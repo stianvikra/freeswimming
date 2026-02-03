@@ -39,10 +39,15 @@ export default function HowWeTeachClient() {
           </p>
 
           {/* 01 Learn */}
-<div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
-  <h2 className="text-[16px] font-semibold text-slate-900">
-    <span className="mr-2 font-semibold text-slate-400">01</span>
-    Learn
+<div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
+  <h2 className="flex items-center gap-3">
+    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[11px] font-semibold text-white shadow-[0_8px_20px_rgba(58,135,230,0.35)]">
+      01
+    </span>
+    <span className="text-[19px] font-semibold tracking-tight text-slate-900">
+      Learn
+    </span>
   </h2>
 
   <div className="mt-3 space-y-2 text-[16px] leading-7 text-slate-700">
@@ -57,10 +62,15 @@ export default function HowWeTeachClient() {
 </div>
 
 {/* 02 Drill */}
-<div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
-  <h2 className="text-[16px] font-semibold text-slate-900">
-    <span className="mr-2 font-semibold text-slate-400">02</span>
-    Drill
+<div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
+  <h2 className="flex items-center gap-3">
+    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[11px] font-semibold text-white shadow-[0_8px_20px_rgba(58,135,230,0.35)]">
+      02
+    </span>
+    <span className="text-[19px] font-semibold tracking-tight text-slate-900">
+      Drill
+    </span>
   </h2>
 
   <p className="font-semibold text-slate-900">
@@ -72,10 +82,15 @@ export default function HowWeTeachClient() {
 </div>
 
 {/* 03 Swim */}
-<div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
-  <h2 className="text-[16px] font-semibold text-slate-900">
-    <span className="mr-2 font-semibold text-slate-400">03</span>
-    Swim
+<div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
+  <h2 className="flex items-center gap-3">
+    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[11px] font-semibold text-white shadow-[0_8px_20px_rgba(58,135,230,0.35)]">
+      03
+    </span>
+    <span className="text-[19px] font-semibold tracking-tight text-slate-900">
+      Swim
+    </span>
   </h2>
 
   <p className="font-semibold text-slate-900">
