@@ -27,7 +27,7 @@ export default function SiteChrome({ children }: Props) {
     {
       href: "/",
       title: "Home",
-      subtitle: "Start here",
+      // subtitle: "Start here",
     },
     {
       href: "/course",
@@ -52,7 +52,6 @@ export default function SiteChrome({ children }: Props) {
     },
   ];
 
-  // Single source of truth for Contact CTA text
   const contactCTA = useMemo(
     () => ({
       href: "/contact",
@@ -128,7 +127,7 @@ export default function SiteChrome({ children }: Props) {
       {/* Slide-in menu */}
       <Modal open={menuOpen} onClose={() => setMenuOpen(false)}>
         <div className="flex h-full flex-col rounded-bl-3xl">
-          {/* Scroll area: menu items only */}
+          {/* Scroll area */}
           <div className="flex-1 overflow-y-auto">
             {/* Header row */}
             <div className="px-5 pt-5">
@@ -166,30 +165,39 @@ export default function SiteChrome({ children }: Props) {
                   ✕
                 </button>
               </div>
+
+              {/* (2) Subtle header divider + spacing so cards don't "start too early" */}
+              <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
             </div>
 
             {/* Menu items */}
-            <div className="px-5 pb-6 pt-4">
+            <div className="px-5 pb-5 pt-4">
+              {/* extra tiny spacer after divider for breathing room */}
+              <div className="h-1" />
+
               <div className="flex flex-col gap-3">
                 {menuItems.map((item) => {
                   const active = isActive(item.href);
 
                   const base =
-                    "relative overflow-hidden rounded-[22px] px-5 py-4 transition active:scale-[0.99] " +
-                    "shadow-[0_10px_28px_rgba(15,23,42,0.06)]";
+                    "relative overflow-hidden rounded-[22px] px-5 py-4 transition active:scale-[0.99]";
 
                   const defaultTone =
-                    "bg-white/85 border border-white/70 hover:bg-white";
+                    "bg-white/85 border border-white/70 hover:bg-white " +
+                    "shadow-[0_10px_28px_rgba(15,23,42,0.06)]";
 
+                  // (3) Featured: stronger presence (still soft)
                   const featuredTone =
-                    "bg-blue-50 border border-blue-100/80 hover:bg-blue-100/60";
+                    "bg-blue-50/80 border border-blue-100/80 hover:bg-blue-100/60 " +
+                    "shadow-[0_18px_48px_rgba(99,168,255,0.18)] " +
+                    "before:absolute before:-inset-10 before:bg-[radial-gradient(600px_200px_at_40%_0%,rgba(99,168,255,0.18),rgba(255,255,255,0)_60%)] before:content-['']";
 
                   // Active: stronger blue + left stripe (single signal)
                   const activeStyle =
-                    "bg-blue-100/75 border border-blue-200/70 " +
-                    "shadow-[0_16px_44px_rgba(99,168,255,0.16)] " +
-                    "before:absolute before:left-0 before:top-0 before:h-full before:w-[4px] " +
-                    "before:bg-[#63A8FF]";
+                  "bg-blue-50/80 border border-blue-200/60 " +
+                  "shadow-[0_14px_36px_rgba(99,168,255,0.14)] " +
+                  "before:absolute before:left-0 before:top-0 before:h-full before:w-[4px] " +
+                  "before:bg-[#63A8FF]";
 
                   const baseTone =
                     item.tone === "primary" ? featuredTone : defaultTone;
@@ -199,9 +207,11 @@ export default function SiteChrome({ children }: Props) {
                       key={item.href}
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
-                      className={[base, active ? activeStyle : baseTone].join(" ")}
+                      className={[base, active ? activeStyle : baseTone].join(
+                        " "
+                      )}
                     >
-                      <div>
+                      <div className="relative">
                         <div className="text-[16px] font-semibold text-slate-900">
                           {item.title}
                         </div>
@@ -216,42 +226,44 @@ export default function SiteChrome({ children }: Props) {
                 })}
               </div>
 
-              {/* Little breathing room before footer zone (no huge empty space) */}
-              <div className="h-4" />
+             {/* Follow: lighter visual weight */}
+<div className="mt-6 border-t border-slate-200/70 py-5">
+  <div className="text-center text-[11.5px] font-medium tracking-wide text-slate-400">
+    Follow
+  </div>
+
+  <div className="mt-3 flex items-center justify-center gap-3">
+    <SocialChip
+      label="YouTube"
+      href="https://youtube.com"
+      icon="youtube"
+      subtle
+    />
+    <SocialChip
+      label="Instagram"
+      href="https://instagram.com"
+      icon="instagram"
+      subtle
+    />
+  </div>
+</div>
+
+              <div className="h-24" />
             </div>
           </div>
 
-          {/* Footer zone: Follow + CTA together (fixes the “huge empty space” problem) */}
-          <div className="border-t border-slate-200/70 bg-white/70 px-5 py-4 backdrop-blur rounded-bl-3xl">
-            {/* Follow module */}
-            <div className="rounded-2xl bg-white/55 p-4 ring-1 ring-slate-100/70">
-              <div className="text-center text-xs font-semibold tracking-wide text-slate-500">
-                Follow
-              </div>
+          {/* Sticky Contact CTA */}
+          <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur rounded-bl-3xl">
+            <Link
+              href={contactCTA.href}
+              onClick={() => setMenuOpen(false)}
+              className="flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(45,143,255,0.22)] transition active:translate-y-[1px]"
+            >
+              {contactCTA.title}
+            </Link>
 
-              <div className="mt-3 flex items-center justify-center gap-3">
-                <SocialChip label="YouTube" href="https://youtube.com" icon="youtube" />
-                <SocialChip
-                  label="Instagram"
-                  href="https://instagram.com"
-                  icon="instagram"
-                />
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="mt-4">
-              <Link
-                href={contactCTA.href}
-                onClick={() => setMenuOpen(false)}
-                className="flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(45,143,255,0.22)] transition active:translate-y-[1px]"
-              >
-                {contactCTA.title}
-              </Link>
-
-              <div className="mt-2 text-center text-xs font-medium text-slate-500">
-                {contactCTA.subtitle}
-              </div>
+            <div className="mt-2 text-center text-xs font-medium text-slate-500">
+              {contactCTA.subtitle}
             </div>
           </div>
         </div>
@@ -267,26 +279,37 @@ function SocialChip({
   label,
   href,
   icon,
+  subtle = false,
 }: {
   label: string;
   href: string;
   icon: "youtube" | "instagram";
+  subtle?: boolean;
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-2xl bg-white/90 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] ring-1 ring-slate-100/70 transition hover:bg-white active:scale-[0.99]"
+      className={[
+        "inline-flex items-center gap-2 rounded-2xl px-5 py-2 text-sm font-semibold transition active:scale-[0.99]",
+        subtle
+          ? "bg-white/70 text-slate-700 shadow-[0_6px_18px_rgba(15,23,42,0.06)] ring-1 ring-slate-100/60 hover:bg-white/90"
+          : "bg-white/90 text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/70 hover:bg-white",
+      ].join(" ")}
     >
-      <span className="inline-flex h-5 w-5 items-center justify-center text-slate-700">
+      <span
+        className={[
+          "inline-flex h-5 w-5 items-center justify-center",
+          subtle ? "text-slate-500" : "text-slate-700",
+        ].join(" ")}
+      >
         {icon === "youtube" ? <YouTubeIcon /> : <InstagramIcon />}
       </span>
       {label}
     </a>
   );
 }
-
 function YouTubeIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
