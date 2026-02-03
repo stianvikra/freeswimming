@@ -38,31 +38,56 @@ export default function HowWeTeachClient() {
             technique — without information overload.
           </p>
 
-          <div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
-            <h2 className="text-[16px] font-semibold text-slate-900">
-             01 Learn
-            </h2>
-            <p className="mt-2 text-slate-700">
-            Before you start swimming, you need to know what you’re actually trying to do. e explain one clear concept at a time — so when you enter the water, you’re not guessing or overthinking.            
-            </p>
-          </div>
+          {/* 01 Learn */}
+<div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
+  <h2 className="text-[16px] font-semibold text-slate-900">
+    <span className="mr-2 font-semibold text-slate-400">01</span>
+    Learn
+  </h2>
 
-          <div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
-            <h2 className="text-[16px] font-semibold text-slate-900">
-              02 Drill
-            </h2>
-            <p className="mt-2 text-slate-700">
-            Each drill is one piece of the puzzle. We practice balance, body position, arm movement, kicking, breathing and coordination — one at a time — so nothing feels rushed or overwhelming.            </p>
-          </div>
+  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+    Before you start swimming, you need to know what you’re actually trying to do.
+  </p>
+  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+    We explain one clear concept at a time — so when you enter the water, you’re not guessing
+    or overthinking.
+  </p>
+  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+    You always know exactly what to focus on.
+  </p>
+</div>
 
-          <div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
-            <h2 className="text-[16px] font-semibold text-slate-900">
-              03 Swim
-            </h2>
-            <p className="mt-2 text-slate-700">
-            When the pieces come together, you stop thinking. You swim — calmer, further and faster than you could imagine was possible.
-            </p>
-          </div>
+{/* 02 Drill */}
+<div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
+  <h2 className="text-[16px] font-semibold text-slate-900">
+    <span className="mr-2 font-semibold text-slate-400">02</span>
+    Drill
+  </h2>
+
+  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+    Each drill is one piece of the puzzle — practiced in isolation, so it actually transfers
+    to swimming.
+  </p>
+  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+    We work on balance, body position, arm movement, kicking, breathing and coordination —
+    one at a time — so nothing feels rushed or overwhelming.
+  </p>
+</div>
+
+{/* 03 Swim */}
+<div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
+  <h2 className="text-[16px] font-semibold text-slate-900">
+    <span className="mr-2 font-semibold text-slate-400">03</span>
+    Swim
+  </h2>
+
+  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+    When the pieces come together, you stop thinking.
+  </p>
+  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+    You swim — calm, balanced and relaxed. Distance and speed come naturally.
+  </p>
+</div>
 
           <p>
           If you’re chasing the Olympics, you probably need a different coach. If you want to become a strong, relaxed swimmer — this is built for you.
