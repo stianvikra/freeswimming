@@ -7,6 +7,37 @@ import Link from "next/link";
 import ActionButton from "@/components/ActionButton";
 import Modal from "@/components/Modal";
 
+type MenuItem = {
+  href: string;
+  title: string;
+  subtitle: string;
+  featured?: boolean;
+};
+
+const MENU: MenuItem[] = [
+  {
+    href: "/course",
+    title: "Free course",
+    subtitle: "Start swimming today",
+    featured: true,
+  },
+  {
+    href: "/programs",
+    title: "Swim programs",
+    subtitle: "Structured plans & PDFs",
+  },
+  {
+    href: "/analysis",
+    title: "Video analysis",
+    subtitle: "Personal feedback — optional",
+  },
+  {
+    href: "/contact",
+    title: "Contact",
+    subtitle: "Help us help you swim better",
+  },
+];
+
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -49,23 +80,96 @@ export default function HomePage() {
       </header>
 
       {/* Menu modal */}
-      <Modal open={menuOpen} onClose={() => setMenuOpen(false)} title="Menu">
-        <nav className="flex flex-col gap-2">
-          {[
-            { href: "/course", label: "Free course" },
-            { href: "/programs", label: "Swim programs" },
-            { href: "/analysis", label: "Video analysis" },
-            { href: "/contact", label: "Contact" },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
+      <Modal open={menuOpen} onClose={() => setMenuOpen(false)}>
+        <nav className="flex h-full flex-col p-5">
+          {/* Header row: brand + close */}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="relative h-8 w-8">
+                <Image
+                  src="/logos/01_icon_transparent.png"
+                  alt="Freeswimming icon"
+                  fill
+                  className="object-contain"
+                  sizes="32px"
+                />
+              </span>
+              <div className="leading-tight">
+                <div className="text-sm font-semibold tracking-wide text-slate-900">
+                  Menu
+                </div>
+                <div className="text-xs font-medium text-slate-500">
+                  freeswimming.org
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
               onClick={() => setMenuOpen(false)}
-              className="rounded-xl px-4 py-3 text-slate-900 transition hover:bg-slate-100 active:scale-[0.99]"
+              className="rounded-2xl bg-white/70 px-3 py-2 text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition hover:bg-white hover:text-slate-900 active:scale-[0.98]"
+              aria-label="Close menu"
             >
-              {item.label}
-            </Link>
-          ))}
+              ✕
+            </button>
+          </div>
+
+          {/* Menu items (consistent cards) */}
+          <div className="flex flex-col gap-2">
+            {MENU.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className={[
+                  "rounded-2xl px-4 py-4 transition active:scale-[0.99]",
+                  "min-h-[64px] flex flex-col justify-center",
+                  "border border-white/70 bg-white/70 backdrop-blur",
+                  "shadow-[0_12px_30px_rgba(15,23,42,0.08)]",
+                  "hover:bg-white hover:shadow-[0_18px_46px_rgba(15,23,42,0.12)]",
+                  item.featured
+                    ? "bg-blue-50/90 border-blue-100/80 shadow-[0_14px_36px_rgba(59,130,246,0.12)]"
+                    : "",
+                ].join(" ")}
+              >
+                <div className="text-[16px] font-semibold text-slate-900">
+                  {item.title}
+                </div>
+                <div className="mt-0.5 text-[14px] font-medium text-slate-600">
+                  {item.subtitle}
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Footer (subtle socials) */}
+          <div className="mt-5 border-t border-slate-200 pt-4">
+            <div className="text-xs font-medium tracking-wide text-slate-500">
+              Follow freeswimming
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/70 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:bg-white hover:text-slate-900 active:scale-[0.99]"
+              >
+                <span aria-hidden>▶</span>
+                YouTube
+              </a>
+
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/70 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:bg-white hover:text-slate-900 active:scale-[0.99]"
+              >
+                <span aria-hidden>⌁</span>
+                Instagram
+              </a>
+            </div>
+          </div>
         </nav>
       </Modal>
 
@@ -87,7 +191,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Copy (slightly larger for readability) */}
+            {/* Copy */}
             <div className="mt-4 text-center">
               <p className="text-[16px] leading-6 text-slate-700 sm:text-[16px]">
                 Olympic dreams?{" "}
@@ -109,7 +213,7 @@ export default function HomePage() {
             <div className="mt-6 flex flex-col gap-4">
               <ActionButton
                 title="FREE COURSE"
-                subtitle="Start here"
+                subtitle="Start swimming today"
                 href="/course"
                 variant="primary"
               />
