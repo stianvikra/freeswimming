@@ -45,10 +45,15 @@ export default function HowWeTeachClient() {
     Learn
   </h2>
 
-  <p className="mt-3 text-[16px] leading-7 text-slate-700">
-  Before you swim, you learn what actually matters.
-One clear concept at a time — so you enter the water calm, not guessing.  
-</p>
+  <div className="mt-3 space-y-2 text-[16px] leading-7 text-slate-700">
+  <p className="font-semibold text-slate-900">
+    Before you swim, you learn what actually matters.
+  </p>
+
+  <p>
+    One clear concept at a time — so you enter the water calm, not guessing.
+  </p>
+</div>
 </div>
 
 {/* 02 Drill */}
@@ -58,10 +63,12 @@ One clear concept at a time — so you enter the water calm, not guessing.
     Drill
   </h2>
 
-  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+  <p className="font-semibold text-slate-900">
   Each drill is one piece of the puzzle.
-Balance, body position, breathing, coordination — trained in isolation, one at a time.
-  </p>
+</p>
+<p>
+  Balance, body position, breathing and coordination — trained one at a time.
+</p>
 </div>
 
 {/* 03 Swim */}
@@ -71,9 +78,11 @@ Balance, body position, breathing, coordination — trained in isolation, one at
     Swim
   </h2>
 
-  <p className="mt-3 text-[16px] leading-7 text-slate-700">
+  <p className="font-semibold text-slate-900">
   When the pieces come together, you stop thinking.
-You swim — calm, balanced and relaxed. Distance and speed follow naturally.  
+</p>
+<p>
+  You swim — calm, balanced and relaxed. Distance and speed follow naturally.
 </p>
 
 </div>
