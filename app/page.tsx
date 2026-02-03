@@ -142,7 +142,8 @@ export default function HomePage() {
                     <div className="text-[16px] font-semibold text-slate-900">
                       Menu
                     </div>
-                    {/* Change: Current page -> Active page */}
+
+                    {/* Active page label */}
                     <div className="mt-0.5 text-[13px] font-medium text-slate-500">
                       Active page:{" "}
                       <span className="text-slate-700">{currentPageLabel}</span>
@@ -168,8 +169,8 @@ export default function HomePage() {
                   const active = isActive(item.href);
 
                   const base =
-                    "relative rounded-[22px] px-5 py-4 transition active:scale-[0.99] " +
-                    "shadow-[0_10px_28px_rgba(15,23,42,0.06)] overflow-hidden";
+                    "relative overflow-hidden rounded-[22px] px-5 py-4 transition active:scale-[0.99] " +
+                    "shadow-[0_10px_28px_rgba(15,23,42,0.06)]";
 
                   // Default cards
                   const defaultTone =
@@ -217,31 +218,20 @@ export default function HomePage() {
                 })}
               </div>
 
-              {/* Social section: centered between two dividers */}
-              <div className="mt-6">
-                {/* top divider */}
-                <div className="border-t border-slate-200/80 pt-4">
-                  <div className="text-xs font-medium tracking-wide text-slate-500 text-center">
-                    Follow freeswimming
-                  </div>
-
-                  {/* Center the chips */}
-                  <div className="mt-3 flex justify-center gap-3">
-                    <SocialChip
-                      label="YouTube"
-                      href="https://youtube.com"
-                      icon="youtube"
-                    />
-                    <SocialChip
-                      label="Instagram"
-                      href="https://instagram.com"
-                      icon="instagram"
-                    />
-                  </div>
+              {/* Follow section: single divider above + sticky CTA divider below (no extra divider here) */}
+              <div className="mt-6 border-t border-slate-200/80 py-6">
+                <div className="text-center text-xs font-semibold tracking-wide text-slate-500">
+                  Follow
                 </div>
 
-                {/* bottom divider (creates the "between two lines" feel) */}
-                <div className="mt-4 border-t border-slate-200/60" />
+                <div className="mt-4 flex items-center justify-center gap-4">
+                  <SocialChip label="YouTube" href="https://youtube.com" icon="youtube" />
+                  <SocialChip
+                    label="Instagram"
+                    href="https://instagram.com"
+                    icon="instagram"
+                  />
+                </div>
               </div>
 
               {/* Spacer so content doesn't hide behind sticky CTA */}
@@ -364,9 +354,9 @@ function SocialChip({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-2xl bg-white/85 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:bg-white active:scale-[0.99]"
+      className="inline-flex items-center gap-2 rounded-2xl bg-white/90 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] ring-1 ring-slate-100/70 transition hover:bg-white active:scale-[0.99]"
     >
-      <span className="inline-flex h-5 w-5 items-center justify-center text-slate-600">
+      <span className="inline-flex h-5 w-5 items-center justify-center text-slate-700">
         {icon === "youtube" ? <YouTubeIcon /> : <InstagramIcon />}
       </span>
       {label}
