@@ -39,10 +39,12 @@ export default function HowWeTeachClient() {
 
           {/* 01 Learn */}
           <div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
+            {/* softer top stripe */}
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent opacity-80" />
 
             <h2 className="flex items-center gap-3">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/90 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(58,135,230,0.20)]">
+              {/* smaller + softer badge */}
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[10px] font-semibold text-white/90 shadow-[0_6px_16px_rgba(58,135,230,0.28)]">
                 01
               </span>
               <span className="text-[19px] font-semibold tracking-tight text-slate-900">
@@ -50,7 +52,7 @@ export default function HowWeTeachClient() {
               </span>
             </h2>
 
-            <div className="mt-2 space-y-1 text-[16px] leading-7 text-slate-700">
+            <div className="mt-2 space-y-2 text-[16px] leading-7 text-slate-700">
               <p className="font-medium text-slate-800">
                 Before you swim, you learn what actually matters.
               </p>
@@ -61,12 +63,14 @@ export default function HowWeTeachClient() {
             </div>
           </div>
 
+          <div className="h-2" />
+
           {/* 02 Drill */}
           <div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent opacity-80" />
 
             <h2 className="flex items-center gap-3">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/90 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(58,135,230,0.20)]">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[10px] font-semibold text-white/90 shadow-[0_6px_16px_rgba(58,135,230,0.28)]">
                 02
               </span>
               <span className="text-[19px] font-semibold tracking-tight text-slate-900">
@@ -74,7 +78,7 @@ export default function HowWeTeachClient() {
               </span>
             </h2>
 
-            <div className="mt-2 space-y-1 text-[16px] leading-7 text-slate-700">
+            <div className="mt-2 space-y-2 text-[16px] leading-7 text-slate-700">
               <p className="font-medium text-slate-800">
                 Each drill is one piece of the puzzle.
               </p>
@@ -85,12 +89,14 @@ export default function HowWeTeachClient() {
             </div>
           </div>
 
+          <div className="h-2" />
+
           {/* 03 Swim */}
           <div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent opacity-80" />
 
             <h2 className="flex items-center gap-3">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/90 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(58,135,230,0.20)]">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[10px] font-semibold text-white/90 shadow-[0_6px_16px_rgba(58,135,230,0.28)]">
                 03
               </span>
               <span className="text-[19px] font-semibold tracking-tight text-slate-900">
@@ -98,19 +104,23 @@ export default function HowWeTeachClient() {
               </span>
             </h2>
 
-            <div className="mt-2 space-y-1 text-[16px] leading-7 text-slate-700">
+            <div className="mt-2 space-y-2 text-[16px] leading-7 text-slate-700">
               <p className="font-medium text-slate-800">
                 When the pieces come together, you stop fighting the water.
               </p>
               <p>
                 You swim — calm, balanced and relaxed. Distance and speed follow
                 naturally.
+                {/* Optional micro-copy:
+                    "Distance and speed follow naturally — without forcing it."
+                */}
               </p>
             </div>
           </div>
 
           <p>
             If you’re chasing the Olympics, you probably need a different coach.
+            <br />
             If you want to become a strong, relaxed swimmer — this is built for
             you.
           </p>
