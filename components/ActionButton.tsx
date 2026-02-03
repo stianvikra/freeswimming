@@ -1,3 +1,4 @@
+// components/ActionButton.tsx
 "use client";
 
 import Link from "next/link";
@@ -21,47 +22,51 @@ export default function ActionButton({
 }: Props) {
   const base =
     "group relative w-full select-none rounded-2xl px-6 " +
-    "min-h-[72px] sm:min-h-[76px] " + // <-- lik høyde alltid (mobile-first)
-    "flex flex-col items-center justify-center gap-1 " +
+    "min-h-[78px] sm:min-h-[82px] " + // litt høyere for bedre luft
+    "flex flex-col items-center justify-center gap-1.5 " +
     "transition-[transform,box-shadow,filter,background-color,border-color] duration-200 ease-out " +
     "focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2d8fff]/25 " +
     "active:translate-y-[1px]";
 
   const primary =
     "text-white bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] " +
-    "shadow-[0_18px_50px_rgba(45,143,255,0.22)] " +
+    "shadow-[0_18px_55px_rgba(45,143,255,0.26)] " +
     "hover:brightness-[1.03] active:brightness-[0.98] " +
-    "hover:shadow-[0_24px_70px_rgba(45,143,255,0.28)]";
+    "hover:shadow-[0_26px_90px_rgba(45,143,255,0.32)]";
 
   const secondary =
-    "bg-white/85 backdrop-blur border border-white/70 " +
+    "bg-white/90 backdrop-blur border border-white/80 " +
     "text-slate-900 " +
-    "shadow-[0_12px_30px_rgba(15,23,42,0.10)] " +
-    "hover:bg-white hover:shadow-[0_18px_46px_rgba(15,23,42,0.14)]";
+    "shadow-[0_12px_36px_rgba(15,23,42,0.11)] " +
+    "hover:bg-white hover:shadow-[0_18px_54px_rgba(15,23,42,0.15)]";
 
   const disabledStyle =
-    "opacity-55 cursor-not-allowed hover:brightness-100 hover:shadow-[0_12px_30px_rgba(15,23,42,0.10)] active:translate-y-0";
+    "opacity-55 cursor-not-allowed hover:brightness-100 " +
+    "hover:shadow-[0_12px_36px_rgba(15,23,42,0.11)] active:translate-y-0";
 
   const skin = variant === "primary" ? primary : secondary;
 
   const content = (
     <>
+      {/* TITLE */}
       <div
         className={
-          "text-[15px] sm:text-[16px] font-semibold tracking-[0.12em] " +
+          "text-[16px] sm:text-[17px] font-semibold tracking-[0.14em] " +
           (variant === "primary" ? "text-white/95" : "text-slate-900")
         }
       >
         {title}
       </div>
 
-      {/* Reserve one line height always => identical button height */}
-      <div className="h-[16px] sm:h-[18px]">
+      {/* SUBTITLE – større på mobil */}
+      <div className="h-[20px] sm:h-[20px]">
         {subtitle ? (
           <div
             className={
-              "text-xs sm:text-sm " +
-              (variant === "primary" ? "text-white/80" : "text-slate-500")
+              "text-[14.5px] leading-tight sm:text-[14px] font-medium " +
+              (variant === "primary"
+                ? "text-white/85"
+                : "text-slate-600")
             }
           >
             {subtitle}
@@ -71,7 +76,6 @@ export default function ActionButton({
     </>
   );
 
-  // Link mode
   if (href && !disabled) {
     return (
       <Link className={`${base} ${skin}`} href={href}>
@@ -80,7 +84,6 @@ export default function ActionButton({
     );
   }
 
-  // Button mode
   return (
     <button
       type="button"

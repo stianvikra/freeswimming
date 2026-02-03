@@ -75,32 +75,32 @@ export default function HomePage() {
           <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_30px_90px_rgba(16,24,40,0.18)] backdrop-blur-xl sm:p-7">
             {/* Hero logo (icon only) */}
             <div className="flex justify-center">
-              <div className="relative h-[120px] w-[120px] sm:h-[140px] sm:w-[140px]">
+              <div className="relative h-[132px] w-[132px] sm:h-[150px] sm:w-[150px]">
                 <Image
                   src="/logos/01_icon_transparent.png"
                   alt="Freeswimming.org logo"
                   fill
                   priority
                   className="object-contain"
-                  sizes="(max-width: 640px) 120px, 140px"
+                  sizes="(max-width: 640px) 132px, 150px"
                 />
               </div>
             </div>
 
-            {/* Copy */}
-            <div className="mt-3 text-center">
-              <p className="text-[15px] leading-6 text-slate-700 sm:text-[15px]">
+            {/* Copy (slightly larger for readability) */}
+            <div className="mt-4 text-center">
+              <p className="text-[16px] leading-6 text-slate-700 sm:text-[16px]">
                 Olympic dreams?{" "}
                 <span className="font-semibold text-slate-900">
                   Wrong channel.
                 </span>
               </p>
 
-              <h1 className="mt-3 text-[20px] font-semibold leading-6 tracking-tight text-slate-900 sm:text-[20px]">
+              <h1 className="mt-3 text-[22px] font-semibold leading-7 tracking-tight text-slate-900 sm:text-[22px]">
                 Adult learner?
               </h1>
 
-              <p className="mt-2 text-[16px] leading-6 text-slate-700 sm:text-[16px]">
+              <p className="mt-2 text-[17px] leading-6 text-slate-700 sm:text-[17px]">
                 You&apos;re exactly where you should be.
               </p>
             </div>
@@ -116,19 +116,24 @@ export default function HomePage() {
 
               <ActionButton
                 title="SWIM PROGRAMS"
-                subtitle="PDF & plans"
+                subtitle="Structured plans & PDFs"
                 href="/programs"
                 variant="secondary"
               />
 
               <ActionButton
                 title="VIDEO ANALYSIS"
-                subtitle="$99 — optional"
+                subtitle="Personal feedback — optional"
                 href="/analysis"
                 variant="secondary"
               />
 
-              <ActionButton title="CONTACT" href="/contact" variant="secondary" />
+              <ActionButton
+                title="CONTACT"
+                subtitle="Help us help you swim better"
+                href="/contact"
+                variant="secondary"
+              />
             </div>
 
             {/* Footer line + tagline */}

@@ -5,60 +5,51 @@ import { useEffect } from "react";
 type ModalProps = {
   open: boolean;
   onClose: () => void;
-  title?: string;
   children: React.ReactNode;
 };
 
-export default function Modal({ open, onClose, title, children }: ModalProps) {
+export default function Modal({ open, onClose, children }: ModalProps) {
   useEffect(() => {
     if (!open) return;
 
-    const onKeyDown = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
 
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return (
     <div
-      className="fixed inset-0 z-50"
-      aria-modal="true"
-      role="dialog"
-      aria-label={title ?? "Menu"}
+      className={`fixed inset-0 z-50 transition ${
+        open ? "pointer-events-auto" : "pointer-events-none"
+      }`}
+      aria-hidden={!open}
     >
       {/* Backdrop */}
       <button
-        className="absolute inset-0 bg-slate-900/30"
-        onClick={onClose}
         aria-label="Close menu"
+        onClick={onClose}
+        className={`absolute inset-0 bg-slate-900/35 backdrop-blur-sm transition-opacity duration-300 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
       />
 
-      {/* Panel */}
-      <div className="absolute right-4 top-20 w-[min(420px,calc(100%-2rem))] glass-card rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200/70">
-          <div className="text-sm font-semibold tracking-wide text-slate-900">
-            {title ?? "Menu"}
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-100 active:scale-[0.98] transition"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="p-5">{children}</div>
-      </div>
+      {/* Slide-in panel */}
+      <aside
+        className={`absolute right-0 top-0 h-full w-[80vw] max-w-[420px]
+        rounded-l-3xl bg-white shadow-[0_40px_120px_rgba(15,23,42,0.35)]
+        transform transition-transform duration-300 ease-out
+        ${open ? "translate-x-0" : "translate-x-full"}`}
+      >
+        {children}
+      </aside>
     </div>
   );
 }
