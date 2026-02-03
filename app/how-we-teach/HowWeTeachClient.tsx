@@ -26,7 +26,7 @@ export default function HowWeTeachClient() {
               How we teach
             </h1>
             <p className="mt-1 text-[14px] font-medium text-slate-600">
-              Learn. Drill. Swim.
+            A simple way to learn freestyle — without overthinking.
             </p>
           </div>
         </div>
@@ -40,35 +40,32 @@ export default function HowWeTeachClient() {
 
           <div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
             <h2 className="text-[16px] font-semibold text-slate-900">
-              Learn
+             01 Learn
             </h2>
             <p className="mt-2 text-slate-700">
-              One clear concept at a time — so you know exactly what to focus on.
+            Before you start swimming, you need to know what you’re actually trying to do. e explain one clear concept at a time — so when you enter the water, you’re not guessing or overthinking.            
             </p>
           </div>
 
           <div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
             <h2 className="text-[16px] font-semibold text-slate-900">
-              Drill
+              02 Drill
             </h2>
             <p className="mt-2 text-slate-700">
-              Short, focused drills with a purpose — technique that actually transfers.
-            </p>
+            Each drill is one piece of the puzzle. We practice balance, body position, arm movement, kicking, breathing and coordination — one at a time — so nothing feels rushed or overwhelming.            </p>
           </div>
 
           <div className="rounded-2xl bg-white/85 p-5 ring-1 ring-slate-100">
             <h2 className="text-[16px] font-semibold text-slate-900">
-              Swim
+              03 Swim
             </h2>
             <p className="mt-2 text-slate-700">
-              Put it together in full stroke — repeatable sessions you can trust.
+            When the pieces come together, you stop thinking. You swim — calmer, further and faster than you could imagine was possible.
             </p>
           </div>
 
           <p>
-            If you’re chasing the Olympics, you probably need a different coach.
-            If you’re an adult learner who wants to become a strong, relaxed swimmer —
-            you’re in the right place.
+          If you’re chasing the Olympics, you probably need a different coach. If you want to become a strong, relaxed swimmer — this is built for you.
           </p>
         </div>
 
