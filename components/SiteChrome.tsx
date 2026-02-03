@@ -1,3 +1,4 @@
+// components/SiteChrome.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -23,6 +24,11 @@ export default function SiteChrome({ children }: Props) {
 
   // Menu list (Contact removed — handled as sticky CTA)
   const menuItems: MenuItem[] = [
+    {
+      href: "/",
+      title: "Home",
+      subtitle: "Start here",
+    },
     {
       href: "/course",
       title: "Free course",
@@ -122,7 +128,7 @@ export default function SiteChrome({ children }: Props) {
       {/* Slide-in menu */}
       <Modal open={menuOpen} onClose={() => setMenuOpen(false)}>
         <div className="flex h-full flex-col rounded-bl-3xl">
-          {/* Scroll area */}
+          {/* Scroll area: menu items only */}
           <div className="flex-1 overflow-y-auto">
             {/* Header row */}
             <div className="px-5 pt-5">
@@ -163,7 +169,7 @@ export default function SiteChrome({ children }: Props) {
             </div>
 
             {/* Menu items */}
-            <div className="px-5 pb-5 pt-4">
+            <div className="px-5 pb-6 pt-4">
               <div className="flex flex-col gap-3">
                 {menuItems.map((item) => {
                   const active = isActive(item.href);
@@ -193,9 +199,7 @@ export default function SiteChrome({ children }: Props) {
                       key={item.href}
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
-                      className={[base, active ? activeStyle : baseTone].join(
-                        " "
-                      )}
+                      className={[base, active ? activeStyle : baseTone].join(" ")}
                     >
                       <div>
                         <div className="text-[16px] font-semibold text-slate-900">
@@ -212,42 +216,42 @@ export default function SiteChrome({ children }: Props) {
                 })}
               </div>
 
-              {/* Follow: one divider above; CTA divider is the sticky top border */}
-              <div className="mt-6 border-t border-slate-200/80 py-6">
-                <div className="text-center text-xs font-semibold tracking-wide text-slate-500">
-                  Follow
-                </div>
-
-                <div className="mt-4 flex items-center justify-center gap-4">
-                  <SocialChip
-                    label="YouTube"
-                    href="https://youtube.com"
-                    icon="youtube"
-                  />
-                  <SocialChip
-                    label="Instagram"
-                    href="https://instagram.com"
-                    icon="instagram"
-                  />
-                </div>
-              </div>
-
-              <div className="h-24" />
+              {/* Little breathing room before footer zone (no huge empty space) */}
+              <div className="h-4" />
             </div>
           </div>
 
-          {/* Sticky Contact CTA */}
-          <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur rounded-bl-3xl">
-            <Link
-              href={contactCTA.href}
-              onClick={() => setMenuOpen(false)}
-              className="flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(45,143,255,0.22)] transition active:translate-y-[1px]"
-            >
-              {contactCTA.title}
-            </Link>
+          {/* Footer zone: Follow + CTA together (fixes the “huge empty space” problem) */}
+          <div className="border-t border-slate-200/70 bg-white/70 px-5 py-4 backdrop-blur rounded-bl-3xl">
+            {/* Follow module */}
+            <div className="rounded-2xl bg-white/55 p-4 ring-1 ring-slate-100/70">
+              <div className="text-center text-xs font-semibold tracking-wide text-slate-500">
+                Follow
+              </div>
 
-            <div className="mt-2 text-center text-xs font-medium text-slate-500">
-              {contactCTA.subtitle}
+              <div className="mt-3 flex items-center justify-center gap-3">
+                <SocialChip label="YouTube" href="https://youtube.com" icon="youtube" />
+                <SocialChip
+                  label="Instagram"
+                  href="https://instagram.com"
+                  icon="instagram"
+                />
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="mt-4">
+              <Link
+                href={contactCTA.href}
+                onClick={() => setMenuOpen(false)}
+                className="flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(45,143,255,0.22)] transition active:translate-y-[1px]"
+              >
+                {contactCTA.title}
+              </Link>
+
+              <div className="mt-2 text-center text-xs font-medium text-slate-500">
+                {contactCTA.subtitle}
+              </div>
             </div>
           </div>
         </div>
@@ -273,7 +277,7 @@ function SocialChip({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-2xl bg-white/90 px-6 py-2.5 text-sm font-semibold text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] ring-1 ring-slate-100/70 transition hover:bg-white active:scale-[0.99]"
+      className="inline-flex items-center gap-2 rounded-2xl bg-white/90 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] ring-1 ring-slate-100/70 transition hover:bg-white active:scale-[0.99]"
     >
       <span className="inline-flex h-5 w-5 items-center justify-center text-slate-700">
         {icon === "youtube" ? <YouTubeIcon /> : <InstagramIcon />}
