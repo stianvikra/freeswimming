@@ -46,15 +46,9 @@ export default function HowWeTeachClient() {
   </h2>
 
   <p className="mt-3 text-[16px] leading-7 text-slate-700">
-    Before you start swimming, you need to know what you’re actually trying to do.
-  </p>
-  <p className="mt-3 text-[16px] leading-7 text-slate-700">
-    We explain one clear concept at a time — so when you enter the water, you’re not guessing
-    or overthinking.
-  </p>
-  <p className="mt-3 text-[16px] leading-7 text-slate-700">
-    You always know exactly what to focus on.
-  </p>
+  Before you swim, you learn what actually matters.
+One clear concept at a time — so you enter the water calm, not guessing.  
+</p>
 </div>
 
 {/* 02 Drill */}
@@ -65,12 +59,8 @@ export default function HowWeTeachClient() {
   </h2>
 
   <p className="mt-3 text-[16px] leading-7 text-slate-700">
-    Each drill is one piece of the puzzle — practiced in isolation, so it actually transfers
-    to swimming.
-  </p>
-  <p className="mt-3 text-[16px] leading-7 text-slate-700">
-    We work on balance, body position, arm movement, kicking, breathing and coordination —
-    one at a time — so nothing feels rushed or overwhelming.
+  Each drill is one piece of the puzzle.
+Balance, body position, breathing, coordination — trained in isolation, one at a time.
   </p>
 </div>
 
@@ -82,11 +72,10 @@ export default function HowWeTeachClient() {
   </h2>
 
   <p className="mt-3 text-[16px] leading-7 text-slate-700">
-    When the pieces come together, you stop thinking.
-  </p>
-  <p className="mt-3 text-[16px] leading-7 text-slate-700">
-    You swim — calm, balanced and relaxed. Distance and speed come naturally.
-  </p>
+  When the pieces come together, you stop thinking.
+You swim — calm, balanced and relaxed. Distance and speed follow naturally.  
+</p>
+
 </div>
 
           <p>
