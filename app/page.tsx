@@ -37,7 +37,6 @@ export default function HomePage() {
       title: "Video analysis",
       subtitle: "Personal feedback — optional",
     },
-    // About moved below the core offer items
     {
       href: "/about",
       title: "About",
@@ -120,7 +119,8 @@ export default function HomePage() {
 
       {/* Slide-in menu */}
       <Modal open={menuOpen} onClose={() => setMenuOpen(false)}>
-        <div className="flex h-full flex-col">
+        {/* Ensures bottom-left rounding visually even if something overrides */}
+        <div className="flex h-full flex-col rounded-bl-3xl">
           {/* Scroll area */}
           <div className="flex-1 overflow-y-auto">
             {/* Header row */}
@@ -142,9 +142,9 @@ export default function HomePage() {
                     <div className="text-[16px] font-semibold text-slate-900">
                       Menu
                     </div>
-                    {/* More premium than "You're on:" */}
+                    {/* Change: Current page -> Active page */}
                     <div className="mt-0.5 text-[13px] font-medium text-slate-500">
-                      Current page:{" "}
+                      Active page:{" "}
                       <span className="text-slate-700">{currentPageLabel}</span>
                     </div>
                   </div>
@@ -168,28 +168,32 @@ export default function HomePage() {
                   const active = isActive(item.href);
 
                   const base =
-                    "rounded-[22px] px-5 py-4 transition active:scale-[0.99] " +
-                    "shadow-[0_10px_28px_rgba(15,23,42,0.06)]";
+                    "relative rounded-[22px] px-5 py-4 transition active:scale-[0.99] " +
+                    "shadow-[0_10px_28px_rgba(15,23,42,0.06)] overflow-hidden";
 
-                  const primaryTone =
-                    "bg-blue-50 border border-blue-100/80 hover:bg-blue-100/60";
-
+                  // Default cards
                   const defaultTone =
                     "bg-white/85 border border-white/70 hover:bg-white";
 
-                  const activeRing =
-                    "ring-2 ring-[#63A8FF]/35 shadow-[0_16px_40px_rgba(99,168,255,0.12)]";
+                  // Primary featured (but not necessarily active)
+                  const primaryTone =
+                    "bg-blue-50 border border-blue-100/80 hover:bg-blue-100/60";
+
+                  // Active: ~7% more blue + subtle left highlight stripe
+                  const activeStyle =
+                    "bg-blue-100/70 border border-blue-200/70 " +
+                    "shadow-[0_18px_46px_rgba(99,168,255,0.16)] " +
+                    "before:absolute before:left-0 before:top-0 before:h-full before:w-[4px] " +
+                    "before:bg-[#63A8FF]";
+
+                  const cardTone = item.tone === "primary" ? primaryTone : defaultTone;
 
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
-                      className={[
-                        base,
-                        item.tone === "primary" ? primaryTone : defaultTone,
-                        active ? activeRing : "",
-                      ].join(" ")}
+                      className={[base, active ? activeStyle : cardTone].join(" ")}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -213,33 +217,40 @@ export default function HomePage() {
                 })}
               </div>
 
-              {/* Follow */}
-              <div className="mt-6 border-t border-slate-200/80 pt-4">
-                <div className="text-xs font-medium tracking-wide text-slate-500">
-                  Follow freeswimming
+              {/* Social section: centered between two dividers */}
+              <div className="mt-6">
+                {/* top divider */}
+                <div className="border-t border-slate-200/80 pt-4">
+                  <div className="text-xs font-medium tracking-wide text-slate-500 text-center">
+                    Follow freeswimming
+                  </div>
+
+                  {/* Center the chips */}
+                  <div className="mt-3 flex justify-center gap-3">
+                    <SocialChip
+                      label="YouTube"
+                      href="https://youtube.com"
+                      icon="youtube"
+                    />
+                    <SocialChip
+                      label="Instagram"
+                      href="https://instagram.com"
+                      icon="instagram"
+                    />
+                  </div>
                 </div>
 
-                <div className="mt-3 flex gap-3">
-                  <SocialChip
-                    label="YouTube"
-                    href="https://youtube.com"
-                    icon="youtube"
-                  />
-                  <SocialChip
-                    label="Instagram"
-                    href="https://instagram.com"
-                    icon="instagram"
-                  />
-                </div>
+                {/* bottom divider (creates the "between two lines" feel) */}
+                <div className="mt-4 border-t border-slate-200/60" />
               </div>
 
               {/* Spacer so content doesn't hide behind sticky CTA */}
-              <div className="h-28" />
+              <div className="h-24" />
             </div>
           </div>
 
-          {/* Sticky Contact CTA (single place for Contact) */}
-          <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur">
+          {/* Sticky Contact CTA */}
+          <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur rounded-bl-3xl">
             <Link
               href={contactCTA.href}
               onClick={() => setMenuOpen(false)}
@@ -353,7 +364,7 @@ function SocialChip({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-2xl bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:bg-white active:scale-[0.99]"
+      className="inline-flex items-center gap-2 rounded-2xl bg-white/85 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:bg-white active:scale-[0.99]"
     >
       <span className="inline-flex h-5 w-5 items-center justify-center text-slate-600">
         {icon === "youtube" ? <YouTubeIcon /> : <InstagramIcon />}
