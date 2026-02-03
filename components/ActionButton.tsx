@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-type ActionButtonProps = {
+type Props = {
   title: string;
   subtitle?: string;
   href?: string;
@@ -18,59 +18,63 @@ export default function ActionButton({
   onClick,
   variant = "secondary",
   disabled = false,
-}: ActionButtonProps) {
+}: Props) {
   const base =
-    "group relative w-full h-16 rounded-2xl px-5 flex flex-col items-center justify-center text-center select-none " +
-    "transition-transform transition-shadow duration-200 " +
-    "active:translate-y-[1px] " +
-    "focus-visible:focus-ring";
+    "group relative w-full select-none rounded-2xl px-6 " +
+    "min-h-[72px] sm:min-h-[76px] " + // <-- lik høyde alltid (mobile-first)
+    "flex flex-col items-center justify-center gap-1 " +
+    "transition-[transform,box-shadow,filter,background-color,border-color] duration-200 ease-out " +
+    "focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2d8fff]/25 " +
+    "active:translate-y-[1px]";
 
   const primary =
-    "text-white " +
-    "bg-[linear-gradient(180deg,#5ea0ff_0%,#4f8fe5_100%)] " +
-    "shadow-[0_18px_40px_rgba(79,143,229,0.35)] " +
-    "hover:brightness-[1.03] hover:shadow-[0_22px_52px_rgba(79,143,229,0.45)]";
+    "text-white bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] " +
+    "shadow-[0_18px_50px_rgba(45,143,255,0.22)] " +
+    "hover:brightness-[1.03] active:brightness-[0.98] " +
+    "hover:shadow-[0_24px_70px_rgba(45,143,255,0.28)]";
 
   const secondary =
-    "bg-white text-slate-900 border border-slate-200 " +
-    "shadow-[0_10px_24px_rgba(15,23,42,0.08)] " +
-    "hover:shadow-[0_14px_34px_rgba(15,23,42,0.10)] hover:bg-slate-50";
+    "bg-white/85 backdrop-blur border border-white/70 " +
+    "text-slate-900 " +
+    "shadow-[0_12px_30px_rgba(15,23,42,0.10)] " +
+    "hover:bg-white hover:shadow-[0_18px_46px_rgba(15,23,42,0.14)]";
 
   const disabledStyle =
-    "opacity-50 cursor-not-allowed hover:brightness-100 hover:shadow-none active:translate-y-0";
+    "opacity-55 cursor-not-allowed hover:brightness-100 hover:shadow-[0_12px_30px_rgba(15,23,42,0.10)] active:translate-y-0";
 
-  const cls =
-    base +
-    " " +
-    (variant === "primary" ? primary : secondary) +
-    (disabled ? " " + disabledStyle : "");
-
-  const Title = (
-    <div className="text-[15px] font-semibold tracking-wide">{title}</div>
-  );
-
-  const Sub = subtitle ? (
-    <div
-      className={
-        "mt-0.5 text-xs " +
-        (variant === "primary" ? "text-white/85" : "text-slate-500")
-      }
-    >
-      {subtitle}
-    </div>
-  ) : null;
+  const skin = variant === "primary" ? primary : secondary;
 
   const content = (
     <>
-      {Title}
-      {Sub}
+      <div
+        className={
+          "text-[15px] sm:text-[16px] font-semibold tracking-[0.12em] " +
+          (variant === "primary" ? "text-white/95" : "text-slate-900")
+        }
+      >
+        {title}
+      </div>
+
+      {/* Reserve one line height always => identical button height */}
+      <div className="h-[16px] sm:h-[18px]">
+        {subtitle ? (
+          <div
+            className={
+              "text-xs sm:text-sm " +
+              (variant === "primary" ? "text-white/80" : "text-slate-500")
+            }
+          >
+            {subtitle}
+          </div>
+        ) : null}
+      </div>
     </>
   );
 
   // Link mode
   if (href && !disabled) {
     return (
-      <Link className={cls} href={href}>
+      <Link className={`${base} ${skin}`} href={href}>
         {content}
       </Link>
     );
@@ -80,10 +84,9 @@ export default function ActionButton({
   return (
     <button
       type="button"
-      className={cls}
+      className={`${base} ${skin} ${disabled ? disabledStyle : ""}`}
       onClick={disabled ? undefined : onClick}
       aria-disabled={disabled}
-      disabled={disabled}
     >
       {content}
     </button>
