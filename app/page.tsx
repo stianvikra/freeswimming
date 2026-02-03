@@ -19,15 +19,41 @@ export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // ✅ Align menu texts with the homepage buttons (same wording)
-  // ✅ Move About near the top (as requested)
+  // Menu list (Contact removed from list — handled as sticky CTA)
   const menuItems: MenuItem[] = [
-    { href: "/course", title: "Free course", subtitle: "Start swimming today", tone: "primary" },
-    { href: "/about", title: "About", subtitle: "Who this is for" },
-    { href: "/programs", title: "Swim programs", subtitle: "Structured plans & PDFs" },
-    { href: "/analysis", title: "Video analysis", subtitle: "Personal feedback — optional" },
-    { href: "/contact", title: "Contact", subtitle: "Help us help you swim better" },
+    {
+      href: "/course",
+      title: "Free course",
+      subtitle: "Start swimming today",
+      tone: "primary",
+    },
+    {
+      href: "/programs",
+      title: "Swim programs",
+      subtitle: "Structured plans & PDFs",
+    },
+    {
+      href: "/analysis",
+      title: "Video analysis",
+      subtitle: "Personal feedback — optional",
+    },
+    // About moved below the core offer items
+    {
+      href: "/about",
+      title: "About",
+      subtitle: "Who this is for",
+    },
   ];
+
+  // Single source of truth for Contact CTA text
+  const contactCTA = useMemo(
+    () => ({
+      href: "/contact",
+      title: "Contact",
+      subtitle: "Help us help you swim better",
+    }),
+    []
+  );
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -38,9 +64,9 @@ export default function HomePage() {
     const map: Record<string, string> = {
       "/": "Home",
       "/course": "Free course",
-      "/about": "About",
       "/programs": "Swim programs",
       "/analysis": "Video analysis",
+      "/about": "About",
       "/contact": "Contact",
     };
 
@@ -94,120 +120,146 @@ export default function HomePage() {
 
       {/* Slide-in menu */}
       <Modal open={menuOpen} onClose={() => setMenuOpen(false)}>
-        <nav className="flex h-full flex-col">
+        <div className="flex h-full flex-col">
           {/* Scroll area */}
-          <div className="flex-1 overflow-y-auto px-5 pb-5 pt-5">
+          <div className="flex-1 overflow-y-auto">
             {/* Header row */}
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="relative h-9 w-9">
-                  <Image
-                    src="/logos/01_icon_transparent.png"
-                    alt="Freeswimming icon"
-                    fill
-                    className="object-contain"
-                    sizes="36px"
-                  />
-                </span>
+            <div className="px-5 pt-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="relative h-9 w-9 shrink-0">
+                    <Image
+                      src="/logos/01_icon_transparent.png"
+                      alt="Freeswimming.org"
+                      fill
+                      priority
+                      className="object-contain"
+                      sizes="36px"
+                    />
+                  </span>
 
-                <div className="flex flex-col">
-                  <div className="text-sm font-semibold tracking-wide text-slate-900">
-                    Menu
-                  </div>
-                  <div className="text-xs font-medium text-slate-500">
-                    You&apos;re on:{" "}
-                    <span className="text-slate-700">{currentPageLabel}</span>
+                  <div className="leading-tight">
+                    <div className="text-[16px] font-semibold text-slate-900">
+                      Menu
+                    </div>
+                    {/* More premium than "You're on:" */}
+                    <div className="mt-0.5 text-[13px] font-medium text-slate-500">
+                      Current page:{" "}
+                      <span className="text-slate-700">{currentPageLabel}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => setMenuOpen(false)}
-                className="rounded-2xl bg-slate-100/80 px-4 py-3 text-slate-700 transition hover:bg-slate-200 active:scale-[0.98]"
-                aria-label="Close menu"
-              >
-                ✕
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
+                  aria-label="Close menu"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Menu items */}
-            <div className="flex flex-col gap-3">
-              {menuItems.map((item) => {
-                const active = isActive(item.href);
+            <div className="px-5 pb-5 pt-4">
+              <div className="flex flex-col gap-3">
+                {menuItems.map((item) => {
+                  const active = isActive(item.href);
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMenuOpen(false)}
-                    className={[
-                      "rounded-3xl px-5 py-5 transition active:scale-[0.99] ring-1",
-                      item.tone === "primary"
-                        ? "bg-blue-50 ring-blue-100 hover:bg-blue-100"
-                        : "bg-white ring-slate-100 hover:bg-slate-50",
-                      active ? "ring-2 ring-[#63A8FF]/45" : "",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="text-[18px] font-semibold text-slate-900">
-                          {item.title}
-                        </div>
-                        {item.subtitle ? (
-                          <div className="mt-1 text-[15px] font-medium text-slate-600">
-                            {item.subtitle}
+                  const base =
+                    "rounded-[22px] px-5 py-4 transition active:scale-[0.99] " +
+                    "shadow-[0_10px_28px_rgba(15,23,42,0.06)]";
+
+                  const primaryTone =
+                    "bg-blue-50 border border-blue-100/80 hover:bg-blue-100/60";
+
+                  const defaultTone =
+                    "bg-white/85 border border-white/70 hover:bg-white";
+
+                  const activeRing =
+                    "ring-2 ring-[#63A8FF]/35 shadow-[0_16px_40px_rgba(99,168,255,0.12)]";
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={[
+                        base,
+                        item.tone === "primary" ? primaryTone : defaultTone,
+                        active ? activeRing : "",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[16px] font-semibold text-slate-900">
+                            {item.title}
                           </div>
+                          {item.subtitle ? (
+                            <div className="mt-1 text-[14px] font-medium text-slate-600">
+                              {item.subtitle}
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {/* Active indicator */}
+                        {active ? (
+                          <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[#63A8FF]" />
                         ) : null}
                       </div>
-
-                      {active ? (
-                        <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[#63A8FF]" />
-                      ) : null}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Follow */}
-            <div className="mt-6 border-t border-slate-200 pt-4">
-              <div className="text-xs font-medium tracking-wide text-slate-500">
-                Follow freeswimming
+                    </Link>
+                  );
+                })}
               </div>
 
-              <div className="mt-3 flex gap-3">
-                <SocialChip label="YouTube" href="https://youtube.com" icon="youtube" />
-                <SocialChip label="Instagram" href="https://instagram.com" icon="instagram" />
-              </div>
-            </div>
+              {/* Follow */}
+              <div className="mt-6 border-t border-slate-200/80 pt-4">
+                <div className="text-xs font-medium tracking-wide text-slate-500">
+                  Follow freeswimming
+                </div>
 
-            {/* Spacer so content doesn't hide behind sticky CTA */}
-            <div className="h-28" />
+                <div className="mt-3 flex gap-3">
+                  <SocialChip
+                    label="YouTube"
+                    href="https://youtube.com"
+                    icon="youtube"
+                  />
+                  <SocialChip
+                    label="Instagram"
+                    href="https://instagram.com"
+                    icon="instagram"
+                  />
+                </div>
+              </div>
+
+              {/* Spacer so content doesn't hide behind sticky CTA */}
+              <div className="h-28" />
+            </div>
           </div>
 
-          {/* Sticky bottom CTA */}
+          {/* Sticky Contact CTA (single place for Contact) */}
           <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur">
             <Link
-              href="/contact"
+              href={contactCTA.href}
               onClick={() => setMenuOpen(false)}
               className="flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(45,143,255,0.22)] transition active:translate-y-[1px]"
             >
-              Contact
+              {contactCTA.title}
             </Link>
 
             <div className="mt-2 text-center text-xs font-medium text-slate-500">
-              Quick question? Send it here.
+              {contactCTA.subtitle}
             </div>
           </div>
-        </nav>
+        </div>
       </Modal>
 
       {/* Page content */}
       <div className="mx-auto flex min-h-screen max-w-[520px] items-start justify-center px-4 pb-10 pt-24 sm:pt-28">
         <section className="relative w-full">
           <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_30px_90px_rgba(16,24,40,0.18)] backdrop-blur-xl sm:p-7">
-            {/* Hero logo */}
+            {/* Hero logo (icon only) */}
             <div className="flex justify-center">
               <div className="relative h-[132px] w-[132px] sm:h-[150px] sm:w-[150px]">
                 <Image
@@ -264,8 +316,8 @@ export default function HomePage() {
 
               <ActionButton
                 title="CONTACT"
-                subtitle="Help us help you swim better"
-                href="/contact"
+                subtitle={contactCTA.subtitle}
+                href={contactCTA.href}
                 variant="secondary"
               />
             </div>
@@ -301,7 +353,7 @@ function SocialChip({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 ring-1 ring-slate-100 transition hover:bg-slate-50 active:scale-[0.99]"
+      className="inline-flex items-center gap-2 rounded-2xl bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:bg-white active:scale-[0.99]"
     >
       <span className="inline-flex h-5 w-5 items-center justify-center text-slate-600">
         {icon === "youtube" ? <YouTubeIcon /> : <InstagramIcon />}
