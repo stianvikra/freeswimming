@@ -46,7 +46,7 @@ export default function SiteChrome({ children }: Props) {
       subtitle: "Personal feedback — optional",
     },
     {
-      href: "/about",
+      href: "/how-we-teach",
       title: "How we teach",
       subtitle: "Learn. Drill. Swim.",
     },
@@ -72,7 +72,7 @@ export default function SiteChrome({ children }: Props) {
       "/course": "Free course",
       "/programs": "Swim programs",
       "/analysis": "Video analysis",
-      "/about": "About",
+      "/how-we-teach": "How we teach",
       "/contact": "Contact",
     };
 
