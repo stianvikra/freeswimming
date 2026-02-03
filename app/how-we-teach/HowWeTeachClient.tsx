@@ -26,83 +26,93 @@ export default function HowWeTeachClient() {
               How we teach
             </h1>
             <p className="mt-1 text-[14px] font-medium text-slate-600">
-            Learn. Drill. Swim.
+              Learn. Drill. Swim.
             </p>
           </div>
         </div>
 
         <div className="mt-6 space-y-5 text-[16px] leading-7 text-slate-700">
           <p>
-            A free, step-by-step freestyle course for adults who want to
-            swim calmly, longer, and with less effort — without information overload.
+            A free, step-by-step freestyle course for adults who want to swim
+            calmly, longer, and with less effort — without information overload.
           </p>
 
           {/* 01 Learn */}
-<div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
-  <h2 className="flex items-center gap-3">
-    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[11px] font-semibold text-white shadow-[0_8px_20px_rgba(58,135,230,0.35)]">
-      01
-    </span>
-    <span className="text-[19px] font-semibold tracking-tight text-slate-900">
-      Learn
-    </span>
-  </h2>
+          <div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
 
-  <div className="mt-2 space-y-1 text-[16px] leading-7 text-slate-700">
-  <p className="font-medium text-slate-800">
-    Before you swim, you learn what actually matters.
-  </p>
+            <h2 className="flex items-center gap-3">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/90 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(58,135,230,0.20)]">
+                01
+              </span>
+              <span className="text-[19px] font-semibold tracking-tight text-slate-900">
+                Learn
+              </span>
+            </h2>
 
-  <p>
-    One clear concept at a time — so you enter the water calm and confident.
-  </p>
-</div>
-</div>
+            <div className="mt-2 space-y-1 text-[16px] leading-7 text-slate-700">
+              <p className="font-medium text-slate-800">
+                Before you swim, you learn what actually matters.
+              </p>
+              <p>
+                One clear concept at a time — so you enter the water calm and
+                confident.
+              </p>
+            </div>
+          </div>
 
-{/* 02 Drill */}
-<div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
-  <h2 className="flex items-center gap-3">
-    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[11px] font-semibold text-white shadow-[0_8px_20px_rgba(58,135,230,0.35)]">
-      02
-    </span>
-    <span className="text-[19px] font-semibold tracking-tight text-slate-900">
-      Drill
-    </span>
-  </h2>
+          {/* 02 Drill */}
+          <div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
 
-  <p className="font-medium text-slate-800">
-  Each drill is one piece of the puzzle.
-</p>
-<p>
-  Balance, body position, breathing and coordination — trained one at a time, without overwhelm.
-</p>
-</div>
+            <h2 className="flex items-center gap-3">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/90 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(58,135,230,0.20)]">
+                02
+              </span>
+              <span className="text-[19px] font-semibold tracking-tight text-slate-900">
+                Drill
+              </span>
+            </h2>
 
-{/* 03 Swim */}
-<div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
-  <h2 className="flex items-center gap-3">
-    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[11px] font-semibold text-white shadow-[0_8px_20px_rgba(58,135,230,0.35)]">
-      03
-    </span>
-    <span className="text-[19px] font-semibold tracking-tight text-slate-900">
-      Swim
-    </span>
-  </h2>
+            <div className="mt-2 space-y-1 text-[16px] leading-7 text-slate-700">
+              <p className="font-medium text-slate-800">
+                Each drill is one piece of the puzzle.
+              </p>
+              <p>
+                Balance, body position, breathing and coordination — trained one
+                at a time, without overwhelm.
+              </p>
+            </div>
+          </div>
 
-  <p className="font-medium text-slate-800">
-  When the pieces come together, you stop fighting the water.
-</p>
-<p>
-  You swim — calm, balanced and relaxed. Distance and speed follow naturally.
-</p>
+          {/* 03 Swim */}
+          <div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-slate-100 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
 
-</div>
+            <h2 className="flex items-center gap-3">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/90 text-[13px] font-semibold text-white shadow-[0_6px_14px_rgba(58,135,230,0.20)]">
+                03
+              </span>
+              <span className="text-[19px] font-semibold tracking-tight text-slate-900">
+                Swim
+              </span>
+            </h2>
+
+            <div className="mt-2 space-y-1 text-[16px] leading-7 text-slate-700">
+              <p className="font-medium text-slate-800">
+                When the pieces come together, you stop fighting the water.
+              </p>
+              <p>
+                You swim — calm, balanced and relaxed. Distance and speed follow
+                naturally.
+              </p>
+            </div>
+          </div>
 
           <p>
-          If you’re chasing the Olympics, you probably need a different coach. <br /> If you want to become a strong, relaxed swimmer — this is built for you.
+            If you’re chasing the Olympics, you probably need a different coach.
+            If you want to become a strong, relaxed swimmer — this is built for
+            you.
           </p>
         </div>
 
