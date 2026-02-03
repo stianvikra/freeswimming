@@ -26,16 +26,15 @@ export default function HowWeTeachClient() {
               How we teach
             </h1>
             <p className="mt-1 text-[14px] font-medium text-slate-600">
-            A simple way to learn freestyle — without overthinking.
+            Learn. Drill. Swim.
             </p>
           </div>
         </div>
 
         <div className="mt-6 space-y-5 text-[16px] leading-7 text-slate-700">
           <p>
-            This is a free, step-by-step freestyle course for adults who want to
-            feel calm in the water, swim longer with less effort, and build real
-            technique — without information overload.
+            A free, step-by-step freestyle course for adults who want to
+            swim calmly, longer, and with less effort — without information overload.
           </p>
 
           {/* 01 Learn */}
@@ -50,13 +49,13 @@ export default function HowWeTeachClient() {
     </span>
   </h2>
 
-  <div className="mt-3 space-y-2 text-[16px] leading-7 text-slate-700">
-  <p className="font-semibold text-slate-900">
+  <div className="mt-2 space-y-1 text-[16px] leading-7 text-slate-700">
+  <p className="font-medium text-slate-800">
     Before you swim, you learn what actually matters.
   </p>
 
   <p>
-    One clear concept at a time — so you enter the water calm, not guessing.
+    One clear concept at a time — so you enter the water calm and confident.
   </p>
 </div>
 </div>
@@ -73,11 +72,11 @@ export default function HowWeTeachClient() {
     </span>
   </h2>
 
-  <p className="font-semibold text-slate-900">
+  <p className="font-medium text-slate-800">
   Each drill is one piece of the puzzle.
 </p>
 <p>
-  Balance, body position, breathing and coordination — trained one at a time.
+  Balance, body position, breathing and coordination — trained one at a time, without overwhelm.
 </p>
 </div>
 
@@ -93,8 +92,8 @@ export default function HowWeTeachClient() {
     </span>
   </h2>
 
-  <p className="font-semibold text-slate-900">
-  When the pieces come together, you stop thinking.
+  <p className="font-medium text-slate-800">
+  When the pieces come together, you stop fighting the water.
 </p>
 <p>
   You swim — calm, balanced and relaxed. Distance and speed follow naturally.
@@ -103,7 +102,7 @@ export default function HowWeTeachClient() {
 </div>
 
           <p>
-          If you’re chasing the Olympics, you probably need a different coach. If you want to become a strong, relaxed swimmer — this is built for you.
+          If you’re chasing the Olympics, you probably need a different coach. <br /> If you want to become a strong, relaxed swimmer — this is built for you.
           </p>
         </div>
 
