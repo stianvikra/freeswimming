@@ -1,26 +1,59 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Base reset */
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(
+      1200px 800px at 50% 25%,
+      rgba(99, 168, 255, 0.28),
+      rgba(255, 255, 255, 0) 60%
+    ),
+    radial-gradient(
+      900px 600px at 20% 75%,
+      rgba(99, 168, 255, 0.16),
+      rgba(255, 255, 255, 0) 65%
+    ),
+    linear-gradient(180deg, #eaf3ff 0%, #f7fbff 35%, #ffffff 100%);
+  color: #0f172a;
+}
+
+/* Nice font rendering */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent “Reader-mode-ish” weirdness from accidental focus outlines */
+:focus {
+  outline: none;
+}
+
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow:
+      0 40px 120px rgba(2, 42, 97, 0.20),
+      0 10px 30px rgba(2, 42, 97, 0.12);
+  }
+
+  .topbar {
+    background: linear-gradient(90deg, #4f8fe5 0%, #62a8ff 100%);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  }
+
+  .focus-ring {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
+  }
 }

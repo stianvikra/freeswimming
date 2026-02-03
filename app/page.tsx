@@ -1,65 +1,146 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import ActionButton from "@/components/ActionButton";
+import Modal from "@/components/Modal";
+
+export default function HomePage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen">
+      {/* Top bar */}
+      <header className="topbar sticky top-0 z-40">
+        <div className="mx-auto max-w-6xl px-5 h-[72px] flex items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-3 text-white/95 hover:text-white transition"
+            aria-label="Home"
           >
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              src="/logos/01_icon_white_transparent.png"
+              alt="freeswimming icon"
+              width={34}
+              height={34}
+              priority
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <span className="font-semibold tracking-wide">freeswimming.org</span>
+          </Link>
+
+          <button
+            className="rounded-xl px-3 py-2 text-white/90 hover:bg-white/10 active:scale-[0.98] transition focus-visible:focus-ring"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
           >
-            Documentation
-          </a>
+            <span className="block w-7 h-[2px] bg-white/90 mb-[6px]" />
+            <span className="block w-7 h-[2px] bg-white/90 mb-[6px]" />
+            <span className="block w-7 h-[2px] bg-white/90" />
+          </button>
+        </div>
+      </header>
+
+      {/* Center content */}
+      <main className="px-5">
+        <div className="mx-auto max-w-6xl">
+        <div className="min-h-[calc(100vh-72px)] flex items-start justify-center pt-10 pb-16">
+            <section className="w-[min(520px,100%)] glass-card rounded-[28px] px-7 py-9">
+              {/* Stacked logo */}
+              <div className="flex flex-col items-center text-center">
+                <Image
+                  src="/logos/03_stacked_transparent.png"
+                  alt="Freeswimming logo"
+                  width={210}
+                  height={210}
+                  priority
+                  className="select-none"
+                />
+
+                {/* Positioning copy (10/10 formatting) */}
+                <div className="mt-4">
+                  <div className="text-sm text-slate-600">
+                    Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
+                  </div>
+                  <div className="mt-2 text-[15px] font-semibold text-slate-900">
+                    Adult learner?
+                  </div>
+                  <div className="mt-1 text-[15px] text-slate-700">
+                    You&apos;re exactly where you should be.
+                  </div>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="mt-7 space-y-4">
+                <ActionButton
+                  title="FREE COURSE"
+                  subtitle="Start here"
+                  href="/course"
+                  variant="primary"
+                />
+
+                <ActionButton
+                  title="SWIM PROGRAMS"
+                  subtitle="PDF & plans"
+                  href="/programs"
+                  variant="secondary"
+                />
+
+                <ActionButton
+                  title="VIDEO ANALYSIS"
+                  subtitle="$99 — optional"
+                  href="/contact"
+                  variant="secondary"
+                />
+
+                <ActionButton
+                  title="CONTACT"
+                  href="/contact"
+                  variant="secondary"
+                />
+              </div>
+
+              {/* Footer tagline */}
+              <div className="mt-8 pt-6 border-t border-slate-200/70 text-center text-[14px] text-slate-700 tracking-wide">
+                Learn. Drill. Swim.
+              </div>
+            </section>
+          </div>
         </div>
       </main>
+
+      {/* Menu modal */}
+      <Modal open={menuOpen} onClose={() => setMenuOpen(false)} title="Menu">
+        <nav className="grid gap-3">
+          <Link
+            href="/course"
+            onClick={() => setMenuOpen(false)}
+            className="rounded-xl px-4 py-3 bg-white border border-slate-200 hover:bg-slate-50 transition"
+          >
+            <div className="font-semibold text-slate-900">Free course</div>
+            <div className="text-sm text-slate-500">Start here</div>
+          </Link>
+
+          <Link
+            href="/programs"
+            onClick={() => setMenuOpen(false)}
+            className="rounded-xl px-4 py-3 bg-white border border-slate-200 hover:bg-slate-50 transition"
+          >
+            <div className="font-semibold text-slate-900">Swim programs</div>
+            <div className="text-sm text-slate-500">PDF & plans</div>
+          </Link>
+
+          <Link
+            href="/contact"
+            onClick={() => setMenuOpen(false)}
+            className="rounded-xl px-4 py-3 bg-white border border-slate-200 hover:bg-slate-50 transition"
+          >
+            <div className="font-semibold text-slate-900">Contact</div>
+            <div className="text-sm text-slate-500">Video analysis & questions</div>
+          </Link>
+        </nav>
+      </Modal>
     </div>
   );
 }
