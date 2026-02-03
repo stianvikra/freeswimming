@@ -18,7 +18,7 @@ export default function HomePage() {
           {/* Left: icon + brand */}
           <Link
             href="/"
-            className="flex items-center gap-3 select-none"
+            className="flex select-none items-center gap-3"
             aria-label="Go to home"
           >
             <span className="relative h-9 w-9">
@@ -31,7 +31,7 @@ export default function HomePage() {
                 sizes="36px"
               />
             </span>
-            <span className="text-white font-semibold tracking-wide">
+            <span className="font-semibold tracking-wide text-white">
               freeswimming.org
             </span>
           </Link>
@@ -40,7 +40,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
-            className="rounded-xl px-3 py-2 text-white/95 hover:bg-white/10 active:scale-[0.98] transition"
+            className="rounded-xl px-3 py-2 text-white/95 transition hover:bg-white/10 active:scale-[0.98]"
             aria-label="Open menu"
           >
             <span className="text-2xl leading-none">≡</span>
@@ -61,7 +61,7 @@ export default function HomePage() {
               key={item.href}
               href={item.href}
               onClick={() => setMenuOpen(false)}
-              className="rounded-xl px-4 py-3 text-slate-900 hover:bg-slate-100 active:scale-[0.99] transition"
+              className="rounded-xl px-4 py-3 text-slate-900 transition hover:bg-slate-100 active:scale-[0.99]"
             >
               {item.label}
             </Link>
@@ -73,22 +73,22 @@ export default function HomePage() {
       <div className="mx-auto flex min-h-screen max-w-[520px] items-start justify-center px-4 pb-10 pt-24 sm:pt-28">
         <section className="relative w-full">
           <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_30px_90px_rgba(16,24,40,0.18)] backdrop-blur-xl sm:p-7">
-            {/* Stacked logo (hero) */}
+            {/* Hero logo (icon only) */}
             <div className="flex justify-center">
-              <div className="relative h-[150px] w-[320px] sm:h-[170px] sm:w-[360px]">
+              <div className="relative h-[120px] w-[120px] sm:h-[140px] sm:w-[140px]">
                 <Image
-                  src="/logos/03_stacked_transparent.png"
-                  alt="Freeswimming.org"
+                  src="/logos/01_icon_transparent.png"
+                  alt="Freeswimming.org logo"
                   fill
                   priority
                   className="object-contain"
-                  sizes="(max-width: 640px) 320px, 360px"
+                  sizes="(max-width: 640px) 120px, 140px"
                 />
               </div>
             </div>
 
             {/* Copy */}
-            <div className="mt-1 text-center">
+            <div className="mt-3 text-center">
               <p className="text-[15px] leading-6 text-slate-700 sm:text-[15px]">
                 Olympic dreams?{" "}
                 <span className="font-semibold text-slate-900">
@@ -128,11 +128,7 @@ export default function HomePage() {
                 variant="secondary"
               />
 
-              <ActionButton
-                title="CONTACT"
-                href="/contact"
-                variant="secondary"
-              />
+              <ActionButton title="CONTACT" href="/contact" variant="secondary" />
             </div>
 
             {/* Footer line + tagline */}
