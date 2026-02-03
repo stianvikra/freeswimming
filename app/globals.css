@@ -57,3 +57,16 @@ body {
     box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
   }
 }
+
+@layer utilities {
+  @keyframes activeItem {
+    from {
+      opacity: 0;
+      transform: translateX(-3px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}

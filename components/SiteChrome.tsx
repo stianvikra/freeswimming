@@ -47,8 +47,8 @@ export default function SiteChrome({ children }: Props) {
     },
     {
       href: "/about",
-      title: "About",
-      subtitle: "Who this is for",
+      title: "How we teach",
+      subtitle: "Learn. Drill. Swim.",
     },
   ];
 
@@ -180,7 +180,7 @@ export default function SiteChrome({ children }: Props) {
                   const active = isActive(item.href);
 
                   const base =
-                    "relative overflow-hidden rounded-[22px] px-5 py-4 transition active:scale-[0.99]";
+                  "relative overflow-hidden rounded-[22px] px-5 py-4 transition duration-150 ease-out active:scale-[0.985]";
 
                   const defaultTone =
                     "bg-white/85 border border-white/70 hover:bg-white " +
@@ -197,7 +197,8 @@ export default function SiteChrome({ children }: Props) {
                   "bg-blue-50/80 border border-blue-200/60 " +
                   "shadow-[0_14px_36px_rgba(99,168,255,0.14)] " +
                   "before:absolute before:left-0 before:top-0 before:h-full before:w-[4px] " +
-                  "before:bg-[#63A8FF]";
+                  "before:bg-[#63A8FF] " +
+                  "animate-[activeItem_180ms_ease-out]";
 
                   const baseTone =
                     item.tone === "primary" ? featuredTone : defaultTone;
