@@ -1,33 +1,99 @@
 // app/page.tsx
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import ActionButton from "@/components/ActionButton";
+import Modal from "@/components/Modal";
 
 export default function HomePage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <main className="min-h-screen bg-[radial-gradient(1200px_600px_at_50%_0%,rgba(59,130,246,0.35),rgba(255,255,255,0)_65%),linear-gradient(#eaf2ff,#ffffff)]">
-      {/* Page padding + center */}
-      <div className="mx-auto flex min-h-screen max-w-[520px] items-start justify-center px-4 pb-10 pt-5 sm:pt-8">
-        {/* Card */}
+      {/* Topbar */}
+      <header className="fixed inset-x-0 top-0 z-40 topbar">
+        <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4">
+          {/* Left: icon + brand */}
+          <Link
+            href="/"
+            className="flex items-center gap-3 select-none"
+            aria-label="Go to home"
+          >
+            <span className="relative h-9 w-9">
+              <Image
+                src="/logos/01_icon_white_transparent.png"
+                alt="Freeswimming icon"
+                fill
+                priority
+                className="object-contain"
+                sizes="36px"
+              />
+            </span>
+            <span className="text-white font-semibold tracking-wide">
+              freeswimming.org
+            </span>
+          </Link>
+
+          {/* Right: hamburger */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            className="rounded-xl px-3 py-2 text-white/95 hover:bg-white/10 active:scale-[0.98] transition"
+            aria-label="Open menu"
+          >
+            <span className="text-2xl leading-none">≡</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Menu modal */}
+      <Modal open={menuOpen} onClose={() => setMenuOpen(false)} title="Menu">
+        <nav className="flex flex-col gap-2">
+          {[
+            { href: "/course", label: "Free course" },
+            { href: "/programs", label: "Swim programs" },
+            { href: "/analysis", label: "Video analysis" },
+            { href: "/contact", label: "Contact" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMenuOpen(false)}
+              className="rounded-xl px-4 py-3 text-slate-900 hover:bg-slate-100 active:scale-[0.99] transition"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </Modal>
+
+      {/* Page content */}
+      <div className="mx-auto flex min-h-screen max-w-[520px] items-start justify-center px-4 pb-10 pt-24 sm:pt-28">
         <section className="relative w-full">
           <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_30px_90px_rgba(16,24,40,0.18)] backdrop-blur-xl sm:p-7">
-            {/* Logo (stacked) */}
+            {/* Stacked logo (hero) */}
             <div className="flex justify-center">
-              <div className="relative h-[140px] w-[280px] sm:h-[150px] sm:w-[300px]">
+              <div className="relative h-[150px] w-[320px] sm:h-[170px] sm:w-[360px]">
                 <Image
                   src="/logos/03_stacked_transparent.png"
                   alt="Freeswimming.org"
                   fill
                   priority
                   className="object-contain"
-                  sizes="(max-width: 640px) 280px, 300px"
+                  sizes="(max-width: 640px) 320px, 360px"
                 />
               </div>
             </div>
 
             {/* Copy */}
-            <div className="mt-2 text-center">
+            <div className="mt-1 text-center">
               <p className="text-[15px] leading-6 text-slate-700 sm:text-[15px]">
-                Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
+                Olympic dreams?{" "}
+                <span className="font-semibold text-slate-900">
+                  Wrong channel.
+                </span>
               </p>
 
               <h1 className="mt-3 text-[20px] font-semibold leading-6 tracking-tight text-slate-900 sm:text-[20px]">
