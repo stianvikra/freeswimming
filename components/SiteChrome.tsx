@@ -11,7 +11,7 @@ type MenuItem = {
   href: string;
   title: string;
   subtitle?: string;
-  note?: string; // ✅ NEW: small extra line under subtitle (muted)
+  note?: string; // small extra line under subtitle (muted)
   tone?: "primary" | "default";
 };
 
@@ -28,13 +28,12 @@ export default function SiteChrome({ children }: Props) {
     {
       href: "/",
       title: "Home",
-      // subtitle: "Start here",
     },
     {
       href: "/course",
       title: "Free course",
       subtitle: "Start swimming today",
-      note: "No signup. No paywall. Just swim.", // ✅ NEW
+      note: "No signup. No paywall. Just swim.",
       tone: "primary",
     },
     {
@@ -168,13 +167,11 @@ export default function SiteChrome({ children }: Props) {
                 </button>
               </div>
 
-              {/* (2) Subtle header divider + spacing so cards don't "start too early" */}
               <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
             </div>
 
             {/* Menu items */}
             <div className="px-5 pb-5 pt-4">
-              {/* extra tiny spacer after divider for breathing room */}
               <div className="h-1" />
 
               <div className="flex flex-col gap-3">
@@ -188,13 +185,11 @@ export default function SiteChrome({ children }: Props) {
                     "bg-white/85 border border-white/70 hover:bg-white " +
                     "shadow-[0_10px_28px_rgba(15,23,42,0.06)]";
 
-                  // (3) Featured: stronger presence (still soft)
                   const featuredTone =
                     "bg-blue-50/80 border border-blue-100/80 hover:bg-blue-100/60 " +
                     "shadow-[0_18px_48px_rgba(99,168,255,0.18)] " +
                     "before:absolute before:-inset-10 before:bg-[radial-gradient(600px_200px_at_40%_0%,rgba(99,168,255,0.18),rgba(255,255,255,0)_60%)] before:content-['']";
 
-                  // Active: stronger blue + left stripe (single signal)
                   const activeStyle =
                     "bg-blue-50/80 border border-blue-200/60 " +
                     "shadow-[0_14px_36px_rgba(99,168,255,0.14)] " +
@@ -225,9 +220,9 @@ export default function SiteChrome({ children }: Props) {
                           </div>
                         ) : null}
 
-                        {/* ✅ NEW: muted microcopy line (only shows when provided) */}
+                        {/* 10/10: micro reassurance (more muted, tighter) */}
                         {item.note ? (
-                          <div className="mt-1 text-[12px] font-medium text-slate-500">
+                          <div className="mt-0.5 text-[12px] font-medium leading-4 tracking-wide text-slate-400">
                             {item.note}
                           </div>
                         ) : null}
@@ -237,7 +232,7 @@ export default function SiteChrome({ children }: Props) {
                 })}
               </div>
 
-              {/* Follow: lighter visual weight */}
+              {/* Follow */}
               <div className="mt-6 border-t border-slate-200/70 py-5">
                 <div className="text-center text-[11.5px] font-medium tracking-wide text-slate-400">
                   Follow
@@ -280,7 +275,6 @@ export default function SiteChrome({ children }: Props) {
         </div>
       </Modal>
 
-      {/* Page content slot */}
       {children}
     </main>
   );
@@ -321,6 +315,7 @@ function SocialChip({
     </a>
   );
 }
+
 function YouTubeIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -337,7 +332,7 @@ function InstagramIcon() {
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
       <path
         fill="currentColor"
-        d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 0 0 1 7.5 2Zm9 2h-9A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4Zm-4.5 4a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM17.8 6.7a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"
+        d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm9 2h-9A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4Zm-4.5 4a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM17.8 6.7a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"
       />
     </svg>
   );

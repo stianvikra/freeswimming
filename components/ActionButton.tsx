@@ -6,6 +6,7 @@ import Link from "next/link";
 type Props = {
   title: string;
   subtitle?: string;
+  note?: string; // small reassurance / microcopy line
   href?: string;
   onClick?: () => void;
   variant?: "primary" | "secondary";
@@ -15,6 +16,7 @@ type Props = {
 export default function ActionButton({
   title,
   subtitle,
+  note,
   href,
   onClick,
   variant = "secondary",
@@ -22,7 +24,7 @@ export default function ActionButton({
 }: Props) {
   const base =
     "group relative w-full select-none rounded-2xl px-6 " +
-    "min-h-[78px] sm:min-h-[82px] " + // litt høyere for bedre luft
+    "min-h-[78px] sm:min-h-[82px] " +
     "flex flex-col items-center justify-center gap-1.5 " +
     "transition-[transform,box-shadow,filter,background-color,border-color] duration-200 ease-out " +
     "focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2d8fff]/25 " +
@@ -58,18 +60,30 @@ export default function ActionButton({
         {title}
       </div>
 
-      {/* SUBTITLE – større på mobil */}
+      {/* SUBTITLE */}
       <div className="h-[20px] sm:h-[20px]">
         {subtitle ? (
           <div
             className={
               "text-[14.5px] leading-tight sm:text-[14px] font-medium " +
-              (variant === "primary"
-                ? "text-white/85"
-                : "text-slate-600")
+              (variant === "primary" ? "text-white/85" : "text-slate-600")
             }
           >
             {subtitle}
+          </div>
+        ) : null}
+      </div>
+
+      {/* NOTE – micro reassurance (10/10 muted, matches menu) */}
+      <div className="h-[16px] sm:h-[16px]">
+        {note ? (
+          <div
+            className={
+              "text-[12px] font-medium leading-4 tracking-wide " +
+              (variant === "primary" ? "text-white/70" : "text-slate-400")
+            }
+          >
+            {note}
           </div>
         ) : null}
       </div>

@@ -28,7 +28,9 @@ export default function HomePage() {
         <div className="mt-4 text-center">
           <p className="text-[16px] leading-6 text-slate-700">
             Olympic dreams?{" "}
-            <span className="font-semibold text-slate-900">Wrong channel.</span>
+            <span className="font-semibold text-slate-900">
+              Wrong channel.
+            </span>
           </p>
 
           <h1 className="mt-3 text-[22px] font-semibold leading-7 tracking-tight text-slate-900">
@@ -40,11 +42,12 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Buttons */}
+        {/* Actions */}
         <div className="mt-6 flex flex-col gap-4">
           <ActionButton
             title="FREE COURSE"
             subtitle="Start swimming today"
+            note="No signup. No paywall. Just swim."
             href="/course"
             variant="primary"
           />
