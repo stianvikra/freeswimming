@@ -1,13 +1,13 @@
-// components/ContactForm.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle2, X } from "lucide-react";
 
 type Variant = "contact" | "analysis";
+type Status = "idle" | "sending" | "success" | "error";
 
 type Props = {
   variant?: Variant;
-  onSuccess?: () => void; // ✅ NEW: parent can show full-page success overlay
 };
 
 type ApiResponse = { ok: boolean; error?: string };
@@ -16,8 +16,8 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
-export default function ContactForm({ variant = "contact", onSuccess }: Props) {
-  const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
+export default function ContactForm({ variant = "contact" }: Props) {
+  const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
 
   const [name, setName] = useState("");
@@ -28,6 +28,9 @@ export default function ContactForm({ variant = "contact", onSuccess }: Props) {
   const [company, setCompany] = useState("");
 
   const nameRef = useRef<HTMLInputElement | null>(null);
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const messageRef = useRef<HTMLTextAreaElement | null>(null);
+
   const startedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -38,28 +41,89 @@ export default function ContactForm({ variant = "contact", onSuccess }: Props) {
   const copy = useMemo(() => {
     if (variant === "analysis") {
       return {
+        pageTitle: "Video analysis",
+        pageSubtitle: "Send a short clip — we’ll tell you exactly what to work on next.",
+
+        helperTitle: "What to include",
+        helperBullets: [
+          "Your level (adult beginner / triathlete / etc.)",
+          "What you struggle with (breathing, balance, arm pull…)",
+          "A video link (YouTube / Drive) if you have it",
+        ],
+        helperLine1: "Best results: 10–20 seconds from the side + 10–20 seconds from the front.",
+        helperLine2: "No pressure — if you don’t have a video yet, just describe the problem.",
+
         formTitle: "Request video analysis",
         formSubtitle: "Tell us what you want feedback on — and what your goal is.",
-        messagePlaceholder:
-          "Example:\n" +
-          "• Your level (adult beginner / triathlete / etc.)\n" +
-          "• What you want feedback on\n" +
-          "• Video link (YouTube/Drive) if you have it\n",
+
+        // ✅ kort placeholder (iPhone ser mye penere)
+        messagePlaceholder: "Describe your goal + what you want feedback on…",
+
+        exampleTitle: "Example",
+        exampleLines: [
+          "Skill level (adult beginner / triathlete / etc.)",
+          "What you struggle with (breathing, balance, arm pull…)",
+          "Video link (YouTube/Drive) if you have it",
+        ],
+
+        successTitle: "Request received",
+        successBody: "Thanks! We’ve received your request and will reply by email within 24–48 hours.",
+        successHint: "You can safely close this page — or tap X to send another request.",
+
         micro: "We usually reply within 24–48 hours.",
       };
     }
+
     return {
+      pageTitle: "Contact",
+      pageSubtitle: "Tell us where you are — and where you want to be.",
+
+      helperTitle: "",
+      helperBullets: [] as string[],
+      helperLine1: "",
+      helperLine2: "",
+
       formTitle: "Send a message",
       formSubtitle: "Send us a short message and we’ll reply by email.",
-      messagePlaceholder:
-        "Write your message here...\n\n" +
-        "Example:\n" +
-        "• What you struggle with\n" +
-        "• Your goal (1000m, open water, technique)\n" +
-        "• Optional: link to a video (YouTube/Drive)\n",
+
+      // ✅ kort placeholder (iPhone ser mye penere)
+      messagePlaceholder: "Write your message…",
+
+      exampleTitle: "Example",
+      exampleLines: [
+        "What you struggle with",
+        "Your goal (1000m, open water, technique)",
+        "Optional: link to a video (YouTube/Drive)",
+      ],
+
+      successTitle: "Message sent",
+      successBody: "Thanks! We’ve received your message and will reply by email within 24–48 hours.",
+      successHint: "You can safely close this page — or tap X to send another message.",
+
       micro: "We usually reply within 24–48 hours.",
     };
   }, [variant]);
+
+  function reset() {
+    setStatus("idle");
+    setError("");
+    setName("");
+    setEmail("");
+    setMessage("");
+    setCompany("");
+    startedAtRef.current = Date.now();
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => nameRef.current?.focus());
+  }
+
+  function goEmail() {
+    requestAnimationFrame(() => emailRef.current?.focus());
+  }
+
+  function goMessage() {
+    requestAnimationFrame(() => messageRef.current?.focus());
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,11 +144,13 @@ export default function ContactForm({ variant = "contact", onSuccess }: Props) {
     if (!isValidEmail(trimmedEmail)) {
       setStatus("error");
       setError("Please enter a valid email.");
+      emailRef.current?.focus();
       return;
     }
     if (trimmedMessage.length < 10) {
       setStatus("error");
       setError("Please write a short message.");
+      messageRef.current?.focus();
       return;
     }
 
@@ -112,99 +178,213 @@ export default function ContactForm({ variant = "contact", onSuccess }: Props) {
         return;
       }
 
-      // ✅ let parent show success overlay
-      onSuccess?.();
-
-      // keep form ready if they return (optional)
-      setStatus("idle");
+      setStatus("success");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setStatus("error");
       setError("Could not send right now. Please try again.");
     }
   }
 
+  // ✅ Success view: header + success card (skjuler resten)
+  if (status === "success") {
+    return (
+      <div>
+        <div className="text-center">
+          <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
+            {copy.pageTitle}
+          </h1>
+          <p className="mt-2 text-[17px] leading-7 text-slate-700">
+            {copy.pageSubtitle}
+          </p>
+        </div>
+
+        <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/70 bg-emerald-50/80 p-7 shadow-sm backdrop-blur-xl">
+          <button
+            type="button"
+            onClick={reset}
+            className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm transition hover:bg-white"
+            aria-label="Close"
+            title="Send another message"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="h-9 w-9 text-emerald-600" />
+            </div>
+
+            <h2 className="mt-5 text-[24px] font-semibold tracking-tight text-slate-900">
+              {copy.successTitle}
+            </h2>
+
+            <p className="mt-3 max-w-[38ch] text-[16px] leading-7 text-slate-700">
+              {copy.successBody}
+            </p>
+
+            <p className="mt-4 max-w-[44ch] text-[14px] leading-6 text-slate-600">
+              {copy.successHint}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mt-6 rounded-[22px] border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-xl">
+    <div>
+      {/* Header (single source of truth) */}
       <div className="text-center">
-        <h2 className="text-[20px] font-semibold text-slate-900">{copy.formTitle}</h2>
-        <p className="mt-2 text-[15px] leading-6 text-slate-700">{copy.formSubtitle}</p>
+        <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
+          {copy.pageTitle}
+        </h1>
+        <p className="mt-2 text-[17px] leading-7 text-slate-700">
+          {copy.pageSubtitle}
+        </p>
       </div>
 
-      {status === "error" && error && (
-        <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] leading-6 text-rose-700">
-          {error}
+      {/* Helper card (analysis only) */}
+      {variant === "analysis" && (
+        <div className="mt-6 rounded-[22px] border border-slate-200/70 bg-white/60 p-6 shadow-sm">
+          <h2 className="text-[18px] font-semibold text-slate-900">
+            {copy.helperTitle}
+          </h2>
+
+          <ul className="mt-3 space-y-3 text-[17px] leading-7 text-slate-700">
+            {copy.helperBullets.map((b) => (
+              <li key={b} className="flex gap-3">
+                <span className="mt-[11px] h-2 w-2 shrink-0 rounded-full bg-slate-400" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-5 text-[16px] leading-7 text-slate-600">
+            {copy.helperLine1}
+          </p>
+          <p className="mt-2 text-[16px] leading-7 text-slate-600">
+            {copy.helperLine2}
+          </p>
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-5">
-        {/* honeypot (hidden) */}
-        <input
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          type="text"
-          name="company"
-          tabIndex={-1}
-          autoComplete="off"
-          className="hidden"
-        />
+      {/* Form card */}
+      <div className="mt-6 rounded-[22px] border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-xl">
+        <div className="text-center">
+          <h2 className="text-[20px] font-semibold text-slate-900">
+            {copy.formTitle}
+          </h2>
+          <p className="mt-2 text-[15px] leading-6 text-slate-700">
+            {copy.formSubtitle}
+          </p>
+        </div>
 
-        <div>
-          <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
-            NAME
-          </label>
+        {status === "error" && error && (
+          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] leading-6 text-rose-700">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="mt-6 space-y-5">
+          {/* honeypot */}
           <input
-            ref={nameRef}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={status === "sending"}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
-            placeholder="Your name"
-            autoComplete="name"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            type="text"
+            name="company"
+            tabIndex={-1}
+            autoComplete="off"
+            className="hidden"
           />
-        </div>
 
-        <div>
-          <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
-            EMAIL
-          </label>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+          <div>
+            <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
+              NAME
+            </label>
+            <input
+              ref={nameRef}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={status === "sending"}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
+              placeholder="Your name"
+              autoComplete="name"
+              enterKeyHint="next"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  goEmail();
+                }
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
+              EMAIL
+            </label>
+            <input
+              ref={emailRef}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={status === "sending"}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
+              placeholder="you@email.com"
+              inputMode="email"
+              autoComplete="email"
+              enterKeyHint="next"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  goMessage();
+                }
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
+              MESSAGE
+            </label>
+            <textarea
+              ref={messageRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              disabled={status === "sending"}
+              className="mt-2 min-h-[150px] w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] leading-6 text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
+              placeholder={copy.messagePlaceholder}
+            />
+
+            {/* ✅ Pen “example” i stedet for lang placeholder */}
+            <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <p className="text-[13px] font-semibold text-slate-700">
+                {copy.exampleTitle}
+              </p>
+              <ul className="mt-2 space-y-1 text-[13px] leading-5 text-slate-600">
+                {copy.exampleLines.map((line) => (
+                  <li key={line} className="flex gap-2">
+                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <button
+            type="submit"
             disabled={status === "sending"}
-            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
-            placeholder="you@email.com"
-            inputMode="email"
-            autoComplete="email"
-          />
-        </div>
+            className="mt-2 w-full rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-5 py-4 text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(37,99,235,0.28)] transition hover:from-blue-600 hover:to-blue-700 disabled:opacity-60"
+          >
+            {status === "sending" ? "Sending…" : "Send"}
+          </button>
 
-        <div>
-          <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
-            MESSAGE
-          </label>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            disabled={status === "sending"}
-            className="mt-2 min-h-[150px] w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] leading-6 text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
-            placeholder={copy.messagePlaceholder}
-          />
-        </div>
+          <p className="text-center text-[13px] text-slate-500">{copy.micro}</p>
 
-        <button
-          type="submit"
-          disabled={status === "sending"}
-          className="mt-2 w-full rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-5 py-4 text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(37,99,235,0.28)] transition hover:from-blue-600 hover:to-blue-700 disabled:opacity-60"
-        >
-          {status === "sending" ? "Sending…" : "Send"}
-        </button>
-
-        <p className="text-center text-[13px] text-slate-500">{copy.micro}</p>
-
-        <p className="text-center text-[13px] font-medium text-slate-600">
-          No signup. No paywall. Just swim.
-        </p>
-      </form>
+         
+        </form>
+      </div>
     </div>
   );
 }
