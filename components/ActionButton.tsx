@@ -22,10 +22,12 @@ export default function ActionButton({
   variant = "secondary",
   disabled = false,
 }: Props) {
+  // ✅ Key change: the outer container is NOT flex-col anymore.
+  // We center one inner content block vertically. That block manages spacing.
   const base =
     "group relative w-full select-none rounded-2xl px-6 " +
     "min-h-[78px] sm:min-h-[82px] " +
-    "flex flex-col items-center justify-center gap-1.5 " +
+    "flex items-center justify-center " +
     "transition-[transform,box-shadow,filter,background-color,border-color] duration-200 ease-out " +
     "focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2d8fff]/25 " +
     "active:translate-y-[1px]";
@@ -48,8 +50,11 @@ export default function ActionButton({
 
   const skin = variant === "primary" ? primary : secondary;
 
+  // ✅ Inner block manages spacing:
+  // - 2 lines (title + subtitle) become visually centered
+  // - 3 lines (title + subtitle + note) stay balanced
   const content = (
-    <>
+    <div className="flex w-full flex-col items-center justify-center text-center">
       {/* TITLE */}
       <div
         className={
@@ -61,33 +66,29 @@ export default function ActionButton({
       </div>
 
       {/* SUBTITLE */}
-      <div className="h-[20px] sm:h-[20px]">
-        {subtitle ? (
-          <div
-            className={
-              "text-[14.5px] leading-tight sm:text-[14px] font-medium " +
-              (variant === "primary" ? "text-white/85" : "text-slate-600")
-            }
-          >
-            {subtitle}
-          </div>
-        ) : null}
-      </div>
+      {subtitle ? (
+        <div
+          className={
+            "mt-1 text-[14.5px] leading-[1.2] sm:text-[14px] font-medium " +
+            (variant === "primary" ? "text-white/85" : "text-slate-600")
+          }
+        >
+          {subtitle}
+        </div>
+      ) : null}
 
-      {/* NOTE – micro reassurance (10/10 muted, matches menu) */}
-      <div className="h-[16px] sm:h-[16px]">
-        {note ? (
-          <div
-            className={
-              "text-[12px] font-medium leading-4 tracking-wide " +
-              (variant === "primary" ? "text-white/70" : "text-slate-400")
-            }
-          >
-            {note}
-          </div>
-        ) : null}
-      </div>
-    </>
+      {/* NOTE */}
+      {note ? (
+        <div
+          className={
+            "mt-2 text-[12px] font-medium leading-4 tracking-wide " +
+            (variant === "primary" ? "text-white/70" : "text-slate-400")
+          }
+        >
+          {note}
+        </div>
+      ) : null}
+    </div>
   );
 
   if (href && !disabled) {
