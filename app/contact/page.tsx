@@ -1,26 +1,26 @@
-// app/contact/page.tsx
 "use client";
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
+import BackButton from "@/components/BackButton";
 import ContactForm from "@/components/ContactForm";
 
 export default function ContactPage() {
   return (
     <SiteChrome>
       <PageTemplate>
-        <h1 className="text-[22px] font-semibold leading-7 tracking-tight text-slate-900">
-          Contact
-        </h1>
+        <BackButton />
 
-        <p className="mt-2 text-[15px] leading-6 text-slate-600">
-          Have a question or need help getting started? Send us a message — we
-          read everything.
-        </p>
-
-        <div className="mt-6">
-          <ContactForm variant="contact" />
+        <div className="text-center">
+          <h1 className="text-[24px] font-semibold tracking-tight text-slate-900">
+            Contact
+          </h1>
+          <p className="mt-2 text-[17px] leading-7 text-slate-700">
+            Tell us where you are — and where you want to be.
+          </p>
         </div>
+
+        <ContactForm variant="contact" />
       </PageTemplate>
     </SiteChrome>
   );

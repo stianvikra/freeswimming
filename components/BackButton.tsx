@@ -20,7 +20,9 @@ export default function BackButton({ fallbackHref = "/" }: Props) {
   return (
     <button
       onClick={handleBack}
-      className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition"
+      className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition"
+      aria-label="Go back"
+      type="button"
     >
       <span className="text-lg leading-none">←</span>
       Back
