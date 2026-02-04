@@ -1,4 +1,3 @@
-// components/PageTemplate.tsx
 "use client";
 
 import BackButton from "@/components/BackButton";
@@ -6,7 +5,7 @@ import BackButton from "@/components/BackButton";
 type Props = {
   children: React.ReactNode;
   size?: "default" | "wide";
-  showBack?: boolean; // ✅ NEW: hide on Home, show everywhere else
+  showBack?: boolean;
 };
 
 export default function PageTemplate({
@@ -22,9 +21,7 @@ export default function PageTemplate({
         }`}
       >
         <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_30px_90px_rgba(16,24,40,0.18)] backdrop-blur-xl sm:p-8">
-          {/* ✅ Back button (optional) */}
-          {showBack ? <BackButton /> : null}
-
+          {showBack && <BackButton />}
           {children}
         </div>
 

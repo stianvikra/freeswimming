@@ -2,14 +2,12 @@
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
-import BackButton from "@/components/BackButton";
 import ContactForm from "@/components/ContactForm";
 
 export default function AnalysisPage() {
   return (
     <SiteChrome>
       <PageTemplate>
-        <BackButton />
 
         <div className="text-center">
           <h1 className="text-[24px] font-semibold tracking-tight text-slate-900">
