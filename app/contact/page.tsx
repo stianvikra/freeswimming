@@ -3,15 +3,24 @@
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
+import ContactForm from "@/components/ContactForm";
 
 export default function ContactPage() {
   return (
     <SiteChrome>
-      <PageTemplate size="wide">
-        <h1 className="text-2xl font-semibold text-slate-900">Contact</h1>
-        <p className="mt-3 text-slate-700">
-          Placeholder page for MVP. Add a simple contact form or email link here.
-        </p>
+      <PageTemplate>
+        <div className="text-center">
+          <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
+            Contact
+          </h1>
+          <p className="mt-2 text-[16px] leading-6 text-slate-700">
+            Tell us where you are — and where you want to be.
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <ContactForm variant="contact" />
+        </div>
       </PageTemplate>
     </SiteChrome>
   );

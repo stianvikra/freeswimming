@@ -9,7 +9,8 @@ import ActionButton from "@/components/ActionButton";
 export default function HomePage() {
   return (
     <SiteChrome>
-      <PageTemplate>
+      {/* Home = top level → no back button */}
+      <PageTemplate showBack={false}>
         {/* Hero logo */}
         <div className="flex justify-center">
           <div className="relative h-[132px] w-[132px] sm:h-[150px] sm:w-[150px]">
