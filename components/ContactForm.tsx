@@ -28,7 +28,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
     if (variant === "analysis") {
       return "Tell us what you want feedback on — and what your goal is.";
     }
-    return "Questions, collaborations, or just want guidance? Write us.";
+    return "Questions, collaborations, or guidance? Write us.";
   }, [variant]);
 
 const placeholder = useMemo(() => {

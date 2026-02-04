@@ -13,20 +13,25 @@ export default function AnalysisPage() {
           <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
             Video analysis
           </h1>
-
           <p className="mt-2 text-[16px] leading-6 text-slate-700">
-            Optional personal feedback — clear, kind, and actionable.
+            Send a short clip — we’ll tell you exactly what to work on next.
           </p>
+        </div>
 
-          <div className="mt-4 rounded-3xl bg-white/70 border border-white/70 shadow-[0_14px_46px_rgba(15,23,42,0.08)] px-5 py-4 text-left">
-            <div className="text-[12px] font-semibold tracking-wide text-slate-600">
-              WHAT TO SEND
-            </div>
-            <ul className="mt-2 space-y-1 text-[14.5px] leading-6 text-slate-700">
-              <li>• Link to your swim video (side + front if possible)</li>
-              <li>• Your goal (distance / open water / technique / breathing)</li>
-              <li>• What feels hardest right now</li>
-            </ul>
+        <div className="mt-5 rounded-2xl border border-white/70 bg-white/60 p-4 backdrop-blur">
+          <div className="text-[13px] font-semibold tracking-wide text-slate-700">
+            What to include
+          </div>
+
+          <ul className="mt-2 space-y-1.5 text-[14px] leading-5 text-slate-600">
+            <li>• Your level (adult beginner / triathlete / etc.)</li>
+            <li>• What you struggle with (breathing, balance, arm pull…)</li>
+            <li>• A video link (YouTube / Drive) if you have it</li>
+          </ul>
+
+          <div className="mt-3 text-[12px] font-medium text-slate-500">
+            No pressure — if you don’t have a video yet, just describe the
+            problem.
           </div>
         </div>
 
