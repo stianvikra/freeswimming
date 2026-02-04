@@ -1,8 +1,8 @@
 // app/programs/page.tsx
-"use client";
+ "use client";
 
-import SiteChrome from "@/components/SiteChrome";
-import PageTemplate from "@/components/PageTemplate";
+ import SiteChrome from "@/components/SiteChrome";
+ import PageTemplate from "@/components/PageTemplate";
 
 export default function ProgramsPage() {
   return (
@@ -16,3 +16,5 @@ export default function ProgramsPage() {
     </SiteChrome>
   );
 }
+
+
