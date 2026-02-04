@@ -11,6 +11,7 @@ type MenuItem = {
   href: string;
   title: string;
   subtitle?: string;
+  note?: string; // ✅ NEW: small extra line under subtitle (muted)
   tone?: "primary" | "default";
 };
 
@@ -33,6 +34,7 @@ export default function SiteChrome({ children }: Props) {
       href: "/course",
       title: "Free course",
       subtitle: "Start swimming today",
+      note: "No signup. No paywall. Just swim.", // ✅ NEW
       tone: "primary",
     },
     {
@@ -180,7 +182,7 @@ export default function SiteChrome({ children }: Props) {
                   const active = isActive(item.href);
 
                   const base =
-                  "relative overflow-hidden rounded-[22px] px-5 py-4 transition duration-150 ease-out active:scale-[0.985]";
+                    "relative overflow-hidden rounded-[22px] px-5 py-4 transition duration-150 ease-out active:scale-[0.985]";
 
                   const defaultTone =
                     "bg-white/85 border border-white/70 hover:bg-white " +
@@ -194,11 +196,11 @@ export default function SiteChrome({ children }: Props) {
 
                   // Active: stronger blue + left stripe (single signal)
                   const activeStyle =
-                  "bg-blue-50/80 border border-blue-200/60 " +
-                  "shadow-[0_14px_36px_rgba(99,168,255,0.14)] " +
-                  "before:absolute before:left-0 before:top-0 before:h-full before:w-[4px] " +
-                  "before:bg-[#63A8FF] " +
-                  "animate-[activeItem_180ms_ease-out]";
+                    "bg-blue-50/80 border border-blue-200/60 " +
+                    "shadow-[0_14px_36px_rgba(99,168,255,0.14)] " +
+                    "before:absolute before:left-0 before:top-0 before:h-full before:w-[4px] " +
+                    "before:bg-[#63A8FF] " +
+                    "animate-[activeItem_180ms_ease-out]";
 
                   const baseTone =
                     item.tone === "primary" ? featuredTone : defaultTone;
@@ -216,9 +218,17 @@ export default function SiteChrome({ children }: Props) {
                         <div className="text-[16px] font-semibold text-slate-900">
                           {item.title}
                         </div>
+
                         {item.subtitle ? (
                           <div className="mt-1 text-[14px] font-medium text-slate-600">
                             {item.subtitle}
+                          </div>
+                        ) : null}
+
+                        {/* ✅ NEW: muted microcopy line (only shows when provided) */}
+                        {item.note ? (
+                          <div className="mt-1 text-[12px] font-medium text-slate-500">
+                            {item.note}
                           </div>
                         ) : null}
                       </div>
@@ -227,27 +237,27 @@ export default function SiteChrome({ children }: Props) {
                 })}
               </div>
 
-             {/* Follow: lighter visual weight */}
-<div className="mt-6 border-t border-slate-200/70 py-5">
-  <div className="text-center text-[11.5px] font-medium tracking-wide text-slate-400">
-    Follow
-  </div>
+              {/* Follow: lighter visual weight */}
+              <div className="mt-6 border-t border-slate-200/70 py-5">
+                <div className="text-center text-[11.5px] font-medium tracking-wide text-slate-400">
+                  Follow
+                </div>
 
-  <div className="mt-3 flex items-center justify-center gap-3">
-    <SocialChip
-      label="YouTube"
-      href="https://youtube.com"
-      icon="youtube"
-      subtle
-    />
-    <SocialChip
-      label="Instagram"
-      href="https://instagram.com"
-      icon="instagram"
-      subtle
-    />
-  </div>
-</div>
+                <div className="mt-3 flex items-center justify-center gap-3">
+                  <SocialChip
+                    label="YouTube"
+                    href="https://youtube.com"
+                    icon="youtube"
+                    subtle
+                  />
+                  <SocialChip
+                    label="Instagram"
+                    href="https://instagram.com"
+                    icon="instagram"
+                    subtle
+                  />
+                </div>
+              </div>
 
               <div className="h-24" />
             </div>
@@ -327,7 +337,7 @@ function InstagramIcon() {
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
       <path
         fill="currentColor"
-        d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm9 2h-9A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4Zm-4.5 4a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM17.8 6.7a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"
+        d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 0 0 1 7.5 2Zm9 2h-9A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4Zm-4.5 4a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM17.8 6.7a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"
       />
     </svg>
   );

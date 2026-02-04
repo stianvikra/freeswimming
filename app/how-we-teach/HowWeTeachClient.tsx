@@ -110,7 +110,7 @@ export default function HowWeTeachClient() {
               </p>
               <p>
                 You swim — calm, balanced and relaxed. Distance and speed follow
-                naturally.
+                naturally - without forcing it.
                 {/* Optional micro-copy:
                     "Distance and speed follow naturally — without forcing it."
                 */}
