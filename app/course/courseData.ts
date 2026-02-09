@@ -1,3 +1,5 @@
+// app/course/courseData.ts
+
 export type CourseLesson = {
   id: string; // used in URL: /course?lesson=<id>
   title: string;
@@ -28,31 +30,19 @@ export const COURSE_MODULES: CourseModule[] = [
   {
     id: "m1",
     title: "Module 1 — Intro",
-    subtitle: "A few tips om the way.",
+    subtitle: "A few tips on the way.",
     lessons: [
       {
         id: "m1-l1",
         title: "Test video - Boknafjorden",
-        youtubeId: "Xh6OblO06LY", // TODO: replace
+        youtubeId: "Xh6OblO06LY",
         estMinutes: 4,
         goal: "Find a long, stable body line so your effort moves you forward — not down.",
-        cues: [
-          "Head neutral (look slightly forward/down)",
-          "Long spine, light chest",
-          "Hips close to the surface",
-        ],
-        commonMistakes: [
-          "Lifting the head to breathe",
-          "Kicking harder instead of fixing balance",
-          "Tension in neck/shoulders",
-        ],
+        cues: ["Head neutral (look slightly forward/down)", "Long spine, light chest", "Hips close to the surface"],
+        commonMistakes: ["Lifting the head to breathe", "Kicking harder instead of fixing balance", "Tension in neck/shoulders"],
         drill: {
           title: "Superman glide (easy version)",
-          steps: [
-            "Push off gently and hold a long line",
-            "Keep head neutral and exhale slowly",
-            "Reset after 5–8 seconds and repeat",
-          ],
+          steps: ["Push off gently and hold a long line", "Keep head neutral and exhale slowly", "Reset after 5–8 seconds and repeat"],
         },
         nextStep: "Repeat this in 2 swim sessions before moving to the next lesson.",
         tags: ["foundation", "balance"],
@@ -60,18 +50,14 @@ export const COURSE_MODULES: CourseModule[] = [
       {
         id: "m1-l2",
         title: "Test video 2",
-        youtubeId: "OWRzGHPRdmg", // TODO: replace
+        youtubeId: "OWRzGHPRdmg",
         estMinutes: 3,
         goal: "Use a neutral head position to lift the hips without kicking harder.",
         cues: ["Chin slightly tucked", "Eyes down-forward", "Neck relaxed"],
         commonMistakes: ["Looking forward too much", "Tensing the neck"],
         drill: {
           title: "Head-only reset",
-          steps: [
-            "Swim easy freestyle for 10–15m",
-            "Only adjust head position — nothing else",
-            "Notice how hips change when head changes",
-          ],
+          steps: ["Swim easy freestyle for 10–15m", "Only adjust head position — nothing else", "Notice how hips change when head changes"],
         },
         nextStep: "If legs still sink, re-do lesson 1 for two more sessions.",
         tags: ["body position"],
@@ -86,18 +72,14 @@ export const COURSE_MODULES: CourseModule[] = [
       {
         id: "m2-l1",
         title: "Balance without brute force",
-        youtubeId: "dQw4w9WgXcQ", // TODO: replace
+        youtubeId: "dQw4w9WgXcQ",
         estMinutes: 4,
         goal: "Stay balanced with less tension so your stroke becomes smoother.",
         cues: ["Relax the shoulders", "Long exhale", "Quiet kick"],
         commonMistakes: ["Holding breath", "Over-kicking to stay afloat"],
         drill: {
           title: "Easy balance swim",
-          steps: [
-            "Swim slow for 15–25m",
-            "Focus only on relaxation + exhale",
-            "Repeat 4–6 times",
-          ],
+          steps: ["Swim slow for 15–25m", "Focus only on relaxation + exhale", "Repeat 4–6 times"],
         },
         nextStep: "Do this drill at the start of every session for one week.",
         tags: ["calm", "efficiency"],
@@ -112,18 +94,14 @@ export const COURSE_MODULES: CourseModule[] = [
       {
         id: "m3-l1",
         title: "Exhale fixes panic",
-        youtubeId: "dQw4w9WgXcQ", // TODO: replace
+        youtubeId: "dQw4w9WgXcQ",
         estMinutes: 5,
         goal: "Build a breathing rhythm that keeps you relaxed and controlled.",
         cues: ["Exhale underwater", "Small inhale", "Return head smoothly"],
         commonMistakes: ["Holding breath", "Big gasp inhale", "Lifting head"],
         drill: {
           title: "Bubble-breathe pattern",
-          steps: [
-            "Swim easy and exhale bubbles continuously",
-            "Breathe every 2 or 3 strokes (pick one)",
-            "Repeat 6–10 x 25m",
-          ],
+          steps: ["Swim easy and exhale bubbles continuously", "Breathe every 2 or 3 strokes (pick one)", "Repeat 6–10 x 25m"],
         },
         nextStep: "When you feel calm and repeatable, move to the next module.",
         tags: ["breathing", "confidence"],
@@ -138,18 +116,14 @@ export const COURSE_MODULES: CourseModule[] = [
       {
         id: "m4-l1",
         title: "Smooth timing (no rushing)",
-        youtubeId: "dQw4w9WgXcQ", // TODO: replace
+        youtubeId: "dQw4w9WgXcQ",
         estMinutes: 4,
         goal: "Stop rushing. Improve flow so each stroke gives you more distance.",
         cues: ["Long line", "Gentle kick", "Patient front arm"],
         commonMistakes: ["Spinning arms fast", "Kicking to compensate"],
         drill: {
           title: "Slow swim with one focus",
-          steps: [
-            "Swim easy and slow for 25m",
-            "Only focus on ‘patient lead arm’",
-            "Repeat 6–8 times",
-          ],
+          steps: ["Swim easy and slow for 25m", "Only focus on ‘patient lead arm’", "Repeat 6–8 times"],
         },
         nextStep: "Repeat for two sessions. If you rush again, slow down and reset.",
         tags: ["timing", "flow"],
@@ -161,9 +135,7 @@ export const COURSE_MODULES: CourseModule[] = [
 export const DEFAULT_LESSON_ID = COURSE_MODULES[0]?.lessons[0]?.id ?? "m1-l1";
 
 /** Helper: flatten lessons for quick lookup / next-prev */
-export const COURSE_LESSONS_FLAT: CourseLesson[] = COURSE_MODULES.flatMap(
-  (m) => m.lessons
-);
+export const COURSE_LESSONS_FLAT: CourseLesson[] = COURSE_MODULES.flatMap((m) => m.lessons);
 
 export function findLesson(lessonId: string | null | undefined): CourseLesson {
   if (!lessonId) return COURSE_LESSONS_FLAT[0] ?? COURSE_MODULES[0].lessons[0];

@@ -65,12 +65,14 @@ export default function CoursePage() {
     };
   }, [activeLesson.id]);
 
+  // Save progress
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, activeLesson.id);
     } catch {}
   }, [activeLesson.id]);
 
+  // Restore last lesson if ?lesson missing
   useEffect(() => {
     if (lessonParam) return;
 
@@ -122,8 +124,7 @@ export default function CoursePage() {
     return Math.min(100, Math.round((idx / total) * 100));
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
 
-  // ✅ Bottom bar: navigation only
-  // ✅ Menu → Lessons (as requested)
+  // Bottom bar (mobile)
   const bottomBar = (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
       <div className="mx-auto max-w-[520px]">
@@ -227,9 +228,7 @@ export default function CoursePage() {
                 {moduleInfo.module?.title ?? "Course"}
                 {activeLesson.estMinutes ? ` • ${activeLesson.estMinutes} min` : ""}
               </div>
-              <div className="mt-1 text-[18px] font-semibold text-slate-900">
-                {activeLesson.title}
-              </div>
+              <div className="mt-1 text-[18px] font-semibold text-slate-900">{activeLesson.title}</div>
             </div>
 
             <div className="hidden gap-2 sm:flex sm:pt-1">
@@ -299,9 +298,7 @@ export default function CoursePage() {
             <p className="mt-2 text-[15px] leading-7 text-slate-700">{activeLesson.goal}</p>
 
             <div className="mt-5">
-              <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">
-                Cues (pick one)
-              </h3>
+              <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">Cues (pick one)</h3>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
                 {activeLesson.cues.map((c) => (
                   <li key={c}>{c}</li>
@@ -331,9 +328,7 @@ export default function CoursePage() {
               Drill
             </div>
 
-            <h2 className="mt-3 text-[18px] font-semibold text-slate-900">
-              {activeLesson.drill.title}
-            </h2>
+            <h2 className="mt-3 text-[18px] font-semibold text-slate-900">{activeLesson.drill.title}</h2>
 
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-[14px] leading-7 text-slate-800">
               {activeLesson.drill.steps.map((s) => (
@@ -345,9 +340,7 @@ export default function CoursePage() {
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                 Next step
               </div>
-              <div className="mt-1 text-[14px] leading-6 text-slate-800">
-                {activeLesson.nextStep}
-              </div>
+              <div className="mt-1 text-[14px] leading-6 text-slate-800">{activeLesson.nextStep}</div>
             </div>
 
             <div className="mt-5 flex flex-col gap-2">
@@ -374,7 +367,7 @@ export default function CoursePage() {
         {/* Spacer so content isn't hidden behind bottom nav */}
         <div className="h-32 sm:h-0" />
 
-        {/* ✅ Drawer now uses the single shared component */}
+        {/* Drawer */}
         <MenuDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
