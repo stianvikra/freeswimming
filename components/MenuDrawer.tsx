@@ -251,17 +251,17 @@ function CourseView({
   onSelectLesson: (lessonId: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-4">
+    // ✅ Gap change: tighter spacing between modules
+    <div className="flex flex-col gap-3">
       {COURSE_MODULES.map((mod, idx) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
 
         const wrapperClass = [
-          "ui-card ui-focus relative overflow-hidden rounded-[22px] border bg-white/80 shadow-sm",
-          isActiveModule ? "border-blue-200/70" : "border-white/70",
-          isOpen && !isActiveModule
-            ? "border-slate-200/70 shadow-[0_18px_60px_rgba(15,23,42,0.10)]"
-            : "",
+          "ui-card ui-focus relative overflow-hidden rounded-[22px] border bg-white/80 backdrop-blur",
+          "shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
+          isActiveModule ? "border-blue-200/70" : "border-slate-200/60",
+          isOpen && !isActiveModule ? "shadow-[0_18px_52px_rgba(15,23,42,0.10)]" : "",
           isOpen && isActiveModule ? "shadow-[0_22px_70px_rgba(37,99,235,0.14)]" : "",
         ].join(" ");
 
@@ -274,7 +274,6 @@ function CourseView({
               : "bg-slate-200/70",
         ].join(" ");
 
-        // Module header is the click target → ui-press + ui-focus
         const moduleHeaderBtn = [
           "ui-press ui-focus flex w-full items-start justify-between gap-3 px-5 py-4 text-left",
           isOpen
@@ -286,7 +285,6 @@ function CourseView({
           <div key={mod.id} className={wrapperClass}>
             <div className={accentClass} />
 
-            {/* Module header */}
             <button
               type="button"
               onClick={() => setOpenModuleId(isOpen ? "" : mod.id)}
@@ -294,7 +292,6 @@ function CourseView({
               aria-expanded={isOpen}
             >
               <div className="pl-2">
-                {/* Module chips row */}
                 <div className="flex items-center gap-2">
                   <span
                     className={[
@@ -321,7 +318,6 @@ function CourseView({
                 ) : null}
               </div>
 
-              {/* ✅ No ui-press inside ui-press */}
               <span
                 className={[
                   "mt-0.5 rounded-2xl px-3 py-2 text-[12px] font-semibold",
@@ -334,9 +330,10 @@ function CourseView({
               </span>
             </button>
 
-            {/* Lessons */}
             {isOpen ? (
               <div className="px-5 pb-4">
+                <div className="mb-3 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
+
                 <div className="rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60">
                   {mod.lessons.map((l: CourseLesson) => {
                     const active = l.id === activeLessonId;
@@ -347,11 +344,9 @@ function CourseView({
                         type="button"
                         onClick={() => onSelectLesson(l.id)}
                         className={[
-                          // ✅ (2) add ui-press to lesson buttons
                           "ui-card ui-press ui-focus relative w-full rounded-[16px] px-4 py-3 text-left",
                           active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "",
                         ].join(" ")}
-                        // ✅ (1) correct aria-current value
                         aria-current={active ? "page" : undefined}
                       >
                         {active ? (
