@@ -172,8 +172,8 @@ export default function MenuDrawer({
                   className={[
                     "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
                     view === "main"
-                      ? "bg-slate-100 text-slate-900"
-                      : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
+                    ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                    : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
                   ].join(" ")}
                   aria-pressed={view === "main"}
                 >
