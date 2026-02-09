@@ -38,19 +38,23 @@ export default function ActionButton({
     "text-slate-900 " +
     "shadow-[0_12px_36px_rgba(15,23,42,0.11)]";
 
-  // Disabled: kills motion + hover + press globally (ui-disabled does that)
-  const disabledStyle = "ui-disabled opacity-55 cursor-not-allowed";
+  // Disabled: ui-disabled kills motion/hover/press globally via globals.css
+  const disabledStyle = "ui-disabled opacity-55";
 
   const skin = variant === "primary" ? primary : secondary;
 
-  // Inner content micro-motion (but we must disable it when disabled)
+  // Inner content micro-motion (desktop-only; no motion when disabled)
   const content = (
     <div
       className={[
         "flex w-full flex-col items-center justify-center text-center",
         disabled
-          ? "" // no motion when disabled
-          : "transition-transform duration-200 ease-out group-hover:-translate-y-[0.5px] group-active:translate-y-[0.5px]",
+          ? ""
+          : [
+              "transition-transform duration-200 ease-out",
+              "[@media(hover:hover)_and_(pointer:fine)]:group-hover:-translate-y-[0.5px]",
+              "group-active:translate-y-[0.5px]",
+            ].join(" "),
       ].join(" ")}
     >
       {/* TITLE */}
@@ -89,15 +93,25 @@ export default function ActionButton({
     </div>
   );
 
-  // IMPORTANT: When disabled, do NOT render Link (so it can't be clicked)
+  // Link variant (only when enabled)
   if (href && !disabled) {
     return (
-      <Link className={`${base} ${skin}`} href={href}>
+      <Link className={`${base} ${skin}`} href={href} aria-disabled={false}>
         {content}
       </Link>
     );
   }
 
+  // If href exists but disabled: render a non-interactive element (no click, no keyboard action)
+  if (href && disabled) {
+    return (
+      <span className={`${base} ${skin} ${disabledStyle}`} aria-disabled="true">
+        {content}
+      </span>
+    );
+  }
+
+  // Button variant
   return (
     <button
       type="button"

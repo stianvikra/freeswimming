@@ -14,6 +14,12 @@ type Props = {
    * - If you ever want BackButton on mobile for a specific page, set "all".
    */
   backVisibility?: "all" | "desktop";
+
+  /**
+   * Optional: extra bottom padding when you know there's a fixed bottom bar (custom or default).
+   * Defaults to true (safe for all pages).
+   */
+  withBottomSafeArea?: boolean;
 };
 
 export default function PageTemplate({
@@ -21,12 +27,22 @@ export default function PageTemplate({
   size = "default",
   showBack = true,
   backVisibility = "desktop",
+  withBottomSafeArea = true,
 }: Props) {
   const showBackOnMobile = backVisibility === "all";
+  const maxW = size === "wide" ? "max-w-[720px]" : "max-w-[520px]";
 
   return (
-    <div className="mx-auto flex min-h-screen items-start justify-center px-4 pb-28 pt-24 sm:pb-10 sm:pt-28">
-      <section className={`relative w-full ${size === "wide" ? "max-w-[720px]" : "max-w-[520px]"}`}>
+    <div
+      className={[
+        "mx-auto w-full px-4 pt-24 sm:pt-28",
+        // keep content above any fixed bottom UI (default nav or custom bottom bar)
+        withBottomSafeArea ? "pb-[calc(7rem+env(safe-area-inset-bottom))] sm:pb-10" : "pb-10",
+        // helps pages with little content not feel “floating”
+        "min-h-[calc(100dvh-64px)]", // 64px topbar height
+      ].join(" ")}
+    >
+      <section className={`relative mx-auto w-full ${maxW}`}>
         <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_30px_90px_rgba(16,24,40,0.18)] backdrop-blur-xl sm:p-8">
           {showBack ? (
             showBackOnMobile ? (

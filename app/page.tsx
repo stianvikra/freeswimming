@@ -29,9 +29,7 @@ export default function HomePage() {
         <div className="mt-4 text-center">
           <p className="text-[16px] leading-6 text-slate-700">
             Olympic dreams?{" "}
-            <span className="font-semibold text-slate-900">
-              Wrong channel.
-            </span>
+            <span className="font-semibold text-slate-900">Wrong channel.</span>
           </p>
 
           <h1 className="mt-3 text-[22px] font-semibold leading-7 tracking-tight text-slate-900">
@@ -43,36 +41,38 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Actions */}
-        <div className="mt-6 flex flex-col gap-4">
-          <ActionButton
-            title="FREE COURSE"
-            subtitle="Start swimming today"
-            note="No signup. No paywall. Just swim."
-            href="/course"
-            variant="primary"
-          />
+        {/* Actions (wrapped for premium consistency) */}
+        <div className="mt-6 glass-card rounded-[24px] p-4 sm:p-5">
+          <div className="flex flex-col gap-4">
+            <ActionButton
+              title="FREE COURSE"
+              subtitle="Start swimming today"
+              note="No signup. No paywall. Just swim."
+              href="/course"
+              variant="primary"
+            />
 
-          <ActionButton
-            title="SWIM PROGRAMS"
-            subtitle="Structured plans & PDFs"
-            href="/programs"
-            variant="secondary"
-          />
+            <ActionButton
+              title="SWIM PROGRAMS"
+              subtitle="Structured plans & PDFs"
+              href="/programs"
+              variant="secondary"
+            />
 
-          <ActionButton
-            title="VIDEO ANALYSIS"
-            subtitle="Personal feedback — optional"
-            href="/analysis"
-            variant="secondary"
-          />
+            <ActionButton
+              title="VIDEO ANALYSIS"
+              subtitle="Personal feedback — optional"
+              href="/analysis"
+              variant="secondary"
+            />
 
-          <ActionButton
-            title="CONTACT"
-            subtitle="Help us help you swim better"
-            href="/contact"
-            variant="secondary"
-          />
+            <ActionButton
+              title="CONTACT"
+              subtitle="Help us help you swim better"
+              href="/contact"
+              variant="secondary"
+            />
+          </div>
         </div>
 
         {/* Footer line + tagline */}
