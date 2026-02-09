@@ -136,6 +136,7 @@ export default function CoursePage() {
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
 
   // ✅ Bottom bar: navigation only (no duplicated progress text)
+  // ✅ Menu → Lessons (as requested)
   const bottomBar = (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
       <div className="mx-auto max-w-[520px]">
@@ -163,9 +164,9 @@ export default function CoursePage() {
                 drawerOpen ? "bg-slate-100/80 text-slate-900" : "bg-white/90 text-slate-900",
               ].join(" ")}
               aria-expanded={drawerOpen}
-              aria-label={drawerOpen ? "Close menu" : "Open menu"}
+              aria-label={drawerOpen ? "Close lessons" : "Open lessons"}
             >
-              {drawerOpen ? "Close" : "Menu"}
+              {drawerOpen ? "Back" : "Lessons"}
             </button>
 
             <button
@@ -194,7 +195,7 @@ export default function CoursePage() {
         isOpen: drawerOpen,
         onOpen: () => setDrawerOpen(true),
         onClose: () => setDrawerOpen(false),
-        ariaLabel: "Toggle course menu",
+        ariaLabel: "Toggle lessons",
       }}
       bottomBar={bottomBar}
     >
@@ -218,9 +219,9 @@ export default function CoursePage() {
             type="button"
             onClick={() => setDrawerOpen((v) => !v)}
             className="hidden shrink-0 rounded-2xl bg-white/80 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-white/70 transition hover:bg-white sm:inline-flex"
-            aria-label={drawerOpen ? "Close menu" : "Open menu"}
+            aria-label={drawerOpen ? "Close lessons" : "Open lessons"}
           >
-            {drawerOpen ? "Close menu" : "Menu"}
+            {drawerOpen ? "Close" : "Lessons"}
           </button>
         </header>
 
@@ -239,7 +240,9 @@ export default function CoursePage() {
                 {moduleInfo.module?.title ?? "Course"}
                 {activeLesson.estMinutes ? ` • ${activeLesson.estMinutes} min` : ""}
               </div>
-              <div className="mt-1 text-[18px] font-semibold text-slate-900">{activeLesson.title}</div>
+              <div className="mt-1 text-[18px] font-semibold text-slate-900">
+                {activeLesson.title}
+              </div>
             </div>
 
             <div className="hidden gap-2 sm:flex sm:pt-1">
@@ -383,9 +386,9 @@ export default function CoursePage() {
         <div className="h-32 sm:h-0" />
 
         {/* Drawer */}
-        <Modal open={drawerOpen} onClose={() => setDrawerOpen(false)} ariaLabel="Course navigation">
+        <Modal open={drawerOpen} onClose={() => setDrawerOpen(false)} ariaLabel="Lessons navigation">
           <div className="flex h-full flex-col overflow-hidden rounded-bl-3xl bg-white/90">
-            {/* Header + toggle */}
+            {/* Header (no tabs) */}
             <div className="px-5 pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -397,42 +400,13 @@ export default function CoursePage() {
                       ? "Pick a module, then choose a lesson."
                       : "Navigate the site."}
                   </div>
-
-                  <div className="mt-3 inline-flex rounded-2xl bg-slate-100/70 p-1 ring-1 ring-slate-200/60">
-                    <button
-                      type="button"
-                      onClick={() => setDrawerView("main")}
-                      className={[
-                        "rounded-xl px-3 py-2 text-[13px] font-semibold transition",
-                        drawerView === "main"
-                          ? "bg-white text-slate-900 shadow-sm"
-                          : "text-slate-600",
-                      ].join(" ")}
-                      aria-pressed={drawerView === "main"}
-                    >
-                      Main
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDrawerView("course")}
-                      className={[
-                        "rounded-xl px-3 py-2 text-[13px] font-semibold transition",
-                        drawerView === "course"
-                          ? "bg-white text-slate-900 shadow-sm"
-                          : "text-slate-600",
-                      ].join(" ")}
-                      aria-pressed={drawerView === "course"}
-                    >
-                      Course
-                    </button>
-                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setDrawerOpen(false)}
                   className="rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
-                  aria-label="Close menu"
+                  aria-label="Close drawer"
                 >
                   ✕
                 </button>
@@ -442,7 +416,7 @@ export default function CoursePage() {
             </div>
 
             {/* Body */}
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 pb-32 pt-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 pb-36 pt-4">
               {drawerView === "course" ? (
                 <>
                   <div className="flex flex-col gap-4">
@@ -565,15 +539,6 @@ export default function CoursePage() {
                       );
                     })}
                   </div>
-
-                  <div className="mt-6 rounded-[20px] border border-slate-200/70 bg-white/70 p-4">
-                    <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-                      Tip
-                    </div>
-                    <div className="mt-1 text-[13px] leading-6 text-slate-700">
-                      Don’t “binge” lessons. Repeat each focus in 2 sessions before moving on.
-                    </div>
-                  </div>
                 </>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -591,6 +556,7 @@ export default function CoursePage() {
                     </Link>
                   ))}
 
+                  {/* ✅ Tip only in Menu view */}
                   <div className="mt-3 rounded-[20px] border border-slate-200/70 bg-white/70 p-4">
                     <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                       Shortcut
@@ -603,15 +569,50 @@ export default function CoursePage() {
               )}
             </div>
 
-            {/* Bottom action */}
-            <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-3 backdrop-blur">
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(false)}
-                className="flex w-full items-center justify-center rounded-2xl bg-slate-100/80 px-5 py-3 text-[14px] font-semibold text-slate-900 transition hover:bg-slate-100"
-              >
-                Close menu
-              </button>
+            {/* ✅ Bottom bar inside drawer (matches CoursePage bottom bar style) */}
+            <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur">
+              <div className="mx-auto max-w-[520px]">
+                <div className="rounded-[22px] bg-white/75 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.14)] ring-1 ring-white/70 backdrop-blur">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDrawerView("main")}
+                      className={[
+                        "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
+                        drawerView === "main"
+                          ? "bg-slate-100 text-slate-900"
+                          : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
+                      ].join(" ")}
+                      aria-pressed={drawerView === "main"}
+                    >
+                      Menu
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex-1 rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 ring-1 ring-white/70 transition hover:bg-white"
+                      aria-label="Back to course"
+                    >
+                      Back
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDrawerView("course")}
+                      className={[
+                        "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
+                        drawerView === "course"
+                          ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                          : "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]",
+                      ].join(" ")}
+                      aria-pressed={drawerView === "course"}
+                    >
+                      Lessons
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </Modal>
