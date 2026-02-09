@@ -31,9 +31,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Prevent “Reader-mode-ish” weirdness from accidental focus outlines */
+/* ✅ A11y best practice:
+   - don't remove focus for keyboard users
+   - only show focus ring for focus-visible */
 :focus {
   outline: none;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
+  border-radius: 12px;
 }
 
 @layer components {
@@ -43,7 +51,7 @@ body {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(226, 232, 240, 0.9);
     box-shadow:
-      0 40px 120px rgba(2, 42, 97, 0.20),
+      0 40px 120px rgba(2, 42, 97, 0.2),
       0 10px 30px rgba(2, 42, 97, 0.12);
   }
 
@@ -52,6 +60,7 @@ body {
     box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
   }
 
+  /* Optional utility if you want to add it to a specific element */
   .focus-ring {
     outline: none;
     box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
@@ -67,6 +76,16 @@ body {
     to {
       opacity: 1;
       transform: translateX(0);
+    }
+  }
+
+  /* ✅ Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }

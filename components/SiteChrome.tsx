@@ -1,4 +1,3 @@
-// components/SiteChrome.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -11,7 +10,7 @@ type MenuItem = {
   href: string;
   title: string;
   subtitle?: string;
-  note?: string; // small extra line under subtitle (muted)
+  note?: string;
   tone?: "primary" | "default";
 };
 
@@ -23,35 +22,22 @@ export default function SiteChrome({ children }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Menu list (Contact removed — handled as sticky CTA)
-  const menuItems: MenuItem[] = [
-    {
-      href: "/",
-      title: "Home",
-    },
-    {
-      href: "/course",
-      title: "Free course",
-      subtitle: "Start swimming today",
-      note: "No signup. No paywall. Just swim.",
-      tone: "primary",
-    },
-    {
-      href: "/programs",
-      title: "Swim programs",
-      subtitle: "Structured plans & PDFs",
-    },
-    {
-      href: "/analysis",
-      title: "Video analysis",
-      subtitle: "Personal feedback — optional",
-    },
-    {
-      href: "/how-we-teach",
-      title: "How we teach",
-      subtitle: "Learn. Drill. Swim.",
-    },
-  ];
+  const menuItems: MenuItem[] = useMemo(
+    () => [
+      { href: "/", title: "Home" },
+      {
+        href: "/course",
+        title: "Free course",
+        subtitle: "Start swimming today",
+        note: "No signup. No paywall. Just swim.",
+        tone: "primary",
+      },
+      { href: "/programs", title: "Swim programs", subtitle: "Structured plans & PDFs" },
+      { href: "/analysis", title: "Video analysis", subtitle: "Personal feedback — optional" },
+      { href: "/how-we-teach", title: "How we teach", subtitle: "Learn. Drill. Swim." },
+    ],
+    []
+  );
 
   const contactCTA = useMemo(
     () => ({
@@ -92,12 +78,7 @@ export default function SiteChrome({ children }: Props) {
       {/* Topbar */}
       <header className="fixed inset-x-0 top-0 z-40 topbar">
         <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4">
-          {/* Left: icon + brand */}
-          <Link
-            href="/"
-            className="flex select-none items-center gap-3"
-            aria-label="Go to home"
-          >
+          <Link href="/" className="flex select-none items-center gap-3" aria-label="Go to home">
             <span className="relative h-9 w-9">
               <Image
                 src="/logos/01_icon_white_transparent.png"
@@ -108,12 +89,9 @@ export default function SiteChrome({ children }: Props) {
                 sizes="36px"
               />
             </span>
-            <span className="font-semibold tracking-wide text-white">
-              freeswimming.org
-            </span>
+            <span className="font-semibold tracking-wide text-white">freeswimming.org</span>
           </Link>
 
-          {/* Right: hamburger */}
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
@@ -126,11 +104,9 @@ export default function SiteChrome({ children }: Props) {
       </header>
 
       {/* Slide-in menu */}
-      <Modal open={menuOpen} onClose={() => setMenuOpen(false)}>
+      <Modal open={menuOpen} onClose={() => setMenuOpen(false)} ariaLabel="Navigation menu">
         <div className="flex h-full flex-col rounded-bl-3xl">
-          {/* Scroll area */}
           <div className="flex-1 overflow-y-auto">
-            {/* Header row */}
             <div className="px-5 pt-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -146,13 +122,9 @@ export default function SiteChrome({ children }: Props) {
                   </span>
 
                   <div className="leading-tight">
-                    <div className="text-[16px] font-semibold text-slate-900">
-                      Menu
-                    </div>
-
+                    <div className="text-[16px] font-semibold text-slate-900">Menu</div>
                     <div className="mt-0.5 text-[13px] font-medium text-slate-500">
-                      Active page:{" "}
-                      <span className="text-slate-700">{activePageLabel}</span>
+                      Active page: <span className="text-slate-700">{activePageLabel}</span>
                     </div>
                   </div>
                 </div>
@@ -170,10 +142,7 @@ export default function SiteChrome({ children }: Props) {
               <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
             </div>
 
-            {/* Menu items */}
             <div className="px-5 pb-5 pt-4">
-              <div className="h-1" />
-
               <div className="flex flex-col gap-3">
                 {menuItems.map((item) => {
                   const active = isActive(item.href);
@@ -197,30 +166,23 @@ export default function SiteChrome({ children }: Props) {
                     "before:bg-[#63A8FF] " +
                     "animate-[activeItem_180ms_ease-out]";
 
-                  const baseTone =
-                    item.tone === "primary" ? featuredTone : defaultTone;
+                  const baseTone = item.tone === "primary" ? featuredTone : defaultTone;
 
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
-                      className={[base, active ? activeStyle : baseTone].join(
-                        " "
-                      )}
+                      aria-current={active ? "page" : undefined}
+                      className={[base, active ? activeStyle : baseTone].join(" ")}
                     >
                       <div className="relative">
-                        <div className="text-[16px] font-semibold text-slate-900">
-                          {item.title}
-                        </div>
-
+                        <div className="text-[16px] font-semibold text-slate-900">{item.title}</div>
                         {item.subtitle ? (
                           <div className="mt-1 text-[14px] font-medium text-slate-600">
                             {item.subtitle}
                           </div>
                         ) : null}
-
-                        {/* 10/10: micro reassurance (more muted, tighter) */}
                         {item.note ? (
                           <div className="mt-0.5 text-[12px] font-medium leading-4 tracking-wide text-slate-400">
                             {item.note}
@@ -232,19 +194,13 @@ export default function SiteChrome({ children }: Props) {
                 })}
               </div>
 
-              {/* Follow */}
               <div className="mt-6 border-t border-slate-200/70 py-5">
                 <div className="text-center text-[11.5px] font-medium tracking-wide text-slate-400">
                   Follow
                 </div>
 
                 <div className="mt-3 flex items-center justify-center gap-3">
-                  <SocialChip
-                    label="YouTube"
-                    href="https://youtube.com"
-                    icon="youtube"
-                    subtle
-                  />
+                  <SocialChip label="YouTube" href="https://youtube.com" icon="youtube" subtle />
                   <SocialChip
                     label="Instagram"
                     href="https://instagram.com"
@@ -258,8 +214,7 @@ export default function SiteChrome({ children }: Props) {
             </div>
           </div>
 
-          {/* Sticky Contact CTA */}
-          <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur rounded-bl-3xl">
+          <div className="sticky bottom-0 rounded-bl-3xl border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur">
             <Link
               href={contactCTA.href}
               onClick={() => setMenuOpen(false)}
