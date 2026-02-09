@@ -57,11 +57,18 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
 
   const hasCustomBottomBar = Boolean(bottomBar);
 
-  // Default mobile nav should be present on all pages EXCEPT where you provide custom bottomBar
-  const showDefaultMobileNav = !hasCustomBottomBar;
+  const isHomeRoute = pathname === "/";
+  const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
 
-  // Hide hamburger on mobile whenever we use ANY bottom nav (default or custom)
-  const hideHamburgerOnMobile = showDefaultMobileNav || hasCustomBottomBar;
+  // ✅ Default mobile nav:
+  // - show on all pages EXCEPT home
+  // - and EXCEPT when a custom bottomBar exists (course page)
+  const showDefaultMobileNav = !isHomeRoute && !hasCustomBottomBar;
+
+  // ✅ Hide hamburger on mobile when:
+  // - Home (you want focus on the CTA buttons)
+  // - Any bottom nav exists (default or custom) => redundant on mobile
+  const hideHamburgerOnMobile = isHomeRoute || showDefaultMobileNav || hasCustomBottomBar;
 
   function openSiteDrawer(view: "main" | "course") {
     setDrawerView(view);
@@ -81,14 +88,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
     setMenuOpen((v) => !v);
   };
 
-  const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
-  const isHomeRoute = pathname === "/";
-
-  // ======================================================
-  // Shared styles (same system as course/page.tsx)
-  // - ui-press handles motion (hover + press)
-  // - skins handle color/ring/shadow only
-  // ======================================================
+  // Button skins
   const navBtnBase = "ui-press ui-focus flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
 
   const skinInactive = "bg-slate-100/70 text-slate-800";
@@ -104,7 +104,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
       <div className="mx-auto max-w-[520px]">
         <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
           <div className="flex items-center gap-2">
-            {/* Menu -> opens drawer (main view) */}
             <button
               type="button"
               onClick={() => openSiteDrawer("main")}
@@ -116,7 +115,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
               Menu
             </button>
 
-            {/* Home */}
             <button
               type="button"
               onClick={() => router.push("/")}
@@ -126,7 +124,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
               Home
             </button>
 
-            {/* Course */}
             <button
               type="button"
               onClick={() => router.push("/course")}
@@ -160,7 +157,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             <span className="font-semibold tracking-wide text-white">freeswimming.org</span>
           </Link>
 
-          {/* Hamburger: keep on sm+; hide on mobile when bottom nav exists */}
+          {/* Hamburger: keep on sm+; hide on mobile when Home or any bottom nav exists */}
           <button
             type="button"
             onClick={toggleMenu}
@@ -194,7 +191,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
       {/* Default mobile nav (global) */}
       {showDefaultMobileNav ? defaultMobileNav : null}
 
-      {/* Custom bottom bar (optional). Keep it from blocking scroll/touches behind. */}
+      {/* Custom bottom bar (optional) */}
       {bottomBar ? (
         <div className="pointer-events-none fixed inset-0 z-[60]">
           <div className="pointer-events-auto">{bottomBar}</div>
