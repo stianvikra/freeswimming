@@ -29,7 +29,7 @@ type SiteMenu = {
 type Props = {
   children: React.ReactNode;
   menu?: SiteMenu | CustomMenu;
-  bottomBar?: React.ReactNode; // ✅ NEW (minimal change)
+  bottomBar?: React.ReactNode;
 };
 
 export default function SiteChrome({ children, menu, bottomBar }: Props) {
@@ -91,6 +91,8 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
     return "Home";
   }, [pathname]);
 
+  const isMenuOpen = customMenu ? customMenu.isOpen : menuOpen;
+
   return (
     <main className="min-h-screen bg-[radial-gradient(1200px_600px_at_50%_0%,rgba(59,130,246,0.35),rgba(255,255,255,0)_65%),linear-gradient(#eaf2ff,#ffffff)]">
       {/* Topbar */}
@@ -122,7 +124,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             }}
             className="rounded-xl px-3 py-2 text-white/95 transition hover:bg-white/10 active:scale-[0.98]"
             aria-label={customMenu?.ariaLabel ?? "Toggle menu"}
-            aria-expanded={customMenu ? customMenu.isOpen : menuOpen}
+            aria-expanded={isMenuOpen}
           >
             <span className="text-2xl leading-none">≡</span>
           </button>
@@ -262,8 +264,12 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
 
       {children}
 
-      {/* ✅ NEW: global bottom bar (optional). Must use pointer-events-auto inside the bar. */}
-      {bottomBar ? <div className="pointer-events-none">{bottomBar}</div> : null}
+      {/* ✅ Bottom bar (optional). Keep it from blocking scroll/touches behind. */}
+      {bottomBar ? (
+        <div className="pointer-events-none fixed inset-0 z-[60]">
+          <div className="pointer-events-auto">{bottomBar}</div>
+        </div>
+      ) : null}
     </main>
   );
 }

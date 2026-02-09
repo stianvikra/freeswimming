@@ -120,9 +120,8 @@ export default function CoursePage() {
     return Math.min(100, Math.round((idx / total) * 100));
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
 
-  // ✅ NEW: bottom bar rendered globally via SiteChrome (fixes iOS fixed issues)
   const bottomBar = (
-    <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
       <div className="mx-auto max-w-[520px]">
         <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
           <div className="px-2 pb-2 text-center text-[12px] font-semibold text-slate-600">
@@ -146,10 +145,17 @@ export default function CoursePage() {
 
             <button
               type="button"
-              onClick={() => setDrawerOpen(true)}
-              className="flex-1 rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 ring-1 ring-white/70"
+              onClick={() => setDrawerOpen((v) => !v)} // ✅ toggle
+              className={[
+                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold ring-1 ring-white/70 transition",
+                drawerOpen
+                  ? "bg-slate-100/80 text-slate-900"
+                  : "bg-white/90 text-slate-900",
+              ].join(" ")}
+              aria-expanded={drawerOpen}
+              aria-label={drawerOpen ? "Close course menu" : "Open course menu"}
             >
-              Menu
+              {drawerOpen ? "Close" : "Menu"}
             </button>
 
             <button
@@ -200,11 +206,11 @@ export default function CoursePage() {
 
           <button
             type="button"
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => setDrawerOpen((v) => !v)} // ✅ toggle also on desktop button
             className="hidden shrink-0 rounded-2xl bg-white/80 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-white/70 transition hover:bg-white sm:inline-flex"
-            aria-label="Open course navigation"
+            aria-label={drawerOpen ? "Close course navigation" : "Open course navigation"}
           >
-            Modules & lessons
+            {drawerOpen ? "Close menu" : "Modules & lessons"}
           </button>
         </header>
 
@@ -223,9 +229,7 @@ export default function CoursePage() {
                 {moduleInfo.module?.title ?? "Course"}
                 {activeLesson.estMinutes ? ` • ${activeLesson.estMinutes} min` : ""}
               </div>
-              <div className="mt-1 text-[18px] font-semibold text-slate-900">
-                {activeLesson.title}
-              </div>
+              <div className="mt-1 text-[18px] font-semibold text-slate-900">{activeLesson.title}</div>
             </div>
 
             <div className="hidden gap-2 sm:flex sm:pt-1">
@@ -341,9 +345,7 @@ export default function CoursePage() {
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                 Next step
               </div>
-              <div className="mt-1 text-[14px] leading-6 text-slate-800">
-                {activeLesson.nextStep}
-              </div>
+              <div className="mt-1 text-[14px] leading-6 text-slate-800">{activeLesson.nextStep}</div>
             </div>
 
             <div className="mt-5 flex flex-col gap-2">
@@ -367,12 +369,13 @@ export default function CoursePage() {
           </div>
         </section>
 
-        {/* ✅ Spacer so the bottom bar doesn't cover content on mobile */}
-        <div className="h-28 sm:h-0" />
+        {/* Spacer so content isn't hidden behind bottom nav */}
+        <div className="h-32 sm:h-0" />
 
         {/* Drawer */}
         <Modal open={drawerOpen} onClose={() => setDrawerOpen(false)} ariaLabel="Course navigation">
-          <div className="flex h-full flex-col">
+          {/* ✅ rounded + overflow hidden fixes grey corner artifacts */}
+          <div className="flex h-full flex-col overflow-hidden rounded-bl-3xl bg-white/90">
             <div className="px-5 pt-5">
               <div className="flex items-start justify-between">
                 <div>
@@ -395,7 +398,8 @@ export default function CoursePage() {
               <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
+            {/* ✅ scroll area with extra padding so bottom nav doesn't block */}
+            <div className="flex-1 overflow-y-auto px-5 pb-32 pt-4">
               <div className="flex flex-col gap-4">
                 {COURSE_MODULES.map((mod, idx) => {
                   const isOpen = openModuleId === mod.id;
@@ -525,17 +529,16 @@ export default function CoursePage() {
                   Don’t “binge” lessons. Repeat each focus in 2 sessions before moving on.
                 </div>
               </div>
-
-              <div className="h-24" />
             </div>
 
-            <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-3 backdrop-blur rounded-bl-3xl">
+            {/* ✅ bottom close area inside drawer (nice UX) */}
+            <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-3 backdrop-blur">
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 className="flex w-full items-center justify-center rounded-2xl bg-slate-100/80 px-5 py-3 text-[14px] font-semibold text-slate-900 transition hover:bg-slate-100"
               >
-                Back to lesson
+                Close menu
               </button>
             </div>
           </div>
