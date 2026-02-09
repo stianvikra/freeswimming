@@ -32,8 +32,8 @@ export const COURSE_MODULES: CourseModule[] = [
     lessons: [
       {
         id: "m1-l1",
-        title: "Course Introduction",
-        youtubeId: "dQw4w9WgXcQ", // TODO: replace
+        title: "Test video - Boknafjorden",
+        youtubeId: "Xh6OblO06LY", // TODO: replace
         estMinutes: 4,
         goal: "Find a long, stable body line so your effort moves you forward — not down.",
         cues: [
@@ -59,8 +59,8 @@ export const COURSE_MODULES: CourseModule[] = [
       },
       {
         id: "m1-l2",
-        title: "Head position controls the hips",
-        youtubeId: "dQw4w9WgXcQ", // TODO: replace
+        title: "Test video 2",
+        youtubeId: "OWRzGHPRdmg", // TODO: replace
         estMinutes: 3,
         goal: "Use a neutral head position to lift the hips without kicking harder.",
         cues: ["Chin slightly tucked", "Eyes down-forward", "Neck relaxed"],
