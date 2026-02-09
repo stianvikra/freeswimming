@@ -31,7 +31,7 @@ type Props = {
   };
 
   /** Optional: headline override */
-  titleMain?: string; // defaults to "Main menu"
+  titleMain?: string; // defaults to "Menu"
   titleCourse?: string; // defaults to "Course menu"
 };
 
@@ -41,7 +41,7 @@ export default function MenuDrawer({
   defaultView = "course",
   mainItems,
   course,
-  titleMain = "Main menu",
+  titleMain = "Menu",
   titleCourse = "Course menu",
 }: Props) {
   const pathname = usePathname();
@@ -49,13 +49,11 @@ export default function MenuDrawer({
 
   const [view, setView] = useState<"main" | "course">(hasCourse ? defaultView : "main");
 
-  // When opening, reset view to default (nice UX)
   useEffect(() => {
     if (!open) return;
     setView(hasCourse ? defaultView : "main");
   }, [open, defaultView, hasCourse]);
 
-  // Default open module based on active lesson
   const defaultOpenModuleId = useMemo(() => {
     if (!hasCourse) return COURSE_MODULES[0]?.id ?? "m1";
     const activeId = course!.activeLessonId;
@@ -100,22 +98,10 @@ export default function MenuDrawer({
       ? "Pick a module, then choose a lesson."
       : `Navigate the site. Active: ${activePageLabel}`;
 
-  // Bottom bar buttons:
-  // Active view = BLUE (primary). Inactive = neutral.
-  const menuBtnClass =
-    view === "main"
-      ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-      : "bg-slate-100/70 text-slate-800 hover:bg-slate-100";
-
-  const lessonsBtnClass =
-    view === "course"
-      ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-      : "bg-slate-100/70 text-slate-800 hover:bg-slate-100";
-
   return (
-    <Modal open={open} onClose={onClose} ariaLabel="Navigation drawer">
+    <Modal open={open} onClose={onClose} ariaLabel="Navigation menu">
       <div className="flex h-full flex-col overflow-hidden rounded-bl-3xl bg-white/90">
-        {/* Header (no tabs) */}
+        {/* Header */}
         <div className="px-5 pt-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
@@ -140,7 +126,7 @@ export default function MenuDrawer({
               type="button"
               onClick={onClose}
               className="rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
-              aria-label="Close drawer"
+              aria-label="Close menu"
             >
               ✕
             </button>
@@ -162,7 +148,7 @@ export default function MenuDrawer({
             <MainView mainItems={mainItems} isActiveRoute={isActiveRoute} onClose={onClose} />
           )}
 
-          {/* Tip only in Menu (main) view */}
+          {/* Tip only in Menu view */}
           {view === "main" ? (
             <div className="mt-6 rounded-[20px] border border-slate-200/70 bg-white/70 p-4">
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
@@ -175,41 +161,42 @@ export default function MenuDrawer({
           ) : null}
         </div>
 
-        {/* Bottom bar (matches CoursePage bottom bar style) */}
+        {/* Bottom bar */}
         <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur sm:px-5">
           <div className="mx-auto max-w-[520px]">
             <div className="rounded-[22px] bg-white/75 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.14)] ring-1 ring-white/70 backdrop-blur">
               <div className="flex items-center gap-2">
-                {/* Left: Menu view */}
                 <button
                   type="button"
                   onClick={() => setView("main")}
-                  className={["flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition", menuBtnClass].join(
-                    " "
-                  )}
+                  className={[
+                    "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
+                    view === "main"
+                      ? "bg-slate-100 text-slate-900"
+                      : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
+                  ].join(" ")}
                   aria-pressed={view === "main"}
                 >
                   Menu
                 </button>
 
-                {/* Middle: close drawer */}
                 <button
                   type="button"
                   onClick={onClose}
                   className="flex-1 rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 ring-1 ring-white/70 transition hover:bg-white"
-                  aria-label="Back to course"
                 >
                   Back
                 </button>
 
-                {/* Right: Lessons view */}
                 {hasCourse ? (
                   <button
                     type="button"
                     onClick={() => setView("course")}
                     className={[
                       "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                      lessonsBtnClass,
+                      view === "course"
+                        ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                        : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
                     ].join(" ")}
                     aria-pressed={view === "course"}
                   >
@@ -276,7 +263,7 @@ function CourseView({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {COURSE_MODULES.map((mod, idx) => {
+      {COURSE_MODULES.map((mod) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
 
@@ -302,6 +289,7 @@ function CourseView({
           <div key={mod.id} className={wrapperClass}>
             <div className={accentClass} />
 
+            {/* Module header (cleaner: no Module 1/4 badge) */}
             <button
               type="button"
               onClick={() => setOpenModuleId(isOpen ? "" : mod.id)}
@@ -312,27 +300,17 @@ function CourseView({
                   : "",
               ].join(" ")}
               aria-expanded={isOpen}
-              aria-controls={`module-${mod.id}`}
             >
               <div className="pl-2">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={[
-                      "inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ring-1",
-                      isActiveModule
-                        ? "bg-blue-50 text-blue-700 ring-blue-100/70"
-                        : "bg-slate-50 text-slate-600 ring-slate-200/70",
-                    ].join(" ")}
-                  >
-                    Module {idx + 1}/{COURSE_MODULES.length}
-                  </span>
-                </div>
-
-                <div className="mt-2 text-[16px] font-semibold text-slate-900">{mod.title}</div>
-
+                <div className="text-[16px] font-semibold text-slate-900">{mod.title}</div>
                 {mod.subtitle ? (
                   <div className="mt-1 text-[13px] font-medium text-slate-600">{mod.subtitle}</div>
                 ) : null}
+
+                <div className="mt-2 text-[12px] font-semibold text-slate-500">
+                  {mod.lessons.length} lesson{mod.lessons.length === 1 ? "" : "s"}
+                  {isActiveModule ? " • contains current lesson" : ""}
+                </div>
               </div>
 
               <span
@@ -342,14 +320,20 @@ function CourseView({
                     ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100/70"
                     : "bg-slate-100/80 text-slate-700",
                 ].join(" ")}
-                aria-hidden="true"
               >
                 {isOpen ? "–" : "+"}
               </span>
             </button>
 
+            {/* Lessons */}
             {isOpen ? (
-              <div id={`module-${mod.id}`} className="px-5 pb-4">
+              <div className="px-5 pb-4">
+                <div className="mb-2 pl-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Lessons
+                  </div>
+                </div>
+
                 <div className="rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60">
                   {mod.lessons.map((l: CourseLesson) => {
                     const active = l.id === activeLessonId;
@@ -360,21 +344,38 @@ function CourseView({
                         type="button"
                         onClick={() => onSelectLesson(l.id)}
                         className={[
-                          "w-full rounded-[16px] px-4 py-3 text-left transition",
-                          active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "hover:bg-white/80",
+                          "relative w-full rounded-[16px] px-4 py-3 text-left transition",
+                          active
+                            ? "bg-blue-50/90 ring-1 ring-blue-200/60"
+                            : "hover:bg-white/80",
                         ].join(" ")}
                         aria-current={active ? "true" : undefined}
                       >
+                        {/* tiny active marker */}
+                        {active ? (
+                          <span className="absolute left-2 top-3 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
+                        ) : null}
+
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
-                          {l.estMinutes ? (
-                            <span className="shrink-0 text-[12px] font-semibold text-slate-500">
-                              {l.estMinutes}m
-                            </span>
-                          ) : null}
+
+                          <div className="flex items-center gap-2">
+                            {active ? (
+                              <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
+                                Now
+                              </span>
+                            ) : null}
+
+                            {l.estMinutes ? (
+                              <span className="shrink-0 text-[12px] font-semibold text-slate-500">
+                                {l.estMinutes}m
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
 
-                        <div className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-[12px] font-medium text-slate-600">
+                        {/* ✅ No "..." truncation: wrap text (2 lines) */}
+                        <div className="mt-1 text-[12px] font-medium leading-5 text-slate-600 line-clamp-2">
                           {l.goal}
                         </div>
                       </button>
