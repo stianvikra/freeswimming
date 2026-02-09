@@ -19,6 +19,16 @@ import {
 
 const STORAGE_KEY = "fs_course_last_lesson";
 
+// Main site navigation shown inside the same drawer (no extra modal / no extra route)
+const MAIN_MENU_ITEMS = [
+  { href: "/", title: "Home", subtitle: "Back to start" },
+  { href: "/course", title: "Free course", subtitle: "Modules & lessons" },
+  { href: "/programs", title: "Swim programs", subtitle: "Structured plans & PDFs" },
+  { href: "/analysis", title: "Video analysis", subtitle: "Personal feedback — optional" },
+  { href: "/how-we-teach", title: "How we teach", subtitle: "Learn. Drill. Swim." },
+  { href: "/contact", title: "Contact", subtitle: "Questions or help" },
+];
+
 export default function CoursePage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -33,6 +43,12 @@ export default function CoursePage() {
   );
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerView, setDrawerView] = useState<"course" | "main">("course");
+
+  // Default to Course view when opening (best UX on mobile)
+  useEffect(() => {
+    if (drawerOpen) setDrawerView("course");
+  }, [drawerOpen]);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -110,7 +126,6 @@ export default function CoursePage() {
     return {
       top: `Module ${modNum}/${moduleInfo.moduleCount} • Lesson ${lessonInMod}/${moduleInfo.moduleLessonCount}`,
       sub: `Course progress: ${lessonGlobal}/${moduleInfo.totalLessons}`,
-      compact: `${lessonGlobal}/${moduleInfo.totalLessons}`,
     };
   }, [moduleInfo]);
 
@@ -120,14 +135,11 @@ export default function CoursePage() {
     return Math.min(100, Math.round((idx / total) * 100));
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
 
+  // ✅ Bottom bar: navigation only (no duplicated progress text)
   const bottomBar = (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
       <div className="mx-auto max-w-[520px]">
         <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
-          <div className="px-2 pb-2 text-center text-[12px] font-semibold text-slate-600">
-            {progressLabel.compact}
-          </div>
-
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -145,15 +157,13 @@ export default function CoursePage() {
 
             <button
               type="button"
-              onClick={() => setDrawerOpen((v) => !v)} // ✅ toggle
+              onClick={() => setDrawerOpen((v) => !v)}
               className={[
                 "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold ring-1 ring-white/70 transition",
-                drawerOpen
-                  ? "bg-slate-100/80 text-slate-900"
-                  : "bg-white/90 text-slate-900",
+                drawerOpen ? "bg-slate-100/80 text-slate-900" : "bg-white/90 text-slate-900",
               ].join(" ")}
               aria-expanded={drawerOpen}
-              aria-label={drawerOpen ? "Close course menu" : "Open course menu"}
+              aria-label={drawerOpen ? "Close menu" : "Open menu"}
             >
               {drawerOpen ? "Close" : "Menu"}
             </button>
@@ -206,11 +216,11 @@ export default function CoursePage() {
 
           <button
             type="button"
-            onClick={() => setDrawerOpen((v) => !v)} // ✅ toggle also on desktop button
+            onClick={() => setDrawerOpen((v) => !v)}
             className="hidden shrink-0 rounded-2xl bg-white/80 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-white/70 transition hover:bg-white sm:inline-flex"
-            aria-label={drawerOpen ? "Close course navigation" : "Open course navigation"}
+            aria-label={drawerOpen ? "Close menu" : "Open menu"}
           >
-            {drawerOpen ? "Close menu" : "Modules & lessons"}
+            {drawerOpen ? "Close menu" : "Menu"}
           </button>
         </header>
 
@@ -374,14 +384,47 @@ export default function CoursePage() {
 
         {/* Drawer */}
         <Modal open={drawerOpen} onClose={() => setDrawerOpen(false)} ariaLabel="Course navigation">
-          {/* ✅ rounded + overflow hidden fixes grey corner artifacts */}
           <div className="flex h-full flex-col overflow-hidden rounded-bl-3xl bg-white/90">
+            {/* Header + toggle */}
             <div className="px-5 pt-5">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[16px] font-semibold text-slate-900">Course menu</div>
+                  <div className="text-[16px] font-semibold text-slate-900">
+                    {drawerView === "course" ? "Course menu" : "Main menu"}
+                  </div>
                   <div className="mt-1 text-[13px] font-medium text-slate-500">
-                    Pick a module, then choose a lesson.
+                    {drawerView === "course"
+                      ? "Pick a module, then choose a lesson."
+                      : "Navigate the site."}
+                  </div>
+
+                  <div className="mt-3 inline-flex rounded-2xl bg-slate-100/70 p-1 ring-1 ring-slate-200/60">
+                    <button
+                      type="button"
+                      onClick={() => setDrawerView("main")}
+                      className={[
+                        "rounded-xl px-3 py-2 text-[13px] font-semibold transition",
+                        drawerView === "main"
+                          ? "bg-white text-slate-900 shadow-sm"
+                          : "text-slate-600",
+                      ].join(" ")}
+                      aria-pressed={drawerView === "main"}
+                    >
+                      Main
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDrawerView("course")}
+                      className={[
+                        "rounded-xl px-3 py-2 text-[13px] font-semibold transition",
+                        drawerView === "course"
+                          ? "bg-white text-slate-900 shadow-sm"
+                          : "text-slate-600",
+                      ].join(" ")}
+                      aria-pressed={drawerView === "course"}
+                    >
+                      Course
+                    </button>
                   </div>
                 </div>
 
@@ -389,7 +432,7 @@ export default function CoursePage() {
                   type="button"
                   onClick={() => setDrawerOpen(false)}
                   className="rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
-                  aria-label="Close course menu"
+                  aria-label="Close menu"
                 >
                   ✕
                 </button>
@@ -398,140 +441,169 @@ export default function CoursePage() {
               <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
             </div>
 
-            {/* ✅ scroll area with extra padding so bottom nav doesn't block */}
+            {/* Body */}
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 pb-32 pt-4">
-              <div className="flex flex-col gap-4">
-                {COURSE_MODULES.map((mod, idx) => {
-                  const isOpen = openModuleId === mod.id;
-                  const isActiveModule = mod.lessons.some((l) => l.id === activeLesson.id);
+              {drawerView === "course" ? (
+                <>
+                  <div className="flex flex-col gap-4">
+                    {COURSE_MODULES.map((mod, idx) => {
+                      const isOpen = openModuleId === mod.id;
+                      const isActiveModule = mod.lessons.some((l) => l.id === activeLesson.id);
 
-                  const wrapperClass = [
-                    "relative overflow-hidden rounded-[22px] border bg-white/80 shadow-sm transition",
-                    isActiveModule ? "border-blue-200/70" : "border-white/70",
-                    isOpen && !isActiveModule
-                      ? "shadow-[0_18px_60px_rgba(15,23,42,0.10)] border-slate-200/70"
-                      : "",
-                    isOpen && isActiveModule ? "shadow-[0_22px_70px_rgba(37,99,235,0.14)]" : "",
-                  ].join(" ");
+                      const wrapperClass = [
+                        "relative overflow-hidden rounded-[22px] border bg-white/80 shadow-sm transition",
+                        isActiveModule ? "border-blue-200/70" : "border-white/70",
+                        isOpen && !isActiveModule
+                          ? "shadow-[0_18px_60px_rgba(15,23,42,0.10)] border-slate-200/70"
+                          : "",
+                        isOpen && isActiveModule ? "shadow-[0_22px_70px_rgba(37,99,235,0.14)]" : "",
+                      ].join(" ");
 
-                  const accentClass = [
-                    "absolute left-0 top-0 h-full w-[4px] transition",
-                    isActiveModule
-                      ? "bg-gradient-to-b from-blue-400 to-blue-600"
-                      : isOpen
-                        ? "bg-slate-300/80"
-                        : "bg-slate-200/70",
-                  ].join(" ");
+                      const accentClass = [
+                        "absolute left-0 top-0 h-full w-[4px] transition",
+                        isActiveModule
+                          ? "bg-gradient-to-b from-blue-400 to-blue-600"
+                          : isOpen
+                            ? "bg-slate-300/80"
+                            : "bg-slate-200/70",
+                      ].join(" ");
 
-                  const headerButtonClass = [
-                    "flex w-full items-start justify-between gap-3 px-5 py-4 text-left transition",
-                    isOpen
-                      ? "bg-[radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.16),rgba(255,255,255,0)_60%)]"
-                      : "",
-                  ].join(" ");
+                      const headerButtonClass = [
+                        "flex w-full items-start justify-between gap-3 px-5 py-4 text-left transition",
+                        isOpen
+                          ? "bg-[radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.16),rgba(255,255,255,0)_60%)]"
+                          : "",
+                      ].join(" ");
 
-                  return (
-                    <div key={mod.id} className={wrapperClass}>
-                      <div className={accentClass} />
+                      return (
+                        <div key={mod.id} className={wrapperClass}>
+                          <div className={accentClass} />
 
-                      <button
-                        type="button"
-                        onClick={() => setOpenModuleId(isOpen ? "" : mod.id)}
-                        className={headerButtonClass}
-                        aria-expanded={isOpen}
-                      >
-                        <div className="pl-2">
-                          <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setOpenModuleId(isOpen ? "" : mod.id)}
+                            className={headerButtonClass}
+                            aria-expanded={isOpen}
+                          >
+                            <div className="pl-2">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={[
+                                    "inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ring-1",
+                                    isActiveModule
+                                      ? "bg-blue-50 text-blue-700 ring-blue-100/70"
+                                      : "bg-slate-50 text-slate-600 ring-slate-200/70",
+                                  ].join(" ")}
+                                >
+                                  Module {idx + 1}/{COURSE_MODULES.length}
+                                </span>
+                              </div>
+
+                              <div className="mt-2 text-[16px] font-semibold text-slate-900">
+                                {mod.title}
+                              </div>
+
+                              {mod.subtitle ? (
+                                <div className="mt-1 text-[13px] font-medium text-slate-600">
+                                  {mod.subtitle}
+                                </div>
+                              ) : null}
+                            </div>
+
                             <span
                               className={[
-                                "inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ring-1",
-                                isActiveModule
-                                  ? "bg-blue-50 text-blue-700 ring-blue-100/70"
-                                  : "bg-slate-50 text-slate-600 ring-slate-200/70",
+                                "mt-0.5 rounded-2xl px-3 py-2 text-[12px] font-semibold transition",
+                                isOpen
+                                  ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100/70"
+                                  : "bg-slate-100/80 text-slate-700",
                               ].join(" ")}
                             >
-                              Module {idx + 1}/{COURSE_MODULES.length}
+                              {isOpen ? "–" : "+"}
                             </span>
-                          </div>
+                          </button>
 
-                          <div className="mt-2 text-[16px] font-semibold text-slate-900">
-                            {mod.title}
-                          </div>
+                          {isOpen ? (
+                            <div className="px-5 pb-4">
+                              <div className="rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60">
+                                {mod.lessons.map((l) => {
+                                  const active = l.id === activeLesson.id;
 
-                          {mod.subtitle ? (
-                            <div className="mt-1 text-[13px] font-medium text-slate-600">
-                              {mod.subtitle}
+                                  return (
+                                    <button
+                                      key={l.id}
+                                      type="button"
+                                      onClick={() => goToLesson(l.id)}
+                                      className={[
+                                        "w-full rounded-[16px] px-4 py-3 text-left transition",
+                                        active
+                                          ? "bg-blue-50/90 ring-1 ring-blue-200/60"
+                                          : "hover:bg-white/80",
+                                      ].join(" ")}
+                                      aria-current={active ? "true" : undefined}
+                                    >
+                                      <div className="flex items-center justify-between gap-3">
+                                        <div className="text-[14px] font-semibold text-slate-900">
+                                          {l.title}
+                                        </div>
+                                        {l.estMinutes ? (
+                                          <span className="shrink-0 text-[12px] font-semibold text-slate-500">
+                                            {l.estMinutes}m
+                                          </span>
+                                        ) : null}
+                                      </div>
+
+                                      <div className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-[12px] font-medium text-slate-600">
+                                        {l.goal}
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
                           ) : null}
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        <span
-                          className={[
-                            "mt-0.5 rounded-2xl px-3 py-2 text-[12px] font-semibold transition",
-                            isOpen
-                              ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100/70"
-                              : "bg-slate-100/80 text-slate-700",
-                          ].join(" ")}
-                        >
-                          {isOpen ? "–" : "+"}
-                        </span>
-                      </button>
-
-                      {isOpen ? (
-                        <div className="px-5 pb-4">
-                          <div className="rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60">
-                            {mod.lessons.map((l) => {
-                              const active = l.id === activeLesson.id;
-
-                              return (
-                                <button
-                                  key={l.id}
-                                  type="button"
-                                  onClick={() => goToLesson(l.id)}
-                                  className={[
-                                    "w-full rounded-[16px] px-4 py-3 text-left transition",
-                                    active
-                                      ? "bg-blue-50/90 ring-1 ring-blue-200/60"
-                                      : "hover:bg-white/80",
-                                  ].join(" ")}
-                                  aria-current={active ? "true" : undefined}
-                                >
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="text-[14px] font-semibold text-slate-900">
-                                      {l.title}
-                                    </div>
-                                    {l.estMinutes ? (
-                                      <span className="shrink-0 text-[12px] font-semibold text-slate-500">
-                                        {l.estMinutes}m
-                                      </span>
-                                    ) : null}
-                                  </div>
-
-                                  <div className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-[12px] font-medium text-slate-600">
-                                    {l.goal}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ) : null}
+                  <div className="mt-6 rounded-[20px] border border-slate-200/70 bg-white/70 p-4">
+                    <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                      Tip
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="mt-1 text-[13px] leading-6 text-slate-700">
+                      Don’t “binge” lessons. Repeat each focus in 2 sessions before moving on.
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {MAIN_MENU_ITEMS.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setDrawerOpen(false)}
+                      className="rounded-[22px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm backdrop-blur transition hover:bg-white active:scale-[0.99]"
+                    >
+                      <div className="text-[16px] font-semibold text-slate-900">{item.title}</div>
+                      <div className="mt-1 text-[13px] font-medium text-slate-600">
+                        {item.subtitle}
+                      </div>
+                    </Link>
+                  ))}
 
-              <div className="mt-6 rounded-[20px] border border-slate-200/70 bg-white/70 p-4">
-                <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-                  Tip
+                  <div className="mt-3 rounded-[20px] border border-slate-200/70 bg-white/70 p-4">
+                    <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                      Shortcut
+                    </div>
+                    <div className="mt-1 text-[13px] leading-6 text-slate-700">
+                      Use the bottom bar to move lesson-by-lesson fast.
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-1 text-[13px] leading-6 text-slate-700">
-                  Don’t “binge” lessons. Repeat each focus in 2 sessions before moving on.
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* ✅ bottom close area inside drawer (nice UX) */}
+            {/* Bottom action */}
             <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-5 py-3 backdrop-blur">
               <button
                 type="button"
