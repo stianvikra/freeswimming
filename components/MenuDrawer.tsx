@@ -98,6 +98,17 @@ export default function MenuDrawer({
       ? "Pick a module, then choose a lesson."
       : `Navigate the site. Active: ${activePageLabel}`;
 
+  // Bottom bar button system (same feel as SiteChrome/Course)
+  const navBtnBase = "ui-press ui-focus flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
+  const navBtnInactive = "bg-slate-100/70 text-slate-800";
+  const navBtnActive =
+    "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]";
+  const navBtnWhite = "bg-white/90 text-slate-900 ring-1 ring-white/70";
+
+  // Small “X” button style
+  const iconBtn =
+    "ui-press ui-focus rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700";
+
   return (
     <Modal open={open} onClose={onClose} ariaLabel="Navigation menu">
       <div className="flex h-full flex-col overflow-hidden rounded-bl-3xl bg-white/90">
@@ -122,12 +133,7 @@ export default function MenuDrawer({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
-              aria-label="Close menu"
-            >
+            <button type="button" onClick={onClose} className={iconBtn} aria-label="Close menu">
               ✕
             </button>
           </div>
@@ -169,12 +175,7 @@ export default function MenuDrawer({
                 <button
                   type="button"
                   onClick={() => setView("main")}
-                  className={[
-                    "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                    view === "main"
-                    ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                    : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
-                  ].join(" ")}
+                  className={[navBtnBase, view === "main" ? navBtnActive : navBtnInactive].join(" ")}
                   aria-pressed={view === "main"}
                 >
                   Menu
@@ -183,7 +184,7 @@ export default function MenuDrawer({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 ring-1 ring-white/70 transition hover:bg-white"
+                  className={[navBtnBase, navBtnWhite].join(" ")}
                 >
                   Back
                 </button>
@@ -192,12 +193,7 @@ export default function MenuDrawer({
                   <button
                     type="button"
                     onClick={() => setView("course")}
-                    className={[
-                      "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                      view === "course"
-                        ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                        : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
-                    ].join(" ")}
+                    className={[navBtnBase, view === "course" ? navBtnActive : navBtnInactive].join(" ")}
                     aria-pressed={view === "course"}
                   >
                     Lessons
@@ -233,10 +229,8 @@ function MainView({
             onClick={onClose}
             aria-current={active ? "page" : undefined}
             className={[
-              "relative rounded-[22px] border px-5 py-4 shadow-sm backdrop-blur transition active:scale-[0.99]",
-              active
-                ? "border-blue-200/70 bg-blue-50/70"
-                : "border-white/70 bg-white/80 hover:bg-white",
+              "ui-card ui-focus relative rounded-[22px] border px-5 py-4 shadow-sm backdrop-blur",
+              active ? "border-blue-200/70 bg-blue-50/70" : "border-white/70 bg-white/80",
             ].join(" ")}
           >
             <div className="text-[16px] font-semibold text-slate-900">{item.title}</div>
@@ -268,7 +262,7 @@ function CourseView({
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
 
         const wrapperClass = [
-          "relative overflow-hidden rounded-[22px] border bg-white/80 shadow-sm transition",
+          "ui-card ui-focus relative overflow-hidden rounded-[22px] border bg-white/80 shadow-sm",
           isActiveModule ? "border-blue-200/70" : "border-white/70",
           isOpen && !isActiveModule
             ? "border-slate-200/70 shadow-[0_18px_60px_rgba(15,23,42,0.10)]"
@@ -285,23 +279,27 @@ function CourseView({
               : "bg-slate-200/70",
         ].join(" ");
 
+        // Module header is the click target → ui-press + ui-focus
+        const moduleHeaderBtn = [
+          "ui-press ui-focus flex w-full items-start justify-between gap-3 px-5 py-4 text-left",
+          isOpen
+            ? "bg-[radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.16),rgba(255,255,255,0)_60%)]"
+            : "",
+        ].join(" ");
+
         return (
           <div key={mod.id} className={wrapperClass}>
             <div className={accentClass} />
 
+            {/* Module header */}
             <button
               type="button"
               onClick={() => setOpenModuleId(isOpen ? "" : mod.id)}
-              className={[
-                "flex w-full items-start justify-between gap-3 px-5 py-4 text-left transition",
-                isOpen
-                  ? "bg-[radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.16),rgba(255,255,255,0)_60%)]"
-                  : "",
-              ].join(" ")}
+              className={moduleHeaderBtn}
               aria-expanded={isOpen}
             >
               <div className="pl-2">
-                {/* ✅ Module chips row */}
+                {/* Module chips row */}
                 <div className="flex items-center gap-2">
                   <span
                     className={[
@@ -314,7 +312,6 @@ function CourseView({
                     Module {idx + 1}/{COURSE_MODULES.length}
                   </span>
 
-                  {/* ✅ Extra clean: Current module chip */}
                   {isActiveModule ? (
                     <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
                       Current module
@@ -329,9 +326,10 @@ function CourseView({
                 ) : null}
               </div>
 
+              {/* ✅ No ui-press inside ui-press */}
               <span
                 className={[
-                  "mt-0.5 rounded-2xl px-3 py-2 text-[12px] font-semibold transition",
+                  "mt-0.5 rounded-2xl px-3 py-2 text-[12px] font-semibold",
                   isOpen
                     ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100/70"
                     : "bg-slate-100/80 text-slate-700",
@@ -341,6 +339,7 @@ function CourseView({
               </span>
             </button>
 
+            {/* Lessons */}
             {isOpen ? (
               <div className="px-5 pb-4">
                 <div className="rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60">
@@ -353,14 +352,11 @@ function CourseView({
                         type="button"
                         onClick={() => onSelectLesson(l.id)}
                         className={[
-                          "relative w-full rounded-[16px] px-4 py-3 text-left transition",
-                          active
-                            ? "bg-blue-50/90 ring-1 ring-blue-200/60"
-                            : "hover:bg-white/80",
+                          "ui-card ui-focus relative w-full rounded-[16px] px-4 py-3 text-left",
+                          active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "",
                         ].join(" ")}
                         aria-current={active ? "true" : undefined}
                       >
-                        {/* tiny active marker */}
                         {active ? (
                           <span className="absolute left-2 top-3 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
                         ) : null}
@@ -369,7 +365,6 @@ function CourseView({
                           <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
 
                           <div className="flex items-center gap-2">
-                            {/* ✅ Lesson chip: Now -> Current */}
                             {active ? (
                               <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
                                 Current
@@ -384,7 +379,7 @@ function CourseView({
                           </div>
                         </div>
 
-                        <div className="mt-1 text-[12px] font-medium leading-5 text-slate-600 line-clamp-2">
+                        <div className="mt-1 line-clamp-2 text-[12px] font-medium leading-5 text-slate-600">
                           {l.goal}
                         </div>
                       </button>

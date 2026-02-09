@@ -83,7 +83,21 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
 
   const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
   const isHomeRoute = pathname === "/";
-  const isMenuActive = !isHomeRoute && !isCourseRoute; // simple heuristic
+
+  // ======================================================
+  // Shared styles (same system as course/page.tsx)
+  // - ui-press handles motion (hover + press)
+  // - skins handle color/ring/shadow only
+  // ======================================================
+  const navBtnBase = "ui-press ui-focus flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
+
+  const skinInactive = "bg-slate-100/70 text-slate-800";
+  const skinActive =
+    "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]";
+
+  const skinWhite = "bg-white/90 text-slate-900 ring-1 ring-white/70";
+  const skinWhiteActive =
+    "bg-white/95 text-slate-900 ring-1 ring-white/80 shadow-[0_14px_40px_rgba(15,23,42,0.10)]";
 
   const defaultMobileNav = (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
@@ -94,12 +108,9 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             <button
               type="button"
               onClick={() => openSiteDrawer("main")}
-              className={[
-                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                menuOpen && drawerView === "main"
-                  ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                  : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
-              ].join(" ")}
+              className={[navBtnBase, menuOpen && drawerView === "main" ? skinActive : skinInactive].join(
+                " "
+              )}
               aria-pressed={menuOpen && drawerView === "main"}
             >
               Menu
@@ -109,27 +120,17 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             <button
               type="button"
               onClick={() => router.push("/")}
-              className={[
-                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                isHomeRoute
-                  ? "bg-white/90 text-slate-900 ring-1 ring-white/70"
-                  : "bg-white/90 text-slate-900 ring-1 ring-white/70 hover:bg-white",
-              ].join(" ")}
+              className={[navBtnBase, isHomeRoute ? skinWhiteActive : skinWhite].join(" ")}
               aria-current={isHomeRoute ? "page" : undefined}
             >
               Home
             </button>
 
-            {/* Course (fast access) */}
+            {/* Course */}
             <button
               type="button"
               onClick={() => router.push("/course")}
-              className={[
-                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                isCourseRoute
-                  ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                  : "bg-slate-100/70 text-slate-800 hover:bg-slate-100",
-              ].join(" ")}
+              className={[navBtnBase, isCourseRoute ? skinActive : skinInactive].join(" ")}
               aria-current={isCourseRoute ? "page" : undefined}
             >
               Course
@@ -164,7 +165,8 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             type="button"
             onClick={toggleMenu}
             className={[
-              "rounded-xl px-3 py-2 text-white/95 transition hover:bg-white/10 active:scale-[0.98]",
+              "ui-press ui-focus rounded-xl px-3 py-2 text-white/95",
+              "hover:bg-white/10",
               hideHamburgerOnMobile ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
             aria-label={customMenu?.ariaLabel ?? "Toggle menu"}
@@ -189,10 +191,10 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
 
       {children}
 
-      {/* ✅ Default mobile nav (global) */}
+      {/* Default mobile nav (global) */}
       {showDefaultMobileNav ? defaultMobileNav : null}
 
-      {/* ✅ Custom bottom bar (optional). Keep it from blocking scroll/touches behind. */}
+      {/* Custom bottom bar (optional). Keep it from blocking scroll/touches behind. */}
       {bottomBar ? (
         <div className="pointer-events-none fixed inset-0 z-[60]">
           <div className="pointer-events-auto">{bottomBar}</div>

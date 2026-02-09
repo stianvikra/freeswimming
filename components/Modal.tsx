@@ -4,16 +4,26 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 type Props = {
-  open: boolean;
+  /** Backwards compatible: support both */
+  open?: boolean;
+  isOpen?: boolean;
+
   onClose: () => void;
   ariaLabel?: string;
   children: React.ReactNode;
 };
 
-export default function Modal({ open, onClose, ariaLabel = "Dialog", children }: Props) {
-  // Lock background scroll when modal is open
+export default function Modal({
+  open,
+  isOpen,
+  onClose,
+  ariaLabel = "Dialog",
+  children,
+}: Props) {
+  const visible = Boolean(open ?? isOpen);
+
   useEffect(() => {
-    if (!open) return;
+    if (!visible) return;
 
     const prevOverflow = document.documentElement.style.overflow;
     const prevBodyOverflow = document.body.style.overflow;
@@ -25,28 +35,24 @@ export default function Modal({ open, onClose, ariaLabel = "Dialog", children }:
       document.documentElement.style.overflow = prevOverflow;
       document.body.style.overflow = prevBodyOverflow;
     };
-  }, [open]);
+  }, [visible]);
 
-  // Close on Escape
   useEffect(() => {
-    if (!open) return;
+    if (!visible) return;
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  }, [visible, onClose]);
 
-  if (!open) return null;
+  if (!visible) return null;
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[70]"
-      role="dialog"
-      aria-modal="true"
-      aria-label={ariaLabel}
-    >
+    <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={ariaLabel}>
       {/* Backdrop */}
       <button
         type="button"
@@ -57,7 +63,6 @@ export default function Modal({ open, onClose, ariaLabel = "Dialog", children }:
 
       {/* Right-side panel wrapper */}
       <div className="absolute inset-0 flex justify-end">
-        {/* Panel */}
         <div
           className={[
             "relative h-[100dvh] w-full max-w-[420px]",
@@ -66,11 +71,9 @@ export default function Modal({ open, onClose, ariaLabel = "Dialog", children }:
             "overflow-hidden rounded-bl-3xl",
             "pointer-events-auto",
           ].join(" ")}
-          // Important on iOS: allow proper touch scrolling inside children scroll areas
           style={{ WebkitOverflowScrolling: "touch" }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* This inner flex container MUST have min-h-0 so children with overflow can scroll */}
           <div className="flex h-full min-h-0 flex-col">{children}</div>
         </div>
       </div>

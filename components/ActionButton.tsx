@@ -22,45 +22,43 @@ export default function ActionButton({
   variant = "secondary",
   disabled = false,
 }: Props) {
-  // ✅ Key change: the outer container is NOT flex-col anymore.
-  // We center one inner content block vertically. That block manages spacing.
+  // Base = structure + interaction system
   const base =
-    "group relative w-full select-none rounded-2xl px-6 " +
+    "ui-press ui-focus group relative w-full select-none rounded-2xl px-6 " +
     "min-h-[78px] sm:min-h-[82px] " +
-    "flex items-center justify-center " +
-    "transition-[transform,box-shadow,filter,background-color,border-color] duration-200 ease-out " +
-    "focus:outline-none focus-visible:ring-4 focus-visible:ring-[#2d8fff]/25 " +
-    "active:translate-y-[1px]";
+    "flex items-center justify-center";
 
+  // Skins only (colors/shadows/rings) — hover/press lives in globals via ui-press
   const primary =
     "text-white bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] " +
-    "shadow-[0_18px_55px_rgba(45,143,255,0.26)] " +
-    "hover:brightness-[1.03] active:brightness-[0.98] " +
-    "hover:shadow-[0_26px_90px_rgba(45,143,255,0.32)]";
+    "shadow-[0_18px_55px_rgba(45,143,255,0.26)]";
 
   const secondary =
     "bg-white/90 backdrop-blur border border-white/80 " +
     "text-slate-900 " +
-    "shadow-[0_12px_36px_rgba(15,23,42,0.11)] " +
-    "hover:bg-white hover:shadow-[0_18px_54px_rgba(15,23,42,0.15)]";
+    "shadow-[0_12px_36px_rgba(15,23,42,0.11)]";
 
-  const disabledStyle =
-    "opacity-55 cursor-not-allowed hover:brightness-100 " +
-    "hover:shadow-[0_12px_36px_rgba(15,23,42,0.11)] active:translate-y-0";
+  // Disabled: kills motion + hover + press globally (ui-disabled does that)
+  const disabledStyle = "ui-disabled opacity-55 cursor-not-allowed";
 
   const skin = variant === "primary" ? primary : secondary;
 
-  // ✅ Inner block manages spacing:
-  // - 2 lines (title + subtitle) become visually centered
-  // - 3 lines (title + subtitle + note) stay balanced
+  // Inner content micro-motion (but we must disable it when disabled)
   const content = (
-    <div className="flex w-full flex-col items-center justify-center text-center">
+    <div
+      className={[
+        "flex w-full flex-col items-center justify-center text-center",
+        disabled
+          ? "" // no motion when disabled
+          : "transition-transform duration-200 ease-out group-hover:-translate-y-[0.5px] group-active:translate-y-[0.5px]",
+      ].join(" ")}
+    >
       {/* TITLE */}
       <div
-        className={
-          "text-[16px] sm:text-[17px] font-semibold tracking-[0.14em] " +
-          (variant === "primary" ? "text-white/95" : "text-slate-900")
-        }
+        className={[
+          "text-[16px] sm:text-[17px] font-semibold tracking-[0.14em]",
+          variant === "primary" ? "text-white/95" : "text-slate-900",
+        ].join(" ")}
       >
         {title}
       </div>
@@ -68,10 +66,10 @@ export default function ActionButton({
       {/* SUBTITLE */}
       {subtitle ? (
         <div
-          className={
-            "mt-1 text-[14.5px] leading-[1.2] sm:text-[14px] font-medium " +
-            (variant === "primary" ? "text-white/85" : "text-slate-600")
-          }
+          className={[
+            "mt-1 text-[14.5px] leading-[1.2] sm:text-[14px] font-medium",
+            variant === "primary" ? "text-white/85" : "text-slate-600",
+          ].join(" ")}
         >
           {subtitle}
         </div>
@@ -80,10 +78,10 @@ export default function ActionButton({
       {/* NOTE */}
       {note ? (
         <div
-          className={
-            "mt-2 text-[12px] font-medium leading-4 tracking-wide " +
-            (variant === "primary" ? "text-white/70" : "text-slate-400")
-          }
+          className={[
+            "mt-2 text-[12px] font-medium leading-4 tracking-wide",
+            variant === "primary" ? "text-white/70" : "text-slate-400",
+          ].join(" ")}
         >
           {note}
         </div>
@@ -91,6 +89,7 @@ export default function ActionButton({
     </div>
   );
 
+  // IMPORTANT: When disabled, do NOT render Link (so it can't be clicked)
   if (href && !disabled) {
     return (
       <Link className={`${base} ${skin}`} href={href}>
@@ -105,6 +104,7 @@ export default function ActionButton({
       className={`${base} ${skin} ${disabled ? disabledStyle : ""}`}
       onClick={disabled ? undefined : onClick}
       aria-disabled={disabled}
+      disabled={disabled}
     >
       {content}
     </button>

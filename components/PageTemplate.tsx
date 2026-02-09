@@ -7,15 +7,37 @@ type Props = {
   children: React.ReactNode;
   size?: "default" | "wide";
   showBack?: boolean;
+
+  /**
+   * Best practice:
+   * - On mobile we usually rely on bottom-nav.
+   * - If you ever want BackButton on mobile for a specific page, set "all".
+   */
+  backVisibility?: "all" | "desktop";
 };
 
-export default function PageTemplate({ children, size = "default", showBack = true }: Props) {
+export default function PageTemplate({
+  children,
+  size = "default",
+  showBack = true,
+  backVisibility = "desktop",
+}: Props) {
+  const showBackOnMobile = backVisibility === "all";
+
   return (
     <div className="mx-auto flex min-h-screen items-start justify-center px-4 pb-28 pt-24 sm:pb-10 sm:pt-28">
       <section className={`relative w-full ${size === "wide" ? "max-w-[720px]" : "max-w-[520px]"}`}>
         <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_30px_90px_rgba(16,24,40,0.18)] backdrop-blur-xl sm:p-8">
-          {/* Hide back on mobile (bottom nav handles navigation) */}
-          {showBack ? <div className="hidden sm:block"><BackButton /></div> : null}
+          {showBack ? (
+            showBackOnMobile ? (
+              <BackButton />
+            ) : (
+              <div className="hidden sm:block">
+                <BackButton />
+              </div>
+            )
+          ) : null}
+
           {children}
         </div>
 

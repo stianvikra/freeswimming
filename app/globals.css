@@ -25,23 +25,29 @@ body {
   color: #0f172a;
 }
 
-/* Nice font rendering */
+/* Nice font rendering + mobile tap highlight */
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* ✅ A11y best practice:
-   - don't remove focus for keyboard users
-   - only show focus ring for focus-visible */
-:focus {
-  outline: none;
+/* Better “press feel” on touch devices */
+button,
+a {
+  touch-action: manipulation;
 }
 
+/* ✅ A11y: only show focus ring for keyboard users */
 :focus-visible {
   outline: none;
   box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
   border-radius: 12px;
+}
+
+/* Slightly nicer selection */
+::selection {
+  background: rgba(99, 168, 255, 0.22);
 }
 
 @layer components {
@@ -60,10 +66,132 @@ body {
     box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
   }
 
-  /* Optional utility if you want to add it to a specific element */
+  /* Optional (legacy) */
   .focus-ring {
     outline: none;
     box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
+  }
+
+  /* =========================
+     10/10 Interaction System
+     ========================= */
+
+  /* Use on buttons/links that should feel “pressable” */
+  .ui-press {
+    transform: translateZ(0);
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      filter 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease;
+    will-change: transform;
+    user-select: none;
+  }
+
+  /* Use on items that should feel “card/clickable” */
+  .ui-card {
+    transform: translateZ(0);
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease,
+      filter 160ms ease;
+    will-change: transform;
+  }
+
+  /* Keyboard ring (opt-in so you can control it per element) */
+  .ui-focus {
+    outline: none;
+  }
+  .ui-focus:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
+  }
+
+  /* Touch / mouse press */
+  .ui-press:active {
+    transform: translateY(1px) scale(0.985);
+  }
+  .ui-card:active {
+    transform: scale(0.992);
+  }
+
+  /* Disabled: works for real disabled + aria-disabled */
+  .ui-disabled,
+  .ui-press:disabled,
+  .ui-card:disabled,
+  [aria-disabled="true"].ui-press,
+  [aria-disabled="true"].ui-card {
+    cursor: not-allowed;
+    transform: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+  }
+
+  /* ✅ Hover effects ONLY on desktop-like pointers */
+  @media (hover: hover) and (pointer: fine) {
+    .ui-press:hover:not(:disabled):not([aria-disabled="true"]) {
+      transform: translateY(-1px);
+      filter: brightness(1.02);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    .ui-card:hover:not(:disabled):not([aria-disabled="true"]) {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+      filter: brightness(1.01);
+    }
+  }
+
+  /* =========================
+     Form field system
+     ========================= */
+
+  .ui-field {
+    width: 100%;
+    border-radius: 16px; /* matches your rounded-2xl vibe but slightly tighter */
+    border: 1px solid rgba(226, 232, 240, 1); /* slate-200 */
+    background: rgba(255, 255, 255, 1);
+    padding: 12px 16px; /* ~py-3 px-4 */
+    font-size: 16px; /* prevents iOS zoom */
+    line-height: 1.5;
+    color: #0f172a;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease;
+    outline: none;
+  }
+
+  .ui-field::placeholder {
+    color: rgba(100, 116, 139, 1); /* slate-500 */
+  }
+
+  .ui-field:focus {
+    border-color: rgba(96, 165, 250, 1); /* blue-400 */
+    box-shadow: 0 0 0 4px rgba(191, 219, 254, 0.6); /* blue-200/60 */
+  }
+
+  .ui-field:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  /* Optional: mark invalid fields in future */
+  .ui-field[aria-invalid="true"] {
+    border-color: rgba(244, 63, 94, 0.55); /* rose-ish */
+    box-shadow: 0 0 0 4px rgba(254, 205, 211, 0.65);
+  }
+
+  .ui-field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: rgba(51, 65, 85, 1); /* slate-700 */
   }
 }
 
@@ -86,6 +214,18 @@ body {
       animation-iteration-count: 1 !important;
       transition-duration: 0.001ms !important;
       scroll-behavior: auto !important;
+    }
+
+    .ui-press,
+    .ui-card {
+      transition: none !important;
+      transform: none !important;
+      filter: none !important;
+      box-shadow: none !important;
+    }
+
+    .ui-field {
+      transition: none !important;
     }
   }
 }

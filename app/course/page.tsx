@@ -20,7 +20,6 @@ import {
 
 const STORAGE_KEY = "fs_course_last_lesson";
 
-// Main site navigation shown inside the same drawer (no extra modal / no extra route)
 const MAIN_MENU_ITEMS = [
   { href: "/", title: "Home", subtitle: "Back to start" },
   { href: "/course", title: "Free course", subtitle: "Modules & lessons" },
@@ -29,6 +28,62 @@ const MAIN_MENU_ITEMS = [
   { href: "/how-we-teach", title: "How we teach", subtitle: "Learn. Drill. Swim." },
   { href: "/contact", title: "Contact", subtitle: "Questions or help" },
 ];
+
+type Skin = "muted" | "white" | "primary";
+
+const SKIN: Record<Skin, string> = {
+  muted: "bg-slate-100/80 text-slate-900",
+  white: "bg-white/90 text-slate-900 ring-1 ring-white/70",
+  primary:
+    "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]",
+};
+
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
+
+type PressButtonProps = {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  ariaLabel?: string;
+  ariaExpanded?: boolean;
+  className?: string;
+  skin?: Skin;
+  /** set false when you don't want flex-1 (desktop buttons) */
+  grow?: boolean;
+};
+
+function PressButton({
+  children,
+  onClick,
+  disabled = false,
+  ariaLabel,
+  ariaExpanded,
+  className,
+  skin = "muted",
+  grow = true,
+}: PressButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
+      aria-label={ariaLabel}
+      aria-expanded={ariaExpanded}
+      className={cx(
+        "ui-press ui-focus rounded-2xl text-[14px] font-semibold",
+        grow && "flex-1",
+        "px-4 py-3",
+        disabled ? "ui-disabled cursor-not-allowed bg-slate-100/50 text-slate-400" : SKIN[skin],
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function CoursePage() {
   const router = useRouter();
@@ -51,7 +106,6 @@ export default function CoursePage() {
     );
     const mod = COURSE_MODULES[moduleIndex] ?? COURSE_MODULES[0];
     const lessonIndexInModule = mod.lessons.findIndex((l) => l.id === activeLesson.id);
-
     const lessonIndexGlobal = COURSE_LESSONS_FLAT.findIndex((l) => l.id === activeLesson.id);
 
     return {
@@ -130,46 +184,26 @@ export default function CoursePage() {
       <div className="mx-auto max-w-[520px]">
         <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={!prevId}
-              onClick={() => prevId && goToLesson(prevId)}
-              className={[
-                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                prevId
-                  ? "bg-slate-100/80 text-slate-900"
-                  : "cursor-not-allowed bg-slate-100/50 text-slate-400",
-              ].join(" ")}
-            >
+            <PressButton disabled={!prevId} onClick={() => prevId && goToLesson(prevId)} skin="muted">
               Prev
-            </button>
+            </PressButton>
 
-            <button
-              type="button"
+            <PressButton
               onClick={() => setDrawerOpen((v) => !v)}
-              className={[
-                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold ring-1 ring-white/70 transition",
-                drawerOpen ? "bg-slate-100/80 text-slate-900" : "bg-white/90 text-slate-900",
-              ].join(" ")}
-              aria-expanded={drawerOpen}
-              aria-label={drawerOpen ? "Close lessons" : "Open lessons"}
+              skin={drawerOpen ? "muted" : "white"}
+              ariaExpanded={drawerOpen}
+              ariaLabel={drawerOpen ? "Close lessons" : "Open lessons"}
             >
               {drawerOpen ? "Back" : "Lessons"}
-            </button>
+            </PressButton>
 
-            <button
-              type="button"
+            <PressButton
               disabled={!nextId}
               onClick={() => nextId && goToLesson(nextId)}
-              className={[
-                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                nextId
-                  ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                  : "cursor-not-allowed bg-slate-100/50 text-slate-400",
-              ].join(" ")}
+              skin="primary"
             >
               Next
-            </button>
+            </PressButton>
           </div>
         </div>
       </div>
@@ -203,14 +237,16 @@ export default function CoursePage() {
             <div className="mt-1 text-[12px] font-medium text-slate-500">{progressLabel.sub}</div>
           </div>
 
-          <button
-            type="button"
+          {/* Desktop Lessons button */}
+          <PressButton
+            grow={false}
+            skin="white"
             onClick={() => setDrawerOpen((v) => !v)}
-            className="hidden shrink-0 rounded-2xl bg-white/80 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-white/70 transition hover:bg-white sm:inline-flex"
-            aria-label={drawerOpen ? "Close lessons" : "Open lessons"}
+            className="hidden shrink-0 sm:inline-flex"
+            ariaLabel={drawerOpen ? "Close lessons" : "Open lessons"}
           >
             {drawerOpen ? "Close" : "Lessons"}
-          </button>
+          </PressButton>
         </header>
 
         <div className="mt-4 overflow-hidden rounded-full bg-white/60 ring-1 ring-white/70">
@@ -231,33 +267,27 @@ export default function CoursePage() {
               <div className="mt-1 text-[18px] font-semibold text-slate-900">{activeLesson.title}</div>
             </div>
 
+            {/* Desktop Prev/Next */}
             <div className="hidden gap-2 sm:flex sm:pt-1">
-              <button
-                type="button"
+              <PressButton
+                grow={false}
                 disabled={!prevId}
                 onClick={() => prevId && goToLesson(prevId)}
-                className={[
-                  "rounded-2xl px-4 py-2 text-[14px] font-semibold transition",
-                  prevId
-                    ? "bg-slate-100/80 text-slate-900 hover:bg-slate-100"
-                    : "cursor-not-allowed bg-slate-100/50 text-slate-400",
-                ].join(" ")}
+                skin="muted"
+                className="px-4 py-2"
               >
                 Prev
-              </button>
-              <button
-                type="button"
+              </PressButton>
+
+              <PressButton
+                grow={false}
                 disabled={!nextId}
                 onClick={() => nextId && goToLesson(nextId)}
-                className={[
-                  "rounded-2xl px-4 py-2 text-[14px] font-semibold transition",
-                  nextId
-                    ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)] hover:from-blue-600 hover:to-blue-700"
-                    : "cursor-not-allowed bg-slate-100/50 text-slate-400",
-                ].join(" ")}
+                skin="primary"
+                className="px-4 py-2"
               >
                 Next
-              </button>
+              </PressButton>
             </div>
           </div>
 
@@ -281,7 +311,7 @@ export default function CoursePage() {
               href={youtubeWatchUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 font-semibold text-slate-900 ring-1 ring-white/70 hover:bg-white/90"
+              className="ui-press ui-focus inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 font-semibold text-slate-900 ring-1 ring-white/70"
             >
               Open on YouTube →
             </a>
@@ -298,7 +328,9 @@ export default function CoursePage() {
             <p className="mt-2 text-[15px] leading-7 text-slate-700">{activeLesson.goal}</p>
 
             <div className="mt-5">
-              <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">Cues (pick one)</h3>
+              <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">
+                Cues (pick one)
+              </h3>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
                 {activeLesson.cues.map((c) => (
                   <li key={c}>{c}</li>
@@ -328,7 +360,9 @@ export default function CoursePage() {
               Drill
             </div>
 
-            <h2 className="mt-3 text-[18px] font-semibold text-slate-900">{activeLesson.drill.title}</h2>
+            <h2 className="mt-3 text-[18px] font-semibold text-slate-900">
+              {activeLesson.drill.title}
+            </h2>
 
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-[14px] leading-7 text-slate-800">
               {activeLesson.drill.steps.map((s) => (
@@ -346,13 +380,14 @@ export default function CoursePage() {
             <div className="mt-5 flex flex-col gap-2">
               <Link
                 href="/programs"
-                className="flex items-center justify-center rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-white/70 transition hover:bg-white"
+                className="ui-press ui-focus flex items-center justify-center rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-white/70"
               >
                 View programs & PDFs
               </Link>
+
               <Link
                 href="/analysis"
-                className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)] transition hover:from-blue-600 hover:to-blue-700"
+                className="ui-press ui-focus flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
               >
                 Get video analysis
               </Link>
@@ -367,7 +402,6 @@ export default function CoursePage() {
         {/* Spacer so content isn't hidden behind bottom nav */}
         <div className="h-32 sm:h-0" />
 
-        {/* Drawer */}
         <MenuDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}

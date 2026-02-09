@@ -1,3 +1,4 @@
+// components/ContactForm.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -33,6 +34,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
   const startedAtRef = useRef<number | null>(null);
 
+  const isSending = status === "sending";
+
   useEffect(() => {
     startedAtRef.current = Date.now();
     nameRef.current?.focus();
@@ -56,7 +59,6 @@ export default function ContactForm({ variant = "contact" }: Props) {
         formTitle: "Request video analysis",
         formSubtitle: "Tell us what you want feedback on — and what your goal is.",
 
-        // ✅ kort placeholder (iPhone ser mye penere)
         messagePlaceholder: "Describe your goal + what you want feedback on…",
 
         exampleTitle: "Example",
@@ -86,7 +88,6 @@ export default function ContactForm({ variant = "contact" }: Props) {
       formTitle: "Send a message",
       formSubtitle: "Send us a short message and we’ll reply by email.",
 
-      // ✅ kort placeholder (iPhone ser mye penere)
       messagePlaceholder: "Write your message…",
 
       exampleTitle: "Example",
@@ -127,7 +128,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (status === "sending") return;
+    if (isSending) return;
 
     setError("");
 
@@ -186,7 +187,20 @@ export default function ContactForm({ variant = "contact" }: Props) {
     }
   }
 
-  // ✅ Success view: header + success card (skjuler resten)
+  // Shared button “skins” (minimal repetition)
+  const btnPrimary =
+    "ui-press ui-focus w-full rounded-2xl px-5 py-4 text-[16px] font-semibold text-white " +
+    "bg-gradient-to-b from-blue-500 to-blue-600 " +
+    "shadow-[0_18px_50px_rgba(37,99,235,0.28)] " +
+    "hover:brightness-[1.03] " +
+    "disabled:opacity-60 disabled:cursor-not-allowed";
+
+  const btnIcon =
+    "ui-press ui-focus inline-flex h-10 w-10 items-center justify-center rounded-full " +
+    "border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm " +
+    "hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed";
+
+  // ✅ Success view
   if (status === "success") {
     return (
       <div>
@@ -194,16 +208,14 @@ export default function ContactForm({ variant = "contact" }: Props) {
           <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
             {copy.pageTitle}
           </h1>
-          <p className="mt-2 text-[17px] leading-7 text-slate-700">
-            {copy.pageSubtitle}
-          </p>
+          <p className="mt-2 text-[17px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
         </div>
 
         <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/70 bg-emerald-50/80 p-7 shadow-sm backdrop-blur-xl">
           <button
             type="button"
             onClick={reset}
-            className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm transition hover:bg-white"
+            className={`${btnIcon} absolute right-3 top-3`}
             aria-label="Close"
             title="Send another message"
           >
@@ -234,22 +246,18 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
   return (
     <div>
-      {/* Header (single source of truth) */}
+      {/* Header */}
       <div className="text-center">
         <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
           {copy.pageTitle}
         </h1>
-        <p className="mt-2 text-[17px] leading-7 text-slate-700">
-          {copy.pageSubtitle}
-        </p>
+        <p className="mt-2 text-[17px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
       </div>
 
       {/* Helper card (analysis only) */}
       {variant === "analysis" && (
         <div className="mt-6 rounded-[22px] border border-slate-200/70 bg-white/60 p-6 shadow-sm">
-          <h2 className="text-[18px] font-semibold text-slate-900">
-            {copy.helperTitle}
-          </h2>
+          <h2 className="text-[18px] font-semibold text-slate-900">{copy.helperTitle}</h2>
 
           <ul className="mt-3 space-y-3 text-[17px] leading-7 text-slate-700">
             {copy.helperBullets.map((b) => (
@@ -260,24 +268,16 @@ export default function ContactForm({ variant = "contact" }: Props) {
             ))}
           </ul>
 
-          <p className="mt-5 text-[16px] leading-7 text-slate-600">
-            {copy.helperLine1}
-          </p>
-          <p className="mt-2 text-[16px] leading-7 text-slate-600">
-            {copy.helperLine2}
-          </p>
+          <p className="mt-5 text-[16px] leading-7 text-slate-600">{copy.helperLine1}</p>
+          <p className="mt-2 text-[16px] leading-7 text-slate-600">{copy.helperLine2}</p>
         </div>
       )}
 
       {/* Form card */}
       <div className="mt-6 rounded-[22px] border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-xl">
         <div className="text-center">
-          <h2 className="text-[20px] font-semibold text-slate-900">
-            {copy.formTitle}
-          </h2>
-          <p className="mt-2 text-[15px] leading-6 text-slate-700">
-            {copy.formSubtitle}
-          </p>
+          <h2 className="text-[20px] font-semibold text-slate-900">{copy.formTitle}</h2>
+          <p className="mt-2 text-[15px] leading-6 text-slate-700">{copy.formSubtitle}</p>
         </div>
 
         {status === "error" && error && (
@@ -299,15 +299,13 @@ export default function ContactForm({ variant = "contact" }: Props) {
           />
 
           <div>
-            <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
-              NAME
-            </label>
+            <label className="ui-field-label">NAME</label>
             <input
               ref={nameRef}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              disabled={status === "sending"}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
+              disabled={isSending}
+              className="ui-field mt-2"
               placeholder="Your name"
               autoComplete="name"
               enterKeyHint="next"
@@ -321,15 +319,13 @@ export default function ContactForm({ variant = "contact" }: Props) {
           </div>
 
           <div>
-            <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
-              EMAIL
-            </label>
+            <label className="ui-field-label">EMAIL</label>
             <input
               ref={emailRef}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={status === "sending"}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
+              disabled={isSending}
+              className="ui-field mt-2"
               placeholder="you@email.com"
               inputMode="email"
               autoComplete="email"
@@ -344,23 +340,18 @@ export default function ContactForm({ variant = "contact" }: Props) {
           </div>
 
           <div>
-            <label className="block text-[12px] font-semibold tracking-wide text-slate-700">
-              MESSAGE
-            </label>
+            <label className="ui-field-label">MESSAGE</label>
             <textarea
               ref={messageRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              disabled={status === "sending"}
-              className="mt-2 min-h-[150px] w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[16px] leading-6 text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-200/50 disabled:opacity-70"
+              disabled={isSending}
+              className="ui-field mt-2 min-h-[150px] resize-none leading-6"
               placeholder={copy.messagePlaceholder}
             />
 
-            {/* ✅ Pen “example” i stedet for lang placeholder */}
             <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-              <p className="text-[13px] font-semibold text-slate-700">
-                {copy.exampleTitle}
-              </p>
+              <p className="text-[13px] font-semibold text-slate-700">{copy.exampleTitle}</p>
               <ul className="mt-2 space-y-1 text-[13px] leading-5 text-slate-600">
                 {copy.exampleLines.map((line) => (
                   <li key={line} className="flex gap-2">
@@ -372,17 +363,11 @@ export default function ContactForm({ variant = "contact" }: Props) {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={status === "sending"}
-            className="mt-2 w-full rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-5 py-4 text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(37,99,235,0.28)] transition hover:from-blue-600 hover:to-blue-700 disabled:opacity-60"
-          >
-            {status === "sending" ? "Sending…" : "Send"}
+          <button type="submit" disabled={isSending} className={btnPrimary}>
+            {isSending ? "Sending…" : "Send"}
           </button>
 
           <p className="text-center text-[13px] text-slate-500">{copy.micro}</p>
-
-         
         </form>
       </div>
     </div>
