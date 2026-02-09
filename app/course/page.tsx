@@ -103,12 +103,14 @@ export default function CoursePage() {
 
   const progressLabel = useMemo(() => {
     const modNum = moduleInfo.moduleIndex >= 0 ? moduleInfo.moduleIndex + 1 : 1;
-    const lessonInMod = moduleInfo.lessonIndexInModule >= 0 ? moduleInfo.lessonIndexInModule + 1 : 1;
+    const lessonInMod =
+      moduleInfo.lessonIndexInModule >= 0 ? moduleInfo.lessonIndexInModule + 1 : 1;
     const lessonGlobal = moduleInfo.lessonIndexGlobal >= 0 ? moduleInfo.lessonIndexGlobal + 1 : 1;
 
     return {
       top: `Module ${modNum}/${moduleInfo.moduleCount} • Lesson ${lessonInMod}/${moduleInfo.moduleLessonCount}`,
       sub: `Course progress: ${lessonGlobal}/${moduleInfo.totalLessons}`,
+      compact: `${lessonGlobal}/${moduleInfo.totalLessons}`,
     };
   }, [moduleInfo]);
 
@@ -117,6 +119,57 @@ export default function CoursePage() {
     const total = Math.max(1, moduleInfo.totalLessons);
     return Math.min(100, Math.round((idx / total) * 100));
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
+
+  // ✅ NEW: bottom bar rendered globally via SiteChrome (fixes iOS fixed issues)
+  const bottomBar = (
+    <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
+      <div className="mx-auto max-w-[520px]">
+        <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
+          <div className="px-2 pb-2 text-center text-[12px] font-semibold text-slate-600">
+            {progressLabel.compact}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={!prevId}
+              onClick={() => prevId && goToLesson(prevId)}
+              className={[
+                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
+                prevId
+                  ? "bg-slate-100/80 text-slate-900"
+                  : "cursor-not-allowed bg-slate-100/50 text-slate-400",
+              ].join(" ")}
+            >
+              Prev
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="flex-1 rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 ring-1 ring-white/70"
+            >
+              Menu
+            </button>
+
+            <button
+              type="button"
+              disabled={!nextId}
+              onClick={() => nextId && goToLesson(nextId)}
+              className={[
+                "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
+                nextId
+                  ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                  : "cursor-not-allowed bg-slate-100/50 text-slate-400",
+              ].join(" ")}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <SiteChrome
@@ -127,6 +180,7 @@ export default function CoursePage() {
         onClose: () => setDrawerOpen(false),
         ariaLabel: "Toggle course menu",
       }}
+      bottomBar={bottomBar}
     >
       <PageTemplate size="wide" showBack={false}>
         <div ref={playerTopRef} />
@@ -169,7 +223,9 @@ export default function CoursePage() {
                 {moduleInfo.module?.title ?? "Course"}
                 {activeLesson.estMinutes ? ` • ${activeLesson.estMinutes} min` : ""}
               </div>
-              <div className="mt-1 text-[18px] font-semibold text-slate-900">{activeLesson.title}</div>
+              <div className="mt-1 text-[18px] font-semibold text-slate-900">
+                {activeLesson.title}
+              </div>
             </div>
 
             <div className="hidden gap-2 sm:flex sm:pt-1">
@@ -285,7 +341,9 @@ export default function CoursePage() {
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                 Next step
               </div>
-              <div className="mt-1 text-[14px] leading-6 text-slate-800">{activeLesson.nextStep}</div>
+              <div className="mt-1 text-[14px] leading-6 text-slate-800">
+                {activeLesson.nextStep}
+              </div>
             </div>
 
             <div className="mt-5 flex flex-col gap-2">
@@ -309,47 +367,8 @@ export default function CoursePage() {
           </div>
         </section>
 
-        <div className="sm:hidden">
-          <div className="fixed inset-x-0 bottom-3 z-30 px-4">
-            <div className="mx-auto flex max-w-[520px] items-center justify-between gap-2 rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
-              <button
-                type="button"
-                disabled={!prevId}
-                onClick={() => prevId && goToLesson(prevId)}
-                className={[
-                  "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                  prevId
-                    ? "bg-slate-100/80 text-slate-900"
-                    : "cursor-not-allowed bg-slate-100/50 text-slate-400",
-                ].join(" ")}
-              >
-                Prev
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                className="flex-1 rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 ring-1 ring-white/70"
-              >
-                Menu
-              </button>
-
-              <button
-                type="button"
-                disabled={!nextId}
-                onClick={() => nextId && goToLesson(nextId)}
-                className={[
-                  "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold transition",
-                  nextId
-                    ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                    : "cursor-not-allowed bg-slate-100/50 text-slate-400",
-                ].join(" ")}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* ✅ Spacer so the bottom bar doesn't cover content on mobile */}
+        <div className="h-28 sm:h-0" />
 
         {/* Drawer */}
         <Modal open={drawerOpen} onClose={() => setDrawerOpen(false)} ariaLabel="Course navigation">

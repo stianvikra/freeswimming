@@ -29,9 +29,10 @@ type SiteMenu = {
 type Props = {
   children: React.ReactNode;
   menu?: SiteMenu | CustomMenu;
+  bottomBar?: React.ReactNode; // ✅ NEW (minimal change)
 };
 
-export default function SiteChrome({ children, menu }: Props) {
+export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const pathname = usePathname();
 
   const menuMode = menu?.mode ?? "site";
@@ -260,6 +261,9 @@ export default function SiteChrome({ children, menu }: Props) {
       ) : null}
 
       {children}
+
+      {/* ✅ NEW: global bottom bar (optional). Must use pointer-events-auto inside the bar. */}
+      {bottomBar ? <div className="pointer-events-none">{bottomBar}</div> : null}
     </main>
   );
 }
