@@ -76,7 +76,7 @@ function PressButton({
         "ui-press ui-focus rounded-2xl text-[14px] font-semibold",
         grow && "flex-1",
         "px-4 py-3",
-        disabled ? "ui-disabled cursor-not-allowed bg-slate-100/50 text-slate-400" : SKIN[skin],
+        disabled ? "ui-disabled bg-slate-100/50 text-slate-400" : SKIN[skin],
         className
       )}
     >
@@ -119,14 +119,12 @@ export default function CoursePage() {
     };
   }, [activeLesson.id]);
 
-  // Save progress
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, activeLesson.id);
     } catch {}
   }, [activeLesson.id]);
 
-  // Restore last lesson if ?lesson missing
   useEffect(() => {
     if (lessonParam) return;
 
@@ -178,7 +176,6 @@ export default function CoursePage() {
     return Math.min(100, Math.round((idx / total) * 100));
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
 
-  // Bottom bar (mobile)
   const bottomBar = (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
       <div className="mx-auto max-w-[520px]">
@@ -237,7 +234,6 @@ export default function CoursePage() {
             <div className="mt-1 text-[12px] font-medium text-slate-500">{progressLabel.sub}</div>
           </div>
 
-          {/* Desktop Lessons button */}
           <PressButton
             grow={false}
             skin="white"
@@ -267,7 +263,6 @@ export default function CoursePage() {
               <div className="mt-1 text-[18px] font-semibold text-slate-900">{activeLesson.title}</div>
             </div>
 
-            {/* Desktop Prev/Next */}
             <div className="hidden gap-2 sm:flex sm:pt-1">
               <PressButton
                 grow={false}
@@ -399,7 +394,6 @@ export default function CoursePage() {
           </div>
         </section>
 
-        {/* Spacer so content isn't hidden behind bottom nav */}
         <div className="h-32 sm:h-0" />
 
         <MenuDrawer

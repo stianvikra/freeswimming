@@ -106,8 +106,7 @@ export default function MenuDrawer({
   const navBtnWhite = "bg-white/90 text-slate-900 ring-1 ring-white/70";
 
   // Small “X” button style
-  const iconBtn =
-    "ui-press ui-focus rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700";
+  const iconBtn = "ui-press ui-focus rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700";
 
   return (
     <Modal open={open} onClose={onClose} ariaLabel="Navigation menu">
@@ -181,11 +180,7 @@ export default function MenuDrawer({
                   Menu
                 </button>
 
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className={[navBtnBase, navBtnWhite].join(" ")}
-                >
+                <button type="button" onClick={onClose} className={[navBtnBase, navBtnWhite].join(" ")}>
                   Back
                 </button>
 
@@ -352,10 +347,12 @@ function CourseView({
                         type="button"
                         onClick={() => onSelectLesson(l.id)}
                         className={[
-                          "ui-card ui-focus relative w-full rounded-[16px] px-4 py-3 text-left",
+                          // ✅ (2) add ui-press to lesson buttons
+                          "ui-card ui-press ui-focus relative w-full rounded-[16px] px-4 py-3 text-left",
                           active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "",
                         ].join(" ")}
-                        aria-current={active ? "true" : undefined}
+                        // ✅ (1) correct aria-current value
+                        aria-current={active ? "page" : undefined}
                       >
                         {active ? (
                           <span className="absolute left-2 top-3 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />

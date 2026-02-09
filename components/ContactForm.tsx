@@ -187,18 +187,17 @@ export default function ContactForm({ variant = "contact" }: Props) {
     }
   }
 
-  // Shared button “skins” (minimal repetition)
+  // Buttons: structure/skin only. Motion/hover is in globals via ui-press.
   const btnPrimary =
     "ui-press ui-focus w-full rounded-2xl px-5 py-4 text-[16px] font-semibold text-white " +
     "bg-gradient-to-b from-blue-500 to-blue-600 " +
-    "shadow-[0_18px_50px_rgba(37,99,235,0.28)] " +
-    "hover:brightness-[1.03] " +
-    "disabled:opacity-60 disabled:cursor-not-allowed";
+    "shadow-[0_18px_50px_rgba(37,99,235,0.28)]";
 
   const btnIcon =
     "ui-press ui-focus inline-flex h-10 w-10 items-center justify-center rounded-full " +
-    "border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm " +
-    "hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed";
+    "border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm";
+
+  const btnDisabled = "ui-disabled";
 
   // ✅ Success view
   if (status === "success") {
@@ -281,7 +280,10 @@ export default function ContactForm({ variant = "contact" }: Props) {
         </div>
 
         {status === "error" && error && (
-          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] leading-6 text-rose-700">
+          <div
+            className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] leading-6 text-rose-700"
+            aria-live="polite"
+          >
             {error}
           </div>
         )}
@@ -327,8 +329,11 @@ export default function ContactForm({ variant = "contact" }: Props) {
               disabled={isSending}
               className="ui-field mt-2"
               placeholder="you@email.com"
+              type="email"
               inputMode="email"
               autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
               enterKeyHint="next"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -363,7 +368,11 @@ export default function ContactForm({ variant = "contact" }: Props) {
             </div>
           </div>
 
-          <button type="submit" disabled={isSending} className={btnPrimary}>
+          <button
+            type="submit"
+            disabled={isSending}
+            className={[btnPrimary, isSending ? btnDisabled : ""].join(" ")}
+          >
             {isSending ? "Sending…" : "Send"}
           </button>
 
