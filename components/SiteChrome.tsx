@@ -14,13 +14,30 @@ type MenuItem = {
   tone?: "primary" | "default";
 };
 
-type Props = {
-  children: React.ReactNode;
+type CustomMenu = {
+  mode: "custom";
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  ariaLabel?: string;
 };
 
-export default function SiteChrome({ children }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
+type SiteMenu = {
+  mode?: "site";
+};
+
+type Props = {
+  children: React.ReactNode;
+  menu?: SiteMenu | CustomMenu;
+};
+
+export default function SiteChrome({ children, menu }: Props) {
   const pathname = usePathname();
+
+  const menuMode = menu?.mode ?? "site";
+  const customMenu = menuMode === "custom" ? (menu as CustomMenu) : null;
+
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const menuItems: MenuItem[] = useMemo(
     () => [
@@ -94,141 +111,153 @@ export default function SiteChrome({ children }: Props) {
 
           <button
             type="button"
-            onClick={() => setMenuOpen(true)}
+            onClick={() => {
+              if (customMenu) {
+                if (customMenu.isOpen) customMenu.onClose();
+                else customMenu.onOpen();
+              } else {
+                setMenuOpen((v) => !v);
+              }
+            }}
             className="rounded-xl px-3 py-2 text-white/95 transition hover:bg-white/10 active:scale-[0.98]"
-            aria-label="Open menu"
+            aria-label={customMenu?.ariaLabel ?? "Toggle menu"}
+            aria-expanded={customMenu ? customMenu.isOpen : menuOpen}
           >
             <span className="text-2xl leading-none">≡</span>
           </button>
         </div>
       </header>
 
-      {/* Slide-in menu */}
-      <Modal open={menuOpen} onClose={() => setMenuOpen(false)} ariaLabel="Navigation menu">
-        <div className="flex h-full flex-col rounded-bl-3xl">
-          <div className="flex-1 overflow-y-auto">
-            <div className="px-5 pt-5">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="relative h-9 w-9 shrink-0">
-                    <Image
-                      src="/logos/01_icon_transparent.png"
-                      alt="Freeswimming.org"
-                      fill
-                      priority
-                      className="object-contain"
-                      sizes="36px"
-                    />
-                  </span>
+      {/* Site slide-in menu (only when in site mode) */}
+      {menuMode !== "custom" ? (
+        <Modal open={menuOpen} onClose={() => setMenuOpen(false)} ariaLabel="Navigation menu">
+          <div className="flex h-full flex-col rounded-bl-3xl">
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-5 pt-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="relative h-9 w-9 shrink-0">
+                      <Image
+                        src="/logos/01_icon_transparent.png"
+                        alt="Freeswimming.org"
+                        fill
+                        priority
+                        className="object-contain"
+                        sizes="36px"
+                      />
+                    </span>
 
-                  <div className="leading-tight">
-                    <div className="text-[16px] font-semibold text-slate-900">Menu</div>
-                    <div className="mt-0.5 text-[13px] font-medium text-slate-500">
-                      Active page: <span className="text-slate-700">{activePageLabel}</span>
+                    <div className="leading-tight">
+                      <div className="text-[16px] font-semibold text-slate-900">Menu</div>
+                      <div className="mt-0.5 text-[13px] font-medium text-slate-500">
+                        Active page: <span className="text-slate-700">{activePageLabel}</span>
+                      </div>
                     </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen(false)}
+                    className="rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
+                    aria-label="Close menu"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
+              </div>
+
+              <div className="px-5 pb-5 pt-4">
+                <div className="flex flex-col gap-3">
+                  {menuItems.map((item) => {
+                    const active = isActive(item.href);
+
+                    const base =
+                      "relative overflow-hidden rounded-[22px] px-5 py-4 transition duration-150 ease-out active:scale-[0.985]";
+
+                    const defaultTone =
+                      "bg-white/85 border border-white/70 hover:bg-white " +
+                      "shadow-[0_10px_28px_rgba(15,23,42,0.06)]";
+
+                    const featuredTone =
+                      "bg-blue-50/80 border border-blue-100/80 hover:bg-blue-100/60 " +
+                      "shadow-[0_18px_48px_rgba(99,168,255,0.18)] " +
+                      "before:absolute before:-inset-10 before:bg-[radial-gradient(600px_200px_at_40%_0%,rgba(99,168,255,0.18),rgba(255,255,255,0)_60%)] before:content-['']";
+
+                    const activeStyle =
+                      "bg-blue-50/80 border border-blue-200/60 " +
+                      "shadow-[0_14px_36px_rgba(99,168,255,0.14)] " +
+                      "before:absolute before:left-0 before:top-0 before:h-full before:w-[4px] " +
+                      "before:bg-[#63A8FF] " +
+                      "animate-[activeItem_180ms_ease-out]";
+
+                    const baseTone = item.tone === "primary" ? featuredTone : defaultTone;
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMenuOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={[base, active ? activeStyle : baseTone].join(" ")}
+                      >
+                        <div className="relative">
+                          <div className="text-[16px] font-semibold text-slate-900">
+                            {item.title}
+                          </div>
+                          {item.subtitle ? (
+                            <div className="mt-1 text-[14px] font-medium text-slate-600">
+                              {item.subtitle}
+                            </div>
+                          ) : null}
+                          {item.note ? (
+                            <div className="mt-0.5 text-[12px] font-medium leading-4 tracking-wide text-slate-400">
+                              {item.note}
+                            </div>
+                          ) : null}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-6 border-t border-slate-200/70 py-5">
+                  <div className="text-center text-[11.5px] font-medium tracking-wide text-slate-400">
+                    Follow
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-center gap-3">
+                    <SocialChip label="YouTube" href="https://youtube.com" icon="youtube" subtle />
+                    <SocialChip
+                      label="Instagram"
+                      href="https://instagram.com"
+                      icon="instagram"
+                      subtle
+                    />
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen(false)}
-                  className="rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700 transition hover:bg-slate-100 active:scale-[0.98]"
-                  aria-label="Close menu"
-                >
-                  ✕
-                </button>
+                <div className="h-24" />
               </div>
-
-              <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
             </div>
 
-            <div className="px-5 pb-5 pt-4">
-              <div className="flex flex-col gap-3">
-                {menuItems.map((item) => {
-                  const active = isActive(item.href);
+            <div className="sticky bottom-0 rounded-bl-3xl border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur">
+              <Link
+                href={contactCTA.href}
+                onClick={() => setMenuOpen(false)}
+                className="flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(45,143,255,0.22)] transition active:translate-y-[1px]"
+              >
+                {contactCTA.title}
+              </Link>
 
-                  const base =
-                    "relative overflow-hidden rounded-[22px] px-5 py-4 transition duration-150 ease-out active:scale-[0.985]";
-
-                  const defaultTone =
-                    "bg-white/85 border border-white/70 hover:bg-white " +
-                    "shadow-[0_10px_28px_rgba(15,23,42,0.06)]";
-
-                  const featuredTone =
-                    "bg-blue-50/80 border border-blue-100/80 hover:bg-blue-100/60 " +
-                    "shadow-[0_18px_48px_rgba(99,168,255,0.18)] " +
-                    "before:absolute before:-inset-10 before:bg-[radial-gradient(600px_200px_at_40%_0%,rgba(99,168,255,0.18),rgba(255,255,255,0)_60%)] before:content-['']";
-
-                  const activeStyle =
-                    "bg-blue-50/80 border border-blue-200/60 " +
-                    "shadow-[0_14px_36px_rgba(99,168,255,0.14)] " +
-                    "before:absolute before:left-0 before:top-0 before:h-full before:w-[4px] " +
-                    "before:bg-[#63A8FF] " +
-                    "animate-[activeItem_180ms_ease-out]";
-
-                  const baseTone = item.tone === "primary" ? featuredTone : defaultTone;
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMenuOpen(false)}
-                      aria-current={active ? "page" : undefined}
-                      className={[base, active ? activeStyle : baseTone].join(" ")}
-                    >
-                      <div className="relative">
-                        <div className="text-[16px] font-semibold text-slate-900">{item.title}</div>
-                        {item.subtitle ? (
-                          <div className="mt-1 text-[14px] font-medium text-slate-600">
-                            {item.subtitle}
-                          </div>
-                        ) : null}
-                        {item.note ? (
-                          <div className="mt-0.5 text-[12px] font-medium leading-4 tracking-wide text-slate-400">
-                            {item.note}
-                          </div>
-                        ) : null}
-                      </div>
-                    </Link>
-                  );
-                })}
+              <div className="mt-2 text-center text-xs font-medium text-slate-500">
+                {contactCTA.subtitle}
               </div>
-
-              <div className="mt-6 border-t border-slate-200/70 py-5">
-                <div className="text-center text-[11.5px] font-medium tracking-wide text-slate-400">
-                  Follow
-                </div>
-
-                <div className="mt-3 flex items-center justify-center gap-3">
-                  <SocialChip label="YouTube" href="https://youtube.com" icon="youtube" subtle />
-                  <SocialChip
-                    label="Instagram"
-                    href="https://instagram.com"
-                    icon="instagram"
-                    subtle
-                  />
-                </div>
-              </div>
-
-              <div className="h-24" />
             </div>
           </div>
-
-          <div className="sticky bottom-0 rounded-bl-3xl border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur">
-            <Link
-              href={contactCTA.href}
-              onClick={() => setMenuOpen(false)}
-              className="flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[16px] font-semibold text-white shadow-[0_18px_50px_rgba(45,143,255,0.22)] transition active:translate-y-[1px]"
-            >
-              {contactCTA.title}
-            </Link>
-
-            <div className="mt-2 text-center text-xs font-medium text-slate-500">
-              {contactCTA.subtitle}
-            </div>
-          </div>
-        </div>
-      </Modal>
+        </Modal>
+      ) : null}
 
       {children}
     </main>
