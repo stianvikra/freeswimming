@@ -23,7 +23,7 @@ type Props = {
 
   /**
    * If provided, enables Course view.
-   * If omitted, drawer only shows Menu view.
+   8 * If omitted, drawer only shows Menu view.
    */
   course?: {
     activeLessonId: string;
@@ -263,7 +263,7 @@ function CourseView({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {COURSE_MODULES.map((mod) => {
+      {COURSE_MODULES.map((mod, idx) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
 
@@ -289,7 +289,7 @@ function CourseView({
           <div key={mod.id} className={wrapperClass}>
             <div className={accentClass} />
 
-            {/* Module header (cleaner: no Module 1/4 badge) */}
+            {/* Module header (✅ brings back Module 1/4 badge) */}
             <button
               type="button"
               onClick={() => setOpenModuleId(isOpen ? "" : mod.id)}
@@ -302,15 +302,24 @@ function CourseView({
               aria-expanded={isOpen}
             >
               <div className="pl-2">
-                <div className="text-[16px] font-semibold text-slate-900">{mod.title}</div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={[
+                      "inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ring-1",
+                      isActiveModule
+                        ? "bg-blue-50 text-blue-700 ring-blue-100/70"
+                        : "bg-slate-50 text-slate-600 ring-slate-200/70",
+                    ].join(" ")}
+                  >
+                    Module {idx + 1}/{COURSE_MODULES.length}
+                  </span>
+                </div>
+
+                <div className="mt-2 text-[16px] font-semibold text-slate-900">{mod.title}</div>
+
                 {mod.subtitle ? (
                   <div className="mt-1 text-[13px] font-medium text-slate-600">{mod.subtitle}</div>
                 ) : null}
-
-                <div className="mt-2 text-[12px] font-semibold text-slate-500">
-                  {mod.lessons.length} lesson{mod.lessons.length === 1 ? "" : "s"}
-                  {isActiveModule ? " • contains current lesson" : ""}
-                </div>
               </div>
 
               <span
@@ -351,7 +360,6 @@ function CourseView({
                         ].join(" ")}
                         aria-current={active ? "true" : undefined}
                       >
-                        {/* tiny active marker */}
                         {active ? (
                           <span className="absolute left-2 top-3 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
                         ) : null}
@@ -374,7 +382,6 @@ function CourseView({
                           </div>
                         </div>
 
-                        {/* ✅ No "..." truncation: wrap text (2 lines) */}
                         <div className="mt-1 text-[12px] font-medium leading-5 text-slate-600 line-clamp-2">
                           {l.goal}
                         </div>

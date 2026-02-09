@@ -29,7 +29,7 @@ export type CourseModule = {
 export const COURSE_MODULES: CourseModule[] = [
   {
     id: "m1",
-    title: "Module 1 — Intro",
+    title: "Intro",
     subtitle: "A few tips on the way.",
     lessons: [
       {
@@ -38,11 +38,23 @@ export const COURSE_MODULES: CourseModule[] = [
         youtubeId: "Xh6OblO06LY",
         estMinutes: 4,
         goal: "Find a long, stable body line so your effort moves you forward — not down.",
-        cues: ["Head neutral (look slightly forward/down)", "Long spine, light chest", "Hips close to the surface"],
-        commonMistakes: ["Lifting the head to breathe", "Kicking harder instead of fixing balance", "Tension in neck/shoulders"],
+        cues: [
+          "Head neutral (look slightly forward/down)",
+          "Long spine, light chest",
+          "Hips close to the surface",
+        ],
+        commonMistakes: [
+          "Lifting the head to breathe",
+          "Kicking harder instead of fixing balance",
+          "Tension in neck/shoulders",
+        ],
         drill: {
           title: "Superman glide (easy version)",
-          steps: ["Push off gently and hold a long line", "Keep head neutral and exhale slowly", "Reset after 5–8 seconds and repeat"],
+          steps: [
+            "Push off gently and hold a long line",
+            "Keep head neutral and exhale slowly",
+            "Reset after 5–8 seconds and repeat",
+          ],
         },
         nextStep: "Repeat this in 2 swim sessions before moving to the next lesson.",
         tags: ["foundation", "balance"],
@@ -57,7 +69,11 @@ export const COURSE_MODULES: CourseModule[] = [
         commonMistakes: ["Looking forward too much", "Tensing the neck"],
         drill: {
           title: "Head-only reset",
-          steps: ["Swim easy freestyle for 10–15m", "Only adjust head position — nothing else", "Notice how hips change when head changes"],
+          steps: [
+            "Swim easy freestyle for 10–15m",
+            "Only adjust head position — nothing else",
+            "Notice how hips change when head changes",
+          ],
         },
         nextStep: "If legs still sink, re-do lesson 1 for two more sessions.",
         tags: ["body position"],
@@ -66,7 +82,7 @@ export const COURSE_MODULES: CourseModule[] = [
   },
   {
     id: "m2",
-    title: "Module 2 — Balance",
+    title: "Balance",
     subtitle: "Stop fighting the water. Feel stable and calm.",
     lessons: [
       {
@@ -79,7 +95,11 @@ export const COURSE_MODULES: CourseModule[] = [
         commonMistakes: ["Holding breath", "Over-kicking to stay afloat"],
         drill: {
           title: "Easy balance swim",
-          steps: ["Swim slow for 15–25m", "Focus only on relaxation + exhale", "Repeat 4–6 times"],
+          steps: [
+            "Swim slow for 15–25m",
+            "Focus only on relaxation + exhale",
+            "Repeat 4–6 times",
+          ],
         },
         nextStep: "Do this drill at the start of every session for one week.",
         tags: ["calm", "efficiency"],
@@ -88,7 +108,7 @@ export const COURSE_MODULES: CourseModule[] = [
   },
   {
     id: "m3",
-    title: "Module 3 — Breathing rhythm",
+    title: "Breathing rhythm",
     subtitle: "Stay calm. Stay consistent.",
     lessons: [
       {
@@ -101,7 +121,11 @@ export const COURSE_MODULES: CourseModule[] = [
         commonMistakes: ["Holding breath", "Big gasp inhale", "Lifting head"],
         drill: {
           title: "Bubble-breathe pattern",
-          steps: ["Swim easy and exhale bubbles continuously", "Breathe every 2 or 3 strokes (pick one)", "Repeat 6–10 x 25m"],
+          steps: [
+            "Swim easy and exhale bubbles continuously",
+            "Breathe every 2 or 3 strokes (pick one)",
+            "Repeat 6–10 x 25m",
+          ],
         },
         nextStep: "When you feel calm and repeatable, move to the next module.",
         tags: ["breathing", "confidence"],
@@ -110,7 +134,7 @@ export const COURSE_MODULES: CourseModule[] = [
   },
   {
     id: "m4",
-    title: "Module 4 — Timing",
+    title: "Timing",
     subtitle: "Coordinate kick + catch for better flow.",
     lessons: [
       {
@@ -123,7 +147,11 @@ export const COURSE_MODULES: CourseModule[] = [
         commonMistakes: ["Spinning arms fast", "Kicking to compensate"],
         drill: {
           title: "Slow swim with one focus",
-          steps: ["Swim easy and slow for 25m", "Only focus on ‘patient lead arm’", "Repeat 6–8 times"],
+          steps: [
+            "Swim easy and slow for 25m",
+            "Only focus on ‘patient lead arm’",
+            "Repeat 6–8 times",
+          ],
         },
         nextStep: "Repeat for two sessions. If you rush again, slow down and reset.",
         tags: ["timing", "flow"],
