@@ -23,7 +23,7 @@ type Props = {
 
   /**
    * If provided, enables Course view.
-   8 * If omitted, drawer only shows Menu view.
+   * If omitted, drawer only shows Menu view.
    */
   course?: {
     activeLessonId: string;
@@ -289,7 +289,6 @@ function CourseView({
           <div key={mod.id} className={wrapperClass}>
             <div className={accentClass} />
 
-            {/* Module header (✅ brings back Module 1/4 badge) */}
             <button
               type="button"
               onClick={() => setOpenModuleId(isOpen ? "" : mod.id)}
@@ -302,6 +301,7 @@ function CourseView({
               aria-expanded={isOpen}
             >
               <div className="pl-2">
+                {/* ✅ Module chips row */}
                 <div className="flex items-center gap-2">
                   <span
                     className={[
@@ -313,6 +313,13 @@ function CourseView({
                   >
                     Module {idx + 1}/{COURSE_MODULES.length}
                   </span>
+
+                  {/* ✅ Extra clean: Current module chip */}
+                  {isActiveModule ? (
+                    <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
+                      Current module
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="mt-2 text-[16px] font-semibold text-slate-900">{mod.title}</div>
@@ -334,15 +341,8 @@ function CourseView({
               </span>
             </button>
 
-            {/* Lessons */}
             {isOpen ? (
               <div className="px-5 pb-4">
-                <div className="mb-2 pl-2">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Lessons
-                  </div>
-                </div>
-
                 <div className="rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60">
                   {mod.lessons.map((l: CourseLesson) => {
                     const active = l.id === activeLessonId;
@@ -360,6 +360,7 @@ function CourseView({
                         ].join(" ")}
                         aria-current={active ? "true" : undefined}
                       >
+                        {/* tiny active marker */}
                         {active ? (
                           <span className="absolute left-2 top-3 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
                         ) : null}
@@ -368,9 +369,10 @@ function CourseView({
                           <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
 
                           <div className="flex items-center gap-2">
+                            {/* ✅ Lesson chip: Now -> Current */}
                             {active ? (
                               <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
-                                Now
+                                Current
                               </span>
                             ) : null}
 
