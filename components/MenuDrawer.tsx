@@ -1,7 +1,7 @@
 // components/MenuDrawer.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -180,7 +180,11 @@ export default function MenuDrawer({
                   Menu
                 </button>
 
-                <button type="button" onClick={onClose} className={[navBtnBase, navBtnWhite].join(" ")}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={[navBtnBase, navBtnWhite].join(" ")}
+                >
                   Back
                 </button>
 
@@ -188,7 +192,9 @@ export default function MenuDrawer({
                   <button
                     type="button"
                     onClick={() => setView("course")}
-                    className={[navBtnBase, view === "course" ? navBtnActive : navBtnInactive].join(" ")}
+                    className={[navBtnBase, view === "course" ? navBtnActive : navBtnInactive].join(
+                      " "
+                    )}
                     aria-pressed={view === "course"}
                   >
                     Lessons
@@ -251,8 +257,7 @@ function CourseView({
   onSelectLesson: (lessonId: string) => void;
 }) {
   return (
-    // ✅ Gap change: tighter spacing between modules
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {COURSE_MODULES.map((mod, idx) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
@@ -270,8 +275,8 @@ function CourseView({
           isActiveModule
             ? "bg-gradient-to-b from-blue-400 to-blue-600"
             : isOpen
-              ? "bg-slate-300/80"
-              : "bg-slate-200/70",
+            ? "bg-slate-300/80"
+            : "bg-slate-200/70",
         ].join(" ");
 
         const moduleHeaderBtn = [
@@ -334,55 +339,145 @@ function CourseView({
               <div className="px-5 pb-4">
                 <div className="mb-3 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
 
-                <div className="rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60">
-                  {mod.lessons.map((l: CourseLesson) => {
-                    const active = l.id === activeLessonId;
-
-                    return (
-                      <button
-                        key={l.id}
-                        type="button"
-                        onClick={() => onSelectLesson(l.id)}
-                        className={[
-                          "ui-card ui-press ui-focus relative w-full rounded-[16px] px-4 py-3 text-left",
-                          active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "",
-                        ].join(" ")}
-                        aria-current={active ? "page" : undefined}
-                      >
-                        {active ? (
-                          <span className="absolute left-2 top-3 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
-                        ) : null}
-
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
-
-                          <div className="flex items-center gap-2">
-                            {active ? (
-                              <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
-                                Current
-                              </span>
-                            ) : null}
-
-                            {l.estMinutes ? (
-                              <span className="shrink-0 text-[12px] font-semibold text-slate-500">
-                                {l.estMinutes}m
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-
-                        <div className="mt-1 line-clamp-2 text-[12px] font-medium leading-5 text-slate-600">
-                          {l.goal}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                <SmartLessonList
+                  lessons={mod.lessons}
+                  activeLessonId={activeLessonId}
+                  onSelectLesson={onSelectLesson}
+                />
               </div>
             ) : null}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function SmartLessonList({
+  lessons,
+  activeLessonId,
+  onSelectLesson,
+}: {
+  lessons: CourseLesson[];
+  activeLessonId: string;
+  onSelectLesson: (lessonId: string) => void;
+}) {
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [canScroll, setCanScroll] = useState(false);
+  const [atBottom, setAtBottom] = useState(false);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const overflow = el.scrollHeight > el.clientHeight + 1;
+      setCanScroll(overflow);
+
+      const bottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+      setAtBottom(bottom);
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    const t = window.setTimeout(measure, 0);
+
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.clearTimeout(t);
+    };
+  }, [lessons.length, activeLessonId]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      const bottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+      setAtBottom(bottom);
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const total = lessons.length;
+  const showHint = canScroll && !atBottom;
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollerRef}
+        className={[
+          "rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60",
+          "max-h-[280px] overflow-y-auto overscroll-contain",
+          "pr-1",
+        ].join(" ")}
+      >
+        {lessons.map((l, i) => {
+          const active = l.id === activeLessonId;
+
+          // ✅ Fade ONLY lesson #3 (index 2) while hint is visible
+          const fadeThird = i === 2 && showHint;
+
+          return (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => onSelectLesson(l.id)}
+              className={[
+                "ui-card ui-press ui-focus relative w-full rounded-[16px] px-4 py-3 text-left",
+                active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "",
+                fadeThird ? "opacity-60" : "",
+              ].join(" ")}
+              aria-current={active ? "page" : undefined}
+            >
+              {active ? (
+                <span className="absolute left-2 top-3 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
+              ) : null}
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
+
+                <div className="flex items-center gap-2">
+                  {active ? (
+                    <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
+                      Current
+                    </span>
+                  ) : null}
+
+                  {/* ✅ Show BOTH position + minutes */}
+                  <span className="shrink-0 text-[12px] font-semibold text-slate-500">
+                    {i + 1}/{total}
+                    {l.estMinutes ? ` • ${l.estMinutes}m` : ""}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-1 line-clamp-2 text-[12px] font-medium leading-5 text-slate-600">
+                {l.goal}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ✅ Stronger fade + scroll hint (arrow) shown only when scroll exists and not at bottom */}
+      {showHint ? (
+        <>
+          {/* gradient fade */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 rounded-b-[18px] bg-gradient-to-t from-slate-50 to-transparent" />
+
+          {/* hint chip */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/70 shadow-sm backdrop-blur">
+              <span aria-hidden>⬇︎</span>
+              <span>Scroll for more</span>
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

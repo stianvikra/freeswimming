@@ -26,7 +26,48 @@ export type CourseModule = {
   lessons: CourseLesson[];
 };
 
-export const COURSE_MODULES: CourseModule[] = [
+/**
+ * ✅ Auto-generate extra lessons in dev so you can test mobile scroll/fade easily.
+ * - Runs ONLY when NODE_ENV !== "production"
+ * - Keeps your real lessons untouched
+ */
+const SHOULD_AUTOGEN = process.env.NODE_ENV !== "production";
+const AUTOGEN_COUNT_M1 = 12; // total lessons you want in module m1 while testing
+
+function withAutoLessons(module: CourseModule, totalTarget: number): CourseModule {
+  if (!SHOULD_AUTOGEN) return module;
+  if (module.lessons.length >= totalTarget) return module;
+
+  const seedLessons = module.lessons;
+  if (seedLessons.length === 0) return module;
+
+  const next = [...seedLessons];
+  let n = seedLessons.length + 1;
+
+  while (next.length < totalTarget) {
+    const seed = seedLessons[(next.length - seedLessons.length) % seedLessons.length];
+
+    // Always unique + stable-ish ids
+    const id = `${module.id}-auto-${n}`;
+
+    next.push({
+      ...seed,
+      id,
+      title: `${seed.title} (Auto ${n})`,
+      // Slight variation so it doesn’t look copy-paste
+      estMinutes: seed.estMinutes ? Math.max(2, seed.estMinutes + ((n % 3) - 1)) : undefined,
+      goal: `${seed.goal}`,
+      nextStep: `Test lesson ${n}: only for scrolling/fade on mobile.`,
+      // Keep cues/drill/etc from seed
+    });
+
+    n += 1;
+  }
+
+  return { ...module, lessons: next };
+}
+
+const COURSE_MODULES_BASE: CourseModule[] = [
   {
     id: "m1",
     title: "Intro",
@@ -38,11 +79,7 @@ export const COURSE_MODULES: CourseModule[] = [
         youtubeId: "Xh6OblO06LY",
         estMinutes: 4,
         goal: "Find a long, stable body line so your effort moves you forward — not down.",
-        cues: [
-          "Head neutral (look slightly forward/down)",
-          "Long spine, light chest",
-          "Hips close to the surface",
-        ],
+        cues: ["Head neutral (look slightly forward/down)", "Long spine, light chest", "Hips close to the surface"],
         commonMistakes: [
           "Lifting the head to breathe",
           "Kicking harder instead of fixing balance",
@@ -50,11 +87,7 @@ export const COURSE_MODULES: CourseModule[] = [
         ],
         drill: {
           title: "Superman glide (easy version)",
-          steps: [
-            "Push off gently and hold a long line",
-            "Keep head neutral and exhale slowly",
-            "Reset after 5–8 seconds and repeat",
-          ],
+          steps: ["Push off gently and hold a long line", "Keep head neutral and exhale slowly", "Reset after 5–8 seconds and repeat"],
         },
         nextStep: "Repeat this in 2 swim sessions before moving to the next lesson.",
         tags: ["foundation", "balance"],
@@ -69,11 +102,7 @@ export const COURSE_MODULES: CourseModule[] = [
         commonMistakes: ["Looking forward too much", "Tensing the neck"],
         drill: {
           title: "Head-only reset",
-          steps: [
-            "Swim easy freestyle for 10–15m",
-            "Only adjust head position — nothing else",
-            "Notice how hips change when head changes",
-          ],
+          steps: ["Swim easy freestyle for 10–15m", "Only adjust head position — nothing else", "Notice how hips change when head changes"],
         },
         nextStep: "If legs still sink, re-do lesson 1 for two more sessions.",
         tags: ["body position"],
@@ -95,11 +124,7 @@ export const COURSE_MODULES: CourseModule[] = [
         commonMistakes: ["Holding breath", "Over-kicking to stay afloat"],
         drill: {
           title: "Easy balance swim",
-          steps: [
-            "Swim slow for 15–25m",
-            "Focus only on relaxation + exhale",
-            "Repeat 4–6 times",
-          ],
+          steps: ["Swim slow for 15–25m", "Focus only on relaxation + exhale", "Repeat 4–6 times"],
         },
         nextStep: "Do this drill at the start of every session for one week.",
         tags: ["calm", "efficiency"],
@@ -121,11 +146,7 @@ export const COURSE_MODULES: CourseModule[] = [
         commonMistakes: ["Holding breath", "Big gasp inhale", "Lifting head"],
         drill: {
           title: "Bubble-breathe pattern",
-          steps: [
-            "Swim easy and exhale bubbles continuously",
-            "Breathe every 2 or 3 strokes (pick one)",
-            "Repeat 6–10 x 25m",
-          ],
+          steps: ["Swim easy and exhale bubbles continuously", "Breathe every 2 or 3 strokes (pick one)", "Repeat 6–10 x 25m"],
         },
         nextStep: "When you feel calm and repeatable, move to the next module.",
         tags: ["breathing", "confidence"],
@@ -147,11 +168,7 @@ export const COURSE_MODULES: CourseModule[] = [
         commonMistakes: ["Spinning arms fast", "Kicking to compensate"],
         drill: {
           title: "Slow swim with one focus",
-          steps: [
-            "Swim easy and slow for 25m",
-            "Only focus on ‘patient lead arm’",
-            "Repeat 6–8 times",
-          ],
+          steps: ["Swim easy and slow for 25m", "Only focus on ‘patient lead arm’", "Repeat 6–8 times"],
         },
         nextStep: "Repeat for two sessions. If you rush again, slow down and reset.",
         tags: ["timing", "flow"],
@@ -159,6 +176,11 @@ export const COURSE_MODULES: CourseModule[] = [
     ],
   },
 ];
+
+// ✅ Final exported modules (auto-filled only in dev)
+export const COURSE_MODULES: CourseModule[] = COURSE_MODULES_BASE.map((m) =>
+  m.id === "m1" ? withAutoLessons(m, AUTOGEN_COUNT_M1) : m
+);
 
 export const DEFAULT_LESSON_ID = COURSE_MODULES[0]?.lessons[0]?.id ?? "m1-l1";
 
