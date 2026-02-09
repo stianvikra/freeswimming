@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect } from "react";
 
 type ModalProps = {
   open: boolean;
@@ -9,76 +9,45 @@ type ModalProps = {
   ariaLabel?: string;
 };
 
-export default function Modal({
-  open,
-  onClose,
-  children,
-  ariaLabel = "Menu",
-}: ModalProps) {
-  const describedById = useId();
-  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
-  const panelRef = useRef<HTMLElement | null>(null);
-
+export default function Modal({ open, onClose, children, ariaLabel }: ModalProps) {
   useEffect(() => {
     if (!open) return;
 
-    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
-
-    const onKeyDown = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
 
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
 
-    // Focus panel on open (after render)
-    requestAnimationFrame(() => {
-      panelRef.current?.focus();
-    });
-
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
-      previouslyFocusedRef.current?.focus?.();
     };
   }, [open, onClose]);
 
+  // ✅ Best practice: when closed, don't render anything
+  if (!open) return null;
+
   return (
-    <div
-      className={`fixed inset-0 z-50 transition ${
-        open ? "pointer-events-auto" : "pointer-events-none"
-      }`}
-      aria-hidden={!open}
-    >
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={ariaLabel}>
       {/* Backdrop */}
       <button
         type="button"
         aria-label="Close"
         onClick={onClose}
-        className={`absolute inset-0 bg-slate-900/35 backdrop-blur-sm transition-opacity duration-300 ${
-          open ? "opacity-100" : "opacity-0"
-        }`}
+        className="absolute inset-0 bg-slate-900/35 backdrop-blur-sm"
       />
 
       {/* Slide-in panel */}
       <aside
-        ref={(el) => {
-          panelRef.current = el;
-        }}
-        role="dialog"
-        aria-modal="true"
-        aria-label={ariaLabel}
-        aria-describedby={describedById}
-        tabIndex={-1}
-        className={`absolute right-0 top-0 h-full w-[80vw] max-w-[420px]
-          rounded-l-3xl bg-white shadow-[0_40px_120px_rgba(15,23,42,0.35)]
-          transform transition-transform duration-300 ease-out
-          ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={[
+          "absolute right-0 top-0 h-full",
+          "w-[92vw] max-w-[420px]",
+          "rounded-l-3xl bg-white",
+          "shadow-[0_40px_120px_rgba(15,23,42,0.35)]",
+        ].join(" ")}
       >
-        <span id={describedById} className="sr-only">
-          Slide-in panel
-        </span>
-
         {children}
       </aside>
     </div>
