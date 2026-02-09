@@ -399,7 +399,7 @@ export default function CoursePage() {
             </div>
 
             {/* ✅ scroll area with extra padding so bottom nav doesn't block */}
-            <div className="flex-1 overflow-y-auto px-5 pb-32 pt-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 pb-32 pt-4">
               <div className="flex flex-col gap-4">
                 {COURSE_MODULES.map((mod, idx) => {
                   const isOpen = openModuleId === mod.id;
