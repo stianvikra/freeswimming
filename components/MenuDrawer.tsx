@@ -156,11 +156,11 @@ export default function MenuDrawer({
 
           {/* Tip only in Menu view */}
           {view === "main" ? (
-            <div className="mt-6 rounded-[20px] border border-slate-200/70 bg-white/70 p-4">
+            <div className="mt-6 rounded-[22px] border border-slate-200/60 bg-[radial-gradient(520px_180px_at_20%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_60%)] p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)] backdrop-blur">
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                 Tip
               </div>
-              <div className="mt-1 text-[13px] leading-6 text-slate-700">
+              <div className="mt-1 text-[13px] leading-6 text-slate-600">
                 Keep it simple: one focus at a time.
               </div>
             </div>
@@ -226,14 +226,16 @@ function MainView({
 
         return (
           <PressLink
-            tier="card"
+            tier="menuCard"
             key={item.href}
             href={item.href}
             onClick={onClose}
             aria-current={active ? "page" : undefined}
             className={[
-              "relative rounded-[22px] border px-5 py-4 shadow-sm backdrop-blur",
-              active ? "border-blue-200/70 bg-blue-50/70" : "border-white/70 bg-white/80",
+              "relative overflow-hidden rounded-[22px] border px-5 py-4 backdrop-blur",
+              active
+                ? "border-blue-200/70 bg-[linear-gradient(90deg,rgba(59,130,246,0.82)_0_4px,rgba(255,255,255,0.84)_4px_100%),radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.14),rgba(255,255,255,0)_60%)] ring-1 ring-blue-100/65 shadow-[0_22px_70px_rgba(37,99,235,0.14)]"
+                : "border-slate-200/60 bg-[linear-gradient(90deg,rgba(203,213,225,0.62)_0_4px,rgba(255,255,255,0.82)_4px_100%)] shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
             ].join(" ")}
           >
             <div className="text-[16px] font-semibold text-slate-900">{item.title}</div>
