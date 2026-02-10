@@ -15,11 +15,11 @@ export default function ProgramsPage() {
           subtitle="Learn. Drill. Swim."
         />
 
-        <p className="mt-3 text-[15px] leading-7 text-slate-700">
+        <p className="mt-2 text-[15px] leading-7 text-slate-700">
           Structured plans + poolside PDFs. Pick a goal — follow the steps.
         </p>
 
-        <div className="mt-6 grid gap-4">
+        <div className="mt-5 grid gap-4">
           <div className="relative overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.9))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
             <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">

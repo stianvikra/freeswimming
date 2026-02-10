@@ -225,7 +225,7 @@ function MainView({
             className={[
               "relative overflow-hidden rounded-[22px] border px-5 py-4 backdrop-blur",
               active
-                ? "border-blue-200/70 bg-[linear-gradient(90deg,rgba(59,130,246,0.82)_0_4px,rgba(255,255,255,0.84)_4px_100%),radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.14),rgba(255,255,255,0)_60%)] ring-1 ring-blue-100/65 shadow-[0_22px_70px_rgba(37,99,235,0.14)]"
+                ? "border-blue-200/70 bg-[linear-gradient(90deg,rgba(59,130,246,0.72)_0_4px,rgba(255,255,255,0.84)_4px_100%),radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_60%)] ring-1 ring-blue-100/65 shadow-[0_16px_48px_rgba(37,99,235,0.11)]"
                 : "border-slate-200/60 bg-[linear-gradient(90deg,rgba(203,213,225,0.62)_0_4px,rgba(255,255,255,0.82)_4px_100%)] shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
             ].join(" ")}
           >
@@ -263,7 +263,7 @@ function CourseView({
           "shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
           isActiveModule ? "border-blue-200/70" : "border-slate-200/60",
           isOpen && !isActiveModule ? "shadow-[0_18px_52px_rgba(15,23,42,0.10)]" : "",
-          isOpen && isActiveModule ? "shadow-[0_22px_70px_rgba(37,99,235,0.14)]" : "",
+          isOpen && isActiveModule ? "shadow-[0_16px_46px_rgba(37,99,235,0.11)]" : "",
         ].join(" ");
 
         const accentClass = [
@@ -278,7 +278,7 @@ function CourseView({
         const moduleHeaderBtn = [
           "flex w-full items-start justify-between gap-3 px-5 py-4 text-left",
           isOpen
-            ? "bg-[radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.16),rgba(255,255,255,0)_60%)]"
+            ? "bg-[radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.11),rgba(255,255,255,0)_60%)]"
             : "",
         ].join(" ");
 
@@ -460,11 +460,11 @@ function SmartLessonList({
       {showHint ? (
         <>
           {/* gradient fade */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 rounded-b-[18px] bg-gradient-to-t from-slate-50 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-9 rounded-b-[18px] bg-gradient-to-t from-slate-50/72 to-transparent" />
 
           {/* hint chip */}
           <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/70 shadow-sm backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/68 px-3 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/60 shadow-[0_1px_2px_rgba(15,23,42,0.06)] backdrop-blur">
               <span aria-hidden>⬇︎</span>
               <span>Scroll for more</span>
             </div>

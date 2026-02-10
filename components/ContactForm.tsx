@@ -258,11 +258,11 @@ export default function ContactForm({ variant = "contact" }: Props) {
     <div>
       {/* Header */}
       <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
-      <p className="mt-3 text-[15px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
+      <p className="mt-2 text-[15px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
 
       {/* Helper card (analysis only) */}
       {variant === "analysis" && (
-        <div className="relative mt-6 overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)]">
+        <div className="relative mt-5 overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)]">
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
           <h2 className="text-[18px] font-semibold text-slate-900">{copy.helperTitle}</h2>
 
@@ -281,7 +281,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
       )}
 
       {/* Form card */}
-      <div className="relative mt-6 overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
+      <div className="relative mt-5 overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent opacity-72" />
         <div className="text-center">
           <h2 className="text-[20px] font-semibold text-slate-900">{copy.formTitle}</h2>

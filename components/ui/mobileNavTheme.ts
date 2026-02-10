@@ -1,6 +1,6 @@
 // components/ui/mobileNavTheme.ts
 export const MOBILE_NAV_SHELL =
-  "rounded-[22px] bg-white/95 p-2 shadow-[0_8px_20px_rgba(15,23,42,0.10)] ring-1 ring-slate-200/70 backdrop-blur";
+  "rounded-[22px] bg-white/95 p-2 shadow-[0_6px_16px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/60 backdrop-blur";
 
 export const MOBILE_NAV_BUTTON_BASE =
   "inline-flex min-h-[46px] items-center justify-center rounded-2xl px-4 py-3 text-center text-[14px] font-semibold leading-none";
@@ -11,14 +11,14 @@ export const MOBILE_NAV_SKIN_NEUTRAL =
   "bg-white/95 text-slate-900 ring-1 ring-slate-200/70 shadow-[0_2px_6px_rgba(15,23,42,0.06)]";
 
 export const MOBILE_NAV_SKIN_ACTIVE =
-  "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_4px_10px_rgba(37,99,235,0.16)]";
+  "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_3px_8px_rgba(37,99,235,0.14)]";
 
 export const MOBILE_NAV_SKIN_PRIMARY =
-  "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_5px_12px_rgba(37,99,235,0.18)]";
+  "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_4px_10px_rgba(37,99,235,0.15)]";
 
 export const MOBILE_NAV_SKIN_DISABLED = "bg-transparent text-slate-400";
 
-export const MOBILE_NAV_SEGMENT_ROW = "flex items-center gap-1 rounded-[18px] bg-slate-100/72 p-1";
+export const MOBILE_NAV_SEGMENT_ROW = "flex items-center gap-1 rounded-[18px] bg-slate-100/88 p-1";
 
 export type MobileNavSkin = "muted" | "neutral" | "active" | "primary";
 

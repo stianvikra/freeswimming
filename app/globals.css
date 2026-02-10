@@ -62,7 +62,7 @@ a {
 
   .topbar {
     background: linear-gradient(90deg, #4f8fe5 0%, #62a8ff 100%);
-    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.13);
   }
 
   /* Optional (legacy) */

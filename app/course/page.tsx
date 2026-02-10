@@ -308,22 +308,22 @@ function CoursePageClient() {
           }
         />
 
-        <p className="mt-3 text-[15px] leading-7 text-slate-700">
+        <p className="mt-2 text-[15px] leading-7 text-slate-700">
           One focus at a time. Watch → drill → repeat.
         </p>
 
-        <section className="mt-3 rounded-[22px] border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(249,250,251,0.94))] p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+        <section className="mt-2 rounded-[22px] border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(249,250,251,0.94))] p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-slate-600">
                 Lesson status
               </div>
               <div className="mt-1 text-[15.5px] font-semibold text-slate-900">{progressLabel.top}</div>
-              <div className="mt-1 text-[13px] font-medium text-slate-600">{progressLabel.sub}</div>
+              <div className="mt-1 text-[13px] font-medium text-slate-700">{progressLabel.sub}</div>
               <div className="mt-2 text-[22px] font-semibold tracking-tight text-slate-900">
                 {activeLesson.title}
               </div>
-              <div className="mt-1 text-[12.5px] font-semibold uppercase tracking-wide text-slate-500">
+              <div className="mt-1 text-[13px] font-semibold uppercase tracking-wide text-slate-600">
                 {lessonMeta}
               </div>
             </div>
@@ -402,7 +402,7 @@ function CoursePageClient() {
           </div>
 
           <div className="mt-2 flex items-center justify-between gap-2 px-1">
-            <div className="min-w-0 text-[12px] font-medium text-slate-600">
+            <div className="min-w-0 text-[12px] font-medium text-slate-700">
               {nextLesson ? (
                 <>
                   Up next: <span className="font-semibold text-slate-800">{nextLesson.title}</span>
@@ -424,7 +424,7 @@ function CoursePageClient() {
             </PressLink>
           </div>
 
-          <div className="mt-1.5 text-center text-[11px] font-medium text-slate-400">
+          <div className="mt-1.5 text-center text-[12px] font-medium text-slate-500">
             Progress is saved on this device.
             <span className="ml-1 text-slate-600">{progressFraction}</span>
           </div>

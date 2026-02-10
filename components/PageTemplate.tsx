@@ -43,7 +43,7 @@ export default function PageTemplate({
       ].join(" ")}
     >
       <section className={`relative mx-auto w-full ${maxW}`}>
-        <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_20px_56px_rgba(16,24,40,0.14)] backdrop-blur-xl sm:p-8 sm:shadow-[0_18px_48px_rgba(16,24,40,0.11)]">
+        <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_16px_44px_rgba(16,24,40,0.11)] backdrop-blur-xl sm:p-8 sm:shadow-[0_14px_38px_rgba(16,24,40,0.09)]">
           {showBack ? (
             showBackOnMobile ? (
               <BackButton />
@@ -58,7 +58,7 @@ export default function PageTemplate({
         </div>
 
         {/* subtle outer glow */}
-        <div className="pointer-events-none absolute inset-0 -z-10 rounded-[32px] shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_28px_80px_rgba(59,130,246,0.14)] sm:shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_24px_70px_rgba(59,130,246,0.10)]" />
+        <div className="pointer-events-none absolute inset-0 -z-10 rounded-[32px] shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_20px_56px_rgba(59,130,246,0.10)] sm:shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_18px_48px_rgba(59,130,246,0.08)]" />
       </section>
     </div>
   );
