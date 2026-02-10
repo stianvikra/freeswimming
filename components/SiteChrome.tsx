@@ -141,7 +141,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(1200px_600px_at_50%_0%,rgba(59,130,246,0.35),rgba(255,255,255,0)_65%),linear-gradient(#eaf2ff,#ffffff)]">
+    <main className="min-h-screen bg-[radial-gradient(1200px_600px_at_50%_0%,rgba(59,130,246,0.26),rgba(255,255,255,0)_65%),linear-gradient(#eaf2ff,#ffffff)]">
       <header className="fixed inset-x-0 top-0 z-40 topbar">
         <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4">
           <PressLink
@@ -172,7 +172,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
                 sizes="36px"
               />
             </span>
-            <span className="font-semibold tracking-wide text-white">freeswimming.org</span>
+            <span className="font-semibold tracking-[0.01em] text-white">freeswimming.org</span>
           </PressLink>
 
           <PressButton

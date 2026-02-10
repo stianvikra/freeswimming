@@ -312,18 +312,18 @@ function CoursePageClient() {
           One focus at a time. Watch → drill → repeat.
         </p>
 
-        <section className="mt-2 rounded-[22px] border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(249,250,251,0.94))] p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+        <section className="mt-3 rounded-[22px] border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(249,250,251,0.94))] p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-slate-600">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-600">
                 Lesson status
               </div>
-              <div className="mt-1 text-[15.5px] font-semibold text-slate-900">{progressLabel.top}</div>
+              <div className="mt-1 text-[16px] font-semibold text-slate-900">{progressLabel.top}</div>
               <div className="mt-1 text-[13px] font-medium text-slate-700">{progressLabel.sub}</div>
               <div className="mt-2 text-[22px] font-semibold tracking-tight text-slate-900">
                 {activeLesson.title}
               </div>
-              <div className="mt-1 text-[13px] font-semibold uppercase tracking-wide text-slate-600">
+              <div className="mt-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-slate-600">
                 {lessonMeta}
               </div>
             </div>
@@ -416,7 +416,7 @@ function CoursePageClient() {
               href={youtubeWatchUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-1.5 py-0.5 text-[11.5px] font-medium text-slate-500 [@media(hover:hover)_and_(pointer:fine)]:text-slate-700"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-1.5 py-0.5 text-[12px] font-medium text-slate-500 [@media(hover:hover)_and_(pointer:fine)]:text-slate-700"
               aria-label="Open video on YouTube"
             >
               <span aria-hidden className="inline-block h-2 w-2 rounded-full bg-rose-500/85" />

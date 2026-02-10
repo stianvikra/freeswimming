@@ -152,7 +152,7 @@ export default function MenuDrawer({
 
               <div>
                 <div className="text-[16px] font-semibold text-slate-900">{headerTitle}</div>
-                <div className="mt-1 text-[13px] font-medium text-slate-500">{headerSub}</div>
+                <div className="mt-1 text-[13px] font-medium text-slate-600">{headerSub}</div>
               </div>
             </div>
 
@@ -180,7 +180,7 @@ export default function MenuDrawer({
           {/* Tip only in Menu view */}
           {view === "main" ? (
             <div className="mt-6 rounded-[22px] border border-slate-200/60 bg-[radial-gradient(520px_180px_at_20%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_60%)] p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)] backdrop-blur">
-              <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+              <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-600">
                 Tip
               </div>
               <div className="mt-1 text-[13px] leading-6 text-slate-600">
@@ -441,7 +441,7 @@ function SmartLessonList({
                   ) : null}
 
                   {/* ✅ Show BOTH position + minutes */}
-                  <span className="shrink-0 text-[12px] font-semibold text-slate-500">
+                  <span className="shrink-0 text-[12px] font-semibold text-slate-600">
                     {i + 1} of {total}
                     {l.estMinutes ? ` • ${l.estMinutes}m` : ""}
                   </span>

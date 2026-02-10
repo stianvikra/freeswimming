@@ -37,7 +37,7 @@ export default function HomePage() {
               Adult learner?
             </h1>
 
-            <p className="mt-2 text-[17px] leading-6 text-slate-700">
+            <p className="mt-2 text-[16px] leading-6 text-slate-700">
               You&apos;re exactly where you should be.
             </p>
           </div>
@@ -46,7 +46,7 @@ export default function HomePage() {
         </div>
 
         {/* Actions (wrapped for premium consistency) */}
-        <div className="mt-6 rounded-[24px] border border-blue-100/60 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),rgba(255,255,255,0.76)] p-4 shadow-[0_12px_30px_rgba(15,23,42,0.07)] sm:p-5">
+        <div className="mt-5 rounded-[24px] border border-blue-100/60 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),rgba(255,255,255,0.76)] p-4 shadow-[0_12px_30px_rgba(15,23,42,0.07)] sm:p-5">
           <div className="flex flex-col gap-4">
             <ActionButton
               title="FREE COURSE"
@@ -82,7 +82,7 @@ export default function HomePage() {
         {/* Footer line + tagline */}
         <div className="mt-7">
           <div className="mx-auto h-px w-full max-w-[420px] bg-slate-200/80" />
-          <p className="mt-5 text-center text-[15px] font-medium tracking-wide text-slate-700">
+          <p className="mt-5 text-center text-[15px] font-medium tracking-[0.01em] text-slate-700">
             Learn. Drill. Swim.
           </p>
         </div>

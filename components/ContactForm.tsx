@@ -266,7 +266,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
           <h2 className="text-[18px] font-semibold text-slate-900">{copy.helperTitle}</h2>
 
-          <ul className="mt-3 space-y-3 text-[17px] leading-7 text-slate-700">
+          <ul className="mt-3 space-y-3 text-[16px] leading-7 text-slate-700">
             {copy.helperBullets.map((b) => (
               <li key={b} className="flex gap-3">
                 <span className="mt-[11px] h-2 w-2 shrink-0 rounded-full bg-slate-400" />

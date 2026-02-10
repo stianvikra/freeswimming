@@ -125,7 +125,7 @@ export default function OurMethodClient() {
 
         <div className="mt-8">
           <div className="mx-auto h-px w-full max-w-[520px] bg-slate-200/80" />
-          <p className="mt-5 text-center text-[15px] font-medium tracking-wide text-slate-700">
+          <p className="mt-5 text-center text-[15px] font-medium tracking-[0.01em] text-slate-700">
             Learn. Drill. Swim.
           </p>
         </div>

@@ -35,9 +35,9 @@ export default function ActionButton({
     "shadow-[0_18px_55px_rgba(45,143,255,0.26)]";
 
   const secondary =
-    "bg-white/90 backdrop-blur border border-white/80 " +
+    "bg-white/92 backdrop-blur border border-slate-200/80 " +
     "text-slate-900 " +
-    "shadow-[0_12px_36px_rgba(15,23,42,0.11)]";
+    "shadow-[0_10px_26px_rgba(15,23,42,0.085)]";
 
   const disabledStyle = "opacity-55";
 
@@ -60,7 +60,7 @@ export default function ActionButton({
       {/* TITLE */}
       <div
         className={[
-          "text-[16px] sm:text-[17px] font-semibold tracking-[0.14em]",
+          "text-[16px] sm:text-[17px] font-semibold tracking-[0.12em]",
           variant === "primary" ? "text-white/95" : "text-slate-900",
         ].join(" ")}
       >
@@ -71,7 +71,7 @@ export default function ActionButton({
       {subtitle ? (
         <div
           className={[
-            "mt-1 text-[14.5px] leading-[1.2] sm:text-[14px] font-medium",
+            "mt-1 text-[14px] leading-[1.25] sm:text-[14px] font-medium",
             variant === "primary" ? "text-white/85" : "text-slate-600",
           ].join(" ")}
         >
@@ -84,7 +84,7 @@ export default function ActionButton({
         <div
           className={[
             "mt-2 text-[12px] font-medium leading-4 tracking-wide",
-            variant === "primary" ? "text-white/70" : "text-slate-400",
+            variant === "primary" ? "text-white/72" : "text-slate-500",
           ].join(" ")}
         >
           {note}

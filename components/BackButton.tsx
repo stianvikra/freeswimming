@@ -37,7 +37,7 @@ export default function BackButton({ fallbackHref = "/", disabled = false }: Pro
         "rounded-2xl px-3 py-2",
 
         // typography
-        "text-[14px] font-semibold",
+        "text-[14px] font-medium",
 
         // skin (motion handled by ui-press)
         "bg-white/70 text-slate-800 ring-1 ring-white/70 backdrop-blur",

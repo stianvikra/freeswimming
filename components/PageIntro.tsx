@@ -57,7 +57,7 @@ export default function PageIntro({
             </h1>
             <p
               className={cx(
-                "mt-1 font-medium text-slate-600",
+                "mt-1 font-medium tracking-[0.01em] text-slate-700",
                 compact ? "text-[14px]" : "text-[14px]"
               )}
             >
