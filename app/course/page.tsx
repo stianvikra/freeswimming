@@ -14,12 +14,11 @@ import MobileSegmentedNav, {
 } from "@/components/ui/MobileSegmentedNav";
 import {
   MOBILE_NAV_BUTTON_BASE,
-  MOBILE_NAV_SKIN_ACTIVE,
-  MOBILE_NAV_SKIN_DISABLED,
-  MOBILE_NAV_SKIN_MUTED,
-  MOBILE_NAV_SKIN_NEUTRAL,
-  MOBILE_NAV_SKIN_PRIMARY,
+  getMobileNavSkinClass,
+  type MobileNavSkin,
 } from "@/components/ui/mobileNavTheme";
+import { cx } from "@/components/ui/cx";
+import { MAIN_MENU_ITEMS } from "@/components/navigation/mainMenuItems";
 
 import {
   COURSE_MODULES,
@@ -32,28 +31,6 @@ import {
 
 const STORAGE_KEY = "fs_course_last_lesson";
 
-const MAIN_MENU_ITEMS = [
-  { href: "/", title: "Home", subtitle: "Back to start" },
-  { href: "/course", title: "Free course", subtitle: "Modules & lessons" },
-  { href: "/programs", title: "Swim programs", subtitle: "Structured plans & PDFs" },
-  { href: "/analysis", title: "Video analysis", subtitle: "Personal feedback — optional" },
-  { href: "/how-we-teach", title: "How we teach", subtitle: "Learn. Drill. Swim." },
-  { href: "/contact", title: "Contact", subtitle: "Questions or help" },
-];
-
-type Skin = "muted" | "neutral" | "active" | "primary";
-
-const SKIN: Record<Skin, string> = {
-  muted: MOBILE_NAV_SKIN_MUTED,
-  neutral: MOBILE_NAV_SKIN_NEUTRAL,
-  active: MOBILE_NAV_SKIN_ACTIVE,
-  primary: MOBILE_NAV_SKIN_PRIMARY,
-};
-
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
-
 type CourseNavButtonProps = {
   children: React.ReactNode;
   onClick?: () => void;
@@ -61,7 +38,7 @@ type CourseNavButtonProps = {
   ariaLabel?: string;
   ariaExpanded?: boolean;
   className?: string;
-  skin?: Skin;
+  skin?: MobileNavSkin;
   /** set false when you don't want flex-1 (desktop buttons) */
   grow?: boolean;
 };
@@ -86,7 +63,7 @@ function CourseNavButton({
       className={cx(
         MOBILE_NAV_BUTTON_BASE,
         grow && "flex-1",
-        disabled ? MOBILE_NAV_SKIN_DISABLED : SKIN[skin],
+        getMobileNavSkinClass(skin, disabled),
         className
       )}
     >
@@ -429,8 +406,6 @@ function CoursePageClient() {
             </div>
           </div>
         </section>
-
-        <div className="h-32 sm:h-0" />
 
         <MenuDrawer
           open={drawerOpen}

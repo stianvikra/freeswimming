@@ -27,12 +27,19 @@ export type CourseModule = {
 };
 
 /**
- * ✅ Auto-generate extra lessons in dev so you can test mobile scroll/fade easily.
- * - Runs ONLY when NODE_ENV !== "production"
+ * ✅ Auto-generate extra lessons for local visual testing only.
+ * - Runs only in development.
+ * - Can be disabled with NEXT_PUBLIC_FS_AUTOGEN_LESSONS=0
+ * - Count can be tuned with NEXT_PUBLIC_FS_AUTOGEN_COUNT_M1
  * - Keeps your real lessons untouched
  */
-const SHOULD_AUTOGEN = process.env.NODE_ENV !== "production";
-const AUTOGEN_COUNT_M1 = 12; // total lessons you want in module m1 while testing
+const SHOULD_AUTOGEN =
+  process.env.NODE_ENV === "development" &&
+  process.env.NEXT_PUBLIC_FS_AUTOGEN_LESSONS !== "0";
+
+const autogenCountRaw = Number(process.env.NEXT_PUBLIC_FS_AUTOGEN_COUNT_M1 ?? "12");
+const AUTOGEN_COUNT_M1 =
+  Number.isFinite(autogenCountRaw) && autogenCountRaw >= 2 ? Math.floor(autogenCountRaw) : 12;
 
 function withAutoLessons(module: CourseModule, totalTarget: number): CourseModule {
   if (!SHOULD_AUTOGEN) return module;
@@ -176,6 +183,30 @@ const COURSE_MODULES_BASE: CourseModule[] = [
     ],
   },
 ];
+
+const PLACEHOLDER_VIDEO_IDS = new Set(["dQw4w9WgXcQ"]);
+
+function isPlaceholderLesson(lesson: CourseLesson) {
+  return (
+    PLACEHOLDER_VIDEO_IDS.has(lesson.youtubeId) ||
+    /test video/i.test(lesson.title) ||
+    /test lesson/i.test(lesson.nextStep)
+  );
+}
+
+export const HAS_PLACEHOLDER_CONTENT = COURSE_MODULES_BASE.some((mod) =>
+  mod.lessons.some((lesson) => isPlaceholderLesson(lesson))
+);
+
+if (
+  typeof window === "undefined" &&
+  process.env.NODE_ENV !== "development" &&
+  HAS_PLACEHOLDER_CONTENT
+) {
+  console.warn(
+    "[courseData] Placeholder lesson content detected outside development. Replace before production launch."
+  );
+}
 
 // ✅ Final exported modules (auto-filled only in dev)
 export const COURSE_MODULES: CourseModule[] = COURSE_MODULES_BASE.map((m) =>

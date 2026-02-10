@@ -14,7 +14,6 @@ export default function AboutClient() {
               src="/logos/01_icon_transparent.png"
               alt="Freeswimming logo"
               fill
-              priority
               className="object-contain"
               sizes="48px"
             />

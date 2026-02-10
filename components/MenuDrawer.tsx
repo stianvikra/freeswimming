@@ -145,7 +145,6 @@ export default function MenuDrawer({
                   src="/logos/01_icon_transparent.png"
                   alt="Freeswimming.org"
                   fill
-                  priority
                   className="object-contain"
                   sizes="36px"
                 />

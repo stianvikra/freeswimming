@@ -9,14 +9,11 @@ import {
   MOBILE_NAV_BUTTON_BASE,
   MOBILE_NAV_SEGMENT_ROW,
   MOBILE_NAV_SHELL,
-  MOBILE_NAV_SKIN_ACTIVE,
-  MOBILE_NAV_SKIN_DISABLED,
-  MOBILE_NAV_SKIN_MUTED,
-  MOBILE_NAV_SKIN_NEUTRAL,
-  MOBILE_NAV_SKIN_PRIMARY,
+  getMobileNavSkinClass,
+  type MobileNavSkin,
 } from "@/components/ui/mobileNavTheme";
 
-export type MobileSegmentedNavSkin = "muted" | "neutral" | "active" | "primary";
+export type MobileSegmentedNavSkin = MobileNavSkin;
 
 type ItemBase = {
   id: string;
@@ -50,19 +47,12 @@ type Props = {
   rowClassName?: string;
 };
 
-const skinClassMap: Record<MobileSegmentedNavSkin, string> = {
-  muted: MOBILE_NAV_SKIN_MUTED,
-  neutral: MOBILE_NAV_SKIN_NEUTRAL,
-  active: MOBILE_NAV_SKIN_ACTIVE,
-  primary: MOBILE_NAV_SKIN_PRIMARY,
-};
-
 function classFor(item: MobileSegmentedNavItem) {
   const skin = item.skin ?? "muted";
   return cx(
     "flex-1",
     MOBILE_NAV_BUTTON_BASE,
-    item.disabled ? MOBILE_NAV_SKIN_DISABLED : skinClassMap[skin],
+    getMobileNavSkinClass(skin, item.disabled),
     item.className
   );
 }

@@ -21,6 +21,7 @@ function isValidEmail(email: string) {
 export default function ContactForm({ variant = "contact" }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  const [fieldError, setFieldError] = useState<"name" | "email" | "message" | null>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,12 +35,20 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const messageRef = useRef<HTMLTextAreaElement | null>(null);
 
   const startedAtRef = useRef<number | null>(null);
+  const nameId = "contact-name";
+  const emailId = "contact-email";
+  const messageId = "contact-message";
+  const errorId = "contact-form-error";
 
   const isSending = status === "sending";
 
   useEffect(() => {
     startedAtRef.current = Date.now();
-    nameRef.current?.focus();
+    // Avoid auto-opening keyboard on touch devices.
+    const desktopLike = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (desktopLike) {
+      requestAnimationFrame(() => nameRef.current?.focus());
+    }
   }, []);
 
   const copy = useMemo(() => {
@@ -109,6 +118,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
   function reset() {
     setStatus("idle");
     setError("");
+    setFieldError(null);
     setName("");
     setEmail("");
     setMessage("");
@@ -132,6 +142,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
     if (isSending) return;
 
     setError("");
+    setFieldError(null);
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
@@ -140,18 +151,21 @@ export default function ContactForm({ variant = "contact" }: Props) {
     if (trimmedName.length < 2) {
       setStatus("error");
       setError("Please enter your name.");
+      setFieldError("name");
       nameRef.current?.focus();
       return;
     }
     if (!isValidEmail(trimmedEmail)) {
       setStatus("error");
       setError("Please enter a valid email.");
+      setFieldError("email");
       emailRef.current?.focus();
       return;
     }
     if (trimmedMessage.length < 10) {
       setStatus("error");
       setError("Please write a short message.");
+      setFieldError("message");
       messageRef.current?.focus();
       return;
     }
@@ -177,6 +191,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
       if (!res.ok || !data?.ok) {
         setStatus("error");
         setError(data?.error || "Could not send right now. Please try again.");
+        setFieldError(null);
         return;
       }
 
@@ -185,6 +200,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
     } catch {
       setStatus("error");
       setError("Could not send right now. Please try again.");
+      setFieldError(null);
     }
   }
 
@@ -280,6 +296,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
         {status === "error" && error && (
           <div
+            id={errorId}
             className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] leading-6 text-rose-700"
             aria-live="polite"
           >
@@ -300,12 +317,17 @@ export default function ContactForm({ variant = "contact" }: Props) {
           />
 
           <div>
-            <label className="ui-field-label">NAME</label>
+            <label htmlFor={nameId} className="ui-field-label">
+              NAME
+            </label>
             <input
+              id={nameId}
               ref={nameRef}
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isSending}
+              aria-invalid={fieldError === "name" ? true : undefined}
+              aria-describedby={fieldError === "name" ? errorId : undefined}
               className="ui-field mt-2"
               placeholder="Your name"
               autoComplete="name"
@@ -320,12 +342,17 @@ export default function ContactForm({ variant = "contact" }: Props) {
           </div>
 
           <div>
-            <label className="ui-field-label">EMAIL</label>
+            <label htmlFor={emailId} className="ui-field-label">
+              EMAIL
+            </label>
             <input
+              id={emailId}
               ref={emailRef}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isSending}
+              aria-invalid={fieldError === "email" ? true : undefined}
+              aria-describedby={fieldError === "email" ? errorId : undefined}
               className="ui-field mt-2"
               placeholder="you@email.com"
               type="email"
@@ -344,12 +371,17 @@ export default function ContactForm({ variant = "contact" }: Props) {
           </div>
 
           <div>
-            <label className="ui-field-label">MESSAGE</label>
+            <label htmlFor={messageId} className="ui-field-label">
+              MESSAGE
+            </label>
             <textarea
+              id={messageId}
               ref={messageRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               disabled={isSending}
+              aria-invalid={fieldError === "message" ? true : undefined}
+              aria-describedby={fieldError === "message" ? errorId : undefined}
               className="ui-field mt-2 min-h-[150px] resize-none leading-6"
               placeholder={copy.messagePlaceholder}
             />

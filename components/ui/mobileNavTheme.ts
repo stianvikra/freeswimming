@@ -19,3 +19,16 @@ export const MOBILE_NAV_SKIN_PRIMARY =
 export const MOBILE_NAV_SKIN_DISABLED = "bg-transparent text-slate-400";
 
 export const MOBILE_NAV_SEGMENT_ROW = "flex items-center gap-1 rounded-[18px] bg-slate-100/72 p-1";
+
+export type MobileNavSkin = "muted" | "neutral" | "active" | "primary";
+
+export const MOBILE_NAV_SKIN_CLASS: Record<MobileNavSkin, string> = {
+  muted: MOBILE_NAV_SKIN_MUTED,
+  neutral: MOBILE_NAV_SKIN_NEUTRAL,
+  active: MOBILE_NAV_SKIN_ACTIVE,
+  primary: MOBILE_NAV_SKIN_PRIMARY,
+};
+
+export function getMobileNavSkinClass(skin: MobileNavSkin, disabled = false) {
+  return disabled ? MOBILE_NAV_SKIN_DISABLED : MOBILE_NAV_SKIN_CLASS[skin];
+}

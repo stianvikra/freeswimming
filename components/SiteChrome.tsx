@@ -1,7 +1,7 @@
 // components/SiteChrome.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import MenuDrawer from "@/components/MenuDrawer";
@@ -10,6 +10,7 @@ import PressLink from "@/components/ui/PressLink";
 import MobileSegmentedNav, {
   type MobileSegmentedNavItem,
 } from "@/components/ui/MobileSegmentedNav";
+import { MAIN_MENU_ITEMS } from "@/components/navigation/mainMenuItems";
 
 type CustomMenu = {
   mode: "custom";
@@ -54,18 +55,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const [drawerView, setDrawerView] = useState<"main" | "course">("main");
 
   const isMenuOpen = customMenu ? customMenu.isOpen : menuOpen;
-
-  const MAIN_MENU_ITEMS = useMemo(
-    () => [
-      { href: "/", title: "Home", subtitle: "Back to start" },
-      { href: "/course", title: "Free course", subtitle: "Modules & lessons" },
-      { href: "/programs", title: "Swim programs", subtitle: "Structured plans & PDFs" },
-      { href: "/analysis", title: "Video analysis", subtitle: "Personal feedback — optional" },
-      { href: "/how-we-teach", title: "How we teach", subtitle: "Learn. Drill. Swim." },
-      { href: "/contact", title: "Contact", subtitle: "Questions or help" },
-    ],
-    []
-  );
 
   const isHomeRoute = pathname === "/";
   const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
@@ -113,7 +102,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         openSiteDrawer("main");
       },
       ariaPressed: menuOpen && drawerView === "main",
-      skin: menuOpen && drawerView === "main" ? "active" : isMenuRoute ? "active" : "muted",
+      skin: menuOpen && drawerView === "main" ? "active" : isMenuRoute ? "neutral" : "muted",
     },
     {
       id: "home",
@@ -180,7 +169,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
                 src="/logos/01_icon_white_transparent.png"
                 alt="Freeswimming icon"
                 fill
-                priority
                 className="object-contain"
                 sizes="36px"
               />
