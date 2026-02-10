@@ -9,6 +9,17 @@ import PageTemplate from "@/components/PageTemplate";
 import MenuDrawer from "@/components/MenuDrawer";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
+import MobileSegmentedNav, {
+  type MobileSegmentedNavItem,
+} from "@/components/ui/MobileSegmentedNav";
+import {
+  MOBILE_NAV_BUTTON_BASE,
+  MOBILE_NAV_SKIN_ACTIVE,
+  MOBILE_NAV_SKIN_DISABLED,
+  MOBILE_NAV_SKIN_MUTED,
+  MOBILE_NAV_SKIN_NEUTRAL,
+  MOBILE_NAV_SKIN_PRIMARY,
+} from "@/components/ui/mobileNavTheme";
 
 import {
   COURSE_MODULES,
@@ -30,13 +41,13 @@ const MAIN_MENU_ITEMS = [
   { href: "/contact", title: "Contact", subtitle: "Questions or help" },
 ];
 
-type Skin = "muted" | "white" | "primary";
+type Skin = "muted" | "neutral" | "active" | "primary";
 
 const SKIN: Record<Skin, string> = {
-  muted: "bg-slate-100/80 text-slate-900",
-  white: "bg-white/90 text-slate-900 ring-1 ring-white/70",
-  primary:
-    "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]",
+  muted: MOBILE_NAV_SKIN_MUTED,
+  neutral: MOBILE_NAV_SKIN_NEUTRAL,
+  active: MOBILE_NAV_SKIN_ACTIVE,
+  primary: MOBILE_NAV_SKIN_PRIMARY,
 };
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -73,10 +84,9 @@ function CourseNavButton({
       aria-label={ariaLabel}
       aria-expanded={ariaExpanded}
       className={cx(
-        "rounded-2xl text-[14px] font-semibold",
+        MOBILE_NAV_BUTTON_BASE,
         grow && "flex-1",
-        "px-4 py-3",
-        disabled ? "bg-slate-100/50 text-slate-400" : SKIN[skin],
+        disabled ? MOBILE_NAV_SKIN_DISABLED : SKIN[skin],
         className
       )}
     >
@@ -194,33 +204,38 @@ function CoursePageClient() {
     return Math.min(100, Math.round((idx / total) * 100));
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
 
+  const bottomNavItems: MobileSegmentedNavItem[] = [
+    {
+      id: "course-prev",
+      kind: "button",
+      label: "Prev",
+      disabled: !prevId,
+      onClick: () => prevId && goToLesson(prevId),
+      skin: "muted",
+    },
+    {
+      id: "course-lessons",
+      kind: "button",
+      label: drawerOpen ? "Back" : "Lessons",
+      onClick: () => setDrawerOpen((v) => !v),
+      skin: drawerOpen ? "active" : "neutral",
+      ariaExpanded: drawerOpen,
+      ariaLabel: drawerOpen ? "Close lessons" : "Open lessons",
+    },
+    {
+      id: "course-next",
+      kind: "button",
+      label: "Next",
+      disabled: !nextId,
+      onClick: () => nextId && goToLesson(nextId),
+      skin: "primary",
+    },
+  ];
+
   const bottomBar = (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
       <div className="mx-auto max-w-[520px]">
-        <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
-          <div className="flex items-center gap-2">
-            <CourseNavButton disabled={!prevId} onClick={() => prevId && goToLesson(prevId)} skin="muted">
-              Prev
-            </CourseNavButton>
-
-            <CourseNavButton
-              onClick={() => setDrawerOpen((v) => !v)}
-              skin={drawerOpen ? "muted" : "white"}
-              ariaExpanded={drawerOpen}
-              ariaLabel={drawerOpen ? "Close lessons" : "Open lessons"}
-            >
-              {drawerOpen ? "Back" : "Lessons"}
-            </CourseNavButton>
-
-            <CourseNavButton
-              disabled={!nextId}
-              onClick={() => nextId && goToLesson(nextId)}
-              skin="primary"
-            >
-              Next
-            </CourseNavButton>
-          </div>
-        </div>
+        <MobileSegmentedNav items={bottomNavItems} />
       </div>
     </div>
   );
@@ -254,7 +269,7 @@ function CoursePageClient() {
 
           <CourseNavButton
             grow={false}
-            skin="white"
+            skin={drawerOpen ? "active" : "neutral"}
             onClick={() => setDrawerOpen((v) => !v)}
             className="hidden shrink-0 sm:inline-flex"
             ariaLabel={drawerOpen ? "Close lessons" : "Open lessons"}

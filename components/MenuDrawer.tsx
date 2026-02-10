@@ -9,6 +9,9 @@ import Modal from "@/components/Modal";
 import { COURSE_MODULES, type CourseLesson } from "@/app/course/courseData";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
+import MobileSegmentedNav, {
+  type MobileSegmentedNavItem,
+} from "@/components/ui/MobileSegmentedNav";
 
 type MainItem = { href: string; title: string; subtitle?: string };
 
@@ -99,15 +102,36 @@ export default function MenuDrawer({
       ? "Pick a module, then choose a lesson."
       : `Navigate the site. Active: ${activePageLabel}`;
 
-  // Bottom bar button system (same feel as SiteChrome/Course)
-  const navBtnBase = "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
-  const navBtnInactive = "bg-slate-100/70 text-slate-800";
-  const navBtnActive =
-    "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]";
-  const navBtnWhite = "bg-white/90 text-slate-900 ring-1 ring-white/70";
-
   // Small “X” button style
   const iconBtn = "rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700";
+
+  const bottomNavItems: MobileSegmentedNavItem[] = [
+    {
+      id: "drawer-main",
+      kind: "button",
+      label: "Menu",
+      onClick: () => setView("main"),
+      ariaPressed: view === "main",
+      skin: view === "main" ? "active" : "muted",
+    },
+    {
+      id: "drawer-back",
+      kind: "button",
+      label: "Back",
+      onClick: onClose,
+      skin: "neutral",
+    },
+  ];
+  if (hasCourse) {
+    bottomNavItems.push({
+      id: "drawer-course",
+      kind: "button",
+      label: "Lessons",
+      onClick: () => setView("course"),
+      ariaPressed: view === "course",
+      skin: view === "course" ? "active" : "muted",
+    });
+  }
 
   return (
     <Modal open={open} onClose={onClose} ariaLabel="Navigation menu">
@@ -170,39 +194,7 @@ export default function MenuDrawer({
         {/* Bottom bar */}
         <div className="sticky bottom-0 border-t border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur sm:px-5">
           <div className="mx-auto max-w-[520px]">
-            <div className="rounded-[22px] bg-white/75 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.14)] ring-1 ring-white/70 backdrop-blur">
-              <div className="flex items-center gap-2">
-                <PressButton
-                  tier="nav"
-                  onClick={() => setView("main")}
-                  className={[navBtnBase, view === "main" ? navBtnActive : navBtnInactive].join(" ")}
-                  aria-pressed={view === "main"}
-                >
-                  Menu
-                </PressButton>
-
-                <PressButton
-                  tier="nav"
-                  onClick={onClose}
-                  className={[navBtnBase, navBtnWhite].join(" ")}
-                >
-                  Back
-                </PressButton>
-
-                {hasCourse ? (
-                  <PressButton
-                    tier="nav"
-                    onClick={() => setView("course")}
-                    className={[navBtnBase, view === "course" ? navBtnActive : navBtnInactive].join(
-                      " "
-                    )}
-                    aria-pressed={view === "course"}
-                  >
-                    Lessons
-                  </PressButton>
-                ) : null}
-              </div>
-            </div>
+            <MobileSegmentedNav items={bottomNavItems} />
           </div>
         </div>
       </div>

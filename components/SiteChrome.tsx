@@ -7,6 +7,9 @@ import { usePathname } from "next/navigation";
 import MenuDrawer from "@/components/MenuDrawer";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
+import MobileSegmentedNav, {
+  type MobileSegmentedNavItem,
+} from "@/components/ui/MobileSegmentedNav";
 
 type CustomMenu = {
   mode: "custom";
@@ -68,6 +71,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
 
   const hasCustomBottomBar = Boolean(bottomBar);
+  const isMenuRoute = !isHomeRoute && !isCourseRoute;
 
   // ✅ Home: remove bottom nav so focus stays on the CTA buttons
   const showDefaultMobileNav = !hasCustomBottomBar && !isHomeRoute;
@@ -95,13 +99,41 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
     setMenuOpen((v) => !v);
   };
 
-  const navBtnBase = "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
-  const skinInactive = "bg-slate-100/70 text-slate-800";
-  const skinActive =
-    "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]";
-  const skinWhite = "bg-white/90 text-slate-900 ring-1 ring-white/70";
-  const skinWhiteActive =
-    "bg-white/95 text-slate-900 ring-1 ring-white/80 shadow-[0_14px_40px_rgba(15,23,42,0.10)]";
+  const defaultNavItems: MobileSegmentedNavItem[] = [
+    {
+      id: "menu",
+      kind: "button",
+      label: "Menu",
+      testId: "mobile-nav-menu",
+      onClick: () => {
+        if (menuOpen && drawerView === "main") {
+          setMenuOpen(false);
+          return;
+        }
+        openSiteDrawer("main");
+      },
+      ariaPressed: menuOpen && drawerView === "main",
+      skin: menuOpen && drawerView === "main" ? "active" : isMenuRoute ? "active" : "muted",
+    },
+    {
+      id: "home",
+      kind: "link",
+      href: "/",
+      label: "Home",
+      testId: "mobile-nav-home",
+      ariaCurrent: isHomeRoute ? "page" : undefined,
+      skin: isHomeRoute ? "active" : "muted",
+    },
+    {
+      id: "course",
+      kind: "link",
+      href: "/course",
+      label: "Course",
+      testId: "mobile-nav-course",
+      ariaCurrent: isCourseRoute ? "page" : undefined,
+      skin: isCourseRoute ? "active" : "muted",
+    },
+  ];
 
   const defaultMobileNav = (
     <div
@@ -109,47 +141,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
       className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden"
     >
       <div className="mx-auto max-w-[520px]">
-        <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
-          <div className="flex items-center gap-2">
-            <PressButton
-              tier="nav"
-              data-testid="mobile-nav-menu"
-              onClick={() => {
-                if (menuOpen && drawerView === "main") {
-                  setMenuOpen(false);
-                  return;
-                }
-                openSiteDrawer("main");
-              }}
-              className={[navBtnBase, menuOpen && drawerView === "main" ? skinActive : skinInactive].join(
-                " "
-              )}
-              aria-pressed={menuOpen && drawerView === "main"}
-            >
-              Menu
-            </PressButton>
-
-            <PressLink
-              tier="nav"
-              href="/"
-              data-testid="mobile-nav-home"
-              className={[navBtnBase, isHomeRoute ? skinWhiteActive : skinWhite].join(" ")}
-              aria-current={isHomeRoute ? "page" : undefined}
-            >
-              Home
-            </PressLink>
-
-            <PressLink
-              tier="nav"
-              href="/course"
-              data-testid="mobile-nav-course"
-              className={[navBtnBase, isCourseRoute ? skinActive : skinInactive].join(" ")}
-              aria-current={isCourseRoute ? "page" : undefined}
-            >
-              Course
-            </PressLink>
-          </div>
-        </div>
+        <MobileSegmentedNav items={defaultNavItems} />
       </div>
     </div>
   );
