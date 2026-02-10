@@ -1,6 +1,5 @@
-// app/about/page.tsx
-import { redirect } from "next/navigation";
+import AboutClient from "./AboutClient";
 
-export default function AboutRedirect() {
-  redirect("/how-we-teach");
+export default function AboutPage() {
+  return <AboutClient />;
 }

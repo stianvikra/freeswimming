@@ -1,24 +1,24 @@
-// app/how-we-teach/page.tsx
+// app/our-method/page.tsx
 import type { Metadata } from "next";
-import HowWeTeachClient from "./HowWeTeachClient";
+import OurMethodClient from "./OurMethodClient";
 
 export const metadata: Metadata = {
-  title: "How we teach freestyle | freeswimming.org",
+  title: "Our Method for freestyle | freeswimming.org",
   description:
     "Learn. Drill. Swim. A clear step-by-step freestyle method for adult learners — calm technique, less effort, and real progress.",
   alternates: {
-    canonical: "/how-we-teach",
+    canonical: "/our-method",
   },
   openGraph: {
-    title: "How we teach freestyle | freeswimming.org",
+    title: "Our Method for freestyle | freeswimming.org",
     description:
       "Learn. Drill. Swim. A clear step-by-step freestyle method for adult learners — calm technique, less effort, and real progress.",
-    url: "/how-we-teach",
+    url: "/our-method",
     siteName: "freeswimming.org",
     type: "website",
   },
 };
 
-export default function HowWeTeachPage() {
-  return <HowWeTeachClient />;
+export default function OurMethodPage() {
+  return <OurMethodClient />;
 }

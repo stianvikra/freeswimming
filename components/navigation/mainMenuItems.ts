@@ -9,6 +9,6 @@ export const MAIN_MENU_ITEMS: MainMenuItem[] = [
   { href: "/course", title: "Free course", subtitle: "Modules & lessons" },
   { href: "/programs", title: "Swim programs", subtitle: "Structured plans & PDFs" },
   { href: "/analysis", title: "Video analysis", subtitle: "Personal feedback — optional" },
-  { href: "/how-we-teach", title: "How we teach", subtitle: "Learn. Drill. Swim." },
+  { href: "/our-method", title: "Our Method", subtitle: "Learn. Drill. Swim." },
   { href: "/contact", title: "Contact", subtitle: "Questions or help" },
 ];

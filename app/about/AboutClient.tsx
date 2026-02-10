@@ -21,7 +21,7 @@ export default function AboutClient() {
 
           <div className="leading-tight">
             <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
-              How we teach
+              Our Method
             </h1>
             <p className="mt-1 text-[14px] font-medium text-slate-600">
               Learn. Drill. Swim.

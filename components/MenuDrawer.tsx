@@ -77,7 +77,7 @@ export default function MenuDrawer({
       "/course": "Free course",
       "/programs": "Swim programs",
       "/analysis": "Video analysis",
-      "/how-we-teach": "How we teach",
+      "/our-method": "Our Method",
       "/contact": "Contact",
     };
 
