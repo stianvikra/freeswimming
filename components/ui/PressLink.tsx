@@ -4,15 +4,18 @@
 import Link, { type LinkProps } from "next/link";
 import * as React from "react";
 import { cx } from "./cx";
+import { getPressTierClass, type PressTier } from "./pressTier";
 
 type Props = LinkProps &
   Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
     disabled?: boolean;
+    tier?: PressTier;
   };
 
 export default function PressLink({
   className,
   disabled,
+  tier = "nav",
   children,
   ...rest
 }: Props) {
@@ -21,7 +24,7 @@ export default function PressLink({
     return (
       <span
         aria-disabled="true"
-        className={cx("ui-press ui-focus ui-disabled select-none", className)}
+        className={cx(getPressTierClass(tier), "ui-disabled", className)}
       >
         {children}
       </span>
@@ -29,7 +32,7 @@ export default function PressLink({
   }
 
   return (
-    <Link className={cx("ui-press ui-focus select-none", className)} {...rest}>
+    <Link className={cx(getPressTierClass(tier), className)} {...rest}>
       {children}
     </Link>
   );

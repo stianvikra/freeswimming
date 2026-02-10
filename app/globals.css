@@ -41,8 +41,6 @@ a {
 /* ✅ A11y: only show focus ring for keyboard users */
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
-  border-radius: 12px;
 }
 
 /* Slightly nicer selection */
@@ -104,10 +102,12 @@ a {
   /* Keyboard ring (opt-in so you can control it per element) */
   .ui-focus {
     outline: none;
+    --ui-focus-ring: rgba(99, 168, 255, 0.35);
   }
   .ui-focus:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 4px rgba(99, 168, 255, 0.35);
+    box-shadow: 0 0 0 4px var(--ui-focus-ring);
+    border-radius: 12px;
   }
 
   /* Touch / mouse press */
@@ -139,6 +139,46 @@ a {
     }
 
     .ui-card:hover:not(:disabled):not([aria-disabled="true"]) {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
+      filter: brightness(1.01);
+    }
+  }
+
+  /* Tier tuning: shared interaction language, different intensity by hierarchy */
+  .ui-press-tier-cta:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(1px) scale(0.982);
+  }
+  .ui-press-tier-nav:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(1px) scale(0.988);
+  }
+  .ui-press-tier-icon:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(0.5px) scale(0.99);
+  }
+  .ui-card-tier-default:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: scale(0.992);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ui-press-tier-cta:hover:not(:disabled):not([aria-disabled="true"]) {
+      transform: translateY(-1.25px);
+      filter: brightness(1.03);
+      box-shadow: 0 14px 38px rgba(15, 23, 42, 0.14);
+    }
+
+    .ui-press-tier-nav:hover:not(:disabled):not([aria-disabled="true"]) {
+      transform: translateY(-0.8px);
+      filter: brightness(1.02);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    .ui-press-tier-icon:hover:not(:disabled):not([aria-disabled="true"]) {
+      transform: translateY(-0.5px);
+      filter: brightness(1.01);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.09);
+    }
+
+    .ui-card-tier-default:hover:not(:disabled):not([aria-disabled="true"]) {
       transform: translateY(-1px);
       box-shadow: 0 18px 50px rgba(15, 23, 42, 0.10);
       filter: brightness(1.01);

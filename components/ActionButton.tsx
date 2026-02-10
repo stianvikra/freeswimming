@@ -1,7 +1,8 @@
 // components/ActionButton.tsx
 "use client";
 
-import Link from "next/link";
+import PressButton from "@/components/ui/PressButton";
+import PressLink from "@/components/ui/PressLink";
 
 type Props = {
   title: string;
@@ -24,7 +25,7 @@ export default function ActionButton({
 }: Props) {
   // Base = structure + interaction system
   const base =
-    "ui-press ui-focus group relative w-full select-none rounded-2xl px-6 " +
+    "group relative w-full rounded-2xl px-6 " +
     "min-h-[78px] sm:min-h-[82px] " +
     "flex items-center justify-center";
 
@@ -38,8 +39,7 @@ export default function ActionButton({
     "text-slate-900 " +
     "shadow-[0_12px_36px_rgba(15,23,42,0.11)]";
 
-  // Disabled: ui-disabled kills motion/hover/press globally via globals.css
-  const disabledStyle = "ui-disabled opacity-55";
+  const disabledStyle = "opacity-55";
 
   const skin = variant === "primary" ? primary : secondary;
 
@@ -96,31 +96,30 @@ export default function ActionButton({
   // Link variant (only when enabled)
   if (href && !disabled) {
     return (
-      <Link className={`${base} ${skin}`} href={href} aria-disabled={false}>
+      <PressLink tier="cta" className={`${base} ${skin}`} href={href}>
         {content}
-      </Link>
+      </PressLink>
     );
   }
 
   // If href exists but disabled: render a non-interactive element (no click, no keyboard action)
   if (href && disabled) {
     return (
-      <span className={`${base} ${skin} ${disabledStyle}`} aria-disabled="true">
+      <PressLink tier="cta" className={`${base} ${skin} ${disabledStyle}`} href={href} disabled>
         {content}
-      </span>
+      </PressLink>
     );
   }
 
   // Button variant
   return (
-    <button
-      type="button"
+    <PressButton
+      tier="cta"
       className={`${base} ${skin} ${disabled ? disabledStyle : ""}`}
       onClick={disabled ? undefined : onClick}
-      aria-disabled={disabled}
       disabled={disabled}
     >
       {content}
-    </button>
+    </PressButton>
   );
 }

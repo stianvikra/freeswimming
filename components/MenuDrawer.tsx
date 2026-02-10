@@ -3,11 +3,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import Modal from "@/components/Modal";
 import { COURSE_MODULES, type CourseLesson } from "@/app/course/courseData";
+import PressButton from "@/components/ui/PressButton";
+import PressLink from "@/components/ui/PressLink";
 
 type MainItem = { href: string; title: string; subtitle?: string };
 
@@ -99,14 +100,14 @@ export default function MenuDrawer({
       : `Navigate the site. Active: ${activePageLabel}`;
 
   // Bottom bar button system (same feel as SiteChrome/Course)
-  const navBtnBase = "ui-press ui-focus flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
+  const navBtnBase = "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
   const navBtnInactive = "bg-slate-100/70 text-slate-800";
   const navBtnActive =
     "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]";
   const navBtnWhite = "bg-white/90 text-slate-900 ring-1 ring-white/70";
 
   // Small “X” button style
-  const iconBtn = "ui-press ui-focus rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700";
+  const iconBtn = "rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700";
 
   return (
     <Modal open={open} onClose={onClose} ariaLabel="Navigation menu">
@@ -132,9 +133,9 @@ export default function MenuDrawer({
               </div>
             </div>
 
-            <button type="button" onClick={onClose} className={iconBtn} aria-label="Close menu">
+            <PressButton tier="icon" onClick={onClose} className={iconBtn} aria-label="Close menu">
               ✕
-            </button>
+            </PressButton>
           </div>
 
           <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
@@ -171,26 +172,26 @@ export default function MenuDrawer({
           <div className="mx-auto max-w-[520px]">
             <div className="rounded-[22px] bg-white/75 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.14)] ring-1 ring-white/70 backdrop-blur">
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+                <PressButton
+                  tier="nav"
                   onClick={() => setView("main")}
                   className={[navBtnBase, view === "main" ? navBtnActive : navBtnInactive].join(" ")}
                   aria-pressed={view === "main"}
                 >
                   Menu
-                </button>
+                </PressButton>
 
-                <button
-                  type="button"
+                <PressButton
+                  tier="nav"
                   onClick={onClose}
                   className={[navBtnBase, navBtnWhite].join(" ")}
                 >
                   Back
-                </button>
+                </PressButton>
 
                 {hasCourse ? (
-                  <button
-                    type="button"
+                  <PressButton
+                    tier="nav"
                     onClick={() => setView("course")}
                     className={[navBtnBase, view === "course" ? navBtnActive : navBtnInactive].join(
                       " "
@@ -198,7 +199,7 @@ export default function MenuDrawer({
                     aria-pressed={view === "course"}
                   >
                     Lessons
-                  </button>
+                  </PressButton>
                 ) : null}
               </div>
             </div>
@@ -224,13 +225,14 @@ function MainView({
         const active = isActiveRoute(item.href);
 
         return (
-          <Link
+          <PressLink
+            tier="card"
             key={item.href}
             href={item.href}
             onClick={onClose}
             aria-current={active ? "page" : undefined}
             className={[
-              "ui-card ui-focus relative rounded-[22px] border px-5 py-4 shadow-sm backdrop-blur",
+              "relative rounded-[22px] border px-5 py-4 shadow-sm backdrop-blur",
               active ? "border-blue-200/70 bg-blue-50/70" : "border-white/70 bg-white/80",
             ].join(" ")}
           >
@@ -238,7 +240,7 @@ function MainView({
             {item.subtitle ? (
               <div className="mt-1 text-[13px] font-medium text-slate-600">{item.subtitle}</div>
             ) : null}
-          </Link>
+          </PressLink>
         );
       })}
     </div>
@@ -261,9 +263,10 @@ function CourseView({
       {COURSE_MODULES.map((mod, idx) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
+        const panelId = `course-module-panel-${mod.id}`;
 
         const wrapperClass = [
-          "ui-card ui-focus relative overflow-hidden rounded-[22px] border bg-white/80 backdrop-blur",
+          "relative overflow-hidden rounded-[22px] border bg-white/80 backdrop-blur",
           "shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
           isActiveModule ? "border-blue-200/70" : "border-slate-200/60",
           isOpen && !isActiveModule ? "shadow-[0_18px_52px_rgba(15,23,42,0.10)]" : "",
@@ -280,7 +283,7 @@ function CourseView({
         ].join(" ");
 
         const moduleHeaderBtn = [
-          "ui-press ui-focus flex w-full items-start justify-between gap-3 px-5 py-4 text-left",
+          "flex w-full items-start justify-between gap-3 px-5 py-4 text-left",
           isOpen
             ? "bg-[radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.16),rgba(255,255,255,0)_60%)]"
             : "",
@@ -290,11 +293,12 @@ function CourseView({
           <div key={mod.id} className={wrapperClass}>
             <div className={accentClass} />
 
-            <button
-              type="button"
+            <PressButton
+              tier="card"
               onClick={() => setOpenModuleId(isOpen ? "" : mod.id)}
               className={moduleHeaderBtn}
               aria-expanded={isOpen}
+              aria-controls={panelId}
             >
               <div className="pl-2">
                 <div className="flex items-center gap-2">
@@ -333,10 +337,10 @@ function CourseView({
               >
                 {isOpen ? "–" : "+"}
               </span>
-            </button>
+            </PressButton>
 
             {isOpen ? (
-              <div className="px-5 pb-4">
+              <div id={panelId} className="px-5 pb-4">
                 <div className="mb-3 h-px w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" />
 
                 <SmartLessonList
@@ -422,12 +426,12 @@ function SmartLessonList({
           const fadeThird = i === 2 && showHint;
 
           return (
-            <button
+            <PressButton
+              tier="card"
               key={l.id}
-              type="button"
               onClick={() => onSelectLesson(l.id)}
               className={[
-                "ui-card ui-press ui-focus relative w-full rounded-[16px] px-4 py-3 text-left",
+                "relative w-full rounded-[16px] px-4 py-3 text-left",
                 active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "",
                 fadeThird ? "opacity-60" : "",
               ].join(" ")}
@@ -458,7 +462,7 @@ function SmartLessonList({
               <div className="mt-1 line-clamp-2 text-[12px] font-medium leading-5 text-slate-600">
                 {l.goal}
               </div>
-            </button>
+            </PressButton>
           );
         })}
       </div>

@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, X } from "lucide-react";
+import PressButton from "@/components/ui/PressButton";
 
 type Variant = "contact" | "analysis";
 type Status = "idle" | "sending" | "success" | "error";
@@ -189,15 +190,13 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
   // Buttons: structure/skin only. Motion/hover is in globals via ui-press.
   const btnPrimary =
-    "ui-press ui-focus w-full rounded-2xl px-5 py-4 text-[16px] font-semibold text-white " +
+    "w-full rounded-2xl px-5 py-4 text-[16px] font-semibold text-white " +
     "bg-gradient-to-b from-blue-500 to-blue-600 " +
     "shadow-[0_18px_50px_rgba(37,99,235,0.28)]";
 
   const btnIcon =
-    "ui-press ui-focus inline-flex h-10 w-10 items-center justify-center rounded-full " +
+    "inline-flex h-10 w-10 items-center justify-center rounded-full " +
     "border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm";
-
-  const btnDisabled = "ui-disabled";
 
   // ✅ Success view
   if (status === "success") {
@@ -211,15 +210,15 @@ export default function ContactForm({ variant = "contact" }: Props) {
         </div>
 
         <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/70 bg-emerald-50/80 p-7 shadow-sm backdrop-blur-xl">
-          <button
-            type="button"
+          <PressButton
+            tier="icon"
             onClick={reset}
             className={`${btnIcon} absolute right-3 top-3`}
             aria-label="Close"
             title="Send another message"
           >
             <X className="h-5 w-5" />
-          </button>
+          </PressButton>
 
           <div className="flex flex-col items-center text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
@@ -368,13 +367,14 @@ export default function ContactForm({ variant = "contact" }: Props) {
             </div>
           </div>
 
-          <button
+          <PressButton
+            tier="cta"
             type="submit"
             disabled={isSending}
-            className={[btnPrimary, isSending ? btnDisabled : ""].join(" ")}
+            className={btnPrimary}
           >
             {isSending ? "Sending…" : "Send"}
-          </button>
+          </PressButton>
 
           <p className="text-center text-[13px] text-slate-500">{copy.micro}</p>
         </form>

@@ -3,9 +3,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import MenuDrawer from "@/components/MenuDrawer";
+import PressButton from "@/components/ui/PressButton";
+import PressLink from "@/components/ui/PressLink";
 
 type CustomMenu = {
   mode: "custom";
@@ -31,7 +32,6 @@ type Props = {
 };
 
 export default function SiteChrome({ children, menu, bottomBar }: Props) {
-  const router = useRouter();
   const pathname = usePathname();
 
   // Blur active element on route change (best effort)
@@ -95,7 +95,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
     setMenuOpen((v) => !v);
   };
 
-  const navBtnBase = "ui-press ui-focus flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
+  const navBtnBase = "flex-1 rounded-2xl px-4 py-3 text-[14px] font-semibold";
   const skinInactive = "bg-slate-100/70 text-slate-800";
   const skinActive =
     "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]";
@@ -104,12 +104,16 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
     "bg-white/95 text-slate-900 ring-1 ring-white/80 shadow-[0_14px_40px_rgba(15,23,42,0.10)]";
 
   const defaultMobileNav = (
-    <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
+    <div
+      data-testid="mobile-fixed-nav"
+      className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden"
+    >
       <div className="mx-auto max-w-[520px]">
         <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <PressButton
+              tier="nav"
+              data-testid="mobile-nav-menu"
               onClick={() => {
                 if (menuOpen && drawerView === "main") {
                   setMenuOpen(false);
@@ -123,25 +127,27 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
               aria-pressed={menuOpen && drawerView === "main"}
             >
               Menu
-            </button>
+            </PressButton>
 
-            <button
-              type="button"
-              onClick={() => router.push("/")}
+            <PressLink
+              tier="nav"
+              href="/"
+              data-testid="mobile-nav-home"
               className={[navBtnBase, isHomeRoute ? skinWhiteActive : skinWhite].join(" ")}
               aria-current={isHomeRoute ? "page" : undefined}
             >
               Home
-            </button>
+            </PressLink>
 
-            <button
-              type="button"
-              onClick={() => router.push("/course")}
+            <PressLink
+              tier="nav"
+              href="/course"
+              data-testid="mobile-nav-course"
               className={[navBtnBase, isCourseRoute ? skinActive : skinInactive].join(" ")}
               aria-current={isCourseRoute ? "page" : undefined}
             >
               Course
-            </button>
+            </PressLink>
           </div>
         </div>
       </div>
@@ -158,22 +164,20 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
     <main className="min-h-screen bg-[radial-gradient(1200px_600px_at_50%_0%,rgba(59,130,246,0.35),rgba(255,255,255,0)_65%),linear-gradient(#eaf2ff,#ffffff)]">
       <header className="fixed inset-x-0 top-0 z-40 topbar">
         <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4">
-          <Link
+          <PressLink
+            tier="nav"
             href="/"
             aria-label="Go to home"
             className={[
-              "ui-press",
               "flex select-none items-center gap-3",
               "rounded-2xl px-2 py-1",
+              "[--ui-focus-ring:rgba(255,255,255,0.56)]",
 
               // ✅ only apply hover styles on devices that actually hover (prevents iOS sticky hover)
               "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/10",
 
               // active is fine (only while pressed)
               "active:bg-white/15",
-
-              // focus ring for keyboard users
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
             ].join(" ")}
             style={{ WebkitTapHighlightColor: "transparent" }}
             onClick={blurNow}
@@ -190,13 +194,15 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
               />
             </span>
             <span className="font-semibold tracking-wide text-white">freeswimming.org</span>
-          </Link>
+          </PressLink>
 
-          <button
-            type="button"
+          <PressButton
+            tier="icon"
+            data-testid="header-menu-toggle"
             onClick={toggleMenu}
             className={[
-              "ui-press ui-focus rounded-xl px-3 py-2 text-white/95",
+              "rounded-xl px-3 py-2 text-white/95",
+              "[--ui-focus-ring:rgba(255,255,255,0.56)]",
               "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/10",
               hideHamburgerOnMobile ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
@@ -204,7 +210,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             aria-expanded={isMenuOpen}
           >
             <span className="text-2xl leading-none">≡</span>
-          </button>
+          </PressButton>
         </div>
       </header>
 

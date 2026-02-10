@@ -2,6 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import PressButton from "@/components/ui/PressButton";
 
 type Props = {
   fallbackHref?: string;
@@ -23,11 +24,10 @@ export default function BackButton({ fallbackHref = "/", disabled = false }: Pro
   };
 
   return (
-    <button
-      type="button"
+    <PressButton
+      tier="nav"
       onClick={handleBack}
       aria-label="Go back"
-      aria-disabled={disabled}
       disabled={disabled}
       className={[
         // spacing
@@ -47,15 +47,12 @@ export default function BackButton({ fallbackHref = "/", disabled = false }: Pro
         "[@media(hover:hover)_and_(pointer:fine)]:hover:text-slate-900",
         "[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm",
 
-        // system
-        "ui-press ui-focus",
-
         // disabled
-        disabled ? "ui-disabled opacity-60" : "",
+        disabled ? "opacity-60" : "",
       ].join(" ")}
     >
       <span className="text-[18px] leading-none">←</span>
       Back
-    </button>
+    </PressButton>
   );
 }

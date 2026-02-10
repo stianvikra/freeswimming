@@ -2,12 +2,13 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import MenuDrawer from "@/components/MenuDrawer";
+import PressButton from "@/components/ui/PressButton";
+import PressLink from "@/components/ui/PressLink";
 
 import {
   COURSE_MODULES,
@@ -42,7 +43,7 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-type PressButtonProps = {
+type CourseNavButtonProps = {
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
@@ -54,7 +55,7 @@ type PressButtonProps = {
   grow?: boolean;
 };
 
-function PressButton({
+function CourseNavButton({
   children,
   onClick,
   disabled = false,
@@ -63,25 +64,24 @@ function PressButton({
   className,
   skin = "muted",
   grow = true,
-}: PressButtonProps) {
+}: CourseNavButtonProps) {
   return (
-    <button
-      type="button"
+    <PressButton
+      tier="nav"
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      aria-disabled={disabled}
       aria-label={ariaLabel}
       aria-expanded={ariaExpanded}
       className={cx(
-        "ui-press ui-focus rounded-2xl text-[14px] font-semibold",
+        "rounded-2xl text-[14px] font-semibold",
         grow && "flex-1",
         "px-4 py-3",
-        disabled ? "ui-disabled bg-slate-100/50 text-slate-400" : SKIN[skin],
+        disabled ? "bg-slate-100/50 text-slate-400" : SKIN[skin],
         className
       )}
     >
       {children}
-    </button>
+    </PressButton>
   );
 }
 
@@ -199,26 +199,26 @@ function CoursePageClient() {
       <div className="mx-auto max-w-[520px]">
         <div className="rounded-[22px] bg-white/80 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 backdrop-blur">
           <div className="flex items-center gap-2">
-            <PressButton disabled={!prevId} onClick={() => prevId && goToLesson(prevId)} skin="muted">
+            <CourseNavButton disabled={!prevId} onClick={() => prevId && goToLesson(prevId)} skin="muted">
               Prev
-            </PressButton>
+            </CourseNavButton>
 
-            <PressButton
+            <CourseNavButton
               onClick={() => setDrawerOpen((v) => !v)}
               skin={drawerOpen ? "muted" : "white"}
               ariaExpanded={drawerOpen}
               ariaLabel={drawerOpen ? "Close lessons" : "Open lessons"}
             >
               {drawerOpen ? "Back" : "Lessons"}
-            </PressButton>
+            </CourseNavButton>
 
-            <PressButton
+            <CourseNavButton
               disabled={!nextId}
               onClick={() => nextId && goToLesson(nextId)}
               skin="primary"
             >
               Next
-            </PressButton>
+            </CourseNavButton>
           </div>
         </div>
       </div>
@@ -252,7 +252,7 @@ function CoursePageClient() {
             <div className="mt-1 text-[12px] font-medium text-slate-500">{progressLabel.sub}</div>
           </div>
 
-          <PressButton
+          <CourseNavButton
             grow={false}
             skin="white"
             onClick={() => setDrawerOpen((v) => !v)}
@@ -260,7 +260,7 @@ function CoursePageClient() {
             ariaLabel={drawerOpen ? "Close lessons" : "Open lessons"}
           >
             {drawerOpen ? "Close" : "Lessons"}
-          </PressButton>
+          </CourseNavButton>
         </header>
 
         <div className="mt-4 overflow-hidden rounded-full bg-white/60 ring-1 ring-white/70">
@@ -282,7 +282,7 @@ function CoursePageClient() {
             </div>
 
             <div className="hidden gap-2 sm:flex sm:pt-1">
-              <PressButton
+              <CourseNavButton
                 grow={false}
                 disabled={!prevId}
                 onClick={() => prevId && goToLesson(prevId)}
@@ -290,9 +290,9 @@ function CoursePageClient() {
                 className="px-4 py-2"
               >
                 Prev
-              </PressButton>
+              </CourseNavButton>
 
-              <PressButton
+              <CourseNavButton
                 grow={false}
                 disabled={!nextId}
                 onClick={() => nextId && goToLesson(nextId)}
@@ -300,7 +300,7 @@ function CoursePageClient() {
                 className="px-4 py-2"
               >
                 Next
-              </PressButton>
+              </CourseNavButton>
             </div>
           </div>
 
@@ -320,14 +320,15 @@ function CoursePageClient() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50/80 px-4 py-3 text-[12.5px] font-medium text-slate-600 ring-1 ring-slate-200/60">
             <span>If the video doesn’t play, open it on YouTube.</span>
-            <a
+            <PressLink
+              tier="nav"
               href={youtubeWatchUrl}
               target="_blank"
               rel="noreferrer"
-              className="ui-press ui-focus inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 font-semibold text-slate-900 ring-1 ring-white/70"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 font-semibold text-slate-900 ring-1 ring-white/70"
             >
               Open on YouTube →
-            </a>
+            </PressLink>
           </div>
 
           <div className="mt-2 text-center text-[11.5px] font-medium text-slate-500">
@@ -391,19 +392,21 @@ function CoursePageClient() {
             </div>
 
             <div className="mt-5 flex flex-col gap-2">
-              <Link
+              <PressLink
+                tier="nav"
                 href="/programs"
-                className="ui-press ui-focus flex items-center justify-center rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-white/70"
+                className="flex items-center justify-center rounded-2xl bg-white/90 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-white/70"
               >
                 View programs & PDFs
-              </Link>
+              </PressLink>
 
-              <Link
+              <PressLink
+                tier="cta"
                 href="/analysis"
-                className="ui-press ui-focus flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
               >
                 Get video analysis
-              </Link>
+              </PressLink>
 
               <p className="mt-1 text-center text-[12px] font-medium text-slate-600">
                 Prices in USD. Local taxes may apply.

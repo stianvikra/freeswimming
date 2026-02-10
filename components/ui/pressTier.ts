@@ -1,0 +1,15 @@
+// components/ui/pressTier.ts
+import { cx } from "./cx";
+
+export type PressTier = "cta" | "nav" | "icon" | "card";
+
+const tierClassMap: Record<PressTier, string> = {
+  cta: "ui-press ui-focus ui-press-tier-cta select-none",
+  nav: "ui-press ui-focus ui-press-tier-nav select-none",
+  icon: "ui-press ui-focus ui-press-tier-icon select-none",
+  card: "ui-card ui-focus ui-card-tier-default",
+};
+
+export function getPressTierClass(tier: PressTier = "nav") {
+  return cx(tierClassMap[tier]);
+}

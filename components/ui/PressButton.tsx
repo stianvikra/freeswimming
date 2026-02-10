@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import { cx } from "./cx";
+import { getPressTierClass, type PressTier } from "./pressTier";
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   /**
@@ -10,12 +11,14 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
    * Useful if you want the *look* disabled but still handle click logic elsewhere.
    */
   ariaDisabled?: boolean;
+  tier?: PressTier;
 };
 
 export default function PressButton({
   className,
   disabled,
   ariaDisabled,
+  tier = "nav",
   type,
   ...rest
 }: Props) {
@@ -27,7 +30,7 @@ export default function PressButton({
       disabled={disabled}
       aria-disabled={ariaDisabled || disabled || undefined}
       className={cx(
-        "ui-press ui-focus select-none",
+        getPressTierClass(tier),
         isDisabled && "ui-disabled",
         className
       )}
