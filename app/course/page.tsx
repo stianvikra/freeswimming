@@ -1,7 +1,7 @@
 // app/course/page.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -85,7 +85,25 @@ function PressButton({
   );
 }
 
+function CoursePageFallback() {
+  return (
+    <SiteChrome>
+      <PageTemplate size="wide" showBack={false}>
+        <div className="text-[15px] font-medium text-slate-600">Loading course...</div>
+      </PageTemplate>
+    </SiteChrome>
+  );
+}
+
 export default function CoursePage() {
+  return (
+    <Suspense fallback={<CoursePageFallback />}>
+      <CoursePageClient />
+    </Suspense>
+  );
+}
+
+function CoursePageClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

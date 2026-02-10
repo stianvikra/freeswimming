@@ -2,7 +2,6 @@
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
-import ActionButton from "@/components/ActionButton";
 import Image from "next/image";
 
 export default function AboutClient() {

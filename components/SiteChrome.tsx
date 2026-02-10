@@ -110,7 +110,13 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => openSiteDrawer("main")}
+              onClick={() => {
+                if (menuOpen && drawerView === "main") {
+                  setMenuOpen(false);
+                  return;
+                }
+                openSiteDrawer("main");
+              }}
               className={[navBtnBase, menuOpen && drawerView === "main" ? skinActive : skinInactive].join(
                 " "
               )}
@@ -161,7 +167,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
               "rounded-2xl px-2 py-1",
 
               // ✅ only apply hover styles on devices that actually hover (prevents iOS sticky hover)
-              "supports-[hover:hover]:hover:bg-white/10",
+              "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/10",
 
               // active is fine (only while pressed)
               "active:bg-white/15",
@@ -191,7 +197,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             onClick={toggleMenu}
             className={[
               "ui-press ui-focus rounded-xl px-3 py-2 text-white/95",
-              "supports-[hover:hover]:hover:bg-white/10",
+              "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/10",
               hideHamburgerOnMobile ? "hidden sm:inline-flex" : "inline-flex",
             ].join(" ")}
             aria-label={customMenu?.ariaLabel ?? "Toggle menu"}
