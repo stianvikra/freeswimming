@@ -60,7 +60,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
 
   const hasCustomBottomBar = Boolean(bottomBar);
-  const isMenuRoute = !isHomeRoute && !isCourseRoute;
 
   // ✅ Home: remove bottom nav so focus stays on the CTA buttons
   const showDefaultMobileNav = !hasCustomBottomBar && !isHomeRoute;
@@ -102,7 +101,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         openSiteDrawer("main");
       },
       ariaPressed: menuOpen && drawerView === "main",
-      skin: menuOpen && drawerView === "main" ? "active" : isMenuRoute ? "neutral" : "muted",
+      skin: menuOpen && drawerView === "main" ? "active" : "muted",
     },
     {
       id: "home",

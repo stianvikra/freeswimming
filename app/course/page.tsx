@@ -413,9 +413,11 @@ function CoursePageClient() {
               href={youtubeWatchUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-1.5 py-0.5 text-[11.5px] font-medium text-slate-500 [@media(hover:hover)_and_(pointer:fine)]:text-slate-700"
+              aria-label="Open video on YouTube"
             >
-              YouTube
+              <span aria-hidden className="inline-block h-2 w-2 rounded-full bg-rose-500/85" />
+              <span>YouTube</span>
             </PressLink>
           </div>
 
@@ -482,17 +484,17 @@ function CoursePageClient() {
 
             <div className="mt-5 flex flex-col gap-2">
               <PressLink
-                tier="nav"
+                tier="cta"
                 href="/programs"
-                className="flex items-center justify-center rounded-2xl bg-white/92 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70"
+                className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
               >
                 View programs & PDFs
               </PressLink>
 
               <PressLink
-                tier="cta"
+                tier="nav"
                 href="/analysis"
-                className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                className="flex items-center justify-center rounded-2xl bg-white/92 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70"
               >
                 Get video analysis
               </PressLink>

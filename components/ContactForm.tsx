@@ -54,7 +54,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const copy = useMemo(() => {
     if (variant === "analysis") {
       return {
-        pageTitle: "Video analysis",
+        pageTitle: "Video Analysis",
         pageSubtitle: "Send a short clip — we’ll tell you exactly what to work on next.",
 
         helperTitle: "What to include",
@@ -66,7 +66,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
         helperLine1: "Best results: 10–20 seconds from the side + 10–20 seconds from the front.",
         helperLine2: "No pressure — if you don’t have a video yet, just describe the problem.",
 
-        formTitle: "Request video analysis",
+        formTitle: "Request Video Analysis",
         formSubtitle: "Tell us what you want feedback on — and what your goal is.",
 
         messagePlaceholder: "Describe your goal + what you want feedback on…",

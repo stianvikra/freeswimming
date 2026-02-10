@@ -74,9 +74,9 @@ export default function MenuDrawer({
   const activePageLabel = useMemo(() => {
     const map: Record<string, string> = {
       "/": "Home",
-      "/course": "Free course",
-      "/programs": "Swim programs",
-      "/analysis": "Video analysis",
+      "/course": "Free Course",
+      "/programs": "Swim Programs",
+      "/analysis": "Video Analysis",
       "/our-method": "Our Method",
       "/contact": "Contact",
     };
@@ -117,7 +117,7 @@ export default function MenuDrawer({
     {
       id: "drawer-back",
       kind: "button",
-      label: "Back",
+      label: "Close",
       onClick: onClose,
       skin: "neutral",
     },
@@ -303,7 +303,7 @@ function CourseView({
                         : "bg-slate-50 text-slate-600 ring-slate-200/70",
                     ].join(" ")}
                   >
-                    Module {idx + 1}/{COURSE_MODULES.length}
+                    Module {idx + 1} of {COURSE_MODULES.length}
                   </span>
 
                   {isActiveModule ? (
@@ -415,9 +415,6 @@ function SmartLessonList({
         {lessons.map((l, i) => {
           const active = l.id === activeLessonId;
 
-          // ✅ Fade ONLY lesson #3 (index 2) while hint is visible
-          const fadeThird = i === 2 && showHint;
-
           return (
             <PressButton
               tier="card"
@@ -426,7 +423,6 @@ function SmartLessonList({
               className={[
                 "relative w-full rounded-[16px] px-4 py-3 text-left",
                 active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "",
-                fadeThird ? "opacity-60" : "",
               ].join(" ")}
               aria-current={active ? "page" : undefined}
             >
@@ -446,7 +442,7 @@ function SmartLessonList({
 
                   {/* ✅ Show BOTH position + minutes */}
                   <span className="shrink-0 text-[12px] font-semibold text-slate-500">
-                    {i + 1}/{total}
+                    {i + 1} of {total}
                     {l.estMinutes ? ` • ${l.estMinutes}m` : ""}
                   </span>
                 </div>
