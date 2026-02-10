@@ -19,6 +19,7 @@ export default function PageIntro({
   className,
 }: Props) {
   const compact = variant === "compact";
+  const displaySubtitle = subtitle ?? "Learn. Drill. Swim.";
 
   return (
     <div
@@ -54,16 +55,14 @@ export default function PageIntro({
             >
               {title}
             </h1>
-            {subtitle ? (
-              <p
-                className={cx(
-                  "mt-1 font-medium text-slate-600",
-                  compact ? "text-[14px]" : "text-[14px]"
-                )}
-              >
-                {subtitle}
-              </p>
-            ) : null}
+            <p
+              className={cx(
+                "mt-1 font-medium text-slate-600",
+                compact ? "text-[14px]" : "text-[14px]"
+              )}
+            >
+              {displaySubtitle}
+            </p>
           </div>
         </div>
 

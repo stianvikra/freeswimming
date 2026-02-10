@@ -12,8 +12,12 @@ export default function ProgramsPage() {
       <PageTemplate size="wide">
         <PageIntro
           title="Swim Programs"
-          subtitle="Structured plans + poolside PDFs. Pick a goal — follow the steps."
+          subtitle="Learn. Drill. Swim."
         />
+
+        <p className="mt-3 text-[15px] leading-7 text-slate-700">
+          Structured plans + poolside PDFs. Pick a goal — follow the steps.
+        </p>
 
         <div className="mt-6 grid gap-4">
           <div className="relative overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.9))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">

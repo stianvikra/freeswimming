@@ -219,7 +219,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
   if (status === "success") {
     return (
       <div>
-        <PageIntro title={copy.pageTitle} subtitle={copy.pageSubtitle} />
+        <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
 
         <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/75 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(52,211,153,0.12),rgba(255,255,255,0)_70%),linear-gradient(180deg,rgba(236,253,245,0.94),rgba(236,253,245,0.84))] p-7 shadow-[0_14px_34px_rgba(16,185,129,0.12)]">
           <PressButton
@@ -257,7 +257,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
   return (
     <div>
       {/* Header */}
-      <PageIntro title={copy.pageTitle} subtitle={copy.pageSubtitle} />
+      <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
+      <p className="mt-3 text-[15px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
 
       {/* Helper card (analysis only) */}
       {variant === "analysis" && (
