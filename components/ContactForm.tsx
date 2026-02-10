@@ -214,18 +214,26 @@ export default function ContactForm({ variant = "contact" }: Props) {
     "inline-flex h-10 w-10 items-center justify-center rounded-full " +
     "border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm";
 
+  const introShell =
+    "relative overflow-hidden rounded-[22px] border border-blue-100/60 " +
+    "bg-[radial-gradient(560px_220px_at_16%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.90),rgba(255,255,255,0.78))] " +
+    "p-5 shadow-[0_12px_30px_rgba(15,23,42,0.07)]";
+
   // ✅ Success view
   if (status === "success") {
     return (
       <div>
-        <div className="text-center">
-          <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
-            {copy.pageTitle}
-          </h1>
-          <p className="mt-2 text-[17px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
+        <div className={introShell}>
+          <div className="text-center">
+            <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
+              {copy.pageTitle}
+            </h1>
+            <p className="mt-2 text-[17px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
+          </div>
+          <div className="mt-4 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent" />
         </div>
 
-        <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/70 bg-emerald-50/80 p-7 shadow-sm backdrop-blur-xl">
+        <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/75 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(52,211,153,0.12),rgba(255,255,255,0)_70%),linear-gradient(180deg,rgba(236,253,245,0.94),rgba(236,253,245,0.84))] p-7 shadow-[0_14px_34px_rgba(16,185,129,0.12)]">
           <PressButton
             tier="icon"
             onClick={reset}
@@ -261,16 +269,20 @@ export default function ContactForm({ variant = "contact" }: Props) {
   return (
     <div>
       {/* Header */}
-      <div className="text-center">
-        <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
-          {copy.pageTitle}
-        </h1>
-        <p className="mt-2 text-[17px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
+      <div className={introShell}>
+        <div className="text-center">
+          <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
+            {copy.pageTitle}
+          </h1>
+          <p className="mt-2 text-[17px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
+        </div>
+        <div className="mt-4 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent" />
       </div>
 
       {/* Helper card (analysis only) */}
       {variant === "analysis" && (
-        <div className="mt-6 rounded-[22px] border border-slate-200/70 bg-white/60 p-6 shadow-sm">
+        <div className="relative mt-6 overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)]">
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
           <h2 className="text-[18px] font-semibold text-slate-900">{copy.helperTitle}</h2>
 
           <ul className="mt-3 space-y-3 text-[17px] leading-7 text-slate-700">
@@ -288,7 +300,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
       )}
 
       {/* Form card */}
-      <div className="mt-6 rounded-[22px] border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-xl">
+      <div className="relative mt-6 overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent opacity-72" />
         <div className="text-center">
           <h2 className="text-[20px] font-semibold text-slate-900">{copy.formTitle}</h2>
           <p className="mt-2 text-[15px] leading-6 text-slate-700">{copy.formSubtitle}</p>
@@ -386,7 +399,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
               placeholder={copy.messagePlaceholder}
             />
 
-            <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="mt-3 rounded-2xl border border-blue-100/70 bg-white/78 p-4">
               <p className="text-[13px] font-semibold text-slate-700">{copy.exampleTitle}</p>
               <ul className="mt-2 space-y-1 text-[13px] leading-5 text-slate-600">
                 {copy.exampleLines.map((line) => (

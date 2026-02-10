@@ -303,7 +303,7 @@ function CoursePageClient() {
           </CourseNavButton>
         </header>
 
-        <div className="mt-4 overflow-hidden rounded-full bg-white/60 ring-1 ring-white/70">
+        <div className="mt-4 overflow-hidden rounded-full bg-white/70 ring-1 ring-blue-100/70 shadow-[inset_0_1px_1px_rgba(255,255,255,0.55)]">
           <div
             className="h-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
             style={{ width: `${progressPct}%` }}
@@ -311,7 +311,7 @@ function CoursePageClient() {
           />
         </div>
 
-        <section className="mt-5 rounded-[24px] border border-white/70 bg-white/80 p-4 shadow-sm backdrop-blur">
+        <section className="mt-5 rounded-[24px] border border-blue-100/55 bg-[radial-gradient(560px_220px_at_14%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_67%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-4 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
@@ -365,7 +365,7 @@ function CoursePageClient() {
             </div>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-[18px] ring-1 ring-slate-200/70">
+          <div className="mt-4 overflow-hidden rounded-[18px] bg-white/70 ring-1 ring-blue-100/70 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
             <div className="aspect-video w-full bg-slate-100">
               <iframe
                 className="h-full w-full"
@@ -379,7 +379,7 @@ function CoursePageClient() {
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50/80 px-4 py-3 text-[12.5px] font-medium text-slate-600 ring-1 ring-slate-200/60">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(248,250,252,0.92))] px-4 py-3 text-[12.5px] font-medium text-slate-600 ring-1 ring-blue-100/60">
             <span>If the video doesn’t play, open it on YouTube.</span>
             <PressLink
               tier="nav"
@@ -398,7 +398,7 @@ function CoursePageClient() {
         </section>
 
         <section className="mt-5 grid gap-3 lg:grid-cols-3">
-          <div className="rounded-[24px] border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur lg:col-span-2">
+          <div className="rounded-[24px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)] lg:col-span-2">
             <h2 className="text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>
             <p className="mt-2 text-[15px] leading-7 text-slate-700">{activeLesson.goal}</p>
 
@@ -430,7 +430,7 @@ function CoursePageClient() {
             ) : null}
           </div>
 
-          <div className="rounded-[24px] border border-blue-100/70 bg-blue-50/60 p-6 shadow-sm">
+          <div className="rounded-[24px] border border-blue-100/70 bg-[radial-gradient(560px_220px_at_12%_0%,rgba(99,168,255,0.14),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(244,248,255,0.94),rgba(239,246,255,0.88))] p-6 shadow-[0_14px_34px_rgba(37,99,235,0.10)]">
             <div className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-white/70">
               Drill
             </div>
@@ -445,7 +445,7 @@ function CoursePageClient() {
               ))}
             </ol>
 
-            <div className="mt-5 rounded-2xl bg-white/80 p-4 ring-1 ring-white/70">
+            <div className="mt-5 rounded-2xl bg-white/84 p-4 ring-1 ring-blue-100/60">
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                 Next step
               </div>
