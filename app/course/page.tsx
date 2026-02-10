@@ -91,6 +91,8 @@ export default function CoursePage() {
 }
 
 function CoursePageClient() {
+  type DrawerView = "main" | "course";
+
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -104,6 +106,7 @@ function CoursePageClient() {
   );
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerView, setDrawerView] = useState<DrawerView>("course");
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -154,6 +157,20 @@ function CoursePageClient() {
     playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
   }
 
+  function toggleDrawer(view: DrawerView) {
+    if (drawerOpen && drawerView === view) {
+      setDrawerOpen(false);
+      return;
+    }
+    setDrawerView(view);
+    setDrawerOpen(true);
+  }
+
+  const isFirstLesson = !prevId;
+  const isLastLesson = !nextId;
+  const isMainDrawerOpen = drawerOpen && drawerView === "main";
+  const isCourseDrawerOpen = drawerOpen && drawerView === "course";
+
   const youtubeSrc = useMemo(
     () => `https://www.youtube-nocookie.com/embed/${activeLesson.youtubeId}`,
     [activeLesson.youtubeId]
@@ -181,33 +198,61 @@ function CoursePageClient() {
     return Math.min(100, Math.round((idx / total) * 100));
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
 
-  const bottomNavItems: MobileSegmentedNavItem[] = [
-    {
+  const bottomNavItems: MobileSegmentedNavItem[] = [];
+
+  if (isFirstLesson) {
+    bottomNavItems.push({
+      id: "course-menu",
+      kind: "button",
+      label: "Menu",
+      testId: "course-nav-left",
+      onClick: () => toggleDrawer("main"),
+      skin: isMainDrawerOpen ? "active" : "muted",
+      ariaPressed: isMainDrawerOpen,
+      ariaLabel: isMainDrawerOpen ? "Close main menu" : "Open main menu",
+    });
+  } else {
+    bottomNavItems.push({
       id: "course-prev",
       kind: "button",
       label: "Prev",
-      disabled: !prevId,
+      testId: "course-nav-left",
       onClick: () => prevId && goToLesson(prevId),
       skin: "muted",
-    },
-    {
-      id: "course-lessons",
-      kind: "button",
-      label: drawerOpen ? "Back" : "Lessons",
-      onClick: () => setDrawerOpen((v) => !v),
-      skin: drawerOpen ? "active" : "neutral",
-      ariaExpanded: drawerOpen,
-      ariaLabel: drawerOpen ? "Close lessons" : "Open lessons",
-    },
-    {
+    });
+  }
+
+  bottomNavItems.push({
+    id: "course-lessons",
+    kind: "button",
+    label: "Lessons",
+    testId: "course-nav-lessons",
+    onClick: () => toggleDrawer("course"),
+    skin: isCourseDrawerOpen ? "active" : "neutral",
+    ariaExpanded: isCourseDrawerOpen,
+    ariaPressed: isCourseDrawerOpen,
+    ariaLabel: isCourseDrawerOpen ? "Close lessons menu" : "Open lessons menu",
+  });
+
+  if (isLastLesson) {
+    bottomNavItems.push({
+      id: "course-programs",
+      kind: "link",
+      href: "/programs",
+      label: "Programs",
+      testId: "course-nav-right",
+      skin: "primary",
+    });
+  } else {
+    bottomNavItems.push({
       id: "course-next",
       kind: "button",
       label: "Next",
-      disabled: !nextId,
+      testId: "course-nav-right",
       onClick: () => nextId && goToLesson(nextId),
       skin: "primary",
-    },
-  ];
+    });
+  }
 
   const bottomBar = (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden">
@@ -222,7 +267,10 @@ function CoursePageClient() {
       menu={{
         mode: "custom",
         isOpen: drawerOpen,
-        onOpen: () => setDrawerOpen(true),
+        onOpen: () => {
+          setDrawerView("course");
+          setDrawerOpen(true);
+        },
         onClose: () => setDrawerOpen(false),
         ariaLabel: "Toggle lessons",
       }}
@@ -246,12 +294,12 @@ function CoursePageClient() {
 
           <CourseNavButton
             grow={false}
-            skin={drawerOpen ? "active" : "neutral"}
-            onClick={() => setDrawerOpen((v) => !v)}
+            skin={isCourseDrawerOpen ? "active" : "neutral"}
+            onClick={() => toggleDrawer("course")}
             className="hidden shrink-0 sm:inline-flex"
-            ariaLabel={drawerOpen ? "Close lessons" : "Open lessons"}
+            ariaLabel={isCourseDrawerOpen ? "Close lessons" : "Open lessons"}
           >
-            {drawerOpen ? "Close" : "Lessons"}
+            {isCourseDrawerOpen ? "Close" : "Lessons"}
           </CourseNavButton>
         </header>
 
@@ -274,25 +322,46 @@ function CoursePageClient() {
             </div>
 
             <div className="hidden gap-2 sm:flex sm:pt-1">
-              <CourseNavButton
-                grow={false}
-                disabled={!prevId}
-                onClick={() => prevId && goToLesson(prevId)}
-                skin="muted"
-                className="px-4 py-2"
-              >
-                Prev
-              </CourseNavButton>
+              {isFirstLesson ? (
+                <CourseNavButton
+                  grow={false}
+                  onClick={() => toggleDrawer("main")}
+                  skin={isMainDrawerOpen ? "active" : "muted"}
+                  className="px-4 py-2"
+                  ariaLabel={isMainDrawerOpen ? "Close main menu" : "Open main menu"}
+                >
+                  Menu
+                </CourseNavButton>
+              ) : (
+                <CourseNavButton
+                  grow={false}
+                  onClick={() => prevId && goToLesson(prevId)}
+                  skin="muted"
+                  className="px-4 py-2"
+                >
+                  Prev
+                </CourseNavButton>
+              )}
 
-              <CourseNavButton
-                grow={false}
-                disabled={!nextId}
-                onClick={() => nextId && goToLesson(nextId)}
-                skin="primary"
-                className="px-4 py-2"
-              >
-                Next
-              </CourseNavButton>
+              {isLastLesson ? (
+                <CourseNavButton
+                  grow={false}
+                  onClick={() => router.push("/programs")}
+                  skin="primary"
+                  className="px-4 py-2"
+                >
+                  Programs
+                </CourseNavButton>
+              ) : (
+                <CourseNavButton
+                  grow={false}
+                  onClick={() => nextId && goToLesson(nextId)}
+                  skin="primary"
+                  className="px-4 py-2"
+                >
+                  Next
+                </CourseNavButton>
+              )}
             </div>
           </div>
 
@@ -410,7 +479,7 @@ function CoursePageClient() {
         <MenuDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
-          defaultView="course"
+          defaultView={drawerView}
           mainItems={MAIN_MENU_ITEMS}
           course={{
             activeLessonId: activeLesson.id,
