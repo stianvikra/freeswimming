@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import PressButton from "@/components/ui/PressButton";
+import PageIntro from "@/components/PageIntro";
 
 type Variant = "contact" | "analysis";
 type Status = "idle" | "sending" | "success" | "error";
@@ -214,24 +215,11 @@ export default function ContactForm({ variant = "contact" }: Props) {
     "inline-flex h-10 w-10 items-center justify-center rounded-full " +
     "border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm";
 
-  const introShell =
-    "relative overflow-hidden rounded-[22px] border border-blue-100/60 " +
-    "bg-[radial-gradient(560px_220px_at_16%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.90),rgba(255,255,255,0.78))] " +
-    "p-5 shadow-[0_12px_30px_rgba(15,23,42,0.07)]";
-
   // ✅ Success view
   if (status === "success") {
     return (
       <div>
-        <div className={introShell}>
-          <div className="text-center">
-            <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
-              {copy.pageTitle}
-            </h1>
-            <p className="mt-2 text-[17px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
-          </div>
-          <div className="mt-4 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent" />
-        </div>
+        <PageIntro title={copy.pageTitle} subtitle={copy.pageSubtitle} />
 
         <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/75 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(52,211,153,0.12),rgba(255,255,255,0)_70%),linear-gradient(180deg,rgba(236,253,245,0.94),rgba(236,253,245,0.84))] p-7 shadow-[0_14px_34px_rgba(16,185,129,0.12)]">
           <PressButton
@@ -269,15 +257,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
   return (
     <div>
       {/* Header */}
-      <div className={introShell}>
-        <div className="text-center">
-          <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
-            {copy.pageTitle}
-          </h1>
-          <p className="mt-2 text-[17px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
-        </div>
-        <div className="mt-4 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent" />
-      </div>
+      <PageIntro title={copy.pageTitle} subtitle={copy.pageSubtitle} />
 
       {/* Helper card (analysis only) */}
       {variant === "analysis" && (

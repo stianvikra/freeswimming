@@ -3,35 +3,13 @@
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import ActionButton from "@/components/ActionButton";
-import Image from "next/image";
+import PageIntro from "@/components/PageIntro";
 
 export default function OurMethodClient() {
   return (
     <SiteChrome>
       <PageTemplate size="wide">
-        <div className="relative overflow-hidden rounded-[22px] border border-blue-100/60 bg-[radial-gradient(520px_220px_at_15%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.88),rgba(255,255,255,0.76))] p-4 shadow-[0_12px_30px_rgba(15,23,42,0.07)] sm:p-5">
-          <div className="flex items-center gap-4">
-            <div className="relative h-12 w-12 shrink-0">
-              <Image
-                src="/logos/01_icon_transparent.png"
-                alt="Freeswimming logo"
-                fill
-                className="object-contain"
-                sizes="48px"
-              />
-            </div>
-
-            <div className="leading-tight">
-              <h1 className="text-[23px] font-semibold tracking-tight text-slate-900">
-                Our Method
-              </h1>
-              <p className="mt-1 text-[14px] font-medium text-slate-600">
-                Learn. Drill. Swim.
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent" />
-        </div>
+        <PageIntro title="Our Method" subtitle="Learn. Drill. Swim." />
 
         <div className="mt-6 text-[16px] leading-7 text-slate-700">
           <p>

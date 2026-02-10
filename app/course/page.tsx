@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import MenuDrawer from "@/components/MenuDrawer";
+import PageIntro from "@/components/PageIntro";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
 import MobileSegmentedNav, {
@@ -290,24 +291,22 @@ function CoursePageClient() {
       <PageTemplate size="wide" showBack={false}>
         <div ref={playerTopRef} />
 
-        <header className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-[24px] font-semibold tracking-tight text-slate-900">Free Course</h1>
-            <p className="mt-1 text-[15px] leading-6 text-slate-700">
-              One focus at a time. Watch → drill → repeat.
-            </p>
-          </div>
-
-          <CourseNavButton
-            grow={false}
-            skin={isCourseDrawerOpen ? "active" : "neutral"}
-            onClick={() => toggleDrawer("course")}
-            className="hidden shrink-0 sm:inline-flex"
-            ariaLabel={isCourseDrawerOpen ? "Close lessons" : "Open lessons"}
-          >
-            {isCourseDrawerOpen ? "Close" : "Lessons"}
-          </CourseNavButton>
-        </header>
+        <PageIntro
+          title="Free Course"
+          subtitle="One focus at a time. Watch → drill → repeat."
+          variant="compact"
+          rightSlot={
+            <CourseNavButton
+              grow={false}
+              skin={isCourseDrawerOpen ? "active" : "neutral"}
+              onClick={() => toggleDrawer("course")}
+              className="hidden sm:inline-flex"
+              ariaLabel={isCourseDrawerOpen ? "Close lessons" : "Open lessons"}
+            >
+              {isCourseDrawerOpen ? "Close" : "Lessons"}
+            </CourseNavButton>
+          }
+        />
 
         <section className="mt-3 rounded-[22px] border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(249,250,251,0.94))] p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

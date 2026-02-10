@@ -4,22 +4,16 @@
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import ActionButton from "@/components/ActionButton";
+import PageIntro from "@/components/PageIntro";
 
 export default function ProgramsPage() {
   return (
     <SiteChrome>
       <PageTemplate size="wide">
-        <div className="relative overflow-hidden rounded-[22px] border border-blue-100/60 bg-[radial-gradient(560px_220px_at_16%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.76))] p-5 shadow-[0_12px_30px_rgba(15,23,42,0.07)]">
-          <div className="text-center">
-            <h1 className="text-[26px] font-semibold tracking-tight text-slate-900">
-              Swim Programs
-            </h1>
-            <p className="mt-2 text-[17px] leading-7 text-slate-700">
-              Structured plans + poolside PDFs. Pick a goal — follow the steps.
-            </p>
-          </div>
-          <div className="mt-4 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent" />
-        </div>
+        <PageIntro
+          title="Swim Programs"
+          subtitle="Structured plans + poolside PDFs. Pick a goal — follow the steps."
+        />
 
         <div className="mt-6 grid gap-4">
           <div className="relative overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.9))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
