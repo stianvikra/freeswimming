@@ -456,15 +456,12 @@ function SmartLessonList({
         })}
       </div>
 
-      {/* ✅ Stronger fade + scroll hint (arrow) shown only when scroll exists and not at bottom */}
+      {/* Scroll hint shown only when scroll exists and not at bottom */}
       {showHint ? (
         <>
-          {/* gradient fade */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-9 rounded-b-[18px] bg-gradient-to-t from-slate-50/72 to-transparent" />
-
           {/* hint chip */}
           <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/68 px-3 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/60 shadow-[0_1px_2px_rgba(15,23,42,0.06)] backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/58 px-3 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200/50 shadow-[0_1px_2px_rgba(15,23,42,0.05)] backdrop-blur">
               <span aria-hidden>⬇︎</span>
               <span>Scroll for more</span>
             </div>

@@ -18,12 +18,12 @@ test("drawer traps keyboard focus and restores trigger focus on close", async ({
   await expect(drawer).toBeVisible();
 
   const closeButton = drawer.getByRole("button", { name: "Close menu" });
-  const backButton = drawer.getByRole("button", { name: "Back" });
+  const closeNavButton = drawer.locator('button:not([aria-label]):has-text("Close")');
 
   await expect(closeButton).toBeFocused();
 
   await page.keyboard.press("Shift+Tab");
-  await expect(backButton).toBeFocused();
+  await expect(closeNavButton).toBeFocused();
 
   await page.keyboard.press("Tab");
   await expect(closeButton).toBeFocused();

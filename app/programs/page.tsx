@@ -35,10 +35,10 @@ export default function ProgramsPage() {
 
             <div className="mt-5">
               <ActionButton
-                title="VIEW PDF OPTIONS"
-                subtitle="(Coming soon)"
+                title="GET PDF UPDATES"
+                subtitle="Join waitlist"
+                href="/contact"
                 variant="secondary"
-                disabled
               />
             </div>
           </div>

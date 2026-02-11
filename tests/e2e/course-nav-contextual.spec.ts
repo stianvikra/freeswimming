@@ -18,7 +18,7 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   await expect(drawer).toBeVisible();
   await expect(drawer.getByText("Main menu")).toBeVisible();
 
-  await drawer.getByRole("button", { name: "Back" }).click();
+  await drawer.getByRole("button", { name: "Close menu" }).click();
   await expect(drawer).toBeHidden();
 
   await page.goto("/course?lesson=m4-l1");

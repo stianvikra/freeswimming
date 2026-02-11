@@ -331,13 +331,13 @@ function CoursePageClient() {
           }
         />
 
-        <section className="mt-2 rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_6px_16px_rgba(15,23,42,0.05)]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <section className="mt-2 rounded-[20px] border border-slate-200/60 bg-white/88 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)]">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-slate-900">
-                <span>{overviewLabel.module}</span>
-                <span className="text-slate-300">•</span>
                 <span>{overviewLabel.lesson}</span>
+                <span className="text-slate-300">•</span>
+                <span>{overviewLabel.module}</span>
               </div>
               <div className="mt-1 text-[13px] font-medium text-slate-700">
                 {overviewLabel.moduleName}
@@ -398,12 +398,19 @@ function CoursePageClient() {
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-3">
-            <div className="overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/75 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45)] flex-1">
+          <div className="mt-2 flex items-center gap-3">
+            <div
+              className="overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/75 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45)] flex-1"
+              role="progressbar"
+              aria-label="Course progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progressPct}
+              aria-valuetext={`${overviewLabel.course} (${progressPct}%)`}
+            >
               <div
                 className="h-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
                 style={{ width: `${progressPct}%` }}
-                aria-label={`Course progress ${overviewLabel.course} (${progressPct}%)`}
               />
             </div>
             <div className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
@@ -411,17 +418,17 @@ function CoursePageClient() {
             </div>
           </div>
 
-          <div className="mt-1 text-[12px] font-medium text-slate-600">
+          <div className="mt-1 text-[12px] font-medium text-slate-500">
             Course progress: <span className="text-slate-700">{overviewLabel.course}</span>
           </div>
 
-          <div className="mt-3 sm:hidden">
+          <div className="mt-2 sm:hidden">
             <PressButton
               tier="nav"
               onClick={toggleOverview}
               aria-expanded={overviewExpanded}
               aria-controls="course-overview-details"
-              className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70"
+              className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65"
             >
               {overviewExpanded ? "Hide details" : "Details"}
             </PressButton>
@@ -430,7 +437,7 @@ function CoursePageClient() {
           {overviewExpanded ? (
             <div
               id="course-overview-details"
-              className="mt-3 rounded-2xl border border-slate-200/75 bg-white/82 p-3"
+              className="mt-2 rounded-2xl border border-slate-200/68 bg-white/78 p-3"
             >
               <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Current context
@@ -486,7 +493,7 @@ function CoursePageClient() {
             </PressLink>
           </div>
 
-          <div className="mt-1.5 text-center text-[12px] font-medium text-slate-500">
+          <div className="mt-1.5 text-center text-[11px] font-medium text-slate-500">
             Progress is saved on this device.
             <span className="ml-1 text-slate-600">{progressFraction}</span>
           </div>
