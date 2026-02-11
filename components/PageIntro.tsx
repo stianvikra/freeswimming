@@ -8,6 +8,7 @@ type Props = {
   subtitle?: string;
   variant?: "default" | "compact";
   rightSlot?: React.ReactNode;
+  belowDivider?: React.ReactNode;
   className?: string;
 };
 
@@ -16,6 +17,7 @@ export default function PageIntro({
   subtitle,
   variant = "default",
   rightSlot,
+  belowDivider,
   className,
 }: Props) {
   const compact = variant === "compact";
@@ -70,6 +72,7 @@ export default function PageIntro({
       </div>
 
       <div className="mt-4 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent" />
+      {belowDivider ? <div className="mt-2">{belowDivider}</div> : null}
     </div>
   );
 }

@@ -378,6 +378,12 @@ function CoursePageClient() {
           title="Free Course"
           subtitle="Learn. Drill. Swim."
           variant="compact"
+          belowDivider={
+            <div className="flex items-baseline gap-1 text-[12px] font-medium sm:text-[13px]">
+              <span className="shrink-0 text-slate-500">Current lesson:</span>
+              <span className="min-w-0 truncate text-slate-800">{activeLesson.title}</span>
+            </div>
+          }
           rightSlot={
             <CourseNavButton
               grow={false}
