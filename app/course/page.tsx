@@ -255,11 +255,16 @@ function CoursePageClient() {
     };
   }, [moduleInfo, activeLesson.estMinutes]);
 
-  const progressPct = useMemo(() => {
-    const idx = moduleInfo.lessonIndexGlobal >= 0 ? moduleInfo.lessonIndexGlobal + 1 : 1;
-    const total = Math.max(1, moduleInfo.totalLessons);
-    return Math.min(100, Math.round((idx / total) * 100));
-  }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
+  const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
+  const doneLessonsCount = useMemo(
+    () => COURSE_LESSONS_FLAT.filter((lesson) => doneLessonIdSet.has(lesson.id)).length,
+    [doneLessonIdSet]
+  );
+  const totalLessons = Math.max(1, moduleInfo.totalLessons);
+  const donePct = useMemo(() => {
+    return Math.min(100, Math.round((doneLessonsCount / totalLessons) * 100));
+  }, [doneLessonsCount, totalLessons]);
+  const currentLessonIndex = moduleInfo.lessonIndexGlobal >= 0 ? moduleInfo.lessonIndexGlobal : 0;
   const nextLesson = useMemo(() => {
     if (!nextId) return null;
     return COURSE_LESSONS_FLAT.find((lesson) => lesson.id === nextId) ?? null;
@@ -389,10 +394,25 @@ function CoursePageClient() {
         <section className="mt-2 rounded-[20px] border border-slate-200/60 bg-white/88 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)]">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-slate-900">
-                <span>{overviewLabel.lesson}</span>
-                <span className="text-slate-300">•</span>
-                <span>{overviewLabel.module}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-slate-900">
+                  <span>{overviewLabel.lesson}</span>
+                  <span className="text-slate-300">•</span>
+                  <span>{overviewLabel.module}</span>
+                </div>
+                <PressButton
+                  tier="nav"
+                  onClick={toggleLessonDone}
+                  aria-pressed={isLessonDone}
+                  className={cx(
+                    "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
+                    isLessonDone
+                      ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                      : "bg-white/92 text-slate-700 ring-slate-200/72"
+                  )}
+                >
+                  {isLessonDone ? "Done" : "Mark as done"}
+                </PressButton>
               </div>
               {overviewExpanded ? (
                 <div className="mt-1 text-[13px] font-medium text-slate-700">
@@ -462,16 +482,38 @@ function CoursePageClient() {
               aria-label="Course progress"
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-valuenow={progressPct}
-              aria-valuetext={`${overviewLabel.course} (${progressPct}%)`}
+              aria-valuenow={donePct}
+              aria-valuetext={`${doneLessonsCount} of ${totalLessons} lessons marked done (${donePct}%). Current: ${overviewLabel.lesson}.`}
             >
-              <div
-                className="h-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
-                style={{ width: `${progressPct}%` }}
-              />
+              <div className="flex h-[10px] w-full overflow-hidden rounded-full bg-slate-200/95">
+                {COURSE_LESSONS_FLAT.map((lesson, index) => {
+                  const isCurrentSegment = index === currentLessonIndex;
+                  const isDoneSegment = doneLessonIdSet.has(lesson.id);
+                  const isFirstSegment = index === 0;
+                  const isLastSegment = index === totalLessons - 1;
+
+                  return (
+                    <span
+                      key={lesson.id}
+                      aria-hidden
+                      className={cx(
+                        "h-full min-w-0 flex-1 transition-colors duration-200",
+                        !isLastSegment && "border-r border-slate-100/70",
+                        isFirstSegment && "rounded-l-full",
+                        isLastSegment && "rounded-r-full",
+                        isCurrentSegment
+                          ? "bg-white shadow-[inset_0_0_0_1px_rgba(147,197,253,0.95)]"
+                          : isDoneSegment
+                            ? "bg-blue-500"
+                            : "bg-slate-300/78"
+                      )}
+                    />
+                  );
+                })}
+              </div>
             </div>
             <div className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
-              {progressPct}%
+              {donePct}%
             </div>
           </div>
 
@@ -492,12 +534,14 @@ function CoursePageClient() {
               id="course-overview-details"
               className="mt-2 rounded-2xl border border-slate-200/68 bg-white/78 p-3"
             >
-              <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                Current context
-              </div>
-              <div className="mt-1 text-[13px] font-medium text-slate-700">
-                {overviewLabel.moduleName}
-                {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
+              <div className="min-w-0">
+                <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  Additional information
+                </div>
+                <div className="mt-1 text-[13px] font-medium text-slate-700">
+                  {overviewLabel.moduleName}
+                  {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
+                </div>
               </div>
               <div className="mt-1 text-[12px] font-medium text-slate-600">
                 {isLastLesson
@@ -505,9 +549,7 @@ function CoursePageClient() {
                   : "Use Lessons to jump to any module or lesson."}
               </div>
               <div className="mt-1 text-[12px] font-medium text-slate-500">
-                {overviewLabel.moduleName}
-                {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""} · Progress{" "}
-                <span className="text-slate-700">{overviewLabel.course}</span> · Saved on this device
+                Progress saved on this device.
               </div>
             </div>
           ) : null}
@@ -562,32 +604,7 @@ function CoursePageClient() {
 
         <section className="mt-4 grid gap-3 lg:grid-cols-3">
           <div className="rounded-[24px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)] lg:col-span-2">
-            <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-              Current lesson{overviewLabel.duration ? ` · ${overviewLabel.duration}` : ""}
-            </div>
-            <div className="mt-1 text-[20px] font-semibold tracking-tight text-slate-900">
-              {activeLesson.title}
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <PressButton
-                tier="nav"
-                onClick={toggleLessonDone}
-                aria-pressed={isLessonDone}
-                className={cx(
-                  "inline-flex min-h-[36px] items-center justify-center rounded-full px-3 py-1 text-[12px] font-semibold ring-1",
-                  isLessonDone
-                    ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                    : "bg-white/90 text-slate-700 ring-slate-200/72"
-                )}
-              >
-                {isLessonDone ? "Done" : "Mark done"}
-              </PressButton>
-              <span className="text-[12px] font-semibold text-slate-600">
-                {isLessonDone ? "Done" : "In progress"}
-              </span>
-            </div>
-
-            <h2 className="mt-4 text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>
+            <h2 className="text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>
             <p className="mt-2 text-[15px] leading-7 text-slate-700">{activeLesson.goal}</p>
 
             <div className="mt-5">
