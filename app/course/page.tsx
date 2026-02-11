@@ -110,6 +110,7 @@ function CoursePageClient() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<DrawerView>("course");
   const [overviewExpanded, setOverviewExpanded] = useState(false);
+  const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(false);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -187,6 +188,10 @@ function CoursePageClient() {
     });
   }
 
+  function toggleCommonMistakes() {
+    setCommonMistakesExpanded((prev) => !prev);
+  }
+
   const isFirstLesson = !prevId;
   const isLastLesson = !nextId;
   const isMainDrawerOpen = drawerOpen && drawerView === "main";
@@ -210,7 +215,7 @@ function CoursePageClient() {
     return {
       module: `Module ${modNum} of ${moduleInfo.moduleCount}`,
       lesson: `Lesson ${lessonInMod} of ${moduleInfo.moduleLessonCount}`,
-      course: `${lessonGlobal} of ${moduleInfo.totalLessons}`,
+      course: `${lessonGlobal} of ${moduleInfo.totalLessons} total`,
       moduleName: moduleInfo.module?.title ?? "Course",
       duration: activeLesson.estMinutes ? `${activeLesson.estMinutes} min` : null,
     };
@@ -225,11 +230,16 @@ function CoursePageClient() {
     if (!nextId) return null;
     return COURSE_LESSONS_FLAT.find((lesson) => lesson.id === nextId) ?? null;
   }, [nextId]);
+
   const programsCtaClass = isLastLesson
     ? "flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
     : "flex items-center justify-center rounded-2xl bg-white/92 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70";
   const supportCardClass =
     "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)]";
+
+  useEffect(() => {
+    setCommonMistakesExpanded(false);
+  }, [activeLesson.id]);
 
   const bottomNavItems: MobileSegmentedNavItem[] = [];
 
@@ -448,7 +458,7 @@ function CoursePageClient() {
                   : "Use Lessons to jump to any module or lesson."}
               </div>
               <div className="mt-1 text-[12px] font-medium text-slate-500">
-                Course progress: <span className="text-slate-700">{overviewLabel.course}</span>
+                Progress: <span className="text-slate-700">{overviewLabel.course}</span>
               </div>
               <div className="mt-1 text-[12px] font-medium text-slate-500">
                 Progress is saved on this device.
@@ -499,7 +509,14 @@ function CoursePageClient() {
 
         <section className="mt-4 grid gap-3 lg:grid-cols-3">
           <div className="rounded-[24px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)] lg:col-span-2">
-            <h2 className="text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>
+            <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+              Current lesson{overviewLabel.duration ? ` · ${overviewLabel.duration}` : ""}
+            </div>
+            <div className="mt-1 text-[20px] font-semibold tracking-tight text-slate-900">
+              {activeLesson.title}
+            </div>
+
+            <h2 className="mt-4 text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>
             <p className="mt-2 text-[15px] leading-7 text-slate-700">{activeLesson.goal}</p>
 
             <div className="mt-5">
@@ -517,15 +534,34 @@ function CoursePageClient() {
             </div>
 
             {activeLesson.commonMistakes?.length ? (
-              <div className="mt-5">
-                <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">
-                  Common mistakes
-                </h3>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
-                  {activeLesson.commonMistakes.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
-                </ul>
+              <div className="mt-5 rounded-2xl border border-slate-200/72 bg-white/72 p-3">
+                <PressButton
+                  tier="nav"
+                  onClick={toggleCommonMistakes}
+                  aria-expanded={commonMistakesExpanded}
+                  aria-controls="common-mistakes-list"
+                  className="inline-flex min-h-[40px] w-full items-center justify-between rounded-xl bg-white/85 px-3 py-2 text-left text-[14px] font-semibold text-slate-900 ring-1 ring-slate-200/70"
+                >
+                  <span>Common mistakes</span>
+                  <span className="text-[12px] text-slate-600">
+                    {commonMistakesExpanded ? "Hide" : "Show"}
+                  </span>
+                </PressButton>
+
+                {commonMistakesExpanded ? (
+                  <ul
+                    id="common-mistakes-list"
+                    className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700"
+                  >
+                    {activeLesson.commonMistakes.map((m) => (
+                      <li key={m}>{m}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-[12px] font-medium text-slate-600">
+                    Expand to review common errors for this lesson.
+                  </p>
+                )}
               </div>
             ) : null}
           </div>
