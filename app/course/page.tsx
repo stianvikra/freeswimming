@@ -115,6 +115,7 @@ function CoursePageClient() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<DrawerView>("course");
+  const [closeDrawerOnLessonChange, setCloseDrawerOnLessonChange] = useState(false);
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(false);
   const [doneLessonIds, setDoneLessonIds] = useState<string[]>([]);
@@ -186,12 +187,22 @@ function CoursePageClient() {
   const playerTopRef = useRef<HTMLDivElement | null>(null);
 
   function goToLesson(lessonId: string) {
-    router.push(`${pathname}?lesson=${encodeURIComponent(lessonId)}`);
-    setDrawerOpen(false);
+    if (lessonId === activeLesson.id) {
+      setDrawerOpen(false);
+      setCloseDrawerOnLessonChange(false);
+      return;
+    }
 
-    const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-    const behavior: ScrollBehavior = prefersReduced ? "auto" : "smooth";
-    playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
+    if (drawerOpen) {
+      setCloseDrawerOnLessonChange(true);
+    }
+
+    router.push(`${pathname}?lesson=${encodeURIComponent(lessonId)}`);
+    if (!drawerOpen) {
+      const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      const behavior: ScrollBehavior = prefersReduced ? "auto" : "smooth";
+      playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
+    }
   }
 
   function toggleDrawer(view: DrawerView) {
@@ -292,6 +303,16 @@ function CoursePageClient() {
     }, 7000);
     return () => window.clearTimeout(timeout);
   }, [videoLoadState, activeLesson.id]);
+
+  useEffect(() => {
+    if (!closeDrawerOnLessonChange) return;
+    setDrawerOpen(false);
+    setCloseDrawerOnLessonChange(false);
+
+    const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const behavior: ScrollBehavior = prefersReduced ? "auto" : "smooth";
+    playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
+  }, [closeDrawerOnLessonChange, activeLesson.id]);
 
   const bottomNavItems: MobileSegmentedNavItem[] = [];
 
