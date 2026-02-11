@@ -258,7 +258,6 @@ export default function ContactForm({ variant = "contact" }: Props) {
     <div>
       {/* Header */}
       <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
-      <p className="mt-2 text-[15px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
 
       {/* Helper card (analysis only) */}
       {variant === "analysis" && (

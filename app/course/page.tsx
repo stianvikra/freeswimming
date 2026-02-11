@@ -31,6 +31,7 @@ import {
 } from "./courseData";
 
 const STORAGE_KEY = "fs_course_last_lesson";
+const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 
 type CourseNavButtonProps = {
   children: React.ReactNode;
@@ -108,6 +109,7 @@ function CoursePageClient() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<DrawerView>("course");
+  const [overviewExpanded, setOverviewExpanded] = useState(false);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -147,6 +149,14 @@ function CoursePageClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(OVERVIEW_STORAGE_KEY);
+      if (saved === null) return;
+      setOverviewExpanded(saved === "1");
+    } catch {}
+  }, []);
+
   const playerTopRef = useRef<HTMLDivElement | null>(null);
 
   function goToLesson(lessonId: string) {
@@ -167,6 +177,16 @@ function CoursePageClient() {
     setDrawerOpen(true);
   }
 
+  function toggleOverview() {
+    setOverviewExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(OVERVIEW_STORAGE_KEY, next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }
+
   const isFirstLesson = !prevId;
   const isLastLesson = !nextId;
   const isMainDrawerOpen = drawerOpen && drawerView === "main";
@@ -181,17 +201,20 @@ function CoursePageClient() {
     [activeLesson.youtubeId]
   );
 
-  const progressLabel = useMemo(() => {
+  const overviewLabel = useMemo(() => {
     const modNum = moduleInfo.moduleIndex >= 0 ? moduleInfo.moduleIndex + 1 : 1;
     const lessonInMod =
       moduleInfo.lessonIndexInModule >= 0 ? moduleInfo.lessonIndexInModule + 1 : 1;
     const lessonGlobal = moduleInfo.lessonIndexGlobal >= 0 ? moduleInfo.lessonIndexGlobal + 1 : 1;
 
     return {
-      top: `Module ${modNum} of ${moduleInfo.moduleCount} • Lesson ${lessonInMod} of ${moduleInfo.moduleLessonCount}`,
-      sub: `Course progress: ${lessonGlobal} of ${moduleInfo.totalLessons}`,
+      module: `Module ${modNum} of ${moduleInfo.moduleCount}`,
+      lesson: `Lesson ${lessonInMod} of ${moduleInfo.moduleLessonCount}`,
+      course: `${lessonGlobal} of ${moduleInfo.totalLessons}`,
+      moduleName: moduleInfo.module?.title ?? "Course",
+      duration: activeLesson.estMinutes ? `${activeLesson.estMinutes} min` : null,
     };
-  }, [moduleInfo]);
+  }, [moduleInfo, activeLesson.estMinutes]);
 
   const progressPct = useMemo(() => {
     const idx = moduleInfo.lessonIndexGlobal >= 0 ? moduleInfo.lessonIndexGlobal + 1 : 1;
@@ -200,13 +223,13 @@ function CoursePageClient() {
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
   const lessonProgressValue = moduleInfo.lessonIndexGlobal >= 0 ? moduleInfo.lessonIndexGlobal + 1 : 1;
   const progressFraction = `${lessonProgressValue} of ${moduleInfo.totalLessons}`;
-  const lessonMeta = `${moduleInfo.module?.title ?? "Course"}${
-    activeLesson.estMinutes ? ` • ${activeLesson.estMinutes} min` : ""
-  }`;
   const nextLesson = useMemo(() => {
     if (!nextId) return null;
     return COURSE_LESSONS_FLAT.find((lesson) => lesson.id === nextId) ?? null;
   }, [nextId]);
+  const programsCtaClass = isLastLesson
+    ? "flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+    : "flex items-center justify-center rounded-2xl bg-white/92 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70";
   const supportCardClass =
     "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)]";
 
@@ -216,10 +239,10 @@ function CoursePageClient() {
     bottomNavItems.push({
       id: "course-menu",
       kind: "button",
-      label: "Menu",
+      label: isMainDrawerOpen ? "Close" : "Menu",
       testId: "course-nav-left",
       onClick: () => toggleDrawer("main"),
-      skin: isMainDrawerOpen ? "active" : "muted",
+      skin: isMainDrawerOpen ? "neutral" : "muted",
       ariaPressed: isMainDrawerOpen,
       ariaLabel: isMainDrawerOpen ? "Close main menu" : "Open main menu",
     });
@@ -237,10 +260,10 @@ function CoursePageClient() {
   bottomNavItems.push({
     id: "course-lessons",
     kind: "button",
-    label: "Lessons",
+    label: isCourseDrawerOpen ? "Close" : "Lessons",
     testId: "course-nav-lessons",
     onClick: () => toggleDrawer("course"),
-    skin: isCourseDrawerOpen ? "active" : "neutral",
+    skin: "neutral",
     ariaExpanded: isCourseDrawerOpen,
     ariaPressed: isCourseDrawerOpen,
     ariaLabel: isCourseDrawerOpen ? "Close lessons menu" : "Open lessons menu",
@@ -298,7 +321,7 @@ function CoursePageClient() {
           rightSlot={
             <CourseNavButton
               grow={false}
-              skin={isCourseDrawerOpen ? "active" : "neutral"}
+              skin="neutral"
               onClick={() => toggleDrawer("course")}
               className="hidden sm:inline-flex"
               ariaLabel={isCourseDrawerOpen ? "Close lessons" : "Open lessons"}
@@ -308,23 +331,16 @@ function CoursePageClient() {
           }
         />
 
-        <p className="mt-2 text-[15px] leading-7 text-slate-700">
-          One focus at a time. Watch → drill → repeat.
-        </p>
-
-        <section className="mt-3 rounded-[22px] border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(249,250,251,0.94))] p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+        <section className="mt-2 rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_6px_16px_rgba(15,23,42,0.05)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                Lesson status
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-slate-900">
+                <span>{overviewLabel.module}</span>
+                <span className="text-slate-300">•</span>
+                <span>{overviewLabel.lesson}</span>
               </div>
-              <div className="mt-1 text-[16px] font-semibold text-slate-900">{progressLabel.top}</div>
-              <div className="mt-1 text-[13px] font-medium text-slate-700">{progressLabel.sub}</div>
-              <div className="mt-2 text-[22px] font-semibold tracking-tight text-slate-900">
-                {activeLesson.title}
-              </div>
-              <div className="mt-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-slate-600">
-                {lessonMeta}
+              <div className="mt-1 text-[13px] font-medium text-slate-700">
+                {overviewLabel.moduleName}
               </div>
             </div>
 
@@ -333,11 +349,11 @@ function CoursePageClient() {
                 <CourseNavButton
                   grow={false}
                   onClick={() => toggleDrawer("main")}
-                  skin={isMainDrawerOpen ? "active" : "muted"}
+                  skin={isMainDrawerOpen ? "neutral" : "muted"}
                   className="px-4 py-2"
                   ariaLabel={isMainDrawerOpen ? "Close main menu" : "Open main menu"}
                 >
-                  Menu
+                  {isMainDrawerOpen ? "Close" : "Menu"}
                 </CourseNavButton>
               ) : (
                 <CourseNavButton
@@ -369,6 +385,16 @@ function CoursePageClient() {
                   Next
                 </CourseNavButton>
               )}
+
+              <PressButton
+                tier="nav"
+                onClick={toggleOverview}
+                aria-expanded={overviewExpanded}
+                aria-controls="course-overview-details"
+                className="inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70"
+              >
+                {overviewExpanded ? "Hide details" : "Details"}
+              </PressButton>
             </div>
           </div>
 
@@ -377,13 +403,49 @@ function CoursePageClient() {
               <div
                 className="h-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
                 style={{ width: `${progressPct}%` }}
-                aria-label={`Progress ${progressPct}%`}
+                aria-label={`Course progress ${overviewLabel.course} (${progressPct}%)`}
               />
             </div>
             <div className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
               {progressPct}%
             </div>
           </div>
+
+          <div className="mt-1 text-[12px] font-medium text-slate-600">
+            Course progress: <span className="text-slate-700">{overviewLabel.course}</span>
+          </div>
+
+          <div className="mt-3 sm:hidden">
+            <PressButton
+              tier="nav"
+              onClick={toggleOverview}
+              aria-expanded={overviewExpanded}
+              aria-controls="course-overview-details"
+              className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70"
+            >
+              {overviewExpanded ? "Hide details" : "Details"}
+            </PressButton>
+          </div>
+
+          {overviewExpanded ? (
+            <div
+              id="course-overview-details"
+              className="mt-3 rounded-2xl border border-slate-200/75 bg-white/82 p-3"
+            >
+              <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                Current context
+              </div>
+              <div className="mt-1 text-[13px] font-medium text-slate-700">
+                {overviewLabel.moduleName}
+                {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
+              </div>
+              <div className="mt-1 text-[12px] font-medium text-slate-600">
+                {isLastLesson
+                  ? "Last lesson in this course."
+                  : "Use Lessons to jump to any module or lesson."}
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section className="mt-3 rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
@@ -487,9 +549,9 @@ function CoursePageClient() {
 
             <div className="mt-5 flex flex-col gap-2">
               <PressLink
-                tier="cta"
+                tier={isLastLesson ? "cta" : "nav"}
                 href="/programs"
-                className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                className={programsCtaClass}
               >
                 View programs & PDFs
               </PressLink>
