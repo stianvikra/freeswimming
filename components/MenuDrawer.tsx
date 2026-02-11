@@ -39,6 +39,8 @@ type Props = {
   titleCourse?: string; // defaults to "Course menu"
 };
 
+const MENU_TIP_SEEN_KEY = "fs_menu_tip_seen";
+
 export default function MenuDrawer({
   open,
   onClose,
@@ -52,11 +54,27 @@ export default function MenuDrawer({
   const hasCourse = Boolean(course);
 
   const [view, setView] = useState<"main" | "course">(hasCourse ? defaultView : "main");
+  const [showMenuTip, setShowMenuTip] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setView(hasCourse ? defaultView : "main");
   }, [open, defaultView, hasCourse]);
+
+  useEffect(() => {
+    if (!open || view !== "main") return;
+    try {
+      const seen = localStorage.getItem(MENU_TIP_SEEN_KEY) === "1";
+      if (seen) {
+        setShowMenuTip(false);
+        return;
+      }
+      setShowMenuTip(true);
+      localStorage.setItem(MENU_TIP_SEEN_KEY, "1");
+    } catch {
+      setShowMenuTip(true);
+    }
+  }, [open, view]);
 
   const defaultOpenModuleId = useMemo(() => {
     if (!hasCourse) return COURSE_MODULES[0]?.id ?? "m1";
@@ -178,7 +196,7 @@ export default function MenuDrawer({
           )}
 
           {/* Tip only in Menu view */}
-          {view === "main" ? (
+          {view === "main" && showMenuTip ? (
             <div className="mt-6 rounded-[22px] border border-slate-200/60 bg-[radial-gradient(520px_180px_at_20%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_60%)] p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)] backdrop-blur">
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-600">
                 Tip

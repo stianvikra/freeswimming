@@ -32,6 +32,7 @@ import {
 
 const STORAGE_KEY = "fs_course_last_lesson";
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
+const DONE_STORAGE_KEY = "fs_course_done_lessons";
 
 type CourseNavButtonProps = {
   children: React.ReactNode;
@@ -78,7 +79,12 @@ function CoursePageFallback() {
   return (
     <SiteChrome>
       <PageTemplate size="wide" showBack={false}>
-        <div className="text-[15px] font-medium text-slate-600">Loading course...</div>
+        <div className="space-y-3" aria-label="Loading course content">
+          <div className="h-16 rounded-2xl border border-slate-200/70 bg-white/80 animate-pulse" />
+          <div className="h-20 rounded-2xl border border-slate-200/70 bg-white/80 animate-pulse" />
+          <div className="aspect-video rounded-[20px] border border-slate-200/70 bg-slate-100/85 animate-pulse" />
+          <div className="h-44 rounded-[22px] border border-slate-200/70 bg-white/80 animate-pulse" />
+        </div>
       </PageTemplate>
     </SiteChrome>
   );
@@ -111,6 +117,8 @@ function CoursePageClient() {
   const [drawerView, setDrawerView] = useState<DrawerView>("course");
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(false);
+  const [doneLessonIds, setDoneLessonIds] = useState<string[]>([]);
+  const [videoLoadState, setVideoLoadState] = useState<"loading" | "loaded" | "failed">("loading");
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -158,6 +166,23 @@ function CoursePageClient() {
     } catch {}
   }, []);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DONE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setDoneLessonIds(parsed.filter((v): v is string => typeof v === "string"));
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(doneLessonIds));
+    } catch {}
+  }, [doneLessonIds]);
+
   const playerTopRef = useRef<HTMLDivElement | null>(null);
 
   function goToLesson(lessonId: string) {
@@ -190,6 +215,15 @@ function CoursePageClient() {
 
   function toggleCommonMistakes() {
     setCommonMistakesExpanded((prev) => !prev);
+  }
+
+  function toggleLessonDone() {
+    setDoneLessonIds((prev) => {
+      if (prev.includes(activeLesson.id)) {
+        return prev.filter((id) => id !== activeLesson.id);
+      }
+      return [...prev, activeLesson.id];
+    });
   }
 
   const isFirstLesson = !prevId;
@@ -230,6 +264,7 @@ function CoursePageClient() {
     if (!nextId) return null;
     return COURSE_LESSONS_FLAT.find((lesson) => lesson.id === nextId) ?? null;
   }, [nextId]);
+  const isLessonDone = doneLessonIds.includes(activeLesson.id);
 
   const programsCtaClass = isLastLesson
     ? "flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
@@ -240,6 +275,18 @@ function CoursePageClient() {
   useEffect(() => {
     setCommonMistakesExpanded(false);
   }, [activeLesson.id]);
+
+  useEffect(() => {
+    setVideoLoadState("loading");
+  }, [activeLesson.id]);
+
+  useEffect(() => {
+    if (videoLoadState !== "loading") return;
+    const timeout = window.setTimeout(() => {
+      setVideoLoadState((prev) => (prev === "loading" ? "failed" : prev));
+    }, 7000);
+    return () => window.clearTimeout(timeout);
+  }, [videoLoadState, activeLesson.id]);
 
   const bottomNavItems: MobileSegmentedNavItem[] = [];
 
@@ -458,10 +505,9 @@ function CoursePageClient() {
                   : "Use Lessons to jump to any module or lesson."}
               </div>
               <div className="mt-1 text-[12px] font-medium text-slate-500">
-                Progress: <span className="text-slate-700">{overviewLabel.course}</span>
-              </div>
-              <div className="mt-1 text-[12px] font-medium text-slate-500">
-                Progress is saved on this device.
+                {overviewLabel.moduleName}
+                {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""} · Progress{" "}
+                <span className="text-slate-700">{overviewLabel.course}</span> · Saved on this device
               </div>
             </div>
           ) : null}
@@ -478,12 +524,14 @@ function CoursePageClient() {
                 referrerPolicy="strict-origin-when-cross-origin"
                 allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                onLoad={() => setVideoLoadState("loaded")}
+                onError={() => setVideoLoadState("failed")}
               />
             </div>
           </div>
 
-          <div className="mt-2 flex items-center justify-between gap-2 px-1">
-            <div className="min-w-0 text-[12px] font-medium text-slate-700">
+          <div className="mt-2 px-1 text-[12px] font-medium text-slate-700">
+            <div className="min-w-0">
               {nextLesson ? (
                 <>
                   Up next: <span className="font-semibold text-slate-800">{nextLesson.title}</span>
@@ -492,18 +540,23 @@ function CoursePageClient() {
                 <span className="font-semibold text-slate-800">Last lesson in this course</span>
               )}
             </div>
-            <PressLink
-              tier="nav"
-              href={youtubeWatchUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-1.5 py-0.5 text-[12px] font-medium text-slate-500 [@media(hover:hover)_and_(pointer:fine)]:text-slate-700"
-              aria-label="Open video on YouTube"
-            >
-              <span aria-hidden className="inline-block h-2 w-2 rounded-full bg-rose-500/85" />
-              <span>YouTube</span>
-            </PressLink>
           </div>
+
+          {videoLoadState === "failed" ? (
+            <div className="mt-2 rounded-2xl border border-slate-200/70 bg-white/82 px-3 py-2 text-[12px] font-medium text-slate-600">
+              Video did not load.{" "}
+              <PressLink
+                tier="nav"
+                href={youtubeWatchUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-slate-800 underline"
+                aria-label="Open video on YouTube"
+              >
+                Open on YouTube
+              </PressLink>
+            </div>
+          ) : null}
 
         </section>
 
@@ -514,6 +567,24 @@ function CoursePageClient() {
             </div>
             <div className="mt-1 text-[20px] font-semibold tracking-tight text-slate-900">
               {activeLesson.title}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <PressButton
+                tier="nav"
+                onClick={toggleLessonDone}
+                aria-pressed={isLessonDone}
+                className={cx(
+                  "inline-flex min-h-[36px] items-center justify-center rounded-full px-3 py-1 text-[12px] font-semibold ring-1",
+                  isLessonDone
+                    ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                    : "bg-white/90 text-slate-700 ring-slate-200/72"
+                )}
+              >
+                {isLessonDone ? "Done" : "Mark done"}
+              </PressButton>
+              <span className="text-[12px] font-semibold text-slate-600">
+                {isLessonDone ? "Done" : "In progress"}
+              </span>
             </div>
 
             <h2 className="mt-4 text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>

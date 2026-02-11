@@ -60,7 +60,7 @@ export default function ActionButton({
       {/* TITLE */}
       <div
         className={[
-          "text-[16px] sm:text-[17px] font-semibold tracking-[0.12em]",
+          "text-[16px] sm:text-[17px] font-semibold tracking-[0.09em] sm:tracking-[0.1em]",
           variant === "primary" ? "text-white/95" : "text-slate-900",
         ].join(" ")}
       >
