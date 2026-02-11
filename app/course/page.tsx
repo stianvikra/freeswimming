@@ -221,8 +221,6 @@ function CoursePageClient() {
     const total = Math.max(1, moduleInfo.totalLessons);
     return Math.min(100, Math.round((idx / total) * 100));
   }, [moduleInfo.lessonIndexGlobal, moduleInfo.totalLessons]);
-  const lessonProgressValue = moduleInfo.lessonIndexGlobal >= 0 ? moduleInfo.lessonIndexGlobal + 1 : 1;
-  const progressFraction = `${lessonProgressValue} of ${moduleInfo.totalLessons}`;
   const nextLesson = useMemo(() => {
     if (!nextId) return null;
     return COURSE_LESSONS_FLAT.find((lesson) => lesson.id === nextId) ?? null;
@@ -339,9 +337,11 @@ function CoursePageClient() {
                 <span className="text-slate-300">•</span>
                 <span>{overviewLabel.module}</span>
               </div>
-              <div className="mt-1 text-[13px] font-medium text-slate-700">
-                {overviewLabel.moduleName}
-              </div>
+              {overviewExpanded ? (
+                <div className="mt-1 text-[13px] font-medium text-slate-700">
+                  {overviewLabel.moduleName}
+                </div>
+              ) : null}
             </div>
 
             <div className="hidden gap-2 sm:flex sm:pt-1">
@@ -393,7 +393,7 @@ function CoursePageClient() {
                 aria-controls="course-overview-details"
                 className="inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70"
               >
-                {overviewExpanded ? "Hide details" : "Details"}
+                {overviewExpanded ? "Hide details" : "Show details"}
               </PressButton>
             </div>
           </div>
@@ -418,10 +418,6 @@ function CoursePageClient() {
             </div>
           </div>
 
-          <div className="mt-1 text-[12px] font-medium text-slate-500">
-            Course progress: <span className="text-slate-700">{overviewLabel.course}</span>
-          </div>
-
           <div className="mt-2 sm:hidden">
             <PressButton
               tier="nav"
@@ -430,7 +426,7 @@ function CoursePageClient() {
               aria-controls="course-overview-details"
               className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65"
             >
-              {overviewExpanded ? "Hide details" : "Details"}
+              {overviewExpanded ? "Hide details" : "Show details"}
             </PressButton>
           </div>
 
@@ -450,6 +446,12 @@ function CoursePageClient() {
                 {isLastLesson
                   ? "Last lesson in this course."
                   : "Use Lessons to jump to any module or lesson."}
+              </div>
+              <div className="mt-1 text-[12px] font-medium text-slate-500">
+                Course progress: <span className="text-slate-700">{overviewLabel.course}</span>
+              </div>
+              <div className="mt-1 text-[12px] font-medium text-slate-500">
+                Progress is saved on this device.
               </div>
             </div>
           ) : null}
@@ -493,10 +495,6 @@ function CoursePageClient() {
             </PressLink>
           </div>
 
-          <div className="mt-1.5 text-center text-[11px] font-medium text-slate-500">
-            Progress is saved on this device.
-            <span className="ml-1 text-slate-600">{progressFraction}</span>
-          </div>
         </section>
 
         <section className="mt-4 grid gap-3 lg:grid-cols-3">
