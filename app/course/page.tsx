@@ -393,7 +393,7 @@ function CoursePageClient() {
                 aria-controls="course-overview-details"
                 className="inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70"
               >
-                {overviewExpanded ? "Hide details" : "Show details"}
+                {overviewExpanded ? "Hide details" : "Overview details"}
               </PressButton>
             </div>
           </div>
@@ -426,7 +426,7 @@ function CoursePageClient() {
               aria-controls="course-overview-details"
               className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65"
             >
-              {overviewExpanded ? "Hide details" : "Show details"}
+              {overviewExpanded ? "Hide details" : "Overview details"}
             </PressButton>
           </div>
 
