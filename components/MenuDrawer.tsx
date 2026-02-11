@@ -247,7 +247,14 @@ function MainView({
                 : "border-slate-200/60 bg-[linear-gradient(90deg,rgba(203,213,225,0.62)_0_4px,rgba(255,255,255,0.82)_4px_100%)] shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
             ].join(" ")}
           >
-            <div className="text-[16px] font-semibold text-slate-900">{item.title}</div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 text-[16px] font-semibold text-slate-900">{item.title}</div>
+              {active ? (
+                <span className="shrink-0 inline-flex rounded-full bg-blue-50 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
+                  Current page
+                </span>
+              ) : null}
+            </div>
             {item.subtitle ? (
               <div className="mt-1 text-[13px] font-medium text-slate-600">{item.subtitle}</div>
             ) : null}
@@ -270,7 +277,7 @@ function CourseView({
   onSelectLesson: (lessonId: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {COURSE_MODULES.map((mod, idx) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
@@ -318,7 +325,7 @@ function CourseView({
                       "inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ring-1",
                       isActiveModule
                         ? "bg-blue-50 text-blue-700 ring-blue-100/70"
-                        : "bg-slate-50 text-slate-600 ring-slate-200/70",
+                        : "bg-slate-50 text-slate-700 ring-slate-200/70",
                     ].join(" ")}
                   >
                     Module {idx + 1} of {COURSE_MODULES.length}
@@ -333,17 +340,15 @@ function CourseView({
 
                 <div className="mt-2 text-[16px] font-semibold text-slate-900">{mod.title}</div>
 
-                {mod.subtitle ? (
-                  <div className="mt-1 text-[13px] font-medium text-slate-600">{mod.subtitle}</div>
-                ) : null}
+                {mod.subtitle ? <div className="mt-1 text-[13px] font-medium text-slate-700">{mod.subtitle}</div> : null}
               </div>
 
               <span
                 className={[
-                  "mt-0.5 rounded-2xl px-3 py-2 text-[12px] font-semibold",
+                  "mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full text-[18px] leading-none font-semibold ring-1 transition",
                   isOpen
                     ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100/70"
-                    : "bg-slate-100/80 text-slate-700",
+                    : "bg-white/88 text-slate-600 ring-slate-200/78",
                 ].join(" ")}
               >
                 {isOpen ? "–" : "+"}
@@ -430,48 +435,53 @@ function SmartLessonList({
           "pr-1",
         ].join(" ")}
       >
-        {lessons.map((l, i) => {
-          const active = l.id === activeLessonId;
+        <div className="space-y-1.5">
+          {lessons.map((l, i) => {
+            const active = l.id === activeLessonId;
 
-          return (
-            <PressButton
-              tier="card"
-              key={l.id}
-              onClick={() => onSelectLesson(l.id)}
-              className={[
-                "relative w-full rounded-[16px] px-4 py-3 text-left",
-                active ? "bg-blue-50/90 ring-1 ring-blue-200/60" : "",
-              ].join(" ")}
-              aria-current={active ? "page" : undefined}
-            >
-              {active ? (
-                <span className="absolute left-2 top-3 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
-              ) : null}
+            return (
+              <PressButton
+                tier="card"
+                key={l.id}
+                onClick={() => onSelectLesson(l.id)}
+                className={[
+                  "relative w-full rounded-[16px] px-4 py-3 text-left transition-colors",
+                  active
+                    ? "bg-blue-50/82 ring-1 ring-blue-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+                    : "bg-white/78 ring-1 ring-slate-200/65",
+                ].join(" ")}
+                aria-current={active ? "page" : undefined}
+              >
+                {active ? (
+                  <span className="absolute left-2 top-3.5 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
+                ) : null}
 
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
 
-                <div className="flex items-center gap-2">
-                  {active ? (
-                    <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
-                      Current
-                    </span>
-                  ) : null}
+                  <div className="flex items-center gap-2">
+                    {active ? (
+                      <span className="rounded-full bg-blue-100/68 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/70">
+                        Current
+                      </span>
+                    ) : null}
 
-                  {/* ✅ Show BOTH position + minutes */}
-                  <span className="shrink-0 text-[12px] font-semibold text-slate-600">
-                    {i + 1} of {total}
-                    {l.estMinutes ? ` • ${l.estMinutes}m` : ""}
-                  </span>
+                    {!active ? (
+                      <span className="shrink-0 text-[12px] font-semibold text-slate-700">
+                        {i + 1} of {total}
+                        {l.estMinutes ? ` • ${l.estMinutes}m` : ""}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-1 line-clamp-2 text-[12px] font-medium leading-5 text-slate-600">
-                {l.goal}
-              </div>
-            </PressButton>
-          );
-        })}
+                <div className="mt-1.5 line-clamp-1 text-[13px] font-medium leading-5 text-slate-700 sm:line-clamp-2">
+                  {l.goal}
+                </div>
+              </PressButton>
+            );
+          })}
+        </div>
       </div>
 
       {/* Scroll hint shown only when scroll exists and not at bottom */}
