@@ -417,6 +417,7 @@ function CoursePageClient() {
               {overviewExpanded ? (
                 <div className="mt-1 text-[13px] font-medium text-slate-700">
                   {overviewLabel.moduleName}
+                  {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
                 </div>
               ) : null}
             </div>
@@ -537,10 +538,6 @@ function CoursePageClient() {
               <div className="min-w-0">
                 <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                   Additional information
-                </div>
-                <div className="mt-1 text-[13px] font-medium text-slate-700">
-                  {overviewLabel.moduleName}
-                  {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
                 </div>
               </div>
               <div className="mt-1 text-[12px] font-medium text-slate-600">
