@@ -43,7 +43,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-3 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent [@media(max-height:820px)]:mt-2.5" />
-          <p className="mt-2 hidden text-center text-[14px] font-medium tracking-[0.01em] text-slate-700 [@media(max-height:820px)]:block">
+          <p className="mt-2 text-center text-[15px] font-medium tracking-[0.01em] text-slate-700">
             Learn. Drill. Swim.
           </p>
         </div>
@@ -86,13 +86,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Footer line + tagline */}
-        <div className="mt-5 [@media(max-height:820px)]:mt-4">
-          <div className="mx-auto h-px w-full max-w-[420px] bg-slate-200/80" />
-          <p className="mt-4 text-center text-[15px] font-medium tracking-[0.01em] text-slate-700 [@media(max-height:820px)]:hidden">
-            Learn. Drill. Swim.
-          </p>
-        </div>
       </PageTemplate>
     </SiteChrome>
   );
