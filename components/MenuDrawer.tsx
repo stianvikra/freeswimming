@@ -489,17 +489,22 @@ function SmartLessonList({
                 className={[
                   "relative w-full rounded-[16px] px-4 py-3 text-left transition-colors",
                   activeAndDone
-                    ? "bg-emerald-50/72 ring-1 ring-emerald-200/74 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+                    ? "bg-emerald-50/85 ring-1 ring-emerald-200/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)]"
                     : active
                     ? "bg-blue-50/82 ring-1 ring-blue-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
                     : done
-                      ? "bg-emerald-50/72 ring-1 ring-emerald-200/72"
+                      ? "bg-emerald-50/85 ring-1 ring-emerald-200/78"
                       : "bg-white/78 ring-1 ring-slate-200/65",
                 ].join(" ")}
                 aria-current={active ? "page" : undefined}
               >
                 {active ? (
-                  <span className="absolute left-2 top-3.5 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
+                  <span
+                    className={[
+                      "absolute left-2 top-3.5 h-5 w-1 rounded-full bg-gradient-to-b",
+                      done ? "from-emerald-500 to-emerald-600" : "from-blue-500 to-blue-600",
+                    ].join(" ")}
+                  />
                 ) : null}
 
                 <div className="flex items-center justify-between gap-3">
