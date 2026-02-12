@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "screenshots:mobile": "playwright test tests/e2e/mobile-screenshots.spec.ts --project=mobile-chromium",
+    "screenshots:iphone": "playwright test tests/e2e/mobile-screenshots.spec.ts --project=mobile-iphone-13-pro-max"
   },
   "dependencies": {
     "lucide-react": "^0.563.0",

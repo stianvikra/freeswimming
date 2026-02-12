@@ -27,5 +27,11 @@ export default defineConfig({
         ...devices["Pixel 7"],
       },
     },
+    {
+      name: "mobile-iphone-13-pro-max",
+      use: {
+        ...devices["iPhone 13 Pro Max"],
+      },
+    },
   ],
 });
