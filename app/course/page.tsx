@@ -127,10 +127,15 @@ function CoursePageClient() {
   const [doneLessonIds, setDoneLessonIds] = useState<string[]>([]);
   const [videoStarted, setVideoStarted] = useState(false);
   const [videoPaused, setVideoPaused] = useState(false);
+  const [youtubeApiReady, setYoutubeApiReady] = useState(false);
   const [videoLoadState, setVideoLoadState] = useState<"idle" | "loading" | "loaded" | "failed">(
     "idle"
   );
-  const videoFrameRef = useRef<HTMLIFrameElement | null>(null);
+  const videoFrameRef = useRef<HTMLDivElement | null>(null);
+  const youtubePlayerRef = useRef<{ destroy?: () => void; playVideo?: () => void } | null>(null);
+  const playerReadyRef = useRef(false);
+  const pendingPlayRef = useRef(false);
+  const videoStartedRef = useRef(false);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -253,14 +258,6 @@ function CoursePageClient() {
   const isMainDrawerOpen = drawerOpen && drawerView === "main";
   const isCourseDrawerOpen = drawerOpen && drawerView === "course";
 
-  const youtubeSrc = useMemo(
-    () => `https://www.youtube-nocookie.com/embed/${activeLesson.youtubeId}`,
-    [activeLesson.youtubeId]
-  );
-  const youtubeEmbedSrc = useMemo(
-    () => `${youtubeSrc}?autoplay=1&playsinline=1&rel=0&enablejsapi=1&modestbranding=1`,
-    [youtubeSrc]
-  );
   const youtubeWatchUrl = useMemo(
     () => `https://www.youtube.com/watch?v=${activeLesson.youtubeId}`,
     [activeLesson.youtubeId]
@@ -314,9 +311,54 @@ function CoursePageClient() {
   }, [activeLesson.id]);
 
   useEffect(() => {
+    videoStartedRef.current = videoStarted;
+  }, [videoStarted]);
+
+  useEffect(() => {
+    const w = window as unknown as {
+      YT?: { Player?: unknown };
+      onYouTubeIframeAPIReady?: (() => void) | undefined;
+    };
+
+    if (w.YT?.Player) {
+      setYoutubeApiReady(true);
+      return;
+    }
+
+    const prevReady = w.onYouTubeIframeAPIReady;
+    const onApiReady = () => {
+      prevReady?.();
+      setYoutubeApiReady(true);
+    };
+    w.onYouTubeIframeAPIReady = onApiReady;
+
+    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      const script = document.createElement("script");
+      script.src = "https://www.youtube.com/iframe_api";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      if (w.onYouTubeIframeAPIReady === onApiReady) {
+        w.onYouTubeIframeAPIReady = prevReady;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     setVideoStarted(false);
     setVideoPaused(false);
     setVideoLoadState("idle");
+    videoStartedRef.current = false;
+    playerReadyRef.current = false;
+    pendingPlayRef.current = false;
+    if (youtubePlayerRef.current?.destroy) {
+      try {
+        youtubePlayerRef.current.destroy();
+      } catch {}
+      youtubePlayerRef.current = null;
+    }
   }, [activeLesson.id]);
 
   useEffect(() => {
@@ -327,60 +369,149 @@ function CoursePageClient() {
     return () => window.clearTimeout(timeout);
   }, [videoLoadState, activeLesson.id]);
 
-  function startVideoPlayback() {
-    setVideoStarted(true);
-    setVideoPaused(false);
-    setVideoLoadState("loading");
+  function tryStartPlayback(preferMutedFallback = true) {
+    const player = youtubePlayerRef.current as
+      | { playVideo?: () => void; mute?: () => void; getPlayerState?: () => number }
+      | null;
+    if (!player) return;
+    try {
+      player.playVideo?.();
+    } catch {}
+    if (!preferMutedFallback) return;
+    window.setTimeout(() => {
+      const w = window as unknown as {
+        YT?: { PlayerState?: { PLAYING: number } };
+      };
+      const playing = w.YT?.PlayerState?.PLAYING;
+      if (playing == null) return;
+      let state: number | undefined;
+      try {
+        state = player.getPlayerState?.();
+      } catch {
+        return;
+      }
+      if (state !== playing) {
+        try {
+          player.mute?.();
+          player.playVideo?.();
+        } catch {}
+      }
+    }, 500);
   }
 
-  function sendYoutubeCommand(func: string, args: unknown[] = []) {
-    const target = videoFrameRef.current?.contentWindow;
-    if (!target) return;
-    target.postMessage(
-      JSON.stringify({
-        event: "command",
-        func,
-        args,
-      }),
-      "*"
-    );
+  function startVideoPlayback() {
+    setVideoStarted(true);
+    videoStartedRef.current = true;
+    setVideoPaused(false);
+    setVideoLoadState("loading");
+    pendingPlayRef.current = true;
+    if (playerReadyRef.current) {
+      pendingPlayRef.current = false;
+      tryStartPlayback(true);
+    }
   }
 
   function resumePlayback() {
     setVideoPaused(false);
-    sendYoutubeCommand("playVideo");
+    pendingPlayRef.current = false;
+    tryStartPlayback(false);
   }
 
   useEffect(() => {
-    if (!videoStarted) return;
+    if (!youtubeApiReady || !videoFrameRef.current) return;
 
-    function onMessage(event: MessageEvent) {
-      const origin = event.origin || "";
-      if (!origin.includes("youtube.com") && !origin.includes("youtube-nocookie.com")) return;
+    const w = window as unknown as {
+      YT?: {
+        Player: new (
+          el: HTMLElement,
+          options: {
+            videoId: string;
+            playerVars?: Record<string, string | number>;
+            events?: {
+              onReady?: (e: { target?: { playVideo?: () => void } }) => void;
+              onError?: () => void;
+              onStateChange?: (e: { data: number }) => void;
+            };
+          }
+        ) => { destroy?: () => void; playVideo?: () => void };
+        PlayerState?: {
+          ENDED: number;
+          PLAYING: number;
+          PAUSED: number;
+          BUFFERING: number;
+          CUED: number;
+        };
+      };
+    };
 
-      let payload: unknown = event.data;
-      if (typeof payload === "string") {
-        try {
-          payload = JSON.parse(payload);
-        } catch {
-          return;
-        }
-      }
-      if (!payload || typeof payload !== "object" || !("event" in payload)) return;
-      const ytEvent = (payload as { event?: unknown; info?: unknown }).event;
-      const ytInfo = (payload as { event?: unknown; info?: unknown }).info;
+    if (!w.YT?.Player) return;
 
-      if (ytEvent !== "onStateChange") return;
-      if (ytInfo === 2 || ytInfo === 0) {
-        setVideoPaused(true);
-      } else if (ytInfo === 1 || ytInfo === 3) {
-        setVideoPaused(false);
-      }
+    if (youtubePlayerRef.current?.destroy) {
+      try {
+        youtubePlayerRef.current.destroy();
+      } catch {}
+      youtubePlayerRef.current = null;
     }
 
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [videoStarted]);
+    const player = new w.YT.Player(videoFrameRef.current, {
+      videoId: activeLesson.youtubeId,
+      playerVars: {
+        autoplay: 0,
+        playsinline: 1,
+        rel: 0,
+        modestbranding: 1,
+        origin: window.location.origin,
+      },
+      events: {
+        onReady: () => {
+          playerReadyRef.current = true;
+          if (videoStartedRef.current) {
+            setVideoLoadState("loaded");
+          }
+          if (pendingPlayRef.current) {
+            pendingPlayRef.current = false;
+            tryStartPlayback(true);
+          }
+        },
+        onError: () => {
+          setVideoLoadState("failed");
+          setVideoPaused(true);
+        },
+        onStateChange: (event) => {
+          const state = event.data;
+          const ps = w.YT?.PlayerState;
+          if (!ps) return;
+          if (state === ps.PAUSED || state === ps.ENDED || state === ps.CUED) {
+            setVideoPaused(true);
+            if (state !== ps.ENDED) {
+              setVideoLoadState("loaded");
+            }
+          } else if (state === ps.PLAYING) {
+            setVideoLoadState("loaded");
+            setVideoPaused(false);
+          } else if (state === ps.BUFFERING) {
+            setVideoLoadState("loading");
+            setVideoPaused(false);
+          }
+        },
+      },
+    });
+
+    youtubePlayerRef.current = player;
+
+    return () => {
+      if (player.destroy) {
+        try {
+          player.destroy();
+        } catch {}
+      }
+      playerReadyRef.current = false;
+      pendingPlayRef.current = false;
+      if (youtubePlayerRef.current === player) {
+        youtubePlayerRef.current = null;
+      }
+    };
+  }, [youtubeApiReady, activeLesson.youtubeId]);
 
   useEffect(() => {
     if (!closeDrawerOnLessonChange) return;
@@ -659,33 +790,11 @@ function CoursePageClient() {
 
         <section className="mt-3 rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
           <div className="relative overflow-hidden rounded-[20px] ring-1 ring-slate-200/75 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-            {videoStarted ? (
-              <div className="aspect-video w-full bg-slate-100">
-                <iframe
-                  ref={videoFrameRef}
-                  className="h-full w-full"
-                  src={youtubeEmbedSrc}
-                  title={`${activeLesson.title} (YouTube video)`}
-                  loading="lazy"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  onLoad={() => {
-                    setVideoLoadState("loaded");
-                    // Register state callbacks + retry play for iOS/Safari edge cases.
-                    window.setTimeout(() => {
-                      sendYoutubeCommand("addEventListener", ["onStateChange"]);
-                      sendYoutubeCommand("playVideo");
-                    }, 120);
-                  }}
-                  onError={() => setVideoLoadState("failed")}
-                />
-              </div>
-            ) : (
-              <div className="aspect-video w-full bg-slate-100" />
-            )}
+            <div className="aspect-video w-full bg-slate-100">
+              <div ref={videoFrameRef} className="h-full w-full" />
+            </div>
 
-            {!videoStarted || videoPaused ? (
+            {!videoStarted || videoPaused || videoLoadState === "loading" ? (
               <PressButton
                 tier="card"
                 onClick={videoStarted ? resumePlayback : startVideoPlayback}
@@ -722,26 +831,20 @@ function CoursePageClient() {
                   </div>
 
                   <div className="mt-auto">
-                    <div className="line-clamp-2 text-[20px] font-semibold leading-tight text-slate-900">
+                    <div className="line-clamp-2 text-[18px] font-semibold leading-tight text-slate-900 sm:text-[20px]">
                       {activeLesson.title}
                     </div>
-                    <div className="mt-3 flex items-center justify-center">
-                      <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)]">
-                        {videoStarted ? (
-                          <span
-                            aria-hidden
-                            className="inline-flex h-3.5 w-3.5 items-center justify-between"
-                          >
-                            <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
-                            <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
-                          </span>
-                        ) : (
-                          <span
-                            aria-hidden
-                            className="ml-0.5 h-0 w-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-white"
-                          />
-                        )}
-                        {videoStarted ? "Paused - tap to resume" : "Play lesson"}
+                    <div className="mt-2 flex items-center justify-center">
+                      <span className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)] sm:min-h-[40px] sm:px-4 sm:py-2 sm:text-[13px]">
+                        <span
+                          aria-hidden
+                          className="ml-0.5 h-0 w-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-white"
+                        />
+                        {videoLoadState === "loading"
+                          ? "Starting video..."
+                          : videoStarted
+                            ? "Tap to resume"
+                            : "Play lesson"}
                       </span>
                     </div>
                   </div>
