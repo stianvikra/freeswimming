@@ -3,6 +3,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
@@ -124,7 +125,12 @@ function CoursePageClient() {
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(false);
   const [doneLessonIds, setDoneLessonIds] = useState<string[]>([]);
-  const [videoLoadState, setVideoLoadState] = useState<"loading" | "loaded" | "failed">("loading");
+  const [videoStarted, setVideoStarted] = useState(false);
+  const [videoPaused, setVideoPaused] = useState(false);
+  const [videoLoadState, setVideoLoadState] = useState<"idle" | "loading" | "loaded" | "failed">(
+    "idle"
+  );
+  const videoFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -251,6 +257,10 @@ function CoursePageClient() {
     () => `https://www.youtube-nocookie.com/embed/${activeLesson.youtubeId}`,
     [activeLesson.youtubeId]
   );
+  const youtubeEmbedSrc = useMemo(
+    () => `${youtubeSrc}?autoplay=1&playsinline=1&rel=0&enablejsapi=1&modestbranding=1`,
+    [youtubeSrc]
+  );
   const youtubeWatchUrl = useMemo(
     () => `https://www.youtube.com/watch?v=${activeLesson.youtubeId}`,
     [activeLesson.youtubeId]
@@ -304,7 +314,9 @@ function CoursePageClient() {
   }, [activeLesson.id]);
 
   useEffect(() => {
-    setVideoLoadState("loading");
+    setVideoStarted(false);
+    setVideoPaused(false);
+    setVideoLoadState("idle");
   }, [activeLesson.id]);
 
   useEffect(() => {
@@ -314,6 +326,61 @@ function CoursePageClient() {
     }, 7000);
     return () => window.clearTimeout(timeout);
   }, [videoLoadState, activeLesson.id]);
+
+  function startVideoPlayback() {
+    setVideoStarted(true);
+    setVideoPaused(false);
+    setVideoLoadState("loading");
+  }
+
+  function sendYoutubeCommand(func: string, args: unknown[] = []) {
+    const target = videoFrameRef.current?.contentWindow;
+    if (!target) return;
+    target.postMessage(
+      JSON.stringify({
+        event: "command",
+        func,
+        args,
+      }),
+      "*"
+    );
+  }
+
+  function resumePlayback() {
+    setVideoPaused(false);
+    sendYoutubeCommand("playVideo");
+  }
+
+  useEffect(() => {
+    if (!videoStarted) return;
+
+    function onMessage(event: MessageEvent) {
+      const origin = event.origin || "";
+      if (!origin.includes("youtube.com") && !origin.includes("youtube-nocookie.com")) return;
+
+      let payload: unknown = event.data;
+      if (typeof payload === "string") {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          return;
+        }
+      }
+      if (!payload || typeof payload !== "object" || !("event" in payload)) return;
+      const ytEvent = (payload as { event?: unknown; info?: unknown }).event;
+      const ytInfo = (payload as { event?: unknown; info?: unknown }).info;
+
+      if (ytEvent !== "onStateChange") return;
+      if (ytInfo === 2 || ytInfo === 0) {
+        setVideoPaused(true);
+      } else if (ytInfo === 1 || ytInfo === 3) {
+        setVideoPaused(false);
+      }
+    }
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [videoStarted]);
 
   useEffect(() => {
     if (!closeDrawerOnLessonChange) return;
@@ -591,33 +658,111 @@ function CoursePageClient() {
         </section>
 
         <section className="mt-3 rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
-          <div className="overflow-hidden rounded-[20px] ring-1 ring-slate-200/75 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-            <div className="aspect-video w-full bg-slate-100">
-              <iframe
-                className="h-full w-full"
-                src={youtubeSrc}
-                title={`${activeLesson.title} (YouTube video)`}
-                loading="lazy"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                onLoad={() => setVideoLoadState("loaded")}
-                onError={() => setVideoLoadState("failed")}
-              />
-            </div>
+          <div className="relative overflow-hidden rounded-[20px] ring-1 ring-slate-200/75 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+            {videoStarted ? (
+              <div className="aspect-video w-full bg-slate-100">
+                <iframe
+                  ref={videoFrameRef}
+                  className="h-full w-full"
+                  src={youtubeEmbedSrc}
+                  title={`${activeLesson.title} (YouTube video)`}
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  onLoad={() => {
+                    setVideoLoadState("loaded");
+                    // Register state callbacks + retry play for iOS/Safari edge cases.
+                    window.setTimeout(() => {
+                      sendYoutubeCommand("addEventListener", ["onStateChange"]);
+                      sendYoutubeCommand("playVideo");
+                    }, 120);
+                  }}
+                  onError={() => setVideoLoadState("failed")}
+                />
+              </div>
+            ) : (
+              <div className="aspect-video w-full bg-slate-100" />
+            )}
+
+            {!videoStarted || videoPaused ? (
+              <PressButton
+                tier="card"
+                onClick={videoStarted ? resumePlayback : startVideoPlayback}
+                className="absolute inset-0 z-[2] w-full overflow-hidden bg-[radial-gradient(120%_100%_at_10%_0%,rgba(147,197,253,0.22),rgba(255,255,255,0.95)),linear-gradient(180deg,rgba(241,245,249,0.96),rgba(255,255,255,0.98))] p-4 text-left"
+                aria-label={
+                  videoStarted
+                    ? `Resume lesson: ${activeLesson.title}`
+                    : `Play lesson: ${activeLesson.title}`
+                }
+              >
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(59,130,246,0.05),rgba(255,255,255,0))]" />
+                <div className="relative flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="relative h-8 w-8 shrink-0">
+                        <Image
+                          src="/logos/01_icon_transparent.png"
+                          alt=""
+                          fill
+                          sizes="32px"
+                          className="object-contain"
+                        />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-slate-600">{overviewLabel.module}</div>
+                        <div className="text-[11px] font-semibold text-slate-600">{overviewLabel.lesson}</div>
+                      </div>
+                    </div>
+                    {overviewLabel.duration ? (
+                      <span className="shrink-0 rounded-full bg-white/88 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
+                        {overviewLabel.duration}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-auto">
+                    <div className="line-clamp-2 text-[20px] font-semibold leading-tight text-slate-900">
+                      {activeLesson.title}
+                    </div>
+                    <div className="mt-3 flex items-center justify-center">
+                      <span className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)]">
+                        {videoStarted ? (
+                          <span
+                            aria-hidden
+                            className="inline-flex h-3.5 w-3.5 items-center justify-between"
+                          >
+                            <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
+                            <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
+                          </span>
+                        ) : (
+                          <span
+                            aria-hidden
+                            className="ml-0.5 h-0 w-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-white"
+                          />
+                        )}
+                        {videoStarted ? "Paused - tap to resume" : "Play lesson"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </PressButton>
+            ) : null}
           </div>
 
-          <div className="mt-2 px-1 text-[12px] font-medium text-slate-700">
-            <div className="min-w-0">
-              {nextLesson ? (
-                <>
-                  Up next: <span className="font-semibold text-slate-800">{nextLesson.title}</span>
-                </>
-              ) : (
-                <span className="font-semibold text-slate-800">Last lesson in this course</span>
-              )}
+          {videoStarted && !videoPaused ? (
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1 text-[12px] font-medium text-slate-700">
+              <div className="min-w-0">
+                {nextLesson ? (
+                  <>
+                    Up next: <span className="font-semibold text-slate-800">{nextLesson.title}</span>
+                  </>
+                ) : (
+                  <span className="font-semibold text-slate-800">Last lesson in this course</span>
+                )}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           {videoLoadState === "failed" ? (
             <div className="mt-2 rounded-2xl border border-slate-200/70 bg-white/82 px-3 py-2 text-[12px] font-medium text-slate-600">
