@@ -836,10 +836,20 @@ function CoursePageClient() {
                     </div>
                     <div className="mt-2 flex items-center justify-center">
                       <span className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)] sm:min-h-[40px] sm:px-4 sm:py-2 sm:text-[13px]">
-                        <span
-                          aria-hidden
-                          className="ml-0.5 h-0 w-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-white"
-                        />
+                        {videoStarted ? (
+                          <span
+                            aria-hidden
+                            className="inline-flex h-3.5 w-3.5 items-center justify-between"
+                          >
+                            <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
+                            <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
+                          </span>
+                        ) : (
+                          <span
+                            aria-hidden
+                            className="ml-0.5 h-0 w-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-white"
+                          />
+                        )}
                         {videoLoadState === "loading"
                           ? "Starting video..."
                           : videoStarted
