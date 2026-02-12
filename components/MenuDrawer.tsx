@@ -281,9 +281,66 @@ function CourseView({
   onSelectLesson: (lessonId: string) => void;
 }) {
   const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
+  const totalModules = COURSE_MODULES.length;
+  const totalLessons = useMemo(
+    () => COURSE_MODULES.reduce((sum, mod) => sum + mod.lessons.length, 0),
+    []
+  );
+  const completedLessons = useMemo(
+    () =>
+      COURSE_MODULES.reduce(
+        (sum, mod) => sum + mod.lessons.filter((lesson) => doneLessonIdSet.has(lesson.id)).length,
+        0
+      ),
+    [doneLessonIdSet]
+  );
+  const completedModules = useMemo(
+    () =>
+      COURSE_MODULES.filter(
+        (mod) => mod.lessons.length > 0 && mod.lessons.every((lesson) => doneLessonIdSet.has(lesson.id))
+      ).length,
+    [doneLessonIdSet]
+  );
+  const completedPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="rounded-[20px] border border-blue-200/62 bg-[radial-gradient(520px_170px_at_18%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_62%),rgba(255,255,255,0.9)] p-3.5 shadow-[0_12px_28px_rgba(15,23,42,0.07)]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">
+              Progress
+            </div>
+            <p className="mt-1 text-[13px] font-semibold leading-5 text-slate-700">
+              Modules {completedModules} of {totalModules}
+              <span className="px-1 text-slate-300">•</span>
+              Lessons {completedLessons} of {totalLessons}
+            </p>
+          </div>
+
+          <span className="shrink-0 rounded-full bg-blue-50/82 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/65">
+            {completedPct}%
+          </span>
+        </div>
+
+        <div
+          className="mt-2.5"
+          role="progressbar"
+          aria-label="Course progress in menu"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={completedPct}
+          aria-valuetext={`Progress: modules ${completedModules} of ${totalModules}, lessons ${completedLessons} of ${totalLessons}.`}
+        >
+          <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/86 ring-1 ring-slate-200/75">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-[width] duration-300"
+              style={{ width: `${completedPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
       {COURSE_MODULES.map((mod, idx) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
@@ -489,9 +546,9 @@ function SmartLessonList({
                 className={[
                   "relative w-full rounded-[16px] px-4 py-3 text-left transition-colors",
                   activeAndDone
-                    ? "bg-emerald-50/85 ring-1 ring-emerald-200/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)]"
+                    ? "bg-emerald-50/85 ring-2 ring-blue-400/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_0_0_1px_rgba(59,130,246,0.35)]"
                     : active
-                    ? "bg-blue-50/82 ring-1 ring-blue-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+                    ? "bg-blue-50/82 ring-1 ring-blue-300/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.58)]"
                     : done
                       ? "bg-emerald-50/85 ring-1 ring-emerald-200/78"
                       : "bg-white/78 ring-1 ring-slate-200/65",
@@ -499,12 +556,7 @@ function SmartLessonList({
                 aria-current={active ? "page" : undefined}
               >
                 {active ? (
-                  <span
-                    className={[
-                      "absolute left-2 top-3.5 h-5 w-1 rounded-full bg-gradient-to-b",
-                      done ? "from-emerald-500 to-emerald-600" : "from-blue-500 to-blue-600",
-                    ].join(" ")}
-                  />
+                  <span className="absolute left-2 top-3.5 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
                 ) : null}
 
                 <div className="flex items-center justify-between gap-3">
