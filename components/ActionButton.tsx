@@ -11,6 +11,7 @@ type Props = {
   href?: string;
   onClick?: () => void;
   variant?: "primary" | "secondary";
+  compact?: boolean;
   disabled?: boolean;
 };
 
@@ -21,12 +22,13 @@ export default function ActionButton({
   href,
   onClick,
   variant = "secondary",
+  compact = false,
   disabled = false,
 }: Props) {
   // Base = structure + interaction system
   const base =
-    "group relative w-full rounded-2xl px-6 " +
-    "min-h-[78px] sm:min-h-[82px] " +
+    `group relative w-full rounded-2xl ${compact ? "px-5" : "px-6"} ` +
+    `${compact ? "min-h-[72px] sm:min-h-[76px]" : "min-h-[78px] sm:min-h-[82px]"} ` +
     "flex items-center justify-center";
 
   // Skins only (colors/shadows/rings) — hover/press lives in globals via ui-press
