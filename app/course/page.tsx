@@ -33,6 +33,11 @@ import {
 const STORAGE_KEY = "fs_course_last_lesson";
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 const DONE_STORAGE_KEY = "fs_course_done_lessons";
+const DEFAULT_PASS_CRITERIA = [
+  "Complete 3 calm repetitions with the same cue.",
+  "Breathing stays controlled without rushing.",
+  "Body line stays stable from start to finish.",
+];
 
 type CourseNavButtonProps = {
   children: React.ReactNode;
@@ -281,6 +286,12 @@ function CoursePageClient() {
     return COURSE_LESSONS_FLAT.find((lesson) => lesson.id === nextId) ?? null;
   }, [nextId]);
   const isLessonDone = doneLessonIds.includes(activeLesson.id);
+  const lessonType = activeLesson.lessonType ?? "drill";
+  const showPassCriteria = lessonType === "drill" || lessonType === "swim";
+  const showStuckCta = lessonType === "drill" || lessonType === "swim";
+  const passCriteria = activeLesson.passCriteria?.length
+    ? activeLesson.passCriteria
+    : DEFAULT_PASS_CRITERIA;
 
   const programsCtaClass = isLastLesson
     ? "flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
@@ -695,9 +706,31 @@ function CoursePageClient() {
 
             <div className={cx("mt-5 p-4", supportCardClass)}>
               <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-                Next step
+                {showPassCriteria ? "Pass criteria" : "Next step"}
               </div>
-              <div className="mt-1 text-[14px] leading-6 text-slate-800">{activeLesson.nextStep}</div>
+              {showPassCriteria ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
+                  {passCriteria.map((criterion) => (
+                    <li key={criterion}>{criterion}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="mt-1 text-[14px] leading-6 text-slate-800">{activeLesson.nextStep}</div>
+              )}
+              {showStuckCta ? (
+                <p className="mt-3 border-t border-slate-200/72 pt-3 text-[12px] leading-5 text-slate-600">
+                  If this doesn&apos;t click after 2-3 sessions, your #1 limiter may be elsewhere.
+                  That&apos;s what{" "}
+                  <PressLink
+                    tier="nav"
+                    href="/analysis"
+                    className="font-semibold text-slate-800 underline decoration-slate-300 underline-offset-2"
+                  >
+                    Video Analysis
+                  </PressLink>{" "}
+                  is for.
+                </p>
+              ) : null}
             </div>
 
             <div className="mt-5 flex flex-col gap-2">

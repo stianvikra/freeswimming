@@ -348,11 +348,7 @@ function CourseView({
         const doneCount = mod.lessons.filter((lesson) => doneLessonIdSet.has(lesson.id)).length;
         const isDoneModule = moduleLessonCount > 0 && doneCount === moduleLessonCount;
         const isInProgressModule = doneCount > 0 && doneCount < moduleLessonCount;
-        const doneSummary = isDoneModule
-          ? "All lessons done"
-          : isInProgressModule
-            ? `In progress · ${doneCount} of ${moduleLessonCount} done`
-            : `${doneCount} of ${moduleLessonCount} done`;
+        const doneSummary = `Module progress: ${doneCount} of ${moduleLessonCount}`;
         const panelId = `course-module-panel-${mod.id}`;
 
         const wrapperClass = [

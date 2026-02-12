@@ -5,6 +5,8 @@ export type CourseLesson = {
   title: string;
   youtubeId: string; // ONLY the video id, not full URL
   estMinutes?: number;
+  lessonType?: "learn" | "drill" | "swim";
+  passCriteria?: string[];
 
   goal: string;
   cues: string[];
@@ -85,6 +87,7 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         title: "Test video - Boknafjorden",
         youtubeId: "Xh6OblO06LY",
         estMinutes: 4,
+        lessonType: "drill",
         goal: "Find a long, stable body line so your effort moves you forward — not down.",
         cues: ["Head neutral (look slightly forward/down)", "Long spine, light chest", "Hips close to the surface"],
         commonMistakes: [
@@ -104,6 +107,7 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         title: "Test video 2",
         youtubeId: "OWRzGHPRdmg",
         estMinutes: 3,
+        lessonType: "drill",
         goal: "Use a neutral head position to lift the hips without kicking harder.",
         cues: ["Chin slightly tucked", "Eyes down-forward", "Neck relaxed"],
         commonMistakes: ["Looking forward too much", "Tensing the neck"],
@@ -126,6 +130,7 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         title: "Balance without brute force",
         youtubeId: "dQw4w9WgXcQ",
         estMinutes: 4,
+        lessonType: "drill",
         goal: "Stay balanced with less tension so your stroke becomes smoother.",
         cues: ["Relax the shoulders", "Long exhale", "Quiet kick"],
         commonMistakes: ["Holding breath", "Over-kicking to stay afloat"],
@@ -148,6 +153,7 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         title: "Exhale fixes panic",
         youtubeId: "dQw4w9WgXcQ",
         estMinutes: 5,
+        lessonType: "drill",
         goal: "Build a breathing rhythm that keeps you relaxed and controlled.",
         cues: ["Exhale underwater", "Small inhale", "Return head smoothly"],
         commonMistakes: ["Holding breath", "Big gasp inhale", "Lifting head"],
@@ -170,6 +176,7 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         title: "Smooth timing (no rushing)",
         youtubeId: "dQw4w9WgXcQ",
         estMinutes: 4,
+        lessonType: "drill",
         goal: "Stop rushing. Improve flow so each stroke gives you more distance.",
         cues: ["Long line", "Gentle kick", "Patient front arm"],
         commonMistakes: ["Spinning arms fast", "Kicking to compensate"],
