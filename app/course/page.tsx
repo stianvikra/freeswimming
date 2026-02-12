@@ -728,6 +728,7 @@ function CoursePageClient() {
           course={{
             activeLessonId: activeLesson.id,
             onSelectLesson: goToLesson,
+            doneLessonIds,
           }}
           titleMain="Main menu"
           titleCourse="Course menu"

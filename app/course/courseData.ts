@@ -182,6 +182,27 @@ const COURSE_MODULES_BASE: CourseModule[] = [
       },
     ],
   },
+      id: "m4",
+    title: "Timing",
+    subtitle: "Coordinate kick + catch for better flow.",
+    lessons: [
+      {
+        id: "m4-l1",
+        title: "Smooth timing (no rushing)",
+        youtubeId: "dQw4w9WgXcQ",
+        estMinutes: 4,
+        goal: "Stop rushing. Improve flow so each stroke gives you more distance.",
+        cues: ["Long line", "Gentle kick", "Patient front arm"],
+        commonMistakes: ["Spinning arms fast", "Kicking to compensate"],
+        drill: {
+          title: "Slow swim with one focus",
+          steps: ["Swim easy and slow for 25m", "Only focus on ‘patient lead arm’", "Repeat 6–8 times"],
+        },
+        nextStep: "Repeat for two sessions. If you rush again, slow down and reset.",
+        tags: ["timing", "flow"],
+      },
+    ],
+  },
 ];
 
 const PLACEHOLDER_VIDEO_IDS = new Set(["dQw4w9WgXcQ"]);

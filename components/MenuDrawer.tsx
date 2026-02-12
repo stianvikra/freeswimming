@@ -32,6 +32,7 @@ type Props = {
   course?: {
     activeLessonId: string;
     onSelectLesson: (lessonId: string) => void;
+    doneLessonIds?: string[];
   };
 
   /** Optional: headline override */
@@ -189,6 +190,7 @@ export default function MenuDrawer({
               openModuleId={openModuleId}
               setOpenModuleId={setOpenModuleId}
               activeLessonId={course!.activeLessonId}
+              doneLessonIds={course!.doneLessonIds ?? []}
               onSelectLesson={course!.onSelectLesson}
             />
           ) : (
@@ -269,18 +271,31 @@ function CourseView({
   openModuleId,
   setOpenModuleId,
   activeLessonId,
+  doneLessonIds,
   onSelectLesson,
 }: {
   openModuleId: string;
   setOpenModuleId: (id: string) => void;
   activeLessonId: string;
+  doneLessonIds: string[];
   onSelectLesson: (lessonId: string) => void;
 }) {
+  const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
+
   return (
     <div className="flex flex-col gap-3">
       {COURSE_MODULES.map((mod, idx) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
+        const moduleLessonCount = mod.lessons.length;
+        const doneCount = mod.lessons.filter((lesson) => doneLessonIdSet.has(lesson.id)).length;
+        const isDoneModule = moduleLessonCount > 0 && doneCount === moduleLessonCount;
+        const isInProgressModule = doneCount > 0 && doneCount < moduleLessonCount;
+        const doneSummary = isDoneModule
+          ? "All lessons done"
+          : isInProgressModule
+            ? `In progress · ${doneCount} of ${moduleLessonCount} done`
+            : `${doneCount} of ${moduleLessonCount} done`;
         const panelId = `course-module-panel-${mod.id}`;
 
         const wrapperClass = [
@@ -295,9 +310,11 @@ function CourseView({
           "absolute left-0 top-0 h-full w-[4px] transition",
           isActiveModule
             ? "bg-gradient-to-b from-blue-400 to-blue-600"
+            : isDoneModule
+              ? "bg-gradient-to-b from-emerald-300 to-emerald-500"
             : isOpen
-            ? "bg-slate-300/80"
-            : "bg-slate-200/70",
+              ? "bg-slate-300/80"
+              : "bg-slate-200/70",
         ].join(" ");
 
         const moduleHeaderBtn = [
@@ -335,12 +352,32 @@ function CourseView({
                     <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
                       Current module
                     </span>
+                  ) : isDoneModule ? (
+                    <span className="inline-flex rounded-full bg-emerald-50/80 px-3 py-1 text-[12px] font-semibold text-emerald-700 ring-1 ring-emerald-200/70">
+                      Module completed
+                    </span>
+                  ) : isInProgressModule ? (
+                    <span className="inline-flex rounded-full bg-blue-50/78 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-200/60">
+                      In progress
+                    </span>
                   ) : null}
                 </div>
 
                 <div className="mt-2 text-[16px] font-semibold text-slate-900">{mod.title}</div>
 
                 {mod.subtitle ? <div className="mt-1 text-[13px] font-medium text-slate-700">{mod.subtitle}</div> : null}
+                <div
+                  className={[
+                    "mt-1 text-[12px] font-medium",
+                    isDoneModule
+                      ? "text-emerald-700"
+                      : isInProgressModule || isActiveModule
+                        ? "text-blue-600"
+                        : "text-slate-500",
+                  ].join(" ")}
+                >
+                  {doneSummary}
+                </div>
               </div>
 
               <span
@@ -362,6 +399,7 @@ function CourseView({
                 <SmartLessonList
                   lessons={mod.lessons}
                   activeLessonId={activeLessonId}
+                  doneLessonIdSet={doneLessonIdSet}
                   onSelectLesson={onSelectLesson}
                 />
               </div>
@@ -376,10 +414,12 @@ function CourseView({
 function SmartLessonList({
   lessons,
   activeLessonId,
+  doneLessonIdSet,
   onSelectLesson,
 }: {
   lessons: CourseLesson[];
   activeLessonId: string;
+  doneLessonIdSet: Set<string>;
   onSelectLesson: (lessonId: string) => void;
 }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -438,6 +478,8 @@ function SmartLessonList({
         <div className="space-y-1.5">
           {lessons.map((l, i) => {
             const active = l.id === activeLessonId;
+            const done = doneLessonIdSet.has(l.id);
+            const activeAndDone = active && done;
 
             return (
               <PressButton
@@ -446,9 +488,13 @@ function SmartLessonList({
                 onClick={() => onSelectLesson(l.id)}
                 className={[
                   "relative w-full rounded-[16px] px-4 py-3 text-left transition-colors",
-                  active
+                  activeAndDone
+                    ? "bg-emerald-50/72 ring-1 ring-emerald-200/74 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+                    : active
                     ? "bg-blue-50/82 ring-1 ring-blue-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
-                    : "bg-white/78 ring-1 ring-slate-200/65",
+                    : done
+                      ? "bg-emerald-50/72 ring-1 ring-emerald-200/72"
+                      : "bg-white/78 ring-1 ring-slate-200/65",
                 ].join(" ")}
                 aria-current={active ? "page" : undefined}
               >
@@ -460,16 +506,31 @@ function SmartLessonList({
                   <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
 
                   <div className="flex items-center gap-2">
-                    {active ? (
+                    {active && done ? (
+                      <span className="rounded-full bg-emerald-50/85 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200/75">
+                        Done
+                      </span>
+                    ) : active ? (
                       <span className="rounded-full bg-blue-100/68 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/70">
                         Current
                       </span>
                     ) : null}
 
-                    {!active ? (
-                      <span className="shrink-0 text-[12px] font-semibold text-slate-700">
+                    {done && !active ? (
+                      <span className="rounded-full bg-emerald-50/75 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200/70">
+                        Done
+                      </span>
+                    ) : null}
+
+                    {!active || activeAndDone ? (
+                      <span
+                        className={[
+                          "shrink-0 text-[12px] font-semibold",
+                          done ? "text-slate-500" : "text-slate-700",
+                        ].join(" ")}
+                      >
                         {i + 1} of {total}
-                        {l.estMinutes ? ` • ${l.estMinutes}m` : ""}
+                        {!done && l.estMinutes ? ` • ${l.estMinutes}m` : ""}
                       </span>
                     ) : null}
                   </div>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="980" viewBox="0 0 1800 980" role="img" aria-labelledby="title desc">
+  <title id="title">Freeswimming user flow map</title>
+  <desc id="desc">Flow diagram for how users navigate home, course, menus, and support pages.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto">
+      <polygon points="0 0, 11 5.5, 0 11" fill="#4b83d9"/>
+    </marker>
+    <style>
+      .bg { fill: #f5f9ff; }
+      .node { fill: #ffffff; stroke: #8fb5f3; stroke-width: 2; rx: 16; }
+      .nodeAlt { fill: #f1f6ff; stroke: #8fb5f3; stroke-width: 2; rx: 16; }
+      .line { stroke: #4b83d9; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .title { fill: #14213d; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; font-size: 36px; font-weight: 700; }
+      .subtitle { fill: #3f4f69; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; font-size: 20px; }
+      .label { fill: #12213f; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; font-size: 24px; font-weight: 600; }
+      .small { fill: #4a5f7f; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; font-size: 18px; }
+      .section { fill: #2e4f88; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; font-size: 22px; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="980" />
+  <text class="title" x="60" y="60">Freeswimming User Flow</text>
+  <text class="subtitle" x="60" y="95">Primary path: Start course quickly, then navigate via Lessons/Menu when needed.</text>
+
+  <text class="section" x="60" y="150">Primary Learning Path</text>
+  <rect class="node" x="60" y="170" width="220" height="90" />
+  <text class="label" x="130" y="225">Home</text>
+
+  <rect class="node" x="360" y="170" width="240" height="90" />
+  <text class="label" x="420" y="225">Free Course</text>
+
+  <rect class="node" x="680" y="170" width="240" height="90" />
+  <text class="label" x="740" y="225">Course Page</text>
+
+  <rect class="node" x="1000" y="170" width="280" height="90" />
+  <text class="label" x="1050" y="225">Watch Lesson Video</text>
+
+  <rect class="node" x="1360" y="170" width="220" height="90" />
+  <text class="label" x="1406" y="225">Mark Done</text>
+
+  <rect class="node" x="1620" y="170" width="140" height="90" />
+  <text class="label" x="1650" y="225">Next</text>
+
+  <path class="line" d="M 280 215 L 360 215" />
+  <path class="line" d="M 600 215 L 680 215" />
+  <path class="line" d="M 920 215 L 1000 215" />
+  <path class="line" d="M 1280 215 L 1360 215" />
+  <path class="line" d="M 1580 215 L 1620 215" />
+  <path class="line" d="M 1690 260 L 1690 315 L 1000 315 L 1000 260" />
+
+  <text class="section" x="60" y="390">Context Navigation (Drawer)</text>
+  <rect class="nodeAlt" x="680" y="410" width="260" height="90" />
+  <text class="label" x="735" y="465">Lessons Drawer</text>
+
+  <rect class="nodeAlt" x="1000" y="410" width="280" height="90" />
+  <text class="label" x="1048" y="465">Pick Module/Lesson</text>
+
+  <rect class="nodeAlt" x="360" y="410" width="240" height="90" />
+  <text class="label" x="400" y="465">Main Menu Drawer</text>
+
+  <path class="line" d="M 800 260 L 800 410" />
+  <path class="line" d="M 940 455 L 1000 455" />
+  <path class="line" d="M 1000 410 L 600 410" />
+  <path class="line" d="M 1140 410 L 1140 260" />
+
+  <text class="section" x="60" y="610">Other Destinations</text>
+  <rect class="node" x="60" y="640" width="280" height="90" />
+  <text class="label" x="110" y="695">Swim Programs</text>
+
+  <rect class="node" x="400" y="640" width="300" height="90" />
+  <text class="label" x="450" y="695">Video Analysis</text>
+
+  <rect class="node" x="760" y="640" width="280" height="90" />
+  <text class="label" x="820" y="695">Our Method</text>
+
+  <rect class="node" x="1100" y="640" width="220" height="90" />
+  <text class="label" x="1160" y="695">Contact</text>
+
+  <rect class="nodeAlt" x="1380" y="410" width="300" height="90" />
+  <text class="label" x="1430" y="465">Poolside Guide CTA</text>
+
+  <rect class="nodeAlt" x="1380" y="530" width="360" height="90" />
+  <text class="label" x="1430" y="585">Video Analysis (Optional)</text>
+
+  <path class="line" d="M 480 500 L 200 640" />
+  <path class="line" d="M 480 500 L 550 640" />
+  <path class="line" d="M 480 500 L 900 640" />
+  <path class="line" d="M 480 500 L 1210 640" />
+
+  <path class="line" d="M 920 215 L 1380 455" />
+  <path class="line" d="M 920 215 L 1380 575" />
+  <path class="line" d="M 1530 500 L 550 640" />
+  <path class="line" d="M 1560 620 L 550 640" />
+
+  <text class="small" x="60" y="900">Label consistency: Lesson X of Y · Module A of B · Current · Mark as done/Done</text>
+</svg>
