@@ -706,7 +706,7 @@ function CoursePageClient() {
                 href="/programs"
                 className={programsCtaClass}
               >
-                View programs & PDFs
+                Poolside Guide
               </PressLink>
 
               <PressLink
@@ -714,12 +714,8 @@ function CoursePageClient() {
                 href="/analysis"
                 className="flex items-center justify-center rounded-2xl bg-white/92 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70"
               >
-                Get video analysis
+                Video Analysis (Optional)
               </PressLink>
-
-              <p className="mt-1 text-center text-[12px] font-medium text-slate-600">
-                Prices in USD. Local taxes may apply.
-              </p>
             </div>
           </div>
         </section>
