@@ -874,10 +874,11 @@ function CoursePageClient() {
   );
   const swipeNearThreshold = activeSwipeProgress >= 0.72;
   const swipeBlueStrength = Math.min(1, Math.max(0, (activeSwipeProgress - 0.72) / 0.28));
-  const swipeShapeWidth = 12 + swipeVisualStrength * 80;
-  const swipeShapeOpacity = 0.03 + swipeVisualStrength * 0.34;
-  const swipeIconOpacity = 0.42 + swipeVisualStrength * 0.46;
+  const swipeShapeWidth = 58 + swipeVisualStrength * 68;
+  const swipeShapeOpacity = 0.01 + swipeVisualStrength * 0.36;
+  const swipeIconOpacity = Math.min(1, Math.max(0, (swipeVisualStrength - 0.12) / 0.88));
   const swipeIconScale = 0.94 + swipeVisualStrength * 0.08;
+  const swipeIconRevealOffset = SWIPE_HINT_REVEAL_PX * (1 - swipeVisualStrength);
 
   const swipeHintOverlay =
     swipeHint && !drawerOpen ? (
@@ -887,23 +888,18 @@ function CoursePageClient() {
           "pointer-events-none fixed top-[72px] bottom-[calc(88px+env(safe-area-inset-bottom))] z-40 sm:hidden",
           swipeHint.direction === "prev" ? "left-0" : "right-0"
         )}
+        style={{ width: `${swipeShapeWidth}px` }}
       >
-        <div
-          className={cx(
-            "absolute inset-y-0 flex items-center",
-            swipeHint.direction === "prev" ? "left-0 justify-start" : "right-0 justify-end"
-          )}
-        >
+        <div className="absolute inset-0 flex items-center">
           <svg
             viewBox="0 0 120 100"
             preserveAspectRatio="none"
             shapeRendering="geometricPrecision"
             style={{
-              width: `${swipeShapeWidth}px`,
               opacity: swipeShapeOpacity,
             }}
             className={cx(
-              "h-full transition-[width,opacity] duration-[120ms] ease-out",
+              "h-full w-full transition-[width,opacity] duration-[120ms] ease-out",
               swipeHint.direction === "next" && "-scale-x-100"
             )}
           >
@@ -924,17 +920,16 @@ function CoursePageClient() {
         </div>
         <div
           className={cx(
-            "absolute top-1/2 -translate-y-1/2 flex h-[76px] w-[46px] items-center justify-center rounded-full border bg-white/92 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.12)] transition-[transform,opacity,color,border-color,background-color] duration-[120ms] ease-out",
-            swipeHint.direction === "prev" ? "-left-2 rounded-r-full border-l-0" : "-right-2 rounded-l-full border-r-0",
+            "absolute left-1/2 top-1/2 flex h-[72px] w-[44px] items-center justify-center rounded-full border bg-white/92 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.12)] transition-[transform,opacity,color,border-color,background-color] duration-[120ms] ease-out",
             swipeNearThreshold
               ? "border-blue-300/88 bg-blue-50/92 text-blue-700"
               : "border-slate-300/82"
           )}
           style={{
-            transform: `translateY(-50%) translateX(${
+            transform: `translate(-50%, -50%) translateX(${
               swipeHint.direction === "prev"
-                ? -SWIPE_HINT_REVEAL_PX * (1 - swipeVisualStrength)
-                : SWIPE_HINT_REVEAL_PX * (1 - swipeVisualStrength)
+                ? -swipeIconRevealOffset
+                : swipeIconRevealOffset
             }px) scale(${swipeIconScale})`,
             opacity: swipeIconOpacity,
           }}
