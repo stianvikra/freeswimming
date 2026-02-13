@@ -35,7 +35,9 @@ const STORAGE_KEY = "fs_course_last_lesson";
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 const DONE_STORAGE_KEY = "fs_course_done_lessons";
 const VIDEO_PROGRESS_STORAGE_KEY = "fs_course_video_progress";
-const SWIPE_EDGE_TRIGGER_PX = 28;
+const SWIPE_NUX_STORAGE_KEY = "fs_course_swipe_nux_seen";
+const SWIPE_RAIL_HITBOX_PX = 76;
+const SWIPE_RAIL_INSET_PX = 14;
 const SWIPE_DISTANCE_TO_NAVIGATE_PX = 78;
 const SWIPE_VERTICAL_CANCEL_PX = 24;
 const SWIPE_HINT_REVEAL_PX = 18;
@@ -166,12 +168,20 @@ function CoursePageClient() {
     direction: SwipeDirection;
     progress: number;
   } | null>(null);
+  const [showSwipeNux, setShowSwipeNux] = useState(false);
   const swipeTouchIdRef = useRef<number | null>(null);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
   const swipeStartXRef = useRef(0);
   const swipeStartYRef = useRef(0);
   const swipeTravelRef = useRef(0);
   const swipeCancelledRef = useRef(false);
+
+  const dismissSwipeNux = useCallback(() => {
+    setShowSwipeNux(false);
+    try {
+      localStorage.setItem(SWIPE_NUX_STORAGE_KEY, "1");
+    } catch {}
+  }, []);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -260,6 +270,25 @@ function CoursePageClient() {
     const savedSeconds = Math.floor(playbackProgressRef.current[activeLesson.id] ?? 0);
     setResumeAvailable(savedSeconds >= 2);
   }, [activeLesson.id, playbackProgressLoaded]);
+
+  useEffect(() => {
+    if (window.innerWidth >= 640) return;
+    try {
+      if (localStorage.getItem(SWIPE_NUX_STORAGE_KEY) === "1") return;
+    } catch {}
+    const timer = window.setTimeout(() => {
+      setShowSwipeNux(true);
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!showSwipeNux) return;
+    const timer = window.setTimeout(() => {
+      dismissSwipeNux();
+    }, 7600);
+    return () => window.clearTimeout(timer);
+  }, [dismissSwipeNux, showSwipeNux]);
 
   const persistPlaybackProgress = useCallback(() => {
     try {
@@ -370,17 +399,13 @@ function CoursePageClient() {
   }, []);
 
   const handleSwipeStart = useCallback(
-    (event: React.TouchEvent<HTMLDivElement>) => {
+    (direction: SwipeDirection, event: React.TouchEvent<HTMLDivElement>) => {
       if (window.innerWidth >= 640 || drawerOpen || event.touches.length !== 1) return;
       if (isSwipeBlockedTarget(event.target)) return;
+      if (direction === "prev" && !prevId) return;
+      if (direction === "next" && !nextId) return;
 
       const touch = event.touches[0];
-      let direction: SwipeDirection | null = null;
-      if (touch.clientX <= SWIPE_EDGE_TRIGGER_PX && prevId) direction = "prev";
-      if (touch.clientX >= window.innerWidth - SWIPE_EDGE_TRIGGER_PX && nextId)
-        direction = "next";
-      if (!direction) return;
-
       swipeTouchIdRef.current = touch.identifier;
       swipeDirectionRef.current = direction;
       swipeStartXRef.current = touch.clientX;
@@ -388,8 +413,9 @@ function CoursePageClient() {
       swipeTravelRef.current = 0;
       swipeCancelledRef.current = false;
       setSwipeHint({ direction, progress: 0 });
+      dismissSwipeNux();
     },
-    [drawerOpen, nextId, prevId]
+    [dismissSwipeNux, drawerOpen, nextId, prevId]
   );
 
   const handleSwipeMove = useCallback(
@@ -828,34 +854,75 @@ function CoursePageClient() {
     </div>
   );
 
+  const swipeRailClass =
+    "fixed top-[72px] bottom-[calc(88px+env(safe-area-inset-bottom))] z-30 sm:hidden";
+  const activeSwipeProgress = swipeHint?.progress ?? 0;
+
   const swipeHintOverlay =
     swipeHint && !drawerOpen ? (
       <div
         aria-hidden
         className={cx(
-          "pointer-events-none fixed top-1/2 z-40 -translate-y-1/2 sm:hidden",
+          "pointer-events-none fixed top-[72px] bottom-[calc(88px+env(safe-area-inset-bottom))] z-40 sm:hidden",
           swipeHint.direction === "prev" ? "left-0" : "right-0"
         )}
       >
+        <div className="absolute inset-y-0 flex items-center">
+          <div
+            style={{
+              width: `${24 + activeSwipeProgress * 82}px`,
+              opacity: 0.12 + activeSwipeProgress * 0.52,
+              clipPath:
+                swipeHint.direction === "prev"
+                  ? "polygon(0% 0%, 48% 11%, 76% 30%, 100% 50%, 76% 70%, 48% 89%, 0% 100%)"
+                  : "polygon(100% 0%, 52% 11%, 24% 30%, 0% 50%, 24% 70%, 52% 89%, 100% 100%)",
+              background:
+                swipeHint.direction === "prev"
+                  ? "linear-gradient(90deg, rgba(148,163,184,0.34) 0%, rgba(148,163,184,0.2) 42%, rgba(148,163,184,0) 100%)"
+                  : "linear-gradient(270deg, rgba(148,163,184,0.34) 0%, rgba(148,163,184,0.2) 42%, rgba(148,163,184,0) 100%)",
+            }}
+            className="h-full transition-[width,opacity] duration-100 ease-out"
+          />
+        </div>
         <div
-          style={{
-            transform: `translateX(${
-              swipeHint.direction === "prev"
-                ? -SWIPE_HINT_REVEAL_PX * (1 - swipeHint.progress)
-                : SWIPE_HINT_REVEAL_PX * (1 - swipeHint.progress)
-            }px)`,
-            opacity: 0.6 + swipeHint.progress * 0.4,
-          }}
           className={cx(
-            "flex h-[72px] w-[44px] items-center justify-center border border-blue-300/65 bg-white/88 text-blue-700 shadow-[0_10px_24px_rgba(37,99,235,0.2)] backdrop-blur-[2px] transition-[transform,opacity] duration-75 ease-out",
-            swipeHint.direction === "prev"
-              ? "rounded-r-full border-l-0"
-              : "rounded-l-full border-r-0"
+            "absolute top-1/2 -translate-y-1/2 flex h-[76px] w-[46px] items-center justify-center rounded-full border border-slate-300/82 bg-white/90 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.14)] transition-[transform,opacity,color,border-color] duration-100 ease-out",
+            swipeHint.direction === "prev" ? "-left-2 rounded-r-full border-l-0" : "-right-2 rounded-l-full border-r-0",
+            activeSwipeProgress > 0.7 && "border-blue-300/75 text-blue-700"
           )}
+          style={{
+            transform: `translateY(-50%) translateX(${
+              swipeHint.direction === "prev"
+                ? -SWIPE_HINT_REVEAL_PX * (1 - activeSwipeProgress)
+                : SWIPE_HINT_REVEAL_PX * (1 - activeSwipeProgress)
+            }px) scale(${0.92 + activeSwipeProgress * 0.1})`,
+            opacity: 0.55 + activeSwipeProgress * 0.38,
+          }}
         >
-          <span className="text-[20px] leading-none">
+          <span className="text-[19px] leading-none">
             {swipeHint.direction === "prev" ? "‹" : "›"}
           </span>
+        </div>
+      </div>
+    ) : null;
+
+  const swipeNuxToast =
+    showSwipeNux && !drawerOpen ? (
+      <div className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-40 px-5 sm:hidden">
+        <div className="mx-auto max-w-[520px] rounded-2xl border border-slate-200/78 bg-white/95 px-4 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.12)] backdrop-blur-sm">
+          <div className="flex items-start gap-3">
+            <p className="flex-1 text-[12px] font-medium leading-5 text-slate-700">
+              Swipe from either side to switch lessons, or use <span className="font-semibold">Lessons</span> and <span className="font-semibold">Next/Prev</span>.
+            </p>
+            <PressButton
+              tier="nav"
+              onClick={dismissSwipeNux}
+              className="inline-flex min-h-[28px] shrink-0 items-center rounded-full px-2.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/75"
+              aria-label="Dismiss swipe hint"
+            >
+              Got it
+            </PressButton>
+          </div>
         </div>
       </div>
     ) : null;
@@ -877,10 +944,6 @@ function CoursePageClient() {
       <PageTemplate size="wide" showBack={false}>
         <div
           className="touch-pan-y"
-          onTouchStart={handleSwipeStart}
-          onTouchMove={handleSwipeMove}
-          onTouchEnd={handleSwipeEnd}
-          onTouchCancel={resetSwipeGesture}
         >
           <div ref={playerTopRef} />
 
@@ -1300,7 +1363,36 @@ function CoursePageClient() {
           />
         </div>
       </PageTemplate>
+      {!drawerOpen && prevId ? (
+        <div
+          aria-hidden
+          className={cx(swipeRailClass, "touch-pan-y")}
+          style={{
+            left: SWIPE_RAIL_INSET_PX,
+            width: SWIPE_RAIL_HITBOX_PX,
+          }}
+          onTouchStart={(event) => handleSwipeStart("prev", event)}
+          onTouchMove={handleSwipeMove}
+          onTouchEnd={handleSwipeEnd}
+          onTouchCancel={resetSwipeGesture}
+        />
+      ) : null}
+      {!drawerOpen && nextId ? (
+        <div
+          aria-hidden
+          className={cx(swipeRailClass, "touch-pan-y")}
+          style={{
+            right: SWIPE_RAIL_INSET_PX,
+            width: SWIPE_RAIL_HITBOX_PX,
+          }}
+          onTouchStart={(event) => handleSwipeStart("next", event)}
+          onTouchMove={handleSwipeMove}
+          onTouchEnd={handleSwipeEnd}
+          onTouchCancel={resetSwipeGesture}
+        />
+      ) : null}
       {swipeHintOverlay}
+      {swipeNuxToast}
     </SiteChrome>
   );
 }
