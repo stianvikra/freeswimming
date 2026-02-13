@@ -295,14 +295,10 @@ function CoursePageClient() {
   const isLessonDone = doneLessonIds.includes(activeLesson.id);
   const lessonType = activeLesson.lessonType ?? "drill";
   const showPassCriteria = lessonType === "drill" || lessonType === "swim";
-  const showStuckCta = lessonType === "drill" || lessonType === "swim";
   const passCriteria = activeLesson.passCriteria?.length
     ? activeLesson.passCriteria
     : DEFAULT_PASS_CRITERIA;
 
-  const programsCtaClass = isLastLesson
-    ? "flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-    : "flex items-center justify-center rounded-2xl bg-white/92 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70";
   const supportCardClass =
     "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)]";
 
@@ -780,9 +776,7 @@ function CoursePageClient() {
                 {isLastLesson
                   ? "Last lesson in this course."
                   : "Use Lessons to jump to any module or lesson."}
-              </div>
-              <div className="mt-1 text-[12px] font-medium text-slate-500">
-                Progress saved on this device.
+                <span className="ml-2 text-slate-500">Progress saved on this device.</span>
               </div>
             </div>
           ) : null}
@@ -798,7 +792,7 @@ function CoursePageClient() {
               <PressButton
                 tier="card"
                 onClick={videoStarted ? resumePlayback : startVideoPlayback}
-                className="absolute inset-0 z-[2] w-full overflow-hidden bg-[radial-gradient(120%_100%_at_10%_0%,rgba(147,197,253,0.22),rgba(255,255,255,0.95)),linear-gradient(180deg,rgba(241,245,249,0.96),rgba(255,255,255,0.98))] p-4 text-left"
+                className="absolute inset-0 z-[2] w-full overflow-hidden bg-[radial-gradient(120%_100%_at_10%_0%,rgba(147,197,253,0.22),rgba(255,255,255,0.95)),linear-gradient(180deg,rgba(241,245,249,0.96),rgba(255,255,255,0.98))] p-4 text-left sm:p-5"
                 aria-label={
                   videoStarted
                     ? `Resume lesson: ${activeLesson.title}`
@@ -806,23 +800,18 @@ function CoursePageClient() {
                 }
               >
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(59,130,246,0.05),rgba(255,255,255,0))]" />
-                <div className="relative flex h-full flex-col">
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-900/14 to-transparent" />
+                <div className="relative flex h-full flex-col gap-2">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="relative h-8 w-8 shrink-0">
-                        <Image
-                          src="/logos/01_icon_transparent.png"
-                          alt=""
-                          fill
-                          sizes="32px"
-                          className="object-contain"
-                        />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-semibold text-slate-600">{overviewLabel.module}</div>
-                        <div className="text-[11px] font-semibold text-slate-600">{overviewLabel.lesson}</div>
-                      </div>
-                    </div>
+                    <span className="relative h-8 w-8 shrink-0">
+                      <Image
+                        src="/logos/01_icon_transparent.png"
+                        alt=""
+                        fill
+                        sizes="32px"
+                        className="object-contain"
+                      />
+                    </span>
                     {overviewLabel.duration ? (
                       <span className="shrink-0 rounded-full bg-white/88 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
                         {overviewLabel.duration}
@@ -830,13 +819,27 @@ function CoursePageClient() {
                     ) : null}
                   </div>
 
-                  <div className="mt-auto">
-                    <div className="line-clamp-2 text-[18px] font-semibold leading-tight text-slate-900 sm:text-[20px]">
+                  <div className="mt-auto pb-4 sm:pb-5">
+                    <div className="line-clamp-2 max-w-[26ch] text-[18px] font-semibold leading-tight text-slate-900 sm:text-[20px]">
                       {activeLesson.title}
                     </div>
-                    <div className="mt-2 flex items-center justify-center">
-                      <span className="inline-flex min-h-[36px] items-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)] sm:min-h-[40px] sm:px-4 sm:py-2 sm:text-[13px]">
-                        {videoStarted ? (
+                    <div className="mt-2 flex items-center justify-center sm:mt-3">
+                      <span
+                        className={cx(
+                          "inline-flex min-h-[36px] w-full max-w-[240px] items-center justify-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-white ring-1 ring-white/20 shadow-[0_10px_24px_rgba(37,99,235,0.24)] sm:min-h-[40px] sm:px-4 sm:py-2 sm:text-[13px]",
+                          videoLoadState === "loading"
+                            ? "bg-gradient-to-b from-slate-500 to-slate-600"
+                            : videoStarted
+                              ? "bg-gradient-to-b from-blue-400 to-blue-500"
+                              : "bg-gradient-to-b from-blue-500 to-blue-600"
+                        )}
+                      >
+                        {videoLoadState === "loading" ? (
+                          <span
+                            aria-hidden
+                            className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/55 border-t-white"
+                          />
+                        ) : videoStarted ? (
                           <span
                             aria-hidden
                             className="inline-flex h-3.5 w-3.5 items-center justify-between"
@@ -975,41 +978,42 @@ function CoursePageClient() {
               ) : (
                 <div className="mt-1 text-[14px] leading-6 text-slate-800">{activeLesson.nextStep}</div>
               )}
-              {showStuckCta ? (
-                <p className="mt-3 border-t border-slate-200/72 pt-3 text-[12px] leading-5 text-slate-600">
-                  If this doesn&apos;t click after 2-3 sessions, your #1 limiter may be elsewhere.
-                  That&apos;s what{" "}
-                  <PressLink
-                    tier="nav"
-                    href="/analysis"
-                    className="font-semibold text-slate-800 underline decoration-slate-300 underline-offset-2"
-                  >
-                    Video Analysis
-                  </PressLink>{" "}
-                  is for.
+              {showPassCriteria ? (
+                <p className="mt-2 border-t border-slate-200/72 pt-2 text-[12px] font-medium leading-5 text-slate-500">
+                  When these are met, mark lesson as done in overview.
                 </p>
               ) : null}
             </div>
 
-            <div className="mt-5 flex flex-col gap-2">
-              <PressLink
-                tier={isLastLesson ? "cta" : "nav"}
-                href="/programs"
-                className={programsCtaClass}
-              >
-                Poolside Guide
-              </PressLink>
-
-              <PressLink
-                tier="nav"
-                href="/analysis"
-                className="flex items-center justify-center rounded-2xl bg-white/92 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70"
-              >
-                Video Analysis (Optional)
-              </PressLink>
+            <div className="mt-5 rounded-2xl border border-slate-200/68 bg-white/80 p-4">
+              <h3 className="text-[14px] font-semibold tracking-wide text-slate-900">
+                Need extra help?
+              </h3>
+              <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                If this doesn&apos;t click after 2-3 sessions, your #1 limiter may be elsewhere.
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                <PressLink
+                  tier="cta"
+                  href="/analysis"
+                  className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                >
+                  Video Analysis (Optional)
+                </PressLink>
+                <PressLink
+                  tier="nav"
+                  href="/programs"
+                  className="flex items-center justify-center rounded-2xl bg-white/92 px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70"
+                >
+                  Poolside Guide
+                </PressLink>
+              </div>
             </div>
+
           </div>
         </section>
+
+        <div className="h-6 sm:hidden" aria-hidden />
 
         <MenuDrawer
           open={drawerOpen}
