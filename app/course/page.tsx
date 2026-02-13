@@ -820,13 +820,16 @@ function CoursePageClient() {
                   </div>
 
                   <div className="mt-auto pb-4 sm:pb-5">
+                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+                      {overviewLabel.moduleName}
+                    </div>
                     <div className="line-clamp-2 max-w-[26ch] text-[18px] font-semibold leading-tight text-slate-900 sm:text-[20px]">
                       {activeLesson.title}
                     </div>
                     <div className="mt-2 flex items-center justify-center sm:mt-3">
                       <span
                         className={cx(
-                          "inline-flex min-h-[36px] w-full max-w-[240px] items-center justify-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-white ring-1 ring-white/20 shadow-[0_10px_24px_rgba(37,99,235,0.24)] sm:min-h-[40px] sm:px-4 sm:py-2 sm:text-[13px]",
+                          "inline-flex min-h-[36px] w-full max-w-[220px] items-center justify-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-white ring-1 ring-white/20 shadow-[0_10px_24px_rgba(37,99,235,0.24)] transition-colors duration-200 sm:min-h-[40px] sm:px-4 sm:py-2 sm:text-[13px]",
                           videoLoadState === "loading"
                             ? "bg-gradient-to-b from-slate-500 to-slate-600"
                             : videoStarted
@@ -842,11 +845,8 @@ function CoursePageClient() {
                         ) : videoStarted ? (
                           <span
                             aria-hidden
-                            className="inline-flex h-3.5 w-3.5 items-center justify-between"
-                          >
-                            <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
-                            <span className="h-3.5 w-[3px] rounded-sm bg-white/95" />
-                          </span>
+                            className="ml-0.5 h-0 w-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-white"
+                          />
                         ) : (
                           <span
                             aria-hidden
@@ -854,10 +854,10 @@ function CoursePageClient() {
                           />
                         )}
                         {videoLoadState === "loading"
-                          ? "Starting video..."
+                          ? "Starting..."
                           : videoStarted
-                            ? "Tap to resume"
-                            : "Play lesson"}
+                            ? "Resume"
+                            : "Play"}
                       </span>
                     </div>
                   </div>
