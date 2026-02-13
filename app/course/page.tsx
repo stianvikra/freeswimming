@@ -145,6 +145,8 @@ function CoursePageClient() {
   const playerLessonIdRef = useRef<string | null>(null);
   const playbackProgressRef = useRef<Record<string, number>>({});
   const progressSaveTimerRef = useRef<number | null>(null);
+  const [resumeAvailable, setResumeAvailable] = useState(false);
+  const [playbackProgressLoaded, setPlaybackProgressLoaded] = useState(false);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -212,19 +214,27 @@ function CoursePageClient() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(VIDEO_PROGRESS_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        const normalized: Record<string, number> = {};
-        for (const [lessonId, value] of Object.entries(parsed)) {
-          if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
-            normalized[lessonId] = value;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          const normalized: Record<string, number> = {};
+          for (const [lessonId, value] of Object.entries(parsed)) {
+            if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+              normalized[lessonId] = value;
+            }
           }
+          playbackProgressRef.current = normalized;
         }
-        playbackProgressRef.current = normalized;
       }
     } catch {}
+    setPlaybackProgressLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (!playbackProgressLoaded) return;
+    const savedSeconds = Math.floor(playbackProgressRef.current[activeLesson.id] ?? 0);
+    setResumeAvailable(savedSeconds >= 2);
+  }, [activeLesson.id, playbackProgressLoaded]);
 
   const persistPlaybackProgress = useCallback(() => {
     try {
@@ -245,10 +255,14 @@ function CoursePageClient() {
     try {
       const seconds = player.getCurrentTime();
       if (!Number.isFinite(seconds) || seconds < 0) return;
-      playbackProgressRef.current[lessonId] = Math.floor(seconds);
+      const normalizedSeconds = Math.floor(seconds);
+      playbackProgressRef.current[lessonId] = normalizedSeconds;
       persistPlaybackProgress();
+      if (lessonId === activeLesson.id) {
+        setResumeAvailable(normalizedSeconds >= 2);
+      }
     } catch {}
-  }, [persistPlaybackProgress]);
+  }, [activeLesson.id, persistPlaybackProgress]);
 
   useEffect(() => {
     return () => {
@@ -356,6 +370,7 @@ function CoursePageClient() {
     : DEFAULT_PASS_CRITERIA;
   const showVideoOverlay = !videoStarted || videoPaused;
   const showResumeState = videoStarted && videoPaused;
+  const showResumeCta = showResumeState || (!videoStarted && resumeAvailable);
 
   const supportCardClass =
     "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)]";
@@ -542,6 +557,9 @@ function CoursePageClient() {
             } else if (state === ps.ENDED) {
               playbackProgressRef.current[lessonIdForPlayer] = 0;
               persistPlaybackProgress();
+              if (lessonIdForPlayer === activeLesson.id) {
+                setResumeAvailable(false);
+              }
             }
             setVideoPaused(true);
             if (state !== ps.ENDED) {
@@ -879,7 +897,7 @@ function CoursePageClient() {
                 onClick={videoStarted ? resumePlayback : startVideoPlayback}
                 className="absolute inset-0 z-[2] w-full overflow-hidden bg-[radial-gradient(140%_115%_at_6%_0%,rgba(147,197,253,0.24),rgba(241,245,249,0.96)),linear-gradient(180deg,rgba(241,245,249,0.98),rgba(255,255,255,0.99))] p-4 text-left sm:p-5"
                 aria-label={
-                  videoStarted
+                  showResumeCta
                     ? `Resume lesson: ${activeLesson.title}`
                     : `Play lesson: ${activeLesson.title}`
                 }
@@ -917,7 +935,7 @@ function CoursePageClient() {
                       <span
                         className={cx(
                           "inline-flex min-h-[38px] w-full max-w-[250px] items-center justify-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white ring-1 ring-white/20 shadow-[0_12px_28px_rgba(37,99,235,0.24)] transition-colors duration-200 sm:min-h-[40px] sm:text-[14px]",
-                          showResumeState
+                          showResumeCta
                               ? "bg-gradient-to-b from-blue-400 to-blue-500"
                               : "bg-gradient-to-b from-blue-500 to-blue-600"
                         )}
@@ -936,7 +954,7 @@ function CoursePageClient() {
                             className="ml-0.5 h-0 w-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-white"
                           />
                         )}
-                        {showResumeState ? "Resume" : "Play"}
+                        {showResumeCta ? "Resume" : "Play"}
                       </span>
                     </div>
                   </div>
