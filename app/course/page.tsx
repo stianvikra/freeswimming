@@ -940,20 +940,10 @@ function CoursePageClient() {
                               : "bg-gradient-to-b from-blue-500 to-blue-600"
                         )}
                       >
-                        {showResumeState ? (
-                          <span
-                            aria-hidden
-                            className="inline-flex h-3.5 w-3 items-center justify-between"
-                          >
-                            <span className="h-full w-[2px] rounded-sm bg-white" />
-                            <span className="h-full w-[2px] rounded-sm bg-white" />
-                          </span>
-                        ) : (
-                          <span
-                            aria-hidden
-                            className="ml-0.5 h-0 w-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-white"
-                          />
-                        )}
+                        <span
+                          aria-hidden
+                          className="ml-0.5 h-0 w-0 border-y-[7px] border-y-transparent border-l-[11px] border-l-white"
+                        />
                         {showResumeCta ? "Resume" : "Play"}
                       </span>
                     </div>
