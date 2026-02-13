@@ -1,8 +1,9 @@
 // app/course/page.tsx
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
@@ -33,6 +34,7 @@ import {
 const STORAGE_KEY = "fs_course_last_lesson";
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 const DONE_STORAGE_KEY = "fs_course_done_lessons";
+const VIDEO_PROGRESS_STORAGE_KEY = "fs_course_video_progress";
 const DEFAULT_PASS_CRITERIA = [
   "Complete 3 calm repetitions with the same cue.",
   "Breathing stays controlled without rushing.",
@@ -131,10 +133,18 @@ function CoursePageClient() {
     "idle"
   );
   const videoFrameRef = useRef<HTMLDivElement | null>(null);
-  const youtubePlayerRef = useRef<{ destroy?: () => void; playVideo?: () => void } | null>(null);
+  const youtubePlayerRef = useRef<{
+    destroy?: () => void;
+    playVideo?: () => void;
+    seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
+    getCurrentTime?: () => number;
+  } | null>(null);
   const playerReadyRef = useRef(false);
   const pendingPlayRef = useRef(false);
   const videoStartedRef = useRef(false);
+  const playerLessonIdRef = useRef<string | null>(null);
+  const playbackProgressRef = useRef<Record<string, number>>({});
+  const progressSaveTimerRef = useRef<number | null>(null);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -198,6 +208,53 @@ function CoursePageClient() {
       localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(doneLessonIds));
     } catch {}
   }, [doneLessonIds]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(VIDEO_PROGRESS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const normalized: Record<string, number> = {};
+        for (const [lessonId, value] of Object.entries(parsed)) {
+          if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+            normalized[lessonId] = value;
+          }
+        }
+        playbackProgressRef.current = normalized;
+      }
+    } catch {}
+  }, []);
+
+  const persistPlaybackProgress = useCallback(() => {
+    try {
+      localStorage.setItem(VIDEO_PROGRESS_STORAGE_KEY, JSON.stringify(playbackProgressRef.current));
+    } catch {}
+  }, []);
+
+  const stopProgressSaveTimer = useCallback(() => {
+    if (progressSaveTimerRef.current == null) return;
+    window.clearInterval(progressSaveTimerRef.current);
+    progressSaveTimerRef.current = null;
+  }, []);
+
+  const savePlaybackPosition = useCallback((lessonId: string | null | undefined) => {
+    if (!lessonId) return;
+    const player = youtubePlayerRef.current;
+    if (!player?.getCurrentTime) return;
+    try {
+      const seconds = player.getCurrentTime();
+      if (!Number.isFinite(seconds) || seconds < 0) return;
+      playbackProgressRef.current[lessonId] = Math.floor(seconds);
+      persistPlaybackProgress();
+    } catch {}
+  }, [persistPlaybackProgress]);
+
+  useEffect(() => {
+    return () => {
+      stopProgressSaveTimer();
+    };
+  }, [stopProgressSaveTimer]);
 
   const playerTopRef = useRef<HTMLDivElement | null>(null);
 
@@ -344,6 +401,8 @@ function CoursePageClient() {
   }, []);
 
   useEffect(() => {
+    savePlaybackPosition(playerLessonIdRef.current);
+    stopProgressSaveTimer();
     setVideoStarted(false);
     setVideoPaused(false);
     setVideoLoadState("idle");
@@ -356,25 +415,40 @@ function CoursePageClient() {
       } catch {}
       youtubePlayerRef.current = null;
     }
-  }, [activeLesson.id]);
+    playerLessonIdRef.current = null;
+  }, [activeLesson.id, savePlaybackPosition, stopProgressSaveTimer]);
 
   useEffect(() => {
     if (videoLoadState !== "loading") return;
     const timeout = window.setTimeout(() => {
-      setVideoLoadState((prev) => (prev === "loading" ? "failed" : prev));
+      setVideoLoadState((prev) => {
+        if (prev === "loading") {
+          setVideoPaused(true);
+          return "failed";
+        }
+        return prev;
+      });
     }, 7000);
     return () => window.clearTimeout(timeout);
   }, [videoLoadState, activeLesson.id]);
 
-  function tryStartPlayback() {
+  const tryStartPlayback = useCallback((restoreFromSaved = false) => {
     const player = youtubePlayerRef.current as
-      | { playVideo?: () => void }
+      | { playVideo?: () => void; seekTo?: (seconds: number, allowSeekAhead?: boolean) => void }
       | null;
     if (!player) return;
+    if (restoreFromSaved) {
+      const savedSeconds = Math.floor(playbackProgressRef.current[activeLesson.id] ?? 0);
+      if (savedSeconds >= 2) {
+        try {
+          player.seekTo?.(savedSeconds, true);
+        } catch {}
+      }
+    }
     try {
       player.playVideo?.();
     } catch {}
-  }
+  }, [activeLesson.id]);
 
   function startVideoPlayback() {
     setVideoStarted(true);
@@ -384,7 +458,7 @@ function CoursePageClient() {
     pendingPlayRef.current = true;
     if (playerReadyRef.current) {
       pendingPlayRef.current = false;
-      tryStartPlayback();
+      tryStartPlayback(true);
     }
   }
 
@@ -392,11 +466,12 @@ function CoursePageClient() {
     setVideoPaused(false);
     setVideoLoadState("loading");
     pendingPlayRef.current = false;
-    tryStartPlayback();
+    tryStartPlayback(false);
   }
 
   useEffect(() => {
     if (!youtubeApiReady || !videoFrameRef.current) return;
+    const lessonIdForPlayer = activeLesson.id;
 
     const w = window as unknown as {
       YT?: {
@@ -425,11 +500,14 @@ function CoursePageClient() {
     if (!w.YT?.Player) return;
 
     if (youtubePlayerRef.current?.destroy) {
+      savePlaybackPosition(playerLessonIdRef.current);
+      stopProgressSaveTimer();
       try {
         youtubePlayerRef.current.destroy();
       } catch {}
       youtubePlayerRef.current = null;
     }
+    playerLessonIdRef.current = lessonIdForPlayer;
 
     const player = new w.YT.Player(videoFrameRef.current, {
       videoId: activeLesson.youtubeId,
@@ -445,10 +523,11 @@ function CoursePageClient() {
           playerReadyRef.current = true;
           if (pendingPlayRef.current) {
             pendingPlayRef.current = false;
-            tryStartPlayback();
+            tryStartPlayback(true);
           }
         },
         onError: () => {
+          stopProgressSaveTimer();
           setVideoLoadState("failed");
           setVideoPaused(true);
         },
@@ -457,11 +536,23 @@ function CoursePageClient() {
           const ps = w.YT?.PlayerState;
           if (!ps) return;
           if (state === ps.PAUSED || state === ps.ENDED || state === ps.CUED) {
+            stopProgressSaveTimer();
+            if (state === ps.PAUSED || state === ps.CUED) {
+              savePlaybackPosition(lessonIdForPlayer);
+            } else if (state === ps.ENDED) {
+              playbackProgressRef.current[lessonIdForPlayer] = 0;
+              persistPlaybackProgress();
+            }
             setVideoPaused(true);
             if (state !== ps.ENDED) {
               setVideoLoadState("loaded");
             }
           } else if (state === ps.PLAYING) {
+            if (progressSaveTimerRef.current == null) {
+              progressSaveTimerRef.current = window.setInterval(() => {
+                savePlaybackPosition(lessonIdForPlayer);
+              }, 2000);
+            }
             setVideoLoadState("loaded");
             setVideoPaused(false);
           } else if (state === ps.BUFFERING) {
@@ -475,6 +566,8 @@ function CoursePageClient() {
     youtubePlayerRef.current = player;
 
     return () => {
+      savePlaybackPosition(lessonIdForPlayer);
+      stopProgressSaveTimer();
       if (player.destroy) {
         try {
           player.destroy();
@@ -485,8 +578,19 @@ function CoursePageClient() {
       if (youtubePlayerRef.current === player) {
         youtubePlayerRef.current = null;
       }
+      if (playerLessonIdRef.current === lessonIdForPlayer) {
+        playerLessonIdRef.current = null;
+      }
     };
-  }, [youtubeApiReady, activeLesson.youtubeId]);
+  }, [
+    youtubeApiReady,
+    activeLesson.id,
+    activeLesson.youtubeId,
+    persistPlaybackProgress,
+    savePlaybackPosition,
+    stopProgressSaveTimer,
+    tryStartPlayback,
+  ]);
 
   useEffect(() => {
     if (!closeDrawerOnLessonChange) return;
@@ -755,7 +859,9 @@ function CoursePageClient() {
                 {isLastLesson
                   ? "Last lesson in this course."
                   : "Use Lessons to jump to any module or lesson."}
-                <span className="ml-2 text-slate-500">Progress saved on this device.</span>
+                <span className="ml-2 text-slate-500">
+                  Lesson and playback progress saved on this device.
+                </span>
               </div>
             </div>
           ) : null}
@@ -782,8 +888,19 @@ function CoursePageClient() {
                 <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-900/16 via-slate-900/5 to-transparent" />
                 <div className="relative flex h-full flex-col gap-3">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 ring-1 ring-slate-200/70">
-                      {overviewLabel.moduleName}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="relative h-8 w-8 shrink-0">
+                        <Image
+                          src="/logos/01_icon_transparent.png"
+                          alt=""
+                          fill
+                          sizes="32px"
+                          className="object-contain"
+                        />
+                      </span>
+                      <span className="truncate rounded-full bg-white/82 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 ring-1 ring-slate-200/70">
+                        {overviewLabel.moduleName}
+                      </span>
                     </span>
                     {overviewLabel.duration ? (
                       <span className="shrink-0 rounded-full bg-white/88 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
