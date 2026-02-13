@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { DEFAULT_LESSON_ID } from "../../app/course/courseData";
 
 function screenshotPath(outputDir: string, fileName: string) {
   return join(outputDir, `${fileName}.png`);
@@ -35,9 +36,9 @@ test("capture mobile full-page screenshots for core app flow", async ({ page }, 
   await expect(page.getByRole("heading", { name: "Adult learner?" })).toBeVisible();
   await saveFullPage(page, outputDir, "01-home");
 
-  await page.goto("/course?lesson=m1-l1");
+  await page.goto(`/course?lesson=${encodeURIComponent(DEFAULT_LESSON_ID)}`);
   await waitForStableUi(page);
-  await expect(page.getByText("Lesson 1 of 12")).toBeVisible();
+  await expect(page.getByText(/Lesson 1 of \d+/)).toBeVisible();
   await saveFullPage(page, outputDir, "02-course");
 
   await page.getByTestId("course-nav-lessons").click();

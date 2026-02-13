@@ -1,7 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { COURSE_LESSONS_FLAT, DEFAULT_LESSON_ID } from "../../app/course/courseData";
 
 test("course nav uses contextual actions on first and last lesson", async ({ page }) => {
-  await page.goto("/course?lesson=m1-l1");
+  const firstLessonId = DEFAULT_LESSON_ID;
+  const lastLessonId = COURSE_LESSONS_FLAT.at(-1)?.id ?? DEFAULT_LESSON_ID;
+
+  await page.goto(`/course?lesson=${encodeURIComponent(firstLessonId)}`);
 
   const leftFirst = page.getByTestId("course-nav-left");
   const middleFirst = page.getByTestId("course-nav-lessons");
@@ -21,7 +25,7 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   await drawer.getByRole("button", { name: "Close menu" }).click();
   await expect(drawer).toBeHidden();
 
-  await page.goto("/course?lesson=m4-l1");
+  await page.goto(`/course?lesson=${encodeURIComponent(lastLessonId)}`);
 
   const leftLast = page.getByTestId("course-nav-left");
   const rightLast = page.getByTestId("course-nav-right");
