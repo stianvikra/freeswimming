@@ -868,6 +868,16 @@ function CoursePageClient() {
   );
 
   const activeSwipeProgress = swipeHint?.progress ?? 0;
+  const swipeVisualStrength = Math.min(
+    1,
+    Math.max(0, (activeSwipeProgress - 0.08) / (1 - 0.08))
+  );
+  const swipeNearThreshold = activeSwipeProgress >= 0.72;
+  const swipeBlueStrength = Math.min(1, Math.max(0, (activeSwipeProgress - 0.72) / 0.28));
+  const swipeShapeWidth = 12 + swipeVisualStrength * 80;
+  const swipeShapeOpacity = 0.03 + swipeVisualStrength * 0.34;
+  const swipeIconOpacity = 0.42 + swipeVisualStrength * 0.46;
+  const swipeIconScale = 0.94 + swipeVisualStrength * 0.08;
 
   const swipeHintOverlay =
     swipeHint && !drawerOpen ? (
@@ -878,41 +888,72 @@ function CoursePageClient() {
           swipeHint.direction === "prev" ? "left-0" : "right-0"
         )}
       >
-        <div className="absolute inset-y-0 flex items-center">
-          <div
+        <div
+          className={cx(
+            "absolute inset-y-0 flex items-center",
+            swipeHint.direction === "prev" ? "left-0 justify-start" : "right-0 justify-end"
+          )}
+        >
+          <svg
+            viewBox="0 0 120 100"
+            preserveAspectRatio="none"
+            shapeRendering="geometricPrecision"
             style={{
-              width: `${24 + activeSwipeProgress * 82}px`,
-              opacity: 0.12 + activeSwipeProgress * 0.52,
-              clipPath:
-                swipeHint.direction === "prev"
-                  ? "polygon(0% 0%, 48% 11%, 76% 30%, 100% 50%, 76% 70%, 48% 89%, 0% 100%)"
-                  : "polygon(100% 0%, 52% 11%, 24% 30%, 0% 50%, 24% 70%, 52% 89%, 100% 100%)",
-              background:
-                swipeHint.direction === "prev"
-                  ? "linear-gradient(90deg, rgba(148,163,184,0.34) 0%, rgba(148,163,184,0.2) 42%, rgba(148,163,184,0) 100%)"
-                  : "linear-gradient(270deg, rgba(148,163,184,0.34) 0%, rgba(148,163,184,0.2) 42%, rgba(148,163,184,0) 100%)",
+              width: `${swipeShapeWidth}px`,
+              opacity: swipeShapeOpacity,
             }}
-            className="h-full transition-[width,opacity] duration-100 ease-out"
-          />
+            className={cx(
+              "h-full transition-[width,opacity] duration-[120ms] ease-out",
+              swipeHint.direction === "next" && "-scale-x-100"
+            )}
+          >
+            <path
+              d="M0 0 C72 6 108 26 120 50 C108 74 72 94 0 100 Z"
+              fill="rgba(148,163,184,0.82)"
+            />
+            <path
+              d="M0 0 C56 8 88 28 100 50 C88 72 56 92 0 100 Z"
+              fill="rgba(203,213,225,0.68)"
+            />
+            <path
+              d="M0 0 C56 8 88 28 100 50 C88 72 56 92 0 100 Z"
+              fill="rgba(59,130,246,0.52)"
+              opacity={0.22 * swipeBlueStrength}
+            />
+          </svg>
         </div>
         <div
           className={cx(
-            "absolute top-1/2 -translate-y-1/2 flex h-[76px] w-[46px] items-center justify-center rounded-full border border-slate-300/82 bg-white/90 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.14)] transition-[transform,opacity,color,border-color] duration-100 ease-out",
+            "absolute top-1/2 -translate-y-1/2 flex h-[76px] w-[46px] items-center justify-center rounded-full border bg-white/92 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.12)] transition-[transform,opacity,color,border-color,background-color] duration-[120ms] ease-out",
             swipeHint.direction === "prev" ? "-left-2 rounded-r-full border-l-0" : "-right-2 rounded-l-full border-r-0",
-            activeSwipeProgress > 0.7 && "border-blue-300/75 text-blue-700"
+            swipeNearThreshold
+              ? "border-blue-300/88 bg-blue-50/92 text-blue-700"
+              : "border-slate-300/82"
           )}
           style={{
             transform: `translateY(-50%) translateX(${
               swipeHint.direction === "prev"
-                ? -SWIPE_HINT_REVEAL_PX * (1 - activeSwipeProgress)
-                : SWIPE_HINT_REVEAL_PX * (1 - activeSwipeProgress)
-            }px) scale(${0.92 + activeSwipeProgress * 0.1})`,
-            opacity: 0.55 + activeSwipeProgress * 0.38,
+                ? -SWIPE_HINT_REVEAL_PX * (1 - swipeVisualStrength)
+                : SWIPE_HINT_REVEAL_PX * (1 - swipeVisualStrength)
+            }px) scale(${swipeIconScale})`,
+            opacity: swipeIconOpacity,
           }}
         >
-          <span className="text-[19px] leading-none">
-            {swipeHint.direction === "prev" ? "‹" : "›"}
-          </span>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden
+            className={cx(
+              "h-5 w-5 transition-transform duration-[120ms] ease-out",
+              swipeHint.direction === "next" && "-scale-x-100"
+            )}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.45}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14.5 5 8 12l6.5 7" />
+          </svg>
         </div>
       </div>
     ) : null;
