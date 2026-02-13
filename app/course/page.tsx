@@ -36,8 +36,10 @@ const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 const DONE_STORAGE_KEY = "fs_course_done_lessons";
 const VIDEO_PROGRESS_STORAGE_KEY = "fs_course_video_progress";
 const SWIPE_NUX_STORAGE_KEY = "fs_course_swipe_nux_seen";
-const SWIPE_RAIL_HITBOX_PX = 76;
-const SWIPE_RAIL_INSET_PX = 14;
+const SWIPE_ZONE_INSET_PX = 12;
+const SWIPE_SIDE_ZONE_RATIO = 0.31;
+const SWIPE_SIDE_ZONE_MIN_PX = 92;
+const SWIPE_SIDE_ZONE_MAX_PX = 170;
 const SWIPE_DISTANCE_TO_NAVIGATE_PX = 78;
 const SWIPE_VERTICAL_CANCEL_PX = 24;
 const SWIPE_HINT_REVEAL_PX = 18;
@@ -399,20 +401,31 @@ function CoursePageClient() {
   }, []);
 
   const handleSwipeStart = useCallback(
-    (direction: SwipeDirection, event: React.TouchEvent<HTMLDivElement>) => {
+    (event: React.TouchEvent<HTMLDivElement>) => {
       if (window.innerWidth >= 640 || drawerOpen || event.touches.length !== 1) return;
       if (isSwipeBlockedTarget(event.target)) return;
-      if (direction === "prev" && !prevId) return;
-      if (direction === "next" && !nextId) return;
 
       const touch = event.touches[0];
+      const availableWidth = Math.max(0, window.innerWidth - SWIPE_ZONE_INSET_PX * 2);
+      const sideZoneWidth = Math.min(
+        SWIPE_SIDE_ZONE_MAX_PX,
+        Math.max(SWIPE_SIDE_ZONE_MIN_PX, availableWidth * SWIPE_SIDE_ZONE_RATIO)
+      );
+      const leftZoneEnd = SWIPE_ZONE_INSET_PX + sideZoneWidth;
+      const rightZoneStart = window.innerWidth - SWIPE_ZONE_INSET_PX - sideZoneWidth;
+
+      let resolvedDirection: SwipeDirection | null = null;
+      if (touch.clientX <= leftZoneEnd && prevId) resolvedDirection = "prev";
+      if (touch.clientX >= rightZoneStart && nextId) resolvedDirection = "next";
+      if (!resolvedDirection) return;
+
       swipeTouchIdRef.current = touch.identifier;
-      swipeDirectionRef.current = direction;
+      swipeDirectionRef.current = resolvedDirection;
       swipeStartXRef.current = touch.clientX;
       swipeStartYRef.current = touch.clientY;
       swipeTravelRef.current = 0;
       swipeCancelledRef.current = false;
-      setSwipeHint({ direction, progress: 0 });
+      setSwipeHint({ direction: resolvedDirection, progress: 0 });
       dismissSwipeNux();
     },
     [dismissSwipeNux, drawerOpen, nextId, prevId]
@@ -854,8 +867,6 @@ function CoursePageClient() {
     </div>
   );
 
-  const swipeRailClass =
-    "fixed top-[72px] bottom-[calc(88px+env(safe-area-inset-bottom))] z-30 sm:hidden";
   const activeSwipeProgress = swipeHint?.progress ?? 0;
 
   const swipeHintOverlay =
@@ -944,6 +955,10 @@ function CoursePageClient() {
       <PageTemplate size="wide" showBack={false}>
         <div
           className="touch-pan-y"
+          onTouchStart={handleSwipeStart}
+          onTouchMove={handleSwipeMove}
+          onTouchEnd={handleSwipeEnd}
+          onTouchCancel={resetSwipeGesture}
         >
           <div ref={playerTopRef} />
 
@@ -1363,34 +1378,6 @@ function CoursePageClient() {
           />
         </div>
       </PageTemplate>
-      {!drawerOpen && prevId ? (
-        <div
-          aria-hidden
-          className={cx(swipeRailClass, "touch-pan-y")}
-          style={{
-            left: SWIPE_RAIL_INSET_PX,
-            width: SWIPE_RAIL_HITBOX_PX,
-          }}
-          onTouchStart={(event) => handleSwipeStart("prev", event)}
-          onTouchMove={handleSwipeMove}
-          onTouchEnd={handleSwipeEnd}
-          onTouchCancel={resetSwipeGesture}
-        />
-      ) : null}
-      {!drawerOpen && nextId ? (
-        <div
-          aria-hidden
-          className={cx(swipeRailClass, "touch-pan-y")}
-          style={{
-            right: SWIPE_RAIL_INSET_PX,
-            width: SWIPE_RAIL_HITBOX_PX,
-          }}
-          onTouchStart={(event) => handleSwipeStart("next", event)}
-          onTouchMove={handleSwipeMove}
-          onTouchEnd={handleSwipeEnd}
-          onTouchCancel={resetSwipeGesture}
-        />
-      ) : null}
       {swipeHintOverlay}
       {swipeNuxToast}
     </SiteChrome>
