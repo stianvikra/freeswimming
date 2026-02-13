@@ -35,11 +35,17 @@ const STORAGE_KEY = "fs_course_last_lesson";
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 const DONE_STORAGE_KEY = "fs_course_done_lessons";
 const VIDEO_PROGRESS_STORAGE_KEY = "fs_course_video_progress";
+const SWIPE_EDGE_TRIGGER_PX = 28;
+const SWIPE_DISTANCE_TO_NAVIGATE_PX = 78;
+const SWIPE_VERTICAL_CANCEL_PX = 24;
+const SWIPE_HINT_REVEAL_PX = 18;
 const DEFAULT_PASS_CRITERIA = [
   "Complete 3 calm repetitions with the same cue.",
   "Breathing stays controlled without rushing.",
   "Body line stays stable from start to finish.",
 ];
+
+type SwipeDirection = "prev" | "next";
 
 type CourseNavButtonProps = {
   children: React.ReactNode;
@@ -97,6 +103,15 @@ function CoursePageFallback() {
   );
 }
 
+function isSwipeBlockedTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(
+    target.closest(
+      'a,button,input,textarea,select,label,[role="button"],[role="link"],iframe,[contenteditable="true"],[data-no-swipe]'
+    )
+  );
+}
+
 export default function CoursePage() {
   return (
     <Suspense fallback={<CoursePageFallback />}>
@@ -147,6 +162,16 @@ function CoursePageClient() {
   const progressSaveTimerRef = useRef<number | null>(null);
   const [resumeAvailable, setResumeAvailable] = useState(false);
   const [playbackProgressLoaded, setPlaybackProgressLoaded] = useState(false);
+  const [swipeHint, setSwipeHint] = useState<{
+    direction: SwipeDirection;
+    progress: number;
+  } | null>(null);
+  const swipeTouchIdRef = useRef<number | null>(null);
+  const swipeDirectionRef = useRef<SwipeDirection | null>(null);
+  const swipeStartXRef = useRef(0);
+  const swipeStartYRef = useRef(0);
+  const swipeTravelRef = useRef(0);
+  const swipeCancelledRef = useRef(false);
 
   const moduleInfo = useMemo(() => {
     const moduleIndex = COURSE_MODULES.findIndex((m) =>
@@ -272,24 +297,27 @@ function CoursePageClient() {
 
   const playerTopRef = useRef<HTMLDivElement | null>(null);
 
-  function goToLesson(lessonId: string) {
-    if (lessonId === activeLesson.id) {
-      setDrawerOpen(false);
-      setCloseDrawerOnLessonChange(false);
-      return;
-    }
+  const goToLesson = useCallback(
+    (lessonId: string) => {
+      if (lessonId === activeLesson.id) {
+        setDrawerOpen(false);
+        setCloseDrawerOnLessonChange(false);
+        return;
+      }
 
-    if (drawerOpen) {
-      setCloseDrawerOnLessonChange(true);
-    }
+      if (drawerOpen) {
+        setCloseDrawerOnLessonChange(true);
+      }
 
-    router.push(`${pathname}?lesson=${encodeURIComponent(lessonId)}`);
-    if (!drawerOpen) {
-      const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-      const behavior: ScrollBehavior = prefersReduced ? "auto" : "smooth";
-      playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
-    }
-  }
+      router.push(`${pathname}?lesson=${encodeURIComponent(lessonId)}`);
+      if (!drawerOpen) {
+        const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+        const behavior: ScrollBehavior = prefersReduced ? "auto" : "smooth";
+        playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
+      }
+    },
+    [activeLesson.id, drawerOpen, pathname, router]
+  );
 
   function toggleDrawer(view: DrawerView) {
     if (drawerOpen && drawerView === view) {
@@ -322,6 +350,112 @@ function CoursePageClient() {
       return [...prev, activeLesson.id];
     });
   }
+
+  const resetSwipeGesture = useCallback(() => {
+    swipeTouchIdRef.current = null;
+    swipeDirectionRef.current = null;
+    swipeTravelRef.current = 0;
+    swipeCancelledRef.current = false;
+    setSwipeHint(null);
+  }, []);
+
+  const getTrackedTouch = useCallback((touches: React.TouchList) => {
+    const trackedId = swipeTouchIdRef.current;
+    if (trackedId == null) return null;
+    for (let i = 0; i < touches.length; i += 1) {
+      const touch = touches.item(i);
+      if (touch && touch.identifier === trackedId) return touch;
+    }
+    return null;
+  }, []);
+
+  const handleSwipeStart = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      if (window.innerWidth >= 640 || drawerOpen || event.touches.length !== 1) return;
+      if (isSwipeBlockedTarget(event.target)) return;
+
+      const touch = event.touches[0];
+      let direction: SwipeDirection | null = null;
+      if (touch.clientX <= SWIPE_EDGE_TRIGGER_PX && prevId) direction = "prev";
+      if (touch.clientX >= window.innerWidth - SWIPE_EDGE_TRIGGER_PX && nextId)
+        direction = "next";
+      if (!direction) return;
+
+      swipeTouchIdRef.current = touch.identifier;
+      swipeDirectionRef.current = direction;
+      swipeStartXRef.current = touch.clientX;
+      swipeStartYRef.current = touch.clientY;
+      swipeTravelRef.current = 0;
+      swipeCancelledRef.current = false;
+      setSwipeHint({ direction, progress: 0 });
+    },
+    [drawerOpen, nextId, prevId]
+  );
+
+  const handleSwipeMove = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      const direction = swipeDirectionRef.current;
+      if (!direction) return;
+      const touch = getTrackedTouch(event.touches);
+      if (!touch) return;
+
+      const deltaX = touch.clientX - swipeStartXRef.current;
+      const travel = direction === "prev" ? deltaX : -deltaX;
+      const verticalTravel = Math.abs(touch.clientY - swipeStartYRef.current);
+      const normalizedTravel = Math.max(0, travel);
+
+      if (
+        !swipeCancelledRef.current &&
+        verticalTravel > SWIPE_VERTICAL_CANCEL_PX &&
+        verticalTravel > normalizedTravel
+      ) {
+        swipeCancelledRef.current = true;
+        setSwipeHint(null);
+        return;
+      }
+
+      if (swipeCancelledRef.current) return;
+      if (normalizedTravel > 0) {
+        event.preventDefault();
+      }
+
+      swipeTravelRef.current = normalizedTravel;
+      const progress = Math.min(1, normalizedTravel / SWIPE_DISTANCE_TO_NAVIGATE_PX);
+      setSwipeHint({ direction, progress });
+    },
+    [getTrackedTouch]
+  );
+
+  const handleSwipeEnd = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      const direction = swipeDirectionRef.current;
+      if (!direction) return;
+      const trackedId = swipeTouchIdRef.current;
+      if (trackedId == null) {
+        resetSwipeGesture();
+        return;
+      }
+
+      let relevantTouchEnded = false;
+      for (let i = 0; i < event.changedTouches.length; i += 1) {
+        const touch = event.changedTouches.item(i);
+        if (touch?.identifier === trackedId) {
+          relevantTouchEnded = true;
+          break;
+        }
+      }
+      if (!relevantTouchEnded) return;
+
+      const shouldNavigate =
+        !swipeCancelledRef.current && swipeTravelRef.current >= SWIPE_DISTANCE_TO_NAVIGATE_PX;
+      const targetLessonId = direction === "prev" ? prevId : nextId;
+      resetSwipeGesture();
+      if (shouldNavigate && targetLessonId) {
+        goToLesson(targetLessonId);
+      }
+    },
+    [goToLesson, nextId, prevId, resetSwipeGesture]
+  );
 
   const isFirstLesson = !prevId;
   const isLastLesson = !nextId;
@@ -378,6 +512,16 @@ function CoursePageClient() {
   useEffect(() => {
     setCommonMistakesExpanded(false);
   }, [activeLesson.id]);
+
+  useEffect(() => {
+    if (drawerOpen) {
+      resetSwipeGesture();
+    }
+  }, [drawerOpen, resetSwipeGesture]);
+
+  useEffect(() => {
+    resetSwipeGesture();
+  }, [activeLesson.id, resetSwipeGesture]);
 
   useEffect(() => {
     videoStartedRef.current = videoStarted;
@@ -684,6 +828,38 @@ function CoursePageClient() {
     </div>
   );
 
+  const swipeHintOverlay =
+    swipeHint && !drawerOpen ? (
+      <div
+        aria-hidden
+        className={cx(
+          "pointer-events-none fixed top-1/2 z-40 -translate-y-1/2 sm:hidden",
+          swipeHint.direction === "prev" ? "left-0" : "right-0"
+        )}
+      >
+        <div
+          style={{
+            transform: `translateX(${
+              swipeHint.direction === "prev"
+                ? -SWIPE_HINT_REVEAL_PX * (1 - swipeHint.progress)
+                : SWIPE_HINT_REVEAL_PX * (1 - swipeHint.progress)
+            }px)`,
+            opacity: 0.6 + swipeHint.progress * 0.4,
+          }}
+          className={cx(
+            "flex h-[72px] w-[44px] items-center justify-center border border-blue-300/65 bg-white/88 text-blue-700 shadow-[0_10px_24px_rgba(37,99,235,0.2)] backdrop-blur-[2px] transition-[transform,opacity] duration-75 ease-out",
+            swipeHint.direction === "prev"
+              ? "rounded-r-full border-l-0"
+              : "rounded-l-full border-r-0"
+          )}
+        >
+          <span className="text-[20px] leading-none">
+            {swipeHint.direction === "prev" ? "‹" : "›"}
+          </span>
+        </div>
+      </div>
+    ) : null;
+
   return (
     <SiteChrome
       menu={{
@@ -699,7 +875,14 @@ function CoursePageClient() {
       bottomBar={bottomBar}
     >
       <PageTemplate size="wide" showBack={false}>
-        <div ref={playerTopRef} />
+        <div
+          className="touch-pan-y"
+          onTouchStart={handleSwipeStart}
+          onTouchMove={handleSwipeMove}
+          onTouchEnd={handleSwipeEnd}
+          onTouchCancel={resetSwipeGesture}
+        >
+          <div ref={playerTopRef} />
 
         <PageIntro
           title="Free Course"
@@ -1102,20 +1285,22 @@ function CoursePageClient() {
 
         <div className="h-6 sm:hidden" aria-hidden />
 
-        <MenuDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          defaultView={drawerView}
-          mainItems={MAIN_MENU_ITEMS}
-          course={{
-            activeLessonId: activeLesson.id,
-            onSelectLesson: goToLesson,
-            doneLessonIds,
-          }}
-          titleMain="Main menu"
-          titleCourse="Course menu"
-        />
+          <MenuDrawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            defaultView={drawerView}
+            mainItems={MAIN_MENU_ITEMS}
+            course={{
+              activeLessonId: activeLesson.id,
+              onSelectLesson: goToLesson,
+              doneLessonIds,
+            }}
+            titleMain="Main menu"
+            titleCourse="Course menu"
+          />
+        </div>
       </PageTemplate>
+      {swipeHintOverlay}
     </SiteChrome>
   );
 }
