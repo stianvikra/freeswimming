@@ -5,14 +5,19 @@ Next.js app for freeswimming.org.
 ## Local setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
+
 2. Create local env file:
+
 ```bash
 cp .env.example .env.local
 ```
+
 3. Start dev server:
+
 ```bash
 npm run dev
 ```
@@ -34,6 +39,21 @@ If Upstash vars are missing, the contact API falls back to in-memory rate limiti
 
 ```bash
 npm run lint
+npm run typecheck
+npm run test:unit
 npm run test:e2e
 npm run build
+```
+
+## Formatting
+
+```bash
+npm run format
+npm run format:check
+```
+
+## Full verification
+
+```bash
+npm run verify
 ```
