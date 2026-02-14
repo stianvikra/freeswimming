@@ -62,10 +62,12 @@ npm run verify
 
 - `AGENTS.md`: repo instructions for coding agents.
 - `CONTRIBUTING.md`: contributor workflow and quality gate.
+- `.github/CODEOWNERS`: default ownership for required code-owner reviews.
 - `.github/pull_request_template.md`: PR checklist.
 - `docs/task-brief-template.md`: preferred task format for coding requests.
 - `docs/task-briefs/`: lifecycle folders for briefs (`planned`, `in-progress`, `done`, `blocked`).
 - `docs/branch-protection.md`: branch protection standard and apply command.
+- `docs/vercel-preview-setup.md`: setup guide for Vercel preview deploys on PRs.
 
 Move a brief between lifecycle folders:
 

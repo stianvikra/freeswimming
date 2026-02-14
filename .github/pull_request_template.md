@@ -29,4 +29,5 @@
 
 - [ ] Acceptance criteria are met
 - [ ] Docs updated for behavior/contract changes
+- [ ] PR is <= 500 changed lines, or intentionally split/explained
 - [ ] No secrets or sensitive data added

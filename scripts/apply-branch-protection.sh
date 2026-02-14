@@ -1,8 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BRANCH="${1:-main}"
-STATUS_CHECK="${2:-CI / verify}"
+if [[ $# -gt 0 ]]; then
+  BRANCH="$1"
+  shift
+else
+  BRANCH="main"
+fi
+
+DEFAULT_CHECKS=(
+  "CI / verify"
+  "CodeQL / Analyze (javascript-typescript)"
+  "PR Size / size-check"
+)
+
+if [[ $# -gt 0 ]]; then
+  REQUIRED_CHECKS=("$@")
+else
+  REQUIRED_CHECKS=("${DEFAULT_CHECKS[@]}")
+fi
+
 TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
 
 if [[ -z "${TOKEN}" ]]; then
@@ -20,19 +37,34 @@ else
   exit 1
 fi
 
-status_check_escaped="${STATUS_CHECK//\"/\\\"}"
+json_escape() {
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  value="${value//$'\n'/\\n}"
+  printf '%s' "${value}"
+}
+
+contexts_json=""
+for check in "${REQUIRED_CHECKS[@]}"; do
+  escaped="$(json_escape "${check}")"
+  if [[ -n "${contexts_json}" ]]; then
+    contexts_json+=", "
+  fi
+  contexts_json+="\"${escaped}\""
+done
 
 payload=$(
   cat <<JSON
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["${status_check_escaped}"]
+    "contexts": [${contexts_json}]
   },
   "enforce_admins": true,
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": false,
+    "require_code_owner_reviews": true,
     "required_approving_review_count": 1,
     "require_last_push_approval": false
   },
@@ -49,6 +81,7 @@ JSON
 )
 
 echo "Applying protection to ${OWNER}/${REPO} branch ${BRANCH} ..."
+echo "Required checks: ${REQUIRED_CHECKS[*]}"
 
 curl --fail-with-body --silent --show-error \
   -X PUT \
