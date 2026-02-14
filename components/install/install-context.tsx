@@ -19,12 +19,14 @@ export type InstallRequestResult =
   | "accepted"
   | "dismissed"
   | "ios-instructions"
+  | "mac-safari-instructions"
   | "unsupported"
   | "already-installed";
 
 type InstallContextValue = {
   isInstalled: boolean;
   isIOS: boolean;
+  isMacSafari: boolean;
   canNativePrompt: boolean;
   canInstall: boolean;
   requestInstall: () => Promise<InstallRequestResult>;
@@ -38,19 +40,47 @@ function detectStandaloneMode() {
   return window.matchMedia("(display-mode: standalone)").matches || nav.standalone === true;
 }
 
+export function isIOSUserAgent(userAgent: string, platform: string, maxTouchPoints: number) {
+  const ua = userAgent.toLowerCase();
+  const iOSByUA = /iphone|ipad|ipod/.test(ua);
+  const iPadOSDesktopUA = platform === "MacIntel" && maxTouchPoints > 1;
+  return iOSByUA || iPadOSDesktopUA;
+}
+
+export function isMacSafariUserAgent(userAgent: string, platform: string, maxTouchPoints: number) {
+  const ua = userAgent.toLowerCase();
+  const isIOS = isIOSUserAgent(userAgent, platform, maxTouchPoints);
+  const isMacPlatform = /mac/i.test(platform);
+  const hasSafariToken = ua.includes("safari");
+  const hasExcludedBrowserToken = /(crios|chrome|chromium|edg|edge|firefox|fxios|opr|opera)/.test(
+    ua
+  );
+  return !isIOS && isMacPlatform && hasSafariToken && !hasExcludedBrowserToken;
+}
+
 function detectIOSDevice() {
   if (typeof window === "undefined") return false;
-  const ua = window.navigator.userAgent.toLowerCase();
-  const iOSByUA = /iphone|ipad|ipod/.test(ua);
-  const iPadOSDesktopUA =
-    window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
-  return iOSByUA || iPadOSDesktopUA;
+  return isIOSUserAgent(
+    window.navigator.userAgent,
+    window.navigator.platform,
+    window.navigator.maxTouchPoints
+  );
+}
+
+function detectMacSafari() {
+  if (typeof window === "undefined") return false;
+  return isMacSafariUserAgent(
+    window.navigator.userAgent,
+    window.navigator.platform,
+    window.navigator.maxTouchPoints
+  );
 }
 
 export function InstallProvider({ children }: { children: React.ReactNode }) {
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(() => detectStandaloneMode());
   const [isIOS] = useState(() => detectIOSDevice());
+  const [isMacSafari] = useState(() => detectMacSafari());
   const [canNativePrompt, setCanNativePrompt] = useState(false);
 
   useEffect(() => {
@@ -123,19 +153,21 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (isIOS) return "ios-instructions";
+    if (isMacSafari) return "mac-safari-instructions";
     return "unsupported";
-  }, [isInstalled, isIOS]);
+  }, [isInstalled, isIOS, isMacSafari]);
 
   const value = useMemo<InstallContextValue>(() => {
-    const canInstall = !isInstalled && (canNativePrompt || isIOS);
+    const canInstall = !isInstalled && (canNativePrompt || isIOS || isMacSafari);
     return {
       isInstalled,
       isIOS,
+      isMacSafari,
       canNativePrompt,
       canInstall,
       requestInstall,
     };
-  }, [canNativePrompt, isIOS, isInstalled, requestInstall]);
+  }, [canNativePrompt, isIOS, isInstalled, isMacSafari, requestInstall]);
 
   return <InstallContext.Provider value={value}>{children}</InstallContext.Provider>;
 }

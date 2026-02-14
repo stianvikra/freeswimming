@@ -54,11 +54,12 @@ export default function MenuDrawer({
 }: Props) {
   const pathname = usePathname();
   const hasCourse = Boolean(course);
-  const { canInstall, isIOS, isInstalled, requestInstall } = useInstallContext();
+  const { canInstall, isInstalled, requestInstall } = useInstallContext();
 
   const [view, setView] = useState<"main" | "course">(hasCourse ? defaultView : "main");
   const [showMenuTip, setShowMenuTip] = useState(false);
   const [showIosInstallGuide, setShowIosInstallGuide] = useState(false);
+  const [showMacSafariInstallGuide, setShowMacSafariInstallGuide] = useState(false);
   const [installFeedback, setInstallFeedback] = useState<string | null>(null);
   const [installBusy, setInstallBusy] = useState(false);
 
@@ -85,6 +86,7 @@ export default function MenuDrawer({
   useEffect(() => {
     if (open) return;
     setShowIosInstallGuide(false);
+    setShowMacSafariInstallGuide(false);
     setInstallFeedback(null);
     setInstallBusy(false);
   }, [open]);
@@ -137,25 +139,39 @@ export default function MenuDrawer({
 
     if (result === "accepted") {
       setShowIosInstallGuide(false);
-      setInstallFeedback("Install prompt opened. Follow your browser steps.");
+      setShowMacSafariInstallGuide(false);
+      setInstallFeedback(
+        "App installed. You can open FreeSwimming from your Dock, Start menu, or home screen."
+      );
       return;
     }
     if (result === "dismissed") {
       setShowIosInstallGuide(false);
+      setShowMacSafariInstallGuide(false);
       setInstallFeedback("No problem. You can install any time from this menu.");
       return;
     }
     if (result === "ios-instructions") {
       setShowIosInstallGuide(true);
+      setShowMacSafariInstallGuide(false);
+      return;
+    }
+    if (result === "mac-safari-instructions") {
+      setShowIosInstallGuide(false);
+      setShowMacSafariInstallGuide(true);
       return;
     }
     if (result === "already-installed") {
       setShowIosInstallGuide(false);
+      setShowMacSafariInstallGuide(false);
       setInstallFeedback("App is already installed on this device.");
       return;
     }
     setShowIosInstallGuide(false);
-    setInstallFeedback("Install is not available in this browser yet.");
+    setShowMacSafariInstallGuide(false);
+    setInstallFeedback(
+      "Install is not available in this browser yet. For best support, use Safari, Chrome, or Edge."
+    );
   }
 
   const headerTitle = view === "course" ? titleCourse : titleMain;
@@ -244,12 +260,13 @@ export default function MenuDrawer({
               install={{
                 isInstalled,
                 canInstall,
-                isIOS,
                 busy: installBusy,
                 feedback: installFeedback,
                 showIosGuide: showIosInstallGuide,
+                showMacSafariGuide: showMacSafariInstallGuide,
                 onInstall: handleInstallFromMenu,
                 onCloseIosGuide: () => setShowIosInstallGuide(false),
+                onCloseMacSafariGuide: () => setShowMacSafariInstallGuide(false),
               }}
             />
           )}
@@ -290,12 +307,13 @@ function MainView({
   install: {
     isInstalled: boolean;
     canInstall: boolean;
-    isIOS: boolean;
     busy: boolean;
     feedback: string | null;
     showIosGuide: boolean;
+    showMacSafariGuide: boolean;
     onInstall: () => void;
     onCloseIosGuide: () => void;
+    onCloseMacSafariGuide: () => void;
   };
 }) {
   return (
@@ -340,7 +358,7 @@ function MainView({
         <p className="mt-1 text-[13px] leading-6 text-slate-600">
           {install.isInstalled
             ? "Already installed on this device."
-            : "Get quick access from your phone home screen."}
+            : "Get quick access from your home screen, Dock, or Start menu."}
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -373,6 +391,26 @@ function MainView({
               <PressButton
                 tier="nav"
                 onClick={install.onCloseIosGuide}
+                className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-white/90 px-3 py-1.5 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+              >
+                Got it
+              </PressButton>
+            </div>
+          </div>
+        ) : null}
+
+        {install.showMacSafariGuide ? (
+          <div className="bg-white/86 mt-3 rounded-2xl border border-blue-100/70 p-3">
+            <div className="text-[13px] font-semibold text-slate-900">Install on Mac (Safari)</div>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
+              <li>Open File in Safari.</li>
+              <li>Choose Add to Dock.</li>
+              <li>Click Add.</li>
+            </ol>
+            <div className="mt-3">
+              <PressButton
+                tier="nav"
+                onClick={install.onCloseMacSafariGuide}
                 className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-white/90 px-3 py-1.5 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
               >
                 Got it
