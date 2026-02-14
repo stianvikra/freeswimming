@@ -1,0 +1,29 @@
+# Task Briefs
+
+Store concrete task briefs in this folder using lifecycle subfolders.
+
+## Lifecycle
+
+- `planned/`: approved briefs not yet started.
+- `in-progress/`: currently being implemented.
+- `done/`: completed and merged work.
+- `blocked/`: paused due to external dependency/decision.
+
+Default flow:
+
+1. create in `planned/`
+2. move to `in-progress/` when implementation starts
+3. move to `done/` after merge
+
+## Naming Convention
+
+- `YYYY-MM-DD-short-title.md`
+
+Example:
+
+- `2026-02-14-add-to-home-screen.md`
+
+## Agent Rule
+
+When an agent starts implementing a brief, it should move that brief from `planned/` to `in-progress/`.
+After the related PR is merged, move it from `in-progress/` to `done/`.

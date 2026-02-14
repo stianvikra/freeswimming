@@ -1,5 +1,13 @@
 # Task Brief: Add To Home Screen
 
+## Metadata
+
+- `id`: `2026-02-14-add-to-home-screen`
+- `status`: `planned`
+- `owner`: `stianvikra`
+- `created`: `2026-02-14`
+- `updated`: `2026-02-14`
+
 ## Goal
 
 Engaged learners should get a high-quality, non-intrusive install experience that combines a one-time contextual prompt after first lesson completion and a permanent manual install option in the menu.

@@ -64,4 +64,11 @@ npm run verify
 - `CONTRIBUTING.md`: contributor workflow and quality gate.
 - `.github/pull_request_template.md`: PR checklist.
 - `docs/task-brief-template.md`: preferred task format for coding requests.
+- `docs/task-briefs/`: lifecycle folders for briefs (`planned`, `in-progress`, `done`, `blocked`).
 - `docs/branch-protection.md`: branch protection standard and apply command.
+
+Move a brief between lifecycle folders:
+
+```bash
+npm run task-brief:move -- 2026-02-14-add-to-home-screen.md in-progress
+```
