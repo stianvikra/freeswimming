@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-14-add-to-home-screen`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-14`
 - `updated`: `2026-02-14`
@@ -18,14 +18,28 @@ Engaged learners should get a high-quality, non-intrusive install experience tha
   - contextual prompt for course users after first completion,
   - persistent manual install option in the main menu/drawer.
 - Trigger prompt on the first successful `Mark as done` action.
+- Define exact trigger contract:
+  - source event name/component,
+  - what counts as "successful",
+  - delay start timing.
 - Show prompt after a short delay (about 1-2 seconds), not instantly on click.
 - Never show install prompt on initial page paint.
-- Add menu item copy such as `Install app` / `Add to Home Screen` that users can open at any time.
+- Add fixed menu item copy and placement for consistency:
+  - label: `Install app`,
+  - placement: main menu/drawer near primary navigation actions.
 - Implement platform-aware behavior:
   - use native install prompt when available (`beforeinstallprompt`),
   - show iOS fallback instructions when native prompt is not available.
 - Persist dismissal/install state in browser storage so users are not repeatedly prompted.
-- Add cooldown behavior for dismissals (for example 30 days).
+- Define browser storage keys and cooldown policy explicitly:
+  - `a2hs_prompt_seen` (boolean),
+  - `a2hs_dismissed_at` (timestamp),
+  - cooldown: 30 days.
+- Add explicit eligibility/skip rules:
+  - skip if app already installed (`display-mode: standalone` or iOS equivalent),
+  - skip when platform/browser does not support install flow and no valid fallback,
+  - skip if cooldown is active.
+- Add a simple kill-switch (feature flag) so install prompt can be disabled quickly.
 - Add/confirm web app metadata and icons for install surfaces:
   - `manifest`,
   - `apple-touch-icon`,
@@ -41,6 +55,7 @@ Engaged learners should get a high-quality, non-intrusive install experience tha
   - one-time/cooldown behavior,
   - menu-entry install flow availability,
   - already-installed behavior,
+  - platform-specific fallback behavior,
   - basic accessibility semantics.
 
 ## 10/10 UX/UI Quality Bar
@@ -85,6 +100,17 @@ Engaged learners should get a high-quality, non-intrusive install experience tha
 - Prompt does not cause layout jump or visual instability.
 - iOS install guidance is understandable without extra explanation.
 - A11y checks pass for the install prompt surface (labels/roles/focus/contrast).
+- Storage keys and cooldown logic are deterministic and covered by tests.
+- Kill-switch can disable contextual prompt without removing menu install action.
+
+## Success Metrics
+
+- Install prompt interaction rate is measurable (open, dismiss, accept).
+- Baseline KPIs are captured before rollout and compared after rollout:
+  - install acceptance rate,
+  - dismiss rate,
+  - return usage (optional if analytics exists).
+- If user experience degrades (complaints/drop-off), kill-switch can be used immediately.
 
 ## Validation
 
