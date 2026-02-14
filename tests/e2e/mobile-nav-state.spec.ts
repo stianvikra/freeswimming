@@ -1,6 +1,14 @@
 import { expect, test } from "@playwright/test";
+import { isMobileProject } from "./project-guards";
 
-test("menu tab is muted on section pages and active only when drawer is open", async ({ page }) => {
+test("menu tab is muted on section pages and active only when drawer is open", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Bottom mobile nav behavior is validated only on mobile projects."
+  );
+
   await page.goto("/programs");
 
   const menu = page.getByTestId("mobile-nav-menu");

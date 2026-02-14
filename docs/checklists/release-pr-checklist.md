@@ -15,6 +15,7 @@ Use this for PRs targeting `main`.
 - Required checks are green.
 - Local manual QA is completed for changed flows (record URL + browser/device in PR).
 - Vercel preview works for changed flows (record preview URL + browser/device in PR).
+- QA matrix coverage is appropriate for the risk (mobile + tablet + desktop browsers when relevant).
 - Branch protection has expected required check names.
 
 ## If CI Is Stuck

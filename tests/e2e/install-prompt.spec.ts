@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { isMobileProject } from "./project-guards";
 
 const UNSUPPORTED_BROWSER_MESSAGE =
   "Install is not available in this browser yet. For best support, use Safari, Chrome, or Edge.";
@@ -56,7 +57,12 @@ async function primeInstallPrompt(page: Page, outcome: "accepted" | "dismissed")
   await page.waitForTimeout(120);
 }
 
-test("main menu exposes a persistent install action", async ({ page }) => {
+test("main menu exposes a persistent install action", async ({ page }, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Install prompt mobile drawer flow is validated on mobile projects."
+  );
+
   await openMainMenuFromCourse(page);
   await expect(page.getByTestId("install-app-menu-action")).toBeVisible();
 });
@@ -64,6 +70,10 @@ test("main menu exposes a persistent install action", async ({ page }) => {
 test("main menu shows unsupported-browser guidance when install path is unavailable", async ({
   page,
 }, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Install prompt mobile drawer flow is validated on mobile projects."
+  );
   test.skip(
     testInfo.project.name.includes("iphone"),
     "Unsupported-browser path is validated on non-iOS profile."
@@ -76,6 +86,10 @@ test("main menu shows unsupported-browser guidance when install path is unavaila
 });
 
 test("main menu shows iOS install instructions on iPhone profile", async ({ page }, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Install prompt mobile drawer flow is validated on mobile projects."
+  );
   test.skip(!testInfo.project.name.includes("iphone"), "iOS-only path.");
 
   await blockBeforeInstallPrompt(page);
@@ -89,6 +103,10 @@ test("main menu shows iOS install instructions on iPhone profile", async ({ page
 test("main menu shows Mac Safari instructions for Safari-on-mac fallback", async ({
   page,
 }, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Install prompt mobile drawer flow is validated on mobile projects."
+  );
   test.skip(
     testInfo.project.name.includes("iphone"),
     "Mac Safari fallback validation runs on non-iOS profile."
@@ -146,7 +164,12 @@ test("main menu shows Mac Safari instructions for Safari-on-mac fallback", async
 
 test("first successful mark-as-done can trigger contextual install prompt once", async ({
   page,
-}) => {
+}, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Install prompt mobile drawer flow is validated on mobile projects."
+  );
+
   await page.goto("/course?lesson=mod3-l1");
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
   await expect(markDoneButton).toBeVisible();
@@ -169,7 +192,12 @@ test("first successful mark-as-done can trigger contextual install prompt once",
 
 test("contextual install prompt shows success confirmation after accepted install", async ({
   page,
-}) => {
+}, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Install prompt mobile drawer flow is validated on mobile projects."
+  );
+
   await page.goto("/course?lesson=mod3-l1");
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
   await expect(markDoneButton).toBeVisible();

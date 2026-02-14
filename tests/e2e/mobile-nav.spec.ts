@@ -1,6 +1,14 @@
 import { expect, test } from "@playwright/test";
+import { isMobileProject } from "./project-guards";
 
-test("mobile fixed nav uses link semantics and menu toggles with Escape", async ({ page }) => {
+test("mobile fixed nav uses link semantics and menu toggles with Escape", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Bottom mobile nav behavior is validated only on mobile projects."
+  );
+
   await page.goto("/contact");
 
   const nav = page.getByTestId("mobile-fixed-nav");

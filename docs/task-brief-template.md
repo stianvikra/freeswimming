@@ -48,6 +48,13 @@ Required when task impacts UI/UX, install flows, runtime browser behavior, or de
   - Preview URL from PR checks
   - Browsers/devices tested on preview
 - Any local vs preview differences documented (or explicitly `none`)
+- Recommended browser/device matrix for UI/runtime changes:
+  - iOS Safari (phone)
+  - Android Chromium (phone)
+  - iPad/tablet viewport
+  - Desktop Chrome
+  - Desktop Safari/WebKit
+  - Desktop Firefox
 
 ## Constraints
 

@@ -21,6 +21,7 @@
 - [ ] `npm run test:e2e` (or explain why skipped)
 - [ ] Local manual QA done on dev URL (list URL + browser/device in PR description)
 - [ ] Vercel preview manual QA done (paste preview URL + browser/device in PR description)
+- [ ] QA covered relevant matrix for this change (mobile, tablet, desktop browsers)
 
 ## UI Evidence
 
