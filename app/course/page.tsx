@@ -21,6 +21,14 @@ import {
 } from "@/components/ui/mobileNavTheme";
 import { cx } from "@/components/ui/cx";
 import { MAIN_MENU_ITEMS } from "@/components/navigation/mainMenuItems";
+import { useInstallContext } from "@/components/install/install-context";
+import {
+  A2HS_AUTO_PROMPT_DELAY_MS,
+  A2HS_DISMISSED_AT_KEY,
+  A2HS_PROMPT_SEEN_KEY,
+  parseStoredTimestamp,
+  shouldShowAutoInstallPrompt,
+} from "@/components/install/install-rules";
 
 import {
   COURSE_MODULES,
@@ -43,6 +51,7 @@ const SWIPE_SIDE_ZONE_MAX_PX = 170;
 const SWIPE_DISTANCE_TO_NAVIGATE_PX = 78;
 const SWIPE_VERTICAL_CANCEL_PX = 24;
 const SWIPE_HINT_REVEAL_PX = 18;
+const A2HS_AUTO_PROMPT_ENABLED = process.env.NEXT_PUBLIC_FS_A2HS_AUTO_PROMPT_ENABLED !== "0";
 const DEFAULT_PASS_CRITERIA = [
   "Complete 3 calm repetitions with the same cue.",
   "Breathing stays controlled without rushing.",
@@ -130,6 +139,7 @@ function CoursePageClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const install = useInstallContext();
 
   const lessonParam = searchParams.get("lesson");
   const activeLesson = useMemo<CourseLesson>(() => findLesson(lessonParam), [lessonParam]);
@@ -173,7 +183,12 @@ function CoursePageClient() {
   const [showSwipeNux, setShowSwipeNux] = useState(false);
   const [overviewJumpIndex, setOverviewJumpIndex] = useState<number | null>(null);
   const [isOverviewJumpDragging, setIsOverviewJumpDragging] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [showInstallIosGuide, setShowInstallIosGuide] = useState(false);
+  const [installPromptBusy, setInstallPromptBusy] = useState(false);
+  const [installPromptFeedback, setInstallPromptFeedback] = useState<string | null>(null);
   const overviewJumpDraggingRef = useRef(false);
+  const installPromptTimerRef = useRef<number | null>(null);
   const swipeTouchIdRef = useRef<number | null>(null);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
   const swipeStartXRef = useRef(0);
@@ -398,13 +413,123 @@ function CoursePageClient() {
     setCommonMistakesExpanded((prev) => !prev);
   }
 
+  const clearInstallPromptTimer = useCallback(() => {
+    if (installPromptTimerRef.current == null) return;
+    window.clearTimeout(installPromptTimerRef.current);
+    installPromptTimerRef.current = null;
+  }, []);
+
+  const markAutoPromptSeen = useCallback(() => {
+    try {
+      localStorage.setItem(A2HS_PROMPT_SEEN_KEY, "1");
+    } catch {}
+  }, []);
+
+  const markAutoPromptDismissed = useCallback(() => {
+    try {
+      localStorage.setItem(A2HS_DISMISSED_AT_KEY, String(Date.now()));
+    } catch {}
+  }, []);
+
+  const queueAutoInstallPrompt = useCallback(() => {
+    if (!A2HS_AUTO_PROMPT_ENABLED) return;
+
+    let hasSeenPrompt = false;
+    let dismissedAtMs: number | null = null;
+    try {
+      hasSeenPrompt = localStorage.getItem(A2HS_PROMPT_SEEN_KEY) === "1";
+      dismissedAtMs = parseStoredTimestamp(localStorage.getItem(A2HS_DISMISSED_AT_KEY));
+    } catch {}
+
+    const shouldShow = shouldShowAutoInstallPrompt({
+      enabled: A2HS_AUTO_PROMPT_ENABLED,
+      hasSeenPrompt,
+      dismissedAtMs,
+      isInstalled: install.isInstalled,
+      canInstall: install.canInstall,
+    });
+    if (!shouldShow) return;
+
+    clearInstallPromptTimer();
+    installPromptTimerRef.current = window.setTimeout(() => {
+      setShowInstallPrompt(true);
+      setShowInstallIosGuide(false);
+      setInstallPromptFeedback(null);
+      markAutoPromptSeen();
+    }, A2HS_AUTO_PROMPT_DELAY_MS);
+  }, [clearInstallPromptTimer, install.canInstall, install.isInstalled, markAutoPromptSeen]);
+
+  async function handleInstallFromPrompt() {
+    if (installPromptBusy) return;
+    setInstallPromptBusy(true);
+    setInstallPromptFeedback(null);
+
+    const result = await install.requestInstall();
+    setInstallPromptBusy(false);
+
+    if (result === "accepted") {
+      setShowInstallPrompt(false);
+      setShowInstallIosGuide(false);
+      return;
+    }
+    if (result === "dismissed") {
+      markAutoPromptDismissed();
+      setShowInstallPrompt(false);
+      setShowInstallIosGuide(false);
+      return;
+    }
+    if (result === "ios-instructions") {
+      setShowInstallIosGuide(true);
+      return;
+    }
+    if (result === "already-installed") {
+      setShowInstallPrompt(false);
+      setShowInstallIosGuide(false);
+      return;
+    }
+    setInstallPromptFeedback("Install is not available in this browser yet.");
+  }
+
+  function dismissInstallPrompt() {
+    clearInstallPromptTimer();
+    markAutoPromptDismissed();
+    setShowInstallPrompt(false);
+    setShowInstallIosGuide(false);
+    setInstallPromptFeedback(null);
+  }
+
+  function closeIosInstallGuide() {
+    markAutoPromptDismissed();
+    setShowInstallPrompt(false);
+    setShowInstallIosGuide(false);
+    setInstallPromptFeedback(null);
+  }
+
+  useEffect(() => {
+    return () => {
+      clearInstallPromptTimer();
+    };
+  }, [clearInstallPromptTimer]);
+
+  useEffect(() => {
+    if (!install.isInstalled) return;
+    clearInstallPromptTimer();
+    setShowInstallPrompt(false);
+    setShowInstallIosGuide(false);
+    setInstallPromptFeedback(null);
+  }, [clearInstallPromptTimer, install.isInstalled]);
+
   function toggleLessonDone() {
+    const willMarkAsDone = !doneLessonIds.includes(activeLesson.id);
     setDoneLessonIds((prev) => {
       if (prev.includes(activeLesson.id)) {
         return prev.filter((id) => id !== activeLesson.id);
       }
       return [...prev, activeLesson.id];
     });
+    if (willMarkAsDone) {
+      queueAutoInstallPrompt();
+    }
   }
 
   const resetSwipeGesture = useCallback(() => {
@@ -1017,6 +1142,88 @@ function CoursePageClient() {
               Got it
             </PressButton>
           </div>
+        </div>
+      </div>
+    ) : null;
+
+  const autoInstallPrompt =
+    showInstallPrompt && !drawerOpen ? (
+      <div
+        data-testid="a2hs-auto-prompt"
+        className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[70] px-4 sm:bottom-6"
+      >
+        <div className="mx-auto max-w-[520px] rounded-[22px] border border-blue-200/70 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.14),rgba(255,255,255,0)_62%),rgba(255,255,255,0.95)] p-4 shadow-[0_16px_46px_rgba(15,23,42,0.16)] backdrop-blur-sm">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">
+            Quick access
+          </div>
+          <h3 className="mt-1 text-[17px] font-semibold text-slate-900">Install app</h3>
+          {!showInstallIosGuide ? (
+            <p className="mt-1 text-[13px] leading-6 text-slate-700">
+              Open FreeSwimming directly from your phone home screen and continue where you left
+              off.
+            </p>
+          ) : (
+            <div className="bg-white/88 mt-2 rounded-2xl border border-blue-100/70 p-3">
+              <p className="text-[13px] font-semibold text-slate-900">
+                Install on iPhone/iPad (Safari)
+              </p>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
+                <li>Tap Share.</li>
+                <li>Choose “Add to Home Screen”.</li>
+                <li>Tap “Add”.</li>
+              </ol>
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {!showInstallIosGuide ? (
+              <>
+                <PressButton
+                  tier="cta"
+                  onClick={handleInstallFromPrompt}
+                  disabled={installPromptBusy || install.isInstalled}
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
+                  aria-label="Install app"
+                >
+                  {install.isInstalled
+                    ? "Installed"
+                    : installPromptBusy
+                      ? "Checking..."
+                      : "Install app"}
+                </PressButton>
+                <PressButton
+                  tier="nav"
+                  onClick={dismissInstallPrompt}
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white/90 px-4 py-2 text-[14px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+                  aria-label="Not now"
+                >
+                  Not now
+                </PressButton>
+              </>
+            ) : (
+              <>
+                <PressButton
+                  tier="cta"
+                  onClick={closeIosInstallGuide}
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
+                >
+                  Done
+                </PressButton>
+                <PressButton
+                  tier="nav"
+                  onClick={dismissInstallPrompt}
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white/90 px-4 py-2 text-[14px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+                  aria-label="Not now"
+                >
+                  Not now
+                </PressButton>
+              </>
+            )}
+          </div>
+
+          {installPromptFeedback ? (
+            <p className="mt-2 text-[12px] font-medium text-slate-600">{installPromptFeedback}</p>
+          ) : null}
         </div>
       </div>
     ) : null;
@@ -1645,6 +1852,7 @@ function CoursePageClient() {
       </PageTemplate>
       {swipeHintOverlay}
       {swipeNuxToast}
+      {autoInstallPrompt}
     </SiteChrome>
   );
 }
