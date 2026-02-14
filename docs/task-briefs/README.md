@@ -37,3 +37,7 @@ When an agent starts implementing a brief, it should move that brief from `plann
 After the related PR is merged, move it from `in-progress/` to `done/`.
 When a PR is ready, agent handoff should include direct merge URL:
 `https://github.com/stianvikra/freeswimming/pull/<PR_NUMBER>`.
+After merge confirmation, agent handoff should include local sync commands:
+`git checkout main`
+`git pull --ff-only origin main`
+`git branch -d <merged-branch>`

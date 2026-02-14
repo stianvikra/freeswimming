@@ -37,3 +37,10 @@ Use this for PRs targeting `main`.
 - Add completion record (feature + DevOps + secrets names only).
 - Re-harden any temporary protection bypasses.
 - Delete merged feature branch (local + remote) when safe.
+- Run local sync immediately:
+  - `git checkout main`
+  - `git pull --ff-only origin main`
+  - `git branch -d <merged-branch>`
+- Optional cleanup:
+  - `git fetch --prune`
+- Full guide: `docs/runbooks/post-merge-local-sync.md`
