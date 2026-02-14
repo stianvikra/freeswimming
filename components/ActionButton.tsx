@@ -62,7 +62,7 @@ export default function ActionButton({
       {/* TITLE */}
       <div
         className={[
-          "text-[16px] sm:text-[17px] font-semibold tracking-[0.09em] sm:tracking-[0.1em]",
+          "text-[16px] font-semibold tracking-[0.09em] sm:text-[17px] sm:tracking-[0.1em]",
           variant === "primary" ? "text-white/95" : "text-slate-900",
         ].join(" ")}
       >
@@ -73,7 +73,7 @@ export default function ActionButton({
       {subtitle ? (
         <div
           className={[
-            "mt-1 text-[14px] leading-[1.25] sm:text-[14px] font-medium",
+            "mt-1 text-[14px] font-medium leading-[1.25] sm:text-[14px]",
             variant === "primary" ? "text-white/85" : "text-slate-600",
           ].join(" ")}
         >

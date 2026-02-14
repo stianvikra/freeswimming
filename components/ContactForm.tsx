@@ -80,7 +80,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
         ],
 
         successTitle: "Request received",
-        successBody: "Thanks! We’ve received your request and will reply by email within 24–48 hours.",
+        successBody:
+          "Thanks! We’ve received your request and will reply by email within 24–48 hours.",
         successHint: "You can safely close this page — or tap X to send another request.",
 
         micro: "We usually reply within 24–48 hours.",
@@ -109,7 +110,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
       ],
 
       successTitle: "Message sent",
-      successBody: "Thanks! We’ve received your message and will reply by email within 24–48 hours.",
+      successBody:
+        "Thanks! We’ve received your message and will reply by email within 24–48 hours.",
       successHint: "You can safely close this page — or tap X to send another message.",
 
       micro: "We usually reply within 24–48 hours.",
@@ -281,7 +283,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
       {/* Form card */}
       <div className="relative mt-5 overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent opacity-72" />
+        <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
         <div className="text-center">
           <h2 className="text-[20px] font-semibold text-slate-900">{copy.formTitle}</h2>
           <p className="mt-2 text-[15px] leading-6 text-slate-700">{copy.formSubtitle}</p>
@@ -379,7 +381,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
               placeholder={copy.messagePlaceholder}
             />
 
-            <div className="mt-3 rounded-2xl border border-blue-100/70 bg-white/78 p-4">
+            <div className="bg-white/78 mt-3 rounded-2xl border border-blue-100/70 p-4">
               <p className="text-[13px] font-semibold text-slate-700">{copy.exampleTitle}</p>
               <ul className="mt-2 space-y-1 text-[13px] leading-5 text-slate-600">
                 {copy.exampleLines.map((line) => (
@@ -392,12 +394,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
             </div>
           </div>
 
-          <PressButton
-            tier="cta"
-            type="submit"
-            disabled={isSending}
-            className={btnPrimary}
-          >
+          <PressButton tier="cta" type="submit" disabled={isSending} className={btnPrimary}>
             {isSending ? "Sending…" : "Send"}
           </PressButton>
 

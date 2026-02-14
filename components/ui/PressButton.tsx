@@ -29,11 +29,7 @@ export default function PressButton({
       type={type ?? "button"}
       disabled={disabled}
       aria-disabled={ariaDisabled || disabled || undefined}
-      className={cx(
-        getPressTierClass(tier),
-        isDisabled && "ui-disabled",
-        className
-      )}
+      className={cx(getPressTierClass(tier), isDisabled && "ui-disabled", className)}
       {...rest}
     />
   );

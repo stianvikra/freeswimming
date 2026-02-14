@@ -137,8 +137,7 @@ async function upstashCommand(parts: string[]) {
 
 async function rateLimit(ip: string): Promise<RateLimitResult> {
   const useUpstash =
-    Boolean(process.env.UPSTASH_REDIS_REST_URL) &&
-    Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
+    Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
 
   if (!useUpstash) {
     return rateLimitInMemory(ip);
@@ -189,12 +188,7 @@ function clampString(s: string, max: number) {
   return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
 }
 
-async function sendWithResend(params: {
-  to: string;
-  from: string;
-  subject: string;
-  text: string;
-}) {
+async function sendWithResend(params: { to: string; from: string; subject: string; text: string }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { ok: false as const, error: "RESEND_API_KEY not set" };
 
@@ -267,7 +261,8 @@ export async function POST(req: Request) {
   // Bot timing: silently accept
   if (typeof body?.startedAt === "number") {
     const elapsed = Date.now() - body.startedAt;
-    if (elapsed < 900) return NextResponse.json({ ok: true }, { status: 200, headers: rateHeaders });
+    if (elapsed < 900)
+      return NextResponse.json({ ok: true }, { status: 200, headers: rateHeaders });
   }
 
   const variant = body?.variant === "analysis" ? "analysis" : "contact";
@@ -296,8 +291,7 @@ export async function POST(req: Request) {
 
   // 5) Deliver via env vars
   const to = process.env.CONTACT_TO_EMAIL || "";
-  const from =
-    process.env.CONTACT_FROM_EMAIL || "Freeswimming <onboarding@resend.dev>";
+  const from = process.env.CONTACT_FROM_EMAIL || "Freeswimming <onboarding@resend.dev>";
 
   const subject =
     variant === "analysis"

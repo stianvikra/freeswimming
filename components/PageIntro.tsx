@@ -34,10 +34,7 @@ export default function PageIntro({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-4">
           <div
-            className={cx(
-              "relative shrink-0",
-              compact ? "h-10 w-10 sm:h-11 sm:w-11" : "h-12 w-12"
-            )}
+            className={cx("relative shrink-0", compact ? "h-10 w-10 sm:h-11 sm:w-11" : "h-12 w-12")}
           >
             <Image
               src="/logos/01_icon_transparent.png"

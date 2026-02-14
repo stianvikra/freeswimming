@@ -184,7 +184,7 @@ export default function MenuDrawer({
         </div>
 
         {/* Body */}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 pb-36 pt-4">
+        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-36 pt-4">
           {view === "course" && hasCourse ? (
             <CourseView
               openModuleId={openModuleId}
@@ -245,14 +245,14 @@ function MainView({
             className={[
               "relative overflow-hidden rounded-[22px] border px-5 py-4 backdrop-blur",
               active
-                ? "border-blue-200/70 bg-[linear-gradient(90deg,rgba(59,130,246,0.72)_0_4px,rgba(255,255,255,0.84)_4px_100%),radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_60%)] ring-1 ring-blue-100/65 shadow-[0_16px_48px_rgba(37,99,235,0.11)]"
+                ? "border-blue-200/70 bg-[linear-gradient(90deg,rgba(59,130,246,0.72)_0_4px,rgba(255,255,255,0.84)_4px_100%),radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_60%)] shadow-[0_16px_48px_rgba(37,99,235,0.11)] ring-1 ring-blue-100/65"
                 : "border-slate-200/60 bg-[linear-gradient(90deg,rgba(203,213,225,0.62)_0_4px,rgba(255,255,255,0.82)_4px_100%)] shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
             ].join(" ")}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 text-[16px] font-semibold text-slate-900">{item.title}</div>
               {active ? (
-                <span className="shrink-0 inline-flex rounded-full bg-blue-50 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
+                <span className="inline-flex shrink-0 rounded-full bg-blue-50 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
                   Current page
                 </span>
               ) : null}
@@ -297,7 +297,8 @@ function CourseView({
   const completedModules = useMemo(
     () =>
       COURSE_MODULES.filter(
-        (mod) => mod.lessons.length > 0 && mod.lessons.every((lesson) => doneLessonIdSet.has(lesson.id))
+        (mod) =>
+          mod.lessons.length > 0 && mod.lessons.every((lesson) => doneLessonIdSet.has(lesson.id))
       ).length,
     [doneLessonIdSet]
   );
@@ -305,7 +306,7 @@ function CourseView({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-[20px] border border-blue-200/62 bg-[radial-gradient(520px_170px_at_18%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_62%),rgba(255,255,255,0.9)] p-3.5 shadow-[0_12px_28px_rgba(15,23,42,0.07)]">
+      <div className="border-blue-200/62 rounded-[20px] border bg-[radial-gradient(520px_170px_at_18%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_62%),rgba(255,255,255,0.9)] p-3.5 shadow-[0_12px_28px_rgba(15,23,42,0.07)]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">
@@ -318,7 +319,7 @@ function CourseView({
             </p>
           </div>
 
-          <span className="shrink-0 rounded-full bg-blue-50/82 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/65">
+          <span className="bg-blue-50/82 shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/65">
             {completedPct}%
           </span>
         </div>
@@ -332,7 +333,7 @@ function CourseView({
           aria-valuenow={completedPct}
           aria-valuetext={`Progress: modules ${completedModules} of ${totalModules}, lessons ${completedLessons} of ${totalLessons}.`}
         >
-          <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/86 ring-1 ring-slate-200/75">
+          <div className="bg-slate-200/86 h-2.5 overflow-hidden rounded-full ring-1 ring-slate-200/75">
             <div
               className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-[width] duration-300"
               style={{ width: `${completedPct}%` }}
@@ -365,9 +366,9 @@ function CourseView({
             ? "bg-gradient-to-b from-blue-400 to-blue-600"
             : isDoneModule
               ? "bg-gradient-to-b from-emerald-300 to-emerald-500"
-            : isOpen
-              ? "bg-slate-300/80"
-              : "bg-slate-200/70",
+              : isOpen
+                ? "bg-slate-300/80"
+                : "bg-slate-200/70",
         ].join(" ");
 
         const moduleHeaderBtn = [
@@ -410,7 +411,7 @@ function CourseView({
                       Module completed
                     </span>
                   ) : isInProgressModule ? (
-                    <span className="inline-flex rounded-full bg-blue-50/78 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-200/60">
+                    <span className="bg-blue-50/78 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-200/60">
                       In progress
                     </span>
                   ) : null}
@@ -418,7 +419,9 @@ function CourseView({
 
                 <div className="mt-2 text-[16px] font-semibold text-slate-900">{mod.title}</div>
 
-                {mod.subtitle ? <div className="mt-1 text-[13px] font-medium text-slate-700">{mod.subtitle}</div> : null}
+                {mod.subtitle ? (
+                  <div className="mt-1 text-[13px] font-medium text-slate-700">{mod.subtitle}</div>
+                ) : null}
                 <div
                   className={[
                     "mt-1 text-[12px] font-medium",
@@ -435,10 +438,10 @@ function CourseView({
 
               <span
                 className={[
-                  "mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full text-[18px] leading-none font-semibold ring-1 transition",
+                  "mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full text-[18px] font-semibold leading-none ring-1 transition",
                   isOpen
                     ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100/70"
-                    : "bg-white/88 text-slate-600 ring-slate-200/78",
+                    : "bg-white/88 ring-slate-200/78 text-slate-600",
                 ].join(" ")}
               >
                 {isOpen ? "–" : "+"}
@@ -542,12 +545,12 @@ function SmartLessonList({
                 className={[
                   "relative w-full rounded-[16px] px-4 py-3 text-left transition-colors",
                   activeAndDone
-                    ? "bg-emerald-50/85 ring-2 ring-blue-400/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_0_0_1px_rgba(59,130,246,0.35)]"
+                    ? "ring-blue-400/82 bg-emerald-50/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_0_0_1px_rgba(59,130,246,0.35)] ring-2"
                     : active
-                    ? "bg-blue-50/82 ring-1 ring-blue-300/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.58)]"
-                    : done
-                      ? "bg-emerald-50/85 ring-1 ring-emerald-200/78"
-                      : "bg-white/78 ring-1 ring-slate-200/65",
+                      ? "bg-blue-50/82 ring-blue-300/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] ring-1"
+                      : done
+                        ? "ring-emerald-200/78 bg-emerald-50/85 ring-1"
+                        : "bg-white/78 ring-1 ring-slate-200/65",
                 ].join(" ")}
                 aria-current={active ? "page" : undefined}
               >
@@ -564,7 +567,7 @@ function SmartLessonList({
                         Done
                       </span>
                     ) : active ? (
-                      <span className="rounded-full bg-blue-100/68 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/70">
+                      <span className="bg-blue-100/68 rounded-full px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/70">
                         Current
                       </span>
                     ) : null}
@@ -603,7 +606,7 @@ function SmartLessonList({
         <>
           {/* hint chip */}
           <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/58 px-3 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200/50 shadow-[0_1px_2px_rgba(15,23,42,0.05)] backdrop-blur">
+            <div className="bg-white/58 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.05)] ring-1 ring-slate-200/50 backdrop-blur">
               <span aria-hidden>⬇︎</span>
               <span>Scroll for more</span>
             </div>

@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("menu tab is muted on section pages and active only when drawer is open", async ({
-  page,
-}) => {
+test("menu tab is muted on section pages and active only when drawer is open", async ({ page }) => {
   await page.goto("/programs");
 
   const menu = page.getByTestId("mobile-nav-menu");

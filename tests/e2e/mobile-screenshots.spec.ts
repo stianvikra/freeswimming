@@ -22,8 +22,7 @@ async function saveFullPage(page: Page, outputDir: string, fileName: string) {
 
 function resolveOutputDir(testInfo: TestInfo) {
   return (
-    process.env.SCREENSHOT_DIR ??
-    join("test-results", "mobile-screenshots", testInfo.project.name)
+    process.env.SCREENSHOT_DIR ?? join("test-results", "mobile-screenshots", testInfo.project.name)
   );
 }
 

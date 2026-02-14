@@ -36,8 +36,7 @@ export type CourseModule = {
  * - Keeps your real lessons untouched
  */
 const SHOULD_AUTOGEN =
-  process.env.NODE_ENV === "development" &&
-  process.env.NEXT_PUBLIC_FS_AUTOGEN_LESSONS !== "0";
+  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_FS_AUTOGEN_LESSONS !== "0";
 
 const autogenCountRaw = Number(process.env.NEXT_PUBLIC_FS_AUTOGEN_COUNT_M1 ?? "12");
 const AUTOGEN_COUNT_M1 =
@@ -89,13 +88,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Understand how to use the course and follow the A→Z progression for your level.",
-        cues: [
-          "One focus at a time",
-        ],
-        commonMistakes: [
-          "Trying to learn everything at once",
-          "Skipping steps",
-        ],
+        cues: ["One focus at a time"],
+        commonMistakes: ["Trying to learn everything at once", "Skipping steps"],
         drill: {
           title: "Watch lesson and focus on the key concept",
           steps: [
@@ -113,13 +107,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Know how to navigate the web app so the course feels effortless to use.",
-        cues: [
-          "Keep it simple",
-        ],
-        commonMistakes: [
-          "Getting lost",
-          "Not knowing where to continue",
-        ],
+        cues: ["Keep it simple"],
+        commonMistakes: ["Getting lost", "Not knowing where to continue"],
         drill: {
           title: "Watch lesson and focus on the key concept",
           steps: [
@@ -137,13 +126,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Know what equipment is optional vs helpful, and how to use it without masking mistakes.",
-        cues: [
-          "Equipment is optional",
-        ],
-        commonMistakes: [
-          "Overusing gear",
-          "Using fins to hide balance issues",
-        ],
+        cues: ["Equipment is optional"],
+        commonMistakes: ["Overusing gear", "Using fins to hide balance issues"],
         drill: {
           title: "Optional: goggles, cap, buoyancy shorts (if needed)",
           steps: [
@@ -168,13 +152,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Understand that the goal is technique—coordination, balance, and body position—not fitness.",
-        cues: [
-          "Technique first",
-        ],
-        commonMistakes: [
-          "Swimming too hard",
-          "Chasing speed while learning",
-        ],
+        cues: ["Technique first"],
+        commonMistakes: ["Swimming too hard", "Chasing speed while learning"],
         drill: {
           title: "Short repeats: 6–10 × 12.5m with full rest",
           steps: [
@@ -199,14 +178,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Learn why the kick matters mainly to reduce drag and support a stable body line.",
-        cues: [
-          "Small kick, stable line",
-        ],
-        commonMistakes: [
-          "Kicking from knees",
-          "Big splash",
-          "Tight ankles",
-        ],
+        cues: ["Small kick, stable line"],
+        commonMistakes: ["Kicking from knees", "Big splash", "Tight ankles"],
         drill: {
           title: "Vertical kick test (30–45s) + easy flutter kicks",
           steps: [
@@ -224,14 +197,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 4,
         lessonType: "drill",
         goal: "Feel the water and learn controlled flutter kick with full awareness of the legs.",
-        cues: [
-          "Long legs",
-        ],
-        commonMistakes: [
-          "Kicking like a bicycle",
-          "Pointing toes too hard",
-          "Over-kicking",
-        ],
+        cues: ["Long legs"],
+        commonMistakes: ["Kicking like a bicycle", "Pointing toes too hard", "Over-kicking"],
         drill: {
           title: "Standing in shallow water: 3 × 30s easy kicks",
           steps: [
@@ -256,14 +223,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Understand how body line reduces resistance and makes everything easier.",
-        cues: [
-          "Hips up",
-        ],
-        commonMistakes: [
-          "Lifting head",
-          "Breaking the line",
-          "Over-arching lower back",
-        ],
+        cues: ["Hips up"],
+        commonMistakes: ["Lifting head", "Breaking the line", "Over-arching lower back"],
         drill: {
           title: "Wall alignment: ribs down, hips up (30–60s)",
           steps: [
@@ -281,14 +242,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 4,
         lessonType: "drill",
         goal: "Learn to float balanced on your back with hips high and relaxed breathing.",
-        cues: [
-          "Ribs down",
-        ],
-        commonMistakes: [
-          "Chin lifted",
-          "Tight neck",
-          "Kicking to survive",
-        ],
+        cues: ["Ribs down"],
+        commonMistakes: ["Chin lifted", "Tight neck", "Kicking to survive"],
         drill: {
           title: "Back float + gentle kick: 6 × 10–15s",
           steps: [
@@ -306,14 +261,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 4,
         lessonType: "drill",
         goal: "Learn to hold a long line face-down without lifting the head.",
-        cues: [
-          "Head neutral",
-        ],
-        commonMistakes: [
-          "Looking forward",
-          "Holding breath",
-          "Dropping hips",
-        ],
+        cues: ["Head neutral"],
+        commonMistakes: ["Looking forward", "Holding breath", "Dropping hips"],
         drill: {
           title: "Front glide + exhale: 6 × 6–10s",
           steps: [
@@ -331,14 +280,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 4,
         lessonType: "drill",
         goal: "Learn side balance and breathing without lifting the head.",
-        cues: [
-          "One goggle in",
-        ],
-        commonMistakes: [
-          "Lifting head to breathe",
-          "Over-rotating",
-          "Legs scissor",
-        ],
+        cues: ["One goggle in"],
+        commonMistakes: ["Lifting head to breathe", "Over-rotating", "Legs scissor"],
         drill: {
           title: "Side kick drill: 6 × 10–15s each side",
           steps: [
@@ -363,14 +306,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Understand why rotation creates power, reduces strain, and makes breathing easier.",
-        cues: [
-          "Hip-led rotation",
-        ],
-        commonMistakes: [
-          "Rotating only shoulders",
-          "Over-rotating",
-          "Kicking wide",
-        ],
+        cues: ["Hip-led rotation"],
+        commonMistakes: ["Rotating only shoulders", "Over-rotating", "Kicking wide"],
         drill: {
           title: "Side-to-side roll (easy): 6 × 6–10 reps",
           steps: [
@@ -388,14 +325,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 4,
         lessonType: "drill",
         goal: "Feel the lead arm and body roll working together as one unit.",
-        cues: [
-          "Hips lead",
-        ],
-        commonMistakes: [
-          "Pulling with arms",
-          "Rolling too late",
-          "Losing line",
-        ],
+        cues: ["Hips lead"],
+        commonMistakes: ["Pulling with arms", "Rolling too late", "Losing line"],
         drill: {
           title: "Mummy swim: 6–10 × 12.5m (full rest)",
           steps: [
@@ -420,14 +351,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Learn the purpose of the catch and a clean arm path that supports rotation and balance.",
-        cues: [
-          "Reach forward first",
-        ],
-        commonMistakes: [
-          "Crossing over",
-          "Dropping elbow",
-          "Rushing the stroke",
-        ],
+        cues: ["Reach forward first"],
+        commonMistakes: ["Crossing over", "Dropping elbow", "Rushing the stroke"],
         drill: {
           title: "Front scull: 4 × 15–20s",
           steps: [
@@ -445,14 +370,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 4,
         lessonType: "drill",
         goal: "Connect body position + rotation + arm timing using a controlled switch.",
-        cues: [
-          "Switch with hips",
-        ],
-        commonMistakes: [
-          "Pushing water down",
-          "Lifting head",
-          "Over-kicking",
-        ],
+        cues: ["Switch with hips"],
+        commonMistakes: ["Pushing water down", "Lifting head", "Over-kicking"],
         drill: {
           title: "Side switch: 6–10 × 12.5m (full rest)",
           steps: [
@@ -477,14 +396,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Confirm you can hold the line before you swim freestyle and avoid training bad habits.",
-        cues: [
-          "Hips up",
-        ],
-        commonMistakes: [
-          "Kicking too hard",
-          "Sinking legs",
-          "Head lift to breathe",
-        ],
+        cues: ["Hips up"],
+        commonMistakes: ["Kicking too hard", "Sinking legs", "Head lift to breathe"],
         drill: {
           title: "Pass test: 3 × 10–15s each side",
           steps: [
@@ -502,14 +415,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 5,
         lessonType: "swim",
         goal: "Learn how to swim in short, controlled repeats so technique improves fast.",
-        cues: [
-          "Full recovery",
-        ],
-        commonMistakes: [
-          "Swimming too far",
-          "Swimming tired",
-          "Losing focus",
-        ],
+        cues: ["Full recovery"],
+        commonMistakes: ["Swimming too far", "Swimming tired", "Losing focus"],
         drill: {
           title: "6–12 × 12.5–25m, one focus, full rest",
           steps: [
@@ -527,14 +434,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 5,
         lessonType: "swim",
         goal: "Remove the most common mistakes that cause fatigue, drag, and loss of glide.",
-        cues: [
-          "Long line",
-        ],
-        commonMistakes: [
-          "Cross-over",
-          "Head lift",
-          "Rushing stroke",
-        ],
+        cues: ["Long line"],
+        commonMistakes: ["Cross-over", "Head lift", "Rushing stroke"],
         drill: {
           title: "3 blocks: 4 × 12.5m per block (full rest)",
           steps: [
@@ -559,13 +460,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Understand why turns improve flow, control, and confidence—even if you’re not competitive.",
-        cues: [
-          "Stay relaxed",
-        ],
-        commonMistakes: [
-          "Stopping at the wall",
-          "Panicking mid-turn",
-        ],
+        cues: ["Stay relaxed"],
+        commonMistakes: ["Stopping at the wall", "Panicking mid-turn"],
         drill: {
           title: "Wall approach + streamline push-off practice",
           steps: [
@@ -583,15 +479,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 4,
         lessonType: "drill",
         goal: "Learn a basic, safe progression for learning tumble turns.",
-        cues: [
-          "Exhale into the turn",
-        ],
-        commonMistakes: [
-          "Holding breath",
-          "Turning too late",
-          "Feet too high",
-          "low",
-        ],
+        cues: ["Exhale into the turn"],
+        commonMistakes: ["Holding breath", "Turning too late", "Feet too high", "low"],
         drill: {
           title: "Somersault → glide → push off → add rotation",
           steps: [
@@ -616,13 +505,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Learn how to enjoy swimming while still improving technique long-term.",
-        cues: [
-          "Repeat the basics",
-        ],
-        commonMistakes: [
-          "Only swimming long",
-          "Never revisiting drills",
-        ],
+        cues: ["Repeat the basics"],
+        commonMistakes: ["Only swimming long", "Never revisiting drills"],
         drill: {
           title: "Warm-up template: 5–10 min drills + short focus swims",
           steps: [
@@ -647,14 +531,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Learn the key differences in open water: breathing timing, calmness, and positioning for waves.",
-        cues: [
-          "Stay calm",
-        ],
-        commonMistakes: [
-          "Holding breath",
-          "Fighting waves",
-          "Lifting head too much",
-        ],
+        cues: ["Stay calm"],
+        commonMistakes: ["Holding breath", "Fighting waves", "Lifting head too much"],
         drill: {
           title: "Breath rhythm: exhale under water, inhale on rotation",
           steps: [
@@ -672,14 +550,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 4,
         lessonType: "drill",
         goal: "Learn to sight forward without destroying body position and rhythm.",
-        cues: [
-          "Eyes forward, head low",
-        ],
-        commonMistakes: [
-          "Lifting whole head",
-          "Dropping hips",
-          "Sighting too often",
-        ],
+        cues: ["Eyes forward, head low"],
+        commonMistakes: ["Lifting whole head", "Dropping hips", "Sighting too often"],
         drill: {
           title: "Sight every 6–10 strokes: alligator eyes",
           steps: [
@@ -704,14 +576,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Understand what cold does to breathing and decision-making, and why safety comes first.",
-        cues: [
-          "Control breathing",
-        ],
-        commonMistakes: [
-          "Rushing in",
-          "Hyperventilating",
-          "Going alone",
-        ],
+        cues: ["Control breathing"],
+        commonMistakes: ["Rushing in", "Hyperventilating", "Going alone"],
         drill: {
           title: "Breath control at edge: 60–90s calm breathing",
           steps: [
@@ -729,14 +595,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Learn essential safety rules to reduce risk in cold water.",
-        cues: [
-          "Safety first",
-        ],
-        commonMistakes: [
-          "Swimming alone",
-          "No exit plan",
-          "Staying too long",
-        ],
+        cues: ["Safety first"],
+        commonMistakes: ["Swimming alone", "No exit plan", "Staying too long"],
         drill: {
           title: "Checklist: buddy, exit plan, short time, warm after",
           steps: [
@@ -761,13 +621,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Offer an optional, structured drill guide people can bring to the pool for faster sessions.",
-        cues: [
-          "Keep it simple",
-        ],
-        commonMistakes: [
-          "Overbuying tools",
-          "Expecting gear to replace practice",
-        ],
+        cues: ["Keep it simple"],
+        commonMistakes: ["Overbuying tools", "Expecting gear to replace practice"],
         drill: {
           title: "QR-based drill library + session templates",
           steps: [
@@ -785,13 +640,8 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         estMinutes: 3,
         lessonType: "learn",
         goal: "Offer personalized feedback: top priorities + a drill plan so progress accelerates.",
-        cues: [
-          "One priority first",
-        ],
-        commonMistakes: [
-          "Wanting 20 fixes at once",
-          "Filming wrong angle",
-        ],
+        cues: ["One priority first"],
+        commonMistakes: ["Wanting 20 fixes at once", "Filming wrong angle"],
         drill: {
           title: "Upload short clip: 10–20s front/side view",
           steps: [

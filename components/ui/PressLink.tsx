@@ -12,20 +12,11 @@ type Props = LinkProps &
     tier?: PressTier;
   };
 
-export default function PressLink({
-  className,
-  disabled,
-  tier = "nav",
-  children,
-  ...rest
-}: Props) {
+export default function PressLink({ className, disabled, tier = "nav", children, ...rest }: Props) {
   if (disabled) {
     // Render non-clickable “link” that still looks consistent
     return (
-      <span
-        aria-disabled="true"
-        className={cx(getPressTierClass(tier), "ui-disabled", className)}
-      >
+      <span aria-disabled="true" className={cx(getPressTierClass(tier), "ui-disabled", className)}>
         {children}
       </span>
     );

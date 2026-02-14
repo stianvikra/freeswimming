@@ -29,8 +29,7 @@ export default function HomePage() {
           {/* Copy */}
           <div className="mt-3 text-center [@media(max-height:820px)]:mt-2.5 [@media(min-height:880px)]:mt-2">
             <p className="text-[16px] leading-6 text-slate-700">
-              Olympic dreams?{" "}
-              <span className="font-semibold text-slate-900">Wrong channel.</span>
+              Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
             </p>
 
             <h1 className="mt-2.5 text-[22px] font-semibold leading-7 tracking-tight text-slate-900 [@media(max-height:820px)]:mt-2">
@@ -85,7 +84,6 @@ export default function HomePage() {
             />
           </div>
         </div>
-
       </PageTemplate>
     </SiteChrome>
   );

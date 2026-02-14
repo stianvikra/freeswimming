@@ -10,10 +10,7 @@ export default function ProgramsPage() {
   return (
     <SiteChrome>
       <PageTemplate size="wide">
-        <PageIntro
-          title="Swim Programs"
-          subtitle="Learn. Drill. Swim."
-        />
+        <PageIntro title="Swim Programs" subtitle="Learn. Drill. Swim." />
 
         <div className="mt-4 grid gap-4">
           <div className="relative overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.9))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
@@ -21,9 +18,7 @@ export default function ProgramsPage() {
             <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
               Most popular
             </div>
-            <h2 className="mt-2 text-[18px] font-semibold text-slate-900">
-              Poolside PDF Guide
-            </h2>
+            <h2 className="mt-2 text-[18px] font-semibold text-slate-900">Poolside PDF Guide</h2>
             <p className="mt-2 text-[15px] leading-7 text-slate-700">
               A simple drill library you can bring to the pool — with QR links to the videos.
             </p>
@@ -44,7 +39,7 @@ export default function ProgramsPage() {
           </div>
 
           <div className="relative overflow-hidden rounded-[22px] border border-blue-100/70 bg-[radial-gradient(520px_220px_at_15%_0%,rgba(99,168,255,0.13),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(244,248,255,0.95),rgba(239,246,255,0.88))] p-6 shadow-[0_14px_34px_rgba(37,99,235,0.1)]">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent opacity-72" />
+            <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
             <h2 className="text-[18px] font-semibold text-slate-900">Want personal guidance?</h2>
             <p className="mt-2 text-[15px] leading-7 text-slate-700">
               Send a short clip and we’ll tell you exactly what to focus on next.

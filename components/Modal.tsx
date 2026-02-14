@@ -24,13 +24,7 @@ const FOCUSABLE_SELECTOR = [
 
 type InertNode = HTMLElement & { inert?: boolean };
 
-export default function Modal({
-  open,
-  isOpen,
-  onClose,
-  ariaLabel = "Dialog",
-  children,
-}: Props) {
+export default function Modal({ open, isOpen, onClose, ariaLabel = "Dialog", children }: Props) {
   const visible = Boolean(open ?? isOpen);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);

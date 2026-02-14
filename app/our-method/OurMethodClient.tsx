@@ -13,14 +13,14 @@ export default function OurMethodClient() {
 
         <div className="mt-6 text-[16px] leading-7 text-slate-700">
           <p>
-            A free, step-by-step freestyle course for adults who want to swim
-            calmly, longer, and with less effort — without information overload.
+            A free, step-by-step freestyle course for adults who want to swim calmly, longer, and
+            with less effort — without information overload.
           </p>
 
           <div className="mt-6 space-y-5">
             {/* 01 Learn */}
-            <div className="relative overflow-hidden rounded-2xl bg-white/90 p-5 ring-1 ring-blue-100/72 shadow-[0_14px_34px_rgba(15,23,42,0.07)]">
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent opacity-78" />
+            <div className="ring-blue-100/72 relative overflow-hidden rounded-2xl bg-white/90 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.07)] ring-1">
+              <div className="opacity-78 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#8bc6ff] to-transparent" />
 
               <h2 className="flex items-center gap-3">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[10px] font-semibold text-white/90 shadow-[0_6px_16px_rgba(58,135,230,0.28)]">
@@ -35,16 +35,13 @@ export default function OurMethodClient() {
                 <p className="font-medium text-slate-800">
                   Before you swim, you learn what actually matters.
                 </p>
-                <p>
-                  One clear concept at a time — so you enter the water calm and
-                  confident.
-                </p>
+                <p>One clear concept at a time — so you enter the water calm and confident.</p>
               </div>
             </div>
 
             {/* 02 Drill */}
-            <div className="relative overflow-hidden rounded-2xl bg-[linear-gradient(180deg,rgba(255,255,255,0.90),rgba(248,250,252,0.93))] p-5 ring-1 ring-slate-200/78 shadow-[0_12px_30px_rgba(15,23,42,0.065)]">
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#78b6ff] via-[#a4ceff] to-transparent opacity-68" />
+            <div className="ring-slate-200/78 relative overflow-hidden rounded-2xl bg-[linear-gradient(180deg,rgba(255,255,255,0.90),rgba(248,250,252,0.93))] p-5 shadow-[0_12px_30px_rgba(15,23,42,0.065)] ring-1">
+              <div className="opacity-68 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#78b6ff] via-[#a4ceff] to-transparent" />
 
               <h2 className="flex items-center gap-3">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[10px] font-semibold text-white/90 shadow-[0_6px_16px_rgba(58,135,230,0.28)]">
@@ -56,19 +53,17 @@ export default function OurMethodClient() {
               </h2>
 
               <div className="mt-2 space-y-2 text-[16px] leading-7 text-slate-700">
-                <p className="font-medium text-slate-800">
-                  Each drill is one piece of the puzzle.
-                </p>
+                <p className="font-medium text-slate-800">Each drill is one piece of the puzzle.</p>
                 <p>
-                  Balance, body position, breathing and coordination — trained one
-                  at a time, without overwhelm.
+                  Balance, body position, breathing and coordination — trained one at a time,
+                  without overwhelm.
                 </p>
               </div>
             </div>
 
             {/* 03 Swim */}
-            <div className="relative overflow-hidden rounded-2xl bg-[radial-gradient(500px_180px_at_12%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_63%),rgba(255,255,255,0.90)] p-5 ring-1 ring-blue-100/65 shadow-[0_14px_34px_rgba(37,99,235,0.085)]">
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#85c2ff] to-transparent opacity-76" />
+            <div className="relative overflow-hidden rounded-2xl bg-[radial-gradient(500px_180px_at_12%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_63%),rgba(255,255,255,0.90)] p-5 shadow-[0_14px_34px_rgba(37,99,235,0.085)] ring-1 ring-blue-100/65">
+              <div className="opacity-76 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#85c2ff] to-transparent" />
 
               <h2 className="flex items-center gap-3">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] text-[10px] font-semibold text-white/90 shadow-[0_6px_16px_rgba(58,135,230,0.28)]">
@@ -84,8 +79,8 @@ export default function OurMethodClient() {
                   When the pieces come together, you stop fighting the water.
                 </p>
                 <p>
-                  You swim — calm, balanced and relaxed. Distance and speed follow
-                  naturally — without forcing it.
+                  You swim — calm, balanced and relaxed. Distance and speed follow naturally —
+                  without forcing it.
                   {/* Optional micro-copy:
                       "Distance and speed follow naturally — without forcing it."
                   */}
@@ -97,8 +92,7 @@ export default function OurMethodClient() {
           <p className="mt-6">
             If you’re chasing the Olympics, you probably need a different coach.
             <br />
-            If you want to become a strong, relaxed swimmer — this is built for
-            you.
+            If you want to become a strong, relaxed swimmer — this is built for you.
           </p>
         </div>
 
