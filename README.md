@@ -57,3 +57,11 @@ npm run format:check
 ```bash
 npm run verify
 ```
+
+## Team workflow docs
+
+- `AGENTS.md`: repo instructions for coding agents.
+- `CONTRIBUTING.md`: contributor workflow and quality gate.
+- `.github/pull_request_template.md`: PR checklist.
+- `docs/task-brief-template.md`: preferred task format for coding requests.
+- `docs/branch-protection.md`: branch protection standard and apply command.
