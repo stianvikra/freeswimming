@@ -171,6 +171,9 @@ function CoursePageClient() {
     progress: number;
   } | null>(null);
   const [showSwipeNux, setShowSwipeNux] = useState(false);
+  const [overviewJumpIndex, setOverviewJumpIndex] = useState<number | null>(null);
+  const [isOverviewJumpDragging, setIsOverviewJumpDragging] = useState(false);
+  const overviewJumpDraggingRef = useRef(false);
   const swipeTouchIdRef = useRef<number | null>(null);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
   const swipeStartXRef = useRef(0);
@@ -203,6 +206,24 @@ function CoursePageClient() {
       totalLessons: COURSE_LESSONS_FLAT.length,
     };
   }, [activeLesson.id]);
+
+  const lessonJumpMeta = useMemo(() => {
+    let globalIndex = 0;
+    return COURSE_MODULES.flatMap((module, moduleIndex) =>
+      module.lessons.map((lesson, lessonIndexInModule) => {
+        globalIndex += 1;
+        return {
+          lesson,
+          moduleTitle: module.title,
+          moduleIndex: moduleIndex + 1,
+          moduleCount: COURSE_MODULES.length,
+          lessonIndexInModule: lessonIndexInModule + 1,
+          moduleLessonCount: module.lessons.length,
+          globalLessonIndex: globalIndex,
+        };
+      })
+    );
+  }, []);
 
   useEffect(() => {
     try {
@@ -329,7 +350,7 @@ function CoursePageClient() {
   const playerTopRef = useRef<HTMLDivElement | null>(null);
 
   const goToLesson = useCallback(
-    (lessonId: string) => {
+    (lessonId: string, options?: { scrollToPlayer?: boolean }) => {
       if (lessonId === activeLesson.id) {
         setDrawerOpen(false);
         setCloseDrawerOnLessonChange(false);
@@ -340,8 +361,9 @@ function CoursePageClient() {
         setCloseDrawerOnLessonChange(true);
       }
 
-      router.push(`${pathname}?lesson=${encodeURIComponent(lessonId)}`);
-      if (!drawerOpen) {
+      router.push(`${pathname}?lesson=${encodeURIComponent(lessonId)}`, { scroll: false });
+      const shouldScrollToPlayer = options?.scrollToPlayer ?? true;
+      if (!drawerOpen && shouldScrollToPlayer) {
         const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
         const behavior: ScrollBehavior = prefersReduced ? "auto" : "smooth";
         playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
@@ -426,6 +448,26 @@ function CoursePageClient() {
       swipeTravelRef.current = 0;
       swipeCancelledRef.current = false;
       setSwipeHint({ direction: resolvedDirection, progress: 0 });
+      dismissSwipeNux();
+    },
+    [dismissSwipeNux, drawerOpen, nextId, prevId]
+  );
+
+  const beginSwipeFromVideoEdge = useCallback(
+    (direction: SwipeDirection, event: React.TouchEvent<HTMLDivElement>) => {
+      event.stopPropagation();
+      if (window.innerWidth >= 640 || drawerOpen || event.touches.length !== 1) return;
+      if (direction === "prev" && !prevId) return;
+      if (direction === "next" && !nextId) return;
+
+      const touch = event.touches[0];
+      swipeTouchIdRef.current = touch.identifier;
+      swipeDirectionRef.current = direction;
+      swipeStartXRef.current = touch.clientX;
+      swipeStartYRef.current = touch.clientY;
+      swipeTravelRef.current = 0;
+      swipeCancelledRef.current = false;
+      setSwipeHint({ direction, progress: 0 });
       dismissSwipeNux();
     },
     [dismissSwipeNux, drawerOpen, nextId, prevId]
@@ -557,6 +599,10 @@ function CoursePageClient() {
       resetSwipeGesture();
     }
   }, [drawerOpen, resetSwipeGesture]);
+
+  useEffect(() => {
+    setOverviewJumpIndex(null);
+  }, [activeLesson.id]);
 
   useEffect(() => {
     resetSwipeGesture();
@@ -974,6 +1020,75 @@ function CoursePageClient() {
       </div>
     ) : null;
 
+  const previewLessonIndex = overviewJumpIndex ?? currentLessonIndex;
+  const safePreviewLessonIndex = Math.min(
+    Math.max(0, previewLessonIndex),
+    Math.max(0, lessonJumpMeta.length - 1)
+  );
+  const previewProgressPct =
+    totalLessons <= 1 ? 0 : (safePreviewLessonIndex / Math.max(1, totalLessons - 1)) * 100;
+  const sliderTrackBackground = `linear-gradient(90deg, rgba(59,130,246,0.92) 0%, rgba(59,130,246,0.92) ${previewProgressPct}%, rgba(203,213,225,0.88) ${previewProgressPct}%, rgba(203,213,225,0.88) 100%)`;
+  const previewLessonMeta = lessonJumpMeta[safePreviewLessonIndex] ?? lessonJumpMeta[0];
+
+  const applyOverviewJump = useCallback(
+    (targetIndex: number | null) => {
+      if (targetIndex == null) return;
+      const clampedIndex = Math.min(
+        Math.max(0, targetIndex),
+        Math.max(0, lessonJumpMeta.length - 1)
+      );
+      const targetLesson = lessonJumpMeta[clampedIndex]?.lesson;
+      if (!targetLesson || targetLesson.id === activeLesson.id) {
+        setOverviewJumpIndex(null);
+        return;
+      }
+      setOverviewJumpIndex(null);
+      goToLesson(targetLesson.id, { scrollToPlayer: false });
+    },
+    [activeLesson.id, goToLesson, lessonJumpMeta]
+  );
+
+  const setOverviewDragging = useCallback((next: boolean) => {
+    overviewJumpDraggingRef.current = next;
+    setIsOverviewJumpDragging(next);
+  }, []);
+
+  const commitOverviewJump = useCallback(
+    (explicitIndex?: number) => {
+      setOverviewDragging(false);
+      applyOverviewJump(explicitIndex ?? overviewJumpIndex ?? currentLessonIndex);
+    },
+    [applyOverviewJump, currentLessonIndex, overviewJumpIndex, setOverviewDragging]
+  );
+
+  const handleOverviewSliderPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLInputElement>) => {
+      if (totalLessons <= 1) return;
+
+      const track = event.currentTarget;
+      const rect = track.getBoundingClientRect();
+      const currentRatio = safePreviewLessonIndex / Math.max(1, totalLessons - 1);
+      const thumbX = rect.left + currentRatio * rect.width;
+      const deltaFromThumb = event.clientX - thumbX;
+
+      // Tap left/right of thumb steps one lesson; touching near thumb enables drag.
+      if (Math.abs(deltaFromThumb) > 14) {
+        event.preventDefault();
+        const direction = deltaFromThumb > 0 ? 1 : -1;
+        const steppedIndex = Math.min(
+          totalLessons - 1,
+          Math.max(0, safePreviewLessonIndex + direction)
+        );
+        setOverviewJumpIndex(steppedIndex);
+        setOverviewDragging(true);
+        return;
+      }
+
+      setOverviewDragging(true);
+    },
+    [safePreviewLessonIndex, setOverviewDragging, totalLessons]
+  );
+
   return (
     <SiteChrome
       menu={{
@@ -1165,8 +1280,80 @@ function CoursePageClient() {
               id="course-overview-details"
               className="mt-2 rounded-2xl border border-slate-200/68 bg-white/78 p-3"
             >
-              <div className="min-w-0">
+              <div className="rounded-2xl border border-slate-200/70 bg-slate-50/72 p-3">
                 <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  Jump to lesson
+                </div>
+                {previewLessonMeta ? (
+                  <>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-[13px] font-semibold text-slate-900">
+                          {previewLessonMeta.lesson.title}
+                        </div>
+                        <div className="truncate text-[12px] font-medium text-slate-600">
+                          {previewLessonMeta.moduleTitle}
+                        </div>
+                      </div>
+                      <span
+                        className={cx(
+                          "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 transition-all duration-150",
+                          previewLessonMeta.lesson.id === activeLesson.id
+                            ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                            : doneLessonIdSet.has(previewLessonMeta.lesson.id)
+                              ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
+                              : "bg-white text-slate-700 ring-slate-200/75",
+                          isOverviewJumpDragging && "scale-[1.03] shadow-[0_8px_20px_rgba(37,99,235,0.16)]"
+                        )}
+                      >
+                        <span className="block leading-[1.15]">
+                          Module {previewLessonMeta.moduleIndex} of {previewLessonMeta.moduleCount}
+                        </span>
+                        <span className="mt-0.5 block text-[10px] font-medium leading-[1.15] text-slate-600">
+                          Lesson {previewLessonMeta.globalLessonIndex} of {totalLessons}
+                        </span>
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={1}
+                      max={Math.max(1, totalLessons)}
+                      value={safePreviewLessonIndex + 1}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        if (Number.isNaN(next)) return;
+                        setOverviewJumpIndex(next - 1);
+                      }}
+                      onPointerDown={handleOverviewSliderPointerDown}
+                      onPointerUp={() => {
+                        if (!overviewJumpDraggingRef.current) return;
+                        commitOverviewJump();
+                      }}
+                      onPointerCancel={() => setOverviewDragging(false)}
+                      onBlur={() => {
+                        if (!overviewJumpDraggingRef.current) return;
+                        if (overviewJumpIndex == null) {
+                          setOverviewDragging(false);
+                          return;
+                        }
+                        commitOverviewJump();
+                      }}
+                      aria-label="Jump to lesson"
+                      aria-valuetext={`${previewLessonMeta.lesson.title}. Lesson ${safePreviewLessonIndex + 1} of ${totalLessons}.`}
+                      className={cx(
+                        "lesson-jump-slider mt-2 h-2.5 w-full cursor-pointer appearance-none rounded-full",
+                        isOverviewJumpDragging && "is-dragging"
+                      )}
+                      style={{ background: sliderTrackBackground }}
+                    />
+
+                  </>
+                ) : null}
+              </div>
+
+              <div className="min-w-0">
+                <div className="mt-3 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                   Additional information
                 </div>
               </div>
@@ -1184,6 +1371,45 @@ function CoursePageClient() {
 
         <section className="mt-3 rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
           <div className="relative overflow-hidden rounded-[20px] ring-1 ring-slate-200/75 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+            {!showVideoOverlay ? (
+              <>
+                <div
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 z-[3] w-[22%] min-w-[68px] max-w-[112px] touch-pan-y"
+                  onTouchStart={(event) => beginSwipeFromVideoEdge("prev", event)}
+                  onTouchMove={(event) => {
+                    event.stopPropagation();
+                    handleSwipeMove(event);
+                  }}
+                  onTouchEnd={(event) => {
+                    event.stopPropagation();
+                    handleSwipeEnd(event);
+                  }}
+                  onTouchCancel={(event) => {
+                    event.stopPropagation();
+                    resetSwipeGesture();
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="absolute inset-y-0 right-0 z-[3] w-[22%] min-w-[68px] max-w-[112px] touch-pan-y"
+                  onTouchStart={(event) => beginSwipeFromVideoEdge("next", event)}
+                  onTouchMove={(event) => {
+                    event.stopPropagation();
+                    handleSwipeMove(event);
+                  }}
+                  onTouchEnd={(event) => {
+                    event.stopPropagation();
+                    handleSwipeEnd(event);
+                  }}
+                  onTouchCancel={(event) => {
+                    event.stopPropagation();
+                    resetSwipeGesture();
+                  }}
+                />
+              </>
+            ) : null}
+
             <div className="aspect-video w-full bg-slate-950">
               <div ref={videoFrameRef} className="h-full w-full" />
             </div>
