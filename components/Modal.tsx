@@ -99,7 +99,16 @@ export default function Modal({ open, isOpen, onClose, ariaLabel = "Dialog", chi
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      lastFocusedRef.current?.focus?.();
+      const lastFocused = lastFocusedRef.current;
+      requestAnimationFrame(() => {
+        if (!lastFocused) return;
+        if (!document.contains(lastFocused)) return;
+        try {
+          lastFocused.focus({ preventScroll: true });
+        } catch {
+          lastFocused.focus();
+        }
+      });
     };
   }, [visible, onClose]);
 
