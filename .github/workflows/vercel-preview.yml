@@ -1,0 +1,107 @@
+name: Vercel Preview
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Check required Vercel secrets
+        id: vercel-secrets
+        shell: bash
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping Vercel preview: required repository secrets are missing."
+          fi
+
+      - name: Checkout
+        if: steps.vercel-secrets.outputs.available == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: steps.vercel-secrets.outputs.available == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.vercel-secrets.outputs.available == 'true'
+        run: npm ci
+
+      - name: Install Vercel CLI
+        if: steps.vercel-secrets.outputs.available == 'true'
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel project settings
+        if: steps.vercel-secrets.outputs.available == 'true'
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Build Preview
+        if: steps.vercel-secrets.outputs.available == 'true'
+        run: vercel build --token="$VERCEL_TOKEN"
+
+      - name: Deploy Preview
+        if: steps.vercel-secrets.outputs.available == 'true'
+        id: deploy
+        run: |
+          preview_url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
+          echo "url=${preview_url}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment Preview URL
+        if: steps.vercel-secrets.outputs.available == 'true'
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const marker = "<!-- vercel-preview-comment -->";
+            const body = `${marker}\n✅ Vercel preview is ready:\n${process.env.PREVIEW_URL}`;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 }
+            );
+
+            const existing = comments.find(
+              (comment) =>
+                comment.user?.type === "Bot" &&
+                typeof comment.body === "string" &&
+                comment.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }

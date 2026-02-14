@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 
 import Modal from "@/components/Modal";
 import { COURSE_MODULES, type CourseLesson } from "@/app/course/courseData";
+import { useInstallContext } from "@/components/install/install-context";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
 import MobileSegmentedNav, {
@@ -53,9 +54,13 @@ export default function MenuDrawer({
 }: Props) {
   const pathname = usePathname();
   const hasCourse = Boolean(course);
+  const { canInstall, isIOS, isInstalled, requestInstall } = useInstallContext();
 
   const [view, setView] = useState<"main" | "course">(hasCourse ? defaultView : "main");
   const [showMenuTip, setShowMenuTip] = useState(false);
+  const [showIosInstallGuide, setShowIosInstallGuide] = useState(false);
+  const [installFeedback, setInstallFeedback] = useState<string | null>(null);
+  const [installBusy, setInstallBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -76,6 +81,13 @@ export default function MenuDrawer({
       setShowMenuTip(true);
     }
   }, [open, view]);
+
+  useEffect(() => {
+    if (open) return;
+    setShowIosInstallGuide(false);
+    setInstallFeedback(null);
+    setInstallBusy(false);
+  }, [open]);
 
   const defaultOpenModuleId = useMemo(() => {
     if (!hasCourse) return COURSE_MODULES[0]?.id ?? "m1";
@@ -114,6 +126,37 @@ export default function MenuDrawer({
     if (href === "/") return pathname === "/";
     return pathname === href || pathname?.startsWith(`${href}/`);
   };
+
+  async function handleInstallFromMenu() {
+    if (installBusy) return;
+    setInstallBusy(true);
+    setInstallFeedback(null);
+
+    const result = await requestInstall();
+    setInstallBusy(false);
+
+    if (result === "accepted") {
+      setShowIosInstallGuide(false);
+      setInstallFeedback("Install prompt opened. Follow your browser steps.");
+      return;
+    }
+    if (result === "dismissed") {
+      setShowIosInstallGuide(false);
+      setInstallFeedback("No problem. You can install any time from this menu.");
+      return;
+    }
+    if (result === "ios-instructions") {
+      setShowIosInstallGuide(true);
+      return;
+    }
+    if (result === "already-installed") {
+      setShowIosInstallGuide(false);
+      setInstallFeedback("App is already installed on this device.");
+      return;
+    }
+    setShowIosInstallGuide(false);
+    setInstallFeedback("Install is not available in this browser yet.");
+  }
 
   const headerTitle = view === "course" ? titleCourse : titleMain;
   const headerSub =
@@ -194,7 +237,21 @@ export default function MenuDrawer({
               onSelectLesson={course!.onSelectLesson}
             />
           ) : (
-            <MainView mainItems={mainItems} isActiveRoute={isActiveRoute} onClose={onClose} />
+            <MainView
+              mainItems={mainItems}
+              isActiveRoute={isActiveRoute}
+              onClose={onClose}
+              install={{
+                isInstalled,
+                canInstall,
+                isIOS,
+                busy: installBusy,
+                feedback: installFeedback,
+                showIosGuide: showIosInstallGuide,
+                onInstall: handleInstallFromMenu,
+                onCloseIosGuide: () => setShowIosInstallGuide(false),
+              }}
+            />
           )}
 
           {/* Tip only in Menu view */}
@@ -225,10 +282,21 @@ function MainView({
   mainItems,
   isActiveRoute,
   onClose,
+  install,
 }: {
   mainItems: { href: string; title: string; subtitle?: string }[];
   isActiveRoute: (href: string) => boolean;
   onClose: () => void;
+  install: {
+    isInstalled: boolean;
+    canInstall: boolean;
+    isIOS: boolean;
+    busy: boolean;
+    feedback: string | null;
+    showIosGuide: boolean;
+    onInstall: () => void;
+    onCloseIosGuide: () => void;
+  };
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -263,6 +331,60 @@ function MainView({
           </PressLink>
         );
       })}
+
+      <div className="border-slate-200/62 relative overflow-hidden rounded-[22px] border bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_62%),rgba(255,255,255,0.86)] px-5 py-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)]">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+          App
+        </div>
+        <div className="mt-1 text-[16px] font-semibold text-slate-900">Install app</div>
+        <p className="mt-1 text-[13px] leading-6 text-slate-600">
+          {install.isInstalled
+            ? "Already installed on this device."
+            : "Get quick access from your phone home screen."}
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <PressButton
+            tier="cta"
+            data-testid="install-app-menu-action"
+            onClick={install.onInstall}
+            disabled={install.busy || install.isInstalled}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
+            aria-label="Install app"
+          >
+            {install.isInstalled ? "Installed" : install.busy ? "Checking..." : "Install app"}
+          </PressButton>
+          {!install.canInstall && !install.isInstalled ? (
+            <span className="rounded-full bg-slate-100/90 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/75">
+              Browser support varies
+            </span>
+          ) : null}
+        </div>
+
+        {install.showIosGuide ? (
+          <div className="bg-white/86 mt-3 rounded-2xl border border-blue-100/70 p-3">
+            <div className="text-[13px] font-semibold text-slate-900">Install on iPhone/iPad</div>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
+              <li>Tap the Share button in Safari.</li>
+              <li>Choose “Add to Home Screen”.</li>
+              <li>Tap “Add”.</li>
+            </ol>
+            <div className="mt-3">
+              <PressButton
+                tier="nav"
+                onClick={install.onCloseIosGuide}
+                className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-white/90 px-3 py-1.5 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+              >
+                Got it
+              </PressButton>
+            </div>
+          </div>
+        ) : null}
+
+        {install.feedback ? (
+          <p className="mt-2 text-[12px] font-medium text-slate-600">{install.feedback}</p>
+        ) : null}
+      </div>
     </div>
   );
 }

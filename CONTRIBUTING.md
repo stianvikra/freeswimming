@@ -41,7 +41,9 @@ npm run verify
 
 - Use `.github/pull_request_template.md`.
 - Keep PRs small and focused.
+- Target <= 500 changed lines (additions + deletions) per PR where practical.
 - Include test evidence and screenshots when UI is changed.
+- Split oversized work into multiple PRs.
 
 ## Documentation
 

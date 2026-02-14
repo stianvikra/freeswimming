@@ -1,6 +1,15 @@
 # Task Brief Template
 
 Use this template when requesting coding work from an agent.
+Save new briefs in `docs/task-briefs/planned/` with date-based filenames.
+
+## Metadata
+
+- `id`: `YYYY-MM-DD-short-title`
+- `status`: `planned | in-progress | done | blocked`
+- `owner`: who is responsible
+- `created`: `YYYY-MM-DD`
+- `updated`: `YYYY-MM-DD`
 
 ## Goal
 
@@ -31,3 +40,10 @@ Which commands should pass?
 ## Constraints
 
 Any constraints around copy, design, API compatibility, performance, or deadlines.
+
+## Lifecycle Rules
+
+1. Start in `docs/task-briefs/planned/`.
+2. Move to `docs/task-briefs/in-progress/` when coding starts.
+3. Move to `docs/task-briefs/done/` when PR is merged.
+4. Use `docs/task-briefs/blocked/` if paused.

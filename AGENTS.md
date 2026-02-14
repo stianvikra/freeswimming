@@ -38,4 +38,13 @@ This file defines how coding agents should collaborate in this repository.
 
 ## Task Brief
 
-Use `docs/task-brief-template.md` when giving coding tasks to an agent.
+Use `docs/task-brief-template.md` when giving coding tasks.
+Store briefs in lifecycle folders:
+
+- `docs/task-briefs/planned/`
+- `docs/task-briefs/in-progress/`
+- `docs/task-briefs/done/`
+- `docs/task-briefs/blocked/`
+
+When implementation starts, move brief to `in-progress`.
+When merged, move brief to `done`.
