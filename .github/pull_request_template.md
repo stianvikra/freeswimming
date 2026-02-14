@@ -42,3 +42,10 @@
 - [ ] Required checks are green
 - [ ] Local QA + Vercel preview QA are completed
 - [ ] `Squash and merge` clicked by repo owner
+
+## Post-Merge Local Sync (owner terminal steps)
+
+- [ ] `git checkout main`
+- [ ] `git pull --ff-only origin main`
+- [ ] `git branch -d <merged-branch>`
+- [ ] Optional: `git fetch --prune`

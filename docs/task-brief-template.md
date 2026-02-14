@@ -75,6 +75,16 @@ Any constraints around copy, design, API compatibility, performance, or deadline
   - Vercel preview QA is done.
 - `assistant_rule`:
   - final handoff must include the direct PR merge URL and a one-line reminder that merge is done in GitHub UI by repo owner.
+  - after user confirms PR is merged, final handoff must include post-merge local sync commands and ask for confirmation when completed.
+- `post_merge_local_sync`:
+  - run:
+    - `git checkout main`
+    - `git pull --ff-only origin main`
+    - `git branch -d <merged-branch>`
+  - optional cleanup:
+    - `git fetch --prune`
+    - `git branch -vv` (confirm no stale branch tracking)
+  - runbook: `docs/runbooks/post-merge-local-sync.md`
 
 ### Delivered Changes
 
