@@ -19,6 +19,8 @@
 3. `npm run test:unit`
 4. `npm run build`
 5. `npm run test:e2e`
+6. Manual local QA on dev URL for changed user flows.
+7. Manual Vercel preview QA for changed user flows (same flows verified in preview).
 
 ## Accessibility
 

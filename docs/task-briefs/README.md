@@ -19,6 +19,7 @@ When moving to `done/`, add a completion record:
 
 - PR link and merge info
 - delivered feature/files summary
+- test evidence summary (local + Vercel preview for changed flows)
 - DevOps/workflow changes
 - secrets used (names only, never values)
 

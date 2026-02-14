@@ -37,6 +37,18 @@ Which commands should pass?
 - `npm run test:e2e`
 - `npm run build`
 
+## Manual QA Environments
+
+Required when task impacts UI/UX, install flows, runtime browser behavior, or deployment behavior.
+
+- Local environment tested (for fast iteration):
+  - URL used (for example `http://127.0.0.1:3000` or LAN URL)
+  - Browsers/devices tested locally
+- Vercel preview tested (for production-like verification):
+  - Preview URL from PR checks
+  - Browsers/devices tested on preview
+- Any local vs preview differences documented (or explicitly `none`)
+
 ## Constraints
 
 Any constraints around copy, design, API compatibility, performance, or deadlines.
@@ -50,6 +62,12 @@ Any constraints around copy, design, API compatibility, performance, or deadline
 ### Delivered Changes
 
 List shipped files/features.
+
+### Test Evidence
+
+- Local automated checks summary (`npm run verify` or explicit command list)
+- Manual local QA summary (URL + browser/device coverage)
+- Manual Vercel preview QA summary (preview URL + browser/device coverage)
 
 ### DevOps / Workflow Changes
 

@@ -19,6 +19,8 @@
 - [ ] `npm run test:unit`
 - [ ] `npm run build`
 - [ ] `npm run test:e2e` (or explain why skipped)
+- [ ] Local manual QA done on dev URL (list URL + browser/device in PR description)
+- [ ] Vercel preview manual QA done (paste preview URL + browser/device in PR description)
 
 ## UI Evidence
 

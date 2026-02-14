@@ -13,7 +13,8 @@ Use this for PRs targeting `main`.
 
 - PR description includes summary, risk, and test evidence.
 - Required checks are green.
-- Vercel preview works (if UI changes).
+- Local manual QA is completed for changed flows (record URL + browser/device in PR).
+- Vercel preview works for changed flows (record preview URL + browser/device in PR).
 - Branch protection has expected required check names.
 
 ## If CI Is Stuck
