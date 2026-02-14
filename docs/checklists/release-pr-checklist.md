@@ -26,6 +26,9 @@ Use this for PRs targeting `main`.
 
 - Prefer `Squash and merge` for clean history.
 - Confirm source branch and target branch before clicking merge.
+- Merge is performed by repo owner in GitHub UI from the PR page URL:
+  - `https://github.com/stianvikra/freeswimming/pull/<PR_NUMBER>`
+- Agent handoff should always include direct merge URL when PR is ready.
 
 ## After Merge
 

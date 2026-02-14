@@ -59,6 +59,16 @@ Any constraints around copy, design, API compatibility, performance, or deadline
 - `merge`: source branch -> target branch
 - `result`: short outcome summary
 
+## Merge Handoff (owner action, required)
+
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/<PR_NUMBER>`
+- `merge_when`:
+  - all required checks are green,
+  - local manual QA is done,
+  - Vercel preview QA is done.
+- `assistant_rule`:
+  - final handoff must include the direct PR merge URL and a one-line reminder that merge is done in GitHub UI by repo owner.
+
 ### Delivered Changes
 
 List shipped files/features.
