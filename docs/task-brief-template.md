@@ -41,6 +41,29 @@ Which commands should pass?
 
 Any constraints around copy, design, API compatibility, performance, or deadlines.
 
+## Completion Record (fill when done)
+
+- `PR`: link to merged PR
+- `merge`: source branch -> target branch
+- `result`: short outcome summary
+
+### Delivered Changes
+
+List shipped files/features.
+
+### DevOps / Workflow Changes
+
+Document CI, branch protection, deployment, and environment/process changes made during the task.
+
+### Secrets Used (Names Only)
+
+List secret names and where they are used.
+Do not store secret values in this file.
+
+### Post-Merge Notes
+
+Anything temporary that must be reverted or re-hardened after merge.
+
 ## Lifecycle Rules
 
 1. Start in `docs/task-briefs/planned/`.

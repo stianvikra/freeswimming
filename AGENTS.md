@@ -36,6 +36,12 @@ This file defines how coding agents should collaborate in this repository.
 - Preserve existing visual language unless the task explicitly asks for redesign.
 - Do not change unrelated behavior in shared components.
 
+## Collaboration Preferences
+
+- Default to one actionable step at a time when guiding the repository owner in UI or terminal flows.
+- Keep instructions short and concrete.
+- Only provide multi-step batches when explicitly requested.
+
 ## Task Brief
 
 Use `docs/task-brief-template.md` when giving coding tasks.

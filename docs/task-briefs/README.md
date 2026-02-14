@@ -15,6 +15,13 @@ Default flow:
 2. move to `in-progress/` when implementation starts
 3. move to `done/` after merge
 
+When moving to `done/`, add a completion record:
+
+- PR link and merge info
+- delivered feature/files summary
+- DevOps/workflow changes
+- secrets used (names only, never values)
+
 ## Naming Convention
 
 - `YYYY-MM-DD-short-title.md`
