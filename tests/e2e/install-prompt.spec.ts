@@ -13,27 +13,36 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   page,
 }) => {
   await page.goto("/course?lesson=mod3-l1");
+  const markDoneButton = page.getByRole("button", { name: "Mark as done" });
+  await expect(markDoneButton).toBeVisible();
 
   await page.evaluate(() => {
     localStorage.removeItem("a2hs_prompt_seen");
     localStorage.removeItem("a2hs_dismissed_at");
     localStorage.removeItem("fs_course_done_lessons");
 
-    const installEvent = new Event("beforeinstallprompt", { cancelable: true }) as Event & {
-      prompt?: () => Promise<void>;
-      userChoice?: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+    const dispatchInstallPromptEvent = () => {
+      const installEvent = new Event("beforeinstallprompt", { cancelable: true }) as Event & {
+        prompt?: () => Promise<void>;
+        userChoice?: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+      };
+
+      installEvent.prompt = async () => {};
+      installEvent.userChoice = Promise.resolve({
+        outcome: "dismissed",
+        platform: "web",
+      });
+
+      window.dispatchEvent(installEvent);
     };
 
-    installEvent.prompt = async () => {};
-    installEvent.userChoice = Promise.resolve({
-      outcome: "dismissed",
-      platform: "web",
-    });
-
-    window.dispatchEvent(installEvent);
+    // Fire once immediately and once shortly after to avoid hydration timing races in CI.
+    dispatchInstallPromptEvent();
+    window.setTimeout(dispatchInstallPromptEvent, 50);
   });
+  await page.waitForTimeout(120);
 
-  await page.getByRole("button", { name: "Mark as done" }).click();
+  await markDoneButton.click();
 
   const prompt = page.getByTestId("a2hs-auto-prompt");
   await expect(prompt).toBeVisible({ timeout: 4_500 });
