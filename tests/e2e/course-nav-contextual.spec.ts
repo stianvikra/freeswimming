@@ -1,7 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { COURSE_LESSONS_FLAT, DEFAULT_LESSON_ID } from "../../app/course/courseData";
+import { isMobileProject } from "./project-guards";
 
-test("course nav uses contextual actions on first and last lesson", async ({ page }) => {
+test("course nav uses contextual actions on first and last lesson", async ({ page }, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Mobile nav behavior is validated only on mobile projects."
+  );
+
   const firstLessonId = DEFAULT_LESSON_ID;
   const lastLessonId = COURSE_LESSONS_FLAT.at(-1)?.id ?? DEFAULT_LESSON_ID;
 

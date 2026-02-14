@@ -33,5 +33,29 @@ export default defineConfig({
         ...devices["iPhone 13 Pro Max"],
       },
     },
+    {
+      name: "tablet-ipad-pro-11",
+      use: {
+        ...devices["iPad Pro 11"],
+      },
+    },
+    {
+      name: "desktop-chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+      },
+    },
+    {
+      name: "desktop-webkit",
+      use: {
+        ...devices["Desktop Safari"],
+      },
+    },
+    {
+      name: "desktop-firefox",
+      use: {
+        ...devices["Desktop Firefox"],
+      },
+    },
   ],
 });

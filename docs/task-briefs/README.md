@@ -19,6 +19,7 @@ When moving to `done/`, add a completion record:
 
 - PR link and merge info
 - delivered feature/files summary
+- test evidence summary (local + Vercel preview for changed flows)
 - DevOps/workflow changes
 - secrets used (names only, never values)
 
@@ -34,3 +35,5 @@ Example:
 
 When an agent starts implementing a brief, it should move that brief from `planned/` to `in-progress/`.
 After the related PR is merged, move it from `in-progress/` to `done/`.
+When a PR is ready, agent handoff should include direct merge URL:
+`https://github.com/stianvikra/freeswimming/pull/<PR_NUMBER>`.

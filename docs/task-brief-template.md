@@ -37,6 +37,25 @@ Which commands should pass?
 - `npm run test:e2e`
 - `npm run build`
 
+## Manual QA Environments
+
+Required when task impacts UI/UX, install flows, runtime browser behavior, or deployment behavior.
+
+- Local environment tested (for fast iteration):
+  - URL used (for example `http://127.0.0.1:3000` or LAN URL)
+  - Browsers/devices tested locally
+- Vercel preview tested (for production-like verification):
+  - Preview URL from PR checks
+  - Browsers/devices tested on preview
+- Any local vs preview differences documented (or explicitly `none`)
+- Recommended browser/device matrix for UI/runtime changes:
+  - iOS Safari (phone)
+  - Android Chromium (phone)
+  - iPad/tablet viewport
+  - Desktop Chrome
+  - Desktop Safari/WebKit
+  - Desktop Firefox
+
 ## Constraints
 
 Any constraints around copy, design, API compatibility, performance, or deadlines.
@@ -47,9 +66,25 @@ Any constraints around copy, design, API compatibility, performance, or deadline
 - `merge`: source branch -> target branch
 - `result`: short outcome summary
 
+## Merge Handoff (owner action, required)
+
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/<PR_NUMBER>`
+- `merge_when`:
+  - all required checks are green,
+  - local manual QA is done,
+  - Vercel preview QA is done.
+- `assistant_rule`:
+  - final handoff must include the direct PR merge URL and a one-line reminder that merge is done in GitHub UI by repo owner.
+
 ### Delivered Changes
 
 List shipped files/features.
+
+### Test Evidence
+
+- Local automated checks summary (`npm run verify` or explicit command list)
+- Manual local QA summary (URL + browser/device coverage)
+- Manual Vercel preview QA summary (preview URL + browser/device coverage)
 
 ### DevOps / Workflow Changes
 

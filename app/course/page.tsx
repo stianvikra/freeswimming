@@ -185,6 +185,8 @@ function CoursePageClient() {
   const [isOverviewJumpDragging, setIsOverviewJumpDragging] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [showInstallIosGuide, setShowInstallIosGuide] = useState(false);
+  const [showInstallMacSafariGuide, setShowInstallMacSafariGuide] = useState(false);
+  const [showInstallSuccessNotice, setShowInstallSuccessNotice] = useState(false);
   const [installPromptBusy, setInstallPromptBusy] = useState(false);
   const [installPromptFeedback, setInstallPromptFeedback] = useState<string | null>(null);
   const overviewJumpDraggingRef = useRef(false);
@@ -454,6 +456,8 @@ function CoursePageClient() {
     installPromptTimerRef.current = window.setTimeout(() => {
       setShowInstallPrompt(true);
       setShowInstallIosGuide(false);
+      setShowInstallMacSafariGuide(false);
+      setShowInstallSuccessNotice(false);
       setInstallPromptFeedback(null);
       markAutoPromptSeen();
     }, A2HS_AUTO_PROMPT_DELAY_MS);
@@ -462,32 +466,54 @@ function CoursePageClient() {
   async function handleInstallFromPrompt() {
     if (installPromptBusy) return;
     setInstallPromptBusy(true);
+    setShowInstallSuccessNotice(false);
     setInstallPromptFeedback(null);
 
     const result = await install.requestInstall();
     setInstallPromptBusy(false);
 
     if (result === "accepted") {
-      setShowInstallPrompt(false);
       setShowInstallIosGuide(false);
+      setShowInstallMacSafariGuide(false);
+      setShowInstallSuccessNotice(true);
+      setInstallPromptFeedback(
+        "App installed. You can open FreeSwimming from your Dock, Start menu, or home screen."
+      );
       return;
     }
     if (result === "dismissed") {
       markAutoPromptDismissed();
       setShowInstallPrompt(false);
       setShowInstallIosGuide(false);
+      setShowInstallMacSafariGuide(false);
+      setShowInstallSuccessNotice(false);
       return;
     }
     if (result === "ios-instructions") {
       setShowInstallIosGuide(true);
+      setShowInstallMacSafariGuide(false);
+      setShowInstallSuccessNotice(false);
+      return;
+    }
+    if (result === "mac-safari-instructions") {
+      setShowInstallIosGuide(false);
+      setShowInstallMacSafariGuide(true);
+      setShowInstallSuccessNotice(false);
       return;
     }
     if (result === "already-installed") {
       setShowInstallPrompt(false);
       setShowInstallIosGuide(false);
+      setShowInstallMacSafariGuide(false);
+      setShowInstallSuccessNotice(false);
       return;
     }
-    setInstallPromptFeedback("Install is not available in this browser yet.");
+    setShowInstallIosGuide(false);
+    setShowInstallMacSafariGuide(false);
+    setShowInstallSuccessNotice(false);
+    setInstallPromptFeedback(
+      "Install is not available in this browser yet. For best support, use Safari, Chrome, or Edge."
+    );
   }
 
   function dismissInstallPrompt() {
@@ -495,6 +521,8 @@ function CoursePageClient() {
     markAutoPromptDismissed();
     setShowInstallPrompt(false);
     setShowInstallIosGuide(false);
+    setShowInstallMacSafariGuide(false);
+    setShowInstallSuccessNotice(false);
     setInstallPromptFeedback(null);
   }
 
@@ -502,6 +530,25 @@ function CoursePageClient() {
     markAutoPromptDismissed();
     setShowInstallPrompt(false);
     setShowInstallIosGuide(false);
+    setShowInstallMacSafariGuide(false);
+    setShowInstallSuccessNotice(false);
+    setInstallPromptFeedback(null);
+  }
+
+  function closeMacSafariInstallGuide() {
+    markAutoPromptDismissed();
+    setShowInstallPrompt(false);
+    setShowInstallIosGuide(false);
+    setShowInstallMacSafariGuide(false);
+    setShowInstallSuccessNotice(false);
+    setInstallPromptFeedback(null);
+  }
+
+  function closeInstallSuccessNotice() {
+    setShowInstallPrompt(false);
+    setShowInstallIosGuide(false);
+    setShowInstallMacSafariGuide(false);
+    setShowInstallSuccessNotice(false);
     setInstallPromptFeedback(null);
   }
 
@@ -516,6 +563,8 @@ function CoursePageClient() {
     clearInstallPromptTimer();
     setShowInstallPrompt(false);
     setShowInstallIosGuide(false);
+    setShowInstallMacSafariGuide(false);
+    setShowInstallSuccessNotice(false);
     setInstallPromptFeedback(null);
   }, [clearInstallPromptTimer, install.isInstalled]);
 
@@ -1157,12 +1206,13 @@ function CoursePageClient() {
             Quick access
           </div>
           <h3 className="mt-1 text-[17px] font-semibold text-slate-900">Install app</h3>
-          {!showInstallIosGuide ? (
+          {!showInstallIosGuide && !showInstallMacSafariGuide ? (
             <p className="mt-1 text-[13px] leading-6 text-slate-700">
-              Open FreeSwimming directly from your phone home screen and continue where you left
-              off.
+              Open FreeSwimming directly from your home screen, Dock, or Start menu and continue
+              where you left off.
             </p>
-          ) : (
+          ) : null}
+          {showInstallIosGuide ? (
             <div className="bg-white/88 mt-2 rounded-2xl border border-blue-100/70 p-3">
               <p className="text-[13px] font-semibold text-slate-900">
                 Install on iPhone/iPad (Safari)
@@ -1173,10 +1223,20 @@ function CoursePageClient() {
                 <li>Tap “Add”.</li>
               </ol>
             </div>
-          )}
+          ) : null}
+          {showInstallMacSafariGuide ? (
+            <div className="bg-white/88 mt-2 rounded-2xl border border-blue-100/70 p-3">
+              <p className="text-[13px] font-semibold text-slate-900">Install on Mac (Safari)</p>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
+                <li>Open File in Safari.</li>
+                <li>Choose Add to Dock.</li>
+                <li>Click Add.</li>
+              </ol>
+            </div>
+          ) : null}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {!showInstallIosGuide ? (
+            {!showInstallIosGuide && !showInstallMacSafariGuide && !showInstallSuccessNotice ? (
               <>
                 <PressButton
                   tier="cta"
@@ -1204,19 +1264,27 @@ function CoursePageClient() {
               <>
                 <PressButton
                   tier="cta"
-                  onClick={closeIosInstallGuide}
+                  onClick={
+                    showInstallSuccessNotice
+                      ? closeInstallSuccessNotice
+                      : showInstallMacSafariGuide
+                        ? closeMacSafariInstallGuide
+                        : closeIosInstallGuide
+                  }
                   className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
                 >
                   Done
                 </PressButton>
-                <PressButton
-                  tier="nav"
-                  onClick={dismissInstallPrompt}
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white/90 px-4 py-2 text-[14px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
-                  aria-label="Not now"
-                >
-                  Not now
-                </PressButton>
+                {!showInstallSuccessNotice ? (
+                  <PressButton
+                    tier="nav"
+                    onClick={dismissInstallPrompt}
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white/90 px-4 py-2 text-[14px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+                    aria-label="Not now"
+                  >
+                    Not now
+                  </PressButton>
+                ) : null}
               </>
             )}
           </div>

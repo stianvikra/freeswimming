@@ -1,12 +1,17 @@
-import { devices, expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { isDesktopProject } from "./project-guards";
 
 test.use({
-  ...devices["Desktop Chrome"],
+  viewport: { width: 1280, height: 720 },
   isMobile: false,
   hasTouch: false,
 });
 
-test("drawer traps keyboard focus and restores trigger focus on close", async ({ page }) => {
+test("drawer traps keyboard focus and restores trigger focus on close", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isDesktopProject(testInfo), "Keyboard focus trap coverage runs on desktop projects.");
+
   await page.goto("/contact");
   await page.evaluate(
     () =>

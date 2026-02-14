@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { DEFAULT_LESSON_ID } from "../../app/course/courseData";
+import { isMobileProject } from "./project-guards";
 
 function screenshotPath(outputDir: string, fileName: string) {
   return join(outputDir, `${fileName}.png`);
@@ -27,6 +28,8 @@ function resolveOutputDir(testInfo: TestInfo) {
 }
 
 test("capture mobile full-page screenshots for core app flow", async ({ page }, testInfo) => {
+  test.skip(!isMobileProject(testInfo), "Mobile screenshots are captured only on mobile projects.");
+
   const outputDir = resolveOutputDir(testInfo);
   mkdirSync(outputDir, { recursive: true });
 

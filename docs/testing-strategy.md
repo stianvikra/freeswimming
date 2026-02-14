@@ -12,6 +12,21 @@
 - `tests/unit/*`: component and utility tests.
 - `tests/e2e/*`: browser-level flows and accessibility checks.
 
+## Playwright Project Matrix
+
+- `mobile-chromium`: Android-like mobile behavior (Pixel 7)
+- `mobile-iphone-13-pro-max`: iOS Safari/WebKit mobile behavior
+- `tablet-ipad-pro-11`: iPad/tablet viewport behavior
+- `desktop-chromium`: desktop Chrome behavior
+- `desktop-webkit`: desktop Safari/WebKit behavior
+- `desktop-firefox`: desktop Firefox behavior
+
+Project-specific scope rules:
+
+- mobile-nav and mobile screenshot specs run only on `mobile-*` projects.
+- keyboard focus trap runs only on `desktop-*` projects.
+- desktop/tablet install entry smoke test runs only on `desktop-*` and `tablet-*` projects.
+
 ## Required Checks Before Merge
 
 1. `npm run lint`
@@ -19,6 +34,13 @@
 3. `npm run test:unit`
 4. `npm run build`
 5. `npm run test:e2e`
+6. Manual local QA on dev URL for changed user flows.
+7. Manual Vercel preview QA for changed user flows (same flows verified in preview).
+
+Useful commands:
+
+- `npm run test:e2e:mobile` for fast mobile install/nav checks.
+- `npm run test:e2e:extended` for tablet/desktop matrix checks.
 
 ## Accessibility
 
