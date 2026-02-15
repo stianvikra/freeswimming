@@ -10,7 +10,7 @@
 
 ## Goal
 
-Users can buy optional paid products and reliably resume both free-course and paid-guide progress from a single account-backed `My Library` across devices.
+Users can start instantly in guest mode, buy optional paid products without account friction, and optionally claim a free account for `My Library` access and cross-device progress sync.
 
 ## Scope
 
@@ -22,11 +22,15 @@ Users can buy optional paid products and reliably resume both free-course and pa
   - integrate Stripe Checkout for paid offers,
   - implement webhook fulfillment (`checkout.session.completed` and relevant async-success events),
   - persist entitlements in app database (server source of truth),
-  - add Stripe Customer Portal link for receipts/invoice history where applicable.
+  - add Stripe Customer Portal link for receipts/invoice history where applicable,
+  - send secure download link by email after purchase,
+  - provide `resend download link` flow without requiring account.
 - Account model:
-  - free course can be browsed without account,
-  - paid access requires account (or auto-create account at checkout email),
-  - support low-friction sign-in (magic link).
+  - free course can be browsed and progressed without account (local device),
+  - guest checkout is allowed (`email + payment`),
+  - account is optional and positioned as upgrade for backup/sync/library access,
+  - support low-friction account claim/sign-in (magic link),
+  - when account email matches purchase email, auto-attach purchases to account.
 - Progress:
   - sync free-course progress (currently localStorage-backed) to server when signed in,
   - sync paid guide progress for interactive HTML versions,
@@ -34,7 +38,8 @@ Users can buy optional paid products and reliably resume both free-course and pa
 - `My Library` UX:
   - section order: `Owned` first, `Continue` actions prominent,
   - section order below owned: `Recommended/Not Owned` with clear buy CTA,
-  - support link present on each owned item.
+  - support link present on each owned item,
+  - guest users see clear value prompt for account claim (`back up progress + keep downloads`).
 - Trust/compliance:
   - add user data export endpoint/flow for app data,
   - add user data delete endpoint/flow for app data with clear retention notes for payment records.
@@ -54,9 +59,15 @@ Users can buy optional paid products and reliably resume both free-course and pa
 ## Acceptance Criteria
 
 - A user can complete payment and see purchased item in `My Library` on refresh and on another device after sign-in.
+- A user can complete payment as guest (no required pre-checkout account creation).
+- A post-purchase success page always shows immediate download + clear email confirmation.
+- A guest user can request `resend download link` with purchase email.
+- Resend and claim endpoints are rate-limited and return non-enumerating responses (`If this email exists, we sent a link`).
 - `My Library` always prioritizes `Owned` items and shows resume actions where progress exists.
 - Free-course progress can resume on a second device when signed in.
 - Paid interactive guide progress can resume on a second device when signed in.
+- Guest users see a progress-safety prompt after exactly 3 lessons marked complete, with free-account backup CTA.
+- If a guest claims/creates account using purchase email, purchases are attached automatically.
 - Not-owned items are clearly purchasable from within `My Library` (no dead-end gray cards).
 - Receipt/invoice self-service path is available through Stripe customer portal link.
 - Data export and delete requests for app-owned user data are available and documented.
@@ -111,7 +122,7 @@ Users can buy optional paid products and reliably resume both free-course and pa
 ## Selected Defaults For V1 (Locked Unless Explicitly Changed)
 
 - Track A: `Option A` (keep `Programs` + `Video Analysis`, add `/plans`, label account area `My Library`).
-- Track B: `Option A` (free browsing optional, paid ownership requires account or auto-created account).
+- Track B: `Option A` (guest-first: free progress + guest checkout + optional account claim).
 - Track C: `Option A` (Supabase Auth + Postgres + RLS).
 - Track D: `Option A` (Stripe Checkout + webhook fulfillment + entitlements table).
 - Track E: `Option A` (local-first UX + debounced sync + server reconciliation).
@@ -171,14 +182,26 @@ Users can buy optional paid products and reliably resume both free-course and pa
 - Performance:
   - no regressions in changed flows against CWV targets in Acceptance Criteria.
 
+## UX Copy and Trigger Contract (V1)
+
+- Guest mode reassurance:
+  - `No account needed to start.`
+- Progress backup prompt (trigger: after 3 lessons marked complete in guest mode):
+  - `Don't lose your progress if this browser clears storage.`
+  - `Create a free account to back up and sync across devices.`
+- Post-purchase upgrade prompt:
+  - `Create a free account to keep downloads and progress synced.`
+- Library claim prompt for guest buyer:
+  - `Already bought this? Claim your library with email magic link.`
+
 ## User Journey Contract (V1)
 
-1. Free user lands on course, makes progress, and sees clear `Sign in to sync across devices` message.
-2. User buys paid product via Stripe Checkout without unnecessary friction.
-3. After successful purchase, user is returned to app and sees owned item in `My Library`.
-4. User resumes content from `Continue` CTA exactly where they left off.
-5. User can access receipts/portal and support from the same library context.
-6. User on a second device can sign in and continue both free and paid progress.
+1. Free user lands on course and progresses immediately in guest mode (local storage).
+2. User buys paid product via guest Stripe Checkout (`email + payment` only).
+3. Success page provides immediate download and confirms email delivery.
+4. After 3 completed lessons, user sees optional progress-safety popup for free account backup/sync.
+5. If user claims account with purchase email, purchases are attached and local progress is imported.
+6. User on second device can sign in and continue both free and paid progress from `My Library`.
 
 ## State and Recovery Matrix (Non-Negotiable)
 
@@ -187,7 +210,10 @@ Users can buy optional paid products and reliably resume both free-course and pa
 - `no entitlements`: clear empty state with purchase CTAs.
 - `sync conflict`: apply latest-server-write rule and show non-blocking "recent activity synced" note.
 - `offline edit`: queue local change marker and sync when online, show pending badge.
+- `guest milestone prompt`: show once at 3 completed lessons; if dismissed, suppress for 7 days before re-show.
 - `password reset during checkout/library`: return to original intent route after auth completion.
+- `guest storage cleared`: show recovery prompt with account claim/sign-in and resend-download option.
+- `claim email mismatch`: show explicit message and support route for manual purchase linking.
 
 ## Scale and Cost Guardrails
 
@@ -233,9 +259,12 @@ Users can buy optional paid products and reliably resume both free-course and pa
 - `/plans`: paid-offer hub page (all upsells).
 - `/my-library`: authenticated library with owned and not-owned sections.
 - `/my-library/goals`: optional subview for goals and milestones.
+- `/checkout/success`: post-purchase success page with download now + claim account CTA.
+- `/claim`: account claim entry via magic link for guest purchasers.
 - `/api/checkout/session`: create Stripe Checkout session for selected product.
 - `/api/stripe/webhook`: process Stripe events and grant entitlements idempotently.
 - `/api/portal`: create Stripe customer portal session.
+- `/api/download/resend`: resend secure download link by purchase email.
 - `/api/progress/course`: read/write free-course progress for signed-in user.
 - `/api/progress/guide`: read/write paid-guide progress for signed-in user.
 - `/api/user/export`: export app-owned user data.
@@ -262,6 +291,12 @@ Users can buy optional paid products and reliably resume both free-course and pa
   - `stripe_customer_id text`,
   - `stripe_checkout_session_id text unique`,
   - `granted_at timestamptz`.
+- `download_links`:
+  - `id uuid primary key`,
+  - `entitlement_id uuid`,
+  - `token_hash text unique`,
+  - `expires_at timestamptz`,
+  - `used_at timestamptz nullable`.
 - `course_progress`:
   - `user_id uuid`,
   - `lesson_id text`,
@@ -297,6 +332,11 @@ Users can buy optional paid products and reliably resume both free-course and pa
 - Verify Stripe webhook signatures on every event.
 - Use idempotent fulfillment keying by `stripe_checkout_session_id` to prevent duplicate grants.
 - Log fulfillment attempts/outcomes for support and reconciliation.
+- Download links must be short-lived, single-purpose, and validated server-side.
+- `resend` and `claim` endpoints must enforce abuse protection:
+  - per-IP and per-email rate limits,
+  - non-enumerating response copy,
+  - audit logging of repeated attempts.
 
 ## Analytics and KPI Contract (V1)
 
@@ -305,6 +345,9 @@ Users can buy optional paid products and reliably resume both free-course and pa
   - `checkout_started`,
   - `checkout_completed`,
   - `entitlement_granted`,
+  - `download_link_resent`,
+  - `account_claim_started`,
+  - `account_claim_completed`,
   - `library_viewed`,
   - `resume_clicked`,
   - `progress_synced`,
@@ -368,6 +411,7 @@ Execution protocol for this task:
   - create one price per product and copy all `price_id` values.
 - Agent:
   - maps each price ID to env var names,
+  - confirms receipt email settings and post-checkout return URLs,
   - provides next step after `done`.
 
 ### Step 4: Configure Stripe webhook
@@ -430,9 +474,9 @@ npx supabase start
 
 ### Track B: Account Requirement Model
 
-- `Option A (Recommended, 10/10)`: account optional for free browsing, required/auto-created for paid ownership and restore.
-- `Option B (8/10)`: force sign-in before any course access.
-- `Option C (5/10)`: guest checkout + optional account later.
+- `Option A (Recommended, 10/10)`: guest-first flow (guest progress + guest checkout + optional account claim for backup/sync/library).
+- `Option B (7/10)`: account optional for free browsing, but required/auto-created for paid ownership.
+- `Option C (5/10)`: force sign-in before any purchase or course progress.
 
 ### Track C: Auth + Database Stack
 
