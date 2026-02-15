@@ -3,6 +3,32 @@
 Use this template when requesting coding work from an agent.
 Save new briefs in `docs/task-briefs/planned/` with date-based filenames.
 
+## Prompt Quality Gate (before sending to Codex)
+
+Use this quick check so the task execution is precise:
+
+- Reference exact brief path (for example `docs/task-briefs/planned/YYYY-MM-DD-xxx.md`)
+- State execution mode (`end-to-end` or `plan only`)
+- State deliverables (implementation, tests, commit, push, PR handoff)
+- State communication style (for example: one step at a time for manual GitHub actions)
+- State non-negotiables (no secrets in repo, UX quality bar, performance guardrails)
+
+Suggested prompt wrapper:
+
+```md
+Use task brief: <PATH_TO_BRIEF>
+Mode: end-to-end (implement + tests + commit + push on current branch)
+Communication: one manual step at a time; wait for my "done" between manual GitHub/UI steps.
+Handoff must include:
+
+1. what changed
+2. test evidence
+3. PR URL
+4. direct merge URL
+5. post-merge local sync commands
+   Do not store secret values in repo files.
+```
+
 ## Metadata
 
 - `id`: `YYYY-MM-DD-short-title`

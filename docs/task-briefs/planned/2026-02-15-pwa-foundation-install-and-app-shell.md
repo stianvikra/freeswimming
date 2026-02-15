@@ -1,0 +1,99 @@
+# Task Brief: PWA Foundation, Install, and App Shell
+
+## Metadata
+
+- `id`: `2026-02-15-pwa-foundation-install-and-app-shell`
+- `status`: `planned`
+- `owner`: `stianvikra`
+- `created`: `2026-02-15`
+- `updated`: `2026-02-15`
+
+## Goal
+
+FreeSwimming should have a production-grade PWA baseline: installable on supported platforms, consistent install UX, and a reliable app-shell/offline fallback foundation.
+
+## Scope
+
+- Validate and harden web app manifest contract:
+  - stable app identity (`name`, `short_name`, `start_url`, `scope`, `display`, theme/background colors),
+  - icon set quality (maskable + Apple touch icon),
+  - metadata consistency across mobile and desktop install surfaces.
+- Upgrade service worker from lifecycle-only to baseline app-shell strategy:
+  - versioned cache namespace,
+  - pre-cache essential shell assets and an offline fallback route,
+  - safe cleanup of outdated caches on activate.
+- Add a branded offline fallback experience:
+  - clear headline,
+  - short explanation,
+  - primary recovery CTA (`Try again`),
+  - secondary navigation CTA back to key app routes.
+- Define a minimum safe fallback contract for runtime failures:
+  - never show blank/white screen for `network fail + cache miss`,
+  - always route to a usable offline fallback surface,
+  - keep next action obvious (`Try again`, `Home`, `Menu`).
+- Align install entry UX across:
+  - contextual install prompt,
+  - persistent menu install action,
+  - mobile and desktop copy consistency.
+- Ensure installed-state behavior is explicit:
+  - no repeated install nudges when already installed,
+  - clear "already installed" feedback in menu/prompt surfaces.
+- Add/update automated tests for:
+  - manifest contract,
+  - service worker registration,
+  - install entry availability and installed-state behavior,
+  - offline fallback visibility when network is unavailable.
+  - safe fallback behavior after cache/storage removal.
+
+## Out Of Scope
+
+- No background sync queueing.
+- No push notifications.
+- No deep offline-first data rewrite for all dynamic content.
+- No analytics vendor migration.
+
+## Acceptance Criteria
+
+- Installability checks pass on supported browsers (manifest + service worker + HTTPS preview).
+- Offline fallback page is reachable and usable when network is unavailable.
+- Core shell routes render without crash in offline mode after first successful load.
+- If cache is missing (or was cleared), users see fallback UI and recovery actions, not a broken page.
+- Install action surfaces remain accessible and consistent on mobile and desktop.
+- Installed users do not see repetitive install prompts.
+- Actions that require server confirmation do not show permanent success if the network/server is unavailable.
+- No measurable regression in Core Web Vitals or perceived page responsiveness.
+- Unit + e2e tests covering manifest/install/offline behavior are green.
+
+## Validation
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:unit`
+- `npm run test:e2e`
+- `npm run build`
+
+## Manual QA Environments
+
+- Local dev URL (for example `http://127.0.0.1:3000`):
+  - iOS Safari,
+  - Android Chromium,
+  - Desktop Chrome,
+  - Desktop Safari.
+- Vercel preview URL from PR checks:
+  - repeat same install/offline smoke flow on at least one mobile + one desktop browser.
+- Storage-eviction checks (required):
+  - clear website data/cache and verify fallback UX remains usable,
+  - verify app recovers correctly after reconnect/reload.
+
+## Constraints
+
+- Keep install UX non-intrusive and aligned with current FreeSwimming design language.
+- Keep runtime overhead low (small service worker footprint and predictable caching rules).
+- Keep all copy concise and plain-language.
+- Treat server state as source of truth; local cache is performance/offline support only.
+
+## Completion Record (fill when done)
+
+- `PR`: link to merged PR
+- `merge`: source branch -> target branch
+- `result`: short outcome summary
