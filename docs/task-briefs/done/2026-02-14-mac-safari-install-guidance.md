@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-02-14-mac-safari-install-guidance`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-14`
-- `updated`: `2026-02-14`
+- `updated`: `2026-02-15`
 
 ## Goal
 
@@ -162,25 +162,57 @@ If no analytics hooks exist in current stack, skip implementation and document a
   - keep manual menu entry functional when contextual flow is disabled,
   - fallback to previous generic message behavior if severe regression is detected.
 
-## Completion Record (fill when done)
+## Completion Record
 
-- `PR`: link to merged PR
-- `merge`: source branch -> target branch
-- `result`: short outcome summary
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/10` (feature) and follow-up `https://github.com/stianvikra/freeswimming/pull/11` (workflow/docs hardening)
+- `merge`: `feat/mac-safari-install-guidance` -> `main`
+- `result`: Mac Safari-specific install guidance shipped across install entry points with updated install copy, deterministic platform handling, and expanded test coverage.
 
 ### Delivered Changes
 
-List shipped files/features.
+- Shipped Mac Safari-specific install guidance across contextual and menu flows:
+  - `components/install/install-context.tsx`
+  - `components/MenuDrawer.tsx`
+  - `app/course/page.tsx`
+- Preserved iOS Safari and native install-capable browser flows while improving unsupported-browser guidance copy.
+- Added/updated tests for install behavior and regression protection:
+  - `tests/unit/install-context.test.ts`
+  - `tests/e2e/install-entry-desktop-tablet.spec.ts`
+  - `tests/e2e/install-prompt.spec.ts`
+  - `tests/e2e/course-nav-contextual.spec.ts`
+  - `tests/e2e/drawer-focus-trap.spec.ts`
+  - `tests/e2e/mobile-nav.spec.ts`
+  - `tests/e2e/mobile-nav-state.spec.ts`
+  - `tests/e2e/mobile-screenshots.spec.ts`
+  - `tests/e2e/a11y-home.spec.ts`
+  - `tests/e2e/project-guards.ts`
+- Updated QA/testing and task-brief process docs to align with release expectations:
+  - `docs/checklists/release-pr-checklist.md`
+  - `docs/task-brief-template.md`
+  - `docs/task-briefs/README.md`
+  - `docs/testing-strategy.md`
+  - `.github/pull_request_template.md`
+
+### Test Evidence
+
+- Automated test coverage was expanded in the merged implementation PR (`#10`) across unit and e2e install flows.
+- CI/workflow follow-up hardening merged in PR (`#11`) to reinforce handoff and local-sync process.
+- This completion record does not include command-by-command historical logs; verification should be referenced from the merged PR checks.
 
 ### DevOps / Workflow Changes
 
-Document CI, branch protection, deployment, and environment/process changes made during the task.
+- CI and workflow updates included:
+  - `.github/workflows/ci.yml`
+  - `.github/pull_request_template.md`
+- Added post-merge local sync runbook:
+  - `docs/runbooks/post-merge-local-sync.md`
+- Updated task-brief lifecycle/process documentation used for future PR handoffs.
 
 ### Secrets Used (Names Only)
 
-List secret names and where they are used.
-Do not store secret values in this file.
+- No new secrets were introduced by this task brief scope.
+- Existing repository/CI secrets (if any) remain managed outside the repository.
 
 ### Post-Merge Notes
 
-Anything temporary that must be reverted or re-hardened after merge.
+- Brief lifecycle status was updated from `in-progress` to `done` after merge.
