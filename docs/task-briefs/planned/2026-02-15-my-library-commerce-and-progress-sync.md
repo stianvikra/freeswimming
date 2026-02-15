@@ -507,6 +507,21 @@ At each phase:
 - if no owner action is required, agent proceeds directly;
 - if owner action is required (dashboard/config/manual QA), agent pauses and waits for explicit owner confirmation before proceeding.
 
+## Session Continuity and Recovery
+
+- Canonical source of truth: git branch + this brief file path.
+- Checkpoint cadence: commit at each completed milestone or every 60-90 minutes of active coding.
+- Required checkpoint note in updates/handoff:
+  - latest commit hash,
+  - completed milestone,
+  - next milestone.
+- Recovery protocol if session/chat is interrupted:
+  1. run `git status -sb`,
+  2. run `git log --oneline -n 10`,
+  3. reopen this brief and continue from the recorded next milestone.
+- Branch safety:
+  - push checkpoint commits to remote branch after major milestones so work survives local interruption.
+
 ## Prompt Wrapper For This Brief
 
 Use this prompt to execute the brief with the required communication style:

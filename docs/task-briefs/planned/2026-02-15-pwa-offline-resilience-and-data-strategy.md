@@ -85,6 +85,33 @@ Learners should get a reliable offline and weak-network experience for core lear
 - Keep cache strategy maintainable and easy to reason about.
 - Server remains source of truth for completion/progress state.
 
+## 10/10 UX/UI and Reliability Bar
+
+- Offline behavior must feel intentional, not degraded:
+  - users always know what works now and what requires network.
+- Required UI states must exist and be testable for changed flows:
+  - `loading`,
+  - `empty`,
+  - `error`,
+  - `offline`,
+  - `retry`.
+- No false success on write actions when server confirmation is missing.
+- Recovery actions must always be obvious and actionable.
+- Accessibility semantics must remain intact for status and error messaging.
+
+## Session Continuity and Recovery
+
+- Canonical source of truth: git branch + this brief file.
+- Checkpoint cadence: commit at each completed milestone or every 60-90 minutes of active coding.
+- Every checkpoint should record:
+  - latest commit hash,
+  - completed milestone,
+  - next milestone.
+- Recovery protocol if session/chat is interrupted:
+  1. run `git status -sb`,
+  2. run `git log --oneline -n 10`,
+  3. reopen this brief and continue from the recorded next milestone.
+
 ## Completion Record (fill when done)
 
 - `PR`: link to merged PR

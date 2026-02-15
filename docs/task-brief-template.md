@@ -12,6 +12,7 @@ Use this quick check so the task execution is precise:
 - State deliverables (implementation, tests, commit, push, PR handoff)
 - State communication style (for example: one step at a time for manual GitHub actions)
 - State non-negotiables (no secrets in repo, UX quality bar, performance guardrails)
+- State continuity rules (commit cadence + resume protocol if chat/session is interrupted)
 
 Suggested prompt wrapper:
 
@@ -26,6 +27,7 @@ Handoff must include:
 3. PR URL
 4. direct merge URL
 5. post-merge local sync commands
+6. latest checkpoint commit hash + next step if session is interrupted
    Do not store secret values in repo files.
 ```
 
@@ -85,6 +87,49 @@ Required when task impacts UI/UX, install flows, runtime browser behavior, or de
 ## Constraints
 
 Any constraints around copy, design, API compatibility, performance, or deadlines.
+
+## 10/10 Quality Bar (Required For User-Facing Work)
+
+List concrete quality expectations. At minimum include:
+
+- UX clarity and primary action expectations.
+- Required UI states: `loading`, `empty`, `error`, `offline`, `retry`.
+- Accessibility level/semantics (keyboard, focus, labels, contrast).
+- Performance expectations (Core Web Vitals or equivalent).
+- Visual consistency requirements relative to existing design language.
+
+## Security, Privacy, and Compliance (Required For Auth/Data/Payments)
+
+State required controls for this task, for example:
+
+- authentication and authorization boundaries,
+- secret handling rules,
+- data minimization/retention,
+- relevant regulatory expectations (for example GDPR baseline),
+- auditability/logging needs for sensitive operations.
+
+## Observability and KPI Contract
+
+Define:
+
+- required events/logs (if analytics hooks exist),
+- minimum operational metrics (latency/error/fulfillment),
+- success KPIs and acceptable thresholds.
+
+## Session Continuity and Recovery (Required)
+
+Define how work remains recoverable if chat/session context is lost.
+
+- Canonical source of truth: git branch + task brief path.
+- Checkpoint cadence: commit at meaningful milestones (or at least every 60-90 minutes of active coding).
+- Required checkpoint note in brief/comments:
+  - latest commit hash,
+  - completed step,
+  - next step.
+- Recovery protocol:
+  1. `git status -sb`
+  2. `git log --oneline -n 10`
+  3. reopen task brief and continue from recorded next step.
 
 ## Completion Record (fill when done)
 

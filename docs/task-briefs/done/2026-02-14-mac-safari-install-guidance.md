@@ -213,6 +213,19 @@ If no analytics hooks exist in current stack, skip implementation and document a
 - No new secrets were introduced by this task brief scope.
 - Existing repository/CI secrets (if any) remain managed outside the repository.
 
+## Session Continuity Notes
+
+- Canonical historical source of truth:
+  - merged PRs:
+    - `https://github.com/stianvikra/freeswimming/pull/10`
+    - `https://github.com/stianvikra/freeswimming/pull/11`
+  - commit history on `main`,
+  - this done brief completion record.
+- If context reconstruction is needed:
+  1. `git log --oneline --decorate -- app/course/page.tsx components/MenuDrawer.tsx components/install/install-context.tsx`,
+  2. review PR #10 and #11 checks/discussion,
+  3. use this brief `Delivered Changes` and `Test Evidence` sections as scope baseline.
+
 ### Post-Merge Notes
 
 - Brief lifecycle status was updated from `in-progress` to `done` after merge.

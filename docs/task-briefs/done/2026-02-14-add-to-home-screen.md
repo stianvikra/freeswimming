@@ -6,7 +6,7 @@
 - `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-14`
-- `updated`: `2026-02-14`
+- `updated`: `2026-02-15`
 
 ## Goal
 
@@ -188,6 +188,17 @@ No secret values are stored in repository files.
   - Used by `.github/workflows/vercel-preview.yml` to bind the deploy to the correct Vercel project.
 - `GITHUB_TOKEN` / `GH_TOKEN` (local env only)
   - Used by `scripts/apply-branch-protection.sh` when applying branch protection via GitHub API.
+
+## Session Continuity Notes
+
+- Canonical historical source of truth:
+  - merged PR `https://github.com/stianvikra/freeswimming/pull/8`,
+  - commit history on `main`,
+  - this done brief completion record.
+- If context reconstruction is needed:
+  1. `git log --oneline --decorate -- app/course/page.tsx components/install/install-context.tsx components/MenuDrawer.tsx`,
+  2. review PR #8 checks and discussion,
+  3. use this brief sections `Delivered Changes` and `Testing and Stability Work` as scope baseline.
 
 ## Post-Merge Notes
 
