@@ -22,6 +22,17 @@ When moving to `done/`, add a completion record:
 - test evidence summary (local + Vercel preview for changed flows)
 - DevOps/workflow changes
 - secrets used (names only, never values)
+- continuity notes (how to reconstruct context from git/PR if chat history is unavailable)
+
+## 10/10 Brief Standard
+
+Each new brief should explicitly include:
+
+- measurable acceptance criteria,
+- quality bar for UX/UI (including required `loading`/`empty`/`error`/`offline`/`retry` states where relevant),
+- security/privacy/compliance expectations when handling auth/data/payments,
+- observability/KPI contract for production-facing behavior,
+- session continuity and recovery protocol (checkpoint cadence + resume steps).
 
 ## Naming Convention
 

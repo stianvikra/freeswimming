@@ -86,6 +86,31 @@ PWA quality should be release-safe and repeatable: strong QA gates, measurable o
 - Keep requirements explicit and binary (pass/fail), not vague.
 - Never store secret values in repo docs; document names only.
 
+## 10/10 Quality Bar
+
+- Release criteria must be deterministic and audit-friendly.
+- QA evidence must be reproducible from the brief/checklist without relying on chat context.
+- Rollback path must be executable in minutes and documented before release.
+- Required changed-flow states must be validated:
+  - `loading`,
+  - `error`,
+  - `offline`,
+  - `retry/recovery`.
+- Accessibility and performance checks must be included in release gating for changed surfaces.
+
+## Session Continuity and Recovery
+
+- Canonical source of truth: git branch + this brief file.
+- Checkpoint cadence: commit at each completed milestone or every 60-90 minutes of active coding.
+- Every checkpoint should record:
+  - latest commit hash,
+  - completed milestone,
+  - next milestone.
+- Recovery protocol if session/chat is interrupted:
+  1. run `git status -sb`,
+  2. run `git log --oneline -n 10`,
+  3. reopen this brief and continue from the recorded next milestone.
+
 ## Completion Record (fill when done)
 
 - `PR`: link to merged PR

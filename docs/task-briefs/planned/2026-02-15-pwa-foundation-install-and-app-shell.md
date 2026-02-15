@@ -92,6 +92,32 @@ FreeSwimming should have a production-grade PWA baseline: installable on support
 - Keep all copy concise and plain-language.
 - Treat server state as source of truth; local cache is performance/offline support only.
 
+## 10/10 UX/UI and Reliability Bar
+
+- Install and fallback surfaces must be understandable in under 2 seconds.
+- Required UI states must exist and be testable:
+  - `loading`,
+  - `empty` (when install not available),
+  - `error`,
+  - `offline`,
+  - `retry`.
+- New/changed interactions must preserve keyboard/focus semantics and visible focus styles.
+- No white/blank screen paths are allowed for cache miss + network failure.
+- Copy must be plain-language, action-oriented, and platform-specific where needed.
+
+## Session Continuity and Recovery
+
+- Canonical source of truth: git branch + this brief file.
+- Checkpoint cadence: commit at each completed milestone or every 60-90 minutes of active coding.
+- Every checkpoint should record:
+  - latest commit hash,
+  - completed milestone,
+  - next milestone.
+- Recovery protocol if session/chat is interrupted:
+  1. run `git status -sb`,
+  2. run `git log --oneline -n 10`,
+  3. reopen this brief and continue from the recorded next milestone.
+
 ## Completion Record (fill when done)
 
 - `PR`: link to merged PR
