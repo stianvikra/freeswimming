@@ -6,6 +6,8 @@ import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
 import { buildLibrarySections } from "@/lib/commerce/library";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,15 @@ export default async function MyLibraryPage() {
 
   if (!user) {
     redirect("/auth/sign-in?next=%2Fmy-library");
+  }
+
+  if (user.email) {
+    try {
+      const adminSupabase = createAdminSupabaseClient();
+      await attachGuestEntitlementsByEmail(adminSupabase, user.id, user.email);
+    } catch (error) {
+      console.error("[MyLibrary] Could not attach guest entitlements", error);
+    }
   }
 
   const { data: entitlements, error: entitlementsError } = await supabase

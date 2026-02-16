@@ -77,3 +77,22 @@ export async function upsertStripeEntitlement(
     throw new Error(`Could not upsert entitlement: ${error.message}`);
   }
 }
+
+export async function attachGuestEntitlementsByEmail(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  email: string
+) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return;
+
+  const { error } = await supabase
+    .from("entitlements")
+    .update({ user_id: userId })
+    .is("user_id", null)
+    .eq("purchaser_email", normalizedEmail);
+
+  if (error) {
+    throw new Error(`Could not attach guest entitlements: ${error.message}`);
+  }
+}
