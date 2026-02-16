@@ -82,3 +82,20 @@ export function getCatalogProductByStripePriceId(
 
   return null;
 }
+
+export function getCatalogProductBySlug(
+  slug: string,
+  env: NodeJS.ProcessEnv = process.env
+): CatalogProduct | null {
+  const definition = CATALOG_DEFINITIONS.find((product) => product.slug === slug);
+  return definition ? toCatalogProduct(definition, env) : null;
+}
+
+export function getCatalogProductsSafe(env: NodeJS.ProcessEnv = process.env): CatalogProduct[] {
+  try {
+    return getCatalogProducts(env);
+  } catch (error) {
+    console.error("[Catalog] Could not load product catalog", error);
+    return [];
+  }
+}
