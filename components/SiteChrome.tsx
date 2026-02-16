@@ -212,11 +212,11 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
                 aria-label={signedInEmail ? "Open My Library" : "Log in to My Library"}
                 title={signedInEmail ?? "Open sign-in"}
                 className={[
-                  "inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold",
+                  "inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold shadow-[0_8px_18px_rgba(15,23,42,0.18)] backdrop-blur-sm",
                   "[--ui-focus-ring:rgba(255,255,255,0.56)]",
                   signedInEmail
                     ? "border-emerald-200/70 bg-emerald-50/95 text-emerald-800"
-                    : "bg-white/92 border-white/40 text-slate-800",
+                    : "bg-white/12 border-white/45 text-white",
                 ].join(" ")}
               >
                 {signedInEmail ? <span className="h-2 w-2 rounded-full bg-emerald-500" /> : null}
@@ -247,28 +247,12 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         <div className="pointer-events-none fixed inset-x-0 top-16 z-30 px-4">
           <div
             data-testid="soft-launch-banner"
-            className="pointer-events-auto mx-auto max-w-[1100px] rounded-b-2xl border border-amber-200/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.96),rgba(255,247,217,0.94))] px-4 py-2.5 text-[13px] text-amber-900 shadow-[0_10px_26px_rgba(120,53,15,0.12)] sm:flex sm:items-center sm:justify-between sm:gap-4"
+            className="pointer-events-auto mx-auto max-w-[1100px] rounded-b-2xl border border-amber-200/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.96),rgba(255,247,217,0.94))] px-4 py-2.5 text-[13px] text-amber-900 shadow-[0_10px_26px_rgba(120,53,15,0.12)]"
           >
             <p className="leading-5">
-              Public beta: We&apos;re polishing the experience. Purchases and My Library are fully
-              available.
+              This site is under construction. We&apos;re currently polishing content and flows
+              before full launch.
             </p>
-            <div className="mt-2 flex items-center gap-2 sm:mt-0">
-              <PressLink
-                tier="nav"
-                href={authHref}
-                className="inline-flex min-h-[32px] items-center rounded-lg border border-amber-300 bg-white/95 px-3 text-xs font-semibold text-amber-900"
-              >
-                {signedInEmail ? "Open My Library" : "Login"}
-              </PressLink>
-              <PressLink
-                tier="nav"
-                href="/programs"
-                className="inline-flex min-h-[32px] items-center rounded-lg border border-transparent bg-amber-100/70 px-3 text-xs font-semibold text-amber-900"
-              >
-                Programs
-              </PressLink>
-            </div>
           </div>
         </div>
       ) : null}
@@ -285,36 +269,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
       ) : null}
 
       <div className={isPublicRoute ? "pt-12 sm:pt-14" : undefined}>{children}</div>
-
-      {isPublicRoute ? (
-        <footer
-          data-testid="site-utility-footer"
-          className="mx-auto w-full max-w-[1100px] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-8"
-        >
-          <div className="bg-white/78 flex flex-col gap-3 rounded-2xl border border-white/60 px-4 py-3 text-slate-700 shadow-[0_12px_28px_rgba(15,23,42,0.08)] sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm leading-6">
-              Building in public. Core lessons are live, and My Library is open for purchases and
-              resume.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <PressLink
-                tier="nav"
-                href={authHref}
-                className="inline-flex min-h-[36px] items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800"
-              >
-                {signedInEmail ? "Open My Library" : "Login"}
-              </PressLink>
-              <PressLink
-                tier="nav"
-                href="/contact"
-                className="inline-flex min-h-[36px] items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700"
-              >
-                Contact
-              </PressLink>
-            </div>
-          </div>
-        </footer>
-      ) : null}
 
       {showDefaultMobileNav ? defaultMobileNav : null}
 
