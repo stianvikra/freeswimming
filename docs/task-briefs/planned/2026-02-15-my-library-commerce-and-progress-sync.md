@@ -39,7 +39,15 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - section order: `Owned` first, `Continue` actions prominent,
   - section order below owned: `Recommended/Not Owned` with clear buy CTA,
   - support link present on each owned item,
-  - guest users see clear value prompt for account claim (`back up progress + keep downloads`).
+  - guest users see clear value prompt for account claim (`back up progress + keep downloads`),
+  - use two tabs in library context:
+    - `My Library` (owned/resume),
+    - `Explore More` (upsell catalog),
+  - if user has no owned items, default to `Explore More` while keeping `My Library` tab visible,
+  - each owned item card includes:
+    - `Open`,
+    - `Preview` (mobile-friendly),
+    - `Download again`.
 - Trust/compliance:
   - add user data export endpoint/flow for app data,
   - add user data delete endpoint/flow for app data with clear retention notes for payment records.
@@ -69,6 +77,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Guest users see a progress-safety prompt after exactly 3 lessons marked complete, with free-account backup CTA.
 - If a guest claims/creates account using purchase email, purchases are attached automatically.
 - Not-owned items are clearly purchasable from within `My Library` (no dead-end gray cards).
+- `My Library` uses `My Library` + `Explore More` tab model; users with no purchases land on `Explore More` by default.
+- Purchased items can be opened, previewed on mobile, and re-downloaded from `My Library`.
+- `0-1000m` has both PDF and interactive web plan with 20 sessions, per-session checkbox completion, and notes.
+- Signed-in progress writes are persisted to Supabase and visible on second device after sign-in.
 - Receipt/invoice self-service path is available through Stripe customer portal link.
 - Data export and delete requests for app-owned user data are available and documented.
 - GDPR rights workflow exists for access/export/delete requests with operational response target <= `30 days`.
@@ -160,6 +172,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Navigation and IA:
   - top-level labels remain explicit (`Programs`, `Video Analysis`, `My Library`), not generic (`Shop`, `Help`) for primary nav.
   - users can reach purchased content in 1 tap/click from `My Library`.
+  - use positive language for upsell surface (`Explore More` / `Additional Learning`), avoid blunt purchase wording in core nav.
 - Clarity and orientation:
   - every page has one primary action above the fold.
   - every flow step indicates "where I am" and "what happens next".
@@ -193,6 +206,13 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `Create a free account to keep downloads and progress synced.`
 - Library claim prompt for guest buyer:
   - `Already bought this? Claim your library with email magic link.`
+- Library tab labels:
+  - `My Library`
+  - `Explore More`
+- Upsell section headline:
+  - `Additional Learning`
+- Naming guardrail:
+  - avoid primary labels like `Shop`/`Buy` in account/library surfaces.
 
 ## User Journey Contract (V1)
 
@@ -202,18 +222,43 @@ Users can start instantly in guest mode, buy optional paid products without acco
 4. After 3 completed lessons, user sees optional progress-safety popup for free account backup/sync.
 5. If user claims account with purchase email, purchases are attached and local progress is imported.
 6. User on second device can sign in and continue both free and paid progress from `My Library`.
+7. User can open/preview/download purchased guides from phone in `My Library`.
+
+## 0-1000m Interactive Plan Draft (V1)
+
+- Plan structure:
+  - 10 weeks, 20 sessions (`2 sessions per week`),
+  - session IDs: `S01` ... `S20`.
+- Per-session UI fields:
+  - session title,
+  - focus,
+  - target set/distance,
+  - checkbox `Completed`,
+  - notes field (free text).
+- Progress behavior:
+  - checking `Completed` stores completion timestamp,
+  - notes auto-save locally and sync to account when signed in,
+  - completion summary visible at top (`x/20 complete`).
+- Device behavior:
+  - works on phone first (single-column cards),
+  - desktop can show week-grouped overview.
+- PDF parity:
+  - PDF remains downloadable,
+  - interactive page acts as working tracker layer (`checkbox + notes`) for same plan.
 
 ## State and Recovery Matrix (Non-Negotiable)
 
 - `webhook delay`: show "Processing purchase" state with auto-refresh + manual refresh button.
 - `webhook failure`: show support path + safe retry/restore action, no false ownership granted.
 - `no entitlements`: clear empty state with purchase CTAs.
+- `no owned items`: default active tab = `Explore More`; keep `My Library` tab visible.
 - `sync conflict`: apply latest-server-write rule and show non-blocking "recent activity synced" note.
 - `offline edit`: queue local change marker and sync when online, show pending badge.
 - `guest milestone prompt`: show once at 3 completed lessons; if dismissed, suppress for 7 days before re-show.
 - `password reset during checkout/library`: return to original intent route after auth completion.
 - `guest storage cleared`: show recovery prompt with account claim/sign-in and resend-download option.
 - `claim email mismatch`: show explicit message and support route for manual purchase linking.
+- `preview not available`: fall back to direct download with clear message and no dead-end.
 
 ## Scale and Cost Guardrails
 
@@ -258,9 +303,12 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 - `/plans`: paid-offer hub page (all upsells).
 - `/my-library`: authenticated library with owned and not-owned sections.
+- `/my-library?tab=library|explore`: tab-driven library/explore surface.
+- `/my-library/item/[slug]`: owned-item detail with open/preview/download actions.
 - `/my-library/goals`: optional subview for goals and milestones.
 - `/checkout/success`: post-purchase success page with download now + claim account CTA.
 - `/claim`: account claim entry via magic link for guest purchasers.
+- `/guides/0-1000m`: interactive 20-session web plan.
 - `/api/checkout/session`: create Stripe Checkout session for selected product.
 - `/api/stripe/webhook`: process Stripe events and grant entitlements idempotently.
 - `/api/portal`: create Stripe customer portal session.
@@ -312,6 +360,22 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `notes text`,
   - `updated_at timestamptz`,
   - unique key on (`user_id`, `guide_slug`, `section_id`).
+- `guide_sessions`:
+  - `guide_slug text`,
+  - `session_number integer`,
+  - `week_number integer`,
+  - `title text`,
+  - `description text`,
+  - primary key on (`guide_slug`, `session_number`).
+- `guide_session_progress`:
+  - `user_id uuid`,
+  - `guide_slug text`,
+  - `session_number integer`,
+  - `completed boolean`,
+  - `notes text`,
+  - `completed_at timestamptz nullable`,
+  - `updated_at timestamptz`,
+  - unique key on (`user_id`, `guide_slug`, `session_number`).
 - `goals`:
   - `id uuid primary key`,
   - `user_id uuid`,
@@ -349,6 +413,9 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `account_claim_started`,
   - `account_claim_completed`,
   - `library_viewed`,
+  - `library_tab_switched`,
+  - `item_preview_opened`,
+  - `item_download_started`,
   - `resume_clicked`,
   - `progress_synced`,
   - `sync_failed`,
@@ -538,13 +605,15 @@ For this task, delivery should follow strict one-step guidance when owner action
 2. Implement auth/session wiring and guarded `My Library` route.
 3. Implement Stripe checkout API + webhook idempotent fulfillment.
 4. Implement entitlements query layer + owned/not-owned UI sections.
-5. Implement free-course progress server sync migration path.
-6. Implement paid interactive guide state + sync endpoints.
-7. Implement Stripe portal link and support link on owned cards.
-8. Implement goals MVP UI/state with achievement state.
-9. Implement data export/delete endpoints and UI entry points.
-10. Implement analytics events + operational logs for entitlement/progress flows.
-11. Add/update tests, run `npm run verify`, complete manual QA matrix.
+5. Implement `My Library` + `Explore More` tabs and mobile preview/download actions.
+6. Implement free-course progress server sync migration path.
+7. Implement paid interactive guide state + sync endpoints.
+8. Implement `0-1000m` interactive 20-session web plan (checkboxes + notes + completion).
+9. Implement Stripe portal link and support link on owned cards.
+10. Implement goals MVP UI/state with achievement state.
+11. Implement data export/delete endpoints and UI entry points.
+12. Implement analytics events + operational logs for entitlement/progress flows.
+13. Add/update tests, run `npm run verify`, complete manual QA matrix.
 
 At each phase:
 
