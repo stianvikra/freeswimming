@@ -127,6 +127,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `Owned` section,
   - `Explore More` section,
   - checkout CTA for not-owned products.
+- `/plans` paid-offers hub route is implemented:
+  - product cards for all paid offers,
+  - checkout CTA wiring to `/api/checkout/session`,
+  - empty/error recovery state when product env configuration is incomplete.
 - Guest purchase attach-by-email on sign-in is implemented.
 - Auth abuse controls are implemented:
   - request/verify rate limits,
@@ -137,7 +141,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ### Outstanding (blocking move to `done`)
 
 - Missing routes from architecture contract:
-  - `/plans`,
   - `/claim`,
   - `/guides/0-1000m` interactive guide.
 - Missing API endpoints from architecture contract:
@@ -170,7 +173,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Next Delivery Order (Execution)
 
 1. Commerce completion slice:
-   - implement `/plans`,
    - implement `/api/portal`,
    - implement `/api/download/resend`,
    - update `/checkout/success` with immediate download + confirmation UX.
@@ -198,7 +200,8 @@ Users can start instantly in guest mode, buy optional paid products without acco
     - free-course progress resume across devices when signed in (server-backed),
     - paid guide progress resume (interactive guide),
     - owned item preview/download/re-download from `My Library` item detail,
-    - `/plans`, `/claim`, and data export/delete user flows.
+    - `/plans` final UX sweep on mobile + desktop preview,
+    - `/claim`, and data export/delete user flows.
   - browsers/devices:
     - iOS Safari (phone),
     - Android Chromium (phone),
