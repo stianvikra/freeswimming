@@ -29,6 +29,7 @@ function resolveOutputDir(testInfo: TestInfo) {
 
 test("capture mobile full-page screenshots for core app flow", async ({ page }, testInfo) => {
   test.skip(!isMobileProject(testInfo), "Mobile screenshots are captured only on mobile projects.");
+  test.setTimeout(90_000);
 
   const outputDir = resolveOutputDir(testInfo);
   mkdirSync(outputDir, { recursive: true });

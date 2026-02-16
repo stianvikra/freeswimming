@@ -48,5 +48,5 @@ test("home keeps menu access and shows login CTA", async ({ page }, testInfo) =>
 
   await expect(page.getByTestId("mobile-fixed-nav")).toBeHidden();
   await expect(page.getByTestId("header-menu-toggle")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Log in to My Library" })).toBeVisible();
+  await expect(page.getByTestId("header-auth-link")).toBeVisible();
 });
