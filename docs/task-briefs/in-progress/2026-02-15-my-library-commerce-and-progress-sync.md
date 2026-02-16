@@ -704,6 +704,19 @@ At each phase:
 - Branch safety:
   - push checkpoint commits to remote branch after major milestones so work survives local interruption.
 
+## Implementation Checkpoint Log (In Progress)
+
+- `2026-02-16` | `44cecac` | completed core implementation through:
+  - Supabase schema + RLS baseline,
+  - auth/session wiring + guarded `My Library`,
+  - Stripe checkout + webhook fulfillment,
+  - library owned/explore rendering,
+  - auto-attach guest purchases by email on sign-in.
+- `2026-02-16` | `working tree (uncommitted)` | added auth resilience improvements:
+  - sign-in page now supports both magic-link and one-time code entry,
+  - callback now handles both `code` and `token_hash + type` verification paths,
+  - fallback error copy updated to guide users toward code-based recovery.
+
 ## Prompt Wrapper For This Brief
 
 Use this prompt to execute the brief with the required communication style:
