@@ -740,6 +740,34 @@ At each phase:
   - added sign-in request and code verification rate limits (IP + hashed email), with Upstash support and safe in-memory fallback,
   - replaced raw provider auth errors with user-friendly cooldown/generic messages to improve UX and reduce abuse signal leakage.
 
+## Security Hardening Follow-Up Tracker
+
+### Completed In This Brief
+
+- `75ef38c`: auth request rate limits added for sign-in email requests (IP + hashed email).
+- `75ef38c`: auth verify rate limits added for sign-in code attempts (IP + hashed email).
+- `75ef38c`: auth error UX hardened to friendly/generic cooldown copy (reduced provider leakage to user-facing UI).
+- `75ef38c`: env access helper fixed for `NEXT_PUBLIC_*` runtime safety in client/server contexts.
+
+### Deferred (Required Before "done" Or Immediately After Launch)
+
+- Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in Vercel `Development`, `Preview`, and `Production`.
+- Verify live rate-limit behavior in preview/prod logs (confirm block + cooldown UX on abuse pattern).
+- Add progressive challenge (Cloudflare Turnstile) only when suspicious behavior threshold is met.
+- Add auth abuse observability baseline (simple counters + alert rule for sustained auth abuse spikes).
+
+### Trigger For Turnstile Activation
+
+- Any of the following sustained for >= `24h`:
+- repeated auth request bursts from limited IP/email pools despite rate limits,
+- elevated sign-in provider throttling events impacting normal users,
+- materially increased `429` rate on auth endpoints relative to baseline.
+
+### Mandatory Prompt Before Moving Brief To `done`
+
+- `Have we configured Upstash in all Vercel environments and verified it with a live auth cooldown test?`
+- `Do current auth abuse metrics require enabling progressive Turnstile now, or can it remain deferred with monitoring?`
+
 ## Prompt Wrapper For This Brief
 
 Use this prompt to execute the brief with the required communication style:
