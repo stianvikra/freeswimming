@@ -204,9 +204,9 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 - Guest mode reassurance:
   - `No account needed to start.`
-- Sign-in token request CTA:
-  - `Request login token`
-- Sign-in form behavior after token sent:
+- Sign-in code request CTA:
+  - `Request login code`
+- Sign-in form behavior after code email sent:
   - do not duplicate email inputs,
   - keep a single visible email field (read-only) and one code input,
   - keep `Sign in with code` as primary (blue) CTA.
@@ -724,7 +724,7 @@ At each phase:
   - callback now handles both `code` and `token_hash + type` verification paths,
   - fallback error copy updated to guide users toward code-based recovery.
 - `2026-02-16` | `1172c41` | sign-in UX refinement:
-  - changed CTA to `Request login token`,
+  - changed CTA to `Request login code`,
   - removed duplicate email inputs in post-send state,
   - made `Sign in with code` primary blue button.
 - `2026-02-16` | `1172c41` | library/home continuity UX refinement:

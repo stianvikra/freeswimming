@@ -34,7 +34,7 @@ export default async function SignInPage({ searchParams }: Props) {
 
           {sent ? (
             <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              Sign-in email sent. Open the newest link, or enter the code below.
+              Sign-in email sent. Enter the code below.
             </p>
           ) : null}
 
@@ -66,13 +66,7 @@ export default async function SignInPage({ searchParams }: Props) {
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
                   />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
-                  <button
-                    type="submit"
-                    className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-                  >
-                    Sign in with code
-                  </button>
+                <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
                   <div>
                     <label htmlFor="code" className="mb-2 block text-sm font-medium text-slate-700">
                       Sign-in code
@@ -83,11 +77,18 @@ export default async function SignInPage({ searchParams }: Props) {
                       type="text"
                       inputMode="numeric"
                       autoComplete="one-time-code"
+                      autoFocus
                       required
                       className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
                       placeholder="123456"
                     />
                   </div>
+                  <button
+                    type="submit"
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                  >
+                    Sign in with code
+                  </button>
                 </div>
               </form>
 
@@ -98,7 +99,7 @@ export default async function SignInPage({ searchParams }: Props) {
                   type="submit"
                   className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                 >
-                  Request new login token
+                  Request new login code
                 </button>
               </form>
             </div>
@@ -124,7 +125,7 @@ export default async function SignInPage({ searchParams }: Props) {
                 type="submit"
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
               >
-                Request login token
+                Request login code
               </button>
             </form>
           )}
