@@ -731,11 +731,14 @@ At each phase:
   - `My Library` now includes a `Continue Free Course` card that resumes from saved lesson on this device,
   - home now includes a discrete `Log in to My Library` CTA,
   - mobile home now keeps hamburger menu accessible for direct navigation.
-- `2026-02-16` | `working tree (uncommitted)` | auth-state clarity refinement:
+- `2026-02-16` | `3aa4c47` | auth-state clarity refinement:
   - `/auth/sign-in` now redirects immediately to the safe `next` path when user is already signed in,
   - home CTA now changes to `Open My Library` when user already has an active session.
-- `2026-02-16` | `working tree (uncommitted)` | signed-in visibility refinement:
+- `2026-02-16` | `3aa4c47` | signed-in visibility refinement:
   - top header now shows a signed-in status chip/dot linking to `My Library` whenever a session is active.
+- `2026-02-16` | `working tree (uncommitted)` | auth abuse protection refinement:
+  - added sign-in request and code verification rate limits (IP + hashed email), with Upstash support and safe in-memory fallback,
+  - replaced raw provider auth errors with user-friendly cooldown/generic messages to improve UX and reduce abuse signal leakage.
 
 ## Prompt Wrapper For This Brief
 
