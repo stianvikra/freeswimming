@@ -106,15 +106,99 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - `npm run test:e2e`
 - `npm run build`
 
+## Current Delivery Status (2026-02-16)
+
+### Implemented (verified)
+
+- Supabase schema + RLS baseline is implemented and committed in:
+  - `supabase/migrations/20260216141500_my_library_schema.sql`
+- Typed DB contract exists in:
+  - `types/database.ts`
+- Auth/session baseline is implemented:
+  - `/auth/sign-in` (code-first UX),
+  - `/auth/callback` token/code handling,
+  - guarded `My Library` access.
+- Stripe checkout + webhook entitlement fulfillment is implemented:
+  - `/api/checkout/session`,
+  - `/api/stripe/webhook`,
+  - idempotent entitlement write by `stripe_checkout_session_id`.
+- `My Library` page exists with:
+  - signed-in state,
+  - `Owned` section,
+  - `Explore More` section,
+  - checkout CTA for not-owned products.
+- Guest purchase attach-by-email on sign-in is implemented.
+- Auth abuse controls are implemented:
+  - request/verify rate limits,
+  - cooldown messaging,
+  - Upstash support with in-memory fallback.
+- Soft-launch public UX exists with under-construction banner.
+
+### Outstanding (blocking move to `done`)
+
+- Missing routes from architecture contract:
+  - `/plans`,
+  - `/claim`,
+  - `/guides/0-1000m` interactive guide.
+- Missing API endpoints from architecture contract:
+  - `/api/portal`,
+  - `/api/download/resend`,
+  - `/api/progress/course`,
+  - `/api/progress/guide`,
+  - `/api/user/export`,
+  - `/api/user/delete`.
+- `My Library` item detail is still placeholder text:
+  - preview/download/re-download behavior not implemented yet.
+- Checkout success criteria is only partially met:
+  - page currently shows processing state, but not immediate download action.
+- Progress sync criteria is not met yet:
+  - free course still writes to local storage only,
+  - no server progress sync on second device.
+- Guest progress-safety milestone prompt (exactly after 3 completed lessons) is not implemented.
+- Goals MVP UI/state flow is not implemented.
+- Analytics/KPI event pipeline is not implemented.
+- GDPR operational requirements are not complete:
+  - export/delete endpoints missing,
+  - rights workflow + privacy/cookie disclosure updates not completed in app docs/routes.
+- Library tab contract decision required:
+  - implement explicit query tabs (`?tab=library|explore`) or revise contract to section layout.
+- Security follow-up items remain deferred:
+  - live rate-limit verification,
+  - progressive Turnstile gate,
+  - auth abuse observability baseline.
+
+## Next Delivery Order (Execution)
+
+1. Commerce completion slice:
+   - implement `/plans`,
+   - implement `/api/portal`,
+   - implement `/api/download/resend`,
+   - update `/checkout/success` with immediate download + confirmation UX.
+2. Progress sync slice:
+   - implement `/api/progress/course` and wire course writes/reads to Supabase for signed-in users,
+   - implement `/api/progress/guide` baseline contract.
+3. Library/content slice:
+   - implement `/guides/0-1000m` interactive 20-session plan,
+   - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
+   - implement guest milestone backup prompt at lesson 3.
+4. Trust/ops slice:
+   - implement `/api/user/export` + `/api/user/delete`,
+   - implement analytics event contract baseline,
+   - close GDPR/privacy/cookie documentation and operational runbook items.
+
 ## Manual QA Environments
 
 - Local environment:
   - URL: `http://127.0.0.1:3000`
-  - flows tested:
+  - current verified manual checks:
     - buy flow -> webhook fulfilled entitlement -> `My Library` visible,
-    - free-course progress resume across sign-in/sign-out states,
-    - paid guide progress resume,
-    - `Owned`/`Not Owned` ordering and CTA clarity.
+    - sign-in code flow + cooldown UX,
+    - soft-launch under-construction banner visibility on public routes.
+  - remaining manual checks (after pending implementation):
+    - free-course progress resume across devices when signed in (server-backed),
+    - paid guide progress resume (interactive guide),
+    - owned item preview/download/re-download from `My Library` item detail,
+    - `/plans`, `/claim`, and data export/delete user flows.
   - browsers/devices:
     - iOS Safari (phone),
     - Android Chromium (phone),
@@ -662,16 +746,21 @@ npx supabase start
 
 1. **Foundation (Week 1-2)**
    - auth, DB schema, Stripe checkout + webhook, entitlement persistence.
+   - status: `done`.
 2. **Library (Week 2-3)**
    - `My Library` page, owned/not-owned sections, receipt portal link, support links.
+   - status: `in-progress` (owned/explore done; portal/support/download actions pending).
 3. **Progress (Week 3-4)**
    - free-course progress sync migration from localStorage,
    - paid interactive guide progress sync.
+   - status: `not started`.
 4. **Trust + QA (Week 4)**
    - data export/delete controls, tests, accessibility polish, verify gate.
+   - status: `in-progress` (partial auth hardening done; export/delete/GDPR workflow pending).
 5. **Monetization Expansion (Post-MVP)**
    - enable `M1` first behind flag and observe KPIs,
    - if stable, enable `M2`, then `M3`.
+   - status: `deferred until MVP gate`.
 
 ## Step-By-Step Delivery Plan (Agent Execution)
 
@@ -739,7 +828,7 @@ At each phase:
 - `2026-02-16` | `75ef38c` | auth abuse protection refinement:
   - added sign-in request and code verification rate limits (IP + hashed email), with Upstash support and safe in-memory fallback,
   - replaced raw provider auth errors with user-friendly cooldown/generic messages to improve UX and reduce abuse signal leakage.
-- `2026-02-16` | `working-tree` | auth cooldown UX + cadence refinement:
+- `2026-02-16` | `ce9e82e` | auth cooldown UX + cadence refinement (merged via PR #19):
   - sign-in cooldown now returns `cooldownUntil` and the error banner counts down live in the UI (no manual refresh needed),
   - added stepped per-email resend cadence for login code requests (`30s` -> `60s` -> `5m`) while retaining hard anti-abuse limits.
 - `2026-02-16` | `ec8d2fb` | soft-launch public UX refinement:
@@ -747,7 +836,7 @@ At each phase:
   - added a utility footer on public routes with clear `Login/My Library` and `Contact` actions,
   - made header auth action explicit (`Login` when signed out, `My Library` when signed in) to improve navigation clarity,
   - increased mobile screenshot E2E timeout to avoid false failures while capturing full-page core-flow snapshots.
-- `2026-02-16` | `working-tree` | soft-launch simplification per owner direction:
+- `2026-02-16` | `7cd6190` | soft-launch simplification per owner direction (merged via PR #21):
   - replaced `Public beta` copy with a simple `under construction` banner on public routes,
   - removed extra banner CTA buttons (`Login`, `Programs`) to reduce noise,
   - removed the temporary utility footer links (`Login`, `Contact`),
@@ -761,8 +850,8 @@ At each phase:
 - `75ef38c`: auth verify rate limits added for sign-in code attempts (IP + hashed email).
 - `75ef38c`: auth error UX hardened to friendly/generic cooldown copy (reduced provider leakage to user-facing UI).
 - `75ef38c`: env access helper fixed for `NEXT_PUBLIC_*` runtime safety in client/server contexts.
-- `working-tree`: cooldown error now includes live countdown behavior via `cooldownUntil` parameter.
-- `working-tree`: login code resend cadence now uses progressive cooldown (`30s`, `60s`, then `5m`) for better UX and lower provider abuse risk.
+- `ce9e82e` (includes PR #19 scope): cooldown error now includes live countdown behavior via `cooldownUntil` parameter.
+- `ce9e82e` (includes PR #19 scope): login code resend cadence now uses progressive cooldown (`30s`, `60s`, then `5m`) for better UX and lower provider abuse risk.
 
 ### Deferred (Required Before "done" Or Immediately After Launch)
 
