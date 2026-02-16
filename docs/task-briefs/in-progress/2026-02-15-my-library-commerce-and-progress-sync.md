@@ -81,6 +81,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Purchased items can be opened, previewed on mobile, and re-downloaded from `My Library`.
 - `0-1000m` has both PDF and interactive web plan with 20 sessions, per-session checkbox completion, and notes.
 - Signed-in progress writes are persisted to Supabase and visible on second device after sign-in.
+- Database and RLS schema changes are tracked as versioned SQL migrations committed in this repository.
 - Receipt/invoice self-service path is available through Stripe customer portal link.
 - Data export and delete requests for app-owned user data are available and documented.
 - GDPR rights workflow exists for access/export/delete requests with operational response target <= `30 days`.
@@ -275,6 +276,18 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - isolate auth and data access behind service/repository modules,
   - avoid vendor-specific logic spread across UI components,
   - keep Stripe entitlement logic independent from auth vendor SDK.
+
+## Lock-In Mitigation Contract (Required)
+
+- Business logic boundaries:
+  - keep core purchase/progress/entitlement logic in app services, not in Supabase-specific UI code.
+- Data access boundaries:
+  - use a thin repository/data-access layer between routes/services and Supabase client.
+- Schema ownership:
+  - keep DB schema, indexes, and RLS policies in versioned SQL migrations committed to repo.
+- Vendor feature scope:
+  - avoid unnecessary Supabase-only features in core flows when equivalent portable patterns exist.
+  - if a Supabase-specific feature is introduced, document why and define migration fallback.
 
 ## Owner Inputs Required Before Implementation
 
