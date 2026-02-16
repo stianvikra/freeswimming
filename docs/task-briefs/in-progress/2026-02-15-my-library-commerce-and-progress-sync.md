@@ -719,15 +719,15 @@ At each phase:
   - Stripe checkout + webhook fulfillment,
   - library owned/explore rendering,
   - auto-attach guest purchases by email on sign-in.
-- `2026-02-16` | `working tree (uncommitted)` | added auth resilience improvements:
+- `2026-02-16` | `7f291be` | added auth resilience improvements:
   - sign-in page now supports both magic-link and one-time code entry,
   - callback now handles both `code` and `token_hash + type` verification paths,
   - fallback error copy updated to guide users toward code-based recovery.
-- `2026-02-16` | `working tree (uncommitted)` | sign-in UX refinement:
+- `2026-02-16` | `1172c41` | sign-in UX refinement:
   - changed CTA to `Request login token`,
   - removed duplicate email inputs in post-send state,
   - made `Sign in with code` primary blue button.
-- `2026-02-16` | `working tree (uncommitted)` | library/home continuity UX refinement:
+- `2026-02-16` | `1172c41` | library/home continuity UX refinement:
   - `My Library` now includes a `Continue Free Course` card that resumes from saved lesson on this device,
   - home now includes a discrete `Log in to My Library` CTA,
   - mobile home now keeps hamburger menu accessible for direct navigation.
