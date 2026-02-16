@@ -3,6 +3,12 @@
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  formatLoginCodeCooldownMessage,
+  getMagicLinkCadenceCooldownMs,
+  MAGIC_LINK_CADENCE_WINDOW_MS,
+  toRetrySeconds,
+} from "@/lib/auth/magic-link-cooldown";
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -14,9 +20,9 @@ function buildSignInPath(nextPath: string, params: Record<string, string>) {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAGIC_LINK_IP_WINDOW_MS = 60_000;
-const MAGIC_LINK_IP_MAX = 8;
+const MAGIC_LINK_IP_MAX = 12;
 const MAGIC_LINK_EMAIL_WINDOW_MS = 10 * 60_000;
-const MAGIC_LINK_EMAIL_MAX = 4;
+const MAGIC_LINK_EMAIL_MAX = 12;
 const SIGN_IN_CODE_IP_WINDOW_MS = 5 * 60_000;
 const SIGN_IN_CODE_IP_MAX = 12;
 const SIGN_IN_CODE_EMAIL_WINDOW_MS = 10 * 60_000;
@@ -42,6 +48,8 @@ type RateLimitRule = {
 };
 
 const authHits = new Map<string, { count: number; resetAt: number }>();
+const authCooldownLocks = new Map<string, number>();
+const authCooldownCounters = new Map<string, { count: number; resetAt: number }>();
 let hasLoggedUpstashFallback = false;
 
 function getNormalizedEmail(formData: FormData): string {
@@ -78,13 +86,47 @@ function getEmailHash(email: string): string {
   return createHash("sha256").update(email).digest("hex").slice(0, 32);
 }
 
-function formatRetrySeconds(retryAfterMs: number): number {
-  return Math.max(1, Math.ceil(retryAfterMs / 1000));
+function shouldUseUpstash(): boolean {
+  return (
+    Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN)
+  );
 }
 
-function getCooldownMessage(retryAfterMs: number): string {
-  const seconds = formatRetrySeconds(retryAfterMs);
-  return `Please wait ${seconds} second${seconds === 1 ? "" : "s"} before requesting a new login code.`;
+function logUpstashFallbackOnce(error: unknown) {
+  if (hasLoggedUpstashFallback) return;
+  hasLoggedUpstashFallback = true;
+  console.error("[Auth] Upstash rate limit failed. Falling back to in-memory.", error);
+}
+
+function getInMemoryTtlMs(store: Map<string, number>, key: string): number {
+  const resetAt = store.get(key);
+  if (!resetAt) return 0;
+
+  const ttlMs = resetAt - Date.now();
+  if (ttlMs <= 0) {
+    store.delete(key);
+    return 0;
+  }
+
+  return ttlMs;
+}
+
+function setInMemoryTtl(store: Map<string, number>, key: string, ttlMs: number): void {
+  store.set(key, Date.now() + Math.max(1, ttlMs));
+}
+
+function incrementInMemoryCounter(key: string, windowMs: number): number {
+  const now = Date.now();
+  const existing = authCooldownCounters.get(key);
+
+  if (!existing || existing.resetAt <= now) {
+    authCooldownCounters.set(key, { count: 1, resetAt: now + windowMs });
+    return 1;
+  }
+
+  existing.count += 1;
+  authCooldownCounters.set(key, existing);
+  return existing.count;
 }
 
 async function upstashCommand(parts: string[]) {
@@ -133,8 +175,7 @@ function rateLimitInMemory(rule: RateLimitRule): RateLimitResult {
 }
 
 async function rateLimit(rule: RateLimitRule): Promise<RateLimitResult> {
-  const useUpstash =
-    Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
+  const useUpstash = shouldUseUpstash();
 
   if (!useUpstash) {
     return rateLimitInMemory(rule);
@@ -169,12 +210,67 @@ async function rateLimit(rule: RateLimitRule): Promise<RateLimitResult> {
       resetAt,
     };
   } catch (error) {
-    if (!hasLoggedUpstashFallback) {
-      hasLoggedUpstashFallback = true;
-      console.error("[Auth] Upstash rate limit failed. Falling back to in-memory.", error);
+    logUpstashFallbackOnce(error);
+    return rateLimitInMemory(rule);
+  }
+}
+
+async function getCooldownTtlMs(key: string): Promise<number> {
+  if (!shouldUseUpstash()) {
+    return getInMemoryTtlMs(authCooldownLocks, key);
+  }
+
+  try {
+    const ttlMs = Number(await upstashCommand(["PTTL", key]));
+    if (!Number.isFinite(ttlMs) || ttlMs <= 0) return 0;
+    return ttlMs;
+  } catch (error) {
+    logUpstashFallbackOnce(error);
+    return getInMemoryTtlMs(authCooldownLocks, key);
+  }
+}
+
+async function setCooldownTtl(key: string, ttlMs: number): Promise<void> {
+  const safeTtlMs = Math.max(1, ttlMs);
+  if (!shouldUseUpstash()) {
+    setInMemoryTtl(authCooldownLocks, key, safeTtlMs);
+    return;
+  }
+
+  try {
+    await upstashCommand(["SET", key, "1", "PX", String(safeTtlMs)]);
+  } catch (error) {
+    logUpstashFallbackOnce(error);
+    setInMemoryTtl(authCooldownLocks, key, safeTtlMs);
+  }
+}
+
+async function incrementCooldownCounter(key: string, windowMs: number): Promise<number> {
+  if (!shouldUseUpstash()) {
+    return incrementInMemoryCounter(key, windowMs);
+  }
+
+  try {
+    const countRaw = await upstashCommand(["INCR", key]);
+    const count = Number(countRaw);
+    if (!Number.isFinite(count)) {
+      throw new Error("Invalid INCR response");
     }
 
-    return rateLimitInMemory(rule);
+    let ttlMs = Number(await upstashCommand(["PTTL", key]));
+    if (!Number.isFinite(ttlMs) || ttlMs < 0 || count === 1) {
+      await upstashCommand(["PEXPIRE", key, String(windowMs)]);
+      ttlMs = windowMs;
+    }
+
+    if (ttlMs <= 0) {
+      await upstashCommand(["PEXPIRE", key, String(windowMs)]);
+    }
+
+    return count;
+  } catch (error) {
+    logUpstashFallbackOnce(error);
+    return incrementInMemoryCounter(key, windowMs);
   }
 }
 
@@ -203,6 +299,18 @@ export async function requestMagicLink(formData: FormData) {
   const headerStore = await headers();
   const clientIp = getClientIp(headerStore);
   const emailHash = getEmailHash(email);
+  const cooldownLockKey = `rate:auth:magic-link:cooldown:${emailHash}`;
+  const activeCooldownMs = await getCooldownTtlMs(cooldownLockKey);
+  if (activeCooldownMs > 0) {
+    redirect(
+      buildSignInPath(nextPath, {
+        error: formatLoginCodeCooldownMessage(activeCooldownMs),
+        cooldownUntil: String(Date.now() + activeCooldownMs),
+        email,
+      })
+    );
+  }
+
   const limitResult = await enforceRateLimitSet([
     {
       key: `rate:auth:magic-link:ip:${clientIp}`,
@@ -219,7 +327,8 @@ export async function requestMagicLink(formData: FormData) {
   if (!limitResult.ok) {
     redirect(
       buildSignInPath(nextPath, {
-        error: getCooldownMessage(limitResult.retryAfterMs),
+        error: formatLoginCodeCooldownMessage(limitResult.retryAfterMs),
+        cooldownUntil: String(Date.now() + limitResult.retryAfterMs),
         email,
       })
     );
@@ -241,6 +350,7 @@ export async function requestMagicLink(formData: FormData) {
       redirect(
         buildSignInPath(nextPath, {
           error: "Please wait about a minute before requesting a new login code.",
+          cooldownUntil: String(Date.now() + 60_000),
           email,
         })
       );
@@ -258,6 +368,14 @@ export async function requestMagicLink(formData: FormData) {
       })
     );
   }
+
+  const cadenceCounterKey = `rate:auth:magic-link:cadence:${emailHash}`;
+  const cadenceCount = await incrementCooldownCounter(
+    cadenceCounterKey,
+    MAGIC_LINK_CADENCE_WINDOW_MS
+  );
+  const cadenceCooldownMs = getMagicLinkCadenceCooldownMs(cadenceCount);
+  await setCooldownTtl(cooldownLockKey, cadenceCooldownMs);
 
   redirect(buildSignInPath(nextPath, { sent: "1", email }));
 }
@@ -302,7 +420,8 @@ export async function verifySignInCode(formData: FormData) {
   if (!limitResult.ok) {
     redirect(
       buildSignInPath(nextPath, {
-        error: `Too many sign-in attempts. Wait ${formatRetrySeconds(limitResult.retryAfterMs)} seconds and try again.`,
+        error: `Too many sign-in attempts. Wait ${toRetrySeconds(limitResult.retryAfterMs)} seconds and try again.`,
+        cooldownUntil: String(Date.now() + limitResult.retryAfterMs),
         sent: "1",
         email,
       })

@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   fallback.searchParams.set("next", nextPath);
   fallback.searchParams.set(
     "error",
-    "Could not verify sign-in link. Request a new link, or use the email sign-in code."
+    "Could not verify sign-in. Request a new login code and try again."
   );
 
   return NextResponse.redirect(fallback);

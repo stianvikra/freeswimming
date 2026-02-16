@@ -739,6 +739,9 @@ At each phase:
 - `2026-02-16` | `75ef38c` | auth abuse protection refinement:
   - added sign-in request and code verification rate limits (IP + hashed email), with Upstash support and safe in-memory fallback,
   - replaced raw provider auth errors with user-friendly cooldown/generic messages to improve UX and reduce abuse signal leakage.
+- `2026-02-16` | `working-tree` | auth cooldown UX + cadence refinement:
+  - sign-in cooldown now returns `cooldownUntil` and the error banner counts down live in the UI (no manual refresh needed),
+  - added stepped per-email resend cadence for login code requests (`30s` -> `60s` -> `5m`) while retaining hard anti-abuse limits.
 
 ## Security Hardening Follow-Up Tracker
 
@@ -748,10 +751,11 @@ At each phase:
 - `75ef38c`: auth verify rate limits added for sign-in code attempts (IP + hashed email).
 - `75ef38c`: auth error UX hardened to friendly/generic cooldown copy (reduced provider leakage to user-facing UI).
 - `75ef38c`: env access helper fixed for `NEXT_PUBLIC_*` runtime safety in client/server contexts.
+- `working-tree`: cooldown error now includes live countdown behavior via `cooldownUntil` parameter.
+- `working-tree`: login code resend cadence now uses progressive cooldown (`30s`, `60s`, then `5m`) for better UX and lower provider abuse risk.
 
 ### Deferred (Required Before "done" Or Immediately After Launch)
 
-- Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in Vercel `Development`, `Preview`, and `Production`.
 - Verify live rate-limit behavior in preview/prod logs (confirm block + cooldown UX on abuse pattern).
 - Add progressive challenge (Cloudflare Turnstile) only when suspicious behavior threshold is met.
 - Add auth abuse observability baseline (simple counters + alert rule for sustained auth abuse spikes).

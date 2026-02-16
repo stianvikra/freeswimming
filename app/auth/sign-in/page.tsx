@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import AuthErrorNotice from "@/components/auth/AuthErrorNotice";
 import SiteChrome from "@/components/SiteChrome";
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import { requestMagicLink, verifySignInCode } from "@/app/auth/sign-in/actions";
@@ -13,7 +14,7 @@ type Props = {
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description: "Sign in with a magic link or one-time code to access My Library.",
+  description: "Sign in with a one-time login code to access My Library.",
 };
 
 export default async function SignInPage({ searchParams }: Props) {
@@ -29,6 +30,9 @@ export default async function SignInPage({ searchParams }: Props) {
   }
 
   const error = typeof params.error === "string" ? params.error : "";
+  const cooldownUntilRaw =
+    typeof params.cooldownUntil === "string" ? Number(params.cooldownUntil) : NaN;
+  const cooldownUntil = Number.isFinite(cooldownUntilRaw) ? cooldownUntilRaw : null;
   const sent = params.sent === "1";
   const email = typeof params.email === "string" ? params.email : "";
   const tokenMode = sent && email.length > 0;
@@ -39,8 +43,7 @@ export default async function SignInPage({ searchParams }: Props) {
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Sign in to My Library</h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Enter your email and we&apos;ll send a one-time sign-in email. If the link opens in a
-            different browser, you can still sign in with the code from the email.
+            Enter your email and we&apos;ll send an e-mail with your one-time login code.
           </p>
 
           {sent ? (
@@ -49,11 +52,7 @@ export default async function SignInPage({ searchParams }: Props) {
             </p>
           ) : null}
 
-          {error ? (
-            <p className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {error}
-            </p>
-          ) : null}
+          {error ? <AuthErrorNotice message={error} cooldownUntilMs={cooldownUntil} /> : null}
 
           {tokenMode ? (
             <div className="mt-6 space-y-4">
