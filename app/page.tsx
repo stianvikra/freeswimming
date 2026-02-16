@@ -1,12 +1,20 @@
-// app/page.tsx
-"use client";
-
 import Image from "next/image";
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import ActionButton from "@/components/ActionButton";
+import PressLink from "@/components/ui/PressLink";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const authHref = user ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
+  const authLabel = user ? "Open My Library" : "Log in to My Library";
+
   return (
     <SiteChrome>
       {/* Home = top level → no back button */}
@@ -82,6 +90,16 @@ export default function HomePage() {
               variant="secondary"
               compact
             />
+          </div>
+
+          <div className="mt-3 flex items-center justify-center">
+            <PressLink
+              tier="nav"
+              href={authHref}
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white/90 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {authLabel}
+            </PressLink>
           </div>
         </div>
       </PageTemplate>

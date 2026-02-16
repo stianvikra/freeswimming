@@ -37,3 +37,16 @@ test("mobile fixed nav uses link semantics and menu toggles with Escape", async 
   await expect(drawer).toBeHidden();
   await expect(menu).toHaveAttribute("aria-pressed", "false");
 });
+
+test("home keeps menu access and shows login CTA", async ({ page }, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Home mobile navigation behavior is validated only on mobile projects."
+  );
+
+  await page.goto("/");
+
+  await expect(page.getByTestId("mobile-fixed-nav")).toBeHidden();
+  await expect(page.getByTestId("header-menu-toggle")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Log in to My Library" })).toBeVisible();
+});

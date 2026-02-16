@@ -28,4 +28,8 @@ jobs:
         run: npx playwright install --with-deps chromium webkit firefox
 
       - name: Run verification suite
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.com
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
         run: npm run verify

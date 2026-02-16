@@ -29,6 +29,7 @@ import {
   parseStoredTimestamp,
   shouldShowAutoInstallPrompt,
 } from "@/components/install/install-rules";
+import { COURSE_LAST_LESSON_STORAGE_KEY } from "@/lib/course/resume";
 
 import {
   COURSE_MODULES,
@@ -39,7 +40,7 @@ import {
   type CourseLesson,
 } from "./courseData";
 
-const STORAGE_KEY = "fs_course_last_lesson";
+const STORAGE_KEY = COURSE_LAST_LESSON_STORAGE_KEY;
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 const DONE_STORAGE_KEY = "fs_course_done_lessons";
 const VIDEO_PROGRESS_STORAGE_KEY = "fs_course_video_progress";

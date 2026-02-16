@@ -7,6 +7,7 @@ export type MainMenuItem = {
 export const MAIN_MENU_ITEMS: MainMenuItem[] = [
   { href: "/", title: "Home", subtitle: "Back to start" },
   { href: "/course", title: "Free Course", subtitle: "Modules & lessons" },
+  { href: "/my-library", title: "My Library", subtitle: "Owned content & resume" },
   { href: "/programs", title: "Swim Programs", subtitle: "Structured plans & PDFs" },
   { href: "/analysis", title: "Video Analysis", subtitle: "Personal feedback — optional" },
   { href: "/our-method", title: "Our Method", subtitle: "Learn. Drill. Swim." },

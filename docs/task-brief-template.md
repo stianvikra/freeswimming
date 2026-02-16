@@ -131,6 +131,19 @@ Define how work remains recoverable if chat/session context is lost.
   2. `git log --oneline -n 10`
   3. reopen task brief and continue from recorded next step.
 
+## Implementation Checkpoint Log (Required For In-Progress Briefs)
+
+Add a running log section in each in-progress brief so status survives chat loss.
+
+- format per line:
+  - `<YYYY-MM-DD> | <commit-hash or "working tree"> | <completed scope> | <next step>`
+- minimum cadence:
+  - add/update log after each meaningful milestone,
+  - add/update before any pause/handoff.
+- include both:
+  - latest pushed checkpoint,
+  - any important uncommitted working-tree changes (if present).
+
 ## Completion Record (fill when done)
 
 - `PR`: link to merged PR
