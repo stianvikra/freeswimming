@@ -11,6 +11,7 @@ import MobileSegmentedNav, {
   type MobileSegmentedNavItem,
 } from "@/components/ui/MobileSegmentedNav";
 import { MAIN_MENU_ITEMS } from "@/components/navigation/mainMenuItems";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 type CustomMenu = {
   mode: "custom";
@@ -37,6 +38,29 @@ type Props = {
 
 export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const pathname = usePathname();
+  const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const supabase = createBrowserSupabaseClient();
+
+    void supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted || error) return;
+      setSignedInEmail(data.user?.email ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setSignedInEmail(session?.user?.email ?? null);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Blur active element on route change (best effort)
   useEffect(() => {
@@ -173,21 +197,47 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             <span className="font-semibold tracking-[0.01em] text-white">freeswimming.org</span>
           </PressLink>
 
-          <PressButton
-            tier="icon"
-            data-testid="header-menu-toggle"
-            onClick={toggleMenu}
-            className={[
-              "rounded-xl px-3 py-2 text-white/95",
-              "[--ui-focus-ring:rgba(255,255,255,0.56)]",
-              "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/10",
-              hideHamburgerOnMobile ? "hidden sm:inline-flex" : "inline-flex",
-            ].join(" ")}
-            aria-label={customMenu?.ariaLabel ?? "Toggle menu"}
-            aria-expanded={isMenuOpen}
-          >
-            <span className="text-2xl leading-none">≡</span>
-          </PressButton>
+          <div className="flex items-center gap-2">
+            {signedInEmail ? (
+              <>
+                <PressLink
+                  tier="nav"
+                  href="/my-library"
+                  aria-label="Signed in. Open My Library."
+                  title={signedInEmail}
+                  className="hidden items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex"
+                >
+                  <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                  <span>Signed in</span>
+                </PressLink>
+                <PressLink
+                  tier="nav"
+                  href="/my-library"
+                  aria-label="Signed in. Open My Library."
+                  title={signedInEmail}
+                  className="bg-white/12 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/35 text-white sm:hidden"
+                >
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                </PressLink>
+              </>
+            ) : null}
+
+            <PressButton
+              tier="icon"
+              data-testid="header-menu-toggle"
+              onClick={toggleMenu}
+              className={[
+                "rounded-xl px-3 py-2 text-white/95",
+                "[--ui-focus-ring:rgba(255,255,255,0.56)]",
+                "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/10",
+                hideHamburgerOnMobile ? "hidden sm:inline-flex" : "inline-flex",
+              ].join(" ")}
+              aria-label={customMenu?.ariaLabel ?? "Toggle menu"}
+              aria-expanded={isMenuOpen}
+            >
+              <span className="text-2xl leading-none">≡</span>
+            </PressButton>
+          </div>
         </div>
       </header>
 

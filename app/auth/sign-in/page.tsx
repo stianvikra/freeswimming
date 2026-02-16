@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import { requestMagicLink, verifySignInCode } from "@/app/auth/sign-in/actions";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -17,6 +19,15 @@ export const metadata: Metadata = {
 export default async function SignInPage({ searchParams }: Props) {
   const params = await searchParams;
   const nextPath = getSafeNextPath(typeof params.next === "string" ? params.next : null);
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect(nextPath);
+  }
+
   const error = typeof params.error === "string" ? params.error : "";
   const sent = params.sent === "1";
   const email = typeof params.email === "string" ? params.email : "";
