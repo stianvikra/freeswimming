@@ -212,11 +212,14 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
                 aria-label={signedInEmail ? "Open My Library" : "Log in to My Library"}
                 title={signedInEmail ?? "Open sign-in"}
                 className={[
-                  "inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold shadow-[0_8px_18px_rgba(15,23,42,0.18)] backdrop-blur-sm",
+                  "inline-flex min-h-[34px] items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold backdrop-blur-md transition-colors duration-150",
                   "[--ui-focus-ring:rgba(255,255,255,0.56)]",
+                  "[@media(hover:hover)_and_(pointer:fine)]:hover:border-white/60",
+                  "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/16",
+                  "active:bg-white/20",
                   signedInEmail
-                    ? "border-emerald-200/70 bg-emerald-50/95 text-emerald-800"
-                    : "bg-white/12 border-white/45 text-white",
+                    ? "bg-emerald-300/14 border-emerald-200/35 text-emerald-50"
+                    : "border-white/38 bg-white/8 text-white/95",
                 ].join(" ")}
               >
                 {signedInEmail ? <span className="h-2 w-2 rounded-full bg-emerald-500" /> : null}
