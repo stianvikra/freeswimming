@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 export default async function CheckoutSuccessPage({ searchParams }: Props) {
   const params = await searchParams;
-  const sessionId = typeof params.session_id === "string" ? params.session_id : "";
+  const rawSessionId = typeof params.session_id === "string" ? params.session_id : "";
+  const sessionId = rawSessionId.startsWith("{") ? "" : rawSessionId;
 
   return (
     <SiteChrome>

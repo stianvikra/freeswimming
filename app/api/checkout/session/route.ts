@@ -23,9 +23,8 @@ function getSafePath(input: string | undefined, fallback: string) {
 }
 
 function getSuccessUrl(origin: string) {
-  const successUrl = new URL("/checkout/success", origin);
-  successUrl.searchParams.set("session_id", "{CHECKOUT_SESSION_ID}");
-  return successUrl.toString();
+  const successUrl = new URL("/checkout/success", origin).toString();
+  return `${successUrl}?session_id={CHECKOUT_SESSION_ID}`;
 }
 
 export async function POST(request: Request) {
