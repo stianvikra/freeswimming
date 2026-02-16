@@ -1,8 +1,11 @@
 const DEFAULT_NEXT_PATH = "/my-library";
 
-export function getSafeNextPath(input: string | null | undefined): string {
-  if (!input) return DEFAULT_NEXT_PATH;
-  if (!input.startsWith("/")) return DEFAULT_NEXT_PATH;
-  if (input.startsWith("//")) return DEFAULT_NEXT_PATH;
+export function getSafeNextPath(
+  input: string | null | undefined,
+  fallback = DEFAULT_NEXT_PATH
+): string {
+  if (!input) return fallback;
+  if (!input.startsWith("/")) return fallback;
+  if (input.startsWith("//")) return fallback;
   return input;
 }

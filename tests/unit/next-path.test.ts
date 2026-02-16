@@ -11,6 +11,11 @@ describe("getSafeNextPath", () => {
     expect(getSafeNextPath("my-library")).toBe("/my-library");
   });
 
+  it("supports a custom fallback path", () => {
+    expect(getSafeNextPath("", "/programs")).toBe("/programs");
+    expect(getSafeNextPath("https://evil.example", "/programs")).toBe("/programs");
+  });
+
   it("keeps safe relative app paths", () => {
     expect(getSafeNextPath("/my-library")).toBe("/my-library");
     expect(getSafeNextPath("/auth/sign-in?next=%2Fmy-library")).toBe(
