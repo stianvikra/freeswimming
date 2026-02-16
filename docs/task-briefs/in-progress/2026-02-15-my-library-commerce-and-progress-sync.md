@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-02-15-my-library-commerce-and-progress-sync`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-15`
-- `updated`: `2026-02-15`
+- `updated`: `2026-02-16`
 
 ## Goal
 
@@ -24,7 +24,8 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - persist entitlements in app database (server source of truth),
   - add Stripe Customer Portal link for receipts/invoice history where applicable,
   - send secure download link by email after purchase,
-  - provide `resend download link` flow without requiring account.
+  - provide `resend download link` flow without requiring account,
+  - define a post-MVP monetization expansion contract (add-ons + targeted discount offers) with strict UX and KPI guardrails.
 - Account model:
   - free course can be browsed and progressed without account (local device),
   - guest checkout is allowed (`email + payment`),
@@ -62,6 +63,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Native mobile apps.
 - Advanced gamification/social leaderboards.
 - Full marketplace/cart with multi-item checkout complexity beyond launch needs.
+- Advanced dynamic discount engine in MVP (`v1`) beyond the fixed phase-2 rules defined in this brief.
 - Major redesign outside changed routes/surfaces.
 
 ## Acceptance Criteria
@@ -141,6 +143,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Track E: `Option A` (local-first UX + debounced sync + server reconciliation).
 - Track F: `Option A` (PDF + interactive HTML).
 - Track G: `Option A` (manual goals + milestones/celebration).
+- Track H: `Option A` (phase-2 add-ons + targeted discount offers after MVP stability gate).
 
 ## GDPR Compliance Contract (V1 Baseline)
 
@@ -294,7 +297,11 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Product catalog:
   - final product names/slugs,
   - launch prices and currency,
-  - bundle policy (if any).
+  - bundle policy (if any),
+  - phase-2 upsell prices/discount windows:
+    - `M1`: `0-1000m` -> `poolside` add-on price,
+    - `M2`: `poolside` -> `0-1000m` add-on price,
+    - `M3`: `video analysis` discount percent and validity window.
 - Brand/copy:
   - final naming for paid hub heading (`Plans`, `Plans & Analysis`, or equivalent),
   - support email/URL to place on owned cards.
@@ -432,7 +439,11 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `resume_clicked`,
   - `progress_synced`,
   - `sync_failed`,
-  - `support_clicked`.
+  - `support_clicked`,
+  - `upsell_presented`,
+  - `upsell_accepted`,
+  - `upsell_declined`,
+  - `discount_redeemed`.
 - 90-day KPI targets (initial baseline can be revised after launch data):
   - checkout completion rate from started checkout >= `55%`,
   - entitlement grant latency p95 <= `10s`,
@@ -440,6 +451,38 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - support tickets for "cannot access purchase" <= `3%` of buyers.
 - Compliance guardrail:
   - analytics events must avoid direct sensitive payloads and unnecessary personal data.
+
+## Monetization Expansion Contract (Phase 2 / v1.1, Post-MVP)
+
+- Intent:
+  - increase average order value and repeat purchases without adding pre-checkout friction.
+- Enablement gate (must pass before activation):
+  - core checkout completion >= `55%` for at least 2 consecutive weeks,
+  - "cannot access purchase" support rate <= `3%` of buyers over same period.
+- Offer rollout sequence (strict order):
+  1. `M1` first: when buying `0-1000m guide`, show optional add-on `poolside guide` at `USD 19` (base `USD 29`).
+  2. `M2` second: when buying `poolside guide`, show optional add-on `0-1000m guide` at `USD 49` (base `USD 59`).
+  3. `M3` third: after any paid purchase, offer `video analysis` at `10%` off for `48h`.
+- UX guardrails (non-negotiable):
+  - offers are optional and clearly dismissible,
+  - only one upsell decision per step (no stacked modals),
+  - keep value copy concrete (`Save $10 today`) and time-bound when relevant (`Offer expires in 48h`),
+  - do not block library access or downloads behind upsell prompts.
+- Stripe implementation contract:
+  - implement `M1` and `M2` via Checkout `optional_items`,
+  - implement `M3` via server-applied discount/coupon rule at session creation,
+  - enforce eligibility server-side using entitlement state and expiry checks,
+  - respect Stripe single-discount-per-session limitation and define deterministic priority (`M3` offer first, then none).
+- Data and abuse controls:
+  - store phase-2 offer exposure/accept/decline/redemption events with stable `offer_id`,
+  - persist redemption lock to prevent repeated use of one-time discount windows per user/email.
+- Phase-2 KPI targets (first 30 days after activation):
+  - add-on attach rate for `M1` >= `8%`,
+  - checkout completion drop vs pre-upsell baseline <= `3` percentage points,
+  - AOV uplift >= `12%`,
+  - `M3` conversion within 48h window >= `5%`.
+- Feature-flag requirement:
+  - wrap each offer (`M1`, `M2`, `M3`) behind independent flags for instant rollback.
 
 ## Environment Variables (Names Only)
 
@@ -452,6 +495,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - `STRIPE_PRICE_ID_0_1000M_GUIDE`
 - `STRIPE_PRICE_ID_POOLSIDE_GUIDE`
 - `STRIPE_PRICE_ID_ANALYSIS`
+- `NEXT_PUBLIC_FS_UPSELL_M1_ENABLED` (phase 2)
+- `NEXT_PUBLIC_FS_UPSELL_M2_ENABLED` (phase 2)
+- `NEXT_PUBLIC_FS_UPSELL_M3_ENABLED` (phase 2)
+- `STRIPE_COUPON_ID_ANALYSIS_10` (phase 2)
 
 ## External Setup Runbook (Owner + Agent, Confirmation-Gated)
 
@@ -588,6 +635,12 @@ npx supabase start
 - `Option B (7/10)`: no goals in v1.
 - `Option C (8/10)`: external wearable-only goals (defer due integration overhead).
 
+### Track H: Monetization Expansion Timing
+
+- `Option A (Recommended, 10/10)`: keep upsells/discounts in phase 2 after MVP stability gate; roll out `M1` -> `M2` -> `M3`.
+- `Option B (7/10)`: launch all upsell/discount rules in MVP.
+- `Option C (8/10)`: skip upsells entirely first 90 days and optimize only baseline conversion.
+
 ## Sequencing With Existing PWA Work
 
 - `Recommended sequence`:
@@ -609,6 +662,9 @@ npx supabase start
    - paid interactive guide progress sync.
 4. **Trust + QA (Week 4)**
    - data export/delete controls, tests, accessibility polish, verify gate.
+5. **Monetization Expansion (Post-MVP)**
+   - enable `M1` first behind flag and observe KPIs,
+   - if stable, enable `M2`, then `M3`.
 
 ## Step-By-Step Delivery Plan (Agent Execution)
 
@@ -653,7 +709,7 @@ At each phase:
 Use this prompt to execute the brief with the required communication style:
 
 ```md
-Use task brief: docs/task-briefs/planned/2026-02-15-my-library-commerce-and-progress-sync.md
+Use task brief: docs/task-briefs/in-progress/2026-02-15-my-library-commerce-and-progress-sync.md
 Mode: end-to-end (implement + tests + commit + push on current branch)
 Communication: one actionable step at a time for manual/external actions; wait for my "done" before next step.
 Non-negotiables: no secrets in repo files, preserve accessibility semantics, keep current visual language, run npm run verify.
