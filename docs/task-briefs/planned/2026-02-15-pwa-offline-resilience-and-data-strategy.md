@@ -18,6 +18,12 @@ Learners should get a reliable offline and weak-network experience for core lear
   - app shell/static assets,
   - course/lesson read content,
   - API responses with safe caching rules.
+- Define explicit storage and sync contract by auth state:
+  - guest users: local-first progress on device,
+  - signed-in users: local-first UX + server sync for durable progress.
+- Define parity contract for installed PWA vs browser web:
+  - same data semantics and sync rules across both,
+  - differences only in install/offline UX surfaces and cache behavior.
 - Add deterministic cache strategy per bucket:
   - `cache-first` for immutable static assets,
   - `stale-while-revalidate` for low-risk read content,
@@ -33,6 +39,10 @@ Learners should get a reliable offline and weak-network experience for core lear
   - do not show permanent "saved/done" state until server confirms,
   - show clear retry path when offline/server unavailable,
   - keep local UI state honest about sync status.
+- Define sync efficiency rules to minimize server resource usage:
+  - use debounced/batched writes for non-critical progress updates,
+  - trigger immediate sync only for high-value milestones (for example lesson/session completed),
+  - avoid aggressive polling loops for progress state.
 - Define cache invalidation/version rules for each release.
 - Add/update tests for:
   - offline navigation to cached content,
@@ -45,6 +55,7 @@ Learners should get a reliable offline and weak-network experience for core lear
 - No push notifications.
 - No background sync for write operations unless explicitly approved in separate task.
 - No auth/session architecture changes.
+- No separate business logic forks for installed PWA vs web app progress semantics.
 
 ## Acceptance Criteria
 
@@ -55,6 +66,10 @@ Learners should get a reliable offline and weak-network experience for core lear
 - Cache behavior is deterministic and documented.
 - No stale-cache bugs after release (old cache versions are cleaned up safely).
 - Network-dependent actions never end in false-success UI.
+- Guest progress remains usable locally without account; clear backup prompt is shown at defined milestone.
+- Signed-in progress sync is durable and recoverable across devices after reconnect.
+- Installed PWA and browser web follow the same progress/sync semantics (no contradictory behavior).
+- Progress sync avoids high-frequency polling and uses batched/event-driven updates.
 - No visible performance regression in normal online browsing.
 - Unit + e2e coverage for offline transition and fallback paths are green.
 
@@ -72,6 +87,10 @@ Learners should get a reliable offline and weak-network experience for core lear
   - browser devtools offline simulation (desktop Chrome/Safari),
   - iOS Safari manual network toggling,
   - Android Chromium manual network toggling.
+- Installed-mode validation:
+  - iOS added-to-home-screen web app,
+  - Android installed PWA,
+  - compare key progress/sync behavior vs normal browser mode.
 - Vercel preview:
   - repeat offline/weak-network checks on at least one mobile and one desktop browser.
 - Required eviction QA:
@@ -84,6 +103,37 @@ Learners should get a reliable offline and weak-network experience for core lear
 - Do not cache sensitive/private response bodies by default.
 - Keep cache strategy maintainable and easy to reason about.
 - Server remains source of truth for completion/progress state.
+- Prefer local compute and batched sync over chatty server writes for routine progress updates.
+- No continuous polling for progress sync unless explicitly justified and bounded.
+
+## Storage and Sync Contract (PWA + Web)
+
+- Guest mode:
+  - progress writes to local storage/indexedDB immediately for responsive UX,
+  - no durability guarantee across reinstall/storage clear,
+  - show explicit upgrade prompt for account backup/sync.
+- Signed-in mode:
+  - progress writes locally first, then syncs to server,
+  - server-confirmed state is durable source for cross-device restore.
+- Conflict handling:
+  - define deterministic conflict rule (for example server timestamp precedence) and surface non-blocking sync notice.
+- Milestone sync:
+  - force sync on meaningful completion events (lesson/session complete),
+  - defer routine edits via debounce/batch.
+- Platform parity:
+  - installed PWA and browser web use same write/sync semantics and data contracts.
+
+## Server Resource Strategy
+
+- Sync efficiency goals:
+  - avoid per-keystroke server writes,
+  - batch routine updates,
+  - prefer event-driven sync over interval polling.
+- Backoff and retry:
+  - use bounded exponential backoff on failed sync attempts,
+  - avoid retry storms during unstable connectivity.
+- Observability:
+  - track sync success/failure rates and retry counts to tune cost/reliability tradeoffs.
 
 ## 10/10 UX/UI and Reliability Bar
 
