@@ -747,6 +747,11 @@ At each phase:
   - added a utility footer on public routes with clear `Login/My Library` and `Contact` actions,
   - made header auth action explicit (`Login` when signed out, `My Library` when signed in) to improve navigation clarity,
   - increased mobile screenshot E2E timeout to avoid false failures while capturing full-page core-flow snapshots.
+- `2026-02-16` | `working-tree` | soft-launch simplification per owner direction:
+  - replaced `Public beta` copy with a simple `under construction` banner on public routes,
+  - removed extra banner CTA buttons (`Login`, `Programs`) to reduce noise,
+  - removed the temporary utility footer links (`Login`, `Contact`),
+  - refined top-right header login chip visual style for cleaner alignment with topbar.
 
 ## Security Hardening Follow-Up Tracker
 
