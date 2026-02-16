@@ -742,6 +742,10 @@ At each phase:
 - `2026-02-16` | `working-tree` | auth cooldown UX + cadence refinement:
   - sign-in cooldown now returns `cooldownUntil` and the error banner counts down live in the UI (no manual refresh needed),
   - added stepped per-email resend cadence for login code requests (`30s` -> `60s` -> `5m`) while retaining hard anti-abuse limits.
+- `2026-02-16` | `working-tree` | soft-launch public UX refinement:
+  - added a visible public-beta status banner on public routes with direct access links to `Login/My Library` and `Programs`,
+  - added a utility footer on public routes with clear `Login/My Library` and `Contact` actions,
+  - made header auth action explicit (`Login` when signed out, `My Library` when signed in) to improve navigation clarity.
 
 ## Security Hardening Follow-Up Tracker
 

@@ -82,8 +82,14 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
 
   const isHomeRoute = pathname === "/";
   const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
+  const isAuthRoute = pathname === "/auth/sign-in" || pathname?.startsWith("/auth/");
+  const isLibraryRoute = pathname === "/my-library" || pathname?.startsWith("/my-library/");
+  const isCheckoutRoute = pathname === "/checkout/success" || pathname?.startsWith("/checkout/");
+  const isPublicRoute = !isAuthRoute && !isLibraryRoute && !isCheckoutRoute;
 
   const hasCustomBottomBar = Boolean(bottomBar);
+  const authHref = signedInEmail ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
+  const authLabel = signedInEmail ? "My Library" : "Login";
 
   // ✅ Home: remove bottom nav so focus stays on the CTA buttons
   const showDefaultMobileNav = !hasCustomBottomBar && !isHomeRoute;
@@ -198,28 +204,24 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
           </PressLink>
 
           <div className="flex items-center gap-2">
-            {signedInEmail ? (
-              <>
-                <PressLink
-                  tier="nav"
-                  href="/my-library"
-                  aria-label="Signed in. Open My Library."
-                  title={signedInEmail}
-                  className="hidden items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex"
-                >
-                  <span className="h-2 w-2 rounded-full bg-emerald-300" />
-                  <span>Signed in</span>
-                </PressLink>
-                <PressLink
-                  tier="nav"
-                  href="/my-library"
-                  aria-label="Signed in. Open My Library."
-                  title={signedInEmail}
-                  className="bg-white/12 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/35 text-white sm:hidden"
-                >
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
-                </PressLink>
-              </>
+            {!isAuthRoute ? (
+              <PressLink
+                tier="nav"
+                href={authHref}
+                data-testid="header-auth-link"
+                aria-label={signedInEmail ? "Open My Library" : "Log in to My Library"}
+                title={signedInEmail ?? "Open sign-in"}
+                className={[
+                  "inline-flex min-h-[36px] items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold",
+                  "[--ui-focus-ring:rgba(255,255,255,0.56)]",
+                  signedInEmail
+                    ? "border-emerald-200/70 bg-emerald-50/95 text-emerald-800"
+                    : "bg-white/92 border-white/40 text-slate-800",
+                ].join(" ")}
+              >
+                {signedInEmail ? <span className="h-2 w-2 rounded-full bg-emerald-500" /> : null}
+                <span>{authLabel}</span>
+              </PressLink>
             ) : null}
 
             <PressButton
@@ -241,6 +243,36 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         </div>
       </header>
 
+      {isPublicRoute ? (
+        <div className="pointer-events-none fixed inset-x-0 top-16 z-30 px-4">
+          <div
+            data-testid="soft-launch-banner"
+            className="pointer-events-auto mx-auto max-w-[1100px] rounded-b-2xl border border-amber-200/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.96),rgba(255,247,217,0.94))] px-4 py-2.5 text-[13px] text-amber-900 shadow-[0_10px_26px_rgba(120,53,15,0.12)] sm:flex sm:items-center sm:justify-between sm:gap-4"
+          >
+            <p className="leading-5">
+              Public beta: We&apos;re polishing the experience. Purchases and My Library are fully
+              available.
+            </p>
+            <div className="mt-2 flex items-center gap-2 sm:mt-0">
+              <PressLink
+                tier="nav"
+                href={authHref}
+                className="inline-flex min-h-[32px] items-center rounded-lg border border-amber-300 bg-white/95 px-3 text-xs font-semibold text-amber-900"
+              >
+                {signedInEmail ? "Open My Library" : "Login"}
+              </PressLink>
+              <PressLink
+                tier="nav"
+                href="/programs"
+                className="inline-flex min-h-[32px] items-center rounded-lg border border-transparent bg-amber-100/70 px-3 text-xs font-semibold text-amber-900"
+              >
+                Programs
+              </PressLink>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {menuMode !== "custom" ? (
         <MenuDrawer
           open={menuOpen}
@@ -252,7 +284,37 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         />
       ) : null}
 
-      {children}
+      <div className={isPublicRoute ? "pt-12 sm:pt-14" : undefined}>{children}</div>
+
+      {isPublicRoute ? (
+        <footer
+          data-testid="site-utility-footer"
+          className="mx-auto w-full max-w-[1100px] px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-8"
+        >
+          <div className="bg-white/78 flex flex-col gap-3 rounded-2xl border border-white/60 px-4 py-3 text-slate-700 shadow-[0_12px_28px_rgba(15,23,42,0.08)] sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6">
+              Building in public. Core lessons are live, and My Library is open for purchases and
+              resume.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <PressLink
+                tier="nav"
+                href={authHref}
+                className="inline-flex min-h-[36px] items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800"
+              >
+                {signedInEmail ? "Open My Library" : "Login"}
+              </PressLink>
+              <PressLink
+                tier="nav"
+                href="/contact"
+                className="inline-flex min-h-[36px] items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700"
+              >
+                Contact
+              </PressLink>
+            </div>
+          </div>
+        </footer>
+      ) : null}
 
       {showDefaultMobileNav ? defaultMobileNav : null}
 
