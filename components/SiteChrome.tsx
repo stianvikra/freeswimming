@@ -64,10 +64,8 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   // ✅ Home: remove bottom nav so focus stays on the CTA buttons
   const showDefaultMobileNav = !hasCustomBottomBar && !isHomeRoute;
 
-  // ✅ Hide hamburger on mobile when:
-  // - Home (clean landing page)
-  // - Any bottom nav exists (default or custom)
-  const hideHamburgerOnMobile = isHomeRoute || showDefaultMobileNav || hasCustomBottomBar;
+  // ✅ Hide hamburger on mobile when any bottom nav exists (default or custom).
+  const hideHamburgerOnMobile = showDefaultMobileNav || hasCustomBottomBar;
 
   function openSiteDrawer(view: "main" | "course") {
     setDrawerView(view);

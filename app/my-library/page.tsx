@@ -4,6 +4,7 @@ import SiteChrome from "@/components/SiteChrome";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
+import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
 import { buildLibrarySections } from "@/lib/commerce/library";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -73,6 +74,8 @@ export default async function MyLibraryPage() {
           </div>
 
           <div className="mt-8 space-y-8">
+            <ContinueCourseCard />
+
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">Owned</h2>
 

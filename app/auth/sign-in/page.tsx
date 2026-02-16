@@ -20,6 +20,7 @@ export default async function SignInPage({ searchParams }: Props) {
   const error = typeof params.error === "string" ? params.error : "";
   const sent = params.sent === "1";
   const email = typeof params.email === "string" ? params.email : "";
+  const tokenMode = sent && email.length > 0;
 
   return (
     <SiteChrome>
@@ -43,45 +44,73 @@ export default async function SignInPage({ searchParams }: Props) {
             </p>
           ) : null}
 
-          <form action={requestMagicLink} className="mt-6 space-y-4">
-            <input type="hidden" name="next" value={nextPath} />
-            <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                defaultValue={email}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
-                placeholder="you@example.com"
-              />
-            </div>
-            <button
-              type="submit"
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-            >
-              Send sign-in email
-            </button>
-          </form>
+          {tokenMode ? (
+            <div className="mt-6 space-y-4">
+              <form action={verifySignInCode} className="space-y-4">
+                <input type="hidden" name="next" value={nextPath} />
+                <div>
+                  <label
+                    htmlFor="code-email"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="code-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    readOnly
+                    defaultValue={email}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
+                  <button
+                    type="submit"
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                  >
+                    Sign in with code
+                  </button>
+                  <div>
+                    <label htmlFor="code" className="mb-2 block text-sm font-medium text-slate-700">
+                      Sign-in code
+                    </label>
+                    <input
+                      id="code"
+                      name="code"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      required
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
+                      placeholder="123456"
+                    />
+                  </div>
+                </div>
+              </form>
 
-          <div className="mt-8 h-px w-full bg-slate-100" />
-
-          <form action={verifySignInCode} className="mt-6 space-y-4">
-            <input type="hidden" name="next" value={nextPath} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="code-email"
-                  className="mb-2 block text-sm font-medium text-slate-700"
+              <form action={requestMagicLink}>
+                <input type="hidden" name="next" value={nextPath} />
+                <input type="hidden" name="email" value={email} />
+                <button
+                  type="submit"
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                 >
+                  Request new login token
+                </button>
+              </form>
+            </div>
+          ) : (
+            <form action={requestMagicLink} className="mt-6 space-y-4">
+              <input type="hidden" name="next" value={nextPath} />
+              <div>
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
                   Email
                 </label>
                 <input
-                  id="code-email"
+                  id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
@@ -91,29 +120,14 @@ export default async function SignInPage({ searchParams }: Props) {
                   placeholder="you@example.com"
                 />
               </div>
-              <div>
-                <label htmlFor="code" className="mb-2 block text-sm font-medium text-slate-700">
-                  Sign-in code
-                </label>
-                <input
-                  id="code"
-                  name="code"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  required
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
-                  placeholder="123456"
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              Sign in with code
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+              >
+                Request login token
+              </button>
+            </form>
+          )}
         </div>
       </section>
     </SiteChrome>

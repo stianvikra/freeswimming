@@ -5,6 +5,7 @@ import Image from "next/image";
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import ActionButton from "@/components/ActionButton";
+import PressLink from "@/components/ui/PressLink";
 
 export default function HomePage() {
   return (
@@ -82,6 +83,16 @@ export default function HomePage() {
               variant="secondary"
               compact
             />
+          </div>
+
+          <div className="mt-3 flex items-center justify-center">
+            <PressLink
+              tier="nav"
+              href="/auth/sign-in?next=%2Fmy-library"
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white/90 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              Log in to My Library
+            </PressLink>
           </div>
         </div>
       </PageTemplate>

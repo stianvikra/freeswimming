@@ -137,6 +137,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Selected Defaults For V1 (Locked Unless Explicitly Changed)
 
 - Track A: `Option A` (keep `Programs` + `Video Analysis`, add `/plans`, label account area `My Library`).
+  - Naming note: keep `My Library` in v1 for immediate clarity; re-evaluate branded alias (`My FreeSwim`) after launch data.
 - Track B: `Option A` (guest-first: free progress + guest checkout + optional account claim).
 - Track C: `Option A` (Supabase Auth + Postgres + RLS).
 - Track D: `Option A` (Stripe Checkout + webhook fulfillment + entitlements table).
@@ -203,6 +204,12 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 - Guest mode reassurance:
   - `No account needed to start.`
+- Sign-in token request CTA:
+  - `Request login token`
+- Sign-in form behavior after token sent:
+  - do not duplicate email inputs,
+  - keep a single visible email field (read-only) and one code input,
+  - keep `Sign in with code` as primary (blue) CTA.
 - Progress backup prompt (trigger: after 3 lessons marked complete in guest mode):
   - `Don't lose your progress if this browser clears storage.`
   - `Create a free account to back up and sync across devices.`
@@ -716,6 +723,14 @@ At each phase:
   - sign-in page now supports both magic-link and one-time code entry,
   - callback now handles both `code` and `token_hash + type` verification paths,
   - fallback error copy updated to guide users toward code-based recovery.
+- `2026-02-16` | `working tree (uncommitted)` | sign-in UX refinement:
+  - changed CTA to `Request login token`,
+  - removed duplicate email inputs in post-send state,
+  - made `Sign in with code` primary blue button.
+- `2026-02-16` | `working tree (uncommitted)` | library/home continuity UX refinement:
+  - `My Library` now includes a `Continue Free Course` card that resumes from saved lesson on this device,
+  - home now includes a discrete `Log in to My Library` CTA,
+  - mobile home now keeps hamburger menu accessible for direct navigation.
 
 ## Prompt Wrapper For This Brief
 
