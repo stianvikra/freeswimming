@@ -272,7 +272,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
       ) : null}
 
       <div className={isPublicRoute ? "pt-12 sm:pt-14" : undefined}>{children}</div>
-
       {showDefaultMobileNav ? defaultMobileNav : null}
 
       {bottomBar ? (
