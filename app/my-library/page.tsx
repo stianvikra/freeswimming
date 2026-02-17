@@ -169,6 +169,18 @@ export default async function MyLibraryPage() {
                 ))}
               </div>
             </div>
+
+            <p className="text-xs leading-relaxed text-slate-600">
+              Privacy and cookie details:{" "}
+              <Link href="/privacy" className="font-semibold text-blue-700 hover:text-blue-600">
+                Privacy Policy
+              </Link>{" "}
+              and{" "}
+              <Link href="/cookies" className="font-semibold text-blue-700 hover:text-blue-600">
+                Cookie Policy
+              </Link>
+              .
+            </p>
           </div>
         </div>
       </section>
