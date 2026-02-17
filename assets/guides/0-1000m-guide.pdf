@@ -1,0 +1,48 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 694 >>
+stream
+BT
+/F1 14 Tf
+72 760 Td (FreeSwimming - 0-1000m Guide) Tj
+72 736 Td () Tj
+72 712 Td (This PDF is provided for offline access.) Tj
+72 688 Td (Use the interactive plan in My Library for progress tracking,) Tj
+72 664 Td (checkbox completion, and synced notes across devices.) Tj
+72 640 Td () Tj
+72 616 Td (Session overview \(20 sessions\):) Tj
+72 592 Td (S01-S04: breathing and body line) Tj
+72 568 Td (S05-S08: catch, rotation, aerobic build) Tj
+72 544 Td (S09-S12: pacing and mid-plan check) Tj
+72 520 Td (S13-S16: endurance + threshold quality) Tj
+72 496 Td (S17-S20: race prep and full 1000m completion) Tj
+72 472 Td () Tj
+72 448 Td (For latest updates, open the interactive plan in app.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000986 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1056
+%%EOF
