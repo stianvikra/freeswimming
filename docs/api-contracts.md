@@ -210,3 +210,33 @@ Failure:
 - `403`: user does not own guide entitlement
 - `500`: entitlement verification failure
 - `503`: PDF asset temporarily unavailable
+
+## `GET /api/guides/poolside/pdf`
+
+### Request
+
+- Auth: signed-in user session required
+- Access: user must own `guide_poolside` entitlement
+
+### Response
+
+- Success:
+  - `200` with `application/pdf`
+  - `Content-Disposition: attachment; filename="freeswimming-poolside-guide.pdf"`
+
+- Failure:
+
+```json
+{
+  "ok": false,
+  "error": "Guide access required."
+}
+```
+
+### Status Codes
+
+- `200`: pdf download stream
+- `401`: unauthorized
+- `403`: user does not own guide entitlement
+- `500`: entitlement verification failure
+- `503`: PDF asset temporarily unavailable

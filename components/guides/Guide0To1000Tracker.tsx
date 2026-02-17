@@ -7,11 +7,16 @@ import {
   type GuideProgressRow,
 } from "@/lib/course/guide-progress";
 import { type Guide0To1000Session } from "@/lib/guides/guide-0-1000m";
+import { getFirstIncompleteId, splitItemsByCompletion } from "@/lib/guides/guide-tracker-ui";
 
 const GUIDE_PROGRESS_SYNC_API_PATH = "/api/progress/guide";
 const GUIDE_PROGRESS_STORAGE_KEY = "fs_guide_0_1000m_progress_v1";
+const GUIDE_LAST_SESSION_STORAGE_KEY = "fs_guide_0_1000m_last_session_v1";
+const GUIDE_COMPLETED_WEEKS_VISIBILITY_STORAGE_KEY =
+  "fs_guide_0_1000m_completed_weeks_visibility_v1";
 const GUIDE_PROGRESS_SYNC_INTERVAL_MS = 10_000;
 const MAX_NOTES_LENGTH = 4000;
+const COMPLETION_UNDO_TIMEOUT_MS = 8_000;
 
 type SyncState = "idle" | "syncing" | "synced" | "error" | "offline";
 
@@ -22,6 +27,12 @@ type SessionProgress = {
 };
 
 type SessionProgressRecord = Record<string, SessionProgress>;
+
+type CompletionUndoState = {
+  sessionId: string;
+  previousCompleted: boolean;
+  expiresAt: number;
+};
 
 type Props = {
   guideSlug: string;
@@ -159,6 +170,10 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
   const [syncError, setSyncError] = useState("");
   const [lastSyncAtMs, setLastSyncAtMs] = useState<number | null>(null);
   const [isOnline, setIsOnline] = useState(getInitialOnlineState);
+  const [focusedSessionId, setFocusedSessionId] = useState<string | null>(null);
+  const [expandedCompletedWeeks, setExpandedCompletedWeeks] = useState<Record<number, boolean>>({});
+  const [lastSessionId, setLastSessionId] = useState<string | null>(null);
+  const [completionUndoState, setCompletionUndoState] = useState<CompletionUndoState | null>(null);
   const dirtySectionIdsRef = useRef<Set<string>>(new Set());
   const syncInFlightRef = useRef(false);
 
@@ -368,6 +383,49 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
     };
   }, [hydrationState, syncGuideProgressNow]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const storedLastSessionId = localStorage.getItem(GUIDE_LAST_SESSION_STORAGE_KEY);
+      if (storedLastSessionId) {
+        setLastSessionId(storedLastSessionId);
+      }
+    } catch {}
+
+    try {
+      const raw = localStorage.getItem(GUIDE_COMPLETED_WEEKS_VISIBILITY_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (!parsed || typeof parsed !== "object") return;
+      const next: Record<number, boolean> = {};
+      for (const [weekKey, value] of Object.entries(parsed as Record<string, unknown>)) {
+        const week = Number(weekKey);
+        if (!Number.isFinite(week) || week <= 0) continue;
+        next[week] = value === true;
+      }
+      setExpandedCompletedWeeks(next);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!lastSessionId) return;
+    try {
+      localStorage.setItem(GUIDE_LAST_SESSION_STORAGE_KEY, lastSessionId);
+    } catch {}
+  }, [lastSessionId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        GUIDE_COMPLETED_WEEKS_VISIBILITY_STORAGE_KEY,
+        JSON.stringify(expandedCompletedWeeks)
+      );
+    } catch {}
+  }, [expandedCompletedWeeks]);
+
   const updateSessionProgress = useCallback(
     (
       sessionId: string,
@@ -414,9 +472,14 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
     [allowedSectionIds, guideSlug]
   );
 
+  const sortedSessions = useMemo(
+    () => [...sessions].sort((left, right) => left.id.localeCompare(right.id)),
+    [sessions]
+  );
+
   const sessionsByWeek = useMemo(() => {
     const grouped = new Map<number, Guide0To1000Session[]>();
-    for (const session of sessions) {
+    for (const session of sortedSessions) {
       const existing = grouped.get(session.weekNumber) ?? [];
       existing.push(session);
       grouped.set(session.weekNumber, existing);
@@ -426,20 +489,106 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
       .sort(([a], [b]) => a - b)
       .map(([weekNumber, weekSessions]) => ({
         weekNumber,
-        sessions: weekSessions.sort((left, right) => left.id.localeCompare(right.id)),
+        sessions: weekSessions,
       }));
-  }, [sessions]);
+  }, [sortedSessions]);
 
   const completedCount = useMemo(() => {
-    return sessions.reduce((total, session) => {
+    return sortedSessions.reduce((total, session) => {
       const progress = progressBySessionId[session.id];
       return progress?.completed ? total + 1 : total;
     }, 0);
-  }, [progressBySessionId, sessions]);
+  }, [progressBySessionId, sortedSessions]);
 
-  const remainingCount = Math.max(0, sessions.length - completedCount);
+  const remainingCount = Math.max(0, sortedSessions.length - completedCount);
   const completionPercent =
-    sessions.length === 0 ? 0 : Math.round((completedCount / sessions.length) * 100);
+    sortedSessions.length === 0 ? 0 : Math.round((completedCount / sortedSessions.length) * 100);
+
+  const focusedSessionIndex = useMemo(() => {
+    if (!focusedSessionId) return -1;
+    return sortedSessions.findIndex((session) => session.id === focusedSessionId);
+  }, [focusedSessionId, sortedSessions]);
+
+  const focusedSession = focusedSessionIndex >= 0 ? sortedSessions[focusedSessionIndex] : null;
+  const focusedSessionProgress = focusedSession
+    ? progressBySessionId[focusedSession.id]
+    : undefined;
+  const lastSession = lastSessionId
+    ? (sortedSessions.find((session) => session.id === lastSessionId) ?? null)
+    : null;
+
+  const openSessionFullscreen = useCallback((sessionId: string) => {
+    setFocusedSessionId(sessionId);
+    setLastSessionId(sessionId);
+  }, []);
+
+  const closeSessionFullscreen = useCallback(() => {
+    setFocusedSessionId(null);
+  }, []);
+
+  const openNextSessionFullscreen = useCallback(() => {
+    if (focusedSessionIndex < 0 || focusedSessionIndex >= sortedSessions.length - 1) return;
+    const nextId = sortedSessions[focusedSessionIndex + 1]?.id ?? null;
+    setFocusedSessionId(nextId);
+    if (nextId) {
+      setLastSessionId(nextId);
+    }
+  }, [focusedSessionIndex, sortedSessions]);
+
+  const openPreviousSessionFullscreen = useCallback(() => {
+    if (focusedSessionIndex <= 0) return;
+    const previousId = sortedSessions[focusedSessionIndex - 1]?.id ?? null;
+    setFocusedSessionId(previousId);
+    if (previousId) {
+      setLastSessionId(previousId);
+    }
+  }, [focusedSessionIndex, sortedSessions]);
+
+  const toggleSessionCompleted = useCallback(
+    (session: Guide0To1000Session) => {
+      const timestamp = new Date().toISOString();
+      const previousCompleted = progressBySessionId[session.id]?.completed ?? false;
+      const nextCompletedState = !previousCompleted;
+
+      updateSessionProgress(session.id, (current) => {
+        return {
+          completed: nextCompletedState,
+          notes: current.notes,
+          updatedAt: timestamp,
+        };
+      });
+
+      if (nextCompletedState) {
+        setCompletionUndoState({
+          sessionId: session.id,
+          previousCompleted,
+          expiresAt: Date.now() + COMPLETION_UNDO_TIMEOUT_MS,
+        });
+      } else {
+        setCompletionUndoState(null);
+      }
+
+      if (nextCompletedState) {
+        setExpandedCompletedWeeks((previous) => ({
+          ...previous,
+          [session.weekNumber]: false,
+        }));
+      }
+    },
+    [progressBySessionId, updateSessionProgress]
+  );
+
+  const updateSessionNotes = useCallback(
+    (sessionId: string, nextNotes: string) => {
+      const timestamp = new Date().toISOString();
+      updateSessionProgress(sessionId, (current) => ({
+        completed: current.completed,
+        notes: nextNotes.slice(0, MAX_NOTES_LENGTH),
+        updatedAt: timestamp,
+      }));
+    },
+    [updateSessionProgress]
+  );
 
   const syncLabel = useMemo(() => {
     if (syncState === "syncing") return "Saving guide progress...";
@@ -453,7 +602,157 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
     return "Signed in. Guide progress sync is active.";
   }, [isOnline, lastSyncAtMs, syncError, syncState]);
 
-  if (sessions.length === 0) {
+  const undoLatestCompletion = useCallback(() => {
+    if (!completionUndoState) return;
+    const timestamp = new Date().toISOString();
+    updateSessionProgress(completionUndoState.sessionId, (current) => ({
+      completed: completionUndoState.previousCompleted,
+      notes: current.notes,
+      updatedAt: timestamp,
+    }));
+    setCompletionUndoState(null);
+  }, [completionUndoState, updateSessionProgress]);
+
+  useEffect(() => {
+    if (!completionUndoState) return;
+
+    const remaining = completionUndoState.expiresAt - Date.now();
+    if (remaining <= 0) {
+      setCompletionUndoState(null);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setCompletionUndoState(null);
+    }, remaining);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [completionUndoState]);
+
+  useEffect(() => {
+    if (focusedSessionIndex < 0) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSessionFullscreen();
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        openPreviousSessionFullscreen();
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        openNextSessionFullscreen();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [
+    closeSessionFullscreen,
+    focusedSessionIndex,
+    openNextSessionFullscreen,
+    openPreviousSessionFullscreen,
+  ]);
+
+  const renderSessionCard = (session: Guide0To1000Session, options?: { muted?: boolean }) => {
+    const progress = progressBySessionId[session.id];
+    const completed = progress?.completed ?? false;
+    const notes = progress?.notes ?? "";
+    const textareaId = `guide-${session.id}-notes`;
+
+    return (
+      <article
+        key={session.id}
+        className={`rounded-2xl border p-4 transition ${
+          completed
+            ? options?.muted
+              ? "border-emerald-200/70 bg-emerald-50/30"
+              : "border-emerald-200 bg-emerald-50/50"
+            : "border-slate-200 bg-white"
+        }`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Session {session.id}
+            </p>
+            <h3 className="mt-1 text-base font-semibold text-slate-900">{session.title}</h3>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => openSessionFullscreen(session.id)}
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Open full screen
+            </button>
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={completed}
+                onChange={() => toggleSessionCompleted(session)}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              {completed ? "Completed" : "Mark complete"}
+            </label>
+          </div>
+        </div>
+
+        <p className="mt-2 text-sm text-slate-600">
+          <span className="font-medium text-slate-700">Focus:</span> {session.focus}
+        </p>
+        <p className="mt-1 text-sm text-slate-600">
+          <span className="font-medium text-slate-700">Target set:</span> {session.targetSet}
+        </p>
+
+        <div className="mt-3 space-y-2">
+          <label htmlFor={textareaId} className="text-xs font-semibold text-slate-700">
+            Session notes
+          </label>
+          <textarea
+            id={textareaId}
+            value={notes}
+            onChange={(event) => {
+              updateSessionNotes(session.id, event.currentTarget.value);
+            }}
+            rows={3}
+            placeholder="Write what felt good, what to adjust next time, and pacing notes."
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+          />
+          <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+            <span>
+              {notes.length}/{MAX_NOTES_LENGTH}
+            </span>
+            <span>{formatSessionUpdatedLabel(progress?.updatedAt)}</span>
+          </div>
+        </div>
+      </article>
+    );
+  };
+
+  if (sortedSessions.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-6">
         <h2 className="text-base font-semibold text-slate-900">Guide content unavailable</h2>
@@ -479,7 +778,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
               Completed
             </p>
             <p className="mt-1 text-2xl font-bold text-slate-900">
-              {completedCount}/{sessions.length}
+              {completedCount}/{sortedSessions.length}
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
@@ -498,6 +797,26 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
           <p className="text-xs text-slate-600" aria-live="polite">
             {syncLabel}
           </p>
+          {lastSession ? (
+            <button
+              type="button"
+              onClick={() => openSessionFullscreen(lastSession.id)}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Continue where you left off ({lastSession.id})
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              const nextId = getFirstIncompleteId(sortedSessions, progressBySessionId);
+              if (!nextId) return;
+              openSessionFullscreen(nextId);
+            }}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Open next session full screen
+          </button>
           {(syncState === "error" || syncState === "offline") && (
             <button
               type="button"
@@ -520,102 +839,183 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
         </div>
       ) : (
         <div className="space-y-5">
-          {sessionsByWeek.map((week) => (
-            <section
-              key={week.weekNumber}
-              className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
-            >
-              <h2 className="text-lg font-semibold text-slate-900">Week {week.weekNumber}</h2>
-              <div className="mt-4 grid gap-3">
-                {week.sessions.map((session) => {
-                  const progress = progressBySessionId[session.id];
-                  const completed = progress?.completed ?? false;
-                  const notes = progress?.notes ?? "";
-                  const textareaId = `guide-${session.id}-notes`;
+          {sessionsByWeek.map((week) => {
+            const split = splitItemsByCompletion(week.sessions, progressBySessionId);
+            const showCompleted = expandedCompletedWeeks[week.weekNumber] ?? false;
 
-                  return (
-                    <article
-                      key={session.id}
-                      className={`rounded-2xl border p-4 transition ${
-                        completed
-                          ? "border-emerald-200 bg-emerald-50/50"
-                          : "border-slate-200 bg-white"
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Session {session.id}
-                          </p>
-                          <h3 className="mt-1 text-base font-semibold text-slate-900">
-                            {session.title}
-                          </h3>
-                        </div>
+            return (
+              <section
+                key={week.weekNumber}
+                className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
+              >
+                <h2 className="text-lg font-semibold text-slate-900">Week {week.weekNumber}</h2>
 
-                        <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={completed}
-                            onChange={() => {
-                              const timestamp = new Date().toISOString();
-                              updateSessionProgress(session.id, (current) => ({
-                                completed: !current.completed,
-                                notes: current.notes,
-                                updatedAt: timestamp,
-                              }));
-                            }}
-                            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          {completed ? "Completed" : "Mark complete"}
-                        </label>
-                      </div>
+                {split.incomplete.length > 0 ? (
+                  <div className="mt-4 grid gap-3">
+                    {split.incomplete.map((session) => renderSessionCard(session))}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm text-emerald-900">
+                    All sessions in this week are currently marked complete.
+                  </div>
+                )}
 
-                      <p className="mt-2 text-sm text-slate-600">
-                        <span className="font-medium text-slate-700">Focus:</span> {session.focus}
+                {split.completed.length > 0 ? (
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-800">
+                        Completed sessions ({split.completed.length})
                       </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        <span className="font-medium text-slate-700">Target set:</span>{" "}
-                        {session.targetSet}
-                      </p>
-
-                      <div className="mt-3 space-y-2">
-                        <label
-                          htmlFor={textareaId}
-                          className="text-xs font-semibold text-slate-700"
-                        >
-                          Session notes
-                        </label>
-                        <textarea
-                          id={textareaId}
-                          value={notes}
-                          onChange={(event) => {
-                            const timestamp = new Date().toISOString();
-                            const nextNotes = event.currentTarget.value.slice(0, MAX_NOTES_LENGTH);
-                            updateSessionProgress(session.id, (current) => ({
-                              completed: current.completed,
-                              notes: nextNotes,
-                              updatedAt: timestamp,
-                            }));
-                          }}
-                          rows={3}
-                          placeholder="Write what felt good, what to adjust next time, and pacing notes."
-                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
-                        />
-                        <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
-                          <span>
-                            {notes.length}/{MAX_NOTES_LENGTH}
-                          </span>
-                          <span>{formatSessionUpdatedLabel(progress?.updatedAt)}</span>
-                        </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExpandedCompletedWeeks((previous) => ({
+                            ...previous,
+                            [week.weekNumber]: !showCompleted,
+                          }));
+                        }}
+                        className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        {showCompleted ? "Hide completed" : "Show completed"}
+                      </button>
+                    </div>
+                    {showCompleted ? (
+                      <div className="mt-3 grid gap-3">
+                        {split.completed.map((session) =>
+                          renderSessionCard(session, { muted: true })
+                        )}
                       </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                    ) : (
+                      <p className="mt-2 text-xs text-slate-600">
+                        Completed sessions are collapsed to keep the overview focused. Open anytime.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+              </section>
+            );
+          })}
         </div>
       )}
+
+      {focusedSession ? (
+        <div className="bg-slate-950/92 fixed inset-0 z-[80]">
+          <button
+            type="button"
+            onClick={closeSessionFullscreen}
+            className="absolute inset-0"
+            aria-label="Close full screen session view"
+          />
+
+          <div className="relative z-[1] mx-auto flex h-full w-full max-w-[980px] flex-col px-3 pb-4 pt-3 sm:px-6 sm:pb-6 sm:pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-white">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-200">
+                  Session full screen
+                </p>
+                <p className="text-sm font-semibold">
+                  {focusedSession.id} - {focusedSession.title}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-3xl border border-white/20 bg-white p-4 shadow-[0_20px_60px_rgba(2,6,23,0.45)] sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Session {focusedSession.id}
+              </p>
+              <h3 className="mt-1 text-2xl font-semibold text-slate-900">{focusedSession.title}</h3>
+
+              <p className="mt-3 text-sm text-slate-700">
+                <span className="font-semibold text-slate-900">Focus:</span> {focusedSession.focus}
+              </p>
+              <p className="mt-1 text-sm text-slate-700">
+                <span className="font-semibold text-slate-900">Target set:</span>{" "}
+                {focusedSession.targetSet}
+              </p>
+
+              <p className="mt-4 text-xs text-slate-500">
+                {formatSessionUpdatedLabel(focusedSessionProgress?.updatedAt)}
+              </p>
+
+              <div className="mt-4 space-y-2">
+                <label
+                  htmlFor={`guide-session-fullscreen-${focusedSession.id}`}
+                  className="text-xs font-semibold text-slate-700"
+                >
+                  Session notes
+                </label>
+                <textarea
+                  id={`guide-session-fullscreen-${focusedSession.id}`}
+                  value={focusedSessionProgress?.notes ?? ""}
+                  onChange={(event) => {
+                    updateSessionNotes(focusedSession.id, event.currentTarget.value);
+                  }}
+                  rows={8}
+                  placeholder="Write what felt good, what to adjust next time, and pacing notes."
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                />
+                <p className="text-xs text-slate-500">
+                  {(focusedSessionProgress?.notes ?? "").length}/{MAX_NOTES_LENGTH}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/20 bg-slate-900/55 p-2 backdrop-blur">
+              <button
+                type="button"
+                onClick={openPreviousSessionFullscreen}
+                disabled={focusedSessionIndex <= 0}
+                className="inline-flex min-h-[44px] min-w-[108px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={openNextSessionFullscreen}
+                disabled={
+                  focusedSessionIndex < 0 || focusedSessionIndex >= sortedSessions.length - 1
+                }
+                className="inline-flex min-h-[44px] min-w-[108px] items-center justify-center rounded-xl border border-white/35 bg-white px-4 text-sm font-semibold text-slate-900 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Next
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleSessionCompleted(focusedSession)}
+                className={`inline-flex min-h-[44px] min-w-[128px] items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
+                  focusedSessionProgress?.completed
+                    ? "border border-emerald-300 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
+                    : "bg-blue-600 text-white hover:bg-blue-500"
+                }`}
+              >
+                {focusedSessionProgress?.completed ? "Completed" : "Mark complete"}
+              </button>
+              <button
+                type="button"
+                onClick={closeSessionFullscreen}
+                className="inline-flex min-h-[44px] min-w-[96px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {completionUndoState ? (
+        <div className="fixed inset-x-0 bottom-4 z-[85] flex justify-center px-4">
+          <div className="flex w-full max-w-[560px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.18)]">
+            <p className="text-sm font-medium text-emerald-900">Session marked complete.</p>
+            <button
+              type="button"
+              onClick={undoLatestCompletion}
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

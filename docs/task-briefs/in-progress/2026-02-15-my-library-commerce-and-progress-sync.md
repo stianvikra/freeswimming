@@ -200,6 +200,30 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 1. Library/content slice:
    - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
+   - lock `guide_poolside` to dual delivery (`PDF + interactive`) now,
+   - upgrade `0-1000m` tracker UX with focus-mode flow:
+     - open one session at a time in fullscreen,
+     - close fullscreen and return to overview,
+     - collapse completed sessions in overview with explicit reopen.
+   - apply cross-guide UX polish bundle (`0-1000m` + `poolside`):
+     - `Continue where you left off` CTA,
+     - sticky fullscreen control order:
+       - `Previous`,
+       - `Next`,
+       - `Mark complete`,
+       - `Close`,
+     - visual fullscreen improvements (`poolside`):
+       - swipe between visuals,
+       - double-tap zoom,
+       - pinch-to-zoom,
+     - completion safety:
+       - undo toast after `Mark complete`,
+       - persisted collapse/show state for completed groups.
+   - deliver poolside interactive UX:
+     - one drill per view,
+     - `Previous`/`Next` + swipe navigation,
+     - `Drills overview` with completion status,
+     - `Visual view` fullscreen image mode (portrait + landscape support),
    - expand claim/restore UX around owned content recovery.
 2. Trust/ops slice:
    - implement `/api/user/export` + `/api/user/delete`,
@@ -607,6 +631,8 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - `STRIPE_PRICE_ID_0_1000M_GUIDE`
 - `STRIPE_PRICE_ID_POOLSIDE_GUIDE`
 - `STRIPE_PRICE_ID_ANALYSIS`
+- `GUIDE_0_TO_1000M_PDF_ASSET_PATH` (optional)
+- `GUIDE_POOLSIDE_PDF_ASSET_PATH` (optional)
 - `NEXT_PUBLIC_FS_UPSELL_M1_ENABLED` (phase 2)
 - `NEXT_PUBLIC_FS_UPSELL_M2_ENABLED` (phase 2)
 - `NEXT_PUBLIC_FS_UPSELL_M3_ENABLED` (phase 2)
@@ -840,6 +866,71 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | cross-guide UX polish bundle (items `1-5`) implemented:
+  - `0-1000m`:
+    - added `Continue where you left off` CTA tied to persisted last opened session,
+    - upgraded fullscreen session mode controls to consistent sticky order:
+      - `Previous` -> `Next` -> `Mark complete` -> `Close`,
+    - completed-week collapse state now persists across visits,
+    - added completion `Undo` toast after marking session complete.
+  - `poolside`:
+    - added `Continue where you left off` CTA tied to persisted last drill,
+    - added persisted completed-drill visibility toggle in overview,
+    - added completion `Undo` toast after marking drill complete,
+    - upgraded visual fullscreen with:
+      - swipe between visuals,
+      - double-tap zoom,
+      - pinch-to-zoom,
+      - sticky controls using the same order as `0-1000m`.
+  - language/button-order consistency improved across guides (removed mixed `Forrige/Neste` vs English labels in critical nav controls).
+  - next step: run manual mobile + desktop QA focused on gesture behavior and fullscreen control ergonomics.
+- `2026-02-17` | `working tree` | `0-1000m` fullscreen session-mode + completed-collapse UX delivered:
+  - added fullscreen session flow in `0-1000m` tracker:
+    - open one session at a time,
+    - `Forrige`/`Neste` in fullscreen,
+    - `Close` returns to overview.
+  - added overview behavior for completed sessions:
+    - completed sessions are collapsed by default per week,
+    - explicit `Show completed` / `Hide completed` toggle keeps reopening simple.
+  - retained completion + notes editing in both overview and fullscreen views with existing sync model.
+  - added helper/test coverage for completion split and next-incomplete selection:
+    - `lib/guides/guide-tracker-ui.ts`,
+    - `tests/unit/guide-tracker-ui.test.ts`.
+  - next step: run manual QA for fullscreen + collapse behavior on mobile + desktop.
+- `2026-02-17` | `working tree` | poolside interactive + dual-action baseline implemented:
+  - added entitlement-gated interactive route: `/guides/poolside`,
+  - added entitlement-gated PDF route: `GET /api/guides/poolside/pdf`,
+  - added poolside guide domain data (`12` drills) and safe PDF asset path handling (`GUIDE_POOLSIDE_PDF_ASSET_PATH` optional),
+  - added dummy visual assets and placeholder PDF for iterative content replacement,
+  - delivered one-drill-per-view UX with:
+    - `Forrige`/`Neste` navigation,
+    - swipe navigation,
+    - `Drills overview`,
+    - completion tracking,
+    - fullscreen `Visual view` mode,
+    - progress sync to `/api/progress/guide` with offline/error/retry states.
+  - updated `My Library` item detail action mapping:
+    - `guide_0_1000m`: `Open interactive plan` + `Download PDF`,
+    - `guide_poolside`: `Open interactive guide` + `Download PDF`,
+    - `analysis_video`: `Open video analysis` + `Contact support`.
+  - added/updated tests:
+    - `tests/unit/guide-poolside-plan.test.ts`,
+    - `tests/unit/library-item-actions.test.ts`.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit -- --run tests/unit/guide-poolside-plan.test.ts tests/unit/library-item-actions.test.ts`.
+  - next step: run manual mobile + desktop QA for poolside UX and cut checkpoint PR.
+- `2026-02-17` | `working tree` | poolside scope decision locked before implementation:
+  - owner confirmed `Poolside = PDF + interactive now`,
+  - interactive requirements locked:
+    - one drill per page,
+    - `Forrige`/`Neste` navigation,
+    - swipe navigation,
+    - `Drills overview` with completion visibility,
+    - `Visual view` fullscreen image mode on phone portrait/landscape,
+    - dummy visuals now; final focus-mark visuals later.
+  - next step: implement `/guides/poolside` interactive flow + entitlement-gated PDF endpoint.
 - `2026-02-17` | `working tree` | `0-1000m` dual-action UX + protected PDF download complete:
   - added secure entitlement-gated PDF endpoint: `GET /api/guides/0-1000m/pdf`,
   - added private PDF asset path handling with safe path validation (`GUIDE_0_TO_1000M_PDF_ASSET_PATH` optional override),
