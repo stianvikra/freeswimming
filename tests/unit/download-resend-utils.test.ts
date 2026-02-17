@@ -29,6 +29,7 @@ describe("download resend helpers", () => {
   it("normalizes source values into allowed source enum", () => {
     expect(toDownloadResendSource("checkout_success")).toBe("checkout_success");
     expect(toDownloadResendSource("library_recovery")).toBe("library_recovery");
+    expect(toDownloadResendSource("claim_entry")).toBe("claim_entry");
     expect(toDownloadResendSource("anything-else")).toBe("unknown");
     expect(toDownloadResendSource(undefined)).toBe("unknown");
   });

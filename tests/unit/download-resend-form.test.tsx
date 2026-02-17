@@ -64,4 +64,37 @@ describe("DownloadResendForm", () => {
       expect(screen.getByText("Too many requests. Please try again shortly.")).toBeInTheDocument();
     });
   });
+
+  it("sends claim source from claim entry flow", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        message: RESEND_DOWNLOAD_GENERIC_MESSAGE,
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <DownloadResendForm
+        initialEmail="buyer@example.com"
+        nextPath="/my-library"
+        source="claim_entry"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Email me access link" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/download/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "buyer@example.com",
+          nextPath: "/my-library",
+          source: "claim_entry",
+        }),
+      });
+    });
+  });
 });

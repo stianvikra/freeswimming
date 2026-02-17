@@ -71,6 +71,12 @@
 }
 ```
 
+- Allowed `source` values:
+  - `checkout_success`
+  - `library_recovery`
+  - `claim_entry`
+  - unknown values normalize to `unknown`
+
 ### Response
 
 - Success (non-enumerating):

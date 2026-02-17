@@ -141,7 +141,8 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Checkout/library recovery UX baseline is implemented:
   - `/checkout/success` now includes immediate `Download from My Library` CTA,
   - `/checkout/success` includes purchase-email resend form for secure access link recovery,
-  - `My Library` empty-owned state includes `already bought?` recovery resend entry.
+  - `My Library` empty-owned state includes `already bought?` recovery resend entry,
+  - `/claim` route is implemented as dedicated magic-link claim entry for guest purchasers.
 - Guest purchase attach-by-email on sign-in is implemented.
 - Free-course account sync baseline is implemented:
   - `/api/progress/course` (authenticated read/write),
@@ -173,8 +174,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 ### Outstanding (blocking move to `done`)
 
-- Missing routes from architecture contract:
-  - `/claim`.
 - Missing API endpoints from architecture contract:
   - `/api/user/export`,
   - `/api/user/delete`.
@@ -879,6 +878,16 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | `/claim` recovery route implemented:
+  - added dedicated claim entry route:
+    - `app/claim/page.tsx`,
+    - supports safe `next` handling and optional email prefill.
+  - integrated existing secure resend flow on claim page:
+    - `DownloadResendForm` now supports `source: "claim_entry"`,
+    - resend source normalization supports `claim_entry`.
+  - checkout success page now links to dedicated claim flow for signed-out users.
+  - updated unit tests for resend source normalization and claim source form submit payload.
+  - next step: implement `/api/user/export` endpoint contract.
 - `2026-02-17` | `working tree` | repository branch hygiene cleanup completed:
   - deleted remote merged branches:
     - `origin/feat/poolside-interactive-guide`,

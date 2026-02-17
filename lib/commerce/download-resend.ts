@@ -8,7 +8,11 @@ export const RESEND_DOWNLOAD_FALLBACK_ERROR =
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export type DownloadResendSource = "checkout_success" | "library_recovery" | "unknown";
+export type DownloadResendSource =
+  | "checkout_success"
+  | "library_recovery"
+  | "claim_entry"
+  | "unknown";
 
 export function normalizeResendEmail(value: string): string {
   return value.trim().toLowerCase();
@@ -25,5 +29,6 @@ export function getSafeDownloadResendNextPath(input: string | undefined): string
 export function toDownloadResendSource(input: string | undefined): DownloadResendSource {
   if (input === "checkout_success") return input;
   if (input === "library_recovery") return input;
+  if (input === "claim_entry") return input;
   return "unknown";
 }
