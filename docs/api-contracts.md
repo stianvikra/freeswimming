@@ -111,6 +111,58 @@
 - `X-RateLimit-Reset`
 - `Retry-After` (on `429`)
 
+## `GET /api/user/export`
+
+### Request
+
+- Auth: signed-in user session required
+- no body
+
+### Response
+
+- Success:
+
+```json
+{
+  "ok": true,
+  "export": {
+    "generatedAt": "2026-02-17T14:00:00.000Z",
+    "schemaVersion": "2026-02-17",
+    "user": {
+      "id": "user-id",
+      "email": "swimmer@example.com"
+    },
+    "profile": {
+      "id": "user-id",
+      "email": "swimmer@example.com",
+      "createdAt": "2026-02-10T10:00:00.000Z",
+      "updatedAt": "2026-02-17T10:00:00.000Z"
+    },
+    "entitlements": [],
+    "courseProgress": [],
+    "guideProgress": [],
+    "guideSessionProgress": [],
+    "goals": [],
+    "downloadLinks": []
+  }
+}
+```
+
+- Failure:
+
+```json
+{
+  "ok": false,
+  "error": "Unauthorized."
+}
+```
+
+### Status Codes
+
+- `200`: export payload returned
+- `401`: unauthorized
+- `500`: failed to build export payload
+
 ## `GET|POST /api/progress/guide`
 
 ### Request

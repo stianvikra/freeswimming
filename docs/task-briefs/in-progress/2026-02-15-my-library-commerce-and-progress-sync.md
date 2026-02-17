@@ -144,6 +144,9 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `My Library` empty-owned state includes `already bought?` recovery resend entry,
   - `/claim` route is implemented as dedicated magic-link claim entry for guest purchasers.
 - Guest purchase attach-by-email on sign-in is implemented.
+- User data export API baseline is implemented:
+  - `/api/user/export` authenticated endpoint,
+  - returns app-owned user data (`profile`, `entitlements`, `course progress`, `guide progress`, `goals`, `download-links metadata`) with `no-store` response headers.
 - Free-course account sync baseline is implemented:
   - `/api/progress/course` (authenticated read/write),
   - signed-in course clients hydrate from server and merge local progress on first sign-in,
@@ -175,7 +178,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ### Outstanding (blocking move to `done`)
 
 - Missing API endpoints from architecture contract:
-  - `/api/user/export`,
   - `/api/user/delete`.
 - `My Library` item detail is still placeholder text:
   - dual-action flow is now implemented for `0-1000m`,
@@ -225,7 +227,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
      - `Visual view` fullscreen image mode (portrait + landscape support),
    - expand claim/restore UX around owned content recovery.
 2. Trust/ops slice:
-   - implement `/api/user/export` + `/api/user/delete`,
+   - implement `/api/user/delete`,
    - implement analytics event contract baseline,
    - close GDPR/privacy/cookie documentation and operational runbook items.
 
@@ -878,6 +880,22 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | `/api/user/export` endpoint implemented:
+  - added authenticated export route:
+    - `app/api/user/export/route.ts`.
+  - route now returns app-owned user export payload with `Cache-Control: no-store`:
+    - `profile`,
+    - `entitlements`,
+    - `courseProgress`,
+    - `guideProgress`,
+    - `guideSessionProgress`,
+    - `goals`,
+    - `downloadLinks` metadata.
+  - added export payload mapper utility + unit coverage:
+    - `lib/user/export.ts`,
+    - `tests/unit/user-export-payload.test.ts`.
+  - updated API contract doc for `GET /api/user/export`.
+  - next step: implement `/api/user/delete` endpoint contract.
 - `2026-02-17` | `working tree` | `/claim` recovery route implemented:
   - added dedicated claim entry route:
     - `app/claim/page.tsx`,
