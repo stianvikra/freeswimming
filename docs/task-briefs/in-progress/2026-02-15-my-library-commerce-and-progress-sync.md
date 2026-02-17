@@ -147,6 +147,9 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `/api/progress/course` (authenticated read/write),
   - signed-in course clients hydrate from server and merge local progress on first sign-in,
   - local progress updates are synced back to server for cross-device continuity.
+- Paid-guide progress sync API baseline is implemented:
+  - `/api/progress/guide` (authenticated read/write),
+  - payload normalization + row caps aligned with course-progress API guardrails.
 - Guest progress-safety milestone prompt is implemented:
   - appears after 3 completed lessons in guest mode,
   - includes free-account CTA to preserve progress across devices,
@@ -163,14 +166,13 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `/claim`,
   - `/guides/0-1000m` interactive guide.
 - Missing API endpoints from architecture contract:
-  - `/api/progress/guide`,
   - `/api/user/export`,
   - `/api/user/delete`.
 - `My Library` item detail is still placeholder text:
   - preview/download/re-download behavior not implemented yet.
 - Progress sync criteria is partially met:
   - free-course progress now supports signed-in server sync and local->account merge,
-  - paid-guide progress sync (`/api/progress/guide`) is still pending.
+  - paid-guide progress sync API is implemented, but interactive guide UX + client sync wiring is still pending.
 - Goals MVP UI/state flow is not implemented.
 - Analytics/KPI event pipeline is not implemented.
 - GDPR operational requirements are not complete:
@@ -185,13 +187,11 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 ## Next Delivery Order (Execution)
 
-1. Progress sync slice:
-   - implement `/api/progress/guide` baseline contract.
-2. Library/content slice:
+1. Library/content slice:
    - implement `/guides/0-1000m` interactive 20-session plan,
    - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
    - expand claim/restore UX around owned content recovery.
-3. Trust/ops slice:
+2. Trust/ops slice:
    - implement `/api/user/export` + `/api/user/delete`,
    - implement analytics event contract baseline,
    - close GDPR/privacy/cookie documentation and operational runbook items.
@@ -830,6 +830,16 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | `/api/progress/guide` baseline contract complete:
+  - added `GET/POST /api/progress/guide` with auth guard, `no-store` responses, JSON/content-type validation, and explicit `401/415/413/500` handling,
+  - added shared guide-progress normalization module with row de-duplication, identifier bounds, and stable sort behavior,
+  - POST now upserts normalized guide progress rows by (`user_id`, `guide_slug`, `section_id`) in `guide_progress`.
+  - updated API contract docs with request/response/status details for `/api/progress/guide`.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`.
+  - next step: implement `/guides/0-1000m` interactive 20-session plan and connect client sync to `/api/progress/guide`.
 - `2026-02-17` | `working tree` | `/api/download/resend` + checkout/library recovery slice complete:
   - added `POST /api/download/resend` with JSON/content-type guard, `no-store` responses, and non-enumerating success copy,
   - endpoint enforces per-IP + per-email rate limits (Upstash-first with in-memory fallback),

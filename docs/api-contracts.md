@@ -104,3 +104,79 @@
 - `X-RateLimit-Remaining`
 - `X-RateLimit-Reset`
 - `Retry-After` (on `429`)
+
+## `GET|POST /api/progress/guide`
+
+### Request
+
+- Auth: signed-in user session required
+
+`GET`:
+
+- no body
+
+`POST`:
+
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "rows": [
+    {
+      "guideSlug": "0-1000m",
+      "sectionId": "s01",
+      "completed": true,
+      "notes": "Felt better rhythm today",
+      "updatedAt": "2026-02-17T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+### Response
+
+`GET` success:
+
+```json
+{
+  "ok": true,
+  "rows": [
+    {
+      "guideSlug": "0-1000m",
+      "sectionId": "s01",
+      "completed": true,
+      "notes": "Felt better rhythm today",
+      "updatedAt": "2026-02-17T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+`POST` success:
+
+```json
+{
+  "ok": true,
+  "upserted": 1
+}
+```
+
+Failure:
+
+```json
+{
+  "ok": false,
+  "error": "Unauthorized."
+}
+```
+
+### Status Codes
+
+- `200`: success
+- `400`: invalid JSON or invalid payload (`rows` missing/not array)
+- `401`: unauthorized
+- `413`: too many rows in one request
+- `415`: unsupported content type
+- `500`: database failure
