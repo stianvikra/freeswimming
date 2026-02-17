@@ -6,7 +6,7 @@
 - `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-14`
-- `updated`: `2026-02-15`
+- `updated`: `2026-02-17`
 
 ## Goal
 
@@ -114,6 +114,12 @@ Which commands should pass?
 - Prefer deterministic, maintainable platform checks.
 - Do not introduce measurable runtime overhead.
 - Keep copy platform-aware but minimal.
+
+## PR Browser Rule
+
+- Open PR create/review/merge links in Safari by default:
+  - `open -a Safari "<PR_URL>"`
+- Use another browser only if the owner explicitly asks for it.
 
 ## Manual QA Matrix
 

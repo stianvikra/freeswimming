@@ -68,3 +68,11 @@ Use this cadence to keep repository branches clean and predictable:
    - clean stale local branches that show upstream `: gone` (with owner confirmation).
 3. Safety:
    - do not force-delete (`git branch -D`) unless explicitly confirmed by owner or after creating a dated backup/tag.
+
+## PR Browser Rule
+
+Use one browser default for PR handoff links to reduce friction:
+
+- open PR create/review/merge URLs in Safari by default:
+  - `open -a Safari "<PR_URL>"`
+- only use another browser if owner explicitly requests it.

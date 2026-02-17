@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-15`
-- `updated`: `2026-02-15`
+- `updated`: `2026-02-17`
 
 ## Goal
 
@@ -117,6 +117,12 @@ FreeSwimming should have a production-grade PWA baseline: installable on support
   1. run `git status -sb`,
   2. run `git log --oneline -n 10`,
   3. reopen this brief and continue from the recorded next milestone.
+
+## PR Browser Rule
+
+- Open PR create/review/merge links in Safari by default:
+  - `open -a Safari "<PR_URL>"`
+- Use another browser only if the owner explicitly asks for it.
 
 ## Completion Record (fill when done)
 

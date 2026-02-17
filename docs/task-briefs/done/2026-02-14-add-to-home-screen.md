@@ -6,7 +6,7 @@
 - `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-14`
-- `updated`: `2026-02-15`
+- `updated`: `2026-02-17`
 
 ## Goal
 
@@ -129,6 +129,12 @@ Which commands should pass?
 - For icon design, use a high-contrast mark with enough padding for masked icon shapes.
 - Prioritize mobile UX quality over aggressive install prompting.
 - Prioritize trust and clarity over growth tactics (no dark patterns, no repeated nagging).
+
+## PR Browser Rule
+
+- Open PR create/review/merge links in Safari by default:
+  - `open -a Safari "<PR_URL>"`
+- Use another browser only if the owner explicitly asks for it.
 
 ## Completion Record
 
