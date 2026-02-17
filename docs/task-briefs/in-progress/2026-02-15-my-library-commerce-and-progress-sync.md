@@ -888,6 +888,12 @@ At each phase:
 - Safety:
   - avoid `git branch -D` unless owner explicitly confirms, or a dated backup/tag has been created first.
 
+### PR Browser Rule (Locked For This Brief)
+
+- Open PR create/review/merge links in Safari by default:
+  - `open -a Safari "<PR_URL>"`
+- Use another browser only if the owner explicitly asks for it.
+
 ## Implementation Checkpoint Log (In Progress)
 
 - `2026-02-17` | `working tree` | analytics event automation tests added:

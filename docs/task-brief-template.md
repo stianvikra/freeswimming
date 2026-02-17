@@ -15,6 +15,7 @@ Use this quick check so the task execution is precise:
 - State continuity rules (commit cadence + resume protocol if chat/session is interrupted)
 - State git rhythm defaults (commit/push cadence and PR cut cadence to `main`)
 - State branch hygiene cadence (post-merge cleanup + stale-branch sweep frequency)
+- State PR browser rule (open PR/merge links in Safari by default unless owner requests otherwise)
 
 Suggested prompt wrapper:
 
@@ -164,6 +165,16 @@ Define when and how branch cleanup is executed so repository hygiene is consiste
 - Safety rule:
   - avoid `git branch -D` unless owner explicitly confirms, or a dated backup/tag has been created.
 
+## PR Browser Rule (Required)
+
+Define the default browser for PR handoff links so collaboration is consistent.
+
+- Default:
+  - open PR create/review/merge URLs in Safari:
+    - `open -a Safari "<PR_URL>"`
+- Exception:
+  - use another browser only when owner explicitly requests it.
+
 ## Implementation Checkpoint Log (Required For In-Progress Briefs)
 
 Add a running log section in each in-progress brief so status survives chat loss.
@@ -192,6 +203,7 @@ Add a running log section in each in-progress brief so status survives chat loss
   - Vercel preview QA is done.
 - `assistant_rule`:
   - final handoff must include the direct PR merge URL and a one-line reminder that merge is done in GitHub UI by repo owner.
+  - when opening PR links for owner actions, open Safari by default unless owner has requested another browser.
   - after user confirms PR is merged, final handoff must include post-merge local sync commands and ask for confirmation when completed.
 - `post_merge_local_sync`:
   - run:
