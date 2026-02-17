@@ -1,24 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { signOutMock, signInWithPasswordMock, createServerSupabaseClientMock } = vi.hoisted(() => {
-  const signOut = vi.fn();
-  const signInWithPassword = vi.fn();
-  const createServerSupabaseClient = vi.fn(async () => ({
-    auth: {
-      signOut,
-      signInWithPassword,
-    },
-  }));
+const { signInWithDevBypassAccountMock } = vi.hoisted(() => {
+  const signInWithDevBypassAccount = vi.fn();
 
   return {
-    signOutMock: signOut,
-    signInWithPasswordMock: signInWithPassword,
-    createServerSupabaseClientMock: createServerSupabaseClient,
+    signInWithDevBypassAccountMock: signInWithDevBypassAccount,
   };
 });
 
-vi.mock("@/lib/supabase/server", () => ({
-  createServerSupabaseClient: createServerSupabaseClientMock,
+vi.mock("@/lib/auth/dev-login", () => ({
+  signInWithDevBypassAccount: signInWithDevBypassAccountMock,
 }));
 
 import { POST } from "@/app/api/dev-login/route";
@@ -42,6 +33,10 @@ function buildRequest(input?: {
   });
 }
 
+function applyResponseCookiesIdentity<T>(response: T): T {
+  return response;
+}
+
 describe("/api/dev-login route", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "development");
@@ -50,8 +45,11 @@ describe("/api/dev-login route", () => {
     vi.stubEnv("DEV_AUTH_BYPASS_EMAIL", "dev@example.com");
     vi.stubEnv("DEV_AUTH_BYPASS_PASSWORD", "dev-password");
 
-    signOutMock.mockResolvedValue({ error: null });
-    signInWithPasswordMock.mockResolvedValue({ error: null });
+    signInWithDevBypassAccountMock.mockResolvedValue({
+      ok: true,
+      userEmail: "dev@example.com",
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
   });
 
   afterEach(() => {
@@ -65,7 +63,7 @@ describe("/api/dev-login route", () => {
 
     const response = await POST(buildRequest());
     expect(response.status).toBe(404);
-    expect(createServerSupabaseClientMock).not.toHaveBeenCalled();
+    expect(signInWithDevBypassAccountMock).not.toHaveBeenCalled();
   });
 
   it("returns 403 for non-local requests", async () => {
@@ -76,7 +74,7 @@ describe("/api/dev-login route", () => {
       })
     );
     expect(response.status).toBe(403);
-    expect(createServerSupabaseClientMock).not.toHaveBeenCalled();
+    expect(signInWithDevBypassAccountMock).not.toHaveBeenCalled();
   });
 
   it("returns 401 when token is invalid", async () => {
@@ -86,7 +84,7 @@ describe("/api/dev-login route", () => {
       })
     );
     expect(response.status).toBe(401);
-    expect(createServerSupabaseClientMock).not.toHaveBeenCalled();
+    expect(signInWithDevBypassAccountMock).not.toHaveBeenCalled();
   });
 
   it("signs in with configured dev credentials and returns safe next path", async () => {
@@ -107,12 +105,7 @@ describe("/api/dev-login route", () => {
       nextPath: "/guides/poolside",
       userEmail: "dev@example.com",
     });
-    expect(createServerSupabaseClientMock).toHaveBeenCalledTimes(1);
-    expect(signOutMock).toHaveBeenCalledTimes(1);
-    expect(signInWithPasswordMock).toHaveBeenCalledWith({
-      email: "dev@example.com",
-      password: "dev-password",
-    });
+    expect(signInWithDevBypassAccountMock).toHaveBeenCalledTimes(1);
   });
 
   it("sanitizes non-local next path and uses fallback", async () => {
@@ -129,8 +122,10 @@ describe("/api/dev-login route", () => {
 
   it("returns 401 when configured dev credentials cannot sign in", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    signInWithPasswordMock.mockResolvedValue({
-      error: { message: "Invalid login credentials" },
+    signInWithDevBypassAccountMock.mockResolvedValue({
+      ok: false,
+      error: "Could not sign in.",
+      applySupabaseCookies: applyResponseCookiesIdentity,
     });
 
     const response = await POST(buildRequest());
@@ -139,7 +134,7 @@ describe("/api/dev-login route", () => {
     expect(response.status).toBe(401);
     expect(payload.ok).toBe(false);
     expect(payload.error).toBe("Could not sign in.");
-    expect(consoleSpy).toHaveBeenCalled();
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 
   it("rejects unsupported content type", async () => {
@@ -149,6 +144,6 @@ describe("/api/dev-login route", () => {
       })
     );
     expect(response.status).toBe(415);
-    expect(createServerSupabaseClientMock).not.toHaveBeenCalled();
+    expect(signInWithDevBypassAccountMock).not.toHaveBeenCalled();
   });
 });

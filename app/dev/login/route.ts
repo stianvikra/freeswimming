@@ -48,8 +48,8 @@ export async function GET(request: Request) {
     const signInUrl = new URL("/auth/sign-in", requestUrl.origin);
     signInUrl.searchParams.set("next", nextPath);
     signInUrl.searchParams.set("error", result.error);
-    return redirectWithNoStore(signInUrl);
+    return result.applySupabaseCookies(redirectWithNoStore(signInUrl));
   }
 
-  return redirectWithNoStore(new URL(nextPath, requestUrl.origin));
+  return result.applySupabaseCookies(redirectWithNoStore(new URL(nextPath, requestUrl.origin)));
 }

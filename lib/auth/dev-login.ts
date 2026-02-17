@@ -1,19 +1,22 @@
+import { NextResponse } from "next/server";
 import { getDevAuthBypassConfig } from "@/lib/auth/dev-auth-bypass";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
 export type DevBypassSignInResult =
   | {
       ok: true;
       userEmail: string;
+      applySupabaseCookies: <T extends NextResponse>(response: T) => T;
     }
   | {
       ok: false;
       error: "Could not sign in.";
+      applySupabaseCookies: <T extends NextResponse>(response: T) => T;
     };
 
 export async function signInWithDevBypassAccount(): Promise<DevBypassSignInResult> {
   const config = getDevAuthBypassConfig();
-  const supabase = await createServerSupabaseClient();
+  const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
 
   try {
     await supabase.auth.signOut();
@@ -29,11 +32,13 @@ export async function signInWithDevBypassAccount(): Promise<DevBypassSignInResul
     return {
       ok: false,
       error: "Could not sign in.",
+      applySupabaseCookies,
     };
   }
 
   return {
     ok: true,
     userEmail: config.email,
+    applySupabaseCookies,
   };
 }
