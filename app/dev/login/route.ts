@@ -15,6 +15,24 @@ function redirectWithNoStore(url: URL, status: 302 | 307 = 302) {
   });
 }
 
+function splitHeaderValue(value: string | null): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function resolveRequestOrigin(request: Request): string {
+  const requestUrl = new URL(request.url);
+  const forwardedHost = splitHeaderValue(request.headers.get("x-forwarded-host"))[0];
+  const host = forwardedHost || splitHeaderValue(request.headers.get("host"))[0] || requestUrl.host;
+
+  const forwardedProto = splitHeaderValue(request.headers.get("x-forwarded-proto"))[0];
+  const protocol = forwardedProto || requestUrl.protocol.replace(":", "") || "http";
+
+  return `${protocol}://${host}`;
+}
+
 export async function GET(request: Request) {
   if (!isDevAuthBypassEnabled()) {
     return NextResponse.json(
@@ -41,15 +59,16 @@ export async function GET(request: Request) {
   }
 
   const requestUrl = new URL(request.url);
+  const requestOrigin = resolveRequestOrigin(request);
   const nextPath = getSafeNextPath(requestUrl.searchParams.get("next"), "/my-library");
 
   const result = await signInWithDevBypassAccount();
   if (!result.ok) {
-    const signInUrl = new URL("/auth/sign-in", requestUrl.origin);
+    const signInUrl = new URL("/auth/sign-in", requestOrigin);
     signInUrl.searchParams.set("next", nextPath);
     signInUrl.searchParams.set("error", result.error);
     return result.applySupabaseCookies(redirectWithNoStore(signInUrl));
   }
 
-  return result.applySupabaseCookies(redirectWithNoStore(new URL(nextPath, requestUrl.origin)));
+  return result.applySupabaseCookies(redirectWithNoStore(new URL(nextPath, requestOrigin)));
 }

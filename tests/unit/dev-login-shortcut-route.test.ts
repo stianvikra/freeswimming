@@ -72,6 +72,19 @@ describe("/dev/login shortcut route", () => {
     expect(signInWithDevBypassAccountMock).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps incoming host for redirects to avoid localhost/127 cookie split", async () => {
+    const response = await GET(
+      buildRequest({
+        url: "http://localhost:3000/dev/login?next=/my-library",
+        origin: "http://127.0.0.1:3000",
+        forwardedHost: "127.0.0.1:3000",
+      })
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("http://127.0.0.1:3000/my-library");
+  });
+
   it("sanitizes unsafe next param and redirects to my-library fallback", async () => {
     const response = await GET(
       buildRequest({
