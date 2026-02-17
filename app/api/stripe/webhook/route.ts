@@ -111,6 +111,27 @@ async function fulfillCheckoutSession(stripe: Stripe, session: Stripe.Checkout.S
   });
 }
 
+export type DiscountRedeemedPayload = {
+  sessionId: string;
+  productId: string | null;
+  amountDiscount: number;
+  currency: string | null;
+};
+
+export function getDiscountRedeemedPayload(
+  session: Stripe.Checkout.Session
+): DiscountRedeemedPayload | null {
+  const amountDiscount = session.total_details?.amount_discount ?? 0;
+  if (amountDiscount <= 0) return null;
+
+  return {
+    sessionId: session.id,
+    productId: session.metadata?.fs_product_id ?? null,
+    amountDiscount,
+    currency: session.currency ?? null,
+  };
+}
+
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   if (!signature) {
@@ -160,18 +181,13 @@ export async function POST(request: Request) {
       },
     });
 
-    const amountDiscount = session.total_details?.amount_discount ?? 0;
-    if (amountDiscount > 0) {
+    const discountPayload = getDiscountRedeemedPayload(session);
+    if (discountPayload) {
       trackAnalyticsEvent({
         eventName: "discount_redeemed",
         channel: "server",
         userId: getValidUserId(session),
-        payload: {
-          sessionId: session.id,
-          productId: session.metadata?.fs_product_id ?? null,
-          amountDiscount,
-          currency: session.currency ?? null,
-        },
+        payload: discountPayload,
       });
     }
 

@@ -890,6 +890,22 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | analytics event automation tests added:
+  - added new unit tests for analytics UX instrumentation:
+    - `tests/unit/tracked-link.test.tsx`,
+    - `tests/unit/library-section-tabs.test.tsx`,
+    - `tests/unit/track-checkout-cancel.test.tsx`,
+    - `tests/unit/checkout-button.test.tsx`.
+  - added webhook discount payload helper test coverage:
+    - `tests/unit/stripe-webhook-analytics.test.ts`,
+    - helper exported in `app/api/stripe/webhook/route.ts`:
+      - `getDiscountRedeemedPayload`.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit -- --run`,
+    - `npm run build`.
+  - next step: finish manual QA checklist items and close remaining brief blockers.
 - `2026-02-17` | `working tree` | analytics coverage completion slice implemented:
   - added tracked library section navigation:
     - `components/my-library/LibrarySectionTabs.tsx`,
