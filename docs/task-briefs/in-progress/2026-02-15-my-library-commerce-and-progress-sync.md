@@ -134,6 +134,14 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Stripe billing self-service baseline is implemented:
   - `/api/portal` route with auth + safe return handling,
   - `My Library` exposes `Manage billing` action and error fallback copy.
+- Download-access recovery baseline is implemented:
+  - `/api/download/resend` endpoint with per-IP + per-email rate limits,
+  - non-enumerating response contract (`If this email exists, we sent a secure access link.`),
+  - access-link resend uses magic-link auth callback to return users to `My Library`.
+- Checkout/library recovery UX baseline is implemented:
+  - `/checkout/success` now includes immediate `Download from My Library` CTA,
+  - `/checkout/success` includes purchase-email resend form for secure access link recovery,
+  - `My Library` empty-owned state includes `already bought?` recovery resend entry.
 - Guest purchase attach-by-email on sign-in is implemented.
 - Free-course account sync baseline is implemented:
   - `/api/progress/course` (authenticated read/write),
@@ -155,14 +163,11 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `/claim`,
   - `/guides/0-1000m` interactive guide.
 - Missing API endpoints from architecture contract:
-  - `/api/download/resend`,
   - `/api/progress/guide`,
   - `/api/user/export`,
   - `/api/user/delete`.
 - `My Library` item detail is still placeholder text:
   - preview/download/re-download behavior not implemented yet.
-- Checkout success criteria is only partially met:
-  - page currently shows processing state, but not immediate download action.
 - Progress sync criteria is partially met:
   - free-course progress now supports signed-in server sync and local->account merge,
   - paid-guide progress sync (`/api/progress/guide`) is still pending.
@@ -180,16 +185,13 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 ## Next Delivery Order (Execution)
 
-1. Commerce completion slice:
-   - implement `/api/download/resend`,
-   - update `/checkout/success` with immediate download + confirmation UX.
-2. Progress sync slice:
+1. Progress sync slice:
    - implement `/api/progress/guide` baseline contract.
-3. Library/content slice:
+2. Library/content slice:
    - implement `/guides/0-1000m` interactive 20-session plan,
    - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
    - expand claim/restore UX around owned content recovery.
-4. Trust/ops slice:
+3. Trust/ops slice:
    - implement `/api/user/export` + `/api/user/delete`,
    - implement analytics event contract baseline,
    - close GDPR/privacy/cookie documentation and operational runbook items.
@@ -828,6 +830,19 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | `/api/download/resend` + checkout/library recovery slice complete:
+  - added `POST /api/download/resend` with JSON/content-type guard, `no-store` responses, and non-enumerating success copy,
+  - endpoint enforces per-IP + per-email rate limits (Upstash-first with in-memory fallback),
+  - resend now verifies entitlement by purchase email and sends magic-link access flow back to `next` path,
+  - added reusable `DownloadResendForm` client component and connected it to:
+    - `/checkout/success` recovery module,
+    - `My Library` empty-owned recovery module.
+  - updated `/checkout/success` with immediate `Download from My Library` CTA and clearer post-payment confirmation copy.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`.
+  - next step: implement `/api/progress/guide` baseline contract.
 - `2026-02-17` | `working tree` | `/api/portal` implementation complete:
   - added `POST /api/portal` with auth guard, `no-store` headers, safe local `returnPath` handling, and explicit `401/404/500` responses,
   - customer resolution now checks entitlement `stripe_customer_id` first, then Stripe customer lookup by signed-in email fallback,
