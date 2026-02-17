@@ -76,6 +76,18 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
               </p>
             ) : null}
           </div>
+
+          <p className="mt-6 text-xs leading-relaxed text-slate-600">
+            Privacy details:{" "}
+            <Link href="/privacy" className="font-semibold text-blue-700 hover:text-blue-600">
+              Privacy Policy
+            </Link>{" "}
+            and{" "}
+            <Link href="/cookies" className="font-semibold text-blue-700 hover:text-blue-600">
+              Cookie Policy
+            </Link>
+            .
+          </p>
         </div>
       </section>
     </SiteChrome>

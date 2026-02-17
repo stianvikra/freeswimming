@@ -151,6 +151,15 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `/api/user/delete` authenticated endpoint with explicit confirmation contract (`confirm: "DELETE"`),
   - deletes auth user via server-only admin client (hard delete) to remove app-owned user data through DB constraints,
   - attempts sign-out/session clear after delete.
+- GDPR/privacy/cookie baseline documentation is implemented:
+  - user-facing disclosure routes:
+    - `/privacy`,
+    - `/cookies`.
+  - checkout-adjacent and account surfaces now expose policy links:
+    - `/checkout/success`,
+    - `/my-library`.
+  - operational rights workflow runbook exists:
+    - `docs/runbooks/gdpr-data-rights.md`.
 - Analytics/KPI event baseline is implemented:
   - centralized analytics event contract + server logger pipeline,
   - client analytics ingestion endpoint (`POST /api/analytics/event`),
@@ -206,8 +215,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Goals MVP UI/state flow is not implemented.
 - Analytics remaining scope:
   - full event coverage for `library_tab_switched`, `item_preview_opened`, `support_clicked` and phase-2 upsell/discount events.
-- GDPR operational requirements are not complete:
-  - rights workflow + privacy/cookie disclosure updates not completed in app docs/routes.
 - Library tab contract decision required:
   - implement explicit query tabs (`?tab=library|explore`) or revise contract to section layout.
 - Security follow-up items remain deferred:
@@ -218,35 +225,14 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Next Delivery Order (Execution)
 
 1. Library/content slice:
-   - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
-   - lock `guide_poolside` to dual delivery (`PDF + interactive`) now,
-   - upgrade `0-1000m` tracker UX with focus-mode flow:
-     - open one session at a time in fullscreen,
-     - close fullscreen and return to overview,
-     - collapse completed sessions in overview with explicit reopen.
-   - apply cross-guide UX polish bundle (`0-1000m` + `poolside`):
-     - `Continue where you left off` CTA,
-     - sticky fullscreen control order:
-       - `Previous`,
-       - `Next`,
-       - `Mark complete`,
-       - `Close`,
-     - visual fullscreen improvements (`poolside`):
-       - swipe between visuals,
-       - double-tap zoom,
-       - pinch-to-zoom,
-     - completion safety:
-       - undo toast after `Mark complete`,
-       - persisted collapse/show state for completed groups.
-   - deliver poolside interactive UX:
-     - one drill per view,
-     - `Previous`/`Next` + swipe navigation,
-     - `Drills overview` with completion status,
-     - `Visual view` fullscreen image mode (portrait + landscape support),
-   - expand claim/restore UX around owned content recovery.
+   - finish remaining owned-item detail behavior in `/my-library/item/[slug]` so non-guide products avoid placeholder-only UX.
+   - run cross-device manual QA for paid-guide resume behavior (`0-1000m` + `poolside`) and record results.
 2. Trust/ops slice:
    - expand analytics coverage for remaining contract events (`library_tab_switched`, `item_preview_opened`, `support_clicked`, phase-2 upsell/discount events),
-   - close GDPR/privacy/cookie documentation and operational runbook items.
+   - run manual QA for privacy/cookie disclosure visibility and rights-flow copy alignment.
+3. Security hardening follow-up:
+   - verify live rate-limit behavior in preview/production logs,
+   - decide if progressive Turnstile activation is needed based on abuse signals.
 
 ## Manual QA Environments
 
@@ -261,7 +247,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
     - paid guide progress resume (interactive guide),
     - owned item preview/download/re-download from `My Library` item detail,
     - `/plans` final UX sweep on mobile + desktop preview,
-    - `/claim`, and data export/delete user flows.
+    - `/claim`, data export/delete user flows, and policy-route visibility (`/privacy`, `/cookies`) from checkout/library surfaces.
   - browsers/devices:
     - iOS Safari (phone),
     - Android Chromium (phone),
@@ -461,10 +447,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - support email/URL to place on owned cards.
 - Policy:
   - refund policy URL,
-  - privacy policy URL,
+  - privacy policy URL (v1 default implemented at `/privacy`),
   - terms URL,
   - data request contact email (privacy inbox),
-  - cookie policy URL (or section anchor).
+  - cookie policy URL (v1 default implemented at `/cookies`).
 - Operations:
   - production domain URL,
   - Vercel project/environment ownership confirmed,
@@ -821,7 +807,7 @@ npx supabase start
    - status: `in-progress` (free-course sync + guest backup prompt delivered; paid-guide sync pending).
 4. **Trust + QA (Week 4)**
    - data export/delete controls, tests, accessibility polish, verify gate.
-   - status: `in-progress` (partial auth hardening done; export/delete/GDPR workflow pending).
+   - status: `in-progress` (export/delete + GDPR baseline docs delivered; analytics expansion and final QA pending).
 5. **Monetization Expansion (Post-MVP)**
    - enable `M1` first behind flag and observe KPIs,
    - if stable, enable `M2`, then `M3`.
@@ -897,6 +883,19 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | GDPR/privacy/cookie docs + workflow runbook slice implemented:
+  - added user-facing legal disclosure routes:
+    - `app/privacy/page.tsx`,
+    - `app/cookies/page.tsx`.
+  - updated policy discoverability in checkout/account surfaces:
+    - `app/checkout/success/page.tsx`,
+    - `app/my-library/page.tsx`.
+  - updated sitemap coverage for policy routes:
+    - `app/sitemap.ts`.
+  - added operational GDPR rights runbook:
+    - `docs/runbooks/gdpr-data-rights.md`.
+  - updated in-progress brief status to mark GDPR/privacy/cookie baseline as delivered.
+  - next step: close remaining analytics event coverage and related QA checks.
 - `2026-02-17` | `working tree` | analytics/KPI baseline implemented:
   - added central analytics event contract + sanitizing logger:
     - `lib/analytics/events.ts`.
