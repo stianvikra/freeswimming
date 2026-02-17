@@ -150,6 +150,17 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Paid-guide progress sync API baseline is implemented:
   - `/api/progress/guide` (authenticated read/write),
   - payload normalization + row caps aligned with course-progress API guardrails.
+- `0-1000m` interactive guide baseline is implemented:
+  - `/guides/0-1000m` authenticated + entitlement-gated route,
+  - 20-session (`S01-S20`) interactive tracker with per-session completion + notes,
+  - local-first persistence + background sync to `/api/progress/guide`,
+  - sync UX states include loading, offline, error, and retry.
+- `0-1000m` dual-action owned-item UX is implemented:
+  - owned-item detail now exposes both:
+    - `Open interactive plan`,
+    - `Download PDF`.
+  - PDF download is served through entitlement-gated API (`/api/guides/0-1000m/pdf`) with no public paid-file exposure.
+  - download UI includes explicit loading + failure state with retry option.
 - Guest progress-safety milestone prompt is implemented:
   - appears after 3 completed lessons in guest mode,
   - includes free-account CTA to preserve progress across devices,
@@ -163,16 +174,16 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ### Outstanding (blocking move to `done`)
 
 - Missing routes from architecture contract:
-  - `/claim`,
-  - `/guides/0-1000m` interactive guide.
+  - `/claim`.
 - Missing API endpoints from architecture contract:
   - `/api/user/export`,
   - `/api/user/delete`.
 - `My Library` item detail is still placeholder text:
-  - preview/download/re-download behavior not implemented yet.
+  - dual-action flow is now implemented for `0-1000m`,
+  - preview/download/re-download behavior for remaining owned products is still pending.
 - Progress sync criteria is partially met:
   - free-course progress now supports signed-in server sync and local->account merge,
-  - paid-guide progress sync API is implemented, but interactive guide UX + client sync wiring is still pending.
+  - paid-guide interactive sync is implemented for `0-1000m`, but cross-device resume still needs manual QA confirmation.
 - Goals MVP UI/state flow is not implemented.
 - Analytics/KPI event pipeline is not implemented.
 - GDPR operational requirements are not complete:
@@ -188,7 +199,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Next Delivery Order (Execution)
 
 1. Library/content slice:
-   - implement `/guides/0-1000m` interactive 20-session plan,
    - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
    - expand claim/restore UX around owned content recovery.
 2. Trust/ops slice:
@@ -830,6 +840,31 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | `0-1000m` dual-action UX + protected PDF download complete:
+  - added secure entitlement-gated PDF endpoint: `GET /api/guides/0-1000m/pdf`,
+  - added private PDF asset path handling with safe path validation (`GUIDE_0_TO_1000M_PDF_ASSET_PATH` optional override),
+  - updated owned-item detail to show dual actions for `0-1000m`:
+    - `Open interactive plan`,
+    - `Download PDF`.
+  - updated `/guides/0-1000m` header actions with direct `Download PDF` and `Back to My Library`,
+  - added tests for:
+    - guide pdf asset path safety,
+    - download button success/error behavior.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`.
+  - next step: implement preview/download/re-download behavior for remaining owned products in `/my-library/item/[slug]`.
+- `2026-02-17` | `working tree` | `/guides/0-1000m` interactive plan baseline complete:
+  - added authenticated + entitlement-gated `/guides/0-1000m` route,
+  - delivered 20-session interactive tracker (`S01-S20`) with per-session completion and notes,
+  - guide tracker now stores progress locally and syncs to `/api/progress/guide` with loading/offline/error/retry states,
+  - wired `My Library` item detail for `guide_0_1000m` to open the interactive plan.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`.
+  - next step: implement owned item preview/download/re-download in `/my-library/item/[slug]`.
 - `2026-02-17` | `working tree` | `/api/progress/guide` baseline contract complete:
   - added `GET/POST /api/progress/guide` with auth guard, `no-store` responses, JSON/content-type validation, and explicit `401/415/413/500` handling,
   - added shared guide-progress normalization module with row de-duplication, identifier bounds, and stable sort behavior,

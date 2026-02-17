@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
+import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
+import {
+  GUIDE_0_TO_1000M_PDF_DOWNLOAD_FILENAME,
+  GUIDE_0_TO_1000M_PRODUCT_ID,
+} from "@/lib/guides/guide-0-1000m";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCatalogProductBySlug } from "@/lib/commerce/catalog";
 
@@ -11,6 +16,20 @@ type Props = {
 };
 
 export const dynamic = "force-dynamic";
+
+function getProductOpenHref(productId: string): string | null {
+  if (productId === GUIDE_0_TO_1000M_PRODUCT_ID) {
+    return "/guides/0-1000m";
+  }
+  return null;
+}
+
+function getProductPdfApiHref(productId: string): string | null {
+  if (productId === GUIDE_0_TO_1000M_PRODUCT_ID) {
+    return "/api/guides/0-1000m/pdf";
+  }
+  return null;
+}
 
 export default async function LibraryItemPage({ params }: Props) {
   const { slug } = await params;
@@ -42,16 +61,35 @@ export default async function LibraryItemPage({ params }: Props) {
     redirect("/my-library");
   }
 
+  const openHref = getProductOpenHref(product.id);
+  const pdfApiHref = getProductPdfApiHref(product.id);
+
   return (
     <SiteChrome>
       <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
           <h1 className="text-3xl font-bold text-slate-900">{product.title}</h1>
           <p className="mt-3 text-sm text-slate-600">
-            Owned item detail is active. Download/preview flows will be added in the next step.
+            {openHref
+              ? "This item includes an interactive tracker. Open it to continue your plan."
+              : "Owned item detail is active. Download/preview flows will be added in the next step."}
           </p>
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap items-start gap-3">
+            {openHref ? (
+              <Link
+                href={openHref}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+              >
+                Open interactive plan
+              </Link>
+            ) : null}
+            {pdfApiHref ? (
+              <GuidePdfDownloadButton
+                apiPath={pdfApiHref}
+                fallbackFileName={GUIDE_0_TO_1000M_PDF_DOWNLOAD_FILENAME}
+              />
+            ) : null}
             <Link
               href="/my-library"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
