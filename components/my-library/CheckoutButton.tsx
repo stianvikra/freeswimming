@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
   productId: string;
   cancelPath?: string;
+  analyticsSource?: "plans" | "library_explore" | "unknown";
   className?: string;
 };
 
@@ -17,15 +19,29 @@ type CheckoutResponse = {
 export default function CheckoutButton({
   productId,
   cancelPath = "/my-library",
+  analyticsSource = "unknown",
   className = "",
 }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
+  function buildCancelPathWithTracking(basePath: string) {
+    const url = new URL(basePath, "https://freeswimming.org");
+    url.searchParams.set("checkout", "cancelled");
+    url.searchParams.set("product", productId);
+    url.searchParams.set("source", analyticsSource);
+    return `${url.pathname}${url.search}`;
+  }
+
   async function onClick() {
     if (pending) return;
     setPending(true);
     setError("");
+
+    void sendClientAnalyticsEvent("upsell_accepted", {
+      productId,
+      source: analyticsSource,
+    });
 
     try {
       const response = await fetch("/api/checkout/session", {
@@ -35,7 +51,7 @@ export default function CheckoutButton({
         },
         body: JSON.stringify({
           productId,
-          cancelPath,
+          cancelPath: buildCancelPathWithTracking(cancelPath),
         }),
       });
 

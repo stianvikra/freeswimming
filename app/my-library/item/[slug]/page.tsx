@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import TrackedLink from "@/components/analytics/TrackedLink";
 import SiteChrome from "@/components/SiteChrome";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import { getLibraryItemActionCopy } from "@/lib/commerce/library-item-actions";
@@ -55,20 +56,39 @@ export default async function LibraryItemPage({ params }: Props) {
 
           <div className="mt-6 flex flex-wrap items-start gap-3">
             {actionCopy.primaryHref ? (
-              <Link
+              <TrackedLink
+                eventName="item_preview_opened"
+                payload={{
+                  source: "library_item_primary",
+                  productId: product.id,
+                  target: actionCopy.primaryHref,
+                }}
                 href={actionCopy.primaryHref}
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
               >
                 {actionCopy.primaryLabel}
-              </Link>
+              </TrackedLink>
             ) : null}
             {actionCopy.secondaryHref && actionCopy.secondaryLabel ? (
-              <Link
+              <TrackedLink
+                eventName={
+                  actionCopy.secondaryHref === "/contact"
+                    ? "support_clicked"
+                    : "item_preview_opened"
+                }
+                payload={{
+                  source:
+                    actionCopy.secondaryHref === "/contact"
+                      ? "library_item_secondary_support"
+                      : "library_item_secondary",
+                  productId: product.id,
+                  target: actionCopy.secondaryHref,
+                }}
                 href={actionCopy.secondaryHref}
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 {actionCopy.secondaryLabel}
-              </Link>
+              </TrackedLink>
             ) : null}
             {actionCopy.pdfApiHref && actionCopy.pdfFallbackFileName ? (
               <GuidePdfDownloadButton

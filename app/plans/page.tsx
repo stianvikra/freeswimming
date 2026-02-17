@@ -1,6 +1,8 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import SiteChrome from "@/components/SiteChrome";
+import TrackCheckoutCancel from "@/components/analytics/TrackCheckoutCancel";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
+import TrackedLink from "@/components/analytics/TrackedLink";
 import PageTemplate from "@/components/PageTemplate";
 import PageIntro from "@/components/PageIntro";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
@@ -69,7 +71,7 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
 
       <div className="mt-5">
         {product.available ? (
-          <CheckoutButton productId={product.id} cancelPath="/plans" />
+          <CheckoutButton productId={product.id} cancelPath="/plans" analyticsSource="plans" />
         ) : (
           <div className="space-y-2">
             <button
@@ -105,6 +107,18 @@ export default function PlansPage() {
             availableCount,
           }}
         />
+        {hasAvailableProducts ? (
+          <TrackEventOnMount
+            eventName="upsell_presented"
+            payload={{
+              surface: "plans",
+              offerCount: availableCount,
+            }}
+          />
+        ) : null}
+        <Suspense fallback={null}>
+          <TrackCheckoutCancel surface="plans" />
+        </Suspense>
         <PageIntro
           title="Plans"
           subtitle="Paid guides and feedback to support your next step."
@@ -125,12 +139,16 @@ export default function PlansPage() {
               You can still contact us and we will help you manually.
             </p>
             <div className="mt-3">
-              <Link
+              <TrackedLink
+                eventName="support_clicked"
+                payload={{
+                  source: "plans_unavailable",
+                }}
                 href="/contact"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
               >
                 Contact support
-              </Link>
+              </TrackedLink>
             </div>
           </div>
         ) : null}

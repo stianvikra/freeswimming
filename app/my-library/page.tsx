@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
+import TrackCheckoutCancel from "@/components/analytics/TrackCheckoutCancel";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
+import LibrarySectionTabs from "@/components/my-library/LibrarySectionTabs";
 import PortalButton from "@/components/my-library/PortalButton";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
@@ -67,6 +69,16 @@ export default async function MyLibraryPage() {
             exploreCount: sections.explore.length,
           }}
         />
+        {sections.explore.length > 0 ? (
+          <TrackEventOnMount
+            eventName="upsell_presented"
+            payload={{
+              surface: "library_explore",
+              offerCount: sections.explore.length,
+            }}
+          />
+        ) : null}
+        <TrackCheckoutCancel surface="my_library" />
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -88,8 +100,9 @@ export default async function MyLibraryPage() {
 
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
+            <LibrarySectionTabs showExploreTab={sections.explore.length > 0} />
 
-            <div className="space-y-4">
+            <div id="my-library-owned" className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">Owned</h2>
 
               {sections.owned.length === 0 && sections.unknownOwnedProductIds.length === 0 ? (
@@ -152,7 +165,7 @@ export default async function MyLibraryPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div id="my-library-explore" className="space-y-4">
               <h2 className="text-lg font-semibold text-slate-900">Explore More</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {sections.explore.map((product) => (
@@ -163,7 +176,7 @@ export default async function MyLibraryPage() {
                     <h3 className="text-base font-semibold text-slate-900">{product.title}</h3>
                     <p className="mt-2 text-sm text-slate-600">{getKindCopy(product)}</p>
                     <div className="mt-4">
-                      <CheckoutButton productId={product.id} />
+                      <CheckoutButton productId={product.id} analyticsSource="library_explore" />
                     </div>
                   </article>
                 ))}

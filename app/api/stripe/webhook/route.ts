@@ -160,6 +160,21 @@ export async function POST(request: Request) {
       },
     });
 
+    const amountDiscount = session.total_details?.amount_discount ?? 0;
+    if (amountDiscount > 0) {
+      trackAnalyticsEvent({
+        eventName: "discount_redeemed",
+        channel: "server",
+        userId: getValidUserId(session),
+        payload: {
+          sessionId: session.id,
+          productId: session.metadata?.fs_product_id ?? null,
+          amountDiscount,
+          currency: session.currency ?? null,
+        },
+      });
+    }
+
     await fulfillCheckoutSession(stripe, session);
     return NextResponse.json({ ok: true });
   } catch (error) {

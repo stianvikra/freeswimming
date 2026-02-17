@@ -176,6 +176,16 @@ Users can start instantly in guest mode, buy optional paid products without acco
     - `item_download_started`,
     - `progress_synced`,
     - `sync_failed`.
+- Analytics remaining coverage is implemented:
+  - library interaction event coverage:
+    - `library_tab_switched` (owned/explore section-nav interactions),
+    - `item_preview_opened` (owned-item primary/secondary open actions),
+    - `support_clicked` (plans fallback + owned-item support actions).
+  - upsell and discount telemetry coverage:
+    - `upsell_presented` on plans and library explore surfaces,
+    - `upsell_accepted` on checkout intent clicks from upsell surfaces,
+    - `upsell_declined` on Stripe checkout cancel returns,
+    - `discount_redeemed` on paid checkout webhook events with non-zero Stripe discount amount.
 - Free-course account sync baseline is implemented:
   - `/api/progress/course` (authenticated read/write),
   - signed-in course clients hydrate from server and merge local progress on first sign-in,
@@ -213,8 +223,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - free-course progress now supports signed-in server sync and local->account merge,
   - paid-guide interactive sync is implemented for `0-1000m`, but cross-device resume still needs manual QA confirmation.
 - Goals MVP UI/state flow is not implemented.
-- Analytics remaining scope:
-  - full event coverage for `library_tab_switched`, `item_preview_opened`, `support_clicked` and phase-2 upsell/discount events.
 - Library tab contract decision required:
   - implement explicit query tabs (`?tab=library|explore`) or revise contract to section layout.
 - Security follow-up items remain deferred:
@@ -228,8 +236,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
    - finish remaining owned-item detail behavior in `/my-library/item/[slug]` so non-guide products avoid placeholder-only UX.
    - run cross-device manual QA for paid-guide resume behavior (`0-1000m` + `poolside`) and record results.
 2. Trust/ops slice:
-   - expand analytics coverage for remaining contract events (`library_tab_switched`, `item_preview_opened`, `support_clicked`, phase-2 upsell/discount events),
-   - run manual QA for privacy/cookie disclosure visibility and rights-flow copy alignment.
+   - run manual QA for analytics payload correctness and privacy/cookie disclosure visibility.
 3. Security hardening follow-up:
    - verify live rate-limit behavior in preview/production logs,
    - decide if progressive Turnstile activation is needed based on abuse signals.
@@ -883,6 +890,32 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | analytics coverage completion slice implemented:
+  - added tracked library section navigation:
+    - `components/my-library/LibrarySectionTabs.tsx`,
+    - `app/my-library/page.tsx` (`library_tab_switched`).
+  - added tracked link wrapper for non-blocking client analytics:
+    - `components/analytics/TrackedLink.tsx`.
+  - added checkout-cancel analytics tracker:
+    - `components/analytics/TrackCheckoutCancel.tsx`,
+    - mounted in:
+      - `app/plans/page.tsx`,
+      - `app/my-library/page.tsx`.
+  - upgraded checkout CTA analytics coverage:
+    - `components/my-library/CheckoutButton.tsx` now emits:
+      - `upsell_accepted`,
+      - enriched checkout cancel path tags for `upsell_declined` tracking.
+  - extended plans and owned-item action instrumentation:
+    - `app/plans/page.tsx` (`upsell_presented`, `support_clicked`),
+    - `app/my-library/item/[slug]/page.tsx` (`item_preview_opened`, `support_clicked`),
+    - `app/my-library/page.tsx` (`upsell_presented`).
+  - extended webhook discount telemetry:
+    - `app/api/stripe/webhook/route.ts` now emits `discount_redeemed` when discount amount > 0.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit -- --run`.
+  - next step: run preview QA pass for analytics payload sanity and open PR.
 - `2026-02-17` | `working tree` | GDPR/privacy/cookie docs + workflow runbook slice implemented:
   - added user-facing legal disclosure routes:
     - `app/privacy/page.tsx`,
