@@ -198,6 +198,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - 20-session (`S01-S20`) interactive tracker with per-session completion + notes,
   - local-first persistence + background sync to `/api/progress/guide`,
   - sync UX states include loading, offline, error, and retry.
+- Guide tracker sync regression coverage is implemented:
+  - automated unit tests now verify server-hydrate + local/remote merge upsert contracts for both interactive guides:
+    - `tests/unit/guide-0-1000m-tracker-sync.test.tsx`,
+    - `tests/unit/guide-poolside-tracker-sync.test.tsx`.
 - `0-1000m` dual-action owned-item UX is implemented:
   - owned-item detail now exposes both:
     - `Open interactive plan`,
@@ -221,7 +225,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - preview/download/re-download behavior for remaining owned products is still pending.
 - Progress sync criteria is partially met:
   - free-course progress now supports signed-in server sync and local->account merge,
-  - paid-guide interactive sync is implemented for `0-1000m`, but cross-device resume still needs manual QA confirmation.
+  - paid-guide interactive sync is implemented for `0-1000m` and `poolside`, with automated merge/hydrate regression coverage, but cross-device resume still needs manual QA confirmation.
 - Goals MVP UI/state flow is not implemented.
 - Library tab contract decision required:
   - implement explicit query tabs (`?tab=library|explore`) or revise contract to section layout.
