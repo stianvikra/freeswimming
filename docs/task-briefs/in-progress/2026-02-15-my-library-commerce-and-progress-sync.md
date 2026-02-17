@@ -151,6 +151,22 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `/api/user/delete` authenticated endpoint with explicit confirmation contract (`confirm: "DELETE"`),
   - deletes auth user via server-only admin client (hard delete) to remove app-owned user data through DB constraints,
   - attempts sign-out/session clear after delete.
+- Analytics/KPI event baseline is implemented:
+  - centralized analytics event contract + server logger pipeline,
+  - client analytics ingestion endpoint (`POST /api/analytics/event`),
+  - core event instrumentation implemented for:
+    - `plans_viewed`,
+    - `library_viewed`,
+    - `checkout_started`,
+    - `checkout_completed`,
+    - `entitlement_granted`,
+    - `download_link_resent`,
+    - `account_claim_started`,
+    - `account_claim_completed`,
+    - `resume_clicked`,
+    - `item_download_started`,
+    - `progress_synced`,
+    - `sync_failed`.
 - Free-course account sync baseline is implemented:
   - `/api/progress/course` (authenticated read/write),
   - signed-in course clients hydrate from server and merge local progress on first sign-in,
@@ -188,7 +204,8 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - free-course progress now supports signed-in server sync and local->account merge,
   - paid-guide interactive sync is implemented for `0-1000m`, but cross-device resume still needs manual QA confirmation.
 - Goals MVP UI/state flow is not implemented.
-- Analytics/KPI event pipeline is not implemented.
+- Analytics remaining scope:
+  - full event coverage for `library_tab_switched`, `item_preview_opened`, `support_clicked` and phase-2 upsell/discount events.
 - GDPR operational requirements are not complete:
   - rights workflow + privacy/cookie disclosure updates not completed in app docs/routes.
 - Library tab contract decision required:
@@ -228,7 +245,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
      - `Visual view` fullscreen image mode (portrait + landscape support),
    - expand claim/restore UX around owned content recovery.
 2. Trust/ops slice:
-   - implement analytics event contract baseline,
+   - expand analytics coverage for remaining contract events (`library_tab_switched`, `item_preview_opened`, `support_clicked`, phase-2 upsell/discount events),
    - close GDPR/privacy/cookie documentation and operational runbook items.
 
 ## Manual QA Environments
@@ -880,6 +897,32 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | analytics/KPI baseline implemented:
+  - added central analytics event contract + sanitizing logger:
+    - `lib/analytics/events.ts`.
+  - added client analytics sender + mount tracker:
+    - `lib/analytics/client.ts`,
+    - `components/analytics/TrackEventOnMount.tsx`.
+  - added analytics ingestion endpoint:
+    - `POST /api/analytics/event` (`app/api/analytics/event/route.ts`).
+  - instrumented core flows:
+    - checkout/session + webhook:
+      - `checkout_started`,
+      - `checkout_completed`,
+      - `entitlement_granted`.
+    - resend/claim:
+      - `download_link_resent`,
+      - `account_claim_started`,
+      - `account_claim_completed` (on guest-entitlement attach).
+    - progress APIs:
+      - `progress_synced`,
+      - `sync_failed`.
+    - UI baseline signals:
+      - `plans_viewed`,
+      - `library_viewed`,
+      - `resume_clicked`,
+      - `item_download_started`.
+  - next step: close GDPR/privacy/cookie workflow docs + runbook scope.
 - `2026-02-17` | `working tree` | `/api/user/delete` endpoint implemented:
   - added authenticated delete route:
     - `app/api/user/delete/route.ts`.

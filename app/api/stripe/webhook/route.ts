@@ -13,6 +13,7 @@ import {
   getCatalogProducts,
   type CatalogProduct,
 } from "@/lib/commerce/catalog";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { createStripeClient, getStripeWebhookSecret } from "@/lib/stripe/server";
 
 const SUPPORTED_EVENTS = new Set([
@@ -91,6 +92,18 @@ async function fulfillCheckoutSession(stripe: Stripe, session: Stripe.Checkout.S
     stripeCheckoutSessionId: session.id,
   });
 
+  const grantedLatencyMs = Math.max(0, Date.now() - session.created * 1000);
+  trackAnalyticsEvent({
+    eventName: "entitlement_granted",
+    channel: "server",
+    userId,
+    payload: {
+      sessionId: session.id,
+      productId: product.id,
+      grantedLatencyMs,
+    },
+  });
+
   console.info("[StripeWebhook] Entitlement upserted", {
     sessionId: session.id,
     productId: product.id,
@@ -135,6 +148,17 @@ export async function POST(request: Request) {
       });
       return NextResponse.json({ ok: true, deferred: true });
     }
+
+    trackAnalyticsEvent({
+      eventName: "checkout_completed",
+      channel: "server",
+      userId: getValidUserId(session),
+      payload: {
+        sessionId: session.id,
+        productId: session.metadata?.fs_product_id ?? null,
+        eventType: event.type,
+      },
+    });
 
     await fulfillCheckoutSession(stripe, session);
     return NextResponse.json({ ok: true });

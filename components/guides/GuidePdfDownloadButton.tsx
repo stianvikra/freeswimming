@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
   apiPath: string;
@@ -42,6 +43,10 @@ export default function GuidePdfDownloadButton({
     if (pending) return;
     setPending(true);
     setError("");
+
+    void sendClientAnalyticsEvent("item_download_started", {
+      apiPath,
+    });
 
     try {
       const response = await fetch(apiPath, {

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { CatalogProduct } from "@/lib/commerce/catalog";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 
 type EntitlementUpsertInput = {
   userId: string | null;
@@ -84,15 +85,30 @@ export async function attachGuestEntitlementsByEmail(
   email: string
 ) {
   const normalizedEmail = normalizeEmail(email);
-  if (!normalizedEmail) return;
+  if (!normalizedEmail) return 0;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("entitlements")
     .update({ user_id: userId })
     .is("user_id", null)
-    .eq("purchaser_email", normalizedEmail);
+    .eq("purchaser_email", normalizedEmail)
+    .select("id");
 
   if (error) {
     throw new Error(`Could not attach guest entitlements: ${error.message}`);
   }
+
+  const attachedEntitlementCount = data?.length ?? 0;
+  if (attachedEntitlementCount > 0) {
+    trackAnalyticsEvent({
+      eventName: "account_claim_completed",
+      channel: "server",
+      userId,
+      payload: {
+        attachedEntitlementCount,
+      },
+    });
+  }
+
+  return attachedEntitlementCount;
 }

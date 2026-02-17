@@ -4,6 +4,7 @@ import {
   normalizeGuideProgressRows,
   type GuideProgressRow,
 } from "@/lib/course/guide-progress";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProgressBody = {
@@ -109,8 +110,27 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error("[GuideProgressApi] Could not save guide progress", error);
+    trackAnalyticsEvent({
+      eventName: "sync_failed",
+      channel: "server",
+      userId,
+      payload: {
+        syncKind: "guide",
+        rowCount: normalizedRows.length,
+      },
+    });
     return jsonNoStore({ ok: false, error: "Could not save guide progress." }, 500);
   }
+
+  trackAnalyticsEvent({
+    eventName: "progress_synced",
+    channel: "server",
+    userId,
+    payload: {
+      syncKind: "guide",
+      rowCount: normalizedRows.length,
+    },
+  });
 
   return jsonNoStore({ ok: true, upserted: normalizedRows.length });
 }

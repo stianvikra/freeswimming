@@ -10,6 +10,7 @@ import {
   RESEND_DOWNLOAD_GENERIC_MESSAGE,
   toDownloadResendSource,
 } from "@/lib/commerce/download-resend";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 
 type ResendBody = {
   email?: string;
@@ -278,6 +279,16 @@ export async function POST(request: Request) {
     );
   }
 
+  if (source === "claim_entry") {
+    trackAnalyticsEvent({
+      eventName: "account_claim_started",
+      channel: "server",
+      payload: {
+        nextPath,
+      },
+    });
+  }
+
   try {
     const adminSupabase = createAdminSupabaseClient();
     const { data: entitlement, error: entitlementError } = await adminSupabase
@@ -342,6 +353,14 @@ export async function POST(request: Request) {
       source,
       emailHash,
       nextPath,
+    });
+    trackAnalyticsEvent({
+      eventName: "download_link_resent",
+      channel: "server",
+      payload: {
+        source,
+        nextPath,
+      },
     });
     return jsonNoStore(GENERIC_OK_BODY, { headers: rateHeaders });
   } catch (error) {

@@ -4,6 +4,7 @@ import {
   normalizeCourseProgressRows,
   type CourseProgressRow,
 } from "@/lib/course/progress";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ProgressBody = {
@@ -108,8 +109,27 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error("[CourseProgressApi] Could not save progress", error);
+    trackAnalyticsEvent({
+      eventName: "sync_failed",
+      channel: "server",
+      userId,
+      payload: {
+        syncKind: "course",
+        rowCount: normalizedRows.length,
+      },
+    });
     return jsonNoStore({ ok: false, error: "Could not save course progress." }, 500);
   }
+
+  trackAnalyticsEvent({
+    eventName: "progress_synced",
+    channel: "server",
+    userId,
+    payload: {
+      syncKind: "course",
+      rowCount: normalizedRows.length,
+    },
+  });
 
   return jsonNoStore({ ok: true, upserted: normalizedRows.length });
 }
