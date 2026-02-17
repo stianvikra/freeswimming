@@ -216,6 +216,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - request/verify rate limits,
   - cooldown messaging,
   - Upstash support with in-memory fallback.
+- Local QA auth bypass (dev-only) is implemented:
+  - `POST /api/dev-login` is hard-disabled outside `NODE_ENV=development`,
+  - guarded by explicit feature flag + token header + localhost/private-network request checks,
+  - signs in only configured seeded dev account (no dynamic account selection).
 - Soft-launch public UX exists with under-construction banner.
 
 ### Outstanding (blocking move to `done`)
