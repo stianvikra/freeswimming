@@ -213,3 +213,33 @@ test("contextual install prompt shows success confirmation after accepted instal
   await prompt.getByRole("button", { name: "Done" }).click();
   await expect(prompt).toBeHidden();
 });
+
+test("guest sees free-account backup prompt after completing three lessons", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Progress backup prompt flow is validated on mobile projects."
+  );
+
+  await page.goto("/course?lesson=mod3-l1");
+  await page.evaluate(() => {
+    localStorage.removeItem("fs_course_done_lessons");
+    localStorage.removeItem("fs_course_backup_prompt_dismissed_at");
+  });
+  await page.reload();
+
+  await page.getByRole("button", { name: "Mark as done" }).click();
+  await page.getByTestId("course-nav-right").click();
+
+  await page.getByRole("button", { name: "Mark as done" }).click();
+  await page.getByTestId("course-nav-right").click();
+
+  await page.getByRole("button", { name: "Mark as done" }).click();
+
+  const backupPrompt = page.getByTestId("course-backup-prompt");
+  await expect(backupPrompt).toBeVisible();
+  await expect(backupPrompt.getByRole("link", { name: "Create free account" })).toBeVisible();
+  await backupPrompt.getByRole("button", { name: "Maybe later" }).click();
+  await expect(backupPrompt).toBeHidden();
+});

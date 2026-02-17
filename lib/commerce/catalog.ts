@@ -16,6 +16,16 @@ export type CatalogProduct = {
   stripePriceId: string;
 };
 
+export type CatalogProductAvailability = {
+  id: CatalogProductId;
+  slug: string;
+  title: string;
+  kind: "course_addon" | "analysis";
+  available: boolean;
+  stripePriceId: string | null;
+  missingEnvVar: string | null;
+};
+
 const CATALOG_DEFINITIONS: CatalogDefinition[] = [
   {
     id: "guide_0_1000m",
@@ -98,4 +108,23 @@ export function getCatalogProductsSafe(env: NodeJS.ProcessEnv = process.env): Ca
     console.error("[Catalog] Could not load product catalog", error);
     return [];
   }
+}
+
+export function getCatalogProductsWithAvailability(
+  env: NodeJS.ProcessEnv = process.env
+): CatalogProductAvailability[] {
+  return CATALOG_DEFINITIONS.map((definition) => {
+    const stripePriceId = env[definition.envVar] ?? null;
+    const available = Boolean(stripePriceId);
+
+    return {
+      id: definition.id,
+      slug: definition.slug,
+      title: definition.title,
+      kind: definition.kind,
+      available,
+      stripePriceId,
+      missingEnvVar: available ? null : definition.envVar,
+    };
+  });
 }

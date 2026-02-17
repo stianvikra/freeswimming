@@ -29,7 +29,18 @@ import {
   parseStoredTimestamp,
   shouldShowAutoInstallPrompt,
 } from "@/components/install/install-rules";
+import {
+  areCourseProgressRowsEqual,
+  buildCourseProgressRowsFromLocal,
+  buildLocalCourseProgressFromRows,
+  mergeCourseProgressRows,
+  normalizeCourseProgressRows,
+  normalizeDoneLessonIds,
+  normalizeVideoProgressRecord,
+  type CourseProgressRow,
+} from "@/lib/course/progress";
 import { COURSE_LAST_LESSON_STORAGE_KEY } from "@/lib/course/resume";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 import {
   COURSE_MODULES,
@@ -53,6 +64,11 @@ const SWIPE_DISTANCE_TO_NAVIGATE_PX = 78;
 const SWIPE_VERTICAL_CANCEL_PX = 24;
 const SWIPE_HINT_REVEAL_PX = 18;
 const A2HS_AUTO_PROMPT_ENABLED = process.env.NEXT_PUBLIC_FS_A2HS_AUTO_PROMPT_ENABLED !== "0";
+const COURSE_PROGRESS_SYNC_API_PATH = "/api/progress/course";
+const COURSE_PROGRESS_SYNC_INTERVAL_MS = 10_000;
+const BACKUP_PROMPT_DISMISSED_AT_KEY = "fs_course_backup_prompt_dismissed_at";
+const BACKUP_PROMPT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+const BACKUP_PROMPT_MIN_DONE_LESSONS = 3;
 const DEFAULT_PASS_CRITERIA = [
   "Complete 3 calm repetitions with the same cue.",
   "Breathing stays controlled without rushing.",
@@ -126,6 +142,21 @@ function isSwipeBlockedTarget(target: EventTarget | null) {
   );
 }
 
+function formatSyncStatusAgeLabel(timestampMs: number | null): string {
+  if (!timestampMs) return "Signed in. Progress sync is active.";
+  const ageMs = Math.max(0, Date.now() - timestampMs);
+  if (ageMs < 15_000) return "Synced to your account just now.";
+
+  const ageMinutes = Math.floor(ageMs / 60_000);
+  if (ageMinutes < 1) return "Synced to your account less than a minute ago.";
+  if (ageMinutes === 1) return "Synced to your account 1 minute ago.";
+  if (ageMinutes < 60) return `Synced to your account ${ageMinutes} minutes ago.`;
+
+  const ageHours = Math.floor(ageMinutes / 60);
+  if (ageHours === 1) return "Synced to your account 1 hour ago.";
+  return `Synced to your account ${ageHours} hours ago.`;
+}
+
 export default function CoursePage() {
   return (
     <Suspense fallback={<CoursePageFallback />}>
@@ -156,6 +187,7 @@ function CoursePageClient() {
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(false);
   const [doneLessonIds, setDoneLessonIds] = useState<string[]>([]);
+  const [doneLessonIdsLoaded, setDoneLessonIdsLoaded] = useState(false);
   const [videoStarted, setVideoStarted] = useState(false);
   const [videoPaused, setVideoPaused] = useState(false);
   const [youtubeApiReady, setYoutubeApiReady] = useState(false);
@@ -177,6 +209,13 @@ function CoursePageClient() {
   const progressSaveTimerRef = useRef<number | null>(null);
   const [resumeAvailable, setResumeAvailable] = useState(false);
   const [playbackProgressLoaded, setPlaybackProgressLoaded] = useState(false);
+  const [authStateLoaded, setAuthStateLoaded] = useState(false);
+  const [signedInUserId, setSignedInUserId] = useState<string | null>(null);
+  const [courseSyncStatus, setCourseSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">(
+    "idle"
+  );
+  const [lastCourseSyncAtMs, setLastCourseSyncAtMs] = useState<number | null>(null);
+  const [showBackupPrompt, setShowBackupPrompt] = useState(false);
   const [swipeHint, setSwipeHint] = useState<{
     direction: SwipeDirection;
     progress: number;
@@ -192,6 +231,12 @@ function CoursePageClient() {
   const [installPromptFeedback, setInstallPromptFeedback] = useState<string | null>(null);
   const overviewJumpDraggingRef = useRef(false);
   const installPromptTimerRef = useRef<number | null>(null);
+  const courseSyncTimerRef = useRef<number | null>(null);
+  const courseSyncDirtyRef = useRef(false);
+  const courseSyncDirtyLessonIdsRef = useRef<Set<string>>(new Set());
+  const courseSyncInFlightRef = useRef(false);
+  const knownProgressLessonIdsRef = useRef<Set<string>>(new Set());
+  const hydratedProgressUserIdRef = useRef<string | null>(null);
   const swipeTouchIdRef = useRef<number | null>(null);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
   const swipeStartXRef = useRef(0);
@@ -243,6 +288,131 @@ function CoursePageClient() {
     );
   }, []);
 
+  const localCourseProgressLoaded = doneLessonIdsLoaded && playbackProgressLoaded;
+
+  const clearCourseSyncTimer = useCallback(() => {
+    if (courseSyncTimerRef.current == null) return;
+    window.clearInterval(courseSyncTimerRef.current);
+    courseSyncTimerRef.current = null;
+  }, []);
+
+  const markCourseProgressDirty = useCallback((lessonId?: string) => {
+    if (lessonId) {
+      knownProgressLessonIdsRef.current.add(lessonId);
+      courseSyncDirtyLessonIdsRef.current.add(lessonId);
+    } else {
+      for (const knownLessonId of knownProgressLessonIdsRef.current) {
+        courseSyncDirtyLessonIdsRef.current.add(knownLessonId);
+      }
+    }
+    courseSyncDirtyRef.current = courseSyncDirtyLessonIdsRef.current.size > 0;
+  }, []);
+
+  const applyLocalCourseProgress = useCallback(
+    (next: { doneLessonIds: string[]; videoProgressByLessonId: Record<string, number> }) => {
+      const normalizedDoneLessonIds = normalizeDoneLessonIds(next.doneLessonIds);
+      const normalizedVideoProgress = normalizeVideoProgressRecord(next.videoProgressByLessonId);
+
+      for (const lessonId of normalizedDoneLessonIds) {
+        knownProgressLessonIdsRef.current.add(lessonId);
+      }
+
+      for (const lessonId of Object.keys(normalizedVideoProgress)) {
+        knownProgressLessonIdsRef.current.add(lessonId);
+      }
+
+      playbackProgressRef.current = normalizedVideoProgress;
+      setDoneLessonIds(normalizedDoneLessonIds);
+      setResumeAvailable(Math.floor(normalizedVideoProgress[activeLesson.id] ?? 0) >= 2);
+
+      try {
+        localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(normalizedDoneLessonIds));
+        localStorage.setItem(VIDEO_PROGRESS_STORAGE_KEY, JSON.stringify(normalizedVideoProgress));
+      } catch {}
+    },
+    [activeLesson.id]
+  );
+
+  const buildSyncRows = useCallback(
+    (updatedAt?: string): CourseProgressRow[] => {
+      return buildCourseProgressRowsFromLocal(
+        {
+          doneLessonIds,
+          videoProgressByLessonId: playbackProgressRef.current,
+        },
+        {
+          knownLessonIds: knownProgressLessonIdsRef.current,
+          updatedAt,
+        }
+      );
+    },
+    [doneLessonIds]
+  );
+
+  const persistCourseProgressRows = useCallback(
+    async (rows: CourseProgressRow[]) => {
+      if (!signedInUserId) return;
+
+      const response = await fetch(COURSE_PROGRESS_SYNC_API_PATH, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        credentials: "same-origin",
+        body: JSON.stringify({ rows }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Course progress sync failed (${response.status})`);
+      }
+    },
+    [signedInUserId]
+  );
+
+  const syncCourseProgressNow = useCallback(
+    async (options?: { force?: boolean }) => {
+      if (!signedInUserId || !localCourseProgressLoaded) return;
+      if (!options?.force && !courseSyncDirtyRef.current) return;
+      if (courseSyncInFlightRef.current) return;
+
+      const dirtyLessonIds = new Set(courseSyncDirtyLessonIdsRef.current);
+      if (!options?.force && dirtyLessonIds.size === 0) return;
+
+      const rows = buildSyncRows(new Date().toISOString()).filter((row) => {
+        if (options?.force) return true;
+        return dirtyLessonIds.has(row.lessonId);
+      });
+      if (rows.length === 0) {
+        courseSyncDirtyRef.current = courseSyncDirtyLessonIdsRef.current.size > 0;
+        return;
+      }
+
+      courseSyncInFlightRef.current = true;
+      setCourseSyncStatus("syncing");
+
+      try {
+        await persistCourseProgressRows(rows);
+        if (options?.force) {
+          courseSyncDirtyLessonIdsRef.current.clear();
+        } else {
+          for (const row of rows) {
+            courseSyncDirtyLessonIdsRef.current.delete(row.lessonId);
+          }
+        }
+        courseSyncDirtyRef.current = courseSyncDirtyLessonIdsRef.current.size > 0;
+        setCourseSyncStatus("synced");
+        setLastCourseSyncAtMs(Date.now());
+      } catch (error) {
+        console.error("[CoursePage] Could not sync course progress", error);
+        setCourseSyncStatus("error");
+      } finally {
+        courseSyncInFlightRef.current = false;
+      }
+    },
+    [buildSyncRows, localCourseProgressLoaded, persistCourseProgressRows, signedInUserId]
+  );
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, activeLesson.id);
@@ -273,38 +443,185 @@ function CoursePageClient() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DONE_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        setDoneLessonIds(parsed.filter((v): v is string => typeof v === "string"));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const normalizedDoneLessonIds = normalizeDoneLessonIds(parsed);
+        for (const lessonId of normalizedDoneLessonIds) {
+          knownProgressLessonIdsRef.current.add(lessonId);
+        }
+        setDoneLessonIds(normalizedDoneLessonIds);
       }
     } catch {}
+    setDoneLessonIdsLoaded(true);
   }, []);
 
   useEffect(() => {
+    if (!doneLessonIdsLoaded) return;
     try {
       localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(doneLessonIds));
     } catch {}
-  }, [doneLessonIds]);
+  }, [doneLessonIds, doneLessonIdsLoaded]);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(VIDEO_PROGRESS_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          const normalized: Record<string, number> = {};
-          for (const [lessonId, value] of Object.entries(parsed)) {
-            if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
-              normalized[lessonId] = value;
-            }
-          }
-          playbackProgressRef.current = normalized;
+        const normalized = normalizeVideoProgressRecord(parsed);
+        for (const lessonId of Object.keys(normalized)) {
+          knownProgressLessonIdsRef.current.add(lessonId);
         }
+        playbackProgressRef.current = normalized;
       }
     } catch {}
     setPlaybackProgressLoaded(true);
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const supabase = createBrowserSupabaseClient();
+
+    void supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return;
+      if (error) {
+        setSignedInUserId(null);
+        setAuthStateLoaded(true);
+        return;
+      }
+      setSignedInUserId(data.user?.id ?? null);
+      setAuthStateLoaded(true);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setSignedInUserId(session?.user?.id ?? null);
+      setAuthStateLoaded(true);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (signedInUserId) return;
+    clearCourseSyncTimer();
+    hydratedProgressUserIdRef.current = null;
+    courseSyncDirtyRef.current = false;
+    courseSyncDirtyLessonIdsRef.current.clear();
+    courseSyncInFlightRef.current = false;
+    setCourseSyncStatus("idle");
+    setLastCourseSyncAtMs(null);
+  }, [clearCourseSyncTimer, signedInUserId]);
+
+  useEffect(() => {
+    if (!authStateLoaded || !localCourseProgressLoaded || !signedInUserId) return;
+    if (hydratedProgressUserIdRef.current === signedInUserId) return;
+
+    hydratedProgressUserIdRef.current = signedInUserId;
+    let cancelled = false;
+
+    const hydrateFromServer = async () => {
+      setCourseSyncStatus("syncing");
+
+      try {
+        const response = await fetch(COURSE_PROGRESS_SYNC_API_PATH, {
+          method: "GET",
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Course progress hydrate failed (${response.status})`);
+        }
+
+        const payload = (await response.json()) as { rows?: unknown };
+        if (cancelled) return;
+
+        const remoteRows = normalizeCourseProgressRows(payload.rows ?? []);
+        for (const row of remoteRows) {
+          knownProgressLessonIdsRef.current.add(row.lessonId);
+        }
+
+        const localRows = buildSyncRows();
+        const mergedRows = mergeCourseProgressRows(localRows, remoteRows);
+        for (const row of mergedRows) {
+          knownProgressLessonIdsRef.current.add(row.lessonId);
+        }
+
+        applyLocalCourseProgress(buildLocalCourseProgressFromRows(mergedRows));
+
+        if (!areCourseProgressRowsEqual(mergedRows, remoteRows)) {
+          await persistCourseProgressRows(mergedRows);
+        }
+
+        if (cancelled) return;
+        courseSyncDirtyRef.current = false;
+        courseSyncDirtyLessonIdsRef.current.clear();
+        setCourseSyncStatus("synced");
+        setLastCourseSyncAtMs(Date.now());
+      } catch (error) {
+        if (cancelled) return;
+        console.error("[CoursePage] Could not hydrate course progress", error);
+        setCourseSyncStatus("error");
+      }
+    };
+
+    void hydrateFromServer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    applyLocalCourseProgress,
+    authStateLoaded,
+    buildSyncRows,
+    localCourseProgressLoaded,
+    persistCourseProgressRows,
+    signedInUserId,
+  ]);
+
+  useEffect(() => {
+    if (!signedInUserId || !localCourseProgressLoaded) return;
+    clearCourseSyncTimer();
+    courseSyncTimerRef.current = window.setInterval(() => {
+      void syncCourseProgressNow();
+    }, COURSE_PROGRESS_SYNC_INTERVAL_MS);
+
+    return () => {
+      clearCourseSyncTimer();
+    };
+  }, [clearCourseSyncTimer, localCourseProgressLoaded, signedInUserId, syncCourseProgressNow]);
+
+  useEffect(() => {
+    if (!signedInUserId) return;
+
+    const flushWhenBackgrounded = () => {
+      if (document.visibilityState !== "hidden") return;
+      void syncCourseProgressNow({ force: true });
+    };
+
+    const flushOnPageHide = () => {
+      void syncCourseProgressNow({ force: true });
+    };
+
+    document.addEventListener("visibilitychange", flushWhenBackgrounded);
+    window.addEventListener("pagehide", flushOnPageHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", flushWhenBackgrounded);
+      window.removeEventListener("pagehide", flushOnPageHide);
+    };
+  }, [signedInUserId, syncCourseProgressNow]);
+
+  useEffect(() => {
+    if (!signedInUserId || !doneLessonIdsLoaded) return;
+    if (!courseSyncDirtyRef.current) return;
+    void syncCourseProgressNow({ force: true });
+  }, [doneLessonIds, doneLessonIdsLoaded, signedInUserId, syncCourseProgressNow]);
 
   useEffect(() => {
     if (!playbackProgressLoaded) return;
@@ -352,21 +669,28 @@ function CoursePageClient() {
         const seconds = player.getCurrentTime();
         if (!Number.isFinite(seconds) || seconds < 0) return;
         const normalizedSeconds = Math.floor(seconds);
+        const previousSeconds = Math.floor(playbackProgressRef.current[lessonId] ?? 0);
+        if (normalizedSeconds === previousSeconds) return;
+
+        knownProgressLessonIdsRef.current.add(lessonId);
         playbackProgressRef.current[lessonId] = normalizedSeconds;
         persistPlaybackProgress();
+        markCourseProgressDirty(lessonId);
         if (lessonId === activeLesson.id) {
           setResumeAvailable(normalizedSeconds >= 2);
         }
       } catch {}
     },
-    [activeLesson.id, persistPlaybackProgress]
+    [activeLesson.id, markCourseProgressDirty, persistPlaybackProgress]
   );
 
   useEffect(() => {
     return () => {
       stopProgressSaveTimer();
+      clearCourseSyncTimer();
+      void syncCourseProgressNow({ force: true });
     };
-  }, [stopProgressSaveTimer]);
+  }, [clearCourseSyncTimer, stopProgressSaveTimer, syncCourseProgressNow]);
 
   const playerTopRef = useRef<HTMLDivElement | null>(null);
 
@@ -553,6 +877,13 @@ function CoursePageClient() {
     setInstallPromptFeedback(null);
   }
 
+  function dismissBackupPrompt() {
+    try {
+      localStorage.setItem(BACKUP_PROMPT_DISMISSED_AT_KEY, String(Date.now()));
+    } catch {}
+    setShowBackupPrompt(false);
+  }
+
   useEffect(() => {
     return () => {
       clearInstallPromptTimer();
@@ -571,6 +902,9 @@ function CoursePageClient() {
 
   function toggleLessonDone() {
     const willMarkAsDone = !doneLessonIds.includes(activeLesson.id);
+    knownProgressLessonIdsRef.current.add(activeLesson.id);
+    markCourseProgressDirty(activeLesson.id);
+
     setDoneLessonIds((prev) => {
       if (prev.includes(activeLesson.id)) {
         return prev.filter((id) => id !== activeLesson.id);
@@ -764,9 +1098,40 @@ function CoursePageClient() {
   const showVideoOverlay = !videoStarted || videoPaused;
   const showResumeState = videoStarted && videoPaused;
   const showResumeCta = showResumeState || (!videoStarted && resumeAvailable);
+  const isSignedIn = Boolean(signedInUserId);
+  const isGuest = authStateLoaded && !signedInUserId;
+  const backupSignInHref = `/auth/sign-in?next=${encodeURIComponent(
+    `${pathname}?lesson=${encodeURIComponent(activeLesson.id)}`
+  )}`;
+  const courseProgressStatusCopy = isSignedIn
+    ? courseSyncStatus === "error"
+      ? "Sync paused right now. We'll retry automatically."
+      : courseSyncStatus === "syncing"
+        ? "Syncing lesson progress to your account..."
+        : formatSyncStatusAgeLabel(lastCourseSyncAtMs)
+    : "Lesson and playback progress saved on this device.";
 
   const supportCardClass =
     "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)]";
+
+  useEffect(() => {
+    if (!isGuest) {
+      setShowBackupPrompt(false);
+      return;
+    }
+    if (doneLessonsCount < BACKUP_PROMPT_MIN_DONE_LESSONS) return;
+
+    try {
+      const dismissedAtMs = parseStoredTimestamp(
+        localStorage.getItem(BACKUP_PROMPT_DISMISSED_AT_KEY)
+      );
+      if (dismissedAtMs && Date.now() - dismissedAtMs < BACKUP_PROMPT_COOLDOWN_MS) {
+        return;
+      }
+    } catch {}
+
+    setShowBackupPrompt(true);
+  }, [doneLessonsCount, isGuest]);
 
   useEffect(() => {
     setCommonMistakesExpanded(false);
@@ -966,8 +1331,10 @@ function CoursePageClient() {
             if (state === ps.PAUSED || state === ps.CUED) {
               savePlaybackPosition(lessonIdForPlayer);
             } else if (state === ps.ENDED) {
+              knownProgressLessonIdsRef.current.add(lessonIdForPlayer);
               playbackProgressRef.current[lessonIdForPlayer] = 0;
               persistPlaybackProgress();
+              markCourseProgressDirty(lessonIdForPlayer);
               if (lessonIdForPlayer === activeLesson.id) {
                 setResumeAvailable(false);
               }
@@ -1016,6 +1383,7 @@ function CoursePageClient() {
     activeLesson.id,
     activeLesson.youtubeId,
     persistPlaybackProgress,
+    markCourseProgressDirty,
     savePlaybackPosition,
     stopProgressSaveTimer,
     tryStartPlayback,
@@ -1196,8 +1564,47 @@ function CoursePageClient() {
       </div>
     ) : null;
 
+  const backupProgressPrompt =
+    showBackupPrompt && !drawerOpen ? (
+      <div
+        data-testid="course-backup-prompt"
+        className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[75] px-4 sm:bottom-6"
+      >
+        <div className="mx-auto max-w-[520px] rounded-[22px] border border-emerald-200/70 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(16,185,129,0.14),rgba(255,255,255,0)_62%),rgba(255,255,255,0.97)] p-4 shadow-[0_16px_46px_rgba(15,23,42,0.16)] backdrop-blur-sm">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
+            Progress backup
+          </div>
+          <h3 className="mt-1 text-[17px] font-semibold text-slate-900">
+            Don&apos;t lose your progress
+          </h3>
+          <p className="mt-1 text-[13px] leading-6 text-slate-700">
+            You&apos;ve completed {doneLessonsCount} lessons. Create a free account to back up and
+            sync your progress across devices.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <PressLink
+              tier="cta"
+              href={backupSignInHref}
+              onClick={dismissBackupPrompt}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(5,150,105,0.22)]"
+            >
+              Create free account
+            </PressLink>
+            <PressButton
+              tier="nav"
+              onClick={dismissBackupPrompt}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white/90 px-4 py-2 text-[14px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+              aria-label="Maybe later"
+            >
+              Maybe later
+            </PressButton>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
   const autoInstallPrompt =
-    showInstallPrompt && !drawerOpen ? (
+    showInstallPrompt && !showBackupPrompt && !drawerOpen ? (
       <div
         data-testid="a2hs-auto-prompt"
         className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[70] px-4 sm:bottom-6"
@@ -1639,9 +2046,16 @@ function CoursePageClient() {
                   {isLastLesson
                     ? "Last lesson in this course."
                     : "Use Lessons to jump to any module or lesson."}
-                  <span className="ml-2 text-slate-500">
-                    Lesson and playback progress saved on this device.
-                  </span>
+                  <span className="ml-2 text-slate-500">{courseProgressStatusCopy}</span>
+                  {isSignedIn && courseSyncStatus === "error" ? (
+                    <PressButton
+                      tier="nav"
+                      onClick={() => void syncCourseProgressNow({ force: true })}
+                      className="ml-2 inline-flex min-h-[24px] items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/70"
+                    >
+                      Retry now
+                    </PressButton>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -1921,6 +2335,7 @@ function CoursePageClient() {
       </PageTemplate>
       {swipeHintOverlay}
       {swipeNuxToast}
+      {backupProgressPrompt}
       {autoInstallPrompt}
     </SiteChrome>
   );

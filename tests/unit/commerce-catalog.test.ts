@@ -3,6 +3,7 @@ import {
   getCatalogProductById,
   getCatalogProductByStripePriceId,
   getCatalogProducts,
+  getCatalogProductsWithAvailability,
 } from "@/lib/commerce/catalog";
 
 const ENV: NodeJS.ProcessEnv = {
@@ -34,5 +35,36 @@ describe("commerce catalog", () => {
     expect(() => getCatalogProducts({} as unknown as NodeJS.ProcessEnv)).toThrow(
       "Missing required environment variable: STRIPE_PRICE_ID_0_1000M_GUIDE"
     );
+  });
+
+  it("returns per-product availability without throwing", () => {
+    const partialEnv: NodeJS.ProcessEnv = {
+      ...process.env,
+      STRIPE_PRICE_ID_0_1000M_GUIDE: "price_1000",
+      STRIPE_PRICE_ID_ANALYSIS: "price_analysis",
+    };
+
+    const availability = getCatalogProductsWithAvailability(partialEnv);
+    expect(availability).toHaveLength(3);
+    expect(availability.map((product) => product.id)).toEqual([
+      "guide_0_1000m",
+      "guide_poolside",
+      "analysis_video",
+    ]);
+    expect(availability.find((product) => product.id === "guide_0_1000m")).toMatchObject({
+      available: true,
+      stripePriceId: "price_1000",
+      missingEnvVar: null,
+    });
+    expect(availability.find((product) => product.id === "guide_poolside")).toMatchObject({
+      available: false,
+      stripePriceId: null,
+      missingEnvVar: "STRIPE_PRICE_ID_POOLSIDE_GUIDE",
+    });
+    expect(availability.find((product) => product.id === "analysis_video")).toMatchObject({
+      available: true,
+      stripePriceId: "price_analysis",
+      missingEnvVar: null,
+    });
   });
 });

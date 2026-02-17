@@ -5,6 +5,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
+import PortalButton from "@/components/my-library/PortalButton";
+import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
 import { buildLibrarySections } from "@/lib/commerce/library";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -63,14 +65,17 @@ export default async function MyLibraryPage() {
               <h1 className="text-3xl font-bold text-slate-900">My Library</h1>
               <p className="mt-2 text-sm text-slate-600">Signed in as {user.email}</p>
             </div>
-            <form action={signOutFromLibrary}>
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                Sign out
-              </button>
-            </form>
+            <div className="flex flex-wrap items-start gap-2">
+              <PortalButton returnPath="/my-library" />
+              <form action={signOutFromLibrary}>
+                <button
+                  type="submit"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
           </div>
 
           <div className="mt-8 space-y-8">
@@ -84,6 +89,18 @@ export default async function MyLibraryPage() {
                   <p className="text-sm text-slate-600">
                     You have no purchased items yet. Browse available options below.
                   </p>
+                  <div className="mt-4 border-t border-slate-200/80 pt-4">
+                    <p className="text-xs leading-relaxed text-slate-600">
+                      Already bought with another email? Request an access link and we&apos;ll
+                      restore your library when you sign in.
+                    </p>
+                    <DownloadResendForm
+                      initialEmail={user.email ?? ""}
+                      nextPath="/my-library"
+                      source="library_recovery"
+                      className="mt-3"
+                    />
+                  </div>
                 </div>
               ) : null}
 

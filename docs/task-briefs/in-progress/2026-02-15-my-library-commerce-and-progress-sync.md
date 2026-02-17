@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-15`
-- `updated`: `2026-02-16`
+- `updated`: `2026-02-17`
 
 ## Goal
 
@@ -106,15 +106,110 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - `npm run test:e2e`
 - `npm run build`
 
+## Current Delivery Status (2026-02-17)
+
+### Implemented (verified)
+
+- Supabase schema + RLS baseline is implemented and committed in:
+  - `supabase/migrations/20260216141500_my_library_schema.sql`
+- Typed DB contract exists in:
+  - `types/database.ts`
+- Auth/session baseline is implemented:
+  - `/auth/sign-in` (code-first UX),
+  - `/auth/callback` token/code handling,
+  - guarded `My Library` access.
+- Stripe checkout + webhook entitlement fulfillment is implemented:
+  - `/api/checkout/session`,
+  - `/api/stripe/webhook`,
+  - idempotent entitlement write by `stripe_checkout_session_id`.
+- `My Library` page exists with:
+  - signed-in state,
+  - `Owned` section,
+  - `Explore More` section,
+  - checkout CTA for not-owned products.
+- `/plans` paid-offers hub route is implemented:
+  - product cards for all paid offers,
+  - checkout CTA wiring to `/api/checkout/session`,
+  - empty/error recovery state when product env configuration is incomplete.
+- Stripe billing self-service baseline is implemented:
+  - `/api/portal` route with auth + safe return handling,
+  - `My Library` exposes `Manage billing` action and error fallback copy.
+- Download-access recovery baseline is implemented:
+  - `/api/download/resend` endpoint with per-IP + per-email rate limits,
+  - non-enumerating response contract (`If this email exists, we sent a secure access link.`),
+  - access-link resend uses magic-link auth callback to return users to `My Library`.
+- Checkout/library recovery UX baseline is implemented:
+  - `/checkout/success` now includes immediate `Download from My Library` CTA,
+  - `/checkout/success` includes purchase-email resend form for secure access link recovery,
+  - `My Library` empty-owned state includes `already bought?` recovery resend entry.
+- Guest purchase attach-by-email on sign-in is implemented.
+- Free-course account sync baseline is implemented:
+  - `/api/progress/course` (authenticated read/write),
+  - signed-in course clients hydrate from server and merge local progress on first sign-in,
+  - local progress updates are synced back to server for cross-device continuity.
+- Paid-guide progress sync API baseline is implemented:
+  - `/api/progress/guide` (authenticated read/write),
+  - payload normalization + row caps aligned with course-progress API guardrails.
+- Guest progress-safety milestone prompt is implemented:
+  - appears after 3 completed lessons in guest mode,
+  - includes free-account CTA to preserve progress across devices,
+  - dismiss suppresses prompt for 7 days.
+- Auth abuse controls are implemented:
+  - request/verify rate limits,
+  - cooldown messaging,
+  - Upstash support with in-memory fallback.
+- Soft-launch public UX exists with under-construction banner.
+
+### Outstanding (blocking move to `done`)
+
+- Missing routes from architecture contract:
+  - `/claim`,
+  - `/guides/0-1000m` interactive guide.
+- Missing API endpoints from architecture contract:
+  - `/api/user/export`,
+  - `/api/user/delete`.
+- `My Library` item detail is still placeholder text:
+  - preview/download/re-download behavior not implemented yet.
+- Progress sync criteria is partially met:
+  - free-course progress now supports signed-in server sync and local->account merge,
+  - paid-guide progress sync API is implemented, but interactive guide UX + client sync wiring is still pending.
+- Goals MVP UI/state flow is not implemented.
+- Analytics/KPI event pipeline is not implemented.
+- GDPR operational requirements are not complete:
+  - export/delete endpoints missing,
+  - rights workflow + privacy/cookie disclosure updates not completed in app docs/routes.
+- Library tab contract decision required:
+  - implement explicit query tabs (`?tab=library|explore`) or revise contract to section layout.
+- Security follow-up items remain deferred:
+  - live rate-limit verification,
+  - progressive Turnstile gate,
+  - auth abuse observability baseline.
+
+## Next Delivery Order (Execution)
+
+1. Library/content slice:
+   - implement `/guides/0-1000m` interactive 20-session plan,
+   - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
+   - expand claim/restore UX around owned content recovery.
+2. Trust/ops slice:
+   - implement `/api/user/export` + `/api/user/delete`,
+   - implement analytics event contract baseline,
+   - close GDPR/privacy/cookie documentation and operational runbook items.
+
 ## Manual QA Environments
 
 - Local environment:
   - URL: `http://127.0.0.1:3000`
-  - flows tested:
+  - current verified manual checks:
     - buy flow -> webhook fulfilled entitlement -> `My Library` visible,
-    - free-course progress resume across sign-in/sign-out states,
-    - paid guide progress resume,
-    - `Owned`/`Not Owned` ordering and CTA clarity.
+    - sign-in code flow + cooldown UX,
+    - soft-launch under-construction banner visibility on public routes.
+  - remaining manual checks (after pending implementation):
+    - free-course progress resume across devices when signed in (server-backed),
+    - paid guide progress resume (interactive guide),
+    - owned item preview/download/re-download from `My Library` item detail,
+    - `/plans` final UX sweep on mobile + desktop preview,
+    - `/claim`, and data export/delete user flows.
   - browsers/devices:
     - iOS Safari (phone),
     - Android Chromium (phone),
@@ -662,16 +757,21 @@ npx supabase start
 
 1. **Foundation (Week 1-2)**
    - auth, DB schema, Stripe checkout + webhook, entitlement persistence.
+   - status: `done`.
 2. **Library (Week 2-3)**
    - `My Library` page, owned/not-owned sections, receipt portal link, support links.
+   - status: `in-progress` (owned/explore done; portal/support/download actions pending).
 3. **Progress (Week 3-4)**
    - free-course progress sync migration from localStorage,
    - paid interactive guide progress sync.
+   - status: `in-progress` (free-course sync + guest backup prompt delivered; paid-guide sync pending).
 4. **Trust + QA (Week 4)**
    - data export/delete controls, tests, accessibility polish, verify gate.
+   - status: `in-progress` (partial auth hardening done; export/delete/GDPR workflow pending).
 5. **Monetization Expansion (Post-MVP)**
    - enable `M1` first behind flag and observe KPIs,
    - if stable, enable `M2`, then `M3`.
+   - status: `deferred until MVP gate`.
 
 ## Step-By-Step Delivery Plan (Agent Execution)
 
@@ -711,8 +811,71 @@ At each phase:
 - Branch safety:
   - push checkpoint commits to remote branch after major milestones so work survives local interruption.
 
+## Git Rhythm (Locked For This Brief)
+
+- Commit + push cadence:
+  - commit and push after each validated implementation step,
+  - minimum validation gate per step:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - targeted tests for changed scope (unit/e2e as relevant).
+- PR cadence to `main`:
+  - cut or refresh PR after every `2-4` validated checkpoint commits, or one completed vertical slice, whichever comes first,
+  - if active implementation continues across days, ensure PR is updated daily.
+- Assistant prompt contract (required):
+  - after each validated step, assistant explicitly asks: `Commit + push this checkpoint now?`,
+  - after every second pushed checkpoint (or one completed slice), assistant explicitly asks:
+    - `Open/update PR to main now?`
+  - this prompt contract is mandatory even if owner does not explicitly request it each time.
+
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | `/api/progress/guide` baseline contract complete:
+  - added `GET/POST /api/progress/guide` with auth guard, `no-store` responses, JSON/content-type validation, and explicit `401/415/413/500` handling,
+  - added shared guide-progress normalization module with row de-duplication, identifier bounds, and stable sort behavior,
+  - POST now upserts normalized guide progress rows by (`user_id`, `guide_slug`, `section_id`) in `guide_progress`.
+  - updated API contract docs with request/response/status details for `/api/progress/guide`.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`.
+  - next step: implement `/guides/0-1000m` interactive 20-session plan and connect client sync to `/api/progress/guide`.
+- `2026-02-17` | `working tree` | `/api/download/resend` + checkout/library recovery slice complete:
+  - added `POST /api/download/resend` with JSON/content-type guard, `no-store` responses, and non-enumerating success copy,
+  - endpoint enforces per-IP + per-email rate limits (Upstash-first with in-memory fallback),
+  - resend now verifies entitlement by purchase email and sends magic-link access flow back to `next` path,
+  - added reusable `DownloadResendForm` client component and connected it to:
+    - `/checkout/success` recovery module,
+    - `My Library` empty-owned recovery module.
+  - updated `/checkout/success` with immediate `Download from My Library` CTA and clearer post-payment confirmation copy.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`.
+  - next step: implement `/api/progress/guide` baseline contract.
+- `2026-02-17` | `working tree` | `/api/portal` implementation complete:
+  - added `POST /api/portal` with auth guard, `no-store` headers, safe local `returnPath` handling, and explicit `401/404/500` responses,
+  - customer resolution now checks entitlement `stripe_customer_id` first, then Stripe customer lookup by signed-in email fallback,
+  - best-effort persistence of fallback `stripe_customer_id` to entitlements for subsequent requests,
+  - added helper utils + unit tests for safe return path and active customer selection,
+  - wired `My Library` `Manage billing` action to call `/api/portal` and redirect on success with user-visible fallback error copy.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`.
+  - next step: implement `/api/download/resend` and connect success/library recovery flows.
+- `2026-02-17` | `working tree` | progress-sync + backup-prompt slice in implementation:
+  - added `/api/progress/course` authenticated read/write route,
+  - added shared course-progress normalization/merge helpers + unit tests,
+  - wired `/course` to hydrate from account, merge local progress, and sync updates for signed-in users,
+  - added guest milestone backup prompt after 3 completed lessons with free-account CTA and 7-day dismiss cooldown.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`,
+    - `npm run build`,
+    - `npx playwright test tests/e2e/install-prompt.spec.ts --project=mobile-chromium`.
+  - next step: implement `/api/portal` using the commerce quality contract before `/api/progress/guide`.
 - `2026-02-16` | `44cecac` | completed core implementation through:
   - Supabase schema + RLS baseline,
   - auth/session wiring + guarded `My Library`,
@@ -739,7 +902,7 @@ At each phase:
 - `2026-02-16` | `75ef38c` | auth abuse protection refinement:
   - added sign-in request and code verification rate limits (IP + hashed email), with Upstash support and safe in-memory fallback,
   - replaced raw provider auth errors with user-friendly cooldown/generic messages to improve UX and reduce abuse signal leakage.
-- `2026-02-16` | `working-tree` | auth cooldown UX + cadence refinement:
+- `2026-02-16` | `ce9e82e` | auth cooldown UX + cadence refinement (merged via PR #19):
   - sign-in cooldown now returns `cooldownUntil` and the error banner counts down live in the UI (no manual refresh needed),
   - added stepped per-email resend cadence for login code requests (`30s` -> `60s` -> `5m`) while retaining hard anti-abuse limits.
 - `2026-02-16` | `ec8d2fb` | soft-launch public UX refinement:
@@ -747,7 +910,7 @@ At each phase:
   - added a utility footer on public routes with clear `Login/My Library` and `Contact` actions,
   - made header auth action explicit (`Login` when signed out, `My Library` when signed in) to improve navigation clarity,
   - increased mobile screenshot E2E timeout to avoid false failures while capturing full-page core-flow snapshots.
-- `2026-02-16` | `working-tree` | soft-launch simplification per owner direction:
+- `2026-02-16` | `7cd6190` | soft-launch simplification per owner direction (merged via PR #21):
   - replaced `Public beta` copy with a simple `under construction` banner on public routes,
   - removed extra banner CTA buttons (`Login`, `Programs`) to reduce noise,
   - removed the temporary utility footer links (`Login`, `Contact`),
@@ -761,8 +924,8 @@ At each phase:
 - `75ef38c`: auth verify rate limits added for sign-in code attempts (IP + hashed email).
 - `75ef38c`: auth error UX hardened to friendly/generic cooldown copy (reduced provider leakage to user-facing UI).
 - `75ef38c`: env access helper fixed for `NEXT_PUBLIC_*` runtime safety in client/server contexts.
-- `working-tree`: cooldown error now includes live countdown behavior via `cooldownUntil` parameter.
-- `working-tree`: login code resend cadence now uses progressive cooldown (`30s`, `60s`, then `5m`) for better UX and lower provider abuse risk.
+- `ce9e82e` (includes PR #19 scope): cooldown error now includes live countdown behavior via `cooldownUntil` parameter.
+- `ce9e82e` (includes PR #19 scope): login code resend cadence now uses progressive cooldown (`30s`, `60s`, then `5m`) for better UX and lower provider abuse risk.
 
 ### Deferred (Required Before "done" Or Immediately After Launch)
 
@@ -791,6 +954,7 @@ Use task brief: docs/task-briefs/in-progress/2026-02-15-my-library-commerce-and-
 Mode: end-to-end (implement + tests + commit + push on current branch)
 Communication: one actionable step at a time for manual/external actions; wait for my "done" before next step.
 Non-negotiables: no secrets in repo files, preserve accessibility semantics, keep current visual language, run npm run verify.
+Git rhythm: commit + push each validated step; ask me explicitly before PR cut/refresh to main.
 ```
 
 ## External References (Primary)

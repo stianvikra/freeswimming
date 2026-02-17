@@ -1,0 +1,170 @@
+import { describe, expect, it } from "vitest";
+import {
+  areCourseProgressRowsEqual,
+  buildCourseProgressRowsFromLocal,
+  buildLocalCourseProgressFromRows,
+  mergeCourseProgressRows,
+  normalizeCourseProgressRows,
+  normalizeDoneLessonIds,
+  normalizeVideoProgressRecord,
+} from "@/lib/course/progress";
+
+describe("course progress helpers", () => {
+  it("normalizes local done lesson ids", () => {
+    expect(normalizeDoneLessonIds([" mod1-l1 ", "", null, "mod1-l1", "mod1-l2"])).toEqual([
+      "mod1-l1",
+      "mod1-l2",
+    ]);
+  });
+
+  it("normalizes local video progress map", () => {
+    expect(
+      normalizeVideoProgressRecord({
+        " mod1-l1 ": 14.8,
+        "mod1-l2": -2,
+        "mod1-l3": "9",
+        "": 22,
+      })
+    ).toEqual({
+      "mod1-l1": 14,
+      "mod1-l3": 9,
+    });
+  });
+
+  it("merges duplicate rows by lesson id using done=OR and max video seconds", () => {
+    const rows = normalizeCourseProgressRows([
+      {
+        lessonId: "mod1-l1",
+        done: false,
+        videoSeconds: 20,
+        updatedAt: "2026-02-16T10:00:00.000Z",
+      },
+      {
+        lesson_id: "mod1-l1",
+        done: true,
+        video_seconds: 12,
+        updated_at: "2026-02-16T10:05:00.000Z",
+      },
+    ]);
+
+    expect(rows).toEqual([
+      {
+        lessonId: "mod1-l1",
+        done: true,
+        videoSeconds: 20,
+        updatedAt: "2026-02-16T10:05:00.000Z",
+      },
+    ]);
+  });
+
+  it("includes known lesson ids when building local rows so reset values can sync", () => {
+    const rows = buildCourseProgressRowsFromLocal(
+      {
+        doneLessonIds: [],
+        videoProgressByLessonId: {},
+      },
+      {
+        knownLessonIds: ["mod1-l1"],
+        updatedAt: "2026-02-16T10:10:00.000Z",
+      }
+    );
+
+    expect(rows).toEqual([
+      {
+        lessonId: "mod1-l1",
+        done: false,
+        videoSeconds: 0,
+        updatedAt: "2026-02-16T10:10:00.000Z",
+      },
+    ]);
+  });
+
+  it("merges local + remote rows and keeps strongest progress", () => {
+    const merged = mergeCourseProgressRows(
+      [
+        {
+          lessonId: "mod1-l1",
+          done: true,
+          videoSeconds: 30,
+          updatedAt: "2026-02-16T10:00:00.000Z",
+        },
+      ],
+      [
+        {
+          lessonId: "mod1-l1",
+          done: false,
+          videoSeconds: 35,
+          updatedAt: "2026-02-16T09:00:00.000Z",
+        },
+        {
+          lessonId: "mod1-l2",
+          done: true,
+          videoSeconds: 0,
+          updatedAt: "2026-02-16T11:00:00.000Z",
+        },
+      ]
+    );
+
+    expect(merged).toEqual([
+      {
+        lessonId: "mod1-l1",
+        done: true,
+        videoSeconds: 35,
+        updatedAt: "2026-02-16T10:00:00.000Z",
+      },
+      {
+        lessonId: "mod1-l2",
+        done: true,
+        videoSeconds: 0,
+        updatedAt: "2026-02-16T11:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("compares rows by effective progress fields, not timestamp noise", () => {
+    expect(
+      areCourseProgressRowsEqual(
+        [
+          {
+            lessonId: "mod1-l1",
+            done: true,
+            videoSeconds: 35,
+            updatedAt: "2026-02-16T10:00:00.000Z",
+          },
+        ],
+        [
+          {
+            lessonId: "mod1-l1",
+            done: true,
+            videoSeconds: 35,
+            updatedAt: "2026-02-16T11:00:00.000Z",
+          },
+        ]
+      )
+    ).toBe(true);
+  });
+
+  it("builds local state from normalized rows", () => {
+    const local = buildLocalCourseProgressFromRows([
+      {
+        lessonId: "mod1-l1",
+        done: true,
+        videoSeconds: 42,
+        updatedAt: "2026-02-16T10:00:00.000Z",
+      },
+      {
+        lessonId: "mod1-l2",
+        done: false,
+        videoSeconds: 0,
+        updatedAt: "2026-02-16T10:00:00.000Z",
+      },
+    ]);
+
+    expect(local).toEqual({
+      doneLessonIds: ["mod1-l1"],
+      videoProgressByLessonId: {
+        "mod1-l1": 42,
+      },
+    });
+  });
+});
