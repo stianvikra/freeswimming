@@ -64,6 +64,8 @@ describe("dev auth bypass helpers", () => {
   it("recognizes localhost, loopback, and private hosts", () => {
     expect(isLocalHostOrIp("localhost")).toBe(true);
     expect(isLocalHostOrIp("127.0.0.1")).toBe(true);
+    expect(isLocalHostOrIp("::ffff:127.0.0.1")).toBe(true);
+    expect(isLocalHostOrIp("::ffff:127.0.0.1:3000")).toBe(true);
     expect(isLocalHostOrIp("192.168.1.42")).toBe(true);
     expect(isLocalHostOrIp("10.1.2.3")).toBe(true);
     expect(isLocalHostOrIp("172.16.0.9")).toBe(true);

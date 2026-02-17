@@ -41,7 +41,22 @@ function normalizeHostCandidate(value: string): string {
   const maybeHostWithPort = candidate.toLowerCase();
   const splitByColon = maybeHostWithPort.split(":");
   if (splitByColon.length === 2 && /^\d+$/.test(splitByColon[1])) {
-    return splitByColon[0];
+    const bareHost = splitByColon[0];
+    if (bareHost.startsWith("::ffff:")) {
+      const mappedV4 = bareHost.slice("::ffff:".length);
+      if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(mappedV4)) {
+        return mappedV4;
+      }
+    }
+    return bareHost;
+  }
+
+  if (maybeHostWithPort.startsWith("::ffff:")) {
+    const mappedV4 = maybeHostWithPort.slice("::ffff:".length);
+    const normalizedMappedV4 = mappedV4.replace(/:\d+$/, "");
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalizedMappedV4)) {
+      return normalizedMappedV4;
+    }
   }
 
   return maybeHostWithPort;
