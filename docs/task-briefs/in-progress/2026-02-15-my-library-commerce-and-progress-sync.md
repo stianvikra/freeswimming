@@ -146,7 +146,11 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Guest purchase attach-by-email on sign-in is implemented.
 - User data export API baseline is implemented:
   - `/api/user/export` authenticated endpoint,
-  - returns app-owned user data (`profile`, `entitlements`, `course progress`, `guide progress`, `goals`, `download-links metadata`) with `no-store` response headers.
+  - returns app-owned user data (`profile`, `entitlements`, `course progress`, `guide progress`, `guide session progress`, `goals`, `download-links metadata`) with `no-store` response headers.
+- User data delete API baseline is implemented:
+  - `/api/user/delete` authenticated endpoint with explicit confirmation contract (`confirm: "DELETE"`),
+  - deletes auth user via server-only admin client (hard delete) to remove app-owned user data through DB constraints,
+  - attempts sign-out/session clear after delete.
 - Free-course account sync baseline is implemented:
   - `/api/progress/course` (authenticated read/write),
   - signed-in course clients hydrate from server and merge local progress on first sign-in,
@@ -177,8 +181,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 ### Outstanding (blocking move to `done`)
 
-- Missing API endpoints from architecture contract:
-  - `/api/user/delete`.
 - `My Library` item detail is still placeholder text:
   - dual-action flow is now implemented for `0-1000m`,
   - preview/download/re-download behavior for remaining owned products is still pending.
@@ -188,7 +190,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Goals MVP UI/state flow is not implemented.
 - Analytics/KPI event pipeline is not implemented.
 - GDPR operational requirements are not complete:
-  - export/delete endpoints missing,
   - rights workflow + privacy/cookie disclosure updates not completed in app docs/routes.
 - Library tab contract decision required:
   - implement explicit query tabs (`?tab=library|explore`) or revise contract to section layout.
@@ -227,7 +228,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
      - `Visual view` fullscreen image mode (portrait + landscape support),
    - expand claim/restore UX around owned content recovery.
 2. Trust/ops slice:
-   - implement `/api/user/delete`,
    - implement analytics event contract baseline,
    - close GDPR/privacy/cookie documentation and operational runbook items.
 
@@ -880,6 +880,17 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | `/api/user/delete` endpoint implemented:
+  - added authenticated delete route:
+    - `app/api/user/delete/route.ts`.
+  - endpoint enforces explicit destructive confirmation payload:
+    - `confirm: "DELETE"`.
+  - endpoint deletes auth user through admin API (hard delete), which removes user-owned app data by DB relations and clears session via sign-out attempt.
+  - added delete-request parsing helper + unit tests:
+    - `lib/user/delete.ts`,
+    - `tests/unit/user-delete-utils.test.ts`.
+  - updated API contract doc for `POST /api/user/delete`.
+  - next step: implement analytics event contract baseline.
 - `2026-02-17` | `working tree` | `/api/user/export` endpoint implemented:
   - added authenticated export route:
     - `app/api/user/export/route.ts`.
