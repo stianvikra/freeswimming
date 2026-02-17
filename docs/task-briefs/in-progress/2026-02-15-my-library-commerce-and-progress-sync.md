@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-15`
-- `updated`: `2026-02-16`
+- `updated`: `2026-02-17`
 
 ## Goal
 
@@ -106,7 +106,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - `npm run test:e2e`
 - `npm run build`
 
-## Current Delivery Status (2026-02-16)
+## Current Delivery Status (2026-02-17)
 
 ### Implemented (verified)
 
@@ -132,6 +132,14 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - checkout CTA wiring to `/api/checkout/session`,
   - empty/error recovery state when product env configuration is incomplete.
 - Guest purchase attach-by-email on sign-in is implemented.
+- Free-course account sync baseline is implemented:
+  - `/api/progress/course` (authenticated read/write),
+  - signed-in course clients hydrate from server and merge local progress on first sign-in,
+  - local progress updates are synced back to server for cross-device continuity.
+- Guest progress-safety milestone prompt is implemented:
+  - appears after 3 completed lessons in guest mode,
+  - includes free-account CTA to preserve progress across devices,
+  - dismiss suppresses prompt for 7 days.
 - Auth abuse controls are implemented:
   - request/verify rate limits,
   - cooldown messaging,
@@ -146,7 +154,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Missing API endpoints from architecture contract:
   - `/api/portal`,
   - `/api/download/resend`,
-  - `/api/progress/course`,
   - `/api/progress/guide`,
   - `/api/user/export`,
   - `/api/user/delete`.
@@ -154,10 +161,9 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - preview/download/re-download behavior not implemented yet.
 - Checkout success criteria is only partially met:
   - page currently shows processing state, but not immediate download action.
-- Progress sync criteria is not met yet:
-  - free course still writes to local storage only,
-  - no server progress sync on second device.
-- Guest progress-safety milestone prompt (exactly after 3 completed lessons) is not implemented.
+- Progress sync criteria is partially met:
+  - free-course progress now supports signed-in server sync and local->account merge,
+  - paid-guide progress sync (`/api/progress/guide`) is still pending.
 - Goals MVP UI/state flow is not implemented.
 - Analytics/KPI event pipeline is not implemented.
 - GDPR operational requirements are not complete:
@@ -177,12 +183,11 @@ Users can start instantly in guest mode, buy optional paid products without acco
    - implement `/api/download/resend`,
    - update `/checkout/success` with immediate download + confirmation UX.
 2. Progress sync slice:
-   - implement `/api/progress/course` and wire course writes/reads to Supabase for signed-in users,
    - implement `/api/progress/guide` baseline contract.
 3. Library/content slice:
    - implement `/guides/0-1000m` interactive 20-session plan,
    - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
-   - implement guest milestone backup prompt at lesson 3.
+   - expand claim/restore UX around owned content recovery.
 4. Trust/ops slice:
    - implement `/api/user/export` + `/api/user/delete`,
    - implement analytics event contract baseline,
@@ -756,7 +761,7 @@ npx supabase start
 3. **Progress (Week 3-4)**
    - free-course progress sync migration from localStorage,
    - paid interactive guide progress sync.
-   - status: `not started`.
+   - status: `in-progress` (free-course sync + guest backup prompt delivered; paid-guide sync pending).
 4. **Trust + QA (Week 4)**
    - data export/delete controls, tests, accessibility polish, verify gate.
    - status: `in-progress` (partial auth hardening done; export/delete/GDPR workflow pending).
@@ -805,6 +810,18 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | progress-sync + backup-prompt slice in implementation:
+  - added `/api/progress/course` authenticated read/write route,
+  - added shared course-progress normalization/merge helpers + unit tests,
+  - wired `/course` to hydrate from account, merge local progress, and sync updates for signed-in users,
+  - added guest milestone backup prompt after 3 completed lessons with free-account CTA and 7-day dismiss cooldown.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`,
+    - `npm run build`,
+    - `npx playwright test tests/e2e/install-prompt.spec.ts --project=mobile-chromium`.
+  - next step: owner review + continue remaining `/api/progress/guide` scope.
 - `2026-02-16` | `44cecac` | completed core implementation through:
   - Supabase schema + RLS baseline,
   - auth/session wiring + guarded `My Library`,
