@@ -864,8 +864,36 @@ At each phase:
     - `Open/update PR to main now?`
   - this prompt contract is mandatory even if owner does not explicitly request it each time.
 
+### Branch Hygiene (Locked For This Brief)
+
+- Post-merge cleanup (same session):
+  - `git checkout main`
+  - `git pull --ff-only origin main`
+  - `git branch -d <merged-branch>`
+  - if remote branch remains: `git push origin --delete <merged-branch>`
+  - `git fetch --prune origin`
+- Daily hygiene while this brief is active:
+  - run `git branch -vv` and clean stale local branches with upstream `: gone` after owner confirmation.
+- Safety:
+  - avoid `git branch -D` unless owner explicitly confirms, or a dated backup/tag has been created first.
+
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | repository branch hygiene cleanup completed:
+  - deleted remote merged branches:
+    - `origin/feat/poolside-interactive-guide`,
+    - `origin/feat/my-library-core-split`,
+    - `origin/feat/my-library-guides-pdf-split`.
+  - deleted stale local branches:
+    - `docs/runbooks-and-task-briefs`,
+    - `chore/vercel-connect-trigger`,
+    - `chore/vercel-prod-env-redeploy`,
+    - `backup/main-pre-sync-2026-02-14`.
+  - updated task-brief standards to include explicit branch hygiene cadence in:
+    - `docs/task-brief-template.md`,
+    - `docs/task-briefs/README.md`,
+    - this in-progress brief.
+  - next step: continue remaining My Library scope from latest `main`.
 - `2026-02-17` | `working tree` | cross-guide UX polish bundle (items `1-5`) implemented:
   - `0-1000m`:
     - added `Continue where you left off` CTA tied to persisted last opened session,

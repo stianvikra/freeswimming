@@ -14,6 +14,7 @@ Use this quick check so the task execution is precise:
 - State non-negotiables (no secrets in repo, UX quality bar, performance guardrails)
 - State continuity rules (commit cadence + resume protocol if chat/session is interrupted)
 - State git rhythm defaults (commit/push cadence and PR cut cadence to `main`)
+- State branch hygiene cadence (post-merge cleanup + stale-branch sweep frequency)
 
 Suggested prompt wrapper:
 
@@ -147,6 +148,22 @@ Define concrete git execution defaults so quality does not depend on memory.
   - after each validated step, assistant must explicitly ask whether to commit+push now,
   - after every `2` pushed checkpoints (or one completed slice), assistant must explicitly ask whether to open/refresh PR to `main`.
 
+## Branch Hygiene Defaults (Required)
+
+Define when and how branch cleanup is executed so repository hygiene is consistent.
+
+- Post-merge cleanup (same working session):
+  - `git checkout main`
+  - `git pull --ff-only origin main`
+  - `git branch -d <merged-branch>`
+  - if remote branch still exists: `git push origin --delete <merged-branch>`
+  - `git fetch --prune origin`
+- Ongoing cleanup cadence:
+  - run `git branch -vv` at least once per active day,
+  - remove stale local branches with upstream marked `: gone` after owner confirmation.
+- Safety rule:
+  - avoid `git branch -D` unless owner explicitly confirms, or a dated backup/tag has been created.
+
 ## Implementation Checkpoint Log (Required For In-Progress Briefs)
 
 Add a running log section in each in-progress brief so status survives chat loss.
@@ -181,8 +198,10 @@ Add a running log section in each in-progress brief so status survives chat loss
     - `git checkout main`
     - `git pull --ff-only origin main`
     - `git branch -d <merged-branch>`
-  - optional cleanup:
     - `git fetch --prune`
+  - if remote branch still exists:
+    - `git push origin --delete <merged-branch>`
+  - optional verification:
     - `git branch -vv` (confirm no stale branch tracking)
   - runbook: `docs/runbooks/post-merge-local-sync.md`
 

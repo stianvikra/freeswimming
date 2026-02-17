@@ -52,3 +52,19 @@ After merge confirmation, agent handoff should include local sync commands:
 `git checkout main`
 `git pull --ff-only origin main`
 `git branch -d <merged-branch>`
+
+## Branch Hygiene Best Practice
+
+Use this cadence to keep repository branches clean and predictable:
+
+1. After each merged PR (same session):
+   - `git checkout main`
+   - `git pull --ff-only origin main`
+   - `git branch -d <merged-branch>`
+   - if remote branch remains: `git push origin --delete <merged-branch>`
+   - `git fetch --prune origin`
+2. At least once per active day:
+   - `git branch -vv`
+   - clean stale local branches that show upstream `: gone` (with owner confirmation).
+3. Safety:
+   - do not force-delete (`git branch -D`) unless explicitly confirmed by owner or after creating a dated backup/tag.
