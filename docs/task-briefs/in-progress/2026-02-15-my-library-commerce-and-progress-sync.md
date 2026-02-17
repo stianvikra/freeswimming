@@ -131,6 +131,9 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - product cards for all paid offers,
   - checkout CTA wiring to `/api/checkout/session`,
   - empty/error recovery state when product env configuration is incomplete.
+- Stripe billing self-service baseline is implemented:
+  - `/api/portal` route with auth + safe return handling,
+  - `My Library` exposes `Manage billing` action and error fallback copy.
 - Guest purchase attach-by-email on sign-in is implemented.
 - Free-course account sync baseline is implemented:
   - `/api/progress/course` (authenticated read/write),
@@ -152,7 +155,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `/claim`,
   - `/guides/0-1000m` interactive guide.
 - Missing API endpoints from architecture contract:
-  - `/api/portal`,
   - `/api/download/resend`,
   - `/api/progress/guide`,
   - `/api/user/export`,
@@ -179,7 +181,6 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Next Delivery Order (Execution)
 
 1. Commerce completion slice:
-   - implement `/api/portal`,
    - implement `/api/download/resend`,
    - update `/checkout/success` with immediate download + confirmation UX.
 2. Progress sync slice:
@@ -808,8 +809,36 @@ At each phase:
 - Branch safety:
   - push checkpoint commits to remote branch after major milestones so work survives local interruption.
 
+## Git Rhythm (Locked For This Brief)
+
+- Commit + push cadence:
+  - commit and push after each validated implementation step,
+  - minimum validation gate per step:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - targeted tests for changed scope (unit/e2e as relevant).
+- PR cadence to `main`:
+  - cut or refresh PR after every `2-4` validated checkpoint commits, or one completed vertical slice, whichever comes first,
+  - if active implementation continues across days, ensure PR is updated daily.
+- Assistant prompt contract (required):
+  - after each validated step, assistant explicitly asks: `Commit + push this checkpoint now?`,
+  - after every second pushed checkpoint (or one completed slice), assistant explicitly asks:
+    - `Open/update PR to main now?`
+  - this prompt contract is mandatory even if owner does not explicitly request it each time.
+
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | `/api/portal` implementation complete:
+  - added `POST /api/portal` with auth guard, `no-store` headers, safe local `returnPath` handling, and explicit `401/404/500` responses,
+  - customer resolution now checks entitlement `stripe_customer_id` first, then Stripe customer lookup by signed-in email fallback,
+  - best-effort persistence of fallback `stripe_customer_id` to entitlements for subsequent requests,
+  - added helper utils + unit tests for safe return path and active customer selection,
+  - wired `My Library` `Manage billing` action to call `/api/portal` and redirect on success with user-visible fallback error copy.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - `npm run test:unit`.
+  - next step: implement `/api/download/resend` and connect success/library recovery flows.
 - `2026-02-17` | `working tree` | progress-sync + backup-prompt slice in implementation:
   - added `/api/progress/course` authenticated read/write route,
   - added shared course-progress normalization/merge helpers + unit tests,
@@ -821,7 +850,7 @@ At each phase:
     - `npm run test:unit`,
     - `npm run build`,
     - `npx playwright test tests/e2e/install-prompt.spec.ts --project=mobile-chromium`.
-  - next step: owner review + continue remaining `/api/progress/guide` scope.
+  - next step: implement `/api/portal` using the commerce quality contract before `/api/progress/guide`.
 - `2026-02-16` | `44cecac` | completed core implementation through:
   - Supabase schema + RLS baseline,
   - auth/session wiring + guarded `My Library`,
@@ -900,6 +929,7 @@ Use task brief: docs/task-briefs/in-progress/2026-02-15-my-library-commerce-and-
 Mode: end-to-end (implement + tests + commit + push on current branch)
 Communication: one actionable step at a time for manual/external actions; wait for my "done" before next step.
 Non-negotiables: no secrets in repo files, preserve accessibility semantics, keep current visual language, run npm run verify.
+Git rhythm: commit + push each validated step; ask me explicitly before PR cut/refresh to main.
 ```
 
 ## External References (Primary)

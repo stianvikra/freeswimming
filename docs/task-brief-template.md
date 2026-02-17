@@ -13,6 +13,7 @@ Use this quick check so the task execution is precise:
 - State communication style (for example: one step at a time for manual GitHub actions)
 - State non-negotiables (no secrets in repo, UX quality bar, performance guardrails)
 - State continuity rules (commit cadence + resume protocol if chat/session is interrupted)
+- State git rhythm defaults (commit/push cadence and PR cut cadence to `main`)
 
 Suggested prompt wrapper:
 
@@ -20,6 +21,7 @@ Suggested prompt wrapper:
 Use task brief: <PATH_TO_BRIEF>
 Mode: end-to-end (implement + tests + commit + push on current branch)
 Communication: one manual step at a time; wait for my "done" between manual GitHub/UI steps.
+Git rhythm: commit + push each validated step; ask me before opening/updating PR to main.
 Handoff must include:
 
 1. what changed
@@ -130,6 +132,20 @@ Define how work remains recoverable if chat/session context is lost.
   1. `git status -sb`
   2. `git log --oneline -n 10`
   3. reopen task brief and continue from recorded next step.
+
+## Git Rhythm Defaults (Required)
+
+Define concrete git execution defaults so quality does not depend on memory.
+
+- Commit + push cadence:
+  - commit and push after each validated implementation step (`lint` + `typecheck` + relevant tests for that step),
+  - avoid batching unrelated scope into one checkpoint commit.
+- PR cadence to `main`:
+  - open or update PR at least once per day of active implementation,
+  - cut/refresh PR after `2-4` validated checkpoint commits, or after one complete vertical slice, whichever comes first.
+- Assistant prompting contract:
+  - after each validated step, assistant must explicitly ask whether to commit+push now,
+  - after every `2` pushed checkpoints (or one completed slice), assistant must explicitly ask whether to open/refresh PR to `main`.
 
 ## Implementation Checkpoint Log (Required For In-Progress Briefs)
 
