@@ -8,13 +8,21 @@ import {
   type GuideProgressRow,
 } from "@/lib/course/guide-progress";
 import { type PoolsideDrill } from "@/lib/guides/guide-poolside";
+import { getFirstIncompleteId, splitItemsByCompletion } from "@/lib/guides/guide-tracker-ui";
 
 const GUIDE_PROGRESS_SYNC_API_PATH = "/api/progress/guide";
 const GUIDE_PROGRESS_STORAGE_KEY = "fs_guide_poolside_progress_v1";
+const GUIDE_LAST_DRILL_STORAGE_KEY = "fs_guide_poolside_last_drill_v1";
+const GUIDE_OVERVIEW_COMPLETED_VISIBILITY_STORAGE_KEY =
+  "fs_guide_poolside_show_completed_overview_v1";
 const GUIDE_PROGRESS_SYNC_INTERVAL_MS = 10_000;
 const MAX_NOTES_LENGTH = 1000;
 const SWIPE_MIN_DISTANCE_PX = 56;
 const SWIPE_VERTICAL_TOLERANCE_PX = 72;
+const VISUAL_MAX_SCALE = 3;
+const VISUAL_MIN_SCALE = 1;
+const DOUBLE_TAP_WINDOW_MS = 280;
+const COMPLETION_UNDO_TIMEOUT_MS = 8_000;
 
 type SyncState = "idle" | "syncing" | "synced" | "error" | "offline";
 
@@ -25,6 +33,12 @@ type DrillProgress = {
 };
 
 type DrillProgressRecord = Record<string, DrillProgress>;
+
+type CompletionUndoState = {
+  drillId: string;
+  previousCompleted: boolean;
+  expiresAt: number;
+};
 
 type Props = {
   guideSlug: string;
@@ -155,6 +169,20 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   return Boolean(target.closest("a,button,input,textarea,select,label,[data-no-swipe='true']"));
 }
 
+function clampScale(value: number): number {
+  if (!Number.isFinite(value)) return VISUAL_MIN_SCALE;
+  return Math.min(VISUAL_MAX_SCALE, Math.max(VISUAL_MIN_SCALE, value));
+}
+
+function touchDistance(
+  touchA: { clientX: number; clientY: number },
+  touchB: { clientX: number; clientY: number }
+): number {
+  const dx = touchA.clientX - touchB.clientX;
+  const dy = touchA.clientY - touchB.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
   const allowedSectionIds = useMemo(() => new Set(drills.map((drill) => drill.id)), [drills]);
   const [progressByDrillId, setProgressByDrillId] = useState<DrillProgressRecord>({});
@@ -167,6 +195,10 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [visualDrillId, setVisualDrillId] = useState<string | null>(null);
+  const [visualScale, setVisualScale] = useState(1);
+  const [lastDrillId, setLastDrillId] = useState<string | null>(null);
+  const [showCompletedInOverview, setShowCompletedInOverview] = useState(false);
+  const [completionUndoState, setCompletionUndoState] = useState<CompletionUndoState | null>(null);
 
   const dirtySectionIdsRef = useRef<Set<string>>(new Set());
   const syncInFlightRef = useRef(false);
@@ -176,6 +208,14 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
   const swipeStartYRef = useRef(0);
   const swipeLastXRef = useRef(0);
   const swipeLastYRef = useRef(0);
+  const visualSwipeTouchIdRef = useRef<number | null>(null);
+  const visualSwipeStartXRef = useRef(0);
+  const visualSwipeStartYRef = useRef(0);
+  const visualSwipeLastXRef = useRef(0);
+  const visualSwipeLastYRef = useRef(0);
+  const visualPinchStartDistanceRef = useRef<number | null>(null);
+  const visualPinchStartScaleRef = useRef(VISUAL_MIN_SCALE);
+  const visualLastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
 
   const applyProgressRows = useCallback(
     (rows: GuideProgressRow[]) => {
@@ -384,32 +424,40 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
   }, [hydrationState, syncGuideProgressNow]);
 
   useEffect(() => {
-    if (drills.length === 0) return;
+    if (typeof window === "undefined") return;
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "SELECT" ||
-          target.isContentEditable)
-      ) {
-        return;
+    try {
+      const storedLastDrillId = localStorage.getItem(GUIDE_LAST_DRILL_STORAGE_KEY);
+      if (storedLastDrillId) {
+        setLastDrillId(storedLastDrillId);
       }
+    } catch {}
 
-      if (event.key === "ArrowLeft") {
-        setActiveIndex((prev) => Math.max(0, prev - 1));
-      } else if (event.key === "ArrowRight") {
-        setActiveIndex((prev) => Math.min(drills.length - 1, prev + 1));
+    try {
+      const raw = localStorage.getItem(GUIDE_OVERVIEW_COMPLETED_VISIBILITY_STORAGE_KEY);
+      if (raw === "1") {
+        setShowCompletedInOverview(true);
       }
-    };
+    } catch {}
+  }, []);
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [drills.length]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!lastDrillId) return;
+    try {
+      localStorage.setItem(GUIDE_LAST_DRILL_STORAGE_KEY, lastDrillId);
+    } catch {}
+  }, [lastDrillId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        GUIDE_OVERVIEW_COMPLETED_VISIBILITY_STORAGE_KEY,
+        showCompletedInOverview ? "1" : "0"
+      );
+    } catch {}
+  }, [showCompletedInOverview]);
 
   const updateDrillProgress = useCallback(
     (
@@ -457,6 +505,43 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
     [allowedSectionIds, guideSlug]
   );
 
+  const toggleDrillCompleted = useCallback(
+    (drillId: string) => {
+      const previousCompleted = progressByDrillId[drillId]?.completed ?? false;
+      const nextCompletedState = !previousCompleted;
+      const timestamp = new Date().toISOString();
+
+      updateDrillProgress(drillId, (current) => ({
+        completed: nextCompletedState,
+        notes: current.notes,
+        updatedAt: timestamp,
+      }));
+
+      if (nextCompletedState) {
+        setCompletionUndoState({
+          drillId,
+          previousCompleted,
+          expiresAt: Date.now() + COMPLETION_UNDO_TIMEOUT_MS,
+        });
+      } else {
+        setCompletionUndoState(null);
+      }
+    },
+    [progressByDrillId, updateDrillProgress]
+  );
+
+  const updateDrillNotes = useCallback(
+    (drillId: string, nextNotes: string) => {
+      const timestamp = new Date().toISOString();
+      updateDrillProgress(drillId, (current) => ({
+        completed: current.completed,
+        notes: nextNotes.slice(0, MAX_NOTES_LENGTH),
+        updatedAt: timestamp,
+      }));
+    },
+    [updateDrillProgress]
+  );
+
   const completedCount = useMemo(() => {
     return drills.reduce((count, drill) => {
       const progress = progressByDrillId[drill.id];
@@ -468,9 +553,15 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
     drills.length === 0 ? 0 : Math.round((completedCount / drills.length) * 100);
   const currentDrill = drills[activeIndex] ?? null;
   const currentDrillProgress = currentDrill ? progressByDrillId[currentDrill.id] : undefined;
+  const lastDrill = lastDrillId ? (drills.find((drill) => drill.id === lastDrillId) ?? null) : null;
   const visualDrill = visualDrillId
     ? (drills.find((drill) => drill.id === visualDrillId) ?? null)
     : null;
+  const visualDrillIndex = visualDrill
+    ? drills.findIndex((drill) => drill.id === visualDrill.id)
+    : -1;
+  const canGoVisualPrevious = visualDrillIndex > 0;
+  const canGoVisualNext = visualDrillIndex >= 0 && visualDrillIndex < drills.length - 1;
 
   const syncLabel = useMemo(() => {
     if (syncState === "syncing") return "Saving drill progress...";
@@ -488,12 +579,146 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
   const canGoNext = activeIndex < drills.length - 1;
 
   const goPrev = useCallback(() => {
-    setActiveIndex((prev) => Math.max(0, prev - 1));
-  }, []);
+    setActiveIndex((prev) => {
+      const nextIndex = Math.max(0, prev - 1);
+      const nextDrill = drills[nextIndex];
+      if (nextDrill) {
+        setLastDrillId(nextDrill.id);
+      }
+      return nextIndex;
+    });
+  }, [drills]);
 
   const goNext = useCallback(() => {
-    setActiveIndex((prev) => Math.min(drills.length - 1, prev + 1));
-  }, [drills.length]);
+    setActiveIndex((prev) => {
+      const nextIndex = Math.min(drills.length - 1, prev + 1);
+      const nextDrill = drills[nextIndex];
+      if (nextDrill) {
+        setLastDrillId(nextDrill.id);
+      }
+      return nextIndex;
+    });
+  }, [drills]);
+
+  const closeVisualView = useCallback(() => {
+    setVisualDrillId(null);
+    setVisualScale(VISUAL_MIN_SCALE);
+  }, []);
+
+  const openVisualPrevious = useCallback(() => {
+    if (!canGoVisualPrevious) return;
+    const previousDrill = drills[visualDrillIndex - 1];
+    if (!previousDrill) return;
+    setVisualDrillId(previousDrill.id);
+    setLastDrillId(previousDrill.id);
+    setVisualScale(VISUAL_MIN_SCALE);
+  }, [canGoVisualPrevious, drills, visualDrillIndex]);
+
+  const openVisualNext = useCallback(() => {
+    if (!canGoVisualNext) return;
+    const nextDrill = drills[visualDrillIndex + 1];
+    if (!nextDrill) return;
+    setVisualDrillId(nextDrill.id);
+    setLastDrillId(nextDrill.id);
+    setVisualScale(VISUAL_MIN_SCALE);
+  }, [canGoVisualNext, drills, visualDrillIndex]);
+
+  const openVisualViewForDrill = useCallback((drillId: string) => {
+    setVisualDrillId(drillId);
+    setLastDrillId(drillId);
+    setVisualScale(VISUAL_MIN_SCALE);
+  }, []);
+
+  const undoLatestCompletion = useCallback(() => {
+    if (!completionUndoState) return;
+    const timestamp = new Date().toISOString();
+    updateDrillProgress(completionUndoState.drillId, (current) => ({
+      completed: completionUndoState.previousCompleted,
+      notes: current.notes,
+      updatedAt: timestamp,
+    }));
+    setCompletionUndoState(null);
+  }, [completionUndoState, updateDrillProgress]);
+
+  useEffect(() => {
+    const activeDrill = drills[activeIndex];
+    if (!activeDrill) return;
+    setLastDrillId(activeDrill.id);
+  }, [activeIndex, drills]);
+
+  useEffect(() => {
+    if (!completionUndoState) return;
+
+    const remaining = completionUndoState.expiresAt - Date.now();
+    if (remaining <= 0) {
+      setCompletionUndoState(null);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setCompletionUndoState(null);
+    }, remaining);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [completionUndoState]);
+
+  useEffect(() => {
+    if (drills.length === 0) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (visualDrillIndex >= 0) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeVisualView();
+          return;
+        }
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          openVisualPrevious();
+          return;
+        }
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          openVisualNext();
+        }
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goPrev();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goNext();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [
+    closeVisualView,
+    drills.length,
+    goNext,
+    goPrev,
+    openVisualNext,
+    openVisualPrevious,
+    visualDrillIndex,
+  ]);
 
   if (drills.length === 0) {
     return (
@@ -551,6 +776,32 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
           <p className="text-xs text-slate-600" aria-live="polite">
             {syncLabel}
           </p>
+          {lastDrill ? (
+            <button
+              type="button"
+              onClick={() => {
+                const resumeIndex = drills.findIndex((drill) => drill.id === lastDrill.id);
+                if (resumeIndex < 0) return;
+                setActiveIndex(resumeIndex);
+              }}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Continue where you left off ({lastDrill.id})
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              const nextId = getFirstIncompleteId(drills, progressByDrillId);
+              if (!nextId) return;
+              const nextIndex = drills.findIndex((drill) => drill.id === nextId);
+              if (nextIndex < 0) return;
+              setActiveIndex(nextIndex);
+            }}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Open next drill
+          </button>
           {(syncState === "error" || syncState === "offline") && (
             <button
               type="button"
@@ -571,37 +822,67 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
           <p className="mt-1 text-sm text-slate-600">
             Jump directly to any drill. Completed drills stay marked.
           </p>
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            {drills.map((drill, index) => {
-              const completed = progressByDrillId[drill.id]?.completed ?? false;
-              const isActive = index === activeIndex;
-              return (
-                <button
-                  key={drill.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveIndex(index);
-                    setOverviewOpen(false);
-                  }}
-                  className={`min-h-[44px] rounded-xl border px-3 py-2 text-left text-sm transition ${
-                    isActive
-                      ? "border-blue-300 bg-blue-50 text-blue-900"
-                      : completed
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                        : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                  }`}
-                >
-                  <span className="block text-xs font-semibold uppercase tracking-wide">
-                    {drill.id}
-                  </span>
-                  <span className="mt-1 line-clamp-2 block font-medium">{drill.title}</span>
-                  <span className="mt-1 block text-xs">
-                    {completed ? "Completed" : "Not completed"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+
+          {(() => {
+            const split = splitItemsByCompletion(drills, progressByDrillId);
+            const visibleDrills = showCompletedInOverview
+              ? [...split.incomplete, ...split.completed]
+              : split.incomplete;
+
+            return (
+              <>
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {visibleDrills.map((drill) => {
+                    const index = drills.findIndex((candidate) => candidate.id === drill.id);
+                    const completed = progressByDrillId[drill.id]?.completed ?? false;
+                    const isActive = index === activeIndex;
+                    return (
+                      <button
+                        key={drill.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveIndex(index);
+                          setOverviewOpen(false);
+                        }}
+                        className={`min-h-[44px] rounded-xl border px-3 py-2 text-left text-sm transition ${
+                          isActive
+                            ? "border-blue-300 bg-blue-50 text-blue-900"
+                            : completed
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                              : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="block text-xs font-semibold uppercase tracking-wide">
+                          {drill.id}
+                        </span>
+                        <span className="mt-1 line-clamp-2 block font-medium">{drill.title}</span>
+                        <span className="mt-1 block text-xs">
+                          {completed ? "Completed" : "Not completed"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {split.completed.length > 0 ? (
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-800">
+                        Completed drills ({split.completed.length})
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowCompletedInOverview((value) => !value)}
+                        className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        {showCompletedInOverview ? "Hide completed" : "Show completed"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            );
+          })()}
         </section>
       ) : null}
 
@@ -663,14 +944,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
 
             <button
               type="button"
-              onClick={() => {
-                const timestamp = new Date().toISOString();
-                updateDrillProgress(currentDrill.id, (current) => ({
-                  completed: !current.completed,
-                  notes: current.notes,
-                  updatedAt: timestamp,
-                }));
-              }}
+              onClick={() => toggleDrillCompleted(currentDrill.id)}
               className={`inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
                 currentDrillProgress?.completed
                   ? "border border-emerald-300 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
@@ -715,13 +989,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                   id={`poolside-note-${currentDrill.id}`}
                   value={currentDrillProgress?.notes ?? ""}
                   onChange={(event) => {
-                    const timestamp = new Date().toISOString();
-                    const nextNotes = event.currentTarget.value.slice(0, MAX_NOTES_LENGTH);
-                    updateDrillProgress(currentDrill.id, (current) => ({
-                      completed: current.completed,
-                      notes: nextNotes,
-                      updatedAt: timestamp,
-                    }));
+                    updateDrillNotes(currentDrill.id, event.currentTarget.value);
                   }}
                   rows={4}
                   placeholder="Write what worked and what you will focus on next time."
@@ -749,7 +1017,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               </div>
               <button
                 type="button"
-                onClick={() => setVisualDrillId(currentDrill.id)}
+                onClick={() => openVisualViewForDrill(currentDrill.id)}
                 className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
               >
                 Visual view
@@ -768,7 +1036,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               disabled={!canGoPrev}
               className="inline-flex min-h-[44px] min-w-[120px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Forrige
+              Previous
             </button>
 
             <p className="text-xs text-slate-500">Swipe left/right or use buttons to navigate.</p>
@@ -779,7 +1047,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               disabled={!canGoNext}
               className="inline-flex min-h-[44px] min-w-[120px] items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition enabled:hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Neste
+              Next
             </button>
           </div>
         </article>
@@ -789,7 +1057,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
         <div className="bg-slate-950/92 fixed inset-0 z-[80]" role="dialog" aria-modal="true">
           <button
             type="button"
-            onClick={() => setVisualDrillId(null)}
+            onClick={closeVisualView}
             className="absolute inset-0"
             aria-label="Close visual view"
           />
@@ -803,25 +1071,183 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                   {visualDrill.id} - {visualDrill.title}
                 </p>
               </div>
+              <p className="text-xs font-semibold text-slate-200">
+                Zoom {Math.round(visualScale * 100)}%
+              </p>
+            </div>
+
+            <div
+              className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-2 pb-4 sm:px-5"
+              onTouchStart={(event) => {
+                if (event.touches.length === 2) {
+                  const touchA = event.touches.item(0);
+                  const touchB = event.touches.item(1);
+                  if (!touchA || !touchB) return;
+                  visualPinchStartDistanceRef.current = touchDistance(touchA, touchB);
+                  visualPinchStartScaleRef.current = visualScale;
+                  visualSwipeTouchIdRef.current = null;
+                  return;
+                }
+
+                if (event.touches.length !== 1) return;
+                const touch = event.touches[0];
+                const now = Date.now();
+                const lastTap = visualLastTapRef.current;
+
+                if (
+                  lastTap &&
+                  now - lastTap.time <= DOUBLE_TAP_WINDOW_MS &&
+                  Math.abs(lastTap.x - touch.clientX) <= 24 &&
+                  Math.abs(lastTap.y - touch.clientY) <= 24
+                ) {
+                  setVisualScale((current) =>
+                    current > VISUAL_MIN_SCALE + 0.05 ? VISUAL_MIN_SCALE : 2
+                  );
+                  visualLastTapRef.current = null;
+                  return;
+                }
+
+                visualLastTapRef.current = {
+                  time: now,
+                  x: touch.clientX,
+                  y: touch.clientY,
+                };
+                visualSwipeTouchIdRef.current = touch.identifier;
+                visualSwipeStartXRef.current = touch.clientX;
+                visualSwipeStartYRef.current = touch.clientY;
+                visualSwipeLastXRef.current = touch.clientX;
+                visualSwipeLastYRef.current = touch.clientY;
+              }}
+              onTouchMove={(event) => {
+                if (event.touches.length === 2) {
+                  const touchA = event.touches.item(0);
+                  const touchB = event.touches.item(1);
+                  if (!touchA || !touchB) return;
+                  const startDistance = visualPinchStartDistanceRef.current;
+                  if (!startDistance || startDistance <= 0) return;
+                  const distance = touchDistance(touchA, touchB);
+                  const ratio = distance / startDistance;
+                  setVisualScale(clampScale(visualPinchStartScaleRef.current * ratio));
+                  return;
+                }
+
+                const trackedId = visualSwipeTouchIdRef.current;
+                if (trackedId === null) return;
+                for (let i = 0; i < event.touches.length; i += 1) {
+                  const touch = event.touches.item(i);
+                  if (!touch || touch.identifier !== trackedId) continue;
+                  visualSwipeLastXRef.current = touch.clientX;
+                  visualSwipeLastYRef.current = touch.clientY;
+                  return;
+                }
+              }}
+              onTouchEnd={() => {
+                if (visualPinchStartDistanceRef.current) {
+                  visualPinchStartDistanceRef.current = null;
+                }
+
+                if (visualSwipeTouchIdRef.current === null) return;
+                if (visualScale > VISUAL_MIN_SCALE + 0.05) {
+                  visualSwipeTouchIdRef.current = null;
+                  return;
+                }
+
+                const deltaX = visualSwipeLastXRef.current - visualSwipeStartXRef.current;
+                const deltaY = visualSwipeLastYRef.current - visualSwipeStartYRef.current;
+                visualSwipeTouchIdRef.current = null;
+
+                if (Math.abs(deltaY) > SWIPE_VERTICAL_TOLERANCE_PX) return;
+                if (Math.abs(deltaX) < SWIPE_MIN_DISTANCE_PX) return;
+
+                if (deltaX < 0) {
+                  openVisualNext();
+                } else {
+                  openVisualPrevious();
+                }
+              }}
+              onTouchCancel={() => {
+                visualSwipeTouchIdRef.current = null;
+                visualPinchStartDistanceRef.current = null;
+              }}
+              onDoubleClick={() => {
+                setVisualScale((current) =>
+                  current > VISUAL_MIN_SCALE + 0.05 ? VISUAL_MIN_SCALE : 2
+                );
+              }}
+            >
+              <div className="flex h-full w-full max-w-[1280px] items-center justify-center overflow-hidden rounded-2xl">
+                <Image
+                  src={visualDrill.visualAssetPath}
+                  alt={visualDrill.visualAlt}
+                  width={1600}
+                  height={1000}
+                  unoptimized
+                  draggable={false}
+                  className="h-full max-h-full w-full max-w-[1200px] select-none object-contain"
+                  style={{
+                    transform: `scale(${visualScale})`,
+                    transformOrigin: "center center",
+                    transition:
+                      visualScale <= VISUAL_MIN_SCALE + 0.01 ? "transform 120ms ease-out" : "none",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="mx-3 mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/20 bg-slate-900/55 p-2 backdrop-blur sm:mx-5">
               <button
                 type="button"
-                onClick={() => setVisualDrillId(null)}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition hover:bg-white/10"
+                onClick={openVisualPrevious}
+                disabled={!canGoVisualPrevious}
+                className="inline-flex min-h-[44px] min-w-[104px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={openVisualNext}
+                disabled={!canGoVisualNext}
+                className="inline-flex min-h-[44px] min-w-[104px] items-center justify-center rounded-xl border border-white/35 bg-white px-4 text-sm font-semibold text-slate-900 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Next
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleDrillCompleted(visualDrill.id)}
+                className={`inline-flex min-h-[44px] min-w-[126px] items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
+                  progressByDrillId[visualDrill.id]?.completed
+                    ? "border border-emerald-300 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
+                    : "bg-blue-600 text-white hover:bg-blue-500"
+                }`}
+              >
+                {progressByDrillId[visualDrill.id]?.completed ? "Completed" : "Mark complete"}
+              </button>
+              <button
+                type="button"
+                onClick={closeVisualView}
+                className="inline-flex min-h-[44px] min-w-[96px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition hover:bg-white/10"
               >
                 Close
               </button>
+              <p className="ml-auto text-xs text-slate-200">
+                Pinch or double tap to zoom. Swipe to move between visuals.
+              </p>
             </div>
+          </div>
+        </div>
+      ) : null}
 
-            <div className="flex min-h-0 flex-1 items-center justify-center px-2 pb-5 sm:px-5">
-              <Image
-                src={visualDrill.visualAssetPath}
-                alt={visualDrill.visualAlt}
-                width={1600}
-                height={1000}
-                unoptimized
-                className="h-full max-h-full w-full max-w-[1200px] object-contain"
-              />
-            </div>
+      {completionUndoState ? (
+        <div className="fixed inset-x-0 bottom-4 z-[85] flex justify-center px-4">
+          <div className="flex w-full max-w-[560px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.18)]">
+            <p className="text-sm font-medium text-emerald-900">Drill marked complete.</p>
+            <button
+              type="button"
+              onClick={undoLatestCompletion}
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+            >
+              Undo
+            </button>
           </div>
         </div>
       ) : null}

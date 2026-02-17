@@ -201,9 +201,27 @@ Users can start instantly in guest mode, buy optional paid products without acco
 1. Library/content slice:
    - implement owned item preview/download/re-download in `/my-library/item/[slug]`,
    - lock `guide_poolside` to dual delivery (`PDF + interactive`) now,
+   - upgrade `0-1000m` tracker UX with focus-mode flow:
+     - open one session at a time in fullscreen,
+     - close fullscreen and return to overview,
+     - collapse completed sessions in overview with explicit reopen.
+   - apply cross-guide UX polish bundle (`0-1000m` + `poolside`):
+     - `Continue where you left off` CTA,
+     - sticky fullscreen control order:
+       - `Previous`,
+       - `Next`,
+       - `Mark complete`,
+       - `Close`,
+     - visual fullscreen improvements (`poolside`):
+       - swipe between visuals,
+       - double-tap zoom,
+       - pinch-to-zoom,
+     - completion safety:
+       - undo toast after `Mark complete`,
+       - persisted collapse/show state for completed groups.
    - deliver poolside interactive UX:
      - one drill per view,
-     - `Forrige`/`Neste` + swipe navigation,
+     - `Previous`/`Next` + swipe navigation,
      - `Drills overview` with completion status,
      - `Visual view` fullscreen image mode (portrait + landscape support),
    - expand claim/restore UX around owned content recovery.
@@ -848,6 +866,37 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-17` | `working tree` | cross-guide UX polish bundle (items `1-5`) implemented:
+  - `0-1000m`:
+    - added `Continue where you left off` CTA tied to persisted last opened session,
+    - upgraded fullscreen session mode controls to consistent sticky order:
+      - `Previous` -> `Next` -> `Mark complete` -> `Close`,
+    - completed-week collapse state now persists across visits,
+    - added completion `Undo` toast after marking session complete.
+  - `poolside`:
+    - added `Continue where you left off` CTA tied to persisted last drill,
+    - added persisted completed-drill visibility toggle in overview,
+    - added completion `Undo` toast after marking drill complete,
+    - upgraded visual fullscreen with:
+      - swipe between visuals,
+      - double-tap zoom,
+      - pinch-to-zoom,
+      - sticky controls using the same order as `0-1000m`.
+  - language/button-order consistency improved across guides (removed mixed `Forrige/Neste` vs English labels in critical nav controls).
+  - next step: run manual mobile + desktop QA focused on gesture behavior and fullscreen control ergonomics.
+- `2026-02-17` | `working tree` | `0-1000m` fullscreen session-mode + completed-collapse UX delivered:
+  - added fullscreen session flow in `0-1000m` tracker:
+    - open one session at a time,
+    - `Forrige`/`Neste` in fullscreen,
+    - `Close` returns to overview.
+  - added overview behavior for completed sessions:
+    - completed sessions are collapsed by default per week,
+    - explicit `Show completed` / `Hide completed` toggle keeps reopening simple.
+  - retained completion + notes editing in both overview and fullscreen views with existing sync model.
+  - added helper/test coverage for completion split and next-incomplete selection:
+    - `lib/guides/guide-tracker-ui.ts`,
+    - `tests/unit/guide-tracker-ui.test.ts`.
+  - next step: run manual QA for fullscreen + collapse behavior on mobile + desktop.
 - `2026-02-17` | `working tree` | poolside interactive + dual-action baseline implemented:
   - added entitlement-gated interactive route: `/guides/poolside`,
   - added entitlement-gated PDF route: `GET /api/guides/poolside/pdf`,
