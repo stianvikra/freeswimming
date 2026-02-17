@@ -4,9 +4,10 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
 
   const lessonId = "mod1-l1";
-  await page.goto(`/dev/login?next=/course?lesson=${encodeURIComponent(lessonId)}`);
+  const nextPath = `/course?lesson=${encodeURIComponent(lessonId)}`;
+  await page.goto(`/dev/login?next=${encodeURIComponent(nextPath)}`);
 
-  if (!page.url().includes("/course")) {
+  if (new URL(page.url()).pathname !== "/course") {
     test.skip(true, "Dev auth bypass is not enabled in this environment.");
   }
 
