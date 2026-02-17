@@ -163,6 +163,49 @@
 - `401`: unauthorized
 - `500`: failed to build export payload
 
+## `POST /api/user/delete`
+
+### Request
+
+- Auth: signed-in user session required
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "confirm": "DELETE"
+}
+```
+
+### Response
+
+- Success:
+
+```json
+{
+  "ok": true,
+  "message": "Your account and app data have been deleted."
+}
+```
+
+- Failure:
+
+```json
+{
+  "ok": false,
+  "error": "Confirmation required. Send confirm=\"DELETE\"."
+}
+```
+
+### Status Codes
+
+- `200`: account delete completed
+- `400`: invalid JSON or missing/invalid confirmation value
+- `401`: unauthorized
+- `415`: unsupported content type
+- `500`: failed to delete user data
+
 ## `GET|POST /api/progress/guide`
 
 ### Request
