@@ -10,6 +10,10 @@ vi.mock("@/lib/auth/dev-login", () => ({
 
 import { GET } from "@/app/dev/login/route";
 
+function applyResponseCookiesIdentity<T>(response: T): T {
+  return response;
+}
+
 function buildRequest(input?: { url?: string; origin?: string; forwardedHost?: string }) {
   return new Request(input?.url ?? "http://127.0.0.1:3000/dev/login?next=/my-library", {
     method: "GET",
@@ -27,6 +31,7 @@ describe("/dev/login shortcut route", () => {
     signInWithDevBypassAccountMock.mockResolvedValue({
       ok: true,
       userEmail: "dev@example.com",
+      applySupabaseCookies: applyResponseCookiesIdentity,
     });
   });
 
@@ -82,6 +87,7 @@ describe("/dev/login shortcut route", () => {
     signInWithDevBypassAccountMock.mockResolvedValue({
       ok: false,
       error: "Could not sign in.",
+      applySupabaseCookies: applyResponseCookiesIdentity,
     });
 
     const response = await GET(

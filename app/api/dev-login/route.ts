@@ -53,15 +53,17 @@ export async function POST(request: Request) {
 
   const result = await signInWithDevBypassAccount();
   if (!result.ok) {
-    return jsonNoStore({ ok: false, error: result.error }, 401);
+    return result.applySupabaseCookies(jsonNoStore({ ok: false, error: result.error }, 401));
   }
 
   const nextInput = typeof body.next === "string" ? body.next : "";
   const nextPath = getSafeNextPath(nextInput, "/my-library");
 
-  return jsonNoStore({
-    ok: true,
-    nextPath,
-    userEmail: result.userEmail,
-  });
+  return result.applySupabaseCookies(
+    jsonNoStore({
+      ok: true,
+      nextPath,
+      userEmail: result.userEmail,
+    })
+  );
 }
