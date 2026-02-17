@@ -10,7 +10,7 @@ import {
 type Props = {
   initialEmail?: string;
   nextPath?: string;
-  source?: "checkout_success" | "library_recovery";
+  source?: "checkout_success" | "library_recovery" | "claim_entry";
   className?: string;
 };
 

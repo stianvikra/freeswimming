@@ -21,6 +21,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   } = await supabase.auth.getUser();
   const libraryHref = user ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
   const libraryCta = user ? "Download from My Library" : "Sign in to My Library";
+  const claimHref = "/claim?next=%2Fmy-library";
 
   return (
     <SiteChrome>
@@ -65,6 +66,15 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
               source="checkout_success"
               className="mt-3"
             />
+            {!user ? (
+              <p className="mt-3 text-xs text-slate-600">
+                Prefer a dedicated flow?{" "}
+                <Link href={claimHref} className="font-semibold text-blue-700 hover:text-blue-600">
+                  Open claim page
+                </Link>
+                .
+              </p>
+            ) : null}
           </div>
         </div>
       </section>
