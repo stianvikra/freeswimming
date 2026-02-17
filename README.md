@@ -37,6 +37,10 @@ npm run dev
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL (public).
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase browser key (public).
 - `SUPABASE_SERVICE_ROLE_KEY`: Supabase server key (secret, server-only).
+- `DEV_AUTH_BYPASS_ENABLED`: local dev-only auth bypass flag (`1` enables `/api/dev-login` in dev).
+- `DEV_AUTH_BYPASS_TOKEN`: required request header secret for `/api/dev-login`.
+- `DEV_AUTH_BYPASS_EMAIL`: seeded low-privilege test account email used by `/api/dev-login`.
+- `DEV_AUTH_BYPASS_PASSWORD`: seeded low-privilege test account password used by `/api/dev-login`.
 - `STRIPE_SECRET_KEY`: Stripe secret API key (secret, server-only).
 - `STRIPE_WEBHOOK_SECRET`: Stripe webhook signing secret (secret, server-only).
 - `STRIPE_PRICE_ID_0_1000M_GUIDE`: Stripe price ID for 0-1000m guide.
@@ -44,6 +48,24 @@ npm run dev
 - `STRIPE_PRICE_ID_ANALYSIS`: Stripe price ID for video analysis.
 
 If Upstash vars are missing, the contact API falls back to in-memory rate limiting.
+
+## Dev auth bypass (local only)
+
+Use this only in local development while testing flows that would otherwise require OTP email:
+
+```bash
+curl -i \
+  -X POST http://127.0.0.1:3000/api/dev-login \
+  -H "content-type: application/json" \
+  -H "x-dev-auth-token: $DEV_AUTH_BYPASS_TOKEN" \
+  -d '{"next":"/my-library"}'
+```
+
+Guardrails:
+
+- Route returns `404` unless `NODE_ENV=development` and `DEV_AUTH_BYPASS_ENABLED=1`.
+- Route rejects non-local host/origin/IP requests.
+- Route requires `x-dev-auth-token` and signs in only the configured seeded test account.
 
 ## Quality checks
 
