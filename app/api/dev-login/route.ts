@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import {
-  getDevAuthBypassConfig,
   isDevAuthBypassEnabled,
   isDevAuthTokenValid,
   isLocalDevelopmentRequest,
 } from "@/lib/auth/dev-auth-bypass";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { signInWithDevBypassAccount } from "@/lib/auth/dev-login";
+import { getDevAuthBypassConfig } from "@/lib/auth/dev-auth-bypass";
 
 type DevLoginBody = {
   next?: unknown;
@@ -51,20 +51,9 @@ export async function POST(request: Request) {
     return jsonNoStore({ ok: false, error: "Unauthorized." }, 401);
   }
 
-  const supabase = await createServerSupabaseClient();
-
-  try {
-    await supabase.auth.signOut();
-  } catch {}
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email: config.email,
-    password: config.password,
-  });
-
-  if (error) {
-    console.error("[DevLoginApi] Could not sign in with configured dev account", error);
-    return jsonNoStore({ ok: false, error: "Could not sign in." }, 401);
+  const result = await signInWithDevBypassAccount();
+  if (!result.ok) {
+    return jsonNoStore({ ok: false, error: result.error }, 401);
   }
 
   const nextInput = typeof body.next === "string" ? body.next : "";
@@ -73,6 +62,6 @@ export async function POST(request: Request) {
   return jsonNoStore({
     ok: true,
     nextPath,
-    userEmail: config.email,
+    userEmail: result.userEmail,
   });
 }
