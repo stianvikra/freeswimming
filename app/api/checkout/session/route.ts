@@ -5,6 +5,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/supabase/env";
 import { getCatalogProductById, getCatalogProducts } from "@/lib/commerce/catalog";
 import { upsertCatalogProducts } from "@/lib/commerce/entitlements";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { createStripeClient } from "@/lib/stripe/server";
 
 type CheckoutBody = {
@@ -80,6 +81,16 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    trackAnalyticsEvent({
+      eventName: "checkout_started",
+      channel: "server",
+      userId: user?.id ?? null,
+      payload: {
+        productId: product.id,
+        sessionId: session.id,
+      },
+    });
 
     return NextResponse.json({ ok: true, url: session.url, sessionId: session.id });
   } catch (error) {

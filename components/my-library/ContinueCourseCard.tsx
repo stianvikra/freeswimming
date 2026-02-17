@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { buildCourseContinueHref, COURSE_LAST_LESSON_STORAGE_KEY } from "@/lib/course/resume";
+import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 
 type ResumeState = {
   continueHref: string;
@@ -28,6 +29,13 @@ function getInitialResumeState(): ResumeState {
 export default function ContinueCourseCard() {
   const [{ continueHref, hasSavedProgress }] = useState<ResumeState>(getInitialResumeState);
 
+  function onResumeClick() {
+    void sendClientAnalyticsEvent("resume_clicked", {
+      hasSavedProgress,
+      destination: continueHref,
+    });
+  }
+
   return (
     <section className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5">
       <h2 className="text-lg font-semibold text-slate-900">Continue Free Course</h2>
@@ -39,6 +47,7 @@ export default function ContinueCourseCard() {
       <div className="mt-4">
         <Link
           href={continueHref}
+          onClick={onResumeClick}
           className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-500 active:bg-blue-700"
         >
           {hasSavedProgress ? "Continue course" : "Start free course"}

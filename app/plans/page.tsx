@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
+import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import PageTemplate from "@/components/PageTemplate";
 import PageIntro from "@/components/PageIntro";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
@@ -92,10 +93,18 @@ export default function PlansPage() {
   const products = getCatalogProductsWithAvailability();
   const hasAvailableProducts = products.some((product) => product.available);
   const hasUnavailableProducts = products.some((product) => !product.available);
+  const availableCount = products.filter((product) => product.available).length;
 
   return (
     <SiteChrome>
       <PageTemplate size="wide">
+        <TrackEventOnMount
+          eventName="plans_viewed"
+          payload={{
+            productCount: products.length,
+            availableCount,
+          }}
+        />
         <PageIntro
           title="Plans"
           subtitle="Paid guides and feedback to support your next step."

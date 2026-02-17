@@ -206,6 +206,51 @@
 - `415`: unsupported content type
 - `500`: failed to delete user data
 
+## `POST /api/analytics/event`
+
+### Request
+
+- Headers:
+  - `Content-Type: application/json`
+- Auth: optional (event is accepted for signed-in and signed-out users)
+- `eventName` must match the allowed analytics event contract list (see My Library task brief section `Analytics and KPI Contract (V1)`).
+- Body:
+
+```json
+{
+  "eventName": "plans_viewed",
+  "payload": {
+    "productCount": 3,
+    "availableCount": 3
+  }
+}
+```
+
+### Response
+
+- Success:
+
+```json
+{
+  "ok": true
+}
+```
+
+- Failure:
+
+```json
+{
+  "ok": false,
+  "error": "Invalid event name."
+}
+```
+
+### Status Codes
+
+- `200`: event accepted
+- `400`: invalid JSON or invalid event name
+- `415`: unsupported content type
+
 ## `GET|POST /api/progress/guide`
 
 ### Request

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
+import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
@@ -59,6 +60,13 @@ export default async function MyLibraryPage() {
   return (
     <SiteChrome>
       <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+        <TrackEventOnMount
+          eventName="library_viewed"
+          payload={{
+            ownedCount: sections.owned.length + sections.unknownOwnedProductIds.length,
+            exploreCount: sections.explore.length,
+          }}
+        />
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
