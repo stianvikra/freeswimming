@@ -53,6 +53,14 @@ If Upstash vars are missing, the contact API falls back to in-memory rate limiti
 
 Use this only in local development while testing flows that would otherwise require OTP email:
 
+Browser shortcut (recommended for manual QA):
+
+```text
+http://127.0.0.1:3000/dev/login?next=/my-library
+```
+
+API shortcut (useful for scripts/automation):
+
 ```bash
 curl -i \
   -X POST http://127.0.0.1:3000/api/dev-login \
@@ -66,6 +74,7 @@ Guardrails:
 - Route returns `404` unless `NODE_ENV=development` and `DEV_AUTH_BYPASS_ENABLED=1`.
 - Route rejects non-local host/origin/IP requests.
 - Route requires `x-dev-auth-token` and signs in only the configured seeded test account.
+- Browser shortcut `/dev/login` is local-only and signs in the same seeded test account before redirect.
 
 ## Quality checks
 
