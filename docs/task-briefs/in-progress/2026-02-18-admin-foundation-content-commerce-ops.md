@@ -220,6 +220,20 @@ Owner should be able to manage lessons, guides, products, and operational states
     - local + remote branch deletion,
     - prune fetch.
   - next step: implement slice 4 (`PATCH`/`DELETE` admin content endpoints + audit log table + tests).
+- `2026-02-18` | `working tree` | slice 4 implementation in progress on `feat/admin-content-mutations-audit-log`:
+  - added new mutation API route:
+    - `app/api/admin/content/[id]/route.ts` (`PATCH` for editor+, `DELETE` for admin only).
+  - added update payload parser + shared UUID validation:
+    - `lib/admin/content.ts` (`parseUpdateAdminContentPayload`, exported `isUuid`).
+  - added audit log schema + RLS + trigger-based mutation logging:
+    - `supabase/migrations/20260219001500_admin_content_audit_log.sql`.
+  - added admin UI row actions:
+    - `components/admin/AdminContentManager.tsx` (publish/draft toggle + delete action).
+  - added/expanded unit tests:
+    - `tests/unit/admin-content.test.ts`.
+  - synced generated DB types:
+    - `types/database.ts` (`admin_audit_logs`).
+  - next step: run CI validation in PR and manual QA for publish/draft/delete + audit entries.
 
 ## Completion Record (fill when done)
 
