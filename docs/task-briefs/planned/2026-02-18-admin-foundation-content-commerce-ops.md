@@ -1,0 +1,162 @@
+# Task Brief: Admin Foundation For Content Commerce And Ops
+
+## Metadata
+
+- `id`: `2026-02-18-admin-foundation-content-commerce-ops`
+- `status`: `planned`
+- `owner`: `stianvikra`
+- `created`: `2026-02-18`
+- `updated`: `2026-02-18`
+
+## Goal
+
+Owner should be able to manage lessons, guides, products, and operational states from an internal admin area without code deploys.
+
+## Scope
+
+- Build internal `/admin` foundation inside current Next.js + Supabase stack (no external CMS).
+- Add admin auth/authorization:
+  - role-based gate (`admin`, `editor`, `viewer`) via profiles/claims,
+  - deny-by-default for non-admin users.
+- Add admin sections (v1):
+  - `Content`: modules, lessons, guide sessions/drills, publish state,
+  - `Commerce`: product catalog metadata and active/inactive state,
+  - `Operations`: feature flags (site lock, soft-launch toggles), support actions.
+- Add content data model in Supabase:
+  - draft/published states,
+  - ordering fields,
+  - version metadata (`updated_by`, `updated_at`),
+  - slug uniqueness and validation.
+- Replace hardcoded runtime reads with DB-backed reads where selected:
+  - keep safe fallback to static content for recovery.
+- Add admin editing UX:
+  - fast list view,
+  - detail editor with validation,
+  - explicit `Save draft` and `Publish` actions,
+  - optimistic but honest feedback (`saved`, `failed`, `retry`).
+- Add performance guardrails:
+  - cache strategy for public reads,
+  - tag-based revalidation after publish,
+  - minimal payload for list endpoints.
+- Add tests:
+  - unit tests for permissions/validation,
+  - integration tests for CRUD API routes,
+  - e2e tests for admin login and core edit/publish flows.
+- Add docs and runbook:
+  - admin role assignment,
+  - rollback to previous content version,
+  - emergency content disable.
+
+## Out Of Scope
+
+- No Strapi migration in this phase.
+- No full WYSIWYG builder.
+- No broad redesign of public UI.
+
+## Acceptance Criteria
+
+- Admin routes are inaccessible to non-admin users.
+- Owner can create/edit/publish lessons and guide content from UI.
+- Owner can edit product metadata and active state used by plans/library surfaces.
+- Publish action is reflected on public pages with deterministic cache invalidation.
+- Content edits do not degrade page performance or stability.
+- All admin-critical operations are logged with actor and timestamp.
+- Unit/integration/e2e coverage for permission + content workflows is green.
+
+## Validation
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:unit`
+- `npm run test:e2e`
+- `npm run build`
+
+## Manual QA Environments
+
+- Local:
+  - `http://127.0.0.1:3000/admin`
+  - Safari, Chrome desktop for heavy edit workflows
+  - iPad/tablet viewport for admin responsive behavior
+- Vercel preview:
+  - verify role gates and publish propagation.
+- Production:
+  - verify one controlled publish and one rollback drill.
+
+## Constraints
+
+- Keep current stack (Next.js + Supabase) for speed and control.
+- No added heavy dependency unless it materially improves delivery.
+- Preserve public-site visual language and SEO output.
+- Admin UI can be utilitarian, but must be clear and fast.
+
+## 10/10 Quality Bar (Required For User-Facing Work)
+
+- Admin can complete core tasks with minimal clicks and clear status.
+- Required states are present and testable: `loading`, `empty`, `error`, `offline`, `retry`.
+- Every destructive action requires explicit confirmation.
+- Keyboard-accessible forms, proper labels, focus order, and contrast.
+- No ambiguous labels; copy is action-based and plain.
+- Mobile/tablet editing remains usable for urgent operations.
+
+## Security, Privacy, And Compliance (Required For Auth/Data/Payments)
+
+- Strong server-side authorization on all admin APIs.
+- RLS policies enforce role boundaries even if client is manipulated.
+- CSRF-safe mutation endpoints and strict input validation.
+- Audit log for create/update/publish/unpublish/delete actions.
+- No secret values exposed in client payloads.
+- GDPR-safe handling of user-related admin views (minimal PII).
+
+## Observability And KPI Contract
+
+- Required events/logs:
+  - `admin_sign_in`,
+  - `admin_content_saved`,
+  - `admin_content_published`,
+  - `admin_publish_failed`,
+  - `admin_product_updated`.
+- Operational metrics:
+  - median save latency,
+  - publish success rate,
+  - admin API error rate.
+- Product KPI outcomes:
+  - reduced time-to-publish,
+  - fewer hotfix deploys for content-only changes.
+
+## Session Continuity And Recovery (Required)
+
+- Canonical source: git branch + this brief file.
+- Checkpoint cadence: commit each milestone or every 60-90 minutes.
+- Recovery protocol:
+  1. `git status -sb`
+  2. `git log --oneline -n 10`
+  3. reopen this brief and continue from next milestone.
+
+## Git Rhythm Defaults (Required)
+
+- Commit + push per validated vertical slice:
+  - schema + RLS,
+  - admin auth gate,
+  - content CRUD,
+  - publish/revalidate,
+  - tests.
+- Ask owner before PR open/refresh and merge handoff.
+
+## Branch Hygiene Defaults (Required)
+
+- After merge:
+  - `git checkout main`
+  - `git pull --ff-only origin main`
+  - `git branch -d <merged-branch>`
+  - `git fetch --prune`
+
+## PR Browser Rule (Required)
+
+- Open PR links in Safari by default:
+  - `open -a Safari "<PR_URL>"`
+
+## Completion Record (fill when done)
+
+- `PR`: link to merged PR
+- `merge`: source branch -> target branch
+- `result`: short outcome summary

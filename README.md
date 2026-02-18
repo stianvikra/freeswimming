@@ -41,6 +41,12 @@ npm run dev
 - `DEV_AUTH_BYPASS_TOKEN`: required request header secret for `/api/dev-login`.
 - `DEV_AUTH_BYPASS_EMAIL`: seeded low-privilege test account email used by `/api/dev-login`.
 - `DEV_AUTH_BYPASS_PASSWORD`: seeded low-privilege test account password used by `/api/dev-login`.
+- `SITE_LOCK_ENABLED`: `1`/`0` global private-mode toggle.
+- `SITE_LOCK_MODE`: currently `password`.
+- `SITE_LOCK_PASSWORD_HASH`: password hash in format `sha256:<64-hex>`.
+- `SITE_LOCK_BYPASS_TOKEN`: secret used to sign preview-access session cookies and optional bypass header.
+- `SITE_LOCK_COOKIE_NAME`: optional cookie override (default `fs_preview_access`).
+- `SITE_LOCK_SESSION_MAX_AGE_SECONDS`: optional session TTL override (default `43200`).
 - `STRIPE_SECRET_KEY`: Stripe secret API key (secret, server-only).
 - `STRIPE_WEBHOOK_SECRET`: Stripe webhook signing secret (secret, server-only).
 - `STRIPE_PRICE_ID_0_1000M_GUIDE`: Stripe price ID for 0-1000m guide.
@@ -75,6 +81,43 @@ Guardrails:
 - Route rejects non-local host/origin/IP requests.
 - Route requires `x-dev-auth-token` and signs in only the configured seeded test account.
 - Browser shortcut `/dev/login` is local-only and signs in the same seeded test account before redirect.
+
+## Private site lock (optional during build phase)
+
+When you want freeswimming.org private while polishing, enable site lock and share password only with invited testers.
+
+Generate password hash:
+
+```bash
+printf '%s' 'YOUR_PREVIEW_PASSWORD' | shasum -a 256
+```
+
+Then set:
+
+```bash
+SITE_LOCK_ENABLED=1
+SITE_LOCK_MODE=password
+SITE_LOCK_PASSWORD_HASH=sha256:<HASH_FROM_COMMAND>
+SITE_LOCK_BYPASS_TOKEN=<LONG_RANDOM_SECRET>
+```
+
+Unlock URL:
+
+```text
+/preview-access?next=/my-library
+```
+
+Clear preview cookie:
+
+```text
+/preview-access/clear?next=/
+```
+
+Optional scripted bypass header:
+
+```text
+x-site-lock-bypass-token: <SITE_LOCK_BYPASS_TOKEN>
+```
 
 ## Quality checks
 

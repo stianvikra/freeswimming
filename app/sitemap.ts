@@ -1,6 +1,11 @@
 import type { MetadataRoute } from "next";
+import { isSiteLockEnabled } from "@/lib/site-lock/config";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  if (isSiteLockEnabled()) {
+    return [];
+  }
+
   const baseUrl = "https://freeswimming.org";
 
   return [
