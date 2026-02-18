@@ -213,6 +213,13 @@ Owner should be able to manage lessons, guides, products, and operational states
   - expanded unit coverage for slug normalization behavior:
     - `tests/unit/admin-content.test.ts`.
   - next step: re-run CI/CodeQL on PR `feat/admin-content-crud-scaffold` and merge if green.
+- `2026-02-18` | `a0d69d1` | slice 3 merged to `main` (`#53`) and branch cleaned up:
+  - merged: `feat/admin-content-crud-scaffold` -> `main`.
+  - post-merge hygiene completed:
+    - local sync to `origin/main`,
+    - local + remote branch deletion,
+    - prune fetch.
+  - next step: implement slice 4 (`PATCH`/`DELETE` admin content endpoints + audit log table + tests).
 
 ## Completion Record (fill when done)
 
