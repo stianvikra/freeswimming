@@ -171,6 +171,22 @@ Owner should be able to manage lessons, guides, products, and operational states
   - added env docs for bootstrap allowlist:
     - `.env.example` (`ADMIN_EMAIL_ALLOWLIST`).
   - next step: validate this slice (`lint`, `typecheck`, targeted unit), then implement role persistence model in DB (`profiles` role column + RLS-safe usage).
+- `2026-02-18` | `working tree` | admin foundation slice 2 implemented (role persistence model):
+  - added migration for persisted profile roles:
+    - `supabase/migrations/20260218230000_admin_profiles_role.sql`:
+      - `public.admin_role` enum (`admin`, `editor`, `viewer`),
+      - `public.profiles.role` column with default `viewer`,
+      - index on `profiles.role`.
+  - updated typed DB contract:
+    - `types/database.ts` (`profiles.role` + `Enums.admin_role`).
+  - admin gate now reads role from `profiles.role` (RLS-safe own-row read) with fallback to metadata/allowlist:
+    - `app/admin/layout.tsx`,
+    - `lib/admin/access.ts`.
+  - added resilience for schema-cache lag during rollout:
+    - `isAdminRoleColumnMissingError` fallback path.
+  - expanded unit coverage:
+    - `tests/unit/admin-access.test.ts` (profile-role precedence + missing-column detection).
+  - next step: validate slice 2 and implement first admin content model table + CRUD API scaffold.
 
 ## Completion Record (fill when done)
 
