@@ -910,14 +910,15 @@ At each phase:
 
 ### PR Browser Rule (Locked For This Brief)
 
-- Open PR create/review/merge links in Safari by default:
-  - `open -a Safari "<PR_URL>"`
+- Open PR create/review/merge links in Safari as active foreground tab/window:
+  - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<PR_URL>"'`
 - Use another browser only if the owner explicitly asks for it.
 
 ### Manual QA URL Rule (Locked For This Brief)
 
 - For each manual QA step requiring a page open:
-  - assistant opens the URL in Safari first (`open -a Safari "<QA_URL>"`),
+  - assistant opens the URL in Safari as active foreground tab/window first:
+    - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<QA_URL>"'`,
   - then asks for one concrete validation and waits for owner `done`.
 - Only skip auto-open if owner explicitly asks to open manually or use another browser.
 

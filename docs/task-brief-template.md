@@ -173,8 +173,8 @@ Define when and how branch cleanup is executed so repository hygiene is consiste
 Define the default browser for PR handoff links so collaboration is consistent.
 
 - Default:
-  - open PR create/review/merge URLs in Safari:
-    - `open -a Safari "<PR_URL>"`
+  - open PR create/review/merge URLs in Safari as active foreground tab/window:
+    - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<PR_URL>"'`
 - Exception:
   - use another browser only when owner explicitly requests it.
 
@@ -183,8 +183,8 @@ Define the default browser for PR handoff links so collaboration is consistent.
 Define how manual QA URLs are handled so owner flow is low-friction.
 
 - Default:
-  - for each manual QA step that requires opening a page, assistant opens the exact URL in Safari first:
-    - `open -a Safari "<QA_URL>"`
+  - for each manual QA step that requires opening a page, assistant opens the exact URL in Safari as active foreground tab/window:
+    - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<QA_URL>"'`
   - then assistant asks owner to validate the concrete expected outcome and reply `done`.
 - Exception:
   - do not auto-open only if owner explicitly asks to open manually or use another browser.
