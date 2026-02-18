@@ -1041,6 +1041,37 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-18` | `working tree` | goals MVP first vertical slice implemented:
+  - added goals contract schema migration with typed goal fields + expanded status range:
+    - `supabase/migrations/20260218213000_goals_mvp_contract.sql`.
+  - implemented goals domain + server data layer:
+    - `lib/goals/mvp.ts`,
+    - `lib/goals/server.ts`.
+  - implemented secured goals API:
+    - `app/api/goals/route.ts` (list + create with `max 3 active` guardrail),
+    - `app/api/goals/[goalId]/route.ts` (archive/restore/log-result/celebration).
+  - implemented goals UI surface and entrypoint:
+    - `app/my-library/goals/page.tsx`,
+    - `components/my-library/goals/GoalsHub.tsx`,
+    - entry card on `app/my-library/page.tsx`.
+  - implemented goals coaching intake flow:
+    - `/contact?source=goals_coaching` support in `app/contact/page.tsx`,
+    - structured goals variant in `components/ContactForm.tsx`,
+    - API validation + email payload updates in `app/api/contact/route.ts`.
+  - added unit coverage for goals domain helpers:
+    - `tests/unit/goals-mvp.test.ts`.
+  - next step: run validation + manual QA (goals create/log/archive flow + coaching intake + regression on existing contact variants).
+
+- `2026-02-18` | `working tree` | goals schema-mismatch hardening added before PR:
+  - added schema detection helper:
+    - `lib/goals/schema.ts`.
+  - added legacy-read fallback for goals list when new MVP columns are not yet available in DB:
+    - `lib/goals/server.ts`.
+  - goals API now returns explicit `503` + `GOALS_SCHEMA_NOT_READY` instead of opaque failures when schema cache/migration is not ready:
+    - `app/api/goals/route.ts`,
+    - `app/api/goals/[goalId]/route.ts`.
+  - next step: rerun lint/typecheck + targeted goals/contact tests and continue PR prep.
+
 - `2026-02-18` | `working tree` | naming decision locked for account surface:
   - `My Library` remains primary nav/account label in MVP for clarity and conversion.
   - `My FreeSwim` allowed only as secondary branded supporting copy.
@@ -1101,6 +1132,15 @@ At each phase:
   - validation run completed:
     - `npm run verify`.
   - next step: execute cross-device manual QA checklist and record outcomes in this brief.
+- `2026-02-18` | `working tree` | CI verify flake fixed for contact API security E2E:
+  - root cause confirmed: contact API in-memory rate limit (`6/min` per IP) was shared across all Playwright projects because requests had no explicit `x-forwarded-for`, so later projects could hit `429`.
+  - stabilized test by assigning deterministic per-project test IP and forwarding it in all `/api/contact` requests:
+    - `tests/e2e/contact-api-security.spec.ts`.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - direct API reproducibility check (`unknown` IP hits `429` on 7th request; unique forwarded IPs stay `200`).
+  - next step: push patch and re-run PR checks to confirm `CI / verify` is green.
 - `2026-02-17` | `working tree` | analytics event automation tests added:
   - added new unit tests for analytics UX instrumentation:
     - `tests/unit/tracked-link.test.tsx`,

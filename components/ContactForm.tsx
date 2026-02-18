@@ -6,7 +6,7 @@ import { CheckCircle2, X } from "lucide-react";
 import PressButton from "@/components/ui/PressButton";
 import PageIntro from "@/components/PageIntro";
 
-type Variant = "contact" | "analysis";
+type Variant = "contact" | "analysis" | "goals_coaching";
 type Status = "idle" | "sending" | "success" | "error";
 
 type Props = {
@@ -14,6 +14,12 @@ type Props = {
 };
 
 type ApiResponse = { ok: boolean; error?: string };
+const GOALS_COACHING_LEVEL_OPTIONS = [
+  { value: "learning_freestyle", label: "Learning freestyle (2:00+ /100m)" },
+  { value: "beginner", label: "Beginner (1:50 /100m)" },
+  { value: "intermediate", label: "Intermediate (1:40 /100m)" },
+  { value: "fast", label: "Fast (1:30 or faster /100m)" },
+] as const;
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
@@ -22,11 +28,25 @@ function isValidEmail(email: string) {
 export default function ContactForm({ variant = "contact" }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
-  const [fieldError, setFieldError] = useState<"name" | "email" | "message" | null>(null);
+  const [fieldError, setFieldError] = useState<
+    | "name"
+    | "email"
+    | "message"
+    | "primary_goal"
+    | "level"
+    | "training_days"
+    | "weekly_volume"
+    | null
+  >(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [primaryGoal, setPrimaryGoal] = useState("");
+  const [level, setLevel] = useState("");
+  const [trainingDaysPerWeek, setTrainingDaysPerWeek] = useState("3");
+  const [weeklyVolume, setWeeklyVolume] = useState("");
+  const [targetDate, setTargetDate] = useState("");
 
   // honeypot
   const [company, setCompany] = useState("");
@@ -34,11 +54,20 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const nameRef = useRef<HTMLInputElement | null>(null);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const messageRef = useRef<HTMLTextAreaElement | null>(null);
+  const primaryGoalRef = useRef<HTMLInputElement | null>(null);
+  const levelRef = useRef<HTMLSelectElement | null>(null);
+  const trainingDaysRef = useRef<HTMLSelectElement | null>(null);
+  const weeklyVolumeRef = useRef<HTMLInputElement | null>(null);
 
   const startedAtRef = useRef<number | null>(null);
   const nameId = "contact-name";
   const emailId = "contact-email";
   const messageId = "contact-message";
+  const primaryGoalId = "contact-goals-primary-goal";
+  const levelId = "contact-goals-level";
+  const trainingDaysId = "contact-goals-training-days";
+  const weeklyVolumeId = "contact-goals-weekly-volume";
+  const targetDateId = "contact-goals-target-date";
   const errorId = "contact-form-error";
 
   const isSending = status === "sending";
@@ -85,6 +114,47 @@ export default function ContactForm({ variant = "contact" }: Props) {
         successHint: "You can safely close this page — or tap X to send another request.",
 
         micro: "We usually reply within 24–48 hours.",
+        messageRequired: true,
+        showGoalsIntake: false,
+      };
+    }
+
+    if (variant === "goals_coaching") {
+      return {
+        pageTitle: "Goals Coaching",
+        pageSubtitle:
+          "Get a structured training schedule built around your current level and target.",
+
+        helperTitle: "What we use to build your plan",
+        helperBullets: [
+          "Primary goal and target timeline",
+          "Your current pace level",
+          "Available training days and weekly volume",
+        ],
+        helperLine1: "This helps us recommend realistic weekly progressions and recovery balance.",
+        helperLine2: "We reply with a clear step-by-step schedule you can follow right away.",
+
+        formTitle: "Request Goal-Based Training Schedule",
+        formSubtitle: "Complete the intake so we can tailor your next training block.",
+
+        messagePlaceholder:
+          "Optional details: current blockers, upcoming race/open-water date, or injury notes.",
+
+        exampleTitle: "What helps us most",
+        exampleLines: [
+          "Current swim routine and available days",
+          "Main challenge (breathing, endurance, pace control)",
+          "How fast you want to reach your target",
+        ],
+
+        successTitle: "Schedule request received",
+        successBody:
+          "Thanks! We’ve received your intake and will reply with a tailored schedule by email within 24–48 hours.",
+        successHint: "You can safely close this page — or tap X to submit another intake.",
+
+        micro: "Structured coaching replies are usually sent within 24–48 hours.",
+        messageRequired: false,
+        showGoalsIntake: true,
       };
     }
 
@@ -115,6 +185,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
       successHint: "You can safely close this page — or tap X to send another message.",
 
       micro: "We usually reply within 24–48 hours.",
+      messageRequired: true,
+      showGoalsIntake: false,
     };
   }, [variant]);
 
@@ -125,6 +197,11 @@ export default function ContactForm({ variant = "contact" }: Props) {
     setName("");
     setEmail("");
     setMessage("");
+    setPrimaryGoal("");
+    setLevel("");
+    setTrainingDaysPerWeek("3");
+    setWeeklyVolume("");
+    setTargetDate("");
     setCompany("");
     startedAtRef.current = Date.now();
 
@@ -140,6 +217,10 @@ export default function ContactForm({ variant = "contact" }: Props) {
     requestAnimationFrame(() => messageRef.current?.focus());
   }
 
+  function goPrimaryGoal() {
+    requestAnimationFrame(() => primaryGoalRef.current?.focus());
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isSending) return;
@@ -150,6 +231,11 @@ export default function ContactForm({ variant = "contact" }: Props) {
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
     const trimmedMessage = message.trim();
+    const trimmedPrimaryGoal = primaryGoal.trim();
+    const trimmedWeeklyVolume = weeklyVolume.trim();
+    const parsedTrainingDays = Number(trainingDaysPerWeek);
+
+    const isGoalsCoaching = variant === "goals_coaching";
 
     if (trimmedName.length < 2) {
       setStatus("error");
@@ -165,7 +251,38 @@ export default function ContactForm({ variant = "contact" }: Props) {
       emailRef.current?.focus();
       return;
     }
-    if (trimmedMessage.length < 10) {
+    if (isGoalsCoaching && trimmedPrimaryGoal.length < 3) {
+      setStatus("error");
+      setError("Please enter your primary goal.");
+      setFieldError("primary_goal");
+      primaryGoalRef.current?.focus();
+      return;
+    }
+    if (isGoalsCoaching && !GOALS_COACHING_LEVEL_OPTIONS.some((option) => option.value === level)) {
+      setStatus("error");
+      setError("Please choose your current level.");
+      setFieldError("level");
+      levelRef.current?.focus();
+      return;
+    }
+    if (
+      isGoalsCoaching &&
+      (!Number.isFinite(parsedTrainingDays) || parsedTrainingDays < 1 || parsedTrainingDays > 7)
+    ) {
+      setStatus("error");
+      setError("Please choose how many training days you have per week.");
+      setFieldError("training_days");
+      trainingDaysRef.current?.focus();
+      return;
+    }
+    if (isGoalsCoaching && trimmedWeeklyVolume.length < 2) {
+      setStatus("error");
+      setError("Please enter your current weekly volume.");
+      setFieldError("weekly_volume");
+      weeklyVolumeRef.current?.focus();
+      return;
+    }
+    if (copy.messageRequired && trimmedMessage.length < 10) {
       setStatus("error");
       setError("Please write a short message.");
       setFieldError("message");
@@ -184,6 +301,15 @@ export default function ContactForm({ variant = "contact" }: Props) {
           name: trimmedName,
           email: trimmedEmail,
           message: trimmedMessage,
+          goalsCoaching: isGoalsCoaching
+            ? {
+                primaryGoal: trimmedPrimaryGoal,
+                level,
+                trainingDaysPerWeek: parsedTrainingDays,
+                weeklyVolume: trimmedWeeklyVolume,
+                targetDate: targetDate.trim() || null,
+              }
+            : undefined,
           company, // honeypot
           startedAt: startedAtRef.current,
         }),
@@ -261,8 +387,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
       {/* Header */}
       <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
 
-      {/* Helper card (analysis only) */}
-      {variant === "analysis" && (
+      {/* Helper card (analysis + goals coaching) */}
+      {variant !== "contact" && (
         <div className="relative mt-5 overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)]">
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
           <h2 className="text-[18px] font-semibold text-slate-900">{copy.helperTitle}</h2>
@@ -359,15 +485,118 @@ export default function ContactForm({ variant = "contact" }: Props) {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  goMessage();
+                  if (variant === "goals_coaching") {
+                    goPrimaryGoal();
+                  } else {
+                    goMessage();
+                  }
                 }
               }}
             />
           </div>
 
+          {copy.showGoalsIntake && (
+            <>
+              <div>
+                <label htmlFor={primaryGoalId} className="ui-field-label">
+                  PRIMARY GOAL
+                </label>
+                <input
+                  id={primaryGoalId}
+                  ref={primaryGoalRef}
+                  value={primaryGoal}
+                  onChange={(e) => setPrimaryGoal(e.target.value)}
+                  disabled={isSending}
+                  aria-invalid={fieldError === "primary_goal" ? true : undefined}
+                  aria-describedby={fieldError === "primary_goal" ? errorId : undefined}
+                  className="ui-field mt-2"
+                  placeholder="Example: 1000m under 18:00"
+                />
+              </div>
+
+              <div>
+                <label htmlFor={levelId} className="ui-field-label">
+                  CURRENT LEVEL
+                </label>
+                <select
+                  id={levelId}
+                  ref={levelRef}
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value)}
+                  disabled={isSending}
+                  aria-invalid={fieldError === "level" ? true : undefined}
+                  aria-describedby={fieldError === "level" ? errorId : undefined}
+                  className="ui-field mt-2"
+                >
+                  <option value="">Select level</option>
+                  {GOALS_COACHING_LEVEL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor={trainingDaysId} className="ui-field-label">
+                  TRAINING DAYS PER WEEK
+                </label>
+                <select
+                  id={trainingDaysId}
+                  ref={trainingDaysRef}
+                  value={trainingDaysPerWeek}
+                  onChange={(e) => setTrainingDaysPerWeek(e.target.value)}
+                  disabled={isSending}
+                  aria-invalid={fieldError === "training_days" ? true : undefined}
+                  aria-describedby={fieldError === "training_days" ? errorId : undefined}
+                  className="ui-field mt-2"
+                >
+                  <option value="1">1 day</option>
+                  <option value="2">2 days</option>
+                  <option value="3">3 days</option>
+                  <option value="4">4 days</option>
+                  <option value="5">5 days</option>
+                  <option value="6">6 days</option>
+                  <option value="7">7 days</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor={weeklyVolumeId} className="ui-field-label">
+                  CURRENT WEEKLY VOLUME
+                </label>
+                <input
+                  id={weeklyVolumeId}
+                  ref={weeklyVolumeRef}
+                  value={weeklyVolume}
+                  onChange={(e) => setWeeklyVolume(e.target.value)}
+                  disabled={isSending}
+                  aria-invalid={fieldError === "weekly_volume" ? true : undefined}
+                  aria-describedby={fieldError === "weekly_volume" ? errorId : undefined}
+                  className="ui-field mt-2"
+                  placeholder="Example: 3 sessions, ~2500m total"
+                />
+              </div>
+
+              <div>
+                <label htmlFor={targetDateId} className="ui-field-label">
+                  TARGET DATE (OPTIONAL)
+                </label>
+                <input
+                  id={targetDateId}
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
+                  disabled={isSending}
+                  className="ui-field mt-2"
+                />
+              </div>
+            </>
+          )}
+
           <div>
             <label htmlFor={messageId} className="ui-field-label">
-              MESSAGE
+              {copy.messageRequired ? "MESSAGE" : "MESSAGE (OPTIONAL)"}
             </label>
             <textarea
               id={messageId}
