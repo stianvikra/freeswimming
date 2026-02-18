@@ -16,6 +16,7 @@ Use this quick check so the task execution is precise:
 - State git rhythm defaults (commit/push cadence and PR cut cadence to `main`)
 - State branch hygiene cadence (post-merge cleanup + stale-branch sweep frequency)
 - State PR browser rule (open PR/merge links in Safari by default unless owner requests otherwise)
+- State closeout gate (completion audit + final 10/10 quality/safety/perf/regression sweep + move/cleanup prompts)
 
 Suggested prompt wrapper:
 
@@ -187,6 +188,27 @@ Add a running log section in each in-progress brief so status survives chat loss
 - include both:
   - latest pushed checkpoint,
   - any important uncommitted working-tree changes (if present).
+
+## Final Closeout Gate (Required Before Move To `done`)
+
+Run this gate before proposing lifecycle move/cleanup:
+
+- Completion audit:
+  - verify every acceptance criterion is either complete or explicitly deferred with rationale.
+  - verify outstanding/open items are empty or moved to a dedicated follow-up brief/backlog item.
+- Final quality sweep (`10/10`):
+  - UX/UI: check clarity and all required states (`loading`, `empty`, `error`, `offline`, `retry`) for changed surfaces.
+  - Security/privacy/compliance: check changed auth/data/payment paths against brief controls.
+  - Performance/ops: check no obvious regressions in changed flows (including CWV-sensitive surfaces where relevant).
+  - Regression safety: verify changes do not break adjacent routes/shared components.
+- Cleanup readiness:
+  - confirm tests/QA evidence is captured in brief.
+  - confirm branch/PR status is ready for post-merge hygiene.
+- Assistant prompting contract:
+  - assistant must ask owner explicitly:
+    - `Do you want to move this brief to done now?`
+    - `Do you want me to run post-merge local sync + branch cleanup now?`
+  - if quality sweep finds gaps, assistant must propose concrete fixes or create a follow-up brief/backlog entry before moving.
 
 ## Completion Record (fill when done)
 

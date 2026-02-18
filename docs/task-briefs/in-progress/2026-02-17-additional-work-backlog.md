@@ -58,3 +58,7 @@ Capture good ideas that should be implemented later without blocking the active 
     - `AW-003` -> `docs/task-briefs/in-progress/2026-02-18-aw-003-sign-in-cooldown-reliability.md`
 - PR create/review/merge links should be opened in Safari by default:
   - `open -a Safari "<PR_URL>"`
+- Before moving any spawned implementation brief to `done`, run final closeout gate:
+  - completion audit,
+  - 10/10 quality + security + regression sweep,
+  - explicit owner prompt for `move to done` and `post-merge cleanup`.

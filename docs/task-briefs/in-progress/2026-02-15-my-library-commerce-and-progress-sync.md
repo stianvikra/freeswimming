@@ -914,6 +914,19 @@ At each phase:
   - `open -a Safari "<PR_URL>"`
 - Use another browser only if the owner explicitly asks for it.
 
+### Final Closeout Gate (Locked For This Brief)
+
+- Before moving this brief to `done`, run a final completion audit:
+  - all acceptance criteria complete, or explicitly deferred with rationale and follow-up location.
+  - outstanding list is empty or converted into dedicated follow-up brief/backlog items.
+- Run final 10/10 sweep for changed scope:
+  - UX/UI quality on changed routes/components,
+  - security/privacy/compliance checks on auth/data/payment paths,
+  - performance/regression sanity check so adjacent flows are not degraded.
+- Assistant must explicitly ask owner before lifecycle closeout:
+  - `Move this brief to done now?`
+  - `Run post-merge local sync + branch cleanup now?`
+
 ## Implementation Checkpoint Log (In Progress)
 
 - `2026-02-18` | `working tree` | owned-item detail fallback + recovery UX completed:

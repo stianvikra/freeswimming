@@ -34,6 +34,26 @@ Each new brief should explicitly include:
 - observability/KPI contract for production-facing behavior,
 - session continuity and recovery protocol (checkpoint cadence + resume steps).
 
+## Final Closeout Gate (Required Before Move To `done`)
+
+Before moving any brief to `done/`, run a final closeout gate:
+
+1. completion audit:
+   - all acceptance criteria complete, or explicitly deferred with rationale.
+   - any remaining ideas moved to a dedicated follow-up brief/backlog entry.
+2. 10/10 quality + safety sweep:
+   - UX/UI quality check on changed surfaces,
+   - security/privacy/compliance check for auth/data/payments,
+   - performance/regression sanity check so adjacent app flows are not degraded.
+3. cleanup readiness:
+   - tests + manual QA evidence recorded in brief,
+   - PR/branch ready for merge and post-merge hygiene.
+
+Agent should explicitly ask owner before final lifecycle actions:
+
+- `Do you want to move this brief to done now?`
+- `Do you want me to run post-merge local sync + branch cleanup now?`
+
 ## Naming Convention
 
 - `YYYY-MM-DD-short-title.md`
