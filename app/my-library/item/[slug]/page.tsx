@@ -15,6 +15,10 @@ type Props = {
 
 export const dynamic = "force-dynamic";
 
+function getTrackedItemEventName(targetHref: string) {
+  return targetHref === "/contact" ? "support_clicked" : "item_preview_opened";
+}
+
 export default async function LibraryItemPage({ params }: Props) {
   const { slug } = await params;
   const product = getCatalogProductBySlug(slug);
@@ -57,9 +61,12 @@ export default async function LibraryItemPage({ params }: Props) {
           <div className="mt-6 flex flex-wrap items-start gap-3">
             {actionCopy.primaryHref ? (
               <TrackedLink
-                eventName="item_preview_opened"
+                eventName={getTrackedItemEventName(actionCopy.primaryHref)}
                 payload={{
-                  source: "library_item_primary",
+                  source:
+                    actionCopy.primaryHref === "/contact"
+                      ? "library_item_primary_support"
+                      : "library_item_primary",
                   productId: product.id,
                   target: actionCopy.primaryHref,
                 }}
@@ -71,11 +78,7 @@ export default async function LibraryItemPage({ params }: Props) {
             ) : null}
             {actionCopy.secondaryHref && actionCopy.secondaryLabel ? (
               <TrackedLink
-                eventName={
-                  actionCopy.secondaryHref === "/contact"
-                    ? "support_clicked"
-                    : "item_preview_opened"
-                }
+                eventName={getTrackedItemEventName(actionCopy.secondaryHref)}
                 payload={{
                   source:
                     actionCopy.secondaryHref === "/contact"

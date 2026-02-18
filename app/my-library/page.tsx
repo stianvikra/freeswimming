@@ -58,6 +58,11 @@ export default async function MyLibraryPage() {
     catalogProducts,
     (entitlements ?? []).map((entitlement) => entitlement.product_id)
   );
+  const claimQuery = new URLSearchParams({ next: "/my-library" });
+  if (user.email) {
+    claimQuery.set("email", user.email);
+  }
+  const claimHref = `/claim?${claimQuery.toString()}`;
 
   return (
     <SiteChrome>
@@ -160,6 +165,20 @@ export default async function MyLibraryPage() {
                     <p className="mt-2 text-sm text-slate-600">
                       This item is owned but not yet mapped in your current catalog view.
                     </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Link
+                        href={claimHref}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Email me access link
+                      </Link>
+                      <Link
+                        href="/contact"
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Contact support
+                      </Link>
+                    </div>
                   </article>
                 ))}
               </div>

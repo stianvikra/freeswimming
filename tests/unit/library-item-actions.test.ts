@@ -32,9 +32,11 @@ describe("getLibraryItemActionCopy", () => {
 
   it("returns safe fallback for unknown products", () => {
     expect(getLibraryItemActionCopy("unknown_product")).toMatchObject({
-      primaryHref: null,
+      primaryHref: "/claim?next=%2Fmy-library",
+      primaryLabel: "Email me access link",
       pdfApiHref: null,
-      secondaryHref: null,
+      secondaryHref: "/contact",
+      secondaryLabel: "Contact support",
     });
   });
 });

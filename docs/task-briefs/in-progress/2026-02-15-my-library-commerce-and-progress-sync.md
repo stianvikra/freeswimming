@@ -234,9 +234,11 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 ### Outstanding (blocking move to `done`)
 
-- `My Library` item detail is still placeholder text:
-  - dual-action flow is now implemented for `0-1000m`,
-  - preview/download/re-download behavior for remaining owned products is still pending.
+- `My Library` item detail behavior is now implemented for all product states:
+  - guides (`0-1000m`, `poolside`) support interactive open + protected PDF download,
+  - `analysis_video` supports open + support,
+  - unknown/unmapped owned-product fallback now exposes recovery/support actions (no placeholder-only state).
+  - remaining work is manual QA confirmation of preview/download/re-download flow quality across devices.
 - Progress sync criteria is partially met:
   - free-course progress now supports signed-in server sync and local->account merge,
   - paid-guide interactive sync is implemented for `0-1000m` and `poolside`, with automated merge/hydrate regression coverage, but cross-device resume still needs manual QA confirmation.
@@ -251,8 +253,8 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Next Delivery Order (Execution)
 
 1. Library/content slice:
-   - finish remaining owned-item detail behavior in `/my-library/item/[slug]` so non-guide products avoid placeholder-only UX.
    - run cross-device manual QA for paid-guide resume behavior (`0-1000m` + `poolside`) and record results.
+   - run manual QA for owned-item preview/download/re-download behavior from `My Library` item detail.
 2. Trust/ops slice:
    - run manual QA for analytics payload correctness and privacy/cookie disclosure visibility.
 3. Security hardening follow-up:
@@ -267,7 +269,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
     - buy flow -> webhook fulfilled entitlement -> `My Library` visible,
     - sign-in code flow + cooldown UX,
     - soft-launch under-construction banner visibility on public routes.
-  - remaining manual checks (after pending implementation):
+  - remaining manual checks:
     - free-course progress resume across devices when signed in (server-backed),
     - paid guide progress resume (interactive guide),
     - owned item preview/download/re-download from `My Library` item detail,
@@ -914,6 +916,21 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-18` | `working tree` | owned-item detail fallback + recovery UX completed:
+  - removed placeholder-only fallback in owned-item action mapping:
+    - `lib/commerce/library-item-actions.ts`.
+  - unknown/unmapped product fallback now provides explicit actions:
+    - `Email me access link` -> `/claim?next=%2Fmy-library`,
+    - `Contact support` -> `/contact`.
+  - improved item-detail link analytics routing so support links track `support_clicked` consistently:
+    - `app/my-library/item/[slug]/page.tsx`.
+  - upgraded unknown-owned cards in `My Library` with direct recovery/support CTAs:
+    - `app/my-library/page.tsx`.
+  - updated unit assertions for fallback action behavior:
+    - `tests/unit/library-item-actions.test.ts`.
+  - validation run completed:
+    - `npm run verify`.
+  - next step: execute cross-device manual QA checklist and record outcomes in this brief.
 - `2026-02-17` | `working tree` | analytics event automation tests added:
   - added new unit tests for analytics UX instrumentation:
     - `tests/unit/tracked-link.test.tsx`,
