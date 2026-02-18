@@ -54,11 +54,31 @@ function normalizeString(value: unknown): string {
 }
 
 function sanitizeSlug(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 120);
+  const lower = input.toLowerCase();
+  const chars: string[] = [];
+  let wroteSeparator = false;
+
+  for (let index = 0; index < lower.length; index += 1) {
+    const code = lower.charCodeAt(index);
+    const isDigit = code >= 48 && code <= 57;
+    const isLetter = code >= 97 && code <= 122;
+    if (isDigit || isLetter) {
+      chars.push(lower[index] ?? "");
+      wroteSeparator = false;
+      continue;
+    }
+
+    if (chars.length > 0 && !wroteSeparator) {
+      chars.push("-");
+      wroteSeparator = true;
+    }
+  }
+
+  while (chars[chars.length - 1] === "-") {
+    chars.pop();
+  }
+
+  return chars.join("").slice(0, 120);
 }
 
 function isUuid(value: string): boolean {

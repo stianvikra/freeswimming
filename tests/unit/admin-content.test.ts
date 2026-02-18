@@ -35,6 +35,19 @@ describe("parseCreateAdminContentPayload", () => {
     expect(parsed.value.sortOrder).toBe(4);
   });
 
+  it("collapses invalid slug separators and trims slug edges", () => {
+    const parsed = parseCreateAdminContentPayload({
+      contentType: "guide_session",
+      title: "Session 2",
+      slug: "___Session---2+++",
+    });
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    expect(parsed.value.slug).toBe("session-2");
+  });
+
   it("rejects invalid content type", () => {
     const parsed = parseCreateAdminContentPayload({
       contentType: "unknown",

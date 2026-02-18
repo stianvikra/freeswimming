@@ -207,6 +207,12 @@ Owner should be able to manage lessons, guides, products, and operational states
   - added unit coverage:
     - `tests/unit/admin-content.test.ts`.
   - next step: run validation and ship this slice, then add `PATCH/DELETE` endpoints + audit log table.
+- `2026-02-18` | `working tree` | CodeQL security hotfix for slice 3:
+  - removed regex-based slug sanitizer flagged by `js/polynomial-redos`:
+    - `lib/admin/content.ts` now uses linear char-by-char slug normalization.
+  - expanded unit coverage for slug normalization behavior:
+    - `tests/unit/admin-content.test.ts`.
+  - next step: push fix and re-run CI/CodeQL on PR `feat/admin-content-crud-scaffold`.
 
 ## Completion Record (fill when done)
 
