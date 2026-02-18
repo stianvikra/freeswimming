@@ -258,6 +258,65 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_content_items: {
+        Row: {
+          body: Json;
+          content_type: Database["public"]["Enums"]["admin_content_type"];
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          parent_id: string | null;
+          published_at: string | null;
+          slug: string;
+          sort_order: number;
+          status: Database["public"]["Enums"]["admin_content_status"];
+          summary: string;
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          body?: Json;
+          content_type: Database["public"]["Enums"]["admin_content_type"];
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          parent_id?: string | null;
+          published_at?: string | null;
+          slug: string;
+          sort_order?: number;
+          status?: Database["public"]["Enums"]["admin_content_status"];
+          summary?: string;
+          title: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          body?: Json;
+          content_type?: Database["public"]["Enums"]["admin_content_type"];
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          parent_id?: string | null;
+          published_at?: string | null;
+          slug?: string;
+          sort_order?: number;
+          status?: Database["public"]["Enums"]["admin_content_status"];
+          summary?: string;
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "admin_content_items_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_content_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       products: {
         Row: {
           active: boolean;
@@ -327,6 +386,8 @@ export type Database = {
     };
     Enums: {
       admin_role: "admin" | "editor" | "viewer";
+      admin_content_status: "draft" | "published";
+      admin_content_type: "course_module" | "course_lesson" | "guide_session" | "guide_drill";
     };
     CompositeTypes: {
       [_ in never]: never;

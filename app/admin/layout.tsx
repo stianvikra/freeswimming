@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import SiteChrome from "@/components/SiteChrome";
-import { isAdminRoleColumnMissingError, resolveAdminRoleForUser } from "@/lib/admin/access";
+import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type AdminLayoutProps = {
@@ -13,35 +13,16 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
   const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const gate = await requireAdminRoleFromSupabase(supabase, {
+    allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
+    minimumRole: "viewer",
+  });
 
-  if (!user) {
+  if (!gate.ok && gate.status === 401) {
     redirect("/auth/sign-in?next=%2Fadmin");
   }
 
-  let profileRole: string | null = null;
-  const profileRoleResult = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileRoleResult.error) {
-    if (!isAdminRoleColumnMissingError(profileRoleResult.error)) {
-      console.error("[Admin] Could not load admin role from profile", profileRoleResult.error);
-    }
-  } else {
-    profileRole = profileRoleResult.data?.role ?? null;
-  }
-
-  const role = resolveAdminRoleForUser(user, {
-    profileRole,
-    allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
-  });
-
-  if (!role) {
+  if (!gate.ok) {
     return (
       <SiteChrome>
         <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
@@ -67,6 +48,8 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
       </SiteChrome>
     );
   }
+
+  const { role } = gate;
 
   return (
     <SiteChrome>
