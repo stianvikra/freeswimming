@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isAdminEmailAllowlisted,
+  isAdminRoleColumnMissingError,
   parseAdminEmailAllowlist,
   resolveAdminRoleForUser,
 } from "@/lib/admin/access";
@@ -18,6 +19,17 @@ describe("admin access helpers", () => {
       app_metadata: { admin_role: "editor" },
     } as never);
     expect(role).toBe("editor");
+  });
+
+  it("prefers profile role over metadata claim", () => {
+    const role = resolveAdminRoleForUser(
+      {
+        email: "user@freeswimming.org",
+        app_metadata: { admin_role: "viewer" },
+      } as never,
+      { profileRole: "admin" }
+    );
+    expect(role).toBe("admin");
   });
 
   it("falls back to allowlist email as admin", () => {
@@ -48,6 +60,15 @@ describe("admin access helpers", () => {
         "Owner@FreeSwimming.org",
         "owner@freeswimming.org,ops@freeswimming.org"
       )
+    ).toBe(true);
+  });
+
+  it("detects missing role-column errors from postgrest", () => {
+    expect(
+      isAdminRoleColumnMissingError({
+        code: "PGRST204",
+        message: "Could not find the 'role' column of 'profiles' in the schema cache",
+      })
     ).toBe(true);
   });
 });

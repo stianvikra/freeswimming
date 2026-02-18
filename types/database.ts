@@ -296,18 +296,21 @@ export type Database = {
           created_at: string;
           email: string;
           id: string;
+          role: Database["public"]["Enums"]["admin_role"];
           updated_at: string;
         };
         Insert: {
           created_at?: string;
           email: string;
           id: string;
+          role?: Database["public"]["Enums"]["admin_role"];
           updated_at?: string;
         };
         Update: {
           created_at?: string;
           email?: string;
           id?: string;
+          role?: Database["public"]["Enums"]["admin_role"];
           updated_at?: string;
         };
         Relationships: [];
@@ -323,7 +326,7 @@ export type Database = {
       };
     };
     Enums: {
-      [_ in never]: never;
+      admin_role: "admin" | "editor" | "viewer";
     };
     CompositeTypes: {
       [_ in never]: never;

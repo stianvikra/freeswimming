@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import SiteChrome from "@/components/SiteChrome";
-import { resolveAdminRoleForUser } from "@/lib/admin/access";
+import { isAdminRoleColumnMissingError, resolveAdminRoleForUser } from "@/lib/admin/access";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type AdminLayoutProps = {
@@ -21,7 +21,23 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
     redirect("/auth/sign-in?next=%2Fadmin");
   }
 
+  let profileRole: string | null = null;
+  const profileRoleResult = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileRoleResult.error) {
+    if (!isAdminRoleColumnMissingError(profileRoleResult.error)) {
+      console.error("[Admin] Could not load admin role from profile", profileRoleResult.error);
+    }
+  } else {
+    profileRole = profileRoleResult.data?.role ?? null;
+  }
+
   const role = resolveAdminRoleForUser(user, {
+    profileRole,
     allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
   });
 
