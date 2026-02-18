@@ -273,6 +273,12 @@ Owner should be able to manage lessons, guides, products, and operational states
     - `tests/unit/library-sections.test.ts`
     - `tests/unit/catalog-overrides.test.ts`.
   - next step: commit+push checkpoint, open PR in Safari, and verify CI + manual QA matrix for admin commerce/operations.
+- `2026-02-18` | `working tree` | hotfix after PR checks:
+  - fixed CodeQL `incomplete URL substring sanitization` in runtime flags endpoint:
+    - `app/api/runtime/flags/route.ts` now parses URL and validates exact hostname instead of substring matching.
+  - hardened `/plans` runtime behavior for preview/build stability:
+    - `app/plans/page.tsx` forced dynamic render and added safe fallback to env catalog when override lookup fails.
+  - next step: push hotfix commit and re-run checks.
 
 ## Completion Record (fill when done)
 

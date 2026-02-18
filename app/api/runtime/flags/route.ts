@@ -3,6 +3,16 @@ import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
 export const dynamic = "force-dynamic";
 
+function isExampleSupabaseHost(value: string | undefined): boolean {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.hostname === "example.com" || parsed.hostname === "www.example.com";
+  } catch {
+    return false;
+  }
+}
+
 function noStoreJson(
   body: Record<string, unknown>,
   init?: {
@@ -22,7 +32,7 @@ export async function GET() {
     softLaunchBanner: true,
   };
 
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("example.com")) {
+  if (isExampleSupabaseHost(process.env.NEXT_PUBLIC_SUPABASE_URL)) {
     return noStoreJson({
       ok: true,
       flags: fallback,

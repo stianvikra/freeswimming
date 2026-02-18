@@ -12,6 +12,9 @@ import {
   getCatalogProductsWithAvailability,
   type CatalogProductAvailability,
 } from "@/lib/commerce/catalog";
+import type { CatalogProductOverridesById } from "@/lib/commerce/catalog";
+
+export const dynamic = "force-dynamic";
 
 function getPlanCopy(product: CatalogProductAvailability) {
   switch (product.id) {
@@ -96,17 +99,23 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
 }
 
 export default async function PlansPage() {
-  const supabase = await createServerSupabaseClient();
-  const { data: productRows, error: productRowsError } = await supabase
-    .from("products")
-    .select("id, slug, title, kind, active")
-    .order("created_at", { ascending: true });
+  let catalogOverrides: CatalogProductOverridesById = {};
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: productRows, error: productRowsError } = await supabase
+      .from("products")
+      .select("id, slug, title, kind, active")
+      .order("created_at", { ascending: true });
 
-  if (productRowsError) {
-    console.error("[Plans] Could not load product catalog overrides", productRowsError);
+    if (productRowsError) {
+      console.error("[Plans] Could not load product catalog overrides", productRowsError);
+    } else {
+      catalogOverrides = buildCatalogOverridesFromRows(productRows ?? []);
+    }
+  } catch (error) {
+    console.error("[Plans] Falling back to env catalog due override lookup failure", error);
   }
 
-  const catalogOverrides = buildCatalogOverridesFromRows(productRows ?? []);
   const products = getCatalogProductsWithAvailability(process.env, catalogOverrides);
   const hasAvailableProducts = products.some((product) => product.available);
   const hasUnavailableProducts = products.some((product) => !product.available);
