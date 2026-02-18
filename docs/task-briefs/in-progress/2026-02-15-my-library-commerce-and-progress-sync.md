@@ -83,6 +83,18 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Purchased items can be opened, previewed on mobile, and re-downloaded from `My Library`.
 - `0-1000m` has both PDF and interactive web plan with 20 sessions, per-session checkbox completion, and notes.
 - Signed-in progress writes are persisted to Supabase and visible on second device after sign-in.
+- Goals MVP supports flexible goal creation with guardrails:
+  - max `3` active goals per user,
+  - template + custom goal creation,
+  - strict typed goal schema (no free-form ambiguous units).
+- Goals templates include at minimum:
+  - `1000m under 10:00`,
+  - `1000m continuous (not timed)`,
+  - `Drill #1 completed`,
+  - `Module 1 completed`,
+  - `400m under 10:00`.
+- Drill/module goals auto-update from existing progress data when relevant progress events occur.
+- Goals surface includes coaching CTA and routes to contact flow with structured intake fields.
 - Database and RLS schema changes are tracked as versioned SQL migrations committed in this repository.
 - Receipt/invoice self-service path is available through Stripe customer portal link.
 - Data export and delete requests for app-owned user data are available and documented.
@@ -238,11 +250,11 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - guides (`0-1000m`, `poolside`) support interactive open + protected PDF download,
   - `analysis_video` supports open + support,
   - unknown/unmapped owned-product fallback now exposes recovery/support actions (no placeholder-only state).
-  - remaining work is manual QA confirmation of preview/download/re-download flow quality across devices.
+  - manual QA confirmation for preview/download/re-download is completed for guide item details.
 - Progress sync criteria is partially met:
   - free-course progress now supports signed-in server sync and local->account merge,
-  - paid-guide interactive sync is implemented for `0-1000m` and `poolside`, with automated merge/hydrate regression coverage, but cross-device resume still needs manual QA confirmation.
-- Goals MVP UI/state flow is not implemented.
+  - paid-guide interactive sync is implemented for `0-1000m` and `poolside`, with automated merge/hydrate regression coverage and manual cross-device resume confirmation.
+- Goals MVP UI/state flow is not implemented yet (10/10 UX/UI contract is locked below).
 - Library tab contract decision required:
   - implement explicit query tabs (`?tab=library|explore`) or revise contract to section layout.
 - Security follow-up items remain deferred:
@@ -253,11 +265,27 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Next Delivery Order (Execution)
 
 1. Library/content slice:
-   - run cross-device manual QA for paid-guide resume behavior (`0-1000m` + `poolside`) and record results.
-   - run manual QA for owned-item preview/download/re-download behavior from `My Library` item detail.
+   - completed on `2026-02-18`:
+     - cross-device manual QA for paid-guide resume behavior (`0-1000m` + `poolside`),
+     - manual QA for owned-item preview/download/re-download from `My Library` item detail.
 2. Trust/ops slice:
-   - run manual QA for analytics payload correctness and privacy/cookie disclosure visibility.
-3. Security hardening follow-up:
+   - analytics payload sanity for library section nav is verified:
+     - `POST /api/analytics/event` emitted `eventName: "library_tab_switched"` with payload `{ tab: "explore", source: "library_section_nav" }`.
+   - privacy/cookie disclosure visibility is verified from `My Library` surface (`Privacy Policy` + `Cookie Policy` links and pages).
+3. Goals MVP slice (next):
+   - implement goals hub and card model with template + custom creation and `max 3 active` guardrail.
+   - implement template set:
+     - `1000m under 10:00`,
+     - `1000m continuous`,
+     - `Drill #1 completed`,
+     - `Module 1 completed`,
+     - `400m under 10:00`.
+   - implement coaching CTA:
+     - `Need help reaching your goals faster? Let us help you set up a training schedule.`
+     - route to contact form with structured level + target intake.
+4. Library tab contract decision:
+   - decide between explicit query tabs (`?tab=library|explore`) and section-nav contract.
+5. Security hardening follow-up:
    - verify live rate-limit behavior in preview/production logs,
    - decide if progressive Turnstile activation is needed based on abuse signals.
 
@@ -269,12 +297,14 @@ Users can start instantly in guest mode, buy optional paid products without acco
     - buy flow -> webhook fulfilled entitlement -> `My Library` visible,
     - sign-in code flow + cooldown UX,
     - soft-launch under-construction banner visibility on public routes.
+    - paid guide progress resume across browsers/devices (`0-1000m`, `poolside`) including notes/completion persistence.
+    - owned item detail preview/download/re-download for `0-1000m` and `poolside` guides.
+    - analytics payload sanity for library section nav (`library_tab_switched`).
+    - policy-route visibility from library (`/privacy`, `/cookies`).
   - remaining manual checks:
     - free-course progress resume across devices when signed in (server-backed),
-    - paid guide progress resume (interactive guide),
-    - owned item preview/download/re-download from `My Library` item detail,
     - `/plans` final UX sweep on mobile + desktop preview,
-    - `/claim`, data export/delete user flows, and policy-route visibility (`/privacy`, `/cookies`) from checkout/library surfaces.
+    - `/claim`, data export/delete user flows from account surfaces.
   - browsers/devices:
     - iOS Safari (phone),
     - Android Chromium (phone),
@@ -297,7 +327,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Selected Defaults For V1 (Locked Unless Explicitly Changed)
 
 - Track A: `Option A` (keep `Programs` + `Video Analysis`, add `/plans`, label account area `My Library`).
-  - Naming note: keep `My Library` in v1 for immediate clarity; re-evaluate branded alias (`My FreeSwim`) after launch data.
+  - Naming decision (locked for MVP):
+    - keep `My Library` as primary navigation/account label for clarity and conversion.
+    - allow `My FreeSwim` only as secondary brand language in headings/supporting copy.
+    - do not replace the primary nav label with `My FreeSwim` before post-launch data review.
 - Track B: `Option A` (guest-first: free progress + guest checkout + optional account claim).
 - Track C: `Option A` (Supabase Auth + Postgres + RLS).
 - Track D: `Option A` (Stripe Checkout + webhook fulfillment + entitlements table).
@@ -353,6 +386,14 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Progress confidence:
   - last sync timestamp shown where relevant (`Saved just now`, `Saved 2 min ago`),
   - failed sync has explicit retry state.
+- Goals clarity and motivation:
+  - goals surface presents one primary next action per goal card,
+  - goals must support both performance and consistency outcomes (timed + non-timed),
+  - milestone completion should feel rewarding but not noisy.
+- Coaching upsell quality bar:
+  - CTA must feel helpful, not salesy:
+    - `Need help reaching your goals faster? Let us help you set up a training schedule.`
+  - intake fields must reduce back-and-forth for support/coaching.
 - Accessibility:
   - target WCAG 2.2 AA for changed surfaces,
   - keyboard access, visible focus, correct ARIA label/description mapping,
@@ -380,6 +421,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - Library tab labels:
   - `My Library`
   - `Explore More`
+- Brand usage rule for account area:
+  - primary IA label remains `My Library`,
+  - optional supporting headline copy may use `My FreeSwim Library`,
+  - avoid using `My FreeSwim` as standalone primary nav label in MVP.
 - Upsell section headline:
   - `Additional Learning`
 - Naming guardrail:
@@ -416,6 +461,50 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - PDF parity:
   - PDF remains downloadable,
   - interactive page acts as working tracker layer (`checkbox + notes`) for same plan.
+
+## Goals MVP Contract (10/10 UX/UI)
+
+- Flexibility model:
+  - support templates + custom goals (flexible),
+  - enforce strict typed targets and units (guardrails),
+  - max `3` active goals per user.
+- Goal templates (locked for MVP):
+  - `1000m under 10:00` (`distance_time`),
+  - `1000m continuous (not timed)` (`distance_continuous`),
+  - `Drill #1 completed` (`drill_complete`),
+  - `Module 1 completed` (`module_complete`),
+  - `400m under 10:00` (`distance_time`).
+- Custom goals:
+  - allow user-defined title + typed target,
+  - block ambiguous units and malformed targets at validation layer.
+- Progress states:
+  - `active`, `on_track`, `at_risk`, `achieved`, `archived`,
+  - celebration state is visible once when moving to `achieved`.
+- Auto-progress rules:
+  - `drill_complete` and `module_complete` goals derive progress from existing guide/course progress events,
+  - timed/continuous goals can be updated by user-submitted result entries in MVP.
+- Goal card UX:
+  - always show:
+    - goal title,
+    - progress summary,
+    - status badge,
+    - one primary CTA (`Open next session`, `Log result`, or `Review drills`).
+  - avoid dead-end cards with no actionable next step.
+- Coaching CTA (locked copy + behavior):
+  - show in goals surface:
+    - `Need help reaching your goals faster? Let us help you set up a training schedule.`
+  - CTA target:
+    - `/contact?source=goals_coaching`
+  - required intake fields:
+    - primary goal,
+    - level:
+      - `Learning freestyle (2:00+ /100m)`,
+      - `Beginner (1:50 /100m)`,
+      - `Intermediate (1:40 /100m)`,
+      - `Fast (1:30 or faster /100m)`,
+    - available training days per week,
+    - current weekly volume,
+    - target date (optional).
 
 ## State and Recovery Matrix (Non-Negotiable)
 
@@ -493,6 +582,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
 - `/my-library?tab=library|explore`: tab-driven library/explore surface.
 - `/my-library/item/[slug]`: owned-item detail with open/preview/download actions.
 - `/my-library/goals`: optional subview for goals and milestones.
+- `/contact?source=goals_coaching`: coaching intake flow for users who want goal-specific schedule help.
 - `/checkout/success`: post-purchase success page with download now + claim account CTA.
 - `/claim`: account claim entry via magic link for guest purchasers.
 - `/guides/0-1000m`: interactive 20-session web plan.
@@ -567,10 +657,16 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `id uuid primary key`,
   - `user_id uuid`,
   - `title text`,
-  - `target_value numeric`,
-  - `target_unit text` (`m`, `minutes`, etc.),
+  - `goal_type text` (`distance_time`, `distance_continuous`, `drill_complete`, `module_complete`, `custom`),
+  - `source text` (`template`, `custom`),
+  - `target_distance_m integer nullable`,
+  - `target_time_seconds integer nullable`,
+  - `target_count integer nullable`,
+  - `target_ref text nullable` (for drill/module IDs),
+  - `progress_value numeric default 0`,
   - `target_date date`,
   - `status text` (`active`, `achieved`, `archived`),
+  - `is_milestone boolean default false`,
   - `celebrated_at timestamptz nullable`.
 
 ### Security contract
@@ -765,6 +861,9 @@ npx supabase start
 ### Track A: Navigation + Page Naming
 
 - `Option A (Recommended, 10/10)`: keep `Programs` and `Video Analysis` in nav, add `/plans` hub, use `My Library` as account destination label.
+- MVP naming lock:
+  - keep `My Library` as primary label until post-launch evidence supports a rename.
+  - evaluate potential rename to `My FreeSwim` only after usage/conversion data review.
 - `Option B (8/10)`: add `Shop` as top-level and move all offers under it.
 - `Option C (6/10)`: use `Additional Help` as top-level paid label.
 
@@ -800,7 +899,12 @@ npx supabase start
 
 ### Track G: Goal Tracking
 
-- `Option A (Recommended, 9.5/10)`: support manual goals (preset + custom), progress milestones, and simple celebration states.
+- `Option A (Recommended, 10/10)`: flexible but guarded goals model:
+  - template + custom goals,
+  - max `3` active goals,
+  - typed units and validated target schema,
+  - progress milestones + celebration states,
+  - coaching CTA to structured contact intake.
 - `Option B (7/10)`: no goals in v1.
 - `Option C (8/10)`: external wearable-only goals (defer due integration overhead).
 
@@ -853,7 +957,7 @@ For this task, delivery should follow strict one-step guidance when owner action
 7. Implement paid interactive guide state + sync endpoints.
 8. Implement `0-1000m` interactive 20-session web plan (checkboxes + notes + completion).
 9. Implement Stripe portal link and support link on owned cards.
-10. Implement goals MVP UI/state with achievement state.
+10. Implement goals MVP UI/state with achievement state, template/custom flow, and coaching CTA intake.
 11. Implement data export/delete endpoints and UI entry points.
 12. Implement analytics events + operational logs for entitlement/progress flows.
 13. Add/update tests, run `npm run verify`, complete manual QA matrix.
@@ -936,6 +1040,41 @@ At each phase:
   - `Run post-merge local sync + branch cleanup now?`
 
 ## Implementation Checkpoint Log (In Progress)
+
+- `2026-02-18` | `working tree` | naming decision locked for account surface:
+  - `My Library` remains primary nav/account label in MVP for clarity and conversion.
+  - `My FreeSwim` allowed only as secondary branded supporting copy.
+  - rename decision deferred until post-launch usage data review.
+  - next step: start goals MVP implementation slice.
+
+- `2026-02-18` | `working tree` | goals MVP brief contract upgraded to 10/10 UX/UI:
+  - locked flexible-but-guarded goals model (`max 3 active`, template + custom),
+  - locked MVP templates:
+    - `1000m under 10:00`,
+    - `1000m continuous`,
+    - `Drill #1 completed`,
+    - `Module 1 completed`,
+    - `400m under 10:00`,
+  - locked coaching CTA + structured contact intake levels and fields.
+  - next step: implement goals MVP vertical slice in app (`/my-library/goals` + data/state wiring + CTA handoff).
+
+- `2026-02-18` | `working tree` | library/content manual QA slice completed with owner verification:
+  - paid-guide cross-device resume verified for:
+    - `0-1000m`: completion + notes persisted across browser/device session,
+    - `poolside`: completion + notes persisted across browser/device session.
+  - owned-item detail manual QA verified for guides:
+    - `0-1000m`: interactive open + PDF download + re-download,
+    - `poolside`: interactive open + PDF download + re-download.
+  - next step: execute trust/ops manual QA slice (analytics payload sanity + policy visibility confirmation).
+- `2026-02-18` | `working tree` | trust/ops manual QA slice completed:
+  - analytics payload verified from browser network panel:
+    - `eventName: "library_tab_switched"`,
+    - payload: `{ tab: "explore", source: "library_section_nav" }`.
+  - privacy/cookie policy visibility verified from library surface and policy pages.
+  - next step: choose next implementation track:
+    - `Goals MVP UI/state flow`,
+    - `Library tab contract decision` (`query-tab` vs `section-nav` contract update),
+    - or `Security hardening follow-up`.
 
 - `2026-02-18` | `working tree` | QA regression fix for `My Library` hydration + desktop install-entry test stability:
   - fixed hydration mismatch in `Continue Free Course` card by using SSR-safe external-store snapshot for local lesson resume state:
