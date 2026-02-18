@@ -9,6 +9,7 @@ import {
   normalizeTargetDate,
 } from "@/lib/goals/mvp";
 import { countActiveGoals, loadGoalProgressContext, loadGoalViews } from "@/lib/goals/server";
+import { isGoalsMvpSchemaMissing } from "@/lib/goals/schema";
 
 type CreateTemplatePayload = {
   mode: "template";
@@ -160,6 +161,19 @@ export async function POST(request: Request) {
     .single();
 
   if (insertResult.error || !insertResult.data) {
+    if (isGoalsMvpSchemaMissing(insertResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: "Goals setup is still syncing. Please try again in a minute.",
+            code: "GOALS_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
     console.error("[Goals] Failed creating goal", insertResult.error);
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not create goal right now." }, { status: 500 })

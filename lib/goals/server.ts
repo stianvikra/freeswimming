@@ -10,6 +10,7 @@ import {
   buildGoalView,
   type GoalProgressContext,
 } from "@/lib/goals/mvp";
+import { isGoalsMvpSchemaMissing } from "@/lib/goals/schema";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
 
@@ -34,10 +35,82 @@ const GOALS_SELECT = `
   updated_at
 `;
 
+const LEGACY_GOALS_SELECT = `
+  id,
+  user_id,
+  title,
+  target_value,
+  target_unit,
+  target_date,
+  status,
+  celebrated_at,
+  created_at,
+  updated_at
+`;
+
+type LegacyGoalRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  target_value: number | null;
+  target_unit: string;
+  target_date: string | null;
+  status: "active" | "achieved" | "archived";
+  celebrated_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 function extractModuleId(lessonId: string): string | null {
   const match = /^([a-z0-9]+)-/i.exec(lessonId);
   if (!match) return null;
   return match[1].toLowerCase();
+}
+
+function toSafeStatus(status: string | null | undefined): GoalRow["status"] {
+  if (status === "active") return "active";
+  if (status === "achieved") return "achieved";
+  if (status === "archived") return "archived";
+  return "active";
+}
+
+function mapLegacyGoalRowToGoalRow(row: LegacyGoalRow): GoalRow {
+  const targetValue = typeof row.target_value === "number" ? row.target_value : null;
+  const unit = row.target_unit ?? "";
+  const normalizedUnit = unit.trim().toLowerCase();
+
+  const inferredGoalType: GoalRow["goal_type"] =
+    normalizedUnit === "seconds_at_distance"
+      ? "distance_time"
+      : normalizedUnit === "meters_continuous"
+        ? "distance_continuous"
+        : "custom";
+
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    title: row.title,
+    goal_type: inferredGoalType,
+    source: "custom",
+    target_value: targetValue,
+    target_unit: row.target_unit,
+    target_date: row.target_date,
+    target_distance_m:
+      inferredGoalType === "distance_continuous" && targetValue !== null
+        ? Math.round(targetValue)
+        : null,
+    target_time_seconds:
+      inferredGoalType === "distance_time" && targetValue !== null ? Math.round(targetValue) : null,
+    target_count:
+      normalizedUnit === "count" && targetValue !== null ? Math.round(targetValue) : null,
+    target_ref: null,
+    progress_value: 0,
+    status: toSafeStatus(row.status),
+    achieved_at: row.status === "achieved" ? row.updated_at : null,
+    celebrated_at: row.celebrated_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
 }
 
 export async function loadGoalProgressContext(
@@ -89,6 +162,23 @@ export async function loadUserGoals(
     .order("created_at", { ascending: false });
 
   if (result.error) {
+    if (isGoalsMvpSchemaMissing(result.error)) {
+      const legacyResult = await supabase
+        .from("goals")
+        .select(LEGACY_GOALS_SELECT)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (legacyResult.error) {
+        console.error("[Goals] Failed loading legacy goals", legacyResult.error);
+        return [];
+      }
+
+      return (legacyResult.data ?? []).map((row) =>
+        mapLegacyGoalRowToGoalRow(row as LegacyGoalRow)
+      );
+    }
+
     console.error("[Goals] Failed loading goals", result.error);
     return [];
   }

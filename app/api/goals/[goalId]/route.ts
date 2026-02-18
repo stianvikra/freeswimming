@@ -7,6 +7,7 @@ import {
   type GoalUpdate,
 } from "@/lib/goals/mvp";
 import { loadGoalProgressContext } from "@/lib/goals/server";
+import { isGoalsMvpSchemaMissing } from "@/lib/goals/schema";
 
 type Params = Promise<{ goalId: string }>;
 
@@ -170,6 +171,19 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     .maybeSingle();
 
   if (goalResult.error) {
+    if (isGoalsMvpSchemaMissing(goalResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: "Goals setup is still syncing. Please try again in a minute.",
+            code: "GOALS_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
     console.error("[Goals] Failed loading goal for patch", goalResult.error);
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not load goal right now." }, { status: 500 })
@@ -215,6 +229,19 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     .single();
 
   if (updateResult.error || !updateResult.data) {
+    if (isGoalsMvpSchemaMissing(updateResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: "Goals setup is still syncing. Please try again in a minute.",
+            code: "GOALS_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
     console.error("[Goals] Failed updating goal", updateResult.error);
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not update goal right now." }, { status: 500 })

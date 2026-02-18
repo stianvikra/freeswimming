@@ -1062,6 +1062,16 @@ At each phase:
     - `tests/unit/goals-mvp.test.ts`.
   - next step: run validation + manual QA (goals create/log/archive flow + coaching intake + regression on existing contact variants).
 
+- `2026-02-18` | `working tree` | goals schema-mismatch hardening added before PR:
+  - added schema detection helper:
+    - `lib/goals/schema.ts`.
+  - added legacy-read fallback for goals list when new MVP columns are not yet available in DB:
+    - `lib/goals/server.ts`.
+  - goals API now returns explicit `503` + `GOALS_SCHEMA_NOT_READY` instead of opaque failures when schema cache/migration is not ready:
+    - `app/api/goals/route.ts`,
+    - `app/api/goals/[goalId]/route.ts`.
+  - next step: rerun lint/typecheck + targeted goals/contact tests and continue PR prep.
+
 - `2026-02-18` | `working tree` | naming decision locked for account surface:
   - `My Library` remains primary nav/account label in MVP for clarity and conversion.
   - `My FreeSwim` allowed only as secondary branded supporting copy.
