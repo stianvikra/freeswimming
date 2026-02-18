@@ -914,6 +914,13 @@ At each phase:
   - `open -a Safari "<PR_URL>"`
 - Use another browser only if the owner explicitly asks for it.
 
+### Manual QA URL Rule (Locked For This Brief)
+
+- For each manual QA step requiring a page open:
+  - assistant opens the URL in Safari first (`open -a Safari "<QA_URL>"`),
+  - then asks for one concrete validation and waits for owner `done`.
+- Only skip auto-open if owner explicitly asks to open manually or use another browser.
+
 ### Final Closeout Gate (Locked For This Brief)
 
 - Before moving this brief to `done`, run a final completion audit:
