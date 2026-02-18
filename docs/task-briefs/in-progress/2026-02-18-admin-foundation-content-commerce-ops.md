@@ -234,6 +234,10 @@ Owner should be able to manage lessons, guides, products, and operational states
   - synced generated DB types:
     - `types/database.ts` (`admin_audit_logs`).
   - next step: open PR, run CI validation, and execute manual QA for publish/draft/delete + audit entries.
+- `2026-02-18` | `working tree` | CI flake hardening for slice 4 PR:
+  - adjusted mobile contextual-nav e2e test to handle intermittent first-tap miss on mobile WebKit:
+    - `tests/e2e/course-nav-contextual.spec.ts` now uses click-first + keyboard fallback before asserting drawer visibility.
+  - next step: push fix and re-run `CI / verify` on PR #54.
 
 ## Completion Record (fill when done)
 

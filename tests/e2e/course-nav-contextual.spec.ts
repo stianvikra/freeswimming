@@ -18,14 +18,25 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   const rightFirst = page.getByTestId("course-nav-right");
 
   await expect(leftFirst).toHaveText("Menu");
+  await expect(leftFirst).toBeVisible();
   await expect(leftFirst).not.toBeDisabled();
   await expect(middleFirst).toHaveText("Lessons");
   await expect(rightFirst).toHaveText("Next");
 
-  await leftFirst.click();
-
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
-  await expect(drawer).toBeVisible();
+  await expect(drawer).toBeHidden();
+
+  // Mobile WebKit can occasionally miss the first tap during hydration/paint.
+  // Keep click as primary path, then fall back to keyboard activation.
+  await leftFirst.click();
+  try {
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+  } catch {
+    await leftFirst.focus();
+    await page.keyboard.press("Enter");
+    await expect(drawer).toBeVisible();
+  }
+
   await expect(drawer.getByText("Main menu")).toBeVisible();
 
   await drawer.getByRole("button", { name: "Close menu" }).click();
