@@ -1132,6 +1132,15 @@ At each phase:
   - validation run completed:
     - `npm run verify`.
   - next step: execute cross-device manual QA checklist and record outcomes in this brief.
+- `2026-02-18` | `working tree` | CI verify flake fixed for contact API security E2E:
+  - root cause confirmed: contact API in-memory rate limit (`6/min` per IP) was shared across all Playwright projects because requests had no explicit `x-forwarded-for`, so later projects could hit `429`.
+  - stabilized test by assigning deterministic per-project test IP and forwarding it in all `/api/contact` requests:
+    - `tests/e2e/contact-api-security.spec.ts`.
+  - validation run completed:
+    - `npm run lint`,
+    - `npm run typecheck`,
+    - direct API reproducibility check (`unknown` IP hits `429` on 7th request; unique forwarded IPs stay `200`).
+  - next step: push patch and re-run PR checks to confirm `CI / verify` is green.
 - `2026-02-17` | `working tree` | analytics event automation tests added:
   - added new unit tests for analytics UX instrumentation:
     - `tests/unit/tracked-link.test.tsx`,

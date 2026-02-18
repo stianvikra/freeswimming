@@ -1,9 +1,17 @@
 import { expect, test } from "@playwright/test";
 
+function buildTestIp(projectName: string) {
+  const seed = Array.from(projectName).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const octet = 10 + (seed % 200);
+  return `203.0.113.${octet}`;
+}
+
 test("contact API rejects mismatched origin and accepts allowed origin", async ({
   request,
   baseURL,
-}) => {
+}, testInfo) => {
+  const testIp = buildTestIp(testInfo.project.name);
+
   const payload = {
     variant: "contact",
     name: "Test User",
@@ -17,6 +25,7 @@ test("contact API rejects mismatched origin and accepts allowed origin", async (
     headers: {
       origin: "https://freeswimming.org.evil.example",
       "content-type": "application/json",
+      "x-forwarded-for": testIp,
     },
     data: payload,
   });
@@ -32,6 +41,7 @@ test("contact API rejects mismatched origin and accepts allowed origin", async (
     headers: {
       origin: baseURL ?? "http://127.0.0.1:3000",
       "content-type": "application/json",
+      "x-forwarded-for": testIp,
     },
     data: payload,
   });
@@ -60,6 +70,7 @@ test("contact API rejects mismatched origin and accepts allowed origin", async (
     headers: {
       origin: baseURL ?? "http://127.0.0.1:3000",
       "content-type": "application/json",
+      "x-forwarded-for": testIp,
     },
     data: goalsPayload,
   });
