@@ -929,6 +929,16 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-18` | `working tree` | QA regression fix for `My Library` hydration + desktop install-entry test stability:
+  - fixed hydration mismatch in `Continue Free Course` card by using SSR-safe external-store snapshot for local lesson resume state:
+    - `components/my-library/ContinueCourseCard.tsx`.
+  - added unit coverage for default vs saved-resume rendering and analytics payload:
+    - `tests/unit/continue-course-card.test.tsx`.
+  - hardened desktop/tablet install-entry E2E locator against course suspense fallback/header overlap:
+    - `tests/e2e/install-entry-desktop-tablet.spec.ts`.
+  - validation run completed:
+    - `npm run verify`.
+  - next step: continue manual QA checklist (cross-device resume + owned-item preview/download/re-download + trust/ops checks).
 - `2026-02-18` | `working tree` | owned-item detail fallback + recovery UX completed:
   - removed placeholder-only fallback in owned-item action mapping:
     - `lib/commerce/library-item-actions.ts`.
