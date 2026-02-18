@@ -17,6 +17,7 @@ Use this quick check so the task execution is precise:
 - State branch hygiene cadence (post-merge cleanup + stale-branch sweep frequency)
 - State PR browser rule (open PR/merge links in Safari by default unless owner requests otherwise)
 - State manual QA link rule (assistant opens each QA URL in Safari before asking for `done`)
+- State local tooling prerequisite (Node LTS + npm installed where local validation runs)
 - State closeout gate (completion audit + final 10/10 quality/safety/perf/regression sweep + move/cleanup prompts)
 
 Suggested prompt wrapper:
@@ -26,6 +27,8 @@ Use task brief: <PATH_TO_BRIEF>
 Mode: end-to-end (implement + tests + commit + push on current branch)
 Communication: one manual step at a time; wait for my "done" between manual GitHub/UI steps.
 Manual QA links: open each URL in Safari for me before asking for "done".
+Local validation prerequisite: Node LTS + npm installed on the machine running checks.
+Pre-PR validation: run `npm ci` then `npm run verify`.
 Git rhythm: commit + push each validated step; ask me before opening/updating PR to main.
 Handoff must include:
 
@@ -66,11 +69,24 @@ List measurable outcomes.
 
 Which commands should pass?
 
+- `npm ci`
 - `npm run lint`
 - `npm run typecheck`
 - `npm run test:unit`
 - `npm run test:e2e`
 - `npm run build`
+- `npm run verify`
+
+## Local Tooling Prerequisite (Required)
+
+- Node.js LTS and npm must be installed on the machine used for local validation.
+- Before PR handoff, run local dependency install and verification:
+  - `npm ci`
+  - `npm run verify`
+- If assistant execution environment lacks `node`/`npm`, assistant must:
+  - state that limitation explicitly,
+  - ask owner to run the local commands,
+  - include owner-provided command results in `Test Evidence`.
 
 ## Manual QA Environments
 

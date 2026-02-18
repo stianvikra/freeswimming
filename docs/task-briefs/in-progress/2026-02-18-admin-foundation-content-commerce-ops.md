@@ -213,6 +213,31 @@ Owner should be able to manage lessons, guides, products, and operational states
   - expanded unit coverage for slug normalization behavior:
     - `tests/unit/admin-content.test.ts`.
   - next step: re-run CI/CodeQL on PR `feat/admin-content-crud-scaffold` and merge if green.
+- `2026-02-18` | `a0d69d1` | slice 3 merged to `main` (`#53`) and branch cleaned up:
+  - merged: `feat/admin-content-crud-scaffold` -> `main`.
+  - post-merge hygiene completed:
+    - local sync to `origin/main`,
+    - local + remote branch deletion,
+    - prune fetch.
+  - next step: implement slice 4 (`PATCH`/`DELETE` admin content endpoints + audit log table + tests).
+- `2026-02-18` | `511049c` | slice 4 implementation checkpoint on `feat/admin-content-mutations-audit-log`:
+  - added new mutation API route:
+    - `app/api/admin/content/[id]/route.ts` (`PATCH` for editor+, `DELETE` for admin only).
+  - added update payload parser + shared UUID validation:
+    - `lib/admin/content.ts` (`parseUpdateAdminContentPayload`, exported `isUuid`).
+  - added audit log schema + RLS + trigger-based mutation logging:
+    - `supabase/migrations/20260219001500_admin_content_audit_log.sql`.
+  - added admin UI row actions:
+    - `components/admin/AdminContentManager.tsx` (publish/draft toggle + delete action).
+  - added/expanded unit tests:
+    - `tests/unit/admin-content.test.ts`.
+  - synced generated DB types:
+    - `types/database.ts` (`admin_audit_logs`).
+  - next step: open PR, run CI validation, and execute manual QA for publish/draft/delete + audit entries.
+- `2026-02-18` | `working tree` | CI flake hardening for slice 4 PR:
+  - adjusted mobile contextual-nav e2e test to handle intermittent first-tap miss on mobile WebKit:
+    - `tests/e2e/course-nav-contextual.spec.ts` now uses click-first + keyboard fallback before asserting drawer visibility.
+  - next step: push fix and re-run `CI / verify` on PR #54.
 
 ## Completion Record (fill when done)
 

@@ -30,6 +30,26 @@ type AdminContentCreateResponse =
       error?: string;
     };
 
+type AdminContentUpdateResponse =
+  | {
+      ok: true;
+      item: AdminContentItemRow;
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
+type AdminContentDeleteResponse =
+  | {
+      ok: true;
+      id: string;
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 type FormState = {
   contentType: AdminContentType;
   title: string;
@@ -53,6 +73,8 @@ export default function AdminContentManager() {
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function loadItems() {
     setLoading(true);
@@ -132,6 +154,71 @@ export default function AdminContentManager() {
     }
   }
 
+  async function handleToggleStatus(item: AdminContentItemRow) {
+    if (updatingId || deletingId) return;
+    setActionError(null);
+    setUpdatingId(item.id);
+    const nextStatus = item.status === "published" ? "draft" : "published";
+
+    try {
+      const response = await fetch(`/api/admin/content/${item.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const payload = (await response.json()) as AdminContentUpdateResponse;
+      if (!response.ok || !payload.ok) {
+        setActionError(
+          payload.ok
+            ? "Could not update content item."
+            : (payload.error ?? "Could not update content item.")
+        );
+        return;
+      }
+
+      setItems((prev) => prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry)));
+    } catch {
+      setActionError("Could not update content item.");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function handleDelete(item: AdminContentItemRow) {
+    if (updatingId || deletingId) return;
+    const confirmed = window.confirm(
+      `Delete "${item.title}"? This cannot be undone and removes this content record.`
+    );
+    if (!confirmed) return;
+
+    setActionError(null);
+    setDeletingId(item.id);
+    try {
+      const response = await fetch(`/api/admin/content/${item.id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const payload = (await response.json()) as AdminContentDeleteResponse;
+      if (!response.ok || !payload.ok) {
+        setActionError(
+          payload.ok
+            ? "Could not delete content item."
+            : (payload.error ?? "Could not delete content item.")
+        );
+        return;
+      }
+
+      setItems((prev) => prev.filter((entry) => entry.id !== payload.id));
+    } catch {
+      setActionError("Could not delete content item.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -188,7 +275,29 @@ export default function AdminContentManager() {
                       {item.content_type} · {item.status} · /{item.slug}
                     </p>
                   </div>
-                  <span className="text-xs text-slate-500">Order: {item.sort_order}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">Order: {item.sort_order}</span>
+                    <button
+                      type="button"
+                      onClick={() => void handleToggleStatus(item)}
+                      disabled={Boolean(updatingId || deletingId)}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {updatingId === item.id
+                        ? "Saving…"
+                        : item.status === "published"
+                          ? "Move to draft"
+                          : "Publish"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(item)}
+                      disabled={Boolean(updatingId || deletingId)}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {deletingId === item.id ? "Deleting…" : "Delete"}
+                    </button>
+                  </div>
                 </div>
               </li>
             ))}

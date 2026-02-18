@@ -317,6 +317,42 @@ export type Database = {
           },
         ];
       };
+      admin_audit_logs: {
+        Row: {
+          action: string;
+          actor_email: string | null;
+          actor_user_id: string | null;
+          after: Json | null;
+          before: Json | null;
+          created_at: string;
+          entity_id: string | null;
+          entity_table: string;
+          id: string;
+        };
+        Insert: {
+          action: string;
+          actor_email?: string | null;
+          actor_user_id?: string | null;
+          after?: Json | null;
+          before?: Json | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_table: string;
+          id?: string;
+        };
+        Update: {
+          action?: string;
+          actor_email?: string | null;
+          actor_user_id?: string | null;
+          after?: Json | null;
+          before?: Json | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_table?: string;
+          id?: string;
+        };
+        Relationships: [];
+      };
       products: {
         Row: {
           active: boolean;
