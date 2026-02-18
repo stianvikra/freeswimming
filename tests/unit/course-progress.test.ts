@@ -7,6 +7,7 @@ import {
   normalizeCourseProgressRows,
   normalizeDoneLessonIds,
   normalizeVideoProgressRecord,
+  resolveCourseDirtyLessonIdsAfterHydrate,
 } from "@/lib/course/progress";
 
 describe("course progress helpers", () => {
@@ -166,5 +167,59 @@ describe("course progress helpers", () => {
         "mod1-l1": 42,
       },
     });
+  });
+
+  it("keeps existing dirty lessons after hydrate even when merged equals remote", () => {
+    const dirty = resolveCourseDirtyLessonIdsAfterHydrate({
+      existingDirtyLessonIds: ["mod1-l1"],
+      mergedRows: [
+        {
+          lessonId: "mod1-l1",
+          done: false,
+          videoSeconds: 0,
+          updatedAt: "2026-02-17T10:00:00.000Z",
+        },
+      ],
+      remoteRows: [
+        {
+          lessonId: "mod1-l1",
+          done: false,
+          videoSeconds: 0,
+          updatedAt: "2026-02-17T10:01:00.000Z",
+        },
+      ],
+    });
+
+    expect(dirty).toEqual(["mod1-l1"]);
+  });
+
+  it("marks merged lesson ids dirty when hydrate reveals local/remote mismatch", () => {
+    const dirty = resolveCourseDirtyLessonIdsAfterHydrate({
+      existingDirtyLessonIds: [],
+      mergedRows: [
+        {
+          lessonId: "mod1-l1",
+          done: true,
+          videoSeconds: 0,
+          updatedAt: "2026-02-17T10:00:00.000Z",
+        },
+        {
+          lessonId: "mod1-l2",
+          done: false,
+          videoSeconds: 0,
+          updatedAt: "2026-02-17T10:00:00.000Z",
+        },
+      ],
+      remoteRows: [
+        {
+          lessonId: "mod1-l1",
+          done: false,
+          videoSeconds: 0,
+          updatedAt: "2026-02-17T10:01:00.000Z",
+        },
+      ],
+    });
+
+    expect(dirty).toEqual(["mod1-l1", "mod1-l2"]);
   });
 });

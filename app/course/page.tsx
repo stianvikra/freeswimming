@@ -30,12 +30,12 @@ import {
   shouldShowAutoInstallPrompt,
 } from "@/components/install/install-rules";
 import {
-  areCourseProgressRowsEqual,
   buildCourseProgressRowsFromLocal,
   buildLocalCourseProgressFromRows,
   mergeCourseProgressRows,
   normalizeCourseProgressRows,
   normalizeDoneLessonIds,
+  resolveCourseDirtyLessonIdsAfterHydrate,
   normalizeVideoProgressRecord,
   type CourseProgressRow,
 } from "@/lib/course/progress";
@@ -235,7 +235,9 @@ function CoursePageClient() {
   const courseSyncDirtyRef = useRef(false);
   const courseSyncDirtyLessonIdsRef = useRef<Set<string>>(new Set());
   const courseSyncInFlightRef = useRef(false);
+  const courseProgressMutationRef = useRef(0);
   const knownProgressLessonIdsRef = useRef<Set<string>>(new Set());
+  const doneLessonIdsRef = useRef<string[]>([]);
   const hydratedProgressUserIdRef = useRef<string | null>(null);
   const swipeTouchIdRef = useRef<number | null>(null);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
@@ -297,6 +299,8 @@ function CoursePageClient() {
   }, []);
 
   const markCourseProgressDirty = useCallback((lessonId?: string) => {
+    courseProgressMutationRef.current += 1;
+
     if (lessonId) {
       knownProgressLessonIdsRef.current.add(lessonId);
       courseSyncDirtyLessonIdsRef.current.add(lessonId);
@@ -322,6 +326,7 @@ function CoursePageClient() {
       }
 
       playbackProgressRef.current = normalizedVideoProgress;
+      doneLessonIdsRef.current = normalizedDoneLessonIds;
       setDoneLessonIds(normalizedDoneLessonIds);
       setResumeAvailable(Math.floor(normalizedVideoProgress[activeLesson.id] ?? 0) >= 2);
 
@@ -333,21 +338,18 @@ function CoursePageClient() {
     [activeLesson.id]
   );
 
-  const buildSyncRows = useCallback(
-    (updatedAt?: string): CourseProgressRow[] => {
-      return buildCourseProgressRowsFromLocal(
-        {
-          doneLessonIds,
-          videoProgressByLessonId: playbackProgressRef.current,
-        },
-        {
-          knownLessonIds: knownProgressLessonIdsRef.current,
-          updatedAt,
-        }
-      );
-    },
-    [doneLessonIds]
-  );
+  const buildSyncRows = useCallback((updatedAt?: string): CourseProgressRow[] => {
+    return buildCourseProgressRowsFromLocal(
+      {
+        doneLessonIds: doneLessonIdsRef.current,
+        videoProgressByLessonId: playbackProgressRef.current,
+      },
+      {
+        knownLessonIds: knownProgressLessonIdsRef.current,
+        updatedAt,
+      }
+    );
+  }, []);
 
   const persistCourseProgressRows = useCallback(
     async (rows: CourseProgressRow[]) => {
@@ -449,6 +451,7 @@ function CoursePageClient() {
         for (const lessonId of normalizedDoneLessonIds) {
           knownProgressLessonIdsRef.current.add(lessonId);
         }
+        doneLessonIdsRef.current = normalizedDoneLessonIds;
         setDoneLessonIds(normalizedDoneLessonIds);
       }
     } catch {}
@@ -461,6 +464,10 @@ function CoursePageClient() {
       localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(doneLessonIds));
     } catch {}
   }, [doneLessonIds, doneLessonIdsLoaded]);
+
+  useEffect(() => {
+    doneLessonIdsRef.current = doneLessonIds;
+  }, [doneLessonIds]);
 
   useEffect(() => {
     try {
@@ -526,6 +533,7 @@ function CoursePageClient() {
 
     const hydrateFromServer = async () => {
       setCourseSyncStatus("syncing");
+      const hydrateStartedAtMutation = courseProgressMutationRef.current;
 
       try {
         const response = await fetch(COURSE_PROGRESS_SYNC_API_PATH, {
@@ -552,15 +560,30 @@ function CoursePageClient() {
           knownProgressLessonIdsRef.current.add(row.lessonId);
         }
 
-        applyLocalCourseProgress(buildLocalCourseProgressFromRows(mergedRows));
+        const hasLocalMutationDuringHydrate =
+          courseProgressMutationRef.current !== hydrateStartedAtMutation;
 
-        if (!areCourseProgressRowsEqual(mergedRows, remoteRows)) {
-          await persistCourseProgressRows(mergedRows);
+        if (!hasLocalMutationDuringHydrate) {
+          applyLocalCourseProgress(buildLocalCourseProgressFromRows(mergedRows));
         }
 
         if (cancelled) return;
-        courseSyncDirtyRef.current = false;
-        courseSyncDirtyLessonIdsRef.current.clear();
+
+        const dirtyLessonIds = resolveCourseDirtyLessonIdsAfterHydrate({
+          existingDirtyLessonIds: courseSyncDirtyLessonIdsRef.current,
+          mergedRows,
+          remoteRows,
+        });
+
+        courseSyncDirtyLessonIdsRef.current = new Set(dirtyLessonIds);
+        courseSyncDirtyRef.current = dirtyLessonIds.length > 0;
+
+        if (courseSyncDirtyRef.current) {
+          setCourseSyncStatus("syncing");
+          void syncCourseProgressNow({ force: true });
+          return;
+        }
+
         setCourseSyncStatus("synced");
         setLastCourseSyncAtMs(Date.now());
       } catch (error) {
@@ -580,8 +603,8 @@ function CoursePageClient() {
     authStateLoaded,
     buildSyncRows,
     localCourseProgressLoaded,
-    persistCourseProgressRows,
     signedInUserId,
+    syncCourseProgressNow,
   ]);
 
   useEffect(() => {
@@ -906,10 +929,13 @@ function CoursePageClient() {
     markCourseProgressDirty(activeLesson.id);
 
     setDoneLessonIds((prev) => {
-      if (prev.includes(activeLesson.id)) {
-        return prev.filter((id) => id !== activeLesson.id);
-      }
-      return [...prev, activeLesson.id];
+      const nextDoneLessonIds = prev.includes(activeLesson.id)
+        ? prev.filter((id) => id !== activeLesson.id)
+        : [...prev, activeLesson.id];
+
+      doneLessonIdsRef.current = nextDoneLessonIds;
+
+      return nextDoneLessonIds;
     });
     if (willMarkAsDone) {
       queueAutoInstallPrompt();
@@ -1833,6 +1859,7 @@ function CoursePageClient() {
                     tier="nav"
                     onClick={toggleLessonDone}
                     aria-pressed={isLessonDone}
+                    data-testid="course-mark-done-button"
                     className={cx(
                       "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
                       isLessonDone

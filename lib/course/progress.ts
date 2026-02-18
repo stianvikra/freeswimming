@@ -242,3 +242,22 @@ export function areCourseProgressRowsEqual(localRows: unknown, remoteRows: unkno
 
   return true;
 }
+
+export function resolveCourseDirtyLessonIdsAfterHydrate(options: {
+  existingDirtyLessonIds?: Iterable<string>;
+  mergedRows: unknown;
+  remoteRows: unknown;
+}): string[] {
+  const dirtyLessonIds = normalizeKnownLessonIds(options.existingDirtyLessonIds);
+  const mergedRows = normalizeCourseProgressRows(options.mergedRows, {
+    maxRows: MAX_COURSE_PROGRESS_ROWS,
+  });
+
+  if (!areCourseProgressRowsEqual(mergedRows, options.remoteRows)) {
+    for (const row of mergedRows) {
+      dirtyLessonIds.add(row.lessonId);
+    }
+  }
+
+  return Array.from(dirtyLessonIds).sort((a, b) => a.localeCompare(b));
+}
