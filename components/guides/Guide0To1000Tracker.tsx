@@ -8,6 +8,7 @@ import {
 } from "@/lib/course/guide-progress";
 import { type Guide0To1000Session } from "@/lib/guides/guide-0-1000m";
 import { getFirstIncompleteId, splitItemsByCompletion } from "@/lib/guides/guide-tracker-ui";
+import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
 const GUIDE_PROGRESS_SYNC_API_PATH = "/api/progress/guide";
 const GUIDE_PROGRESS_STORAGE_KEY = "fs_guide_0_1000m_progress_v1";
@@ -38,11 +39,6 @@ type Props = {
   guideSlug: string;
   sessions: Guide0To1000Session[];
 };
-
-function getInitialOnlineState(): boolean {
-  if (typeof navigator === "undefined") return true;
-  return navigator.onLine;
-}
 
 function getSafeIsoTimestamp(value: string | undefined): string {
   if (!value) return new Date().toISOString();
@@ -169,7 +165,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const [syncError, setSyncError] = useState("");
   const [lastSyncAtMs, setLastSyncAtMs] = useState<number | null>(null);
-  const [isOnline, setIsOnline] = useState(getInitialOnlineState);
+  const [isOnline, setIsOnline] = useState(readNavigatorOnlineState);
   const [focusedSessionId, setFocusedSessionId] = useState<string | null>(null);
   const [expandedCompletedWeeks, setExpandedCompletedWeeks] = useState<Record<number, boolean>>({});
   const [lastSessionId, setLastSessionId] = useState<string | null>(null);
@@ -288,7 +284,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
       const localRows = readLocalRows(guideSlug, allowedSectionIds);
       applyProgressRows(localRows);
 
-      if (!navigator.onLine) {
+      if (!readNavigatorOnlineState()) {
         if (!cancelled) {
           setHydrationState("ready");
           setSyncState("offline");
@@ -336,7 +332,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             ? error.message
             : "Could not load guide progress right now. You can continue locally.";
         setSyncError(message);
-        setSyncState(navigator.onLine ? "error" : "offline");
+        setSyncState(readNavigatorOnlineState() ? "error" : "offline");
       } finally {
         if (!cancelled) {
           setHydrationState("ready");

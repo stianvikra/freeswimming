@@ -9,6 +9,7 @@ import {
 } from "@/lib/course/guide-progress";
 import { type PoolsideDrill } from "@/lib/guides/guide-poolside";
 import { getFirstIncompleteId, splitItemsByCompletion } from "@/lib/guides/guide-tracker-ui";
+import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
 const GUIDE_PROGRESS_SYNC_API_PATH = "/api/progress/guide";
 const GUIDE_PROGRESS_STORAGE_KEY = "fs_guide_poolside_progress_v1";
@@ -44,11 +45,6 @@ type Props = {
   guideSlug: string;
   drills: PoolsideDrill[];
 };
-
-function getInitialOnlineState(): boolean {
-  if (typeof navigator === "undefined") return true;
-  return navigator.onLine;
-}
 
 function getSafeIsoTimestamp(value: string | undefined): string {
   if (!value) return new Date().toISOString();
@@ -191,7 +187,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const [syncError, setSyncError] = useState("");
   const [lastSyncAtMs, setLastSyncAtMs] = useState<number | null>(null);
-  const [isOnline, setIsOnline] = useState(getInitialOnlineState);
+  const [isOnline, setIsOnline] = useState(readNavigatorOnlineState);
   const [activeIndex, setActiveIndex] = useState(0);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [visualDrillId, setVisualDrillId] = useState<string | null>(null);
@@ -328,7 +324,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
       const localRows = readLocalRows(guideSlug, allowedSectionIds);
       applyProgressRows(localRows);
 
-      if (!navigator.onLine) {
+      if (!readNavigatorOnlineState()) {
         if (!cancelled) {
           setHydrationState("ready");
           setSyncState("offline");
@@ -376,7 +372,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
             ? error.message
             : "Could not load drill progress right now. You can continue locally.";
         setSyncError(message);
-        setSyncState(navigator.onLine ? "error" : "offline");
+        setSyncState(readNavigatorOnlineState() ? "error" : "offline");
       } finally {
         if (!cancelled) {
           setHydrationState("ready");
