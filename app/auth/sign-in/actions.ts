@@ -1,7 +1,7 @@
 "use server";
 
-import { createHash } from "node:crypto";
-import { headers } from "next/headers";
+import { createHash, randomBytes } from "node:crypto";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   formatLoginCodeCooldownMessage,
@@ -10,6 +10,7 @@ import {
   toRetrySeconds,
 } from "@/lib/auth/magic-link-cooldown";
 import { getSafeNextPath } from "@/lib/auth/next-path";
+import { isResendRequestFlag, shouldApplyMagicLinkCooldown } from "@/lib/auth/sign-in-request";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -27,6 +28,9 @@ const SIGN_IN_CODE_IP_WINDOW_MS = 5 * 60_000;
 const SIGN_IN_CODE_IP_MAX = 12;
 const SIGN_IN_CODE_EMAIL_WINDOW_MS = 10 * 60_000;
 const SIGN_IN_CODE_EMAIL_MAX = 8;
+const MAGIC_LINK_SESSION_COOKIE_NAME = "fs_auth_magic_link_session";
+const MAGIC_LINK_SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+const MAGIC_LINK_SESSION_ID_PATTERN = /^[a-f0-9]{32}$/i;
 
 type RateLimitResult =
   | {
@@ -84,6 +88,28 @@ function getClientIp(headerStore: Headers): string {
 
 function getEmailHash(email: string): string {
   return createHash("sha256").update(email).digest("hex").slice(0, 32);
+}
+
+async function getMagicLinkSessionId(): Promise<string> {
+  const cookieStore = await cookies();
+  const existing = cookieStore.get(MAGIC_LINK_SESSION_COOKIE_NAME)?.value ?? "";
+
+  if (MAGIC_LINK_SESSION_ID_PATTERN.test(existing)) {
+    return existing.toLowerCase();
+  }
+
+  const generated = randomBytes(16).toString("hex");
+  cookieStore.set({
+    name: MAGIC_LINK_SESSION_COOKIE_NAME,
+    value: generated,
+    httpOnly: true,
+    secure: process.env.NODE_ENV !== "development",
+    sameSite: "lax",
+    path: "/",
+    maxAge: MAGIC_LINK_SESSION_MAX_AGE_SECONDS,
+  });
+
+  return generated;
 }
 
 function shouldUseUpstash(): boolean {
@@ -291,6 +317,7 @@ async function enforceRateLimitSet(rules: RateLimitRule[]) {
 export async function requestMagicLink(formData: FormData) {
   const email = getNormalizedEmail(formData);
   const nextPath = getNextPath(formData);
+  const isResendRequest = isResendRequestFlag(formData.get("resend"));
 
   if (!email || !EMAIL_REGEX.test(email)) {
     redirect(buildSignInPath(nextPath, { error: "Enter a valid email address." }));
@@ -299,13 +326,16 @@ export async function requestMagicLink(formData: FormData) {
   const headerStore = await headers();
   const clientIp = getClientIp(headerStore);
   const emailHash = getEmailHash(email);
-  const cooldownLockKey = `rate:auth:magic-link:cooldown:${emailHash}`;
+  const magicLinkSessionId = await getMagicLinkSessionId();
+  const sessionScopedEmailHash = `${emailHash}:${magicLinkSessionId}`;
+  const cooldownLockKey = `rate:auth:magic-link:cooldown:${sessionScopedEmailHash}`;
   const activeCooldownMs = await getCooldownTtlMs(cooldownLockKey);
-  if (activeCooldownMs > 0) {
+  if (shouldApplyMagicLinkCooldown(activeCooldownMs, isResendRequest)) {
     redirect(
       buildSignInPath(nextPath, {
         error: formatLoginCodeCooldownMessage(activeCooldownMs),
         cooldownUntil: String(Date.now() + activeCooldownMs),
+        sent: "1",
         email,
       })
     );
@@ -325,13 +355,16 @@ export async function requestMagicLink(formData: FormData) {
   ]);
 
   if (!limitResult.ok) {
-    redirect(
-      buildSignInPath(nextPath, {
-        error: formatLoginCodeCooldownMessage(limitResult.retryAfterMs),
-        cooldownUntil: String(Date.now() + limitResult.retryAfterMs),
-        email,
-      })
-    );
+    const params: Record<string, string> = {
+      error: formatLoginCodeCooldownMessage(limitResult.retryAfterMs),
+      cooldownUntil: String(Date.now() + limitResult.retryAfterMs),
+      email,
+    };
+    if (isResendRequest) {
+      params.sent = "1";
+    }
+
+    redirect(buildSignInPath(nextPath, params));
   }
 
   const origin = headerStore.get("origin") ?? getAppUrl();
@@ -347,13 +380,16 @@ export async function requestMagicLink(formData: FormData) {
 
   if (error) {
     if (error.message.toLowerCase().includes("rate limit")) {
-      redirect(
-        buildSignInPath(nextPath, {
-          error: "Please wait about a minute before requesting a new login code.",
-          cooldownUntil: String(Date.now() + 60_000),
-          email,
-        })
-      );
+      const params: Record<string, string> = {
+        error: "Please wait about a minute before requesting a new login code.",
+        cooldownUntil: String(Date.now() + 60_000),
+        email,
+      };
+      if (isResendRequest) {
+        params.sent = "1";
+      }
+
+      redirect(buildSignInPath(nextPath, params));
     }
 
     console.error("[Auth] Could not request sign-in email.", {
@@ -361,15 +397,18 @@ export async function requestMagicLink(formData: FormData) {
       status: error.status,
       code: error.code,
     });
-    redirect(
-      buildSignInPath(nextPath, {
-        error: "Could not send sign-in email right now. Please try again.",
-        email,
-      })
-    );
+    const params: Record<string, string> = {
+      error: "Could not send sign-in email right now. Please try again.",
+      email,
+    };
+    if (isResendRequest) {
+      params.sent = "1";
+    }
+
+    redirect(buildSignInPath(nextPath, params));
   }
 
-  const cadenceCounterKey = `rate:auth:magic-link:cadence:${emailHash}`;
+  const cadenceCounterKey = `rate:auth:magic-link:cadence:${sessionScopedEmailHash}`;
   const cadenceCount = await incrementCooldownCounter(
     cadenceCounterKey,
     MAGIC_LINK_CADENCE_WINDOW_MS

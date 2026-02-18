@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-15`
-- `updated`: `2026-02-17`
+- `updated`: `2026-02-18`
 
 ## Goal
 
@@ -223,6 +223,14 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - local browser shortcut route exists for fast session bootstrap:
     - `GET /dev/login?next=/my-library`.
 - Soft-launch public UX exists with under-construction banner.
+
+### Active Workstream Split (2026-02-18)
+
+- Auth reliability/cooldown UX is now tracked in dedicated AW-003 brief:
+  - `docs/task-briefs/in-progress/2026-02-18-aw-003-sign-in-cooldown-reliability.md`.
+- Private site lock and owner bypass is tracked separately:
+  - `docs/task-briefs/in-progress/2026-02-18-private-access-gate-and-owner-bypass.md`.
+- This core brief keeps ownership of commerce/library/progress completion criteria.
 
 ### Outstanding (blocking move to `done`)
 

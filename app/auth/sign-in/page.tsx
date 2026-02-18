@@ -105,6 +105,7 @@ export default async function SignInPage({ searchParams }: Props) {
               <form action={requestMagicLink}>
                 <input type="hidden" name="next" value={nextPath} />
                 <input type="hidden" name="email" value={email} />
+                <input type="hidden" name="resend" value="1" />
                 <button
                   type="submit"
                   className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
