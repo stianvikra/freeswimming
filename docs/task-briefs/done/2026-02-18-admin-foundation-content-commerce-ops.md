@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-18-admin-foundation-content-commerce-ops`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
 - `updated`: `2026-02-18`
@@ -265,7 +265,7 @@ Owner should be able to manage lessons, guides, products, and operational states
     - `app/my-library/item/[slug]/page.tsx` now resolves display title from DB override.
     - `app/api/checkout/session/route.ts` now blocks checkout for inactive products.
   - preserved admin-edited product metadata by changing catalog sync behavior:
-    - `lib/commerce/entitlements.ts` now uses insert-ignore-duplicates instead of upsert overwrite.
+    - `lib/commerce/entitlements.ts` now uses upsert with `ignoreDuplicates: true` to avoid overwriting existing product metadata on conflict.
   - added/updated unit coverage:
     - `tests/unit/admin-products.test.ts`
     - `tests/unit/admin-runtime-flags.test.ts`
@@ -284,9 +284,18 @@ Owner should be able to manage lessons, guides, products, and operational states
     `products.upsert(..., { onConflict, ignoreDuplicates })` in `lib/commerce/entitlements.ts`
     so catalog sync keeps "do nothing on conflict" behavior while matching client typings.
   - next step: push patch and re-run CI/Vercel.
+- `2026-02-18` | `7e1efa4` | slice 5-6 merged to `main` (`#55`) and closeout completed:
+  - merged: `feat/admin-commerce-operations-controls` -> `main`.
+  - checks/deploy: CI + CodeQL + Vercel preview green at merge.
+  - post-merge hygiene completed:
+    - `git checkout main`
+    - `git pull --ff-only origin main`
+    - local + remote feature branch deleted
+    - `git fetch --prune origin`
+  - closeout: brief lifecycle moved to `done`.
 
 ## Completion Record (fill when done)
 
-- `PR`: link to merged PR
-- `merge`: source branch -> target branch
-- `result`: short outcome summary
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/55`
+- `merge`: `feat/admin-commerce-operations-controls` -> `main`
+- `result`: Admin foundation expanded with commerce + operations modules, runtime flag controls, and DB-driven product metadata/active-state wiring across plans/library surfaces.
