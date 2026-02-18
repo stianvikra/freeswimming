@@ -19,7 +19,7 @@ export async function upsertCatalogProducts(
   supabase: SupabaseClient<Database>,
   products: CatalogProduct[]
 ) {
-  const { error } = await supabase.from("products").insert(
+  const { error } = await supabase.from("products").upsert(
     products.map((product) => ({
       id: product.id,
       slug: product.slug,

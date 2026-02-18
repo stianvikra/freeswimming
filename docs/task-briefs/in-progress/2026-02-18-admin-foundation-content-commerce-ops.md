@@ -279,6 +279,11 @@ Owner should be able to manage lessons, guides, products, and operational states
   - hardened `/plans` runtime behavior for preview/build stability:
     - `app/plans/page.tsx` forced dynamic render and added safe fallback to env catalog when override lookup fails.
   - next step: push hotfix commit and re-run checks.
+- `2026-02-18` | `working tree` | CI build fix for Supabase typing mismatch:
+  - replaced `products.insert(..., { onConflict, ignoreDuplicates })` with
+    `products.upsert(..., { onConflict, ignoreDuplicates })` in `lib/commerce/entitlements.ts`
+    so catalog sync keeps "do nothing on conflict" behavior while matching client typings.
+  - next step: push patch and re-run CI/Vercel.
 
 ## Completion Record (fill when done)
 
