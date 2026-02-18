@@ -187,6 +187,32 @@ Owner should be able to manage lessons, guides, products, and operational states
   - expanded unit coverage:
     - `tests/unit/admin-access.test.ts` (profile-role precedence + missing-column detection).
   - next step: validate slice 2 and implement first admin content model table + CRUD API scaffold.
+- `2026-02-18` | `working tree` | admin foundation slice 3 implemented (content CRUD scaffold):
+  - added admin content data model + RLS scaffold:
+    - `supabase/migrations/20260218234500_admin_content_items_scaffold.sql`
+      - enums: `admin_content_type`, `admin_content_status`
+      - table: `admin_content_items` with `draft/published`, ordering, parent linkage, metadata
+      - RLS policies: `viewer+` read, `editor+` create/update, `admin` delete.
+  - updated typed DB contract:
+    - `types/database.ts` (`admin_content_items` + related enums).
+  - added reusable admin server gate helper:
+    - `lib/admin/server.ts` (`requireAdminRoleFromSupabase`).
+  - added admin content payload validation + normalization:
+    - `lib/admin/content.ts`.
+  - added secured API scaffold:
+    - `app/api/admin/content/route.ts` (`GET` list + `POST` create with validation, parent check, slug conflict handling).
+  - replaced admin page placeholder with working manager UI:
+    - `app/admin/page.tsx`,
+    - `components/admin/AdminContentManager.tsx`.
+  - added unit coverage:
+    - `tests/unit/admin-content.test.ts`.
+  - next step: run validation and ship this slice, then add `PATCH/DELETE` endpoints + audit log table.
+- `2026-02-18` | `e46c6ce` | CodeQL security hotfix for slice 3:
+  - removed regex-based slug sanitizer flagged by `js/polynomial-redos`:
+    - `lib/admin/content.ts` now uses linear char-by-char slug normalization.
+  - expanded unit coverage for slug normalization behavior:
+    - `tests/unit/admin-content.test.ts`.
+  - next step: re-run CI/CodeQL on PR `feat/admin-content-crud-scaffold` and merge if green.
 
 ## Completion Record (fill when done)
 

@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 export const ADMIN_ROLE_VALUES = ["admin", "editor", "viewer"] as const;
 
 export type AdminRole = (typeof ADMIN_ROLE_VALUES)[number];
+export type MinimumAdminRole = "admin" | "editor" | "viewer";
 
 type RoleLookupError = {
   code?: string;
@@ -61,4 +62,14 @@ export function isAdminRoleColumnMissingError(error: RoleLookupError): boolean {
   const combined =
     `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`.toLowerCase();
   return combined.includes("role") && combined.includes("profiles");
+}
+
+const ADMIN_ROLE_RANK: Record<AdminRole, number> = {
+  viewer: 1,
+  editor: 2,
+  admin: 3,
+};
+
+export function hasRequiredAdminRole(role: AdminRole, minimumRole: MinimumAdminRole): boolean {
+  return ADMIN_ROLE_RANK[role] >= ADMIN_ROLE_RANK[minimumRole];
 }
