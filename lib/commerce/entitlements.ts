@@ -26,9 +26,8 @@ export async function upsertCatalogProducts(
       title: product.title,
       kind: product.kind,
       stripe_price_id: product.stripePriceId,
-      active: true,
     })),
-    { onConflict: "id" }
+    { onConflict: "id", ignoreDuplicates: true }
   );
 
   if (error) {

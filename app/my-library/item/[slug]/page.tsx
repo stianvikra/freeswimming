@@ -49,13 +49,25 @@ export default async function LibraryItemPage({ params }: Props) {
     redirect("/my-library");
   }
 
+  const { data: productOverride, error: productOverrideError } = await supabase
+    .from("products")
+    .select("title")
+    .eq("id", product.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (productOverrideError) {
+    console.error("[LibraryItem] Could not load product title override", productOverrideError);
+  }
+
+  const displayTitle = productOverride?.title?.trim() ? productOverride.title.trim() : product.title;
   const actionCopy = getLibraryItemActionCopy(product.id);
 
   return (
     <SiteChrome>
       <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
-          <h1 className="text-3xl font-bold text-slate-900">{product.title}</h1>
+          <h1 className="text-3xl font-bold text-slate-900">{displayTitle}</h1>
           <p className="mt-3 text-sm text-slate-600">{actionCopy.description}</p>
 
           <div className="mt-6 flex flex-wrap items-start gap-3">

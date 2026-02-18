@@ -6,10 +6,15 @@ import TrackedLink from "@/components/analytics/TrackedLink";
 import PageTemplate from "@/components/PageTemplate";
 import PageIntro from "@/components/PageIntro";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
 import {
   getCatalogProductsWithAvailability,
   type CatalogProductAvailability,
 } from "@/lib/commerce/catalog";
+import type { CatalogProductOverridesById } from "@/lib/commerce/catalog";
+
+export const dynamic = "force-dynamic";
 
 function getPlanCopy(product: CatalogProductAvailability) {
   switch (product.id) {
@@ -82,7 +87,9 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
               Temporarily unavailable
             </button>
             <p className="text-xs text-slate-500">
-              Checkout setup missing ({product.missingEnvVar ?? "unknown variable"}).
+              {product.active
+                ? `Checkout setup missing (${product.missingEnvVar ?? "unknown variable"}).`
+                : "This offer is hidden from new sales in admin commerce settings."}
             </p>
           </div>
         )}
@@ -91,8 +98,25 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
   );
 }
 
-export default function PlansPage() {
-  const products = getCatalogProductsWithAvailability();
+export default async function PlansPage() {
+  let catalogOverrides: CatalogProductOverridesById = {};
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: productRows, error: productRowsError } = await supabase
+      .from("products")
+      .select("id, slug, title, kind, active")
+      .order("created_at", { ascending: true });
+
+    if (productRowsError) {
+      console.error("[Plans] Could not load product catalog overrides", productRowsError);
+    } else {
+      catalogOverrides = buildCatalogOverridesFromRows(productRows ?? []);
+    }
+  } catch (error) {
+    console.error("[Plans] Falling back to env catalog due override lookup failure", error);
+  }
+
+  const products = getCatalogProductsWithAvailability(process.env, catalogOverrides);
   const hasAvailableProducts = products.some((product) => product.available);
   const hasUnavailableProducts = products.some((product) => !product.available);
   const availableCount = products.filter((product) => product.available).length;

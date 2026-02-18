@@ -9,6 +9,7 @@ const CATALOG: CatalogProduct[] = [
     title: "0-1000m guide",
     kind: "course_addon",
     stripePriceId: "price_1000",
+    active: true,
   },
   {
     id: "guide_poolside",
@@ -16,6 +17,7 @@ const CATALOG: CatalogProduct[] = [
     title: "Poolside guide",
     kind: "course_addon",
     stripePriceId: "price_pool",
+    active: true,
   },
   {
     id: "analysis_video",
@@ -23,6 +25,7 @@ const CATALOG: CatalogProduct[] = [
     title: "Video analysis",
     kind: "analysis",
     stripePriceId: "price_analysis",
+    active: true,
   },
 ];
 
@@ -38,5 +41,20 @@ describe("buildLibrarySections", () => {
     const result = buildLibrarySections(CATALOG, ["guide_0_1000m", "custom_product"]);
     expect(result.owned.map((product) => product.id)).toEqual(["guide_0_1000m"]);
     expect(result.unknownOwnedProductIds).toEqual(["custom_product"]);
+  });
+
+  it("hides inactive non-owned products from explore while still showing inactive owned", () => {
+    const result = buildLibrarySections(
+      CATALOG.map((product) =>
+        product.id === "guide_poolside" ? { ...product, active: false } : product
+      ),
+      ["guide_poolside"]
+    );
+
+    expect(result.owned.map((product) => product.id)).toEqual(["guide_poolside"]);
+    expect(result.explore.map((product) => product.id)).toEqual([
+      "guide_0_1000m",
+      "analysis_video",
+    ]);
   });
 });

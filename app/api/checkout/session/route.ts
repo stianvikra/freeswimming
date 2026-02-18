@@ -50,6 +50,28 @@ export async function POST(request: Request) {
     const adminSupabase = createAdminSupabaseClient();
     await upsertCatalogProducts(adminSupabase, getCatalogProducts());
 
+    const productStateResult = await adminSupabase
+      .from("products")
+      .select("active")
+      .eq("id", product.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (productStateResult.error) {
+      console.error("[Checkout] Could not verify product active status", productStateResult.error);
+      return NextResponse.json(
+        { ok: false, error: "Could not verify product availability right now." },
+        { status: 500 }
+      );
+    }
+
+    if (productStateResult.data && !productStateResult.data.active) {
+      return NextResponse.json(
+        { ok: false, error: "This product is currently unavailable." },
+        { status: 409 }
+      );
+    }
+
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },

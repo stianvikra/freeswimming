@@ -39,6 +39,7 @@ type Props = {
 export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const pathname = usePathname();
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+  const [softLaunchBannerEnabled, setSoftLaunchBannerEnabled] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -59,6 +60,40 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
     return () => {
       mounted = false;
       subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRuntimeFlags() {
+      try {
+        const response = await fetch("/api/runtime/flags", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          ok?: boolean;
+          flags?: {
+            softLaunchBanner?: boolean;
+          };
+        };
+
+        if (cancelled) return;
+        if (!response.ok || !payload.ok) return;
+
+        if (typeof payload.flags?.softLaunchBanner === "boolean") {
+          setSoftLaunchBannerEnabled(payload.flags.softLaunchBanner);
+        }
+      } catch {
+        // keep safe default
+      }
+    }
+
+    void loadRuntimeFlags();
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -246,7 +281,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         </div>
       </header>
 
-      {isPublicRoute ? (
+      {isPublicRoute && softLaunchBannerEnabled ? (
         <div className="pointer-events-none fixed inset-x-0 top-16 z-30 px-4">
           <div
             data-testid="soft-launch-banner"

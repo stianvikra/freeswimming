@@ -63,8 +63,8 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
             </span>
           </div>
           <p className="mt-3 max-w-[60ch] text-sm text-slate-700">
-            Manage content, commerce settings, and operational states. This foundation step adds
-            role-gated access before CRUD modules are enabled.
+            Manage content, commerce settings, and operational states from one internal workspace.
+            All mutations are role-gated server-side and aligned with audit logging.
           </p>
         </header>
         <div className="mt-6">{children}</div>

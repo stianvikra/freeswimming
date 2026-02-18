@@ -5,6 +5,7 @@ import {
   getCatalogProducts,
   getCatalogProductsWithAvailability,
 } from "@/lib/commerce/catalog";
+import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
 
 const ENV: NodeJS.ProcessEnv = {
   ...process.env,
@@ -22,6 +23,7 @@ describe("commerce catalog", () => {
       "guide_poolside",
       "analysis_video",
     ]);
+    expect(products.every((product) => product.active)).toBe(true);
   });
 
   it("looks up products by id and by stripe price id", () => {
@@ -52,18 +54,41 @@ describe("commerce catalog", () => {
       "analysis_video",
     ]);
     expect(availability.find((product) => product.id === "guide_0_1000m")).toMatchObject({
+      active: true,
       available: true,
       stripePriceId: "price_1000",
       missingEnvVar: null,
     });
     expect(availability.find((product) => product.id === "guide_poolside")).toMatchObject({
+      active: true,
       available: false,
       stripePriceId: null,
       missingEnvVar: "STRIPE_PRICE_ID_POOLSIDE_GUIDE",
     });
     expect(availability.find((product) => product.id === "analysis_video")).toMatchObject({
+      active: true,
       available: true,
       stripePriceId: "price_analysis",
+      missingEnvVar: null,
+    });
+  });
+
+  it("applies DB title/active overrides to availability output", () => {
+    const overrides = buildCatalogOverridesFromRows([
+      {
+        id: "guide_poolside",
+        slug: "poolside-guide",
+        title: "Poolside Pro",
+        kind: "course_addon",
+        active: false,
+      },
+    ]);
+
+    const availability = getCatalogProductsWithAvailability(ENV, overrides);
+    expect(availability.find((product) => product.id === "guide_poolside")).toMatchObject({
+      title: "Poolside Pro",
+      active: false,
+      available: false,
       missingEnvVar: null,
     });
   });
