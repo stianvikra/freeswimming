@@ -94,5 +94,14 @@ Use this cadence to keep repository branches clean and predictable:
 Use one browser default for PR handoff links to reduce friction:
 
 - open PR create/review/merge URLs in Safari by default:
-  - `open -a Safari "<PR_URL>"`
+  - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<PR_URL>"'`
 - only use another browser if owner explicitly requests it.
+
+## Manual QA URL Rule
+
+For manual QA steps, reduce owner copy/paste work:
+
+- assistant should open each QA URL in Safari before asking for `done`:
+  - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<QA_URL>"'`
+- then ask for one concrete validation result per step.
+- only skip auto-open when owner explicitly asks to open URLs manually or use another browser.

@@ -16,6 +16,7 @@ Use this quick check so the task execution is precise:
 - State git rhythm defaults (commit/push cadence and PR cut cadence to `main`)
 - State branch hygiene cadence (post-merge cleanup + stale-branch sweep frequency)
 - State PR browser rule (open PR/merge links in Safari by default unless owner requests otherwise)
+- State manual QA link rule (assistant opens each QA URL in Safari before asking for `done`)
 - State closeout gate (completion audit + final 10/10 quality/safety/perf/regression sweep + move/cleanup prompts)
 
 Suggested prompt wrapper:
@@ -24,6 +25,7 @@ Suggested prompt wrapper:
 Use task brief: <PATH_TO_BRIEF>
 Mode: end-to-end (implement + tests + commit + push on current branch)
 Communication: one manual step at a time; wait for my "done" between manual GitHub/UI steps.
+Manual QA links: open each URL in Safari for me before asking for "done".
 Git rhythm: commit + push each validated step; ask me before opening/updating PR to main.
 Handoff must include:
 
@@ -171,10 +173,21 @@ Define when and how branch cleanup is executed so repository hygiene is consiste
 Define the default browser for PR handoff links so collaboration is consistent.
 
 - Default:
-  - open PR create/review/merge URLs in Safari:
-    - `open -a Safari "<PR_URL>"`
+  - open PR create/review/merge URLs in Safari as active foreground tab/window:
+    - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<PR_URL>"'`
 - Exception:
   - use another browser only when owner explicitly requests it.
+
+## Manual QA URL Rule (Required)
+
+Define how manual QA URLs are handled so owner flow is low-friction.
+
+- Default:
+  - for each manual QA step that requires opening a page, assistant opens the exact URL in Safari as active foreground tab/window:
+    - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<QA_URL>"'`
+  - then assistant asks owner to validate the concrete expected outcome and reply `done`.
+- Exception:
+  - do not auto-open only if owner explicitly asks to open manually or use another browser.
 
 ## Implementation Checkpoint Log (Required For In-Progress Briefs)
 
