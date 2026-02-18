@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-18-aw-003-sign-in-cooldown-reliability`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
 - `updated`: `2026-02-18`
@@ -58,3 +58,10 @@ Make sign-in code request behavior predictable and trustworthy: first request co
     - `npm run test:unit`,
     - `npm run build`.
   - next step: checkpoint commit + push, then open PR.
+- `2026-02-18` | `1c32579` | AW-003 merged to `main` via PR `#42` and post-merge cleanup completed. | next: move brief to `done`.
+
+## Completion Record
+
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/42`
+- `merge`: `feat/auth-aw003-cooldown-ux` -> `main` (squash merge)
+- `result`: sign-in cooldown/resend UX hardened with session-scoped throttling and resilient resend flow.

@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-18-private-access-gate-and-owner-bypass`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
 - `updated`: `2026-02-18`
@@ -152,9 +152,10 @@ freeswimming.org should be private during build, with safe access only for the o
   - `npm run build`,
   - `npx playwright test tests/e2e/sitemap.spec.ts tests/e2e/soft-launch-banner.spec.ts tests/e2e/private-access-gate.spec.ts --project=desktop-chromium` (`private-access-gate` tests skipped unless lock env is enabled).
   - next step: checkpoint commit + push, then open PR in Safari.
+- `2026-02-18` | `7388181` | private access gate merged to `main` via PR `#43`; owner bypass verified on local and preview. | next: move brief to `done`.
 
 ## Completion Record (fill when done)
 
-- `PR`: link to merged PR
-- `merge`: source branch -> target branch
-- `result`: short outcome summary
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/43`
+- `merge`: `feat/private-access-gate` -> `main` (squash merge)
+- `result`: site lock, owner bypass flow, session cookie handling, tests, and runbook delivered.

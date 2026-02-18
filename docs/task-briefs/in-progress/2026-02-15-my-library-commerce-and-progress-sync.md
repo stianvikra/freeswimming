@@ -226,10 +226,10 @@ Users can start instantly in guest mode, buy optional paid products without acco
 
 ### Active Workstream Split (2026-02-18)
 
-- Auth reliability/cooldown UX is now tracked in dedicated AW-003 brief:
-  - `docs/task-briefs/in-progress/2026-02-18-aw-003-sign-in-cooldown-reliability.md`.
-- Private site lock and owner bypass is tracked separately:
-  - `docs/task-briefs/in-progress/2026-02-18-private-access-gate-and-owner-bypass.md`.
+- Auth reliability/cooldown UX is completed in dedicated AW-003 brief:
+  - `docs/task-briefs/done/2026-02-18-aw-003-sign-in-cooldown-reliability.md`.
+- Private site lock and owner bypass is completed in dedicated brief:
+  - `docs/task-briefs/done/2026-02-18-private-access-gate-and-owner-bypass.md`.
 - This core brief keeps ownership of commerce/library/progress completion criteria.
 
 ### Outstanding (blocking move to `done`)
