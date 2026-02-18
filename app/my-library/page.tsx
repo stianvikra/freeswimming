@@ -58,6 +58,17 @@ export default async function MyLibraryPage() {
     catalogProducts,
     (entitlements ?? []).map((entitlement) => entitlement.product_id)
   );
+
+  const { count: activeGoalCount, error: activeGoalCountError } = await supabase
+    .from("goals")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .in("status", ["active", "on_track", "at_risk"]);
+
+  if (activeGoalCountError) {
+    console.error("[MyLibrary] Could not load active goal count", activeGoalCountError);
+  }
+
   const claimQuery = new URLSearchParams({ next: "/my-library" });
   if (user.email) {
     claimQuery.set("email", user.email);
@@ -105,6 +116,24 @@ export default async function MyLibraryPage() {
 
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Goals</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {(activeGoalCount ?? 0) > 0
+                      ? `${activeGoalCount} active goal${activeGoalCount === 1 ? "" : "s"} in progress.`
+                      : "Set your first measurable swim goal and keep momentum with clear next actions."}
+                  </p>
+                </div>
+                <Link
+                  href="/my-library/goals"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  Open goals hub
+                </Link>
+              </div>
+            </section>
             <LibrarySectionTabs showExploreTab={sections.explore.length > 0} />
 
             <div id="my-library-owned" className="space-y-4">

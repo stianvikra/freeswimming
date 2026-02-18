@@ -2,10 +2,17 @@
 import { NextResponse } from "next/server";
 
 type Payload = {
-  variant?: "contact" | "analysis";
+  variant?: "contact" | "analysis" | "goals_coaching";
   name?: string;
   email?: string;
   message?: string;
+  goalsCoaching?: {
+    primaryGoal?: string;
+    level?: "learning_freestyle" | "beginner" | "intermediate" | "fast";
+    trainingDaysPerWeek?: number;
+    weeklyVolume?: string;
+    targetDate?: string | null;
+  };
 
   // anti-spam
   company?: string; // honeypot
@@ -188,6 +195,11 @@ function clampString(s: string, max: number) {
   return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
 }
 
+function isValidDateString(value: string | null | undefined): value is string {
+  if (!value) return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 async function sendWithResend(params: { to: string; from: string; subject: string; text: string }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { ok: false as const, error: "RESEND_API_KEY not set" };
@@ -265,10 +277,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true }, { status: 200, headers: rateHeaders });
   }
 
-  const variant = body?.variant === "analysis" ? "analysis" : "contact";
+  const variant =
+    body?.variant === "analysis"
+      ? "analysis"
+      : body?.variant === "goals_coaching"
+        ? "goals_coaching"
+        : "contact";
   const name = clampString(String(body?.name || ""), 80);
   const email = clampString(String(body?.email || ""), 120);
   const message = clampString(String(body?.message || ""), 2000);
+  const goalsCoaching = body?.goalsCoaching;
 
   if (name.length < 2) {
     return NextResponse.json(
@@ -282,11 +300,68 @@ export async function POST(req: Request) {
       { status: 400, headers: rateHeaders }
     );
   }
-  if (message.length < 10) {
+  if (variant !== "goals_coaching" && message.length < 10) {
     return NextResponse.json(
       { ok: false, error: "Please write a short message." },
       { status: 400, headers: rateHeaders }
     );
+  }
+
+  let goalsLines = "";
+  if (variant === "goals_coaching") {
+    const primaryGoal = clampString(String(goalsCoaching?.primaryGoal || ""), 160);
+    const level = String(goalsCoaching?.level || "");
+    const trainingDaysPerWeek = Number(goalsCoaching?.trainingDaysPerWeek ?? NaN);
+    const weeklyVolume = clampString(String(goalsCoaching?.weeklyVolume || ""), 120);
+    const targetDateRaw =
+      typeof goalsCoaching?.targetDate === "string" ? goalsCoaching.targetDate : null;
+    const targetDate = isValidDateString(targetDateRaw) ? targetDateRaw : null;
+
+    const levelMap: Record<string, string> = {
+      learning_freestyle: "Learning freestyle (2:00+ /100m)",
+      beginner: "Beginner (1:50 /100m)",
+      intermediate: "Intermediate (1:40 /100m)",
+      fast: "Fast (1:30 or faster /100m)",
+    };
+
+    if (primaryGoal.length < 3) {
+      return NextResponse.json(
+        { ok: false, error: "Please enter your primary goal." },
+        { status: 400, headers: rateHeaders }
+      );
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(levelMap, level)) {
+      return NextResponse.json(
+        { ok: false, error: "Please choose your current level." },
+        { status: 400, headers: rateHeaders }
+      );
+    }
+
+    if (
+      !Number.isFinite(trainingDaysPerWeek) ||
+      trainingDaysPerWeek < 1 ||
+      trainingDaysPerWeek > 7
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "Please choose training days per week." },
+        { status: 400, headers: rateHeaders }
+      );
+    }
+
+    if (weeklyVolume.length < 2) {
+      return NextResponse.json(
+        { ok: false, error: "Please enter your current weekly volume." },
+        { status: 400, headers: rateHeaders }
+      );
+    }
+
+    goalsLines =
+      `Primary goal: ${primaryGoal}\n` +
+      `Current level: ${levelMap[level]}\n` +
+      `Training days/week: ${trainingDaysPerWeek}\n` +
+      `Current weekly volume: ${weeklyVolume}\n` +
+      `Target date: ${targetDate ?? "Not provided"}\n`;
   }
 
   // 5) Deliver via env vars
@@ -296,14 +371,17 @@ export async function POST(req: Request) {
   const subject =
     variant === "analysis"
       ? `Freeswimming — Video analysis request (${name})`
-      : `Freeswimming — New contact message (${name})`;
+      : variant === "goals_coaching"
+        ? `Freeswimming — Goals coaching intake (${name})`
+        : `Freeswimming — New contact message (${name})`;
 
   const text =
     `Variant: ${variant}\n` +
     `Name: ${name}\n` +
     `Email: ${email}\n` +
     `IP: ${ip}\n` +
-    `\nMessage:\n${message}\n`;
+    (variant === "goals_coaching" ? `\nGoals intake:\n${goalsLines}` : "") +
+    `\nMessage:\n${message || "(No additional message)"}\n`;
 
   // If not configured yet: log in dev, still return ok
   if (!to) {

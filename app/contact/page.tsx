@@ -1,14 +1,31 @@
-"use client";
-
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import ContactForm from "@/components/ContactForm";
 
-export default function ContactPage() {
+type ContactPageProps = {
+  searchParams?:
+    | Promise<{
+        source?: string | string[];
+      }>
+    | {
+        source?: string | string[];
+      };
+};
+
+export default async function ContactPage({ searchParams }: ContactPageProps) {
+  const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
+  const source =
+    typeof resolvedSearchParams.source === "string"
+      ? resolvedSearchParams.source
+      : Array.isArray(resolvedSearchParams.source)
+        ? (resolvedSearchParams.source[0] ?? "")
+        : "";
+  const variant = source === "goals_coaching" ? "goals_coaching" : "contact";
+
   return (
     <SiteChrome>
       <PageTemplate>
-        <ContactForm variant="contact" />
+        <ContactForm variant={variant} />
       </PageTemplate>
     </SiteChrome>
   );

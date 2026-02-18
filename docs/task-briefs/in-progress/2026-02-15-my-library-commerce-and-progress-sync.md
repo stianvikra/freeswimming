@@ -1041,6 +1041,27 @@ At each phase:
 
 ## Implementation Checkpoint Log (In Progress)
 
+- `2026-02-18` | `working tree` | goals MVP first vertical slice implemented:
+  - added goals contract schema migration with typed goal fields + expanded status range:
+    - `supabase/migrations/20260218213000_goals_mvp_contract.sql`.
+  - implemented goals domain + server data layer:
+    - `lib/goals/mvp.ts`,
+    - `lib/goals/server.ts`.
+  - implemented secured goals API:
+    - `app/api/goals/route.ts` (list + create with `max 3 active` guardrail),
+    - `app/api/goals/[goalId]/route.ts` (archive/restore/log-result/celebration).
+  - implemented goals UI surface and entrypoint:
+    - `app/my-library/goals/page.tsx`,
+    - `components/my-library/goals/GoalsHub.tsx`,
+    - entry card on `app/my-library/page.tsx`.
+  - implemented goals coaching intake flow:
+    - `/contact?source=goals_coaching` support in `app/contact/page.tsx`,
+    - structured goals variant in `components/ContactForm.tsx`,
+    - API validation + email payload updates in `app/api/contact/route.ts`.
+  - added unit coverage for goals domain helpers:
+    - `tests/unit/goals-mvp.test.ts`.
+  - next step: run validation + manual QA (goals create/log/archive flow + coaching intake + regression on existing contact variants).
+
 - `2026-02-18` | `working tree` | naming decision locked for account surface:
   - `My Library` remains primary nav/account label in MVP for clarity and conversion.
   - `My FreeSwim` allowed only as secondary branded supporting copy.

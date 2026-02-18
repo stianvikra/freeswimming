@@ -95,11 +95,24 @@ export type Database = {
       };
       goals: {
         Row: {
+          achieved_at: string | null;
           celebrated_at: string | null;
           created_at: string;
+          goal_type:
+            | "distance_time"
+            | "distance_continuous"
+            | "drill_complete"
+            | "module_complete"
+            | "custom";
           id: string;
-          status: "active" | "achieved" | "archived";
+          progress_value: number;
+          source: "template" | "custom";
+          status: "active" | "on_track" | "at_risk" | "achieved" | "archived";
+          target_count: number | null;
           target_date: string | null;
+          target_distance_m: number | null;
+          target_ref: string | null;
+          target_time_seconds: number | null;
           target_unit: string;
           target_value: number | null;
           title: string;
@@ -107,11 +120,24 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          achieved_at?: string | null;
           celebrated_at?: string | null;
           created_at?: string;
+          goal_type?:
+            | "distance_time"
+            | "distance_continuous"
+            | "drill_complete"
+            | "module_complete"
+            | "custom";
           id?: string;
-          status?: "active" | "achieved" | "archived";
+          progress_value?: number;
+          source?: "template" | "custom";
+          status?: "active" | "on_track" | "at_risk" | "achieved" | "archived";
+          target_count?: number | null;
           target_date?: string | null;
+          target_distance_m?: number | null;
+          target_ref?: string | null;
+          target_time_seconds?: number | null;
           target_unit: string;
           target_value?: number | null;
           title: string;
@@ -119,11 +145,24 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          achieved_at?: string | null;
           celebrated_at?: string | null;
           created_at?: string;
+          goal_type?:
+            | "distance_time"
+            | "distance_continuous"
+            | "drill_complete"
+            | "module_complete"
+            | "custom";
           id?: string;
-          status?: "active" | "achieved" | "archived";
+          progress_value?: number;
+          source?: "template" | "custom";
+          status?: "active" | "on_track" | "at_risk" | "achieved" | "archived";
+          target_count?: number | null;
           target_date?: string | null;
+          target_distance_m?: number | null;
+          target_ref?: string | null;
+          target_time_seconds?: number | null;
           target_unit?: string;
           target_value?: number | null;
           title?: string;
