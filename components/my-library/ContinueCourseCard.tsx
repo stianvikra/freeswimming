@@ -1,33 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { buildCourseContinueHref, COURSE_LAST_LESSON_STORAGE_KEY } from "@/lib/course/resume";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 
-type ResumeState = {
-  continueHref: string;
-  hasSavedProgress: boolean;
-};
+const EMPTY_SUBSCRIBE = () => () => {};
 
-function getInitialResumeState(): ResumeState {
-  if (typeof window === "undefined") {
-    return { continueHref: "/course", hasSavedProgress: false };
-  }
-
+function getLastLessonSnapshot(): string {
   try {
     const lastLessonId = localStorage.getItem(COURSE_LAST_LESSON_STORAGE_KEY);
-    return {
-      continueHref: buildCourseContinueHref(lastLessonId),
-      hasSavedProgress: Boolean(lastLessonId && lastLessonId.trim().length > 0),
-    };
+    return lastLessonId?.trim() ?? "";
   } catch {
-    return { continueHref: "/course", hasSavedProgress: false };
+    return "";
   }
 }
 
 export default function ContinueCourseCard() {
-  const [{ continueHref, hasSavedProgress }] = useState<ResumeState>(getInitialResumeState);
+  const lastLessonId = useSyncExternalStore(EMPTY_SUBSCRIBE, getLastLessonSnapshot, () => "");
+  const hasSavedProgress = lastLessonId.length > 0;
+  const continueHref = buildCourseContinueHref(lastLessonId);
 
   function onResumeClick() {
     void sendClientAnalyticsEvent("resume_clicked", {

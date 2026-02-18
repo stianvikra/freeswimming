@@ -11,7 +11,9 @@ test("main menu exposes install action on desktop and tablet layouts", async ({
 
   await page.goto("/course?lesson=mod3-l1");
 
-  const menuToggle = page.getByTestId("header-menu-toggle");
+  // Course route can briefly render suspense fallback header before the final course header.
+  // Target the course-specific toggle label to avoid strict-mode locator collisions.
+  const menuToggle = page.getByRole("button", { name: "Toggle lessons", exact: true });
   await expect(menuToggle).toBeVisible();
   await menuToggle.click();
 
