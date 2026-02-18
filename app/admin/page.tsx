@@ -1,5 +1,5 @@
-import AdminContentManager from "@/components/admin/AdminContentManager";
+import AdminWorkspace from "@/components/admin/AdminWorkspace";
 
 export default function AdminPage() {
-  return <AdminContentManager />;
+  return <AdminWorkspace />;
 }

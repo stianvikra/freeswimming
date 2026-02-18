@@ -11,6 +11,7 @@ import LibrarySectionTabs from "@/components/my-library/LibrarySectionTabs";
 import PortalButton from "@/components/my-library/PortalButton";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
+import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
 import { buildLibrarySections } from "@/lib/commerce/library";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
@@ -53,7 +54,17 @@ export default async function MyLibraryPage() {
     console.error("[MyLibrary] Could not load entitlements", entitlementsError);
   }
 
-  const catalogProducts = getCatalogProductsSafe();
+  const { data: productRows, error: productRowsError } = await supabase
+    .from("products")
+    .select("id, slug, title, kind, active")
+    .order("created_at", { ascending: true });
+
+  if (productRowsError) {
+    console.error("[MyLibrary] Could not load product catalog overrides", productRowsError);
+  }
+
+  const catalogOverrides = buildCatalogOverridesFromRows(productRows ?? []);
+  const catalogProducts = getCatalogProductsSafe(process.env, catalogOverrides);
   const sections = buildLibrarySections(
     catalogProducts,
     (entitlements ?? []).map((entitlement) => entitlement.product_id)
@@ -170,6 +181,12 @@ export default async function MyLibraryPage() {
                     </p>
                     <h3 className="mt-1 text-base font-semibold text-slate-900">{product.title}</h3>
                     <p className="mt-2 text-sm text-slate-600">{getKindCopy(product)}</p>
+                    {!product.active ? (
+                      <p className="mt-2 text-xs text-amber-700">
+                        This item remains available in your library, but it is currently hidden
+                        from new sales.
+                      </p>
+                    ) : null}
                     <div className="mt-4">
                       <Link
                         href={`/my-library/item/${product.slug}`}

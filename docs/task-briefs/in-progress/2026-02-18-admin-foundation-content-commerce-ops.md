@@ -238,6 +238,41 @@ Owner should be able to manage lessons, guides, products, and operational states
   - adjusted mobile contextual-nav e2e test to handle intermittent first-tap miss on mobile WebKit:
     - `tests/e2e/course-nav-contextual.spec.ts` now uses click-first + keyboard fallback before asserting drawer visibility.
   - next step: push fix and re-run `CI / verify` on PR #54.
+- `2026-02-18` | `working tree` | slice 5-6 implementation checkpoint on `feat/admin-commerce-operations-controls`:
+  - added admin workspace tabs and managers:
+    - `components/admin/AdminWorkspace.tsx`
+    - `components/admin/AdminCommerceManager.tsx`
+    - `components/admin/AdminOperationsManager.tsx`
+    - wired in `app/admin/page.tsx` + updated shell copy in `app/admin/layout.tsx`.
+  - added role-gated admin APIs + payload validators:
+    - `app/api/admin/products/route.ts`
+    - `app/api/admin/products/[id]/route.ts`
+    - `app/api/admin/operations/flags/route.ts`
+    - `app/api/admin/operations/flags/[key]/route.ts`
+    - `lib/admin/products.ts`
+    - `lib/admin/runtime-flags.ts`.
+  - added operations runtime flags and product update policies:
+    - `supabase/migrations/20260219020500_admin_runtime_flags.sql`
+    - `supabase/migrations/20260219021200_admin_products_update_policy.sql`
+    - updated `types/database.ts` with `admin_runtime_flags`.
+  - connected operations flag to public runtime:
+    - `app/api/runtime/flags/route.ts`
+    - `components/SiteChrome.tsx` (soft-launch banner now runtime-flag driven).
+  - connected admin commerce metadata to user-facing surfaces:
+    - `/plans` and `/my-library` now load product title/active overrides from DB rows
+      (`app/plans/page.tsx`, `app/my-library/page.tsx`, `lib/commerce/catalog-overrides.ts`).
+    - `lib/commerce/library.ts` now hides inactive products from explore while keeping owned access.
+    - `app/my-library/item/[slug]/page.tsx` now resolves display title from DB override.
+    - `app/api/checkout/session/route.ts` now blocks checkout for inactive products.
+  - preserved admin-edited product metadata by changing catalog sync behavior:
+    - `lib/commerce/entitlements.ts` now uses insert-ignore-duplicates instead of upsert overwrite.
+  - added/updated unit coverage:
+    - `tests/unit/admin-products.test.ts`
+    - `tests/unit/admin-runtime-flags.test.ts`
+    - `tests/unit/commerce-catalog.test.ts`
+    - `tests/unit/library-sections.test.ts`
+    - `tests/unit/catalog-overrides.test.ts`.
+  - next step: commit+push checkpoint, open PR in Safari, and verify CI + manual QA matrix for admin commerce/operations.
 
 ## Completion Record (fill when done)
 

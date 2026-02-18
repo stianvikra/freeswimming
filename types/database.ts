@@ -353,6 +353,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_runtime_flags: {
+        Row: {
+          description: string;
+          enabled: boolean;
+          is_public: boolean;
+          key: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          description?: string;
+          enabled?: boolean;
+          is_public?: boolean;
+          key: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          description?: string;
+          enabled?: boolean;
+          is_public?: boolean;
+          key?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       products: {
         Row: {
           active: boolean;

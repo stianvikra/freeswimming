@@ -19,16 +19,15 @@ export async function upsertCatalogProducts(
   supabase: SupabaseClient<Database>,
   products: CatalogProduct[]
 ) {
-  const { error } = await supabase.from("products").upsert(
+  const { error } = await supabase.from("products").insert(
     products.map((product) => ({
       id: product.id,
       slug: product.slug,
       title: product.title,
       kind: product.kind,
       stripe_price_id: product.stripePriceId,
-      active: true,
     })),
-    { onConflict: "id" }
+    { onConflict: "id", ignoreDuplicates: true }
   );
 
   if (error) {

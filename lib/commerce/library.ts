@@ -18,7 +18,7 @@ export function buildLibrarySections(
   for (const product of catalogProducts) {
     if (ownedIdSet.has(product.id)) {
       owned.push(product);
-    } else {
+    } else if (product.active) {
       explore.push(product);
     }
   }
