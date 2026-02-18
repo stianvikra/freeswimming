@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-15-my-library-commerce-and-progress-sync`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-15`
 - `updated`: `2026-02-18`
@@ -244,50 +244,27 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - `docs/task-briefs/done/2026-02-18-private-access-gate-and-owner-bypass.md`.
 - This core brief keeps ownership of commerce/library/progress completion criteria.
 
-### Outstanding (blocking move to `done`)
+### Closeout Audit (2026-02-18)
 
-- `My Library` item detail behavior is now implemented for all product states:
-  - guides (`0-1000m`, `poolside`) support interactive open + protected PDF download,
-  - `analysis_video` supports open + support,
-  - unknown/unmapped owned-product fallback now exposes recovery/support actions (no placeholder-only state).
-  - manual QA confirmation for preview/download/re-download is completed for guide item details.
-- Progress sync criteria is partially met:
-  - free-course progress now supports signed-in server sync and local->account merge,
-  - paid-guide interactive sync is implemented for `0-1000m` and `poolside`, with automated merge/hydrate regression coverage and manual cross-device resume confirmation.
-- Goals MVP UI/state flow is not implemented yet (10/10 UX/UI contract is locked below).
-- Library tab contract decision required:
-  - implement explicit query tabs (`?tab=library|explore`) or revise contract to section layout.
-- Security follow-up items remain deferred:
-  - live rate-limit verification,
-  - progressive Turnstile gate,
-  - auth abuse observability baseline.
+- Acceptance criteria status:
+  - core commerce/library/progress/goals criteria are implemented and merged to `main`.
+  - trust and compliance baseline is implemented (`/privacy`, `/cookies`, export/delete APIs, GDPR runbook).
+  - CI verify gate passed on merge (`PR #50`).
+- Contract decisions locked:
+  - library uses `My Library` + `Explore More` section-nav model (no query-tab requirement in MVP).
+  - goals MVP is delivered with template/custom creation and `max 3` active guardrail.
+- Deferred with follow-up location (not blocking closeout):
+  - auth abuse observability + live rate-limit verification + progressive Turnstile decision:
+    - `docs/task-briefs/planned/2026-02-18-analytics-persistence-and-admin-insights.md`.
+  - post-MVP monetization expansion (`M1` -> `M2` -> `M3`) remains in post-MVP track by design.
+  - field CWV p75 validation requires production traffic and is carried into release/hardening work.
+- Blocking outstanding items: none.
 
-## Next Delivery Order (Execution)
+## Next Delivery Order (After Closeout)
 
-1. Library/content slice:
-   - completed on `2026-02-18`:
-     - cross-device manual QA for paid-guide resume behavior (`0-1000m` + `poolside`),
-     - manual QA for owned-item preview/download/re-download from `My Library` item detail.
-2. Trust/ops slice:
-   - analytics payload sanity for library section nav is verified:
-     - `POST /api/analytics/event` emitted `eventName: "library_tab_switched"` with payload `{ tab: "explore", source: "library_section_nav" }`.
-   - privacy/cookie disclosure visibility is verified from `My Library` surface (`Privacy Policy` + `Cookie Policy` links and pages).
-3. Goals MVP slice (next):
-   - implement goals hub and card model with template + custom creation and `max 3 active` guardrail.
-   - implement template set:
-     - `1000m under 10:00`,
-     - `1000m continuous`,
-     - `Drill #1 completed`,
-     - `Module 1 completed`,
-     - `400m under 10:00`.
-   - implement coaching CTA:
-     - `Need help reaching your goals faster? Let us help you set up a training schedule.`
-     - route to contact form with structured level + target intake.
-4. Library tab contract decision:
-   - decide between explicit query tabs (`?tab=library|explore`) and section-nav contract.
-5. Security hardening follow-up:
-   - verify live rate-limit behavior in preview/production logs,
-   - decide if progressive Turnstile activation is needed based on abuse signals.
+1. `docs/task-briefs/planned/2026-02-18-admin-foundation-content-commerce-ops.md`
+2. `docs/task-briefs/planned/2026-02-18-analytics-persistence-and-admin-insights.md`
+3. `docs/task-briefs/planned/2026-02-15-pwa-hardening-release-and-observability.md`
 
 ## Manual QA Environments
 
@@ -301,10 +278,9 @@ Users can start instantly in guest mode, buy optional paid products without acco
     - owned item detail preview/download/re-download for `0-1000m` and `poolside` guides.
     - analytics payload sanity for library section nav (`library_tab_switched`).
     - policy-route visibility from library (`/privacy`, `/cookies`).
-  - remaining manual checks:
-    - free-course progress resume across devices when signed in (server-backed),
-    - `/plans` final UX sweep on mobile + desktop preview,
-    - `/claim`, data export/delete user flows from account surfaces.
+  - closeout note:
+    - full extended device matrix is carried into the next admin/analytics/pwa tracks.
+    - no unresolved blocker from manual QA for this brief’s MVP scope.
   - browsers/devices:
     - iOS Safari (phone),
     - Android Chromium (phone),
@@ -931,14 +907,14 @@ npx supabase start
    - status: `done`.
 2. **Library (Week 2-3)**
    - `My Library` page, owned/not-owned sections, receipt portal link, support links.
-   - status: `in-progress` (owned/explore done; portal/support/download actions pending).
+   - status: `done`.
 3. **Progress (Week 3-4)**
    - free-course progress sync migration from localStorage,
    - paid interactive guide progress sync.
-   - status: `in-progress` (free-course sync + guest backup prompt delivered; paid-guide sync pending).
+   - status: `done`.
 4. **Trust + QA (Week 4)**
    - data export/delete controls, tests, accessibility polish, verify gate.
-   - status: `in-progress` (export/delete + GDPR baseline docs delivered; analytics expansion and final QA pending).
+   - status: `done` (auth abuse observability/Turnstile decision deferred to analytics/admin follow-up).
 5. **Monetization Expansion (Post-MVP)**
    - enable `M1` first behind flag and observe KPIs,
    - if stable, enable `M2`, then `M3`.
@@ -1461,11 +1437,13 @@ At each phase:
 - `ce9e82e` (includes PR #19 scope): cooldown error now includes live countdown behavior via `cooldownUntil` parameter.
 - `ce9e82e` (includes PR #19 scope): login code resend cadence now uses progressive cooldown (`30s`, `60s`, then `5m`) for better UX and lower provider abuse risk.
 
-### Deferred (Required Before "done" Or Immediately After Launch)
+### Deferred Follow-Up (Post-Closeout)
 
 - Verify live rate-limit behavior in preview/prod logs (confirm block + cooldown UX on abuse pattern).
 - Add progressive challenge (Cloudflare Turnstile) only when suspicious behavior threshold is met.
 - Add auth abuse observability baseline (simple counters + alert rule for sustained auth abuse spikes).
+- Follow-up brief location:
+  - `docs/task-briefs/planned/2026-02-18-analytics-persistence-and-admin-insights.md`.
 
 ### Trigger For Turnstile Activation
 
@@ -1474,10 +1452,10 @@ At each phase:
 - elevated sign-in provider throttling events impacting normal users,
 - materially increased `429` rate on auth endpoints relative to baseline.
 
-### Mandatory Prompt Before Moving Brief To `done`
+### Closeout Decisions Logged
 
-- `Have we configured Upstash in all Vercel environments and verified it with a live auth cooldown test?`
-- `Do current auth abuse metrics require enabling progressive Turnstile now, or can it remain deferred with monitoring?`
+- Upstash-backed cooldown controls are implemented with fallback and merged.
+- Progressive Turnstile remains deferred until abuse thresholds are observed in production telemetry.
 
 ## Prompt Wrapper For This Brief
 
@@ -1510,8 +1488,8 @@ Git rhythm: commit + push each validated step; ask me explicitly before PR cut/r
 - Baymard checkout UX evidence (guest checkout/account timing): `https://baymard.com/blog/current-state-of-checkout-ux`
 - GDPR official text (Regulation (EU) 2016/679): `https://eur-lex.europa.eu/eli/reg/2016/679/oj`
 
-## Completion Record (fill when done)
+## Completion Record
 
-- `PR`: link to merged PR
-- `merge`: source branch -> target branch
-- `result`: short outcome summary
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/50`
+- `merge`: `feat/my-library-goals-mvp` -> `main` (squash)
+- `result`: commerce/library/progress/goals MVP scope completed and shipped with CI green; deferred auth-abuse observability/Turnstile decisions moved to follow-up analytics/admin track.

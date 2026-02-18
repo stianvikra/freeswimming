@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-18-admin-foundation-content-commerce-ops`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
 - `updated`: `2026-02-18`
@@ -154,6 +154,23 @@ Owner should be able to manage lessons, guides, products, and operational states
 
 - Open PR links in Safari by default:
   - `open -a Safari "<PR_URL>"`
+
+## Implementation Checkpoint Log (In Progress)
+
+- `2026-02-18` | `working tree` | brief promoted from `planned` to `in-progress`; next step: scaffold admin auth gate + route shell (`/admin`) behind role check.
+- `2026-02-18` | `working tree` | admin foundation slice 1 implemented:
+  - added role resolution helper with deny-by-default behavior:
+    - `lib/admin/access.ts` (`admin|editor|viewer` from `app_metadata`, optional bootstrap allowlist fallback).
+  - added role-gated admin route shell:
+    - `app/admin/layout.tsx`,
+    - `app/admin/page.tsx`.
+  - non-auth users are redirected to sign-in with intent (`/auth/sign-in?next=%2Fadmin`).
+  - signed-in users without admin role receive explicit no-access state.
+  - added unit coverage:
+    - `tests/unit/admin-access.test.ts`.
+  - added env docs for bootstrap allowlist:
+    - `.env.example` (`ADMIN_EMAIL_ALLOWLIST`).
+  - next step: validate this slice (`lint`, `typecheck`, targeted unit), then implement role persistence model in DB (`profiles` role column + RLS-safe usage).
 
 ## Completion Record (fill when done)
 
