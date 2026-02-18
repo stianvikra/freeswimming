@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-17`
-- `updated`: `2026-02-17`
+- `updated`: `2026-02-18`
 
 ## Purpose
 
@@ -14,10 +14,10 @@ Capture good ideas that should be implemented later without blocking the active 
 
 ## Queue
 
-| ID       | Title                                                                      | Priority | Status    |
-| -------- | -------------------------------------------------------------------------- | -------- | --------- |
-| `AW-002` | Email one-time-code UX hardening (magic link first + OTP fallback clarity) | `medium` | `triaged` |
-| `AW-003` | Sign-in code request reliability + cooldown UX redesign (10/10)            | `high`   | `triaged` |
+| ID       | Title                                                                      | Priority | Status        |
+| -------- | -------------------------------------------------------------------------- | -------- | ------------- |
+| `AW-002` | Email one-time-code UX hardening (magic link first + OTP fallback clarity) | `medium` | `triaged`     |
+| `AW-003` | Sign-in code request reliability + cooldown UX redesign (10/10)            | `high`   | `in-progress` |
 
 ## AW-002: Email one-time-code UX hardening
 
@@ -54,5 +54,7 @@ Capture good ideas that should be implemented later without blocking the active 
 
 - Backlog items here are intentionally deferred.
 - When an item starts implementation, cut a dedicated feature branch and a focused task brief/checkpoint log entry.
+  - active now:
+    - `AW-003` -> `docs/task-briefs/in-progress/2026-02-18-aw-003-sign-in-cooldown-reliability.md`
 - PR create/review/merge links should be opened in Safari by default:
   - `open -a Safari "<PR_URL>"`
