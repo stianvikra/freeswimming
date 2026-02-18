@@ -220,7 +220,7 @@ Owner should be able to manage lessons, guides, products, and operational states
     - local + remote branch deletion,
     - prune fetch.
   - next step: implement slice 4 (`PATCH`/`DELETE` admin content endpoints + audit log table + tests).
-- `2026-02-18` | `working tree` | slice 4 implementation in progress on `feat/admin-content-mutations-audit-log`:
+- `2026-02-18` | `511049c` | slice 4 implementation checkpoint on `feat/admin-content-mutations-audit-log`:
   - added new mutation API route:
     - `app/api/admin/content/[id]/route.ts` (`PATCH` for editor+, `DELETE` for admin only).
   - added update payload parser + shared UUID validation:
@@ -233,7 +233,7 @@ Owner should be able to manage lessons, guides, products, and operational states
     - `tests/unit/admin-content.test.ts`.
   - synced generated DB types:
     - `types/database.ts` (`admin_audit_logs`).
-  - next step: run CI validation in PR and manual QA for publish/draft/delete + audit entries.
+  - next step: open PR, run CI validation, and execute manual QA for publish/draft/delete + audit entries.
 
 ## Completion Record (fill when done)
 
