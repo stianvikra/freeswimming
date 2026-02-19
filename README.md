@@ -154,6 +154,13 @@ Private access gate verification (run separately when site lock is in use):
 SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate
 ```
 
+Pre-PR and pre-merge shortcuts:
+
+```bash
+npm run verify:pre-pr
+npm run verify:pre-merge
+```
+
 ## Recommended Test Cadence
 
 1. Per implementation step (before checkpoint commit):
@@ -161,10 +168,25 @@ SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-
    - `npm run typecheck`
    - `npm run test:unit`
 2. Before PR update:
-   - `npm run verify:public`
+   - `npm run verify:pre-pr`
 3. Before merge:
-   - `npm run verify:public`
-   - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate` (if lock mode is active)
+   - `npm run verify:pre-merge`
+
+## Automated test runs (GitHub Actions)
+
+- PR / push CI:
+  - smoke e2e (public)
+  - smoke e2e (private-gate)
+  - full verify in public mode
+- Nightly (01:30 Norway time, CET/CEST via seasonal cron):
+  - full Playwright matrix across mobile/tablet/desktop browsers
+  - private-gate regression smoke
+- Artifacts (`playwright-report`, `test-results`) are uploaded automatically.
+
+## Coverage scorecard
+
+- Current coverage status and 10/10 gap plan:
+  - `docs/testing-coverage-scorecard.md`
 
 ## Team workflow docs
 
