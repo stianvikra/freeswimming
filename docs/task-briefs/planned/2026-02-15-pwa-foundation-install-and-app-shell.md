@@ -92,6 +92,29 @@ FreeSwimming should have a production-grade PWA baseline: installable on support
 - Keep all copy concise and plain-language.
 - Treat server state as source of truth; local cache is performance/offline support only.
 
+## 10/10 Cross-Cut Categories (Apply When Relevant)
+
+- Content governance and source-of-truth:
+  - declare canonical source per changed surface; avoid split authority.
+- Taxonomy and category management:
+  - define/maintain consistent labels and ordering where categories exist.
+- Workflow and publishing safety:
+  - protect rollouts with explicit gates and safe defaults.
+- RBAC and auditability:
+  - ensure access boundaries and logging for sensitive operations.
+- UX/UI quality contract:
+  - enforce clear primary actions and required states (`loading`, `empty`, `error`, `retry`).
+- Performance contract:
+  - define measurable budgets for changed routes/surfaces.
+- Testing contract:
+  - extend existing unit/e2e suites for critical + negative paths.
+- Observability and KPI tracking:
+  - define required signals and acceptance thresholds.
+- Migration and rollback readiness:
+  - document rollout, fallback, and rollback strategy.
+- Definition of done quant targets:
+  - include explicit measurable pass criteria for closeout.
+
 ## 10/10 UX/UI and Reliability Bar
 
 - Install and fallback surfaces must be understandable in under 2 seconds.

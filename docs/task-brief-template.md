@@ -125,6 +125,31 @@ List concrete quality expectations. At minimum include:
 - Performance expectations (Core Web Vitals or equivalent).
 - Visual consistency requirements relative to existing design language.
 
+## 10/10 Cross-Cut Categories (Apply When Relevant)
+
+For each brief, explicitly state scope or `N/A` for these categories so quality stays consistent:
+
+- Content governance and source-of-truth
+  - canonical model, required fields, owner assignment, revision/rollback policy.
+- Taxonomy and category management
+  - category model, naming rules, sorting, archive/active lifecycle.
+- Workflow and publishing safety
+  - status model (`draft/review/published/archived`), publish safeguards, destructive-action confirmation.
+- RBAC and auditability
+  - role boundaries per endpoint/UI action, audit trail for sensitive mutations.
+- UX/UI quality contract
+  - clear primary action, hierarchy, and required states (`loading`, `empty`, `error`, `retry`).
+- Performance contract
+  - latency/render/payload guardrails for changed surfaces.
+- Testing contract
+  - unit + e2e coverage for critical paths and negative paths; avoid duplicate tests.
+- Observability and KPI tracking
+  - required events/logs + concrete success/failure thresholds.
+- Migration and rollback readiness
+  - rollout plan, backward compatibility window, rollback path.
+- Definition of done quant targets
+  - explicit measurable pass criteria (for example zero unexpected `500` on covered paths).
+
 ## Security, Privacy, and Compliance (Required For Auth/Data/Payments)
 
 State required controls for this task, for example:
