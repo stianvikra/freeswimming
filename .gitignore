@@ -16,6 +16,7 @@
 /test-results
 /blob-report
 .husky/_
+/artifacts/test-runs
 
 # next.js
 /.next/
