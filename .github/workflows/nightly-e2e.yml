@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: nightly-e2e
+  group: nightly-e2e-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
