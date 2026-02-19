@@ -26,4 +26,16 @@ test.describe("private access gate", () => {
     const response = await request.get("/api/progress/course");
     expect(response.status()).toBe(423);
   });
+
+  test("keeps indexing metadata locked while site is private", async ({ request }) => {
+    const sitemapResponse = await request.get("/sitemap.xml");
+    expect(sitemapResponse.status()).toBe(200);
+    const sitemapXml = await sitemapResponse.text();
+    expect(sitemapXml).not.toContain("<loc>");
+
+    const robotsResponse = await request.get("/robots.txt");
+    expect(robotsResponse.status()).toBe(200);
+    const robotsText = await robotsResponse.text();
+    expect(robotsText).toContain("Disallow: /");
+  });
 });

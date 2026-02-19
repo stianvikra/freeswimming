@@ -8,7 +8,68 @@ on:
   pull_request:
 
 jobs:
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E smoke suite
+        env:
+          SITE_LOCK_ENABLED: "0"
+          NEXT_PUBLIC_SUPABASE_URL: https://example.com
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
+        run: npm run test:e2e:smoke
+
+  site-lock-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run site-lock smoke suite
+        env:
+          SITE_LOCK_ENABLED: "1"
+          SITE_LOCK_MODE: password
+          SITE_LOCK_PASSWORD_HASH: sha256:dbb0e329da7714d323329ff55bf91dcd8206fdc0142e814d8a35724d5a6b7058
+          SITE_LOCK_BYPASS_TOKEN: ci-site-lock-bypass-token
+          PW_SITE_LOCK_PASSWORD: ci-preview-access
+          NEXT_PUBLIC_SUPABASE_URL: https://example.com
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
+        run: npm run test:e2e:site-lock
+
   verify:
+    needs:
+      - e2e-smoke
+      - site-lock-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -33,3 +94,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
         run: npm run verify
+
+      - name: Run webpack production build check
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.com
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
+        run: npm run build:webpack

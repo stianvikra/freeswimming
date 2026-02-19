@@ -44,3 +44,17 @@ This folder is git-ignored and kept locally.
   - `npm run test:e2e:mobile` (if touching mobile/nav/auth/guide flows)
 - Before merge:
   - run full `npm run verify:open` again.
+
+## CI and Nightly Automation
+
+- PR/push CI now includes:
+  - `test:e2e:smoke` (fast critical path)
+  - `test:e2e:site-lock` (private-access gate behavior)
+  - full `verify` and `build:webpack`
+- Nightly full E2E is GitHub-hosted (not local machine):
+  - workflow: `.github/workflows/nightly-e2e.yml`
+  - schedule: `01:30` Norway time (CET/CEST via seasonal UTC cron)
+  - manual run available via `workflow_dispatch`
+  - uploads Playwright artifacts for debugging
+
+You do not need to keep your laptop on for nightly runs.
