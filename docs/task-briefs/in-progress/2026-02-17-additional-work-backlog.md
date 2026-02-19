@@ -50,6 +50,21 @@ Capture good ideas that should be implemented later without blocking the active 
   - no dead-end state after resend failure,
   - validated on Safari + Chrome desktop and mobile.
 
+## 10/10 Cross-Cut Categories (Apply When Relevant)
+
+Apply these when backlog items graduate to dedicated implementation briefs:
+
+- Content governance and source-of-truth
+- Taxonomy and category management
+- Workflow and publishing safety (`draft/review/published/archived`)
+- RBAC and auditability
+- UX/UI quality contract (`loading`, `empty`, `error`, `retry`)
+- Performance contract
+- Testing contract (critical + negative paths, no duplicate tests)
+- Observability and KPI tracking
+- Migration and rollback readiness
+- Definition-of-done quant targets
+
 ## Notes
 
 - Backlog items here are intentionally deferred.

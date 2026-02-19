@@ -139,6 +139,21 @@ Release quality should be 10/10 for performance and security reliability by enfo
 - Keep runtime overhead of performance checks reasonable for PR CI.
 - Keep production behavior unchanged except intended hardening.
 
+## 10/10 Cross-Cut Categories (Apply When Relevant)
+
+State scope or `N/A` for each category during implementation and closeout:
+
+- Content governance and source-of-truth: canonical model, required fields, owner assignment, revision/rollback policy.
+- Taxonomy and category management: naming rules, sorting, and active/archive lifecycle.
+- Workflow and publishing safety: status model (`draft/review/published/archived`), publish safeguards, destructive confirmation.
+- RBAC and auditability: role boundaries per endpoint/UI action and audit trail for sensitive mutations.
+- UX/UI quality contract: clear primary action and required states (`loading`, `empty`, `error`, `retry`).
+- Performance contract: latency/render/payload guardrails for changed surfaces.
+- Testing contract: unit + e2e coverage for critical and negative paths; avoid duplicate tests.
+- Observability and KPI tracking: required events/logs and measurable thresholds.
+- Migration and rollback readiness: rollout plan, compatibility window, rollback path.
+- Definition-of-done quant targets: explicit measurable pass criteria.
+
 ## 10/10 Quality Bar (Required For User-Facing Work)
 
 - Performance gates are strict enough to catch regressions but stable (low flake).
