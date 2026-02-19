@@ -4,7 +4,7 @@ export type MainMenuItem = {
   subtitle: string;
 };
 
-export const MAIN_MENU_ITEMS: MainMenuItem[] = [
+const BASE_MAIN_MENU_ITEMS: MainMenuItem[] = [
   { href: "/", title: "Home", subtitle: "Back to start" },
   { href: "/course", title: "Free Course", subtitle: "Modules & lessons" },
   { href: "/my-library", title: "My Library", subtitle: "Owned content & resume" },
@@ -14,3 +14,23 @@ export const MAIN_MENU_ITEMS: MainMenuItem[] = [
   { href: "/our-method", title: "Our Method", subtitle: "Learn. Drill. Swim." },
   { href: "/contact", title: "Contact", subtitle: "Questions or help" },
 ];
+
+const DASHBOARD_MENU_ITEM: MainMenuItem = {
+  href: "/admin",
+  title: "Dashboard",
+  subtitle: "Content, commerce, and ops",
+};
+
+export function getMainMenuItems(options?: { includeDashboard?: boolean }): MainMenuItem[] {
+  if (!options?.includeDashboard) {
+    return BASE_MAIN_MENU_ITEMS;
+  }
+
+  return [
+    ...BASE_MAIN_MENU_ITEMS.slice(0, 3),
+    DASHBOARD_MENU_ITEM,
+    ...BASE_MAIN_MENU_ITEMS.slice(3),
+  ];
+}
+
+export const MAIN_MENU_ITEMS = getMainMenuItems();

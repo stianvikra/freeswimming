@@ -10,7 +10,7 @@ import PressLink from "@/components/ui/PressLink";
 import MobileSegmentedNav, {
   type MobileSegmentedNavItem,
 } from "@/components/ui/MobileSegmentedNav";
-import { MAIN_MENU_ITEMS } from "@/components/navigation/mainMenuItems";
+import { getMainMenuItems } from "@/components/navigation/mainMenuItems";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 type CustomMenu = {
@@ -40,6 +40,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const pathname = usePathname();
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [softLaunchBannerEnabled, setSoftLaunchBannerEnabled] = useState(true);
+  const [dashboardVisible, setDashboardVisible] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -77,6 +78,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
           ok?: boolean;
           flags?: {
             softLaunchBanner?: boolean;
+            dashboardVisible?: boolean;
           };
         };
 
@@ -85,6 +87,9 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
 
         if (typeof payload.flags?.softLaunchBanner === "boolean") {
           setSoftLaunchBannerEnabled(payload.flags.softLaunchBanner);
+        }
+        if (typeof payload.flags?.dashboardVisible === "boolean") {
+          setDashboardVisible(payload.flags.dashboardVisible);
         }
       } catch {
         // keep safe default
@@ -118,6 +123,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const isHomeRoute = pathname === "/";
   const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
   const isAuthRoute = pathname === "/auth/sign-in" || pathname?.startsWith("/auth/");
+  const isAdminRoute = pathname === "/admin" || pathname?.startsWith("/admin/");
   const isLibraryRoute = pathname === "/my-library" || pathname?.startsWith("/my-library/");
   const isCheckoutRoute = pathname === "/checkout/success" || pathname?.startsWith("/checkout/");
   const isPublicRoute = !isAuthRoute && !isLibraryRoute && !isCheckoutRoute;
@@ -125,6 +131,9 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const hasCustomBottomBar = Boolean(bottomBar);
   const authHref = signedInEmail ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
   const authLabel = signedInEmail ? "My Library" : "Login";
+  const adminHref = "/admin";
+  const adminLabel = isAdminRoute ? "Dashboard" : "Open Dashboard";
+  const menuItems = getMainMenuItems({ includeDashboard: dashboardVisible });
 
   // ✅ Home: remove bottom nav so focus stays on the CTA buttons
   const showDefaultMobileNav = !hasCustomBottomBar && !isHomeRoute;
@@ -239,6 +248,25 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
           </PressLink>
 
           <div className="flex items-center gap-2">
+            {!isAuthRoute && dashboardVisible ? (
+              <PressLink
+                tier="nav"
+                href={adminHref}
+                data-testid="header-dashboard-link"
+                aria-label="Open admin dashboard"
+                className={[
+                  "border-white/38 bg-white/8 hidden min-h-[34px] items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold text-white/95 backdrop-blur-md transition-colors duration-150 md:inline-flex",
+                  "[--ui-focus-ring:rgba(255,255,255,0.56)]",
+                  "[@media(hover:hover)_and_(pointer:fine)]:hover:border-white/60",
+                  "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/16",
+                  "active:bg-white/20",
+                ].join(" ")}
+              >
+                <span className="h-2 w-2 rounded-full bg-white/90" />
+                <span>{adminLabel}</span>
+              </PressLink>
+            ) : null}
+
             {!isAuthRoute ? (
               <PressLink
                 tier="nav"
@@ -299,7 +327,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         <MenuDrawer
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          mainItems={MAIN_MENU_ITEMS}
+          mainItems={menuItems}
           defaultView={drawerView}
           titleMain="Main menu"
           titleCourse="Course menu"
