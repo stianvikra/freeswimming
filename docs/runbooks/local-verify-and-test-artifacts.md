@@ -53,7 +53,7 @@ This folder is git-ignored and kept locally.
   - full `verify` and `build:webpack`
 - Nightly full E2E is GitHub-hosted (not local machine):
   - workflow: `.github/workflows/nightly-e2e.yml`
-  - schedule: `02:15 UTC` daily
+  - schedule: `01:30` Norway time (CET/CEST via seasonal UTC cron)
   - manual run available via `workflow_dispatch`
   - uploads Playwright artifacts for debugging
 

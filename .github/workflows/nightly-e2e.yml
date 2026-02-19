@@ -2,8 +2,11 @@ name: Nightly E2E
 
 on:
   schedule:
-    # 02:15 UTC daily
-    - cron: "15 2 * * *"
+    # 01:30 Norway time (CET, UTC+1) during winter months.
+    - cron: "30 0 * 11-2 *"
+    # 01:30 Norway time (CEST, UTC+2) during summer months.
+    # Note: around DST changeover days, runtime can be off by one hour.
+    - cron: "30 23 * 3-10 *"
   workflow_dispatch:
 
 concurrency:
