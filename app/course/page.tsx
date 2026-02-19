@@ -20,7 +20,7 @@ import {
   type MobileNavSkin,
 } from "@/components/ui/mobileNavTheme";
 import { cx } from "@/components/ui/cx";
-import { MAIN_MENU_ITEMS } from "@/components/navigation/mainMenuItems";
+import { getMainMenuItems } from "@/components/navigation/mainMenuItems";
 import { useInstallContext } from "@/components/install/install-context";
 import {
   A2HS_AUTO_PROMPT_DELAY_MS,
@@ -211,6 +211,7 @@ function CoursePageClient() {
   const [playbackProgressLoaded, setPlaybackProgressLoaded] = useState(false);
   const [authStateLoaded, setAuthStateLoaded] = useState(false);
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null);
+  const [dashboardVisible, setDashboardVisible] = useState(false);
   const [courseSyncStatus, setCourseSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">(
     "idle"
   );
@@ -433,6 +434,43 @@ function CoursePageClient() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRuntimeFlags = async () => {
+      try {
+        const response = await fetch("/api/runtime/flags", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          ok?: boolean;
+          flags?: { dashboardVisible?: boolean };
+        };
+
+        if (cancelled) return;
+        if (!response.ok || !payload.ok) return;
+
+        if (typeof payload.flags?.dashboardVisible === "boolean") {
+          setDashboardVisible(payload.flags.dashboardVisible);
+        }
+      } catch {
+        // keep safe default
+      }
+    };
+
+    void loadRuntimeFlags();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const mainMenuItems = useMemo(
+    () => getMainMenuItems({ includeDashboard: dashboardVisible }),
+    [dashboardVisible]
+  );
 
   useEffect(() => {
     try {
@@ -2349,7 +2387,7 @@ function CoursePageClient() {
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
             defaultView={drawerView}
-            mainItems={MAIN_MENU_ITEMS}
+            mainItems={mainMenuItems}
             course={{
               activeLessonId: activeLesson.id,
               onSelectLesson: goToLesson,

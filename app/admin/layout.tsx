@@ -66,6 +66,20 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
             Manage content, commerce settings, and operational states from one internal workspace.
             All mutations are role-gated server-side and aligned with audit logging.
           </p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Link
+              href="/"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              Open site
+            </Link>
+            <Link
+              href="/my-library"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 active:bg-blue-200"
+            >
+              Open My Library
+            </Link>
+          </div>
         </header>
         <div className="mt-6">{children}</div>
       </section>

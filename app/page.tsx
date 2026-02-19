@@ -3,6 +3,7 @@ import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import ActionButton from "@/components/ActionButton";
 import PressLink from "@/components/ui/PressLink";
+import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,15 @@ export default async function HomePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  let showDashboardCta = false;
+  if (user) {
+    const adminRole = await resolveAdminRoleFromSupabase(supabase, user, {
+      allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
+    });
+    showDashboardCta = Boolean(adminRole);
+  }
+
   const authHref = user ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
   const authLabel = user ? "Open My Library" : "Log in to My Library";
 
@@ -93,13 +103,24 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-3 flex items-center justify-center">
-            <PressLink
-              tier="nav"
-              href={authHref}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white/90 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              {authLabel}
-            </PressLink>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <PressLink
+                tier="nav"
+                href={authHref}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white/90 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              >
+                {authLabel}
+              </PressLink>
+              {showDashboardCta ? (
+                <PressLink
+                  tier="nav"
+                  href="/admin"
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-blue-200/80 bg-blue-50/90 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100/85 active:bg-blue-200/75"
+                >
+                  Open Dashboard
+                </PressLink>
+              ) : null}
+            </div>
           </div>
         </div>
       </PageTemplate>
