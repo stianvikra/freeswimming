@@ -190,6 +190,9 @@ Define the default browser for PR handoff links so collaboration is consistent.
 
 - Default:
   - open PR create/review/merge URLs in Safari as active foreground tab/window:
+    - preferred repo script:
+      - `npm run pr:open:safari`
+      - optional direct form: `bash scripts/open-pr-safari.sh "<PR_URL>"`
     - `osascript -e 'tell application "Safari" to activate' -e 'tell application "Safari" to open location "<PR_URL>"'`
 - Exception:
   - use another browser only when owner explicitly requests it.
