@@ -3,17 +3,13 @@ import PageTemplate from "@/components/PageTemplate";
 import ContactForm from "@/components/ContactForm";
 
 type ContactPageProps = {
-  searchParams?:
-    | Promise<{
-        source?: string | string[];
-      }>
-    | {
-        source?: string | string[];
-      };
+  searchParams?: Promise<{
+    source?: string | string[];
+  }>;
 };
 
 export default async function ContactPage({ searchParams }: ContactPageProps) {
-  const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
+  const resolvedSearchParams: { source?: string | string[] } = (await searchParams) ?? {};
   const source =
     typeof resolvedSearchParams.source === "string"
       ? resolvedSearchParams.source

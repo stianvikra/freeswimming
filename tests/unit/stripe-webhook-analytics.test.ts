@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { describe, expect, it } from "vitest";
-import { getDiscountRedeemedPayload } from "@/app/api/stripe/webhook/route";
+import { getDiscountRedeemedPayload } from "@/lib/stripe/webhook-discount";
 
 function buildCheckoutSession(input: Partial<Stripe.Checkout.Session>): Stripe.Checkout.Session {
   return {
