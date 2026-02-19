@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
-- `updated`: `2026-02-18`
+- `updated`: `2026-02-19`
 
 ## Goal
 
@@ -38,8 +38,19 @@ Core user journeys should feel polished, fast, and consistent across iPhone, And
   - empty/error/retry patterns.
 - Add regression guardrails:
   - screenshot baselines for critical surfaces,
+  - visual snapshot diff assertions in CI for stable key routes,
   - route-level manual QA checklist with expected outcomes,
   - E2E assertions for top navigation and core task flows.
+
+## Ownership Split (No Overlap)
+
+- This brief owns:
+  - cross-platform UX consistency and visual diff/snapshot baselines.
+- Related work owned elsewhere:
+  - SEO metadata/indexing assertions:
+    - `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
+  - performance budget gates and security negative-path hardening:
+    - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
 
 ## Out Of Scope
 
