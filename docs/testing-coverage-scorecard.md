@@ -43,15 +43,30 @@ Principle:
 ## 10/10 Gaps To Close Next
 
 1. Performance budgets (P0)
-   - Add Lighthouse CI or equivalent budget gates for core routes (`/`, `/course`, `/my-library`).
-   - Track thresholds (LCP/CLS/INP/TBT) and fail on budget regressions.
+
+- Add Lighthouse CI or equivalent budget gates for core routes (`/`, `/course`, `/my-library`).
+- Track thresholds (LCP/CLS/INP/TBT) and fail on budget regressions.
+- tracked in:
+  - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+
 2. Visual diff assertions (P1)
-   - Convert screenshot capture to baseline snapshot assertions for key routes.
-   - Keep tolerance small; run on stable project(s) first to avoid flaky noise.
+
+- Convert screenshot capture to baseline snapshot assertions for key routes.
+- Keep tolerance small; run on stable project(s) first to avoid flaky noise.
+- tracked in:
+  - `docs/task-briefs/planned/2026-02-18-cross-platform-ux-design-hardening.md`
+
 3. Security hardening tests (P1)
-   - Add focused API tests for admin/content mutation negative paths and auth abuse/rate-limit boundaries.
+
+- Add focused API tests for admin/content mutation negative paths and auth abuse/rate-limit boundaries.
+- tracked in:
+  - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+
 4. SEO metadata validation (P1)
-   - Add route-level assertions for canonical/meta consistency on indexable pages.
+
+- Add route-level assertions for canonical/meta consistency on indexable pages.
+- tracked in:
+  - `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
 
 ## Automation Status
 

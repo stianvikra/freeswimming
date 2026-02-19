@@ -1,0 +1,162 @@
+# Task Brief: Performance Budgets And Security Negative-Path Hardening
+
+## Metadata
+
+- `id`: `2026-02-19-performance-budgets-and-security-negative-path-hardening`
+- `status`: `planned`
+- `owner`: `stianvikra`
+- `created`: `2026-02-19`
+- `updated`: `2026-02-19`
+
+## Goal
+
+Release quality should be 10/10 for performance and security reliability by enforcing automated budget gates and strong negative-path regression coverage in CI.
+
+## Scope
+
+- Add performance budget gates for core routes:
+  - `/`
+  - `/course`
+  - `/my-library`
+- Implement CI-enforced thresholds for core web vitals proxies and payload/perf constraints:
+  - LCP proxy budget
+  - CLS budget
+  - INP/TBT proxy budget
+  - JS/CSS transfer and request-count guardrails where feasible
+- Add security negative-path coverage (no duplicate suite sprawl):
+  - extend existing unit/e2e suites first,
+  - only add new suites when existing coverage cannot model risk.
+- Harden admin/auth/data mutation negative paths:
+  - unauthenticated access must return expected deny status (`401`/`403`/`423`/`429` as designed),
+  - forbidden role boundaries must be enforced server-side,
+  - invalid payloads must fail cleanly without stack leakage,
+  - rate-limit/abuse paths must return deterministic safe responses.
+- Add regression checks for server-error hygiene:
+  - no accidental `500` on expected deny paths,
+  - no sensitive error content in API responses.
+- Wire automated execution into release cadence:
+  - pre-PR,
+  - pre-merge,
+  - nightly.
+- Update runbooks/checklists with exact commands and expected pass/fail outcomes.
+
+## Out Of Scope
+
+- SEO metadata and crawl/indexing assertions:
+  - `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
+- Visual snapshot baseline strategy and cross-device UX visual polish:
+  - `docs/task-briefs/planned/2026-02-18-cross-platform-ux-design-hardening.md`
+- Major backend architecture rewrites.
+
+## Acceptance Criteria
+
+- Performance budget checks are automated and block regressions in CI.
+- Core routes have explicit documented thresholds and these are version-controlled.
+- Negative-path tests cover auth/admin critical routes and fail on unexpected status drift.
+- Expected deny paths never return `500` in covered scenarios.
+- API error bodies in covered negative paths do not expose stack/internal secrets.
+- Nightly workflow includes relevant performance/security regression coverage.
+- Documentation clearly states when each gate runs and which command to use.
+
+## Validation
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:unit`
+- `npm run test:e2e:security`
+- `npm run verify:pre-pr`
+- `npm run verify:pre-merge`
+- any added performance budget command(s) must pass in CI context
+
+## Manual QA Environments
+
+- Local:
+  - `http://127.0.0.1:3000/`
+  - `http://127.0.0.1:3000/course`
+  - `http://127.0.0.1:3000/my-library`
+  - auth/admin/api deny-path checks with local/dev test account as needed
+- Vercel preview:
+  - verify same gate behavior and no route-level regressions.
+- Required browser/device matrix (for changed user-facing flows):
+  - iOS Safari
+  - Android Chromium
+  - Desktop Chrome/Safari/Firefox
+
+## Constraints
+
+- Do not add duplicate tests that re-check identical behavior with no added risk coverage.
+- Prefer extending existing suites (`tests/unit/*`, `tests/e2e/*`) before creating new files.
+- Keep runtime overhead of performance checks reasonable for PR CI.
+- Keep production behavior unchanged except intended hardening.
+
+## 10/10 Quality Bar (Required For User-Facing Work)
+
+- Performance gates are strict enough to catch regressions but stable (low flake).
+- Security deny paths are explicit, deterministic, and test-enforced.
+- Required states remain clear for users (`loading`, `error`, `retry`, `offline`) with no UX regressions.
+- Test evidence is easy to interpret from CI artifacts and logs.
+
+## Security, Privacy, And Compliance (Required For Auth/Data/Payments)
+
+- Enforce principle of least privilege in admin/data paths.
+- Ensure protected operations require valid auth + role checks.
+- Ensure deny responses are safe and non-enumerating where required.
+- Preserve GDPR-aligned data minimization in logs and error payloads.
+
+## Observability And KPI Contract
+
+- Track:
+  - deny-path status distribution (`401/403/423/429/500`) on protected routes,
+  - performance budget pass/fail trend by route,
+  - regression frequency over 7-day window.
+- Quality targets:
+  - zero expected-deny-path `500` in CI-covered flows,
+  - no sustained budget regressions on core routes.
+
+## Session Continuity And Recovery (Required)
+
+- Canonical source: git branch + this brief.
+- Checkpoint cadence: commit every validated slice or every 60-90 minutes.
+- Recovery:
+  1. `git status -sb`
+  2. `git log --oneline -n 10`
+  3. reopen this brief and continue from next slice.
+
+## Git Rhythm Defaults (Required)
+
+- Commit + push per validated slice:
+  - performance budget scaffolding,
+  - negative-path test hardening,
+  - CI workflow wiring,
+  - docs/runbook updates.
+
+## Branch Hygiene Defaults (Required)
+
+- Post-merge:
+  - `git checkout main`
+  - `git pull --ff-only origin main`
+  - `git branch -d <merged-branch>`
+  - `git fetch --prune origin`
+
+## PR Browser Rule (Required)
+
+- Open PR links in Safari by default.
+
+## Manual QA URL Rule (Required)
+
+- Assistant opens each QA URL in Safari as active tab before asking for `done`.
+
+## Final Closeout Gate (Required Before Move To `done`)
+
+- Confirm all acceptance criteria are complete or explicitly deferred with rationale.
+- Run final quality sweep:
+  - performance budgets,
+  - security negative-path behavior,
+  - regression safety for adjacent routes/components.
+- Confirm CI artifacts and commands are documented and reproducible.
+
+## Completion Record (fill when done)
+
+- `PR`: link
+- `merge`: source -> target
+- `result`: short summary

@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
-- `updated`: `2026-02-18`
+- `updated`: `2026-02-19`
 
 ## Goal
 
@@ -38,10 +38,24 @@ freeswimming.org should have production-grade technical/content SEO and operator
   - max lengths, duplicate canonical checks, slug collision checks,
   - broken internal link checks,
   - noindex safety rules for production-critical routes.
+- Add automated SEO assertions:
+  - route-level tests for canonical/title/description consistency on indexable routes,
+  - robots/sitemap consistency assertions for public vs gated/admin routes,
+  - metadata regressions caught in CI before merge.
 - Add measurement and runbook:
   - Search Console + Bing Webmaster verification setup checklist,
   - event logging for SEO admin mutations,
   - monthly SEO health checklist in docs.
+
+## Ownership Split (No Overlap)
+
+- This brief owns:
+  - SEO metadata assertions and crawl/indexing correctness.
+- Related work owned elsewhere:
+  - visual snapshot baselines and cross-device UI diff checks:
+    - `docs/task-briefs/planned/2026-02-18-cross-platform-ux-design-hardening.md`
+  - performance budgets and security negative-path hardening:
+    - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
 
 ## Out Of Scope
 
