@@ -2,6 +2,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import {
   hasRequiredAdminRole,
   isAdminRoleColumnMissingError,
+  isUnauthenticatedAuthUserLookupError,
   resolveAdminRoleForUser,
   type AdminRole,
   type MinimumAdminRole,
@@ -102,6 +103,16 @@ export async function requireAdminRoleFromSupabase(
   } = await supabase.auth.getUser();
 
   if (userError) {
+    if (
+      isUnauthenticatedAuthUserLookupError({
+        code: userError.code,
+        message: userError.message,
+        status: userError.status,
+      })
+    ) {
+      return { ok: false, status: 401, error: "Unauthorized." };
+    }
+
     console.error("[Admin] Could not load auth user", userError);
     return { ok: false, status: 500, error: "Could not verify admin session." };
   }
