@@ -142,6 +142,30 @@ npm run format:check
 npm run verify
 ```
 
+Public-mode verification (recommended before PR/merge):
+
+```bash
+npm run verify:public
+```
+
+Private access gate verification (run separately when site lock is in use):
+
+```bash
+SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate
+```
+
+## Recommended Test Cadence
+
+1. Per implementation step (before checkpoint commit):
+   - `npm run lint`
+   - `npm run typecheck`
+   - `npm run test:unit`
+2. Before PR update:
+   - `npm run verify:public`
+3. Before merge:
+   - `npm run verify:public`
+   - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate` (if lock mode is active)
+
 ## Team workflow docs
 
 - `AGENTS.md`: repo instructions for coding agents.
@@ -149,7 +173,7 @@ npm run verify
 - `.github/CODEOWNERS`: default ownership for required code-owner reviews.
 - `.github/pull_request_template.md`: PR checklist.
 - `docs/task-brief-template.md`: preferred task format for coding requests.
-- `docs/task-briefs/`: lifecycle folders for briefs (`planned`, `in-progress`, `done`, `blocked`).
+- `docs/task-briefs/`: lifecycle folders for briefs (`planned`, `in-progress`, `done`, `deferred`, `blocked`).
 - `docs/branch-protection.md`: branch protection standard and apply command.
 - `docs/vercel-preview-setup.md`: setup guide for Vercel preview deploys on PRs.
 

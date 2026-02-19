@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-02-18-analytics-persistence-and-admin-insights`
-- `status`: `planned`
+- `status`: `deferred`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
-- `updated`: `2026-02-18`
+- `updated`: `2026-02-19`
 
 ## Goal
 

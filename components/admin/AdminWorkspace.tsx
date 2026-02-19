@@ -43,6 +43,7 @@ export default function AdminWorkspace() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
+              data-testid={`admin-tab-${tab.id}`}
               className={[
                 "rounded-2xl border px-4 py-3 text-left transition",
                 isActive
@@ -69,7 +70,12 @@ export default function AdminWorkspace() {
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Active section
         </p>
-        <p className="mt-1 text-sm font-semibold text-slate-900">{activeMeta.label}</p>
+        <p
+          className="mt-1 text-sm font-semibold text-slate-900"
+          data-testid="admin-active-section-label"
+        >
+          {activeMeta.label}
+        </p>
         <p className="mt-1 text-sm text-slate-600">{activeMeta.subtitle}</p>
       </div>
 

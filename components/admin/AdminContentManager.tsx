@@ -179,7 +179,9 @@ export default function AdminContentManager() {
         return;
       }
 
-      setItems((prev) => prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry)));
+      setItems((prev) =>
+        prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+      );
     } catch {
       setActionError("Could not update content item.");
     } finally {
@@ -220,7 +222,7 @@ export default function AdminContentManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="admin-content-manager">
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -266,6 +268,7 @@ export default function AdminContentManager() {
             {items.map((item) => (
               <li
                 key={item.id}
+                data-testid="admin-content-item"
                 className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -310,7 +313,11 @@ export default function AdminContentManager() {
         <p className="mt-2 text-sm text-slate-600">
           This scaffold creates draft/published content records for future lesson and guide editors.
         </p>
-        <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={handleCreate}>
+        <form
+          className="mt-5 grid gap-4 sm:grid-cols-2"
+          onSubmit={handleCreate}
+          data-testid="admin-content-create-form"
+        >
           <label className="space-y-1 text-sm font-medium text-slate-700">
             <span>Type</span>
             <select
