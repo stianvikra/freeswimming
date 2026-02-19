@@ -13,6 +13,9 @@ Use this runbook for reliable local validation when private-access (site lock) i
   - `npm run verify:open`
 - Run full verify with automatic local log + artifact capture:
   - `npm run verify:open:log`
+- If npm is missing in a non-interactive shell, run script directly:
+  - `bash ./scripts/run-verify-open.sh`
+  - script auto-attempts `nvm` bootstrap before failing.
 - Show summary from the latest captured verify run:
   - `npm run verify:last`
 
