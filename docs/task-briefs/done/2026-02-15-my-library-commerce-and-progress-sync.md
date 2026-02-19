@@ -255,7 +255,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - goals MVP is delivered with template/custom creation and `max 3` active guardrail.
 - Deferred with follow-up location (not blocking closeout):
   - auth abuse observability + live rate-limit verification + progressive Turnstile decision:
-    - `docs/task-briefs/planned/2026-02-18-analytics-persistence-and-admin-insights.md`.
+    - `docs/task-briefs/deferred/2026-02-18-analytics-persistence-and-admin-insights.md`.
   - post-MVP monetization expansion (`M1` -> `M2` -> `M3`) remains in post-MVP track by design.
   - field CWV p75 validation requires production traffic and is carried into release/hardening work.
 - Blocking outstanding items: none.
@@ -263,7 +263,7 @@ Users can start instantly in guest mode, buy optional paid products without acco
 ## Next Delivery Order (After Closeout)
 
 1. `docs/task-briefs/planned/2026-02-18-admin-foundation-content-commerce-ops.md`
-2. `docs/task-briefs/planned/2026-02-18-analytics-persistence-and-admin-insights.md`
+2. `docs/task-briefs/deferred/2026-02-18-analytics-persistence-and-admin-insights.md`
 3. `docs/task-briefs/planned/2026-02-15-pwa-hardening-release-and-observability.md`
 
 ## Manual QA Environments
@@ -1443,7 +1443,7 @@ At each phase:
 - Add progressive challenge (Cloudflare Turnstile) only when suspicious behavior threshold is met.
 - Add auth abuse observability baseline (simple counters + alert rule for sustained auth abuse spikes).
 - Follow-up brief location:
-  - `docs/task-briefs/planned/2026-02-18-analytics-persistence-and-admin-insights.md`.
+  - `docs/task-briefs/deferred/2026-02-18-analytics-persistence-and-admin-insights.md`.
 
 ### Trigger For Turnstile Activation
 

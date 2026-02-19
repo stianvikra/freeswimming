@@ -51,3 +51,45 @@ jobs:
             test-results
           if-no-files-found: ignore
           retention-days: 14
+
+  private-gate-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run private-gate regression
+        env:
+          SITE_LOCK_ENABLED: "1"
+          SITE_LOCK_MODE: password
+          SITE_LOCK_PASSWORD_HASH: sha256:dbb0e329da7714d323329ff55bf91dcd8206fdc0142e814d8a35724d5a6b7058
+          SITE_LOCK_BYPASS_TOKEN: ci-site-lock-bypass-token
+          PW_SITE_LOCK_PASSWORD: ci-preview-access
+          NEXT_PUBLIC_SUPABASE_URL: https://example.com
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
+        run: npm run test:e2e:private-gate
+
+      - name: Upload private-gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-private-gate-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 14

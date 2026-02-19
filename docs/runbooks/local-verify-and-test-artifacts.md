@@ -10,9 +10,12 @@ Use this runbook for reliable local validation when private-access (site lock) i
 ## Commands
 
 - Run full verify with site lock disabled for this command only:
-  - `npm run verify:open`
+  - `npm run verify:public`
 - Run full verify with automatic local log + artifact capture:
   - `npm run verify:open:log`
+- Run release gates with one command:
+  - pre-PR: `npm run verify:pre-pr`
+  - pre-merge: `npm run verify:pre-merge`
 - If npm is missing in a non-interactive shell, run script directly:
   - `bash ./scripts/run-verify-open.sh`
   - script auto-attempts `nvm` bootstrap before failing.
@@ -36,14 +39,14 @@ This folder is git-ignored and kept locally.
 ## Recommended regular cadence
 
 - On each feature branch before PR:
-  - `npm run verify:open`
+  - `npm run verify:pre-pr`
 - For faster inner-loop checks:
   - `npm run lint`
   - `npm run typecheck`
   - `npm run test:unit`
   - `npm run test:e2e:mobile` (if touching mobile/nav/auth/guide flows)
 - Before merge:
-  - run full `npm run verify:open` again.
+  - run full `npm run verify:pre-merge`.
 
 ## CI and Nightly Automation
 
@@ -56,5 +59,6 @@ This folder is git-ignored and kept locally.
   - schedule: `01:30` Norway time (CET/CEST via seasonal UTC cron)
   - manual run available via `workflow_dispatch`
   - uploads Playwright artifacts for debugging
+  - includes both public full-matrix and private-gate smoke coverage
 
 You do not need to keep your laptop on for nightly runs.

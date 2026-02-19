@@ -12,6 +12,12 @@ type RoleLookupError = {
   hint?: string;
 } | null;
 
+type AuthUserLookupError = {
+  code?: string;
+  message?: string;
+  status?: number;
+} | null;
+
 function normalizeRole(value: unknown): AdminRole | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();
@@ -62,6 +68,19 @@ export function isAdminRoleColumnMissingError(error: RoleLookupError): boolean {
   const combined =
     `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`.toLowerCase();
   return combined.includes("role") && combined.includes("profiles");
+}
+
+export function isUnauthenticatedAuthUserLookupError(error: AuthUserLookupError): boolean {
+  if (!error) return false;
+  if (error.status === 401) return true;
+
+  const message = (error.message ?? "").toLowerCase();
+  return (
+    message.includes("auth session missing") ||
+    message.includes("session missing") ||
+    message.includes("invalid jwt") ||
+    message.includes("jwt expired")
+  );
 }
 
 const ADMIN_ROLE_RANK: Record<AdminRole, number> = {

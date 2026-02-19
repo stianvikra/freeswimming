@@ -142,6 +142,52 @@ npm run format:check
 npm run verify
 ```
 
+Public-mode verification (recommended before PR/merge):
+
+```bash
+npm run verify:public
+```
+
+Private access gate verification (run separately when site lock is in use):
+
+```bash
+SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate
+```
+
+Pre-PR and pre-merge shortcuts:
+
+```bash
+npm run verify:pre-pr
+npm run verify:pre-merge
+```
+
+## Recommended Test Cadence
+
+1. Per implementation step (before checkpoint commit):
+   - `npm run lint`
+   - `npm run typecheck`
+   - `npm run test:unit`
+2. Before PR update:
+   - `npm run verify:pre-pr`
+3. Before merge:
+   - `npm run verify:pre-merge`
+
+## Automated test runs (GitHub Actions)
+
+- PR / push CI:
+  - smoke e2e (public)
+  - smoke e2e (private-gate)
+  - full verify in public mode
+- Nightly (01:30 Norway time, CET/CEST via seasonal cron):
+  - full Playwright matrix across mobile/tablet/desktop browsers
+  - private-gate regression smoke
+- Artifacts (`playwright-report`, `test-results`) are uploaded automatically.
+
+## Coverage scorecard
+
+- Current coverage status and 10/10 gap plan:
+  - `docs/testing-coverage-scorecard.md`
+
 ## Team workflow docs
 
 - `AGENTS.md`: repo instructions for coding agents.
@@ -149,7 +195,7 @@ npm run verify
 - `.github/CODEOWNERS`: default ownership for required code-owner reviews.
 - `.github/pull_request_template.md`: PR checklist.
 - `docs/task-brief-template.md`: preferred task format for coding requests.
-- `docs/task-briefs/`: lifecycle folders for briefs (`planned`, `in-progress`, `done`, `blocked`).
+- `docs/task-briefs/`: lifecycle folders for briefs (`planned`, `in-progress`, `done`, `deferred`, `blocked`).
 - `docs/branch-protection.md`: branch protection standard and apply command.
 - `docs/vercel-preview-setup.md`: setup guide for Vercel preview deploys on PRs.
 

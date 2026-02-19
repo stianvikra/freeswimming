@@ -7,6 +7,7 @@ Store concrete task briefs in this folder using lifecycle subfolders.
 - `planned/`: approved briefs not yet started.
 - `in-progress/`: currently being implemented.
 - `done/`: completed and merged work.
+- `deferred/`: explicitly postponed follow-up work accepted during closeout.
 - `blocked/`: paused due to external dependency/decision.
 
 Default flow:
@@ -14,6 +15,12 @@ Default flow:
 1. create in `planned/`
 2. move to `in-progress/` when implementation starts
 3. move to `done/` after merge
+4. move explicit postponed scope to `deferred/` with rationale and re-entry trigger
+
+Deferred re-entry flow:
+
+1. move from `deferred/` to `planned/` when reprioritized
+2. resume standard lifecycle (`planned` -> `in-progress` -> `done`)
 
 When moving to `done/`, add a completion record:
 
@@ -40,7 +47,7 @@ Before moving any brief to `done/`, run a final closeout gate:
 
 1. completion audit:
    - all acceptance criteria complete, or explicitly deferred with rationale.
-   - any remaining ideas moved to a dedicated follow-up brief/backlog entry.
+   - any remaining ideas moved to a dedicated follow-up brief/backlog entry in `deferred/` (or `planned/` if scheduled immediately).
 2. 10/10 quality + safety sweep:
    - UX/UI quality check on changed surfaces,
    - security/privacy/compliance check for auth/data/payments,

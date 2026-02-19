@@ -19,6 +19,8 @@
 - [ ] `npm run test:unit`
 - [ ] `npm run build`
 - [ ] `npm run test:e2e` (or explain why skipped)
+- [ ] `npm run verify:pre-pr`
+- [ ] `npm run verify:pre-merge` (or explain why private-gate step is not required)
 - [ ] Local manual QA done on dev URL (list URL + browser/device in PR description)
 - [ ] Vercel preview manual QA done (paste preview URL + browser/device in PR description)
 - [ ] QA covered relevant matrix for this change (mobile, tablet, desktop browsers)

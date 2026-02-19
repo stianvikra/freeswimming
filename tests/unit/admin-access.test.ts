@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isAdminEmailAllowlisted,
   isAdminRoleColumnMissingError,
+  isUnauthenticatedAuthUserLookupError,
   parseAdminEmailAllowlist,
   resolveAdminRoleForUser,
 } from "@/lib/admin/access";
@@ -70,5 +71,23 @@ describe("admin access helpers", () => {
         message: "Could not find the 'role' column of 'profiles' in the schema cache",
       })
     ).toBe(true);
+  });
+
+  it("treats auth session missing user lookup errors as unauthenticated", () => {
+    expect(
+      isUnauthenticatedAuthUserLookupError({
+        status: 400,
+        message: "Auth session missing!",
+      })
+    ).toBe(true);
+  });
+
+  it("does not treat unrelated user lookup errors as unauthenticated", () => {
+    expect(
+      isUnauthenticatedAuthUserLookupError({
+        status: 500,
+        message: "Database unavailable",
+      })
+    ).toBe(false);
   });
 });

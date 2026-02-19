@@ -25,7 +25,7 @@ This file defines how coding agents should collaborate in this repository.
 
 1. Requested behavior is implemented and scoped correctly.
 2. Relevant tests are added or updated.
-3. `npm run verify` passes locally.
+3. `npm run verify:pre-pr` passes locally; use `npm run verify:pre-merge` before merge.
 4. Accessibility semantics are preserved for changed UI.
 5. Related docs are updated when rules/contracts change.
 
@@ -41,6 +41,9 @@ This file defines how coding agents should collaborate in this repository.
 - Default to one actionable step at a time when guiding the repository owner in UI or terminal flows.
 - Keep instructions short and concrete.
 - Only provide multi-step batches when explicitly requested.
+- At implementation checkpoints, explicitly prompt the owner to run the next recommended gate:
+  - before PR update: `npm run verify:pre-pr`
+  - before merge: `npm run verify:pre-merge`
 
 ## Task Brief
 

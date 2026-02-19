@@ -44,7 +44,7 @@ Handoff must include:
 ## Metadata
 
 - `id`: `YYYY-MM-DD-short-title`
-- `status`: `planned | in-progress | done | blocked`
+- `status`: `planned | in-progress | done | deferred | blocked`
 - `owner`: who is responsible
 - `created`: `YYYY-MM-DD`
 - `updated`: `YYYY-MM-DD`
@@ -76,6 +76,10 @@ Which commands should pass?
 - `npm run test:e2e`
 - `npm run build`
 - `npm run verify`
+- `npm run verify:pre-pr`
+- `npm run verify:pre-merge`
+- `npm run verify:public` (when private gate can affect route visibility)
+- `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate` (for private-gate coverage)
 
 ## Local Tooling Prerequisite (Required)
 
@@ -299,4 +303,6 @@ Anything temporary that must be reverted or re-hardened after merge.
 1. Start in `docs/task-briefs/planned/`.
 2. Move to `docs/task-briefs/in-progress/` when coding starts.
 3. Move to `docs/task-briefs/done/` when PR is merged.
-4. Use `docs/task-briefs/blocked/` if paused.
+4. Move explicitly postponed follow-up scope to `docs/task-briefs/deferred/` (with rationale + re-entry trigger).
+5. Move from `docs/task-briefs/deferred/` back to `docs/task-briefs/planned/` when reprioritized.
+6. Use `docs/task-briefs/blocked/` only for externally blocked work.
