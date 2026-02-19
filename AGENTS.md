@@ -44,6 +44,9 @@ This file defines how coding agents should collaborate in this repository.
 - At implementation checkpoints, explicitly prompt the owner to run the next recommended gate:
   - before PR update: `npm run verify:pre-pr`
   - before merge: `npm run verify:pre-merge`
+- After `2` consecutive weekly green runs on baseline performance budgets:
+  - explicitly prompt the owner to tighten one stretch target step.
+  - record tighten/hold/revert decision in the active brief or PR summary.
 
 ## Task Brief
 

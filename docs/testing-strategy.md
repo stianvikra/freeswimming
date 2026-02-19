@@ -70,6 +70,14 @@ Useful commands:
    - `npm run test:e2e:extended`
    - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
 
+## Performance Budget Ratchet Policy
+
+- Start with CI-blocking baseline budgets defined in the active performance-hardening brief.
+- After `2` consecutive weekly green runs on baseline:
+  - assistant must explicitly ask owner whether to tighten budgets toward stretch targets.
+- Tighten one step at a time to avoid flaky regressions.
+- Record each tighten/hold/revert decision in the relevant brief or PR summary.
+
 ## Accessibility
 
 - Keep semantic roles and labels in forms/navigation.

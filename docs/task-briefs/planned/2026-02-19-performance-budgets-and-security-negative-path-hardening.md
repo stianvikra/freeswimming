@@ -16,6 +16,7 @@ Release quality should be 10/10 for performance and security reliability by enfo
 
 - Add performance budget gates for core routes:
   - `/`
+  - `/plans`
   - `/course`
   - `/my-library`
 - Implement CI-enforced thresholds for core web vitals proxies and payload/perf constraints:
@@ -34,11 +35,58 @@ Release quality should be 10/10 for performance and security reliability by enfo
 - Add regression checks for server-error hygiene:
   - no accidental `500` on expected deny paths,
   - no sensitive error content in API responses.
+- Define baseline budgets vs stretch budgets and a ratchet policy:
+  - baseline gates are blocking in CI initially,
+  - stretch goals are tightened in controlled increments after stable runs.
 - Wire automated execution into release cadence:
   - pre-PR,
   - pre-merge,
   - nightly.
 - Update runbooks/checklists with exact commands and expected pass/fail outcomes.
+
+## Standard Targets (Agreed Default)
+
+### Performance Budgets
+
+- Initial CI-blocking thresholds:
+  - LCP <= `2.5s`
+  - CLS <= `0.10`
+  - TBT <= `200ms`
+- Stretch targets (ratchet after stability):
+  - LCP <= `2.2s`
+  - CLS <= `0.05`
+  - TBT <= `150ms`
+  - INP p75 <= `200ms` (field metric; track in production telemetry)
+
+### Blocking Route Set
+
+- `/`
+- `/plans`
+- `/course`
+- `/my-library`
+
+### P0 API Negative-Path Set
+
+- `/api/admin/*`
+- `/api/contact`
+- `/api/portal`
+- `/api/checkout/session`
+
+### P1 API Negative-Path Set (after P0)
+
+- `/api/progress/course`
+- `/api/progress/guide`
+- `/api/user/export`
+- `/api/user/delete`
+
+### Ratchet Reminder Rule (Required)
+
+- After `2` consecutive weekly green runs on baseline thresholds:
+  - assistant must explicitly prompt owner to tighten toward stretch targets.
+- Tightening step:
+  - one budget step at a time, then observe stability for at least one full week.
+- Decision log:
+  - every ratchet decision (tighten/hold/revert) must be recorded in brief notes or PR summary.
 
 ## Out Of Scope
 
@@ -51,12 +99,14 @@ Release quality should be 10/10 for performance and security reliability by enfo
 ## Acceptance Criteria
 
 - Performance budget checks are automated and block regressions in CI.
+- Baseline thresholds are implemented exactly as specified in this brief.
 - Core routes have explicit documented thresholds and these are version-controlled.
 - Negative-path tests cover auth/admin critical routes and fail on unexpected status drift.
 - Expected deny paths never return `500` in covered scenarios.
 - API error bodies in covered negative paths do not expose stack/internal secrets.
 - Nightly workflow includes relevant performance/security regression coverage.
 - Documentation clearly states when each gate runs and which command to use.
+- Ratchet reminder policy is implemented in docs/agent workflow so threshold tightening is not forgotten.
 
 ## Validation
 
