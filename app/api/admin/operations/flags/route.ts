@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAdminSchemaSetupMessage, isAdminRuntimeFlagsSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import { getSiteLockConfig } from "@/lib/site-lock/config";
@@ -57,9 +58,24 @@ export async function GET() {
     .order("key", { ascending: true });
 
   if (result.error) {
+    if (isAdminRuntimeFlagsSchemaMissing(result.error)) {
+      return applySupabaseCookies(
+        noStoreJson({
+          ok: true,
+          siteLock: getSafeSiteLockSnapshot(),
+          flags: [],
+          schemaReady: false,
+          warning: getAdminSchemaSetupMessage("operations"),
+        })
+      );
+    }
+
     console.error("[AdminOperations] Could not load runtime flags", result.error);
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Could not load operations flags right now." }, { status: 500 })
+      noStoreJson(
+        { ok: false, error: "Could not load operations flags right now." },
+        { status: 500 }
+      )
     );
   }
 
@@ -67,7 +83,9 @@ export async function GET() {
     noStoreJson({
       ok: true,
       siteLock: getSafeSiteLockSnapshot(),
-      flags: result.data ?? [],
+      flags: (result.data ?? []).filter((flag) => flag.key !== "soft_launch_banner"),
+      schemaReady: true,
+      warning: null,
     })
   );
 }

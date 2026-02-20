@@ -353,6 +353,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_notes: {
+        Row: {
+          body: string;
+          category: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          is_done: boolean;
+          note_date: string;
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          body?: string;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_done?: boolean;
+          note_date?: string;
+          title: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          body?: string;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_done?: boolean;
+          note_date?: string;
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       admin_runtime_flags: {
         Row: {
           description: string;

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { buildAdminContentMirrorSnapshot } from "@/lib/admin/content-mirror";
 import { parseCreateAdminContentPayload } from "@/lib/admin/content";
+import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import type { Database } from "@/types/database";
@@ -55,17 +57,44 @@ export async function GET() {
     .order("created_at", { ascending: true })
     .limit(250);
 
+  let items = result.data ?? [];
+  let schemaReady = true;
+  let warning: string | null = null;
+
   if (result.error) {
-    console.error("[AdminContent] Could not load content items", result.error);
-    return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Could not load admin content right now." }, { status: 500 })
-    );
+    if (isAdminContentSchemaMissing(result.error)) {
+      schemaReady = false;
+      warning = getAdminSchemaSetupMessage("content");
+      items = [];
+    } else {
+      console.error("[AdminContent] Could not load content items", result.error);
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not load admin content right now." },
+          { status: 500 }
+        )
+      );
+    }
   }
+
+  const productsResult = await supabase.from("products").select("id, active").eq("active", true);
+  let productRows: Array<Pick<Database["public"]["Tables"]["products"]["Row"], "id" | "active">> =
+    [];
+  if (productsResult.error) {
+    console.error("[AdminContent] Could not load products mirror snapshot", productsResult.error);
+  } else {
+    productRows = productsResult.data ?? [];
+  }
+
+  const mirror = buildAdminContentMirrorSnapshot(items, productRows);
 
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
-      items: result.data ?? [],
+      items,
+      schemaReady,
+      warning,
+      mirror,
     })
   );
 }
@@ -112,6 +141,18 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (parentResult.error) {
+      if (isAdminContentSchemaMissing(parentResult.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: getAdminSchemaSetupMessage("content"),
+              code: "ADMIN_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
       console.error("[AdminContent] Could not validate parent item", parentResult.error);
       return applySupabaseCookies(
         noStoreJson({ ok: false, error: "Could not validate parent content." }, { status: 500 })
@@ -162,6 +203,19 @@ export async function POST(request: Request) {
     .single();
 
   if (insertResult.error || !insertResult.data) {
+    if (isAdminContentSchemaMissing(insertResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("content"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
     if (insertResult.error?.code === "23505") {
       return applySupabaseCookies(
         noStoreJson(
