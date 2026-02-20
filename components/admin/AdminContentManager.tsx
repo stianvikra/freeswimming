@@ -17,7 +17,13 @@ type MirrorMetric = {
   platformCount: number;
   adminCount: number;
   delta: number;
-  status: "matched" | "missing" | "extra";
+  status: "matched" | "missing" | "extra" | "drift";
+  coverage: {
+    missingCount: number;
+    extraCount: number;
+    missingSamples: string[];
+    extraSamples: string[];
+  };
 };
 
 type MirrorSnapshot = {
@@ -26,6 +32,7 @@ type MirrorSnapshot = {
   summary: {
     matchedCount: number;
     mismatchCount: number;
+    coverageMismatchCount: number;
   };
 };
 
@@ -393,7 +400,14 @@ export default function AdminContentManager() {
               <p className="text-xs text-slate-500">
                 {mirror.summary.mismatchCount === 0
                   ? "All aligned"
-                  : `${mirror.summary.mismatchCount} mismatch${mirror.summary.mismatchCount === 1 ? "" : "es"}`}
+                  : `${mirror.summary.mismatchCount} mismatch${
+                      mirror.summary.mismatchCount === 1 ? "" : "es"
+                    }`}
+                {mirror.summary.coverageMismatchCount > 0
+                  ? ` · ${mirror.summary.coverageMismatchCount} identity drift${
+                      mirror.summary.coverageMismatchCount === 1 ? "" : "s"
+                    }`
+                  : ""}
               </p>
             </div>
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -414,6 +428,22 @@ export default function AdminContentManager() {
                       ? ` · Delta: ${metric.delta > 0 ? "+" : ""}${metric.delta}`
                       : ""}
                   </p>
+                  {metric.coverage.missingCount > 0 ? (
+                    <p className="mt-1">
+                      Missing IDs: {metric.coverage.missingCount}
+                      {metric.coverage.missingSamples.length > 0
+                        ? ` (${metric.coverage.missingSamples.join(", ")})`
+                        : ""}
+                    </p>
+                  ) : null}
+                  {metric.coverage.extraCount > 0 ? (
+                    <p className="mt-1">
+                      Extra IDs: {metric.coverage.extraCount}
+                      {metric.coverage.extraSamples.length > 0
+                        ? ` (${metric.coverage.extraSamples.join(", ")})`
+                        : ""}
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>
