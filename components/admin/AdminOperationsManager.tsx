@@ -16,6 +16,8 @@ type AdminOperationsResponse =
       ok: true;
       siteLock: SiteLockSnapshot;
       flags: AdminRuntimeFlagRow[];
+      schemaReady?: boolean;
+      warning?: string | null;
     }
   | {
       ok: false;
@@ -55,12 +57,15 @@ export default function AdminOperationsManager() {
   const [siteLock, setSiteLock] = useState<SiteLockSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [schemaReady, setSchemaReady] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
 
   async function loadOperations() {
     setLoading(true);
     setError(null);
+    setWarning(null);
     try {
       const response = await fetch("/api/admin/operations/flags", {
         method: "GET",
@@ -76,15 +81,19 @@ export default function AdminOperationsManager() {
         );
         setFlags([]);
         setSiteLock(null);
+        setSchemaReady(true);
         return;
       }
 
       setFlags(payload.flags);
       setSiteLock(payload.siteLock);
+      setSchemaReady(payload.schemaReady !== false);
+      setWarning(payload.warning ?? null);
     } catch {
       setError("Could not load operations data.");
       setFlags([]);
       setSiteLock(null);
+      setSchemaReady(true);
     } finally {
       setLoading(false);
     }
@@ -125,7 +134,9 @@ export default function AdminOperationsManager() {
         return;
       }
 
-      setFlags((prev) => prev.map((entry) => (entry.key === payload.item.key ? payload.item : entry)));
+      setFlags((prev) =>
+        prev.map((entry) => (entry.key === payload.item.key ? payload.item : entry))
+      );
     } catch {
       setActionError("Could not update runtime flag.");
     } finally {
@@ -168,10 +179,18 @@ export default function AdminOperationsManager() {
         </div>
       ) : null}
 
+      {!schemaReady && warning ? (
+        <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {warning}
+        </p>
+      ) : null}
+
       {!loading && !error && siteLock ? (
         <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-900">Private Access Gate (site lock)</h3>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Private Access Gate (site lock)
+            </h3>
             <span
               className={[
                 "inline-flex rounded-full px-2 py-1 text-xs font-semibold",
@@ -215,8 +234,8 @@ export default function AdminOperationsManager() {
             </a>
           </div>
           <p className="mt-3 text-xs text-slate-500">
-            Required env vars: <code>SITE_LOCK_ENABLED</code>, <code>SITE_LOCK_PASSWORD_HASH</code>
-            , <code>SITE_LOCK_BYPASS_TOKEN</code>.
+            Required env vars: <code>SITE_LOCK_ENABLED</code>, <code>SITE_LOCK_PASSWORD_HASH</code>,{" "}
+            <code>SITE_LOCK_BYPASS_TOKEN</code>.
           </p>
         </article>
       ) : null}
@@ -233,7 +252,9 @@ export default function AdminOperationsManager() {
             <li key={flag.key} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">{runtimeFlagLabel(flag.key)}</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    {runtimeFlagLabel(flag.key)}
+                  </h3>
                   <p className="mt-1 text-sm text-slate-600">
                     {runtimeFlagHint(flag.key, flag.description)}
                   </p>
@@ -253,11 +274,7 @@ export default function AdminOperationsManager() {
                     updatingKey ? "cursor-not-allowed opacity-60" : "",
                   ].join(" ")}
                 >
-                  {updatingKey === flag.key
-                    ? "Saving…"
-                    : flag.enabled
-                      ? "Disable"
-                      : "Enable"}
+                  {updatingKey === flag.key ? "Saving…" : flag.enabled ? "Disable" : "Enable"}
                 </button>
               </div>
             </li>

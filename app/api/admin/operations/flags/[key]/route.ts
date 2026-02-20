@@ -3,6 +3,7 @@ import {
   isAdminRuntimeFlagKey,
   parseUpdateAdminRuntimeFlagPayload,
 } from "@/lib/admin/runtime-flags";
+import { getAdminSchemaSetupMessage, isAdminRuntimeFlagsSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
@@ -75,6 +76,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (updateResult.error) {
+    if (isAdminRuntimeFlagsSchemaMissing(updateResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("operations"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
     console.error("[AdminOperations] Could not update runtime flag", updateResult.error);
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not update runtime flag right now." }, { status: 500 })

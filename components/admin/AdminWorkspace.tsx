@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import AdminCommerceManager from "@/components/admin/AdminCommerceManager";
 import AdminContentManager from "@/components/admin/AdminContentManager";
+import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
 
-type AdminTab = "content" | "commerce" | "operations";
+type AdminTab = "content" | "commerce" | "operations" | "notes";
 
 const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
   {
@@ -23,6 +24,11 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
     label: "Operations",
     subtitle: "Runtime flags and private-access status",
   },
+  {
+    id: "notes",
+    label: "Notes",
+    subtitle: "Internal tasks, categories, and completion status",
+  },
 ];
 
 export default function AdminWorkspace() {
@@ -35,7 +41,7 @@ export default function AdminWorkspace() {
 
   return (
     <div>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
@@ -83,6 +89,7 @@ export default function AdminWorkspace() {
         {activeTab === "content" ? <AdminContentManager /> : null}
         {activeTab === "commerce" ? <AdminCommerceManager /> : null}
         {activeTab === "operations" ? <AdminOperationsManager /> : null}
+        {activeTab === "notes" ? <AdminNotesManager /> : null}
       </div>
     </div>
   );

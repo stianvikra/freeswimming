@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { isUnauthenticatedAuthUserLookupError } from "@/lib/admin/access";
 import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
-import { getSiteLockConfig } from "@/lib/site-lock/config";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
 export const dynamic = "force-dynamic";
@@ -30,18 +29,8 @@ function noStoreJson(
   });
 }
 
-function isSiteLockActive(): boolean {
-  try {
-    return getSiteLockConfig().enabled;
-  } catch {
-    return false;
-  }
-}
-
 export async function GET() {
-  const siteLockEnabled = isSiteLockActive();
   const fallback = {
-    softLaunchBanner: !siteLockEnabled,
     dashboardVisible: false,
   };
 
@@ -81,35 +70,10 @@ export async function GET() {
       dashboardVisible = Boolean(role);
     }
 
-    const result = await supabase
-      .from("admin_runtime_flags")
-      .select("key, enabled")
-      .eq("is_public", true);
-
-    if (result.error) {
-      console.error("[RuntimeFlags] Could not load public runtime flags", result.error);
-      return applySupabaseCookies(
-        noStoreJson({
-          ok: true,
-          flags: {
-            ...fallback,
-            dashboardVisible,
-          },
-        })
-      );
-    }
-
-    const rows = result.data ?? [];
-    const softLaunchBanner = siteLockEnabled
-      ? false
-      : (rows.find((row) => row.key === "soft_launch_banner")?.enabled ??
-        fallback.softLaunchBanner);
-
     return applySupabaseCookies(
       noStoreJson({
         ok: true,
         flags: {
-          softLaunchBanner,
           dashboardVisible,
         },
       })

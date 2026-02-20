@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isUuid, parseUpdateAdminContentPayload } from "@/lib/admin/content";
+import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import type { Database } from "@/types/database";
@@ -95,6 +96,18 @@ export async function PATCH(request: Request, context: RouteContext) {
       .maybeSingle();
 
     if (parentResult.error) {
+      if (isAdminContentSchemaMissing(parentResult.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: getAdminSchemaSetupMessage("content"),
+              code: "ADMIN_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
       console.error("[AdminContent] Could not validate parent item", parentResult.error);
       return applySupabaseCookies(
         noStoreJson({ ok: false, error: "Could not validate parent content." }, { status: 500 })
@@ -115,6 +128,18 @@ export async function PATCH(request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (existingResult.error) {
+    if (isAdminContentSchemaMissing(existingResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("content"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
     console.error("[AdminContent] Could not load existing content item", existingResult.error);
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not load content item right now." }, { status: 500 })
@@ -144,8 +169,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     updatePayload.summary = parsed.value.summary;
   }
   if (parsed.value.body !== undefined) {
-    updatePayload.body =
-      parsed.value.body as Database["public"]["Tables"]["admin_content_items"]["Update"]["body"];
+    updatePayload.body = parsed.value
+      .body as Database["public"]["Tables"]["admin_content_items"]["Update"]["body"];
   }
   if (parsed.value.sortOrder !== undefined) {
     updatePayload.sort_order = parsed.value.sortOrder;
@@ -157,7 +182,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     updatePayload.status = parsed.value.status;
     updatePayload.published_at =
       parsed.value.status === "published"
-        ? existingResult.data.published_at ?? new Date().toISOString()
+        ? (existingResult.data.published_at ?? new Date().toISOString())
         : null;
   }
 
@@ -169,6 +194,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     .single();
 
   if (updateResult.error || !updateResult.data) {
+    if (isAdminContentSchemaMissing(updateResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("content"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
     if (updateResult.error?.code === "23505") {
       return applySupabaseCookies(
         noStoreJson(
@@ -218,6 +256,18 @@ export async function DELETE(_request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (deleteResult.error) {
+    if (isAdminContentSchemaMissing(deleteResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("content"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
     console.error("[AdminContent] Could not delete content item", deleteResult.error);
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not delete content item right now." }, { status: 500 })

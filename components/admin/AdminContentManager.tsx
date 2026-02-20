@@ -10,10 +10,31 @@ const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = 
   { value: "guide_drill", label: "Guide drill" },
 ];
 
+type MirrorMetric = {
+  key: "course_module" | "course_lesson" | "guide_session" | "guide_drill" | "programs";
+  label: string;
+  platformCount: number;
+  adminCount: number;
+  delta: number;
+  status: "matched" | "missing" | "extra";
+};
+
+type MirrorSnapshot = {
+  checkedAt: string;
+  metrics: MirrorMetric[];
+  summary: {
+    matchedCount: number;
+    mismatchCount: number;
+  };
+};
+
 type AdminContentListResponse =
   | {
       ok: true;
       items: AdminContentItemRow[];
+      schemaReady?: boolean;
+      warning?: string | null;
+      mirror?: MirrorSnapshot;
     }
   | {
       ok: false;
@@ -70,6 +91,9 @@ export default function AdminContentManager() {
   const [items, setItems] = useState<AdminContentItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [schemaReady, setSchemaReady] = useState(true);
+  const [mirror, setMirror] = useState<MirrorSnapshot | null>(null);
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -79,6 +103,7 @@ export default function AdminContentManager() {
   async function loadItems() {
     setLoading(true);
     setError(null);
+    setWarning(null);
     try {
       const response = await fetch("/api/admin/content", {
         method: "GET",
@@ -93,12 +118,19 @@ export default function AdminContentManager() {
             : (payload.error ?? "Could not load content list.")
         );
         setItems([]);
+        setSchemaReady(true);
+        setMirror(null);
         return;
       }
       setItems(payload.items);
+      setSchemaReady(payload.schemaReady !== false);
+      setWarning(payload.warning ?? null);
+      setMirror(payload.mirror ?? null);
     } catch {
       setError("Could not load content list.");
       setItems([]);
+      setSchemaReady(true);
+      setMirror(null);
     } finally {
       setLoading(false);
     }
@@ -237,6 +269,50 @@ export default function AdminContentManager() {
             Refresh
           </button>
         </div>
+
+        {!schemaReady && warning ? (
+          <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {warning}
+          </p>
+        ) : null}
+
+        {mirror ? (
+          <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-900">Platform mirror snapshot</h3>
+              <p className="text-xs text-slate-500">
+                {mirror.summary.mismatchCount === 0
+                  ? "All aligned"
+                  : `${mirror.summary.mismatchCount} mismatch${mirror.summary.mismatchCount === 1 ? "" : "es"}`}
+              </p>
+            </div>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {mirror.metrics.map((metric) => (
+                <li
+                  key={metric.key}
+                  className={[
+                    "rounded-lg border px-3 py-2 text-xs",
+                    metric.status === "matched"
+                      ? "border-emerald-200 bg-emerald-50/70 text-emerald-800"
+                      : "border-amber-200 bg-amber-50 text-amber-900",
+                  ].join(" ")}
+                >
+                  <p className="font-semibold">{metric.label}</p>
+                  <p className="mt-1">
+                    Platform: {metric.platformCount} · Admin: {metric.adminCount}
+                    {metric.delta !== 0
+                      ? ` · Delta: ${metric.delta > 0 ? "+" : ""}${metric.delta}`
+                      : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-slate-500">
+              Snapshot checks current platform modules/lessons/guides/products against admin
+              records.
+            </p>
+          </article>
+        ) : null}
 
         {loading ? (
           <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">

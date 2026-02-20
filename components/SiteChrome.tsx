@@ -39,7 +39,6 @@ type Props = {
 export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const pathname = usePathname();
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
-  const [softLaunchBannerEnabled, setSoftLaunchBannerEnabled] = useState(true);
   const [dashboardVisible, setDashboardVisible] = useState(false);
 
   useEffect(() => {
@@ -77,7 +76,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         const payload = (await response.json()) as {
           ok?: boolean;
           flags?: {
-            softLaunchBanner?: boolean;
             dashboardVisible?: boolean;
           };
         };
@@ -85,9 +83,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         if (cancelled) return;
         if (!response.ok || !payload.ok) return;
 
-        if (typeof payload.flags?.softLaunchBanner === "boolean") {
-          setSoftLaunchBannerEnabled(payload.flags.softLaunchBanner);
-        }
         if (typeof payload.flags?.dashboardVisible === "boolean") {
           setDashboardVisible(payload.flags.dashboardVisible);
         }
@@ -308,20 +303,6 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
           </div>
         </div>
       </header>
-
-      {isPublicRoute && softLaunchBannerEnabled ? (
-        <div className="pointer-events-none fixed inset-x-0 top-16 z-30 px-4">
-          <div
-            data-testid="soft-launch-banner"
-            className="pointer-events-auto mx-auto max-w-[1100px] rounded-b-2xl border border-amber-200/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.96),rgba(255,247,217,0.94))] px-4 py-2.5 text-[13px] text-amber-900 shadow-[0_10px_26px_rgba(120,53,15,0.12)]"
-          >
-            <p className="leading-5">
-              This site is under construction. We&apos;re currently polishing content and flows
-              before full launch.
-            </p>
-          </div>
-        </div>
-      ) : null}
 
       {menuMode !== "custom" ? (
         <MenuDrawer
