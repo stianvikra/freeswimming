@@ -14,16 +14,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+      missing: ${{ steps.check.outputs.missing }}
+    steps:
+      - name: Check required secrets
+        id: check
+        env:
+          CI_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
+          CI_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
+          CI_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
+          CI_DEV_AUTH_BYPASS_TOKEN: ${{ secrets.CI_DEV_AUTH_BYPASS_TOKEN }}
+          CI_DEV_AUTH_BYPASS_EMAIL: ${{ secrets.CI_DEV_AUTH_BYPASS_EMAIL }}
+          CI_DEV_AUTH_BYPASS_PASSWORD: ${{ secrets.CI_DEV_AUTH_BYPASS_PASSWORD }}
+        run: |
+          missing=""
+          for key in \
+            CI_SUPABASE_URL \
+            CI_SUPABASE_ANON_KEY \
+            CI_SUPABASE_SERVICE_ROLE_KEY \
+            CI_DEV_AUTH_BYPASS_TOKEN \
+            CI_DEV_AUTH_BYPASS_EMAIL \
+            CI_DEV_AUTH_BYPASS_PASSWORD; do
+            if [ -z "${!key}" ]; then
+              if [ -n "$missing" ]; then
+                missing="$missing, "
+              fi
+              missing="${missing}${key}"
+            fi
+          done
+
+          if [ -n "$missing" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "missing=$missing" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "missing=" >> "$GITHUB_OUTPUT"
+          fi
+
   admin-e2e:
-    if: >-
-      ${{
-        secrets.CI_SUPABASE_URL != '' &&
-        secrets.CI_SUPABASE_ANON_KEY != '' &&
-        secrets.CI_SUPABASE_SERVICE_ROLE_KEY != '' &&
-        secrets.CI_DEV_AUTH_BYPASS_TOKEN != '' &&
-        secrets.CI_DEV_AUTH_BYPASS_EMAIL != '' &&
-        secrets.CI_DEV_AUTH_BYPASS_PASSWORD != ''
-      }}
+    needs: preflight
+    if: needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -67,20 +100,11 @@ jobs:
           retention-days: 14
 
   admin-e2e-secrets-missing:
-    if: >-
-      ${{
-        !(
-          secrets.CI_SUPABASE_URL != '' &&
-          secrets.CI_SUPABASE_ANON_KEY != '' &&
-          secrets.CI_SUPABASE_SERVICE_ROLE_KEY != '' &&
-          secrets.CI_DEV_AUTH_BYPASS_TOKEN != '' &&
-          secrets.CI_DEV_AUTH_BYPASS_EMAIL != '' &&
-          secrets.CI_DEV_AUTH_BYPASS_PASSWORD != ''
-        )
-      }}
+    needs: preflight
+    if: needs.preflight.outputs.ready != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Report skipped admin e2e due to missing secrets
         run: |
           echo "::notice::Admin E2E skipped: missing one or more required secrets."
-          echo "::notice::Required: CI_SUPABASE_URL, CI_SUPABASE_ANON_KEY, CI_SUPABASE_SERVICE_ROLE_KEY, CI_DEV_AUTH_BYPASS_TOKEN, CI_DEV_AUTH_BYPASS_EMAIL, CI_DEV_AUTH_BYPASS_PASSWORD."
+          echo "::notice::Missing: ${{ needs.preflight.outputs.missing }}"
