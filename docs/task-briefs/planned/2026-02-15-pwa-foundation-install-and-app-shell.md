@@ -99,6 +99,7 @@ FreeSwimming should have a production-grade PWA baseline: installable on support
 - Taxonomy and category management:
   - define/maintain consistent labels and ordering where categories exist.
 - Workflow and publishing safety:
+- Business logic correctness and data integrity: deterministic state transitions, invariant validation, idempotent critical mutations, and no silent data corruption paths.
   - protect rollouts with explicit gates and safe defaults.
 - RBAC and auditability:
   - ensure access boundaries and logging for sensitive operations.

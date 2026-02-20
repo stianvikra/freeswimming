@@ -57,6 +57,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 - Content governance and source-of-truth
 - Taxonomy and category management
 - Workflow and publishing safety (`draft/review/published/archived`)
+- Business logic correctness and data integrity: deterministic state transitions, invariant validation, idempotent critical mutations, and no silent data corruption paths.
 - RBAC and auditability
 - UX/UI quality contract (`loading`, `empty`, `error`, `retry`)
 - Performance contract

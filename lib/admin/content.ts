@@ -7,7 +7,7 @@ export const ADMIN_CONTENT_TYPE_VALUES = [
   "guide_drill",
 ] as const;
 
-export const ADMIN_CONTENT_STATUS_VALUES = ["draft", "published"] as const;
+export const ADMIN_CONTENT_STATUS_VALUES = ["draft", "review", "published", "archived"] as const;
 
 export type AdminContentType = (typeof ADMIN_CONTENT_TYPE_VALUES)[number];
 export type AdminContentStatus = (typeof ADMIN_CONTENT_STATUS_VALUES)[number];

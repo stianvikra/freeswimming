@@ -146,6 +146,7 @@ State scope or `N/A` for each category during implementation and closeout:
 - Content governance and source-of-truth: canonical model, required fields, owner assignment, revision/rollback policy.
 - Taxonomy and category management: naming rules, sorting, and active/archive lifecycle.
 - Workflow and publishing safety: status model (`draft/review/published/archived`), publish safeguards, destructive confirmation.
+- Business logic correctness and data integrity: deterministic state transitions, invariant validation, idempotent critical mutations, and no silent data corruption paths.
 - RBAC and auditability: role boundaries per endpoint/UI action and audit trail for sensitive mutations.
 - UX/UI quality contract: clear primary action and required states (`loading`, `empty`, `error`, `retry`).
 - Performance contract: latency/render/payload guardrails for changed surfaces.
