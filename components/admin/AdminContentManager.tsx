@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { AdminContentItemRow, AdminContentType } from "@/lib/admin/content";
+import type { AdminCategoryRow } from "@/lib/admin/categories";
 
 const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = [
   { value: "course_module", label: "Course module" },
@@ -71,11 +72,24 @@ type AdminContentDeleteResponse =
       error?: string;
     };
 
+type AdminCategoriesResponse =
+  | {
+      ok: true;
+      items: AdminCategoryRow[];
+      schemaReady?: boolean;
+      warning?: string | null;
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 type FormState = {
   contentType: AdminContentType;
   title: string;
   slug: string;
   summary: string;
+  category: string;
   status: "draft" | "published";
 };
 
@@ -84,6 +98,7 @@ const INITIAL_FORM: FormState = {
   title: "",
   slug: "",
   summary: "",
+  category: "General",
   status: "draft",
 };
 
@@ -94,6 +109,7 @@ export default function AdminContentManager() {
   const [warning, setWarning] = useState<string | null>(null);
   const [schemaReady, setSchemaReady] = useState(true);
   const [mirror, setMirror] = useState<MirrorSnapshot | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -126,11 +142,29 @@ export default function AdminContentManager() {
       setSchemaReady(payload.schemaReady !== false);
       setWarning(payload.warning ?? null);
       setMirror(payload.mirror ?? null);
+
+      const categoriesResponse = await fetch("/api/admin/categories/content", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const categoriesPayload = (await categoriesResponse.json()) as AdminCategoriesResponse;
+      if (categoriesResponse.ok && categoriesPayload.ok) {
+        setCategoryOptions(
+          categoriesPayload.items
+            .filter((item) => item.is_active)
+            .map((item) => item.title)
+            .filter((value, index, self) => self.indexOf(value) === index)
+        );
+      } else {
+        setCategoryOptions([]);
+      }
     } catch {
       setError("Could not load content list.");
       setItems([]);
       setSchemaReady(true);
       setMirror(null);
+      setCategoryOptions([]);
     } finally {
       setLoading(false);
     }
@@ -163,6 +197,7 @@ export default function AdminContentManager() {
           title: formState.title,
           slug: formState.slug,
           summary: formState.summary,
+          category: formState.category,
           status: formState.status,
         }),
       });
@@ -351,7 +386,7 @@ export default function AdminContentManager() {
                   <div>
                     <p className="font-semibold text-slate-900">{item.title}</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {item.content_type} · {item.status} · /{item.slug}
+                      {item.content_type} · {item.category} · {item.status} · /{item.slug}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -478,6 +513,28 @@ export default function AdminContentManager() {
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
               placeholder="Short purpose or editor note."
             />
+          </label>
+
+          <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+            <span>Category</span>
+            <input
+              type="text"
+              list="admin-content-category-options"
+              value={formState.category}
+              onChange={(e) =>
+                setFormState((prev) => ({
+                  ...prev,
+                  category: e.target.value,
+                }))
+              }
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              placeholder="General"
+            />
+            <datalist id="admin-content-category-options">
+              {categoryOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
           </label>
 
           {actionError ? (

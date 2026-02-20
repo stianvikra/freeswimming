@@ -31,6 +31,7 @@ function mapSelectedFields() {
     slug,
     title,
     summary,
+    category,
     body,
     sort_order,
     status,
@@ -167,6 +168,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   if (parsed.value.summary !== undefined) {
     updatePayload.summary = parsed.value.summary;
+  }
+  if (parsed.value.category !== undefined) {
+    updatePayload.category = parsed.value.category;
   }
   if (parsed.value.body !== undefined) {
     updatePayload.body = parsed.value

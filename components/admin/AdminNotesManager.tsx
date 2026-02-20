@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { AdminCategoryRow } from "@/lib/admin/categories";
 import type { AdminNoteRow } from "@/lib/admin/notes";
 
 type AdminNotesResponse =
@@ -45,6 +46,18 @@ type AdminNoteDeleteResponse =
       error?: string;
     };
 
+type AdminCategoriesResponse =
+  | {
+      ok: true;
+      items: AdminCategoryRow[];
+      schemaReady?: boolean;
+      warning?: string | null;
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 type FormState = {
   title: string;
   category: string;
@@ -81,6 +94,7 @@ export default function AdminNotesManager() {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [schemaReady, setSchemaReady] = useState(true);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -108,10 +122,28 @@ export default function AdminNotesManager() {
       setItems(payload.items);
       setSchemaReady(payload.schemaReady !== false);
       setWarning(payload.warning ?? null);
+
+      const categoriesResponse = await fetch("/api/admin/categories/notes", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const categoriesPayload = (await categoriesResponse.json()) as AdminCategoriesResponse;
+      if (categoriesResponse.ok && categoriesPayload.ok) {
+        setCategoryOptions(
+          categoriesPayload.items
+            .filter((item) => item.is_active)
+            .map((item) => item.title)
+            .filter((value, index, self) => self.indexOf(value) === index)
+        );
+      } else {
+        setCategoryOptions([]);
+      }
     } catch {
       setError("Could not load notes.");
       setItems([]);
       setSchemaReady(true);
+      setCategoryOptions([]);
     } finally {
       setLoading(false);
     }
@@ -357,11 +389,17 @@ export default function AdminNotesManager() {
             <span>Category</span>
             <input
               type="text"
+              list="admin-note-category-options"
               value={formState.category}
               onChange={(e) => setFormState((prev) => ({ ...prev, category: e.target.value }))}
               className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
               placeholder="Operations"
             />
+            <datalist id="admin-note-category-options">
+              {categoryOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
           </label>
 
           <label className="space-y-1 text-sm font-medium text-slate-700">

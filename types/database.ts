@@ -261,6 +261,7 @@ export type Database = {
       admin_content_items: {
         Row: {
           body: Json;
+          category: string;
           content_type: Database["public"]["Enums"]["admin_content_type"];
           created_at: string;
           created_by: string | null;
@@ -277,6 +278,7 @@ export type Database = {
         };
         Insert: {
           body?: Json;
+          category?: string;
           content_type: Database["public"]["Enums"]["admin_content_type"];
           created_at?: string;
           created_by?: string | null;
@@ -293,6 +295,7 @@ export type Database = {
         };
         Update: {
           body?: Json;
+          category?: string;
           content_type?: Database["public"]["Enums"]["admin_content_type"];
           created_at?: string;
           created_by?: string | null;
@@ -316,6 +319,45 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      admin_categories: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          is_active: boolean;
+          scope: string;
+          slug: string;
+          sort_order: number;
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_active?: boolean;
+          scope: string;
+          slug: string;
+          sort_order?: number;
+          title: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_active?: boolean;
+          scope?: string;
+          slug?: string;
+          sort_order?: number;
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
       };
       admin_audit_logs: {
         Row: {

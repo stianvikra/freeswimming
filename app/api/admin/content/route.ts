@@ -43,6 +43,7 @@ export async function GET() {
       slug,
       title,
       summary,
+      category,
       body,
       sort_order,
       status,
@@ -171,6 +172,7 @@ export async function POST(request: Request) {
       slug: parsed.value.slug,
       title: parsed.value.title,
       summary: parsed.value.summary,
+      category: parsed.value.category,
       body: parsed.value
         .body as Database["public"]["Tables"]["admin_content_items"]["Insert"]["body"],
       sort_order: parsed.value.sortOrder,
@@ -187,6 +189,7 @@ export async function POST(request: Request) {
       slug,
       title,
       summary,
+      category,
       body,
       sort_order,
       status,
