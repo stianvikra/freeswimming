@@ -40,6 +40,29 @@ describe("parseCreateAdminContentPayload", () => {
     expect(parsed.value.sortOrder).toBe(4);
   });
 
+  it("accepts review and archived as valid lifecycle statuses", () => {
+    const reviewParsed = parseCreateAdminContentPayload({
+      contentType: "course_module",
+      title: "Lifecycle item",
+      status: "review",
+    });
+    const archivedParsed = parseCreateAdminContentPayload({
+      contentType: "course_module",
+      title: "Lifecycle item",
+      status: "archived",
+    });
+
+    expect(reviewParsed.ok).toBe(true);
+    if (reviewParsed.ok) {
+      expect(reviewParsed.value.status).toBe("review");
+    }
+
+    expect(archivedParsed.ok).toBe(true);
+    if (archivedParsed.ok) {
+      expect(archivedParsed.value.status).toBe("archived");
+    }
+  });
+
   it("collapses invalid slug separators and trims slug edges", () => {
     const parsed = parseCreateAdminContentPayload({
       contentType: "guide_session",
@@ -107,6 +130,18 @@ describe("parseUpdateAdminContentPayload", () => {
     expect(parsed.value.hasStatus).toBe(true);
     expect(parsed.value.slug).toBe("session-2");
     expect(parsed.value.category).toBe("Endurance");
+  });
+
+  it("accepts archived status update", () => {
+    const parsed = parseUpdateAdminContentPayload({
+      status: "archived",
+    });
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    expect(parsed.value.status).toBe("archived");
+    expect(parsed.value.hasStatus).toBe(true);
   });
 
   it("rejects update payload with no known fields", () => {

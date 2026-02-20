@@ -162,6 +162,7 @@ State scope or `N/A` for each category during implementation and closeout:
 - Content governance and source-of-truth: canonical model, required fields, owner assignment, revision/rollback policy.
 - Taxonomy and category management: naming rules, sorting, and active/archive lifecycle.
 - Workflow and publishing safety: status model (`draft/review/published/archived`), publish safeguards, destructive confirmation.
+- Business logic correctness and data integrity: deterministic status transitions, invariant validation, idempotent import behavior, and no silent drift between app/admin/DB.
 - RBAC and auditability: role boundaries per endpoint/UI action and audit trail for sensitive mutations.
 - UX/UI quality contract: clear primary action and required states (`loading`, `empty`, `error`, `retry`).
 - Performance contract: latency/render/payload guardrails for changed surfaces.
@@ -174,32 +175,33 @@ State scope or `N/A` for each category during implementation and closeout:
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                 | Scope Status | Target Threshold                                                                                    |
-| ---------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------- |
-| Product goals and IA                     | `target`     | Admin information architecture documented and stable for all active tabs.                           |
-| UX flow clarity                          | `target`     | No dead-end admin states; every tab has clear primary action and retry path.                        |
-| Visual design quality                    | `target`     | Consistent spacing/typography/state styles across content/notes/categories modules.                 |
-| Admin editor ergonomics                  | `target`     | Core edit/publish/note/category flows are low-friction and validated by manual QA scripts.          |
-| Accessibility (a11y)                     | `target`     | Keyboard + label + focus coverage for critical admin actions.                                       |
-| Performance (CWV + payloads)             | `supporting` | No material regression in admin route render and mutation latency.                                  |
-| Data placement and sync boundaries       | `target`     | Content/notes/categories are server-canonical; any local state is non-authoritative and documented. |
-| Caching and invalidation strategy        | `target`     | Admin reads/mutations have explicit refresh/invalidation behavior after writes.                     |
-| Reliability and failure handling         | `target`     | Zero unexpected `500` on expected setup/deny/read failure paths.                                    |
-| Security and authz                       | `target`     | Role-gated mutation paths with deterministic `401/403` deny behavior.                               |
-| Privacy and compliance                   | `supporting` | No PII leakage in admin error states/audit payload exposure.                                        |
-| Content governance                       | `target`     | Owner + status + revision/rollback model enforced for admin content.                                |
-| Admin workflow and editability           | `target`     | Draft/review/publish/archive + category/notes management usable end-to-end.                         |
-| SEO and crawlability                     | `supporting` | Content source-of-truth changes do not break sitemap/metadata paths.                                |
-| AI discoverability                       | `supporting` | Admin content schema remains compatible with structured public outputs later.                       |
-| Analytics and KPI observability          | `target`     | Content/notes mutations emit required operational telemetry and audit records.                      |
-| Commerce and revenue ops                 | `supporting` | Product metadata linkage remains consistent with checkout entitlement paths.                        |
-| Incident response and support operations | `supporting` | Admin critical paths include actionable troubleshooting signals for support/ops.                    |
-| Finance and reporting operations         | `supporting` | Admin content/commerce updates do not break reconciliation expectations.                            |
-| i18n operational readiness               | `supporting` | Content/category schema choices do not block future locale rollout.                                 |
-| Stack-fit and dependency discipline      | `target`     | Implement with existing Next/Supabase/testing stack patterns and minimal dependency growth.         |
-| Testing and QA automation                | `target`     | Unit + e2e + negative-path coverage updated for admin source-of-truth flows.                        |
-| Scalability and cost efficiency          | `supporting` | Query/mutation patterns avoid obvious N+1/cost-heavy admin operations.                              |
-| DevOps and rollback readiness            | `target`     | Migration/import has explicit rollback/defer path before DB-first cutover.                          |
+| Category                                      | Scope Status | Target Threshold                                                                                                      |
+| --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `target`     | Admin information architecture documented and stable for all active tabs.                                             |
+| UX flow clarity                               | `target`     | No dead-end admin states; every tab has clear primary action and retry path.                                          |
+| Visual design quality                         | `target`     | Consistent spacing/typography/state styles across content/notes/categories modules.                                   |
+| Business logic correctness and data integrity | `target`     | Deterministic lifecycle transitions + idempotent import/mutation behavior with invariant checks and regression tests. |
+| Admin editor ergonomics                       | `target`     | Core edit/publish/note/category flows are low-friction and validated by manual QA scripts.                            |
+| Accessibility (a11y)                          | `target`     | Keyboard + label + focus coverage for critical admin actions.                                                         |
+| Performance (CWV + payloads)                  | `supporting` | No material regression in admin route render and mutation latency.                                                    |
+| Data placement and sync boundaries            | `target`     | Content/notes/categories are server-canonical; any local state is non-authoritative and documented.                   |
+| Caching and invalidation strategy             | `target`     | Admin reads/mutations have explicit refresh/invalidation behavior after writes.                                       |
+| Reliability and failure handling              | `target`     | Zero unexpected `500` on expected setup/deny/read failure paths.                                                      |
+| Security and authz                            | `target`     | Role-gated mutation paths with deterministic `401/403` deny behavior.                                                 |
+| Privacy and compliance                        | `supporting` | No PII leakage in admin error states/audit payload exposure.                                                          |
+| Content governance                            | `target`     | Owner + status + revision/rollback model enforced for admin content.                                                  |
+| Admin workflow and editability                | `target`     | Draft/review/publish/archive + category/notes management usable end-to-end.                                           |
+| SEO and crawlability                          | `supporting` | Content source-of-truth changes do not break sitemap/metadata paths.                                                  |
+| AI discoverability                            | `supporting` | Admin content schema remains compatible with structured public outputs later.                                         |
+| Analytics and KPI observability               | `target`     | Content/notes mutations emit required operational telemetry and audit records.                                        |
+| Commerce and revenue ops                      | `supporting` | Product metadata linkage remains consistent with checkout entitlement paths.                                          |
+| Incident response and support operations      | `supporting` | Admin critical paths include actionable troubleshooting signals for support/ops.                                      |
+| Finance and reporting operations              | `supporting` | Admin content/commerce updates do not break reconciliation expectations.                                              |
+| i18n operational readiness                    | `supporting` | Content/category schema choices do not block future locale rollout.                                                   |
+| Stack-fit and dependency discipline           | `target`     | Implement with existing Next/Supabase/testing stack patterns and minimal dependency growth.                           |
+| Testing and QA automation                     | `target`     | Unit + e2e + negative-path coverage updated for admin source-of-truth flows.                                          |
+| Scalability and cost efficiency               | `supporting` | Query/mutation patterns avoid obvious N+1/cost-heavy admin operations.                                                |
+| DevOps and rollback readiness                 | `target`     | Migration/import has explicit rollback/defer path before DB-first cutover.                                            |
 
 ## Observability And KPI Contract
 
@@ -240,14 +242,15 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-20 | working tree | implemented phase-2 import baseline flow: new admin import endpoint, deterministic seed mapper from hardcoded course/guide content, admin UI import action with feedback, and unit coverage for seed parity | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | implemented phase-4 DB-first published read-path for guides and course (new published mappers/loaders, /api/course/content, dynamic course modules in page/drawer with fallback, mapper unit tests) | finalize validation + commit/push + PR`
 - `2026-02-20 | working tree | hardened phase-5 parity mirror with identity coverage checks (missing/extra samples), drift status, summary coverage mismatch count, admin UI mismatch details, and stronger unit tests | commit checkpoint + push + PR`
+- `2026-02-20 | working tree | phase-1 contract hardening started: expanded content workflow statuses (`draft/review/published/archived`), added manifest metadata/checksum to seed import bodies, and made import route change-aware to reduce redundant rewrites | commit checkpoint + push + PR`
 
 ## Deferred Closeout Items
 
 - `workflow/archive`
-  - Current state: content supports `draft/published` in DB/API/UI.
-  - Gap: no full `archived` lifecycle wired end-to-end.
-  - Why deferred: core migration path is stable without archive; archive can be added safely as a focused follow-up.
-  - Exit criteria: DB status model includes archive, API validation accepts it, UI exposes archive action/state, unit + e2e tests cover it.
+  - Current state: lifecycle statuses now include `draft/review/published/archived` in code + migration.
+  - Gap: dedicated e2e coverage for `review` and `archived` transitions is still pending.
+  - Why deferred: lifecycle logic is implemented and unit-covered first; browser-level flow coverage is staged next.
+  - Exit criteria: admin e2e validates create -> review -> publish -> archive transitions with deterministic UI/API outcomes.
 - `audit/revisions`
   - Current state: content audit logging exists.
   - Gap: notes audit logging is missing, and immutable content revision history table/model is not yet in place.

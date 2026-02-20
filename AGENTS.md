@@ -28,6 +28,7 @@ This file defines how coding agents should collaborate in this repository.
 3. `npm run verify:pre-pr` passes locally; use `npm run verify:pre-merge` before merge.
 4. Accessibility semantics are preserved for changed UI.
 5. Related docs are updated when rules/contracts change.
+6. Business logic invariants and data integrity constraints for changed scope are explicitly validated (tests and/or deterministic runtime guards).
 
 ## Platform 10/10 Governance
 
@@ -40,7 +41,7 @@ This file defines how coding agents should collaborate in this repository.
   - remaining gaps (if any),
   - defer/fix recommendation when a target score is `<4`.
 - Treat these categories as first-class quality gates across the full platform:
-  - UX, UI/design, admin workflow, security/privacy, performance, reliability, SEO/AI discoverability, analytics/KPI, testing, and release/rollback readiness.
+  - UX, UI/design, business logic correctness, data integrity, admin workflow, security/privacy, performance, reliability, SEO/AI discoverability, analytics/KPI, testing, and release/rollback readiness.
   - Include enterprise readiness where relevant:
     - incident response/support operations,
     - finance/reporting operations,

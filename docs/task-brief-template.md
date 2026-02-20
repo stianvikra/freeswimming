@@ -158,6 +158,10 @@ List concrete quality expectations. At minimum include:
 - Accessibility level/semantics (keyboard, focus, labels, contrast).
 - Performance expectations (Core Web Vitals or equivalent).
 - Visual consistency requirements relative to existing design language.
+- Business-logic correctness expectations:
+  - deterministic state transitions,
+  - clear validation/invariant rules,
+  - no silent data corruption paths.
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
@@ -169,6 +173,8 @@ For each brief, explicitly state scope or `N/A` for these categories so quality 
   - category model, naming rules, sorting, archive/active lifecycle.
 - Workflow and publishing safety
   - status model (`draft/review/published/archived`), publish safeguards, destructive-action confirmation.
+- Business logic correctness and data integrity
+  - deterministic state transitions, idempotent mutations where required, invariant enforcement, and no ambiguous merge/update outcomes.
 - RBAC and auditability
   - role boundaries per endpoint/UI action, audit trail for sensitive mutations.
 - UX/UI quality contract

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { AdminContentItemRow, AdminContentType } from "@/lib/admin/content";
+import type {
+  AdminContentItemRow,
+  AdminContentStatus,
+  AdminContentType,
+} from "@/lib/admin/content";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 
 const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = [
@@ -9,6 +13,13 @@ const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = 
   { value: "course_lesson", label: "Course lesson" },
   { value: "guide_session", label: "Guide session" },
   { value: "guide_drill", label: "Guide drill" },
+];
+
+const STATUS_OPTIONS: Array<{ value: AdminContentStatus; label: string }> = [
+  { value: "draft", label: "Draft" },
+  { value: "review", label: "Review" },
+  { value: "published", label: "Published" },
+  { value: "archived", label: "Archived" },
 ];
 
 type MirrorMetric = {
@@ -80,6 +91,7 @@ type AdminContentDeleteResponse =
     };
 
 type AdminContentImportSummary = {
+  manifestVersion: number;
   totalItems: number;
   courseModules: number;
   courseLessons: number;
@@ -91,6 +103,11 @@ type AdminContentImportResponse =
   | {
       ok: true;
       imported: AdminContentImportSummary;
+      changes?: {
+        parentRowsUpdated: number;
+        childRowsUpdated: number;
+        unchangedRows: number;
+      };
       productsSynced: number;
       warning?: string | null;
     }
@@ -117,7 +134,7 @@ type FormState = {
   slug: string;
   summary: string;
   category: string;
-  status: "draft" | "published";
+  status: AdminContentStatus;
 };
 
 const INITIAL_FORM: FormState = {
@@ -277,8 +294,11 @@ export default function AdminContentManager() {
       const warningSuffix = payload.warning ? ` Warning: ${payload.warning}` : "";
       const productSuffix =
         payload.productsSynced > 0 ? ` and synced ${payload.productsSynced} products` : "";
+      const changesSuffix = payload.changes
+        ? ` Updated ${payload.changes.parentRowsUpdated + payload.changes.childRowsUpdated} rows, ${payload.changes.unchangedRows} unchanged.`
+        : "";
       setActionNotice(
-        `Imported ${payload.imported.totalItems} platform items${productSuffix}.${warningSuffix}`
+        `Imported ${payload.imported.totalItems} platform items (manifest v${payload.imported.manifestVersion})${productSuffix}.${changesSuffix}${warningSuffix}`
       );
       await loadItems();
     } catch {
@@ -288,12 +308,26 @@ export default function AdminContentManager() {
     }
   }
 
-  async function handleToggleStatus(item: AdminContentItemRow) {
+  function statusNotice(status: AdminContentStatus): string {
+    if (status === "published") return "Content item published.";
+    if (status === "review") return "Moved to review.";
+    if (status === "archived") return "Content item archived.";
+    return "Moved to draft.";
+  }
+
+  function statusActionLabel(status: AdminContentStatus): string {
+    if (status === "published") return "Publish";
+    if (status === "review") return "Move to review";
+    if (status === "archived") return "Archive";
+    return "Move to draft";
+  }
+
+  async function handleSetStatus(item: AdminContentItemRow, nextStatus: AdminContentStatus) {
     if (updatingId || deletingId) return;
+    if (item.status === nextStatus) return;
     setActionError(null);
     setActionNotice(null);
     setUpdatingId(item.id);
-    const nextStatus = item.status === "published" ? "draft" : "published";
 
     try {
       const response = await fetch(`/api/admin/content/${item.id}`, {
@@ -317,7 +351,7 @@ export default function AdminContentManager() {
       setItems((prev) =>
         prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
       );
-      setActionNotice(nextStatus === "published" ? "Content item published." : "Moved to draft.");
+      setActionNotice(statusNotice(nextStatus));
     } catch {
       setActionError("Could not update content item.");
     } finally {
@@ -502,18 +536,19 @@ export default function AdminContentManager() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-slate-500">Order: {item.sort_order}</span>
-                    <button
-                      type="button"
-                      onClick={() => void handleToggleStatus(item)}
-                      disabled={Boolean(updatingId || deletingId)}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {updatingId === item.id
-                        ? "Saving…"
-                        : item.status === "published"
-                          ? "Move to draft"
-                          : "Publish"}
-                    </button>
+                    {STATUS_OPTIONS.filter((option) => option.value !== item.status).map(
+                      (option) => (
+                        <button
+                          key={`${item.id}-${option.value}`}
+                          type="button"
+                          onClick={() => void handleSetStatus(item, option.value)}
+                          disabled={Boolean(updatingId || deletingId)}
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {updatingId === item.id ? "Saving…" : statusActionLabel(option.value)}
+                        </button>
+                      )
+                    )}
                     <button
                       type="button"
                       onClick={() => void handleDelete(item)}
@@ -533,7 +568,7 @@ export default function AdminContentManager() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900">Create content item</h2>
         <p className="mt-2 text-sm text-slate-600">
-          This scaffold creates draft/published content records for future lesson and guide editors.
+          Create and stage content records that power course and guide experiences in the app.
         </p>
         <form
           className="mt-5 grid gap-4 sm:grid-cols-2"
@@ -567,13 +602,16 @@ export default function AdminContentManager() {
               onChange={(e) =>
                 setFormState((prev) => ({
                   ...prev,
-                  status: e.target.value as "draft" | "published",
+                  status: e.target.value as AdminContentStatus,
                 }))
               }
               className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
 

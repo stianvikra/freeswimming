@@ -37,6 +37,7 @@ Each new brief should explicitly include:
 
 - measurable acceptance criteria,
 - quality bar for UX/UI (including required `loading`/`empty`/`error`/`offline`/`retry` states where relevant),
+- business logic correctness and data integrity expectations (deterministic transitions, invariants, no silent corruption),
 - security/privacy/compliance expectations when handling auth/data/payments,
 - observability/KPI contract for production-facing behavior,
 - session continuity and recovery protocol (checkpoint cadence + resume steps).
@@ -52,6 +53,7 @@ Before moving any brief to `done/`, run a final closeout gate:
    - any remaining ideas moved to a dedicated follow-up brief/backlog entry in `deferred/` (or `planned/` if scheduled immediately).
 2. 10/10 quality + safety sweep:
    - UX/UI quality check on changed surfaces,
+   - business logic/data integrity check for changed stateful flows,
    - security/privacy/compliance check for auth/data/payments,
    - performance/regression sanity check so adjacent app flows are not degraded.
    - score target categories from `docs/quality/platform-10-10-scorecard.md` (`0-5`) and record results.

@@ -10,6 +10,7 @@ describe("buildPlatformContentSeedItems", () => {
     const { items, summary } = buildPlatformContentSeedItems();
 
     expect(summary).toEqual({
+      manifestVersion: 1,
       totalItems:
         COURSE_MODULES.length +
         lessonCount +
@@ -50,10 +51,39 @@ describe("buildPlatformContentSeedItems", () => {
 
     for (const session of sessions) {
       expect(session.body.guideSlug).toBe(GUIDE_0_TO_1000M_SLUG);
+      expect(session.body._meta).toMatchObject({
+        manifestVersion: 1,
+        sourceCollection: "guide_session",
+      });
     }
 
     for (const drill of drills) {
       expect(drill.body.guideSlug).toBe(GUIDE_POOLSIDE_SLUG);
+      expect(drill.body._meta).toMatchObject({
+        manifestVersion: 1,
+        sourceCollection: "guide_drill",
+      });
+    }
+  });
+
+  it("adds deterministic manifest metadata and checksum per item", () => {
+    const first = buildPlatformContentSeedItems().items;
+    const second = buildPlatformContentSeedItems().items;
+
+    for (let index = 0; index < first.length; index += 1) {
+      const a = first[index];
+      const b = second[index];
+      const aMeta = (a?.body._meta ?? {}) as { manifestVersion?: number; sourceChecksum?: string };
+      const bMeta = (b?.body._meta ?? {}) as { manifestVersion?: number; sourceChecksum?: string };
+      expect(a?.slug).toBe(b?.slug);
+      expect(a?.body._meta).toMatchObject({
+        manifestVersion: 1,
+      });
+      expect(b?.body._meta).toMatchObject({
+        manifestVersion: 1,
+      });
+      expect(String(aMeta.sourceChecksum)).toMatch(/^[0-9a-f]{64}$/);
+      expect(aMeta.sourceChecksum).toBe(bMeta.sourceChecksum);
     }
   });
 });

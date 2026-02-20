@@ -208,6 +208,8 @@ gh auth login
 
 - Current coverage status and 10/10 gap plan:
   - `docs/testing-coverage-scorecard.md`
+- Platform 10/10 quality contract (including business logic correctness + data integrity):
+  - `docs/quality/platform-10-10-scorecard.md`
 
 ## Team workflow docs
 

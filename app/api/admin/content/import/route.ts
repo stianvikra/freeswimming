@@ -12,6 +12,20 @@ import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import type { Database } from "@/types/database";
 
 type AdminContentInsert = Database["public"]["Tables"]["admin_content_items"]["Insert"];
+type AdminContentRow = Database["public"]["Tables"]["admin_content_items"]["Row"];
+type AdminContentCompareRow = Pick<
+  AdminContentRow,
+  | "slug"
+  | "content_type"
+  | "parent_id"
+  | "title"
+  | "summary"
+  | "category"
+  | "body"
+  | "sort_order"
+  | "status"
+  | "published_at"
+>;
 
 function noStoreJson(
   body: Record<string, unknown>,
@@ -51,6 +65,57 @@ function toInsertRow(
   };
 }
 
+function normalizeStableJson(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeStableJson(entry));
+  }
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => entryValue !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([entryKey, entryValue]) => [entryKey, normalizeStableJson(entryValue)] as const);
+    return Object.fromEntries(entries);
+  }
+  return value;
+}
+
+function sameBody(a: unknown, b: unknown): boolean {
+  return JSON.stringify(normalizeStableJson(a)) === JSON.stringify(normalizeStableJson(b));
+}
+
+function matchesSeedRow(
+  existing: AdminContentCompareRow | undefined,
+  desired: AdminContentInsert
+): boolean {
+  if (!existing) return false;
+  return (
+    existing.content_type === desired.content_type &&
+    existing.parent_id === (desired.parent_id ?? null) &&
+    existing.slug === desired.slug &&
+    existing.title === desired.title &&
+    existing.summary === desired.summary &&
+    existing.category === desired.category &&
+    existing.sort_order === desired.sort_order &&
+    existing.status === desired.status &&
+    Boolean(existing.published_at) === Boolean(desired.published_at) &&
+    sameBody(existing.body, desired.body)
+  );
+}
+
+function withStablePublishedAt(
+  desired: AdminContentInsert,
+  existing: AdminContentCompareRow | undefined,
+  fallbackPublishedAt: string
+): AdminContentInsert {
+  if (desired.status !== "published") {
+    return { ...desired, published_at: null };
+  }
+  return {
+    ...desired,
+    published_at: existing?.published_at ?? fallbackPublishedAt,
+  };
+}
+
 export async function POST() {
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
   const gate = await requireAdminRoleFromSupabase(supabase, {
@@ -69,21 +134,16 @@ export async function POST() {
   const parentItems = seed.items.filter((item) => !item.parentSlug);
   const childItems = seed.items.filter((item) => Boolean(item.parentSlug));
 
-  const parentUpsert = await supabase
+  const parentSlugs = parentItems.map((item) => item.slug);
+  const existingParentsResult = await supabase
     .from("admin_content_items")
-    .upsert(
-      parentItems.map((item) =>
-        toInsertRow(item, {
-          userId: gate.user.id,
-          publishedAt,
-        })
-      ),
-      { onConflict: "slug" }
+    .select(
+      "slug, content_type, parent_id, title, summary, category, body, sort_order, status, published_at"
     )
-    .select("id, slug");
+    .in("slug", parentSlugs);
 
-  if (parentUpsert.error) {
-    if (isAdminContentSchemaMissing(parentUpsert.error)) {
+  if (existingParentsResult.error) {
+    if (isAdminContentSchemaMissing(existingParentsResult.error)) {
       return applySupabaseCookies(
         noStoreJson(
           {
@@ -95,13 +155,66 @@ export async function POST() {
         )
       );
     }
-    console.error("[AdminContentImport] Could not upsert parent content items", parentUpsert.error);
+    console.error(
+      "[AdminContentImport] Could not load existing parent items before import",
+      existingParentsResult.error
+    );
     return applySupabaseCookies(
       noStoreJson(
         { ok: false, error: "Could not import platform content right now." },
         { status: 500 }
       )
     );
+  }
+
+  const existingParentsBySlug = new Map(
+    (existingParentsResult.data ?? []).map((row) => [row.slug, row] as const)
+  );
+  const desiredParentRows = parentItems.map((item) => {
+    const existing = existingParentsBySlug.get(item.slug);
+    return withStablePublishedAt(
+      toInsertRow(item, {
+        userId: gate.user.id,
+        publishedAt,
+      }),
+      existing,
+      publishedAt
+    );
+  });
+  const parentRowsToUpsert = desiredParentRows.filter((row) => {
+    const existing = existingParentsBySlug.get(row.slug);
+    return !matchesSeedRow(existing, row);
+  });
+
+  if (parentRowsToUpsert.length > 0) {
+    const parentUpsert = await supabase
+      .from("admin_content_items")
+      .upsert(parentRowsToUpsert, { onConflict: "slug" });
+
+    if (parentUpsert.error) {
+      if (isAdminContentSchemaMissing(parentUpsert.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: getAdminSchemaSetupMessage("content"),
+              code: "ADMIN_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
+      console.error(
+        "[AdminContentImport] Could not upsert parent content items",
+        parentUpsert.error
+      );
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not import platform content right now." },
+          { status: 500 }
+        )
+      );
+    }
   }
 
   const parentSlugSet = new Set(parentItems.map((item) => item.slug));
@@ -153,19 +266,16 @@ export async function POST() {
     );
   }
 
-  const childUpsert = await supabase.from("admin_content_items").upsert(
-    childItems.map((item) =>
-      toInsertRow(item, {
-        userId: gate.user.id,
-        publishedAt,
-        parentId: item.parentSlug ? (parentIdBySlug.get(item.parentSlug) ?? null) : null,
-      })
-    ),
-    { onConflict: "slug" }
-  );
+  const childSlugs = childItems.map((item) => item.slug);
+  const existingChildrenResult = await supabase
+    .from("admin_content_items")
+    .select(
+      "slug, content_type, parent_id, title, summary, category, body, sort_order, status, published_at"
+    )
+    .in("slug", childSlugs);
 
-  if (childUpsert.error) {
-    if (isAdminContentSchemaMissing(childUpsert.error)) {
+  if (existingChildrenResult.error) {
+    if (isAdminContentSchemaMissing(existingChildrenResult.error)) {
       return applySupabaseCookies(
         noStoreJson(
           {
@@ -177,13 +287,64 @@ export async function POST() {
         )
       );
     }
-    console.error("[AdminContentImport] Could not upsert child content items", childUpsert.error);
+    console.error(
+      "[AdminContentImport] Could not load existing child items before import",
+      existingChildrenResult.error
+    );
     return applySupabaseCookies(
       noStoreJson(
         { ok: false, error: "Could not import platform content right now." },
         { status: 500 }
       )
     );
+  }
+
+  const existingChildrenBySlug = new Map(
+    (existingChildrenResult.data ?? []).map((row) => [row.slug, row] as const)
+  );
+  const desiredChildRows = childItems.map((item) => {
+    const existing = existingChildrenBySlug.get(item.slug);
+    return withStablePublishedAt(
+      toInsertRow(item, {
+        userId: gate.user.id,
+        publishedAt,
+        parentId: item.parentSlug ? (parentIdBySlug.get(item.parentSlug) ?? null) : null,
+      }),
+      existing,
+      publishedAt
+    );
+  });
+  const childRowsToUpsert = desiredChildRows.filter((row) => {
+    const existing = existingChildrenBySlug.get(row.slug);
+    return !matchesSeedRow(existing, row);
+  });
+
+  if (childRowsToUpsert.length > 0) {
+    const childUpsert = await supabase
+      .from("admin_content_items")
+      .upsert(childRowsToUpsert, { onConflict: "slug" });
+
+    if (childUpsert.error) {
+      if (isAdminContentSchemaMissing(childUpsert.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: getAdminSchemaSetupMessage("content"),
+              code: "ADMIN_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
+      console.error("[AdminContentImport] Could not upsert child content items", childUpsert.error);
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not import platform content right now." },
+          { status: 500 }
+        )
+      );
+    }
   }
 
   const catalogProducts = getCatalogProductsSafe();
@@ -212,6 +373,12 @@ export async function POST() {
     noStoreJson({
       ok: true,
       imported: seed.summary,
+      changes: {
+        parentRowsUpdated: parentRowsToUpsert.length,
+        childRowsUpdated: childRowsToUpsert.length,
+        unchangedRows:
+          seed.summary.totalItems - (parentRowsToUpsert.length + childRowsToUpsert.length),
+      },
       productsSynced,
       warning: productSyncWarning,
     })

@@ -530,7 +530,7 @@ export type Database = {
     };
     Enums: {
       admin_role: "admin" | "editor" | "viewer";
-      admin_content_status: "draft" | "published";
+      admin_content_status: "draft" | "review" | "published" | "archived";
       admin_content_type: "course_module" | "course_lesson" | "guide_session" | "guide_drill";
     };
     CompositeTypes: {

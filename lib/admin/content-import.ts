@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { COURSE_MODULES } from "@/app/course/courseData";
 import type { AdminContentStatus, AdminContentType } from "@/lib/admin/content";
 import {
@@ -24,6 +25,7 @@ export type PlatformContentSeedItem = {
 };
 
 export type PlatformContentSeedSummary = {
+  manifestVersion: number;
   totalItems: number;
   courseModules: number;
   courseLessons: number;
@@ -32,6 +34,7 @@ export type PlatformContentSeedSummary = {
 };
 
 const IMPORT_STATUS: AdminContentStatus = "published";
+export const PLATFORM_CONTENT_MANIFEST_VERSION = 1;
 
 function capSummary(value: string): string {
   return value.trim().slice(0, 500);
@@ -53,6 +56,53 @@ function drillSlug(drillId: string): string {
   return `guide-${GUIDE_POOLSIDE_SLUG}-drill-${drillId.toLowerCase()}`;
 }
 
+function normalizeStableJson(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeStableJson(entry));
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => entryValue !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([entryKey, entryValue]) => [entryKey, normalizeStableJson(entryValue)] as const);
+
+    return Object.fromEntries(entries);
+  }
+
+  return value;
+}
+
+function stableChecksum(input: unknown): string {
+  const normalized = normalizeStableJson(input);
+  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
+}
+
+function withManifestMeta(
+  body: Record<string, unknown>,
+  source: {
+    sourceCollection: AdminContentType;
+    sourceId: string;
+  }
+): Record<string, unknown> {
+  const sourceChecksum = stableChecksum({
+    manifestVersion: PLATFORM_CONTENT_MANIFEST_VERSION,
+    sourceCollection: source.sourceCollection,
+    sourceId: source.sourceId,
+    body,
+  });
+
+  return {
+    ...body,
+    _meta: {
+      manifestVersion: PLATFORM_CONTENT_MANIFEST_VERSION,
+      sourceCollection: source.sourceCollection,
+      sourceId: source.sourceId,
+      sourceChecksum,
+    },
+  };
+}
+
 function toModuleSeedItems(): PlatformContentSeedItem[] {
   return COURSE_MODULES.map((module, index) => ({
     contentType: "course_module",
@@ -60,12 +110,18 @@ function toModuleSeedItems(): PlatformContentSeedItem[] {
     title: module.title,
     summary: capSummary(module.subtitle || `${module.lessons.length} lessons`),
     category: "Course modules",
-    body: {
-      moduleId: module.id,
-      subtitle: module.subtitle ?? "",
-      moduleIndex: index + 1,
-      lessonCount: module.lessons.length,
-    },
+    body: withManifestMeta(
+      {
+        moduleId: module.id,
+        subtitle: module.subtitle ?? "",
+        moduleIndex: index + 1,
+        lessonCount: module.lessons.length,
+      },
+      {
+        sourceCollection: "course_module",
+        sourceId: module.id,
+      }
+    ),
     sortOrder: index,
     status: IMPORT_STATUS,
     parentSlug: null,
@@ -84,21 +140,27 @@ function toLessonSeedItems(): PlatformContentSeedItem[] {
         title: lesson.title,
         summary: capSummary(lesson.goal),
         category: "Course lessons",
-        body: {
-          moduleId: module.id,
-          moduleTitle: module.title,
-          moduleIndex: moduleIndex + 1,
-          lessonId: lesson.id,
-          youtubeId: lesson.youtubeId,
-          estMinutes: lesson.estMinutes ?? null,
-          lessonType: lesson.lessonType ?? null,
-          goal: lesson.goal,
-          cues: lesson.cues,
-          commonMistakes: lesson.commonMistakes ?? [],
-          drill: lesson.drill,
-          nextStep: lesson.nextStep,
-          tags: lesson.tags ?? [],
-        },
+        body: withManifestMeta(
+          {
+            moduleId: module.id,
+            moduleTitle: module.title,
+            moduleIndex: moduleIndex + 1,
+            lessonId: lesson.id,
+            youtubeId: lesson.youtubeId,
+            estMinutes: lesson.estMinutes ?? null,
+            lessonType: lesson.lessonType ?? null,
+            goal: lesson.goal,
+            cues: lesson.cues,
+            commonMistakes: lesson.commonMistakes ?? [],
+            drill: lesson.drill,
+            nextStep: lesson.nextStep,
+            tags: lesson.tags ?? [],
+          },
+          {
+            sourceCollection: "course_lesson",
+            sourceId: lesson.id,
+          }
+        ),
         sortOrder: lessonIndex,
         status: IMPORT_STATUS,
         parentSlug: parent,
@@ -116,13 +178,19 @@ function toGuideSessionSeedItem(session: Guide0To1000Session): PlatformContentSe
     title: session.title,
     summary: capSummary(session.focus),
     category: "Guide sessions",
-    body: {
-      guideSlug: GUIDE_0_TO_1000M_SLUG,
-      sessionId: session.id,
-      weekNumber: session.weekNumber,
-      targetSet: session.targetSet,
-      focus: session.focus,
-    },
+    body: withManifestMeta(
+      {
+        guideSlug: GUIDE_0_TO_1000M_SLUG,
+        sessionId: session.id,
+        weekNumber: session.weekNumber,
+        targetSet: session.targetSet,
+        focus: session.focus,
+      },
+      {
+        sourceCollection: "guide_session",
+        sourceId: session.id,
+      }
+    ),
     sortOrder: Number.parseInt(session.id.replace(/[^0-9]/g, ""), 10) - 1,
     status: IMPORT_STATUS,
     parentSlug: null,
@@ -136,14 +204,20 @@ function toGuideDrillSeedItem(drill: PoolsideDrill): PlatformContentSeedItem {
     title: drill.title,
     summary: capSummary(drill.summary),
     category: "Guide drills",
-    body: {
-      guideSlug: GUIDE_POOLSIDE_SLUG,
-      drillId: drill.id,
-      setup: drill.setup,
-      keyFocus: drill.keyFocus,
-      visualAssetPath: drill.visualAssetPath,
-      visualAlt: drill.visualAlt,
-    },
+    body: withManifestMeta(
+      {
+        guideSlug: GUIDE_POOLSIDE_SLUG,
+        drillId: drill.id,
+        setup: drill.setup,
+        keyFocus: drill.keyFocus,
+        visualAssetPath: drill.visualAssetPath,
+        visualAlt: drill.visualAlt,
+      },
+      {
+        sourceCollection: "guide_drill",
+        sourceId: drill.id,
+      }
+    ),
     sortOrder: Number.parseInt(drill.id.replace(/[^0-9]/g, ""), 10) - 1,
     status: IMPORT_STATUS,
     parentSlug: null,
@@ -163,6 +237,7 @@ export function buildPlatformContentSeedItems(): {
   return {
     items,
     summary: {
+      manifestVersion: PLATFORM_CONTENT_MANIFEST_VERSION,
       totalItems: items.length,
       courseModules: modules.length,
       courseLessons: lessons.length,
