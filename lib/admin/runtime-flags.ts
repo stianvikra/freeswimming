@@ -1,6 +1,6 @@
 import type { Database } from "@/types/database";
 
-export const ADMIN_RUNTIME_FLAG_KEYS = ["soft_launch_banner"] as const;
+export const ADMIN_RUNTIME_FLAG_KEYS = [] as const;
 
 export type AdminRuntimeFlagKey = (typeof ADMIN_RUNTIME_FLAG_KEYS)[number];
 export type AdminRuntimeFlagRow = Database["public"]["Tables"]["admin_runtime_flags"]["Row"];

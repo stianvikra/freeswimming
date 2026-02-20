@@ -35,14 +35,10 @@ type AdminRuntimeFlagUpdateResponse =
     };
 
 function runtimeFlagLabel(key: string): string {
-  if (key === "soft_launch_banner") return "Soft launch banner";
   return key;
 }
 
-function runtimeFlagHint(key: string, fallbackDescription: string): string {
-  if (key === "soft_launch_banner") {
-    return "Shows or hides the under-construction banner on public routes.";
-  }
+function runtimeFlagHint(_key: string, fallbackDescription: string): string {
   return fallbackDescription || "Runtime flag.";
 }
 

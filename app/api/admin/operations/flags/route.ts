@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminRuntimeFlagKey } from "@/lib/admin/runtime-flags";
 import { getAdminSchemaSetupMessage, isAdminRuntimeFlagsSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -83,7 +84,7 @@ export async function GET() {
     noStoreJson({
       ok: true,
       siteLock: getSafeSiteLockSnapshot(),
-      flags: (result.data ?? []).filter((flag) => flag.key !== "soft_launch_banner"),
+      flags: (result.data ?? []).filter((flag) => isAdminRuntimeFlagKey(flag.key)),
       schemaReady: true,
       warning: null,
     })
