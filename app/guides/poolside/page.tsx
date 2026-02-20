@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import PoolsideGuideTracker from "@/components/guides/PoolsideGuideTracker";
+import { loadPublishedPoolsideDrills } from "@/lib/admin/content-published";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import {
-  GUIDE_POOLSIDE_DRILLS,
   GUIDE_POOLSIDE_PDF_DOWNLOAD_FILENAME,
   GUIDE_POOLSIDE_PRODUCT_ID,
   GUIDE_POOLSIDE_SLUG,
@@ -75,6 +75,8 @@ export default async function GuidePoolsidePage() {
     );
   }
 
+  const drills = await loadPublishedPoolsideDrills();
+
   return (
     <SiteChrome>
       <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
@@ -97,7 +99,7 @@ export default async function GuidePoolsidePage() {
           </div>
         </div>
 
-        <PoolsideGuideTracker guideSlug={GUIDE_POOLSIDE_SLUG} drills={GUIDE_POOLSIDE_DRILLS} />
+        <PoolsideGuideTracker guideSlug={GUIDE_POOLSIDE_SLUG} drills={drills} />
       </section>
     </SiteChrome>
   );

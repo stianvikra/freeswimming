@@ -45,9 +45,8 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import {
   COURSE_MODULES,
   DEFAULT_LESSON_ID,
-  findLesson,
-  getNextPrevLessonIds,
   COURSE_LESSONS_FLAT,
+  type CourseModule,
   type CourseLesson,
 } from "./courseData";
 
@@ -74,6 +73,18 @@ const DEFAULT_PASS_CRITERIA = [
   "Breathing stays controlled without rushing.",
   "Body line stays stable from start to finish.",
 ];
+const FALLBACK_LESSON: CourseLesson = COURSE_LESSONS_FLAT[0] ?? {
+  id: DEFAULT_LESSON_ID,
+  title: "Freestyle lesson",
+  youtubeId: "Xh6OblO06LY",
+  goal: "Start your freestyle progression here.",
+  cues: ["Swim easy and stay relaxed."],
+  drill: {
+    title: "Technique warm-up",
+    steps: ["Swim easy and keep your body line calm and controlled."],
+  },
+  nextStep: "Continue to the next lesson.",
+};
 
 type SwipeDirection = "prev" | "next";
 
@@ -174,12 +185,28 @@ function CoursePageClient() {
   const install = useInstallContext();
 
   const lessonParam = searchParams.get("lesson");
-  const activeLesson = useMemo<CourseLesson>(() => findLesson(lessonParam), [lessonParam]);
-
-  const { prevId, nextId } = useMemo(
-    () => getNextPrevLessonIds(activeLesson.id),
-    [activeLesson.id]
+  const [courseModules, setCourseModules] = useState<CourseModule[]>(COURSE_MODULES);
+  const courseLessonsFlat = useMemo(
+    () => courseModules.flatMap((module) => module.lessons),
+    [courseModules]
   );
+  const defaultLessonId = courseLessonsFlat[0]?.id ?? DEFAULT_LESSON_ID;
+  const activeLesson = useMemo<CourseLesson>(() => {
+    const firstLesson = courseLessonsFlat[0] ?? FALLBACK_LESSON;
+    if (!lessonParam) return firstLesson;
+    return courseLessonsFlat.find((lesson) => lesson.id === lessonParam) ?? firstLesson;
+  }, [courseLessonsFlat, lessonParam]);
+
+  const { prevId, nextId } = useMemo(() => {
+    const index = courseLessonsFlat.findIndex((lesson) => lesson.id === activeLesson.id);
+    if (index === -1) return { prevId: null, nextId: null };
+
+    return {
+      prevId: index > 0 ? (courseLessonsFlat[index - 1]?.id ?? null) : null,
+      nextId:
+        index < courseLessonsFlat.length - 1 ? (courseLessonsFlat[index + 1]?.id ?? null) : null,
+    };
+  }, [activeLesson.id, courseLessonsFlat]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<DrawerView>("course");
@@ -255,41 +282,43 @@ function CoursePageClient() {
   }, []);
 
   const moduleInfo = useMemo(() => {
-    const moduleIndex = COURSE_MODULES.findIndex((m) =>
+    const moduleIndex = courseModules.findIndex((m) =>
       m.lessons.some((l) => l.id === activeLesson.id)
     );
-    const mod = COURSE_MODULES[moduleIndex] ?? COURSE_MODULES[0];
-    const lessonIndexInModule = mod.lessons.findIndex((l) => l.id === activeLesson.id);
-    const lessonIndexGlobal = COURSE_LESSONS_FLAT.findIndex((l) => l.id === activeLesson.id);
+    const mod = courseModules[moduleIndex] ?? courseModules[0] ?? null;
+    const moduleCount = Math.max(1, courseModules.length);
+    const moduleLessons = mod?.lessons ?? [];
+    const lessonIndexInModule = moduleLessons.findIndex((l) => l.id === activeLesson.id);
+    const lessonIndexGlobal = courseLessonsFlat.findIndex((l) => l.id === activeLesson.id);
 
     return {
       moduleIndex,
-      moduleCount: COURSE_MODULES.length,
+      moduleCount,
       module: mod,
       lessonIndexInModule,
-      moduleLessonCount: mod.lessons.length,
+      moduleLessonCount: moduleLessons.length,
       lessonIndexGlobal,
-      totalLessons: COURSE_LESSONS_FLAT.length,
+      totalLessons: courseLessonsFlat.length,
     };
-  }, [activeLesson.id]);
+  }, [activeLesson.id, courseLessonsFlat, courseModules]);
 
   const lessonJumpMeta = useMemo(() => {
     let globalIndex = 0;
-    return COURSE_MODULES.flatMap((module, moduleIndex) =>
+    return courseModules.flatMap((module, moduleIndex) =>
       module.lessons.map((lesson, lessonIndexInModule) => {
         globalIndex += 1;
         return {
           lesson,
           moduleTitle: module.title,
           moduleIndex: moduleIndex + 1,
-          moduleCount: COURSE_MODULES.length,
+          moduleCount: courseModules.length,
           lessonIndexInModule: lessonIndexInModule + 1,
           moduleLessonCount: module.lessons.length,
           globalLessonIndex: globalIndex,
         };
       })
     );
-  }, []);
+  }, [courseModules]);
 
   const localCourseProgressLoaded = doneLessonIdsLoaded && playbackProgressLoaded;
 
@@ -427,12 +456,50 @@ function CoursePageClient() {
 
     try {
       const last = localStorage.getItem(STORAGE_KEY);
-      const next = last || DEFAULT_LESSON_ID;
+      const next = last || defaultLessonId;
       router.replace(`${pathname}?lesson=${encodeURIComponent(next)}`);
     } catch {
-      router.replace(`${pathname}?lesson=${encodeURIComponent(DEFAULT_LESSON_ID)}`);
+      router.replace(`${pathname}?lesson=${encodeURIComponent(defaultLessonId)}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPublishedCourseContent = async () => {
+      try {
+        const response = await fetch("/api/course/content", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+
+        const payload = (await response.json()) as {
+          ok?: boolean;
+          modules?: CourseModule[];
+        };
+
+        if (
+          cancelled ||
+          !response.ok ||
+          !payload.ok ||
+          !Array.isArray(payload.modules) ||
+          payload.modules.length === 0
+        ) {
+          return;
+        }
+
+        setCourseModules(payload.modules);
+      } catch {
+        // keep safe default
+      }
+    };
+
+    void loadPublishedCourseContent();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -1141,8 +1208,8 @@ function CoursePageClient() {
 
   const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
   const doneLessonsCount = useMemo(
-    () => COURSE_LESSONS_FLAT.filter((lesson) => doneLessonIdSet.has(lesson.id)).length,
-    [doneLessonIdSet]
+    () => courseLessonsFlat.filter((lesson) => doneLessonIdSet.has(lesson.id)).length,
+    [courseLessonsFlat, doneLessonIdSet]
   );
   const totalLessons = Math.max(1, moduleInfo.totalLessons);
   const donePct = useMemo(() => {
@@ -1151,8 +1218,8 @@ function CoursePageClient() {
   const currentLessonIndex = moduleInfo.lessonIndexGlobal >= 0 ? moduleInfo.lessonIndexGlobal : 0;
   const nextLesson = useMemo(() => {
     if (!nextId) return null;
-    return COURSE_LESSONS_FLAT.find((lesson) => lesson.id === nextId) ?? null;
-  }, [nextId]);
+    return courseLessonsFlat.find((lesson) => lesson.id === nextId) ?? null;
+  }, [courseLessonsFlat, nextId]);
   const isLessonDone = doneLessonIds.includes(activeLesson.id);
   const lessonType = activeLesson.lessonType ?? "drill";
   const showPassCriteria = lessonType === "drill" || lessonType === "swim";
@@ -1981,7 +2048,7 @@ function CoursePageClient() {
                 aria-valuetext={`${doneLessonsCount} of ${totalLessons} lessons marked done (${donePct}%). Current: ${overviewLabel.lesson}.`}
               >
                 <div className="flex h-[10px] w-full overflow-hidden rounded-full bg-slate-200/95">
-                  {COURSE_LESSONS_FLAT.map((lesson, index) => {
+                  {courseLessonsFlat.map((lesson, index) => {
                     const isCurrentSegment = index === currentLessonIndex;
                     const isDoneSegment = doneLessonIdSet.has(lesson.id);
                     const isFirstSegment = index === 0;
@@ -2392,6 +2459,7 @@ function CoursePageClient() {
               activeLessonId: activeLesson.id,
               onSelectLesson: goToLesson,
               doneLessonIds,
+              modules: courseModules,
             }}
             titleMain="Main menu"
             titleCourse="Course menu"

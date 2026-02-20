@@ -238,6 +238,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-20 | working tree | changed admin GET APIs (content/operations/commerce/notes) to return setup-not-ready fallback instead of generic 500 on read errors; validated lint/typecheck/unit/admin-e2e-smoke | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | added admin categories foundation (DB migration + category APIs + dashboard categories tab) and wired category suggestions into notes/content forms; content items now carry category field | validate + commit/push + PR`
 - `2026-02-20 | working tree | implemented phase-2 import baseline flow: new admin import endpoint, deterministic seed mapper from hardcoded course/guide content, admin UI import action with feedback, and unit coverage for seed parity | commit checkpoint + push + PR`
+- `2026-02-20 | working tree | implemented phase-4 DB-first published read-path for guides and course (new published mappers/loaders, /api/course/content, dynamic course modules in page/drawer with fallback, mapper unit tests) | finalize validation + commit/push + PR`
 
 ## Final Closeout Gate
 

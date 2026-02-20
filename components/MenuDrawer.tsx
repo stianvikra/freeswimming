@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import Modal from "@/components/Modal";
-import { COURSE_MODULES, type CourseLesson } from "@/app/course/courseData";
+import { COURSE_MODULES, type CourseLesson, type CourseModule } from "@/app/course/courseData";
 import { useInstallContext } from "@/components/install/install-context";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
@@ -34,6 +34,7 @@ type Props = {
     activeLessonId: string;
     onSelectLesson: (lessonId: string) => void;
     doneLessonIds?: string[];
+    modules?: CourseModule[];
   };
 
   /** Optional: headline override */
@@ -54,6 +55,13 @@ export default function MenuDrawer({
 }: Props) {
   const pathname = usePathname();
   const hasCourse = Boolean(course);
+  const activeCourseLessonId = course?.activeLessonId ?? null;
+  const courseModules = useMemo(() => {
+    if (!hasCourse) return COURSE_MODULES;
+    const dynamicModules = course?.modules;
+    if (!dynamicModules || dynamicModules.length === 0) return COURSE_MODULES;
+    return dynamicModules;
+  }, [course?.modules, hasCourse]);
   const { canInstall, isInstalled, requestInstall } = useInstallContext();
 
   const [view, setView] = useState<"main" | "course">(hasCourse ? defaultView : "main");
@@ -92,11 +100,12 @@ export default function MenuDrawer({
   }, [open]);
 
   const defaultOpenModuleId = useMemo(() => {
-    if (!hasCourse) return COURSE_MODULES[0]?.id ?? "m1";
-    const activeId = course!.activeLessonId;
-    const mod = COURSE_MODULES.find((m) => m.lessons.some((l) => l.id === activeId));
-    return mod?.id ?? COURSE_MODULES[0]?.id ?? "m1";
-  }, [hasCourse, course]);
+    if (!hasCourse) return courseModules[0]?.id ?? "m1";
+    const activeId = activeCourseLessonId;
+    if (!activeId) return courseModules[0]?.id ?? "m1";
+    const mod = courseModules.find((m) => m.lessons.some((l) => l.id === activeId));
+    return mod?.id ?? courseModules[0]?.id ?? "m1";
+  }, [activeCourseLessonId, courseModules, hasCourse]);
 
   const [openModuleId, setOpenModuleId] = useState<string>(defaultOpenModuleId);
 
@@ -246,6 +255,7 @@ export default function MenuDrawer({
         <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-36 pt-4">
           {view === "course" && hasCourse ? (
             <CourseView
+              modules={courseModules}
               openModuleId={openModuleId}
               setOpenModuleId={setOpenModuleId}
               activeLessonId={course!.activeLessonId}
@@ -428,12 +438,14 @@ function MainView({
 }
 
 function CourseView({
+  modules,
   openModuleId,
   setOpenModuleId,
   activeLessonId,
   doneLessonIds,
   onSelectLesson,
 }: {
+  modules: CourseModule[];
   openModuleId: string;
   setOpenModuleId: (id: string) => void;
   activeLessonId: string;
@@ -441,26 +453,26 @@ function CourseView({
   onSelectLesson: (lessonId: string) => void;
 }) {
   const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
-  const totalModules = COURSE_MODULES.length;
+  const totalModules = modules.length;
   const totalLessons = useMemo(
-    () => COURSE_MODULES.reduce((sum, mod) => sum + mod.lessons.length, 0),
-    []
+    () => modules.reduce((sum, mod) => sum + mod.lessons.length, 0),
+    [modules]
   );
   const completedLessons = useMemo(
     () =>
-      COURSE_MODULES.reduce(
+      modules.reduce(
         (sum, mod) => sum + mod.lessons.filter((lesson) => doneLessonIdSet.has(lesson.id)).length,
         0
       ),
-    [doneLessonIdSet]
+    [doneLessonIdSet, modules]
   );
   const completedModules = useMemo(
     () =>
-      COURSE_MODULES.filter(
+      modules.filter(
         (mod) =>
           mod.lessons.length > 0 && mod.lessons.every((lesson) => doneLessonIdSet.has(lesson.id))
       ).length,
-    [doneLessonIdSet]
+    [doneLessonIdSet, modules]
   );
   const completedPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
@@ -502,7 +514,7 @@ function CourseView({
         </div>
       </div>
 
-      {COURSE_MODULES.map((mod, idx) => {
+      {modules.map((mod, idx) => {
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
         const moduleLessonCount = mod.lessons.length;
@@ -559,7 +571,7 @@ function CourseView({
                         : "bg-slate-50 text-slate-700 ring-slate-200/70",
                     ].join(" ")}
                   >
-                    Module {idx + 1} of {COURSE_MODULES.length}
+                    Module {idx + 1} of {modules.length}
                   </span>
 
                   {isActiveModule ? (
