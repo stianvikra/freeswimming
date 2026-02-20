@@ -3,13 +3,13 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import Guide0To1000Tracker from "@/components/guides/Guide0To1000Tracker";
+import { loadPublishedGuide0To1000Sessions } from "@/lib/admin/content-published";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   GUIDE_0_TO_1000M_PDF_DOWNLOAD_FILENAME,
   GUIDE_0_TO_1000M_PRODUCT_ID,
-  GUIDE_0_TO_1000M_SESSIONS,
   GUIDE_0_TO_1000M_SLUG,
 } from "@/lib/guides/guide-0-1000m";
 
@@ -75,6 +75,8 @@ export default async function Guide0To1000Page() {
     );
   }
 
+  const sessions = await loadPublishedGuide0To1000Sessions();
+
   return (
     <SiteChrome>
       <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
@@ -96,10 +98,7 @@ export default async function Guide0To1000Page() {
             </Link>
           </div>
         </div>
-        <Guide0To1000Tracker
-          guideSlug={GUIDE_0_TO_1000M_SLUG}
-          sessions={GUIDE_0_TO_1000M_SESSIONS}
-        />
+        <Guide0To1000Tracker guideSlug={GUIDE_0_TO_1000M_SLUG} sessions={sessions} />
       </section>
     </SiteChrome>
   );
