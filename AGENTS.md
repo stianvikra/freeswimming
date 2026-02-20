@@ -140,6 +140,9 @@ This file defines how coding agents should collaborate in this repository.
   - risk/regression notes,
   - follow-up items (if any).
 - Open PR/review/merge links in Safari and make the Safari tab active when possible.
+- Prefer `npm run pr:create:safari` for PR handoff:
+  - auto-creates PR when `gh` CLI auth is available,
+  - otherwise falls back to Safari PR page.
 
 ## Session Recovery And Continuity
 
