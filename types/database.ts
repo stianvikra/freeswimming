@@ -320,6 +320,42 @@ export type Database = {
           },
         ];
       };
+      admin_content_revisions: {
+        Row: {
+          action: string;
+          changed_by: string | null;
+          changed_by_email: string | null;
+          content_item_id: string;
+          content_slug: string;
+          created_at: string;
+          id: string;
+          revision_number: number;
+          snapshot: Json;
+        };
+        Insert: {
+          action: string;
+          changed_by?: string | null;
+          changed_by_email?: string | null;
+          content_item_id: string;
+          content_slug: string;
+          created_at?: string;
+          id?: string;
+          revision_number: number;
+          snapshot: Json;
+        };
+        Update: {
+          action?: string;
+          changed_by?: string | null;
+          changed_by_email?: string | null;
+          content_item_id?: string;
+          content_slug?: string;
+          created_at?: string;
+          id?: string;
+          revision_number?: number;
+          snapshot?: Json;
+        };
+        Relationships: [];
+      };
       admin_categories: {
         Row: {
           created_at: string;
