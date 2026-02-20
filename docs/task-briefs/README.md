@@ -40,6 +40,8 @@ Each new brief should explicitly include:
 - security/privacy/compliance expectations when handling auth/data/payments,
 - observability/KPI contract for production-facing behavior,
 - session continuity and recovery protocol (checkpoint cadence + resume steps).
+- platform 10/10 scorecard mapping with category status (`target`/`supporting`/`N/A`) and measurable thresholds:
+  - `docs/quality/platform-10-10-scorecard.md`
 
 ## Final Closeout Gate (Required Before Move To `done`)
 
@@ -52,6 +54,7 @@ Before moving any brief to `done/`, run a final closeout gate:
    - UX/UI quality check on changed surfaces,
    - security/privacy/compliance check for auth/data/payments,
    - performance/regression sanity check so adjacent app flows are not degraded.
+   - score target categories from `docs/quality/platform-10-10-scorecard.md` (`0-5`) and record results.
 3. cleanup readiness:
    - tests + manual QA evidence recorded in brief,
    - PR/branch ready for merge and post-merge hygiene.

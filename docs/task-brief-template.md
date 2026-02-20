@@ -18,6 +18,7 @@ Use this quick check so the task execution is precise:
 - State PR browser rule (open PR/merge links in Safari by default unless owner requests otherwise)
 - State manual QA link rule (assistant opens each QA URL in Safari before asking for `done`)
 - State local tooling prerequisite (Node LTS + npm installed where local validation runs)
+- State platform scorecard mapping (`docs/quality/platform-10-10-scorecard.md`)
 - State closeout gate (completion audit + final 10/10 quality/safety/perf/regression sweep + move/cleanup prompts)
 
 Suggested prompt wrapper:
@@ -52,6 +53,39 @@ Handoff must include:
 ## Goal
 
 One sentence: what should be true after this task is done?
+
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+For each category in the scorecard, mark:
+
+- `target`: this brief must achieve measurable pass criteria,
+- `supporting`: touched indirectly but not the primary target,
+- `N/A`: not relevant for this brief.
+
+Include:
+
+- threshold(s) for each `target` category,
+- evidence source (test, metric, manual QA, log),
+- expected closeout score (`0-5`) target.
+
+## Data Placement And Sync Contract (Required For Stateful Features)
+
+For stateful work, define explicit boundaries:
+
+- Server-canonical data:
+  - which entities are source-of-truth in backend storage.
+- Local data:
+  - which values may be stored in browser/device and why.
+- Sync policy:
+  - sync triggers, conflict resolution, retry/backoff behavior, and failure UX.
+- Retention and sensitivity:
+  - data lifetime, deletion expectations, and sensitive-data constraints.
+- Cache/invalidation:
+  - route/data cache mode and invalidation events (`revalidate`/write-through/manual refresh).
+
+If not applicable, write `N/A` with rationale.
 
 ## Scope
 
@@ -139,16 +173,36 @@ For each brief, explicitly state scope or `N/A` for these categories so quality 
   - role boundaries per endpoint/UI action, audit trail for sensitive mutations.
 - UX/UI quality contract
   - clear primary action, hierarchy, and required states (`loading`, `empty`, `error`, `retry`).
+- Admin editor ergonomics
+  - low-friction edit/publish flows with explicit confirmations and fast recovery from validation errors.
 - Performance contract
-  - latency/render/payload guardrails for changed surfaces.
+  - latency/render/payload guardrails for changed surfaces, including route-level speed budgets when applicable.
+- Data placement and sync boundaries
+  - explicit local-vs-server ownership and synchronization rules.
+- Caching and invalidation strategy
+  - freshness guarantees and deterministic invalidation triggers.
 - Testing contract
   - unit + e2e coverage for critical paths and negative paths; avoid duplicate tests.
 - Observability and KPI tracking
   - required events/logs + concrete success/failure thresholds.
+- Incident response and support operations
+  - runbooks, alerting/escalation path, and support diagnostics for changed critical flows.
+- Finance and reporting operations
+  - reconciliation impact for commerce/entitlement/refund related changes.
+- i18n operational readiness
+  - ensure changed models/routes/metadata do not block future multi-language rollout.
+- Stack-fit and dependency discipline
+  - prefer stack-native patterns and avoid unnecessary dependencies.
+- Scalability and cost efficiency
+  - avoid patterns likely to cause runaway runtime/database/CI costs.
 - Migration and rollback readiness
   - rollout plan, backward compatibility window, rollback path.
 - Definition of done quant targets
   - explicit measurable pass criteria (for example zero unexpected `500` on covered paths).
+
+Also ensure alignment with the canonical platform scorecard:
+
+- `docs/quality/platform-10-10-scorecard.md`
 
 ## Security, Privacy, and Compliance (Required For Auth/Data/Payments)
 

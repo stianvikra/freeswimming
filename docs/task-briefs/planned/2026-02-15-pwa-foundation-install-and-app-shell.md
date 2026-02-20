@@ -152,3 +152,9 @@ FreeSwimming should have a production-grade PWA baseline: installable on support
 - `PR`: link to merged PR
 - `merge`: source branch -> target branch
 - `result`: short outcome summary
+
+## Platform 10/10 Scorecard Linkage
+
+- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
+- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
+- Closeout must record achieved score (`0-5`) for each target category.
