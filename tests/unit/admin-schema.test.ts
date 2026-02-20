@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isAdminCommerceSchemaMissing,
   getAdminSchemaSetupMessage,
   isAdminContentSchemaMissing,
   isAdminNotesSchemaMissing,
@@ -28,9 +29,30 @@ describe("admin schema helpers", () => {
     expect(isAdminNotesSchemaMissing({ code: "PGRST205" })).toBe(true);
   });
 
+  it("detects setup blocked by missing grants or policies", () => {
+    expect(
+      isAdminContentSchemaMissing({
+        code: "42501",
+        message: "permission denied for table admin_content_items",
+      })
+    ).toBe(true);
+    expect(
+      isAdminRuntimeFlagsSchemaMissing({
+        message: "new row violates row-level security policy for table admin_runtime_flags",
+      })
+    ).toBe(true);
+    expect(
+      isAdminCommerceSchemaMissing({
+        code: "42501",
+        message: "permission denied for table products",
+      })
+    ).toBe(true);
+  });
+
   it("returns setup message per section", () => {
     expect(getAdminSchemaSetupMessage("content")).toContain("Admin content");
     expect(getAdminSchemaSetupMessage("operations")).toContain("Admin operations");
     expect(getAdminSchemaSetupMessage("notes")).toContain("Admin notes");
+    expect(getAdminSchemaSetupMessage("commerce")).toContain("Admin commerce");
   });
 });

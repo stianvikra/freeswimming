@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAdminSchemaSetupMessage, isAdminCommerceSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
@@ -35,6 +36,17 @@ export async function GET() {
     .order("created_at", { ascending: true });
 
   if (result.error) {
+    if (isAdminCommerceSchemaMissing(result.error)) {
+      return applySupabaseCookies(
+        noStoreJson({
+          ok: true,
+          items: [],
+          schemaReady: false,
+          warning: getAdminSchemaSetupMessage("commerce"),
+        })
+      );
+    }
+
     console.error("[AdminProducts] Could not load products", result.error);
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not load products right now." }, { status: 500 })
@@ -45,6 +57,8 @@ export async function GET() {
     noStoreJson({
       ok: true,
       items: result.data ?? [],
+      schemaReady: true,
+      warning: null,
     })
   );
 }

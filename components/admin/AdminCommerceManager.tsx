@@ -9,6 +9,8 @@ type AdminProductsResponse =
   | {
       ok: true;
       items: AdminProductRow[];
+      schemaReady?: boolean;
+      warning?: string | null;
     }
   | {
       ok: false;
@@ -35,6 +37,8 @@ export default function AdminCommerceManager() {
   const [draftById, setDraftById] = useState<Record<string, ProductDraft>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [schemaReady, setSchemaReady] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
@@ -42,6 +46,7 @@ export default function AdminCommerceManager() {
   async function loadProducts() {
     setLoading(true);
     setError(null);
+    setWarning(null);
     try {
       const response = await fetch("/api/admin/products", {
         method: "GET",
@@ -51,15 +56,16 @@ export default function AdminCommerceManager() {
       const payload = (await response.json()) as AdminProductsResponse;
       if (!response.ok || !payload.ok) {
         setError(
-          payload.ok
-            ? "Could not load products."
-            : (payload.error ?? "Could not load products.")
+          payload.ok ? "Could not load products." : (payload.error ?? "Could not load products.")
         );
         setItems([]);
         setDraftById({});
+        setSchemaReady(true);
         return;
       }
       setItems(payload.items);
+      setSchemaReady(payload.schemaReady !== false);
+      setWarning(payload.warning ?? null);
       setDraftById(
         Object.fromEntries(
           payload.items.map((item) => [
@@ -75,6 +81,7 @@ export default function AdminCommerceManager() {
       setError("Could not load products.");
       setItems([]);
       setDraftById({});
+      setSchemaReady(true);
     } finally {
       setLoading(false);
     }
@@ -132,14 +139,14 @@ export default function AdminCommerceManager() {
       const payload = (await response.json()) as AdminProductUpdateResponse;
       if (!response.ok || !payload.ok) {
         setActionError(
-          payload.ok
-            ? "Could not update product."
-            : (payload.error ?? "Could not update product.")
+          payload.ok ? "Could not update product." : (payload.error ?? "Could not update product.")
         );
         return;
       }
 
-      setItems((prev) => prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry)));
+      setItems((prev) =>
+        prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+      );
       setDraftById((prev) => ({
         ...prev,
         [payload.item.id]: {
@@ -190,6 +197,12 @@ export default function AdminCommerceManager() {
         </div>
       ) : null}
 
+      {!schemaReady && warning ? (
+        <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {warning}
+        </p>
+      ) : null}
+
       {!loading && !error && items.length === 0 ? (
         <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
           Product catalog is empty. Checkout flows depend on seeded products.
@@ -234,12 +247,16 @@ export default function AdminCommerceManager() {
                   </label>
 
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Slug</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Slug
+                    </p>
                     <p className="mt-1 text-sm text-slate-700">/{item.slug}</p>
                   </div>
 
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Kind</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Kind
+                    </p>
                     <p className="mt-1 text-sm text-slate-700">{item.kind}</p>
                   </div>
 
@@ -261,7 +278,9 @@ export default function AdminCommerceManager() {
                       }
                       className="h-4 w-4 rounded border-slate-300 text-blue-600"
                     />
-                    <span>{draft.active ? "Active in plans/library" : "Hidden from new sales"}</span>
+                    <span>
+                      {draft.active ? "Active in plans/library" : "Hidden from new sales"}
+                    </span>
                   </label>
 
                   <div className="sm:col-span-2">

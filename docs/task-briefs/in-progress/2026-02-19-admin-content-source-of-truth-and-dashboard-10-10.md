@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-02-19-admin-content-source-of-truth-and-dashboard-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-19`
-- `updated`: `2026-02-19`
+- `updated`: `2026-02-20`
 
 ## Goal
 
@@ -196,7 +196,13 @@ State scope or `N/A` for each category during implementation and closeout:
 - Recovery:
   1. `git status -sb`
   2. `git log --oneline -n 10`
-  3. reopen this brief and continue from latest checkpoint.
+
+3. reopen this brief and continue from latest checkpoint.
+
+## Implementation Checkpoint Log
+
+- `2026-02-20 | working tree | moved brief to in-progress and started admin API hardening for schema/policy readiness handling | patch schema helpers + admin routes and validate with tests`
+- `2026-02-20 | working tree | hardened admin schema helpers + products APIs/UI for setup-not-ready fallback (no red 500 for missing grants/RLS) | commit checkpoint + push + PR`
 
 ## Final Closeout Gate
 

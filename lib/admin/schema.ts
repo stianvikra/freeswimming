@@ -6,6 +6,13 @@ type PostgrestLikeError = {
 };
 
 const MISSING_SCHEMA_CODES = new Set(["42P01", "42703", "PGRST204", "PGRST205"]);
+const SETUP_BLOCKED_CODES = new Set(["42501"]);
+const SETUP_BLOCKED_MARKERS = [
+  "permission denied",
+  "row-level security",
+  "violates row-level security",
+  "insufficient privilege",
+];
 
 function buildErrorBlob(error: PostgrestLikeError): string {
   return `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`.toLowerCase();
@@ -13,6 +20,10 @@ function buildErrorBlob(error: PostgrestLikeError): string {
 
 function hasMissingSchemaCode(error: PostgrestLikeError): boolean {
   return Boolean(error.code && MISSING_SCHEMA_CODES.has(error.code));
+}
+
+function hasSetupBlockedCode(error: PostgrestLikeError): boolean {
+  return Boolean(error.code && SETUP_BLOCKED_CODES.has(error.code));
 }
 
 function includesAnyMarker(blob: string, markers: string[]): boolean {
@@ -24,6 +35,8 @@ export function isAdminContentSchemaMissing(error: PostgrestLikeError | null | u
   if (hasMissingSchemaCode(error)) return true;
 
   const blob = buildErrorBlob(error);
+  if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
+
   return includesAnyMarker(blob, [
     "admin_content_items",
     "admin_content_type",
@@ -38,6 +51,8 @@ export function isAdminRuntimeFlagsSchemaMissing(
   if (hasMissingSchemaCode(error)) return true;
 
   const blob = buildErrorBlob(error);
+  if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
+
   return includesAnyMarker(blob, ["admin_runtime_flags"]);
 }
 
@@ -46,16 +61,34 @@ export function isAdminNotesSchemaMissing(error: PostgrestLikeError | null | und
   if (hasMissingSchemaCode(error)) return true;
 
   const blob = buildErrorBlob(error);
+  if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
+
   return includesAnyMarker(blob, ["admin_notes"]);
 }
 
-export function getAdminSchemaSetupMessage(section: "content" | "operations" | "notes"): string {
+export function isAdminCommerceSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  if (!error) return false;
+  if (hasMissingSchemaCode(error)) return true;
+
+  const blob = buildErrorBlob(error);
+  if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
+
+  return includesAnyMarker(blob, ["products", "profiles", "role"]);
+}
+
+export function getAdminSchemaSetupMessage(
+  section: "content" | "operations" | "notes" | "commerce"
+): string {
   const area =
     section === "content"
       ? "Admin content"
       : section === "operations"
         ? "Admin operations"
-        : "Admin notes";
+        : section === "notes"
+          ? "Admin notes"
+          : "Admin commerce";
 
-  return `${area} setup is not ready in this environment yet. Apply latest Supabase migrations and refresh.`;
+  return `${area} setup is not ready in this environment yet. Apply latest Supabase migrations (tables + grants + RLS policies), then refresh.`;
 }
