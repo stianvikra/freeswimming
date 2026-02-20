@@ -246,6 +246,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-20 | working tree | closed deferred hardening slice: added immutable `admin_content_revisions` + notes audit triggers, expanded admin workflow e2e to cover review/archive transitions, and added dedicated admin parity mirror e2e | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | implemented admin notes edit workflow UX (inline edit + save/cancel + user feedback) and added dedicated e2e create/edit/toggle/delete notes coverage | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | added dedicated admin-e2e CI workflow (manual + nightly, secrets-gated) and documented required secrets/test command | commit checkpoint + push + PR`
+- `2026-02-20 | working tree | hardened admin e2e reliability for schema-mismatch CI environments (skip write-path flows when admin schema is not ready) and avoided noisy profile-role bootstrap attempts when `profiles.role` is absent | commit checkpoint + push + PR`
 
 ## Deferred Closeout Items
 

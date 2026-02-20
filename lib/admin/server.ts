@@ -86,7 +86,12 @@ export async function resolveAdminRoleFromSupabase(
     allowlistedEmailsRaw: options.allowlistedEmailsRaw,
   });
 
-  if (resolvedRole === "admin" && !profileRole && user.email) {
+  if (
+    resolvedRole === "admin" &&
+    !profileRole &&
+    user.email &&
+    !isAdminRoleColumnMissingError(profileRoleError)
+  ) {
     await ensureAllowlistedAdminProfile(user);
   }
 
