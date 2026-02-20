@@ -241,6 +241,30 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-20 | working tree | implemented phase-4 DB-first published read-path for guides and course (new published mappers/loaders, /api/course/content, dynamic course modules in page/drawer with fallback, mapper unit tests) | finalize validation + commit/push + PR`
 - `2026-02-20 | working tree | hardened phase-5 parity mirror with identity coverage checks (missing/extra samples), drift status, summary coverage mismatch count, admin UI mismatch details, and stronger unit tests | commit checkpoint + push + PR`
 
+## Deferred Closeout Items
+
+- `workflow/archive`
+  - Current state: content supports `draft/published` in DB/API/UI.
+  - Gap: no full `archived` lifecycle wired end-to-end.
+  - Why deferred: core migration path is stable without archive; archive can be added safely as a focused follow-up.
+  - Exit criteria: DB status model includes archive, API validation accepts it, UI exposes archive action/state, unit + e2e tests cover it.
+- `audit/revisions`
+  - Current state: content audit logging exists.
+  - Gap: notes audit logging is missing, and immutable content revision history table/model is not yet in place.
+  - Why deferred: present admin workflows function, but governance depth is incomplete.
+  - Exit criteria: notes mutations are fully audited and immutable content revisions are queryable/rollback-ready.
+- `parity-e2e`
+  - Current state: parity mirror logic is covered by unit tests and surfaced in admin UI.
+  - Gap: no dedicated parity-focused e2e test that validates mirror health through real browser/admin flow.
+  - Why deferred: core parity logic is validated in unit scope; browser-level contract still needs a dedicated scenario.
+  - Exit criteria: dedicated parity e2e is added and runs in CI for the admin flow.
+
+## Deferred Follow-Up Path
+
+- Create linked follow-up implementation items for each deferred gap.
+- Keep this brief in `in-progress` until deferred items are completed or explicitly moved to approved follow-up briefs with owners.
+- Do not move this brief to `done` without owner confirmation that deferred ownership is clear and scheduled.
+
 ## Final Closeout Gate
 
 - Confirm all acceptance criteria completed or explicitly deferred.
