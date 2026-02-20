@@ -192,3 +192,9 @@ State scope or `N/A` for each category during implementation and closeout:
 - `PR`: link
 - `merge`: source -> target
 - `result`: short summary
+
+## Platform 10/10 Scorecard Linkage
+
+- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
+- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
+- Closeout must record achieved score (`0-5`) for each target category.

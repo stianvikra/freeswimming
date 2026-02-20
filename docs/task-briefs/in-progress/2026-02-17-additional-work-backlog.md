@@ -77,3 +77,9 @@ Apply these when backlog items graduate to dedicated implementation briefs:
   - completion audit,
   - 10/10 quality + security + regression sweep,
   - explicit owner prompt for `move to done` and `post-merge cleanup`.
+
+## Platform 10/10 Scorecard Linkage
+
+- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
+- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
+- Closeout must record achieved score (`0-5`) for each target category.

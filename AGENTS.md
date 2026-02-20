@@ -29,6 +29,28 @@ This file defines how coding agents should collaborate in this repository.
 4. Accessibility semantics are preserved for changed UI.
 5. Related docs are updated when rules/contracts change.
 
+## Platform 10/10 Governance
+
+- Use `docs/quality/platform-10-10-scorecard.md` as the canonical cross-cut quality standard.
+- For every new or updated task brief, include explicit scorecard mapping:
+  - categories marked `target`, `supporting`, or `N/A`,
+  - measurable thresholds for each `target` category.
+- In final handoff for implementation work, include:
+  - achieved score per target category (`0-5`),
+  - remaining gaps (if any),
+  - defer/fix recommendation when a target score is `<4`.
+- Treat these categories as first-class quality gates across the full platform:
+  - UX, UI/design, admin workflow, security/privacy, performance, reliability, SEO/AI discoverability, analytics/KPI, testing, and release/rollback readiness.
+  - Include enterprise readiness where relevant:
+    - incident response/support operations,
+    - finance/reporting operations,
+    - i18n operational readiness.
+- For stateful features, always require explicit data-boundary decisions in the brief:
+  - what is local-only,
+  - what is server-canonical,
+  - sync/conflict/invalidation behavior.
+- For performance-sensitive work, always set route-level speed targets (CWV/payload) for changed core routes.
+
 ## Guardrails
 
 - Keep changes minimal and targeted.
