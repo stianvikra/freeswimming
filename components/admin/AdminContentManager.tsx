@@ -72,6 +72,26 @@ type AdminContentDeleteResponse =
       error?: string;
     };
 
+type AdminContentImportSummary = {
+  totalItems: number;
+  courseModules: number;
+  courseLessons: number;
+  guideSessions: number;
+  guideDrills: number;
+};
+
+type AdminContentImportResponse =
+  | {
+      ok: true;
+      imported: AdminContentImportSummary;
+      productsSynced: number;
+      warning?: string | null;
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 type AdminCategoriesResponse =
   | {
       ok: true;
@@ -112,7 +132,9 @@ export default function AdminContentManager() {
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [importingBaseline, setImportingBaseline] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -184,6 +206,7 @@ export default function AdminContentManager() {
     if (submitting) return;
     setSubmitting(true);
     setActionError(null);
+    setActionNotice(null);
 
     try {
       const response = await fetch("/api/admin/content", {
@@ -214,6 +237,7 @@ export default function AdminContentManager() {
 
       setItems((prev) => [payload.item, ...prev]);
       setFormState(INITIAL_FORM);
+      setActionNotice("Content item created.");
     } catch {
       setActionError("Could not create content item.");
     } finally {
@@ -221,9 +245,46 @@ export default function AdminContentManager() {
     }
   }
 
+  async function handleImportBaseline() {
+    if (importingBaseline || submitting || updatingId || deletingId) return;
+
+    setImportingBaseline(true);
+    setActionError(null);
+    setActionNotice(null);
+
+    try {
+      const response = await fetch("/api/admin/content/import", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      const payload = (await response.json()) as AdminContentImportResponse;
+      if (!response.ok || !payload.ok) {
+        setActionError(
+          payload.ok
+            ? "Could not import platform baseline."
+            : (payload.error ?? "Could not import platform baseline.")
+        );
+        return;
+      }
+
+      const warningSuffix = payload.warning ? ` Warning: ${payload.warning}` : "";
+      const productSuffix =
+        payload.productsSynced > 0 ? ` and synced ${payload.productsSynced} products` : "";
+      setActionNotice(
+        `Imported ${payload.imported.totalItems} platform items${productSuffix}.${warningSuffix}`
+      );
+      await loadItems();
+    } catch {
+      setActionError("Could not import platform baseline.");
+    } finally {
+      setImportingBaseline(false);
+    }
+  }
+
   async function handleToggleStatus(item: AdminContentItemRow) {
     if (updatingId || deletingId) return;
     setActionError(null);
+    setActionNotice(null);
     setUpdatingId(item.id);
     const nextStatus = item.status === "published" ? "draft" : "published";
 
@@ -249,6 +310,7 @@ export default function AdminContentManager() {
       setItems((prev) =>
         prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
       );
+      setActionNotice(nextStatus === "published" ? "Content item published." : "Moved to draft.");
     } catch {
       setActionError("Could not update content item.");
     } finally {
@@ -264,6 +326,7 @@ export default function AdminContentManager() {
     if (!confirmed) return;
 
     setActionError(null);
+    setActionNotice(null);
     setDeletingId(item.id);
     try {
       const response = await fetch(`/api/admin/content/${item.id}`, {
@@ -281,6 +344,7 @@ export default function AdminContentManager() {
       }
 
       setItems((prev) => prev.filter((entry) => entry.id !== payload.id));
+      setActionNotice("Content item deleted.");
     } catch {
       setActionError("Could not delete content item.");
     } finally {
@@ -296,13 +360,24 @@ export default function AdminContentManager() {
             <h2 className="text-lg font-semibold text-slate-900">Content items</h2>
             <p className="mt-2 text-sm text-slate-600">{groupedCountLabel}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => void loadItems()}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void handleImportBaseline()}
+              disabled={importingBaseline || loading}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+              data-testid="admin-content-import-platform"
+            >
+              {importingBaseline ? "Importing…" : "Import platform baseline"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void loadItems()}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         {!schemaReady && warning ? (
@@ -366,6 +441,12 @@ export default function AdminContentManager() {
               Retry
             </button>
           </div>
+        ) : null}
+
+        {actionNotice ? (
+          <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {actionNotice}
+          </p>
         ) : null}
 
         {!loading && !error && items.length === 0 ? (
