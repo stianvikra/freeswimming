@@ -204,6 +204,7 @@ State scope or `N/A` for each category during implementation and closeout:
 - `2026-02-20 | working tree | moved brief to in-progress and started admin API hardening for schema/policy readiness handling | patch schema helpers + admin routes and validate with tests`
 - `2026-02-20 | working tree | hardened admin schema helpers + products APIs/UI for setup-not-ready fallback (no red 500 for missing grants/RLS) | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | removed soft-launch runtime flag path from active admin behavior and broadened setup-issue detection for admin APIs; added migration to delete deprecated flag | validate + commit/push + PR`
+- `2026-02-20 | working tree | changed admin GET APIs (content/operations/commerce/notes) to return setup-not-ready fallback instead of generic 500 on read errors; validated lint/typecheck/unit/admin-e2e-smoke | commit checkpoint + push + PR`
 
 ## Final Closeout Gate
 

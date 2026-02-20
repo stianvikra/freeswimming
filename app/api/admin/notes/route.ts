@@ -67,7 +67,12 @@ export async function GET() {
 
     console.error("[AdminNotes] Could not load notes", result.error);
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Could not load notes right now." }, { status: 500 })
+      noStoreJson({
+        ok: true,
+        items: [],
+        schemaReady: false,
+        warning: getAdminSchemaSetupMessage("notes"),
+      })
     );
   }
 
