@@ -199,6 +199,16 @@ gh auth login
   - smoke e2e (public)
   - smoke e2e (private-gate)
   - full verify in public mode
+- Dedicated admin e2e (manual + nightly, secrets-gated):
+  - runs `npm run test:e2e:admin` (desktop Chromium)
+  - validates admin foundation + content parity + notes workflow
+  - requires secrets:
+    - `CI_SUPABASE_URL`
+    - `CI_SUPABASE_ANON_KEY`
+    - `CI_SUPABASE_SERVICE_ROLE_KEY`
+    - `CI_DEV_AUTH_BYPASS_TOKEN`
+    - `CI_DEV_AUTH_BYPASS_EMAIL`
+    - `CI_DEV_AUTH_BYPASS_PASSWORD`
 - Nightly (01:30 Norway time, CET/CEST via seasonal cron):
   - full Playwright matrix across mobile/tablet/desktop browsers
   - private-gate regression smoke

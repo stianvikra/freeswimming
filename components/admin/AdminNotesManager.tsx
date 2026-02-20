@@ -88,6 +88,16 @@ function formatDateLabel(value: string): string {
   }).format(date);
 }
 
+function toFormState(note: AdminNoteRow): FormState {
+  return {
+    title: note.title,
+    category: note.category,
+    noteDate: note.note_date,
+    body: note.body,
+    isDone: note.is_done,
+  };
+}
+
 export default function AdminNotesManager() {
   const [items, setItems] = useState<AdminNoteRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,13 +108,18 @@ export default function AdminNotesManager() {
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editState, setEditState] = useState<FormState | null>(null);
 
   async function loadNotes() {
     setLoading(true);
     setError(null);
     setWarning(null);
+    setEditingId(null);
+    setEditState(null);
     try {
       const response = await fetch("/api/admin/notes", {
         method: "GET",
@@ -165,6 +180,7 @@ export default function AdminNotesManager() {
     if (submitting) return;
     setSubmitting(true);
     setActionError(null);
+    setActionNotice(null);
 
     try {
       const response = await fetch("/api/admin/notes", {
@@ -186,6 +202,7 @@ export default function AdminNotesManager() {
 
       setItems((prev) => [payload.item, ...prev]);
       setFormState(INITIAL_FORM);
+      setActionNotice("Note saved.");
     } catch {
       setActionError("Could not save note.");
     } finally {
@@ -193,9 +210,67 @@ export default function AdminNotesManager() {
     }
   }
 
-  async function toggleDone(item: AdminNoteRow) {
+  function startEdit(item: AdminNoteRow) {
     if (updatingId || deletingId) return;
     setActionError(null);
+    setActionNotice(null);
+    setEditingId(item.id);
+    setEditState(toFormState(item));
+  }
+
+  function cancelEdit() {
+    if (updatingId || deletingId) return;
+    setEditingId(null);
+    setEditState(null);
+  }
+
+  function setEditField(updater: (prev: FormState) => FormState) {
+    setEditState((prev) => (prev ? updater(prev) : prev));
+  }
+
+  async function saveEdit(itemId: string) {
+    if (!editState) return;
+    if (updatingId || deletingId) return;
+
+    setActionError(null);
+    setActionNotice(null);
+    setUpdatingId(itemId);
+
+    try {
+      const response = await fetch(`/api/admin/notes/${itemId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify(editState),
+      });
+
+      const payload = (await response.json()) as AdminNoteUpdateResponse;
+      if (!response.ok || !payload.ok) {
+        setActionError(
+          payload.ok ? "Could not update note." : (payload.error ?? "Could not update note.")
+        );
+        return;
+      }
+
+      setItems((prev) =>
+        prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+      );
+      setEditingId(null);
+      setEditState(null);
+      setActionNotice("Note updated.");
+    } catch {
+      setActionError("Could not update note.");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function toggleDone(item: AdminNoteRow) {
+    if (updatingId || deletingId || editingId) return;
+    setActionError(null);
+    setActionNotice(null);
     setUpdatingId(item.id);
 
     try {
@@ -219,6 +294,7 @@ export default function AdminNotesManager() {
       setItems((prev) =>
         prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
       );
+      setActionNotice(payload.item.is_done ? "Note marked as done." : "Note reopened.");
     } catch {
       setActionError("Could not update note.");
     } finally {
@@ -232,6 +308,7 @@ export default function AdminNotesManager() {
     if (!confirmed) return;
 
     setActionError(null);
+    setActionNotice(null);
     setDeletingId(item.id);
 
     try {
@@ -249,6 +326,11 @@ export default function AdminNotesManager() {
       }
 
       setItems((prev) => prev.filter((entry) => entry.id !== payload.id));
+      if (editingId === payload.id) {
+        setEditingId(null);
+        setEditState(null);
+      }
+      setActionNotice("Note deleted.");
     } catch {
       setActionError("Could not delete note.");
     } finally {
@@ -304,11 +386,24 @@ export default function AdminNotesManager() {
           </p>
         ) : null}
 
+        {actionError ? (
+          <p className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {actionError}
+          </p>
+        ) : null}
+
+        {actionNotice ? (
+          <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {actionNotice}
+          </p>
+        ) : null}
+
         {!loading && !error && items.length > 0 ? (
           <ul className="mt-5 space-y-3">
             {items.map((item) => {
               const isUpdating = updatingId === item.id;
               const isDeleting = deletingId === item.id;
+              const isEditing = editingId === item.id && editState !== null;
               return (
                 <li
                   key={item.id}
@@ -332,7 +427,7 @@ export default function AdminNotesManager() {
                         <input
                           type="checkbox"
                           checked={item.is_done}
-                          disabled={Boolean(updatingId || deletingId)}
+                          disabled={Boolean(updatingId || deletingId || editingId)}
                           onChange={() => {
                             void toggleDone(item);
                           }}
@@ -340,6 +435,16 @@ export default function AdminNotesManager() {
                         />
                         {isUpdating ? "Saving…" : "Done"}
                       </label>
+                      <button
+                        type="button"
+                        disabled={Boolean(updatingId || deletingId || editingId)}
+                        onClick={() => {
+                          startEdit(item);
+                        }}
+                        className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Edit
+                      </button>
                       <button
                         type="button"
                         disabled={Boolean(updatingId || deletingId)}
@@ -352,7 +457,98 @@ export default function AdminNotesManager() {
                       </button>
                     </div>
                   </div>
-                  {item.body ? (
+
+                  {isEditing && editState ? (
+                    <form
+                      className="mt-3 grid gap-3 sm:grid-cols-2"
+                      data-testid="admin-note-edit-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void saveEdit(item.id);
+                      }}
+                    >
+                      <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                        <span>Edit title</span>
+                        <input
+                          type="text"
+                          required
+                          value={editState.title}
+                          onChange={(e) => {
+                            setEditField((prev) => ({ ...prev, title: e.target.value }));
+                          }}
+                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        />
+                      </label>
+
+                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <span>Edit category</span>
+                        <input
+                          type="text"
+                          list="admin-note-category-options"
+                          value={editState.category}
+                          onChange={(e) => {
+                            setEditField((prev) => ({ ...prev, category: e.target.value }));
+                          }}
+                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        />
+                      </label>
+
+                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <span>Edit date</span>
+                        <input
+                          type="date"
+                          required
+                          value={editState.noteDate}
+                          onChange={(e) => {
+                            setEditField((prev) => ({ ...prev, noteDate: e.target.value }));
+                          }}
+                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        />
+                      </label>
+
+                      <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                        <span>Edit text</span>
+                        <textarea
+                          rows={3}
+                          value={editState.body}
+                          onChange={(e) => {
+                            setEditField((prev) => ({ ...prev, body: e.target.value }));
+                          }}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                        />
+                      </label>
+
+                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
+                        <input
+                          type="checkbox"
+                          checked={editState.isDone}
+                          onChange={(e) => {
+                            setEditField((prev) => ({ ...prev, isDone: e.target.checked }));
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                        />
+                        Mark as done
+                      </label>
+
+                      <div className="flex items-center gap-2 sm:col-span-2">
+                        <button
+                          type="submit"
+                          className="inline-flex h-8 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                          disabled={Boolean(updatingId || deletingId)}
+                        >
+                          {isUpdating ? "Saving…" : "Save changes"}
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          onClick={cancelEdit}
+                          disabled={Boolean(updatingId || deletingId)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : item.body ? (
                     <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{item.body}</p>
                   ) : null}
                 </li>
@@ -432,12 +628,6 @@ export default function AdminNotesManager() {
             />
             Mark as done now
           </label>
-
-          {actionError ? (
-            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:col-span-2">
-              {actionError}
-            </p>
-          ) : null}
 
           <div className="sm:col-span-2">
             <button

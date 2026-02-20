@@ -244,6 +244,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-20 | working tree | hardened phase-5 parity mirror with identity coverage checks (missing/extra samples), drift status, summary coverage mismatch count, admin UI mismatch details, and stronger unit tests | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | phase-1 contract hardening started: expanded content workflow statuses (`draft/review/published/archived`), added manifest metadata/checksum to seed import bodies, and made import route change-aware to reduce redundant rewrites | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | closed deferred hardening slice: added immutable `admin_content_revisions` + notes audit triggers, expanded admin workflow e2e to cover review/archive transitions, and added dedicated admin parity mirror e2e | commit checkpoint + push + PR`
+- `2026-02-20 | working tree | implemented admin notes edit workflow UX (inline edit + save/cancel + user feedback) and added dedicated e2e create/edit/toggle/delete notes coverage | commit checkpoint + push + PR`
+- `2026-02-20 | working tree | added dedicated admin-e2e CI workflow (manual + nightly, secrets-gated) and documented required secrets/test command | commit checkpoint + push + PR`
 
 ## Deferred Closeout Items
 

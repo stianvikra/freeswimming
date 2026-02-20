@@ -1,0 +1,86 @@
+name: Admin E2E
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 01:45 Norway time (CET, UTC+1) during winter months.
+    - cron: "45 0 * 11,12,1,2 *"
+    # 01:45 Norway time (CEST, UTC+2) during summer months.
+    # Note: around DST changeover days, runtime can be off by one hour.
+    - cron: "45 23 * 3,4,5,6,7,8,9,10 *"
+
+concurrency:
+  group: admin-e2e-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  admin-e2e:
+    if: >-
+      ${{
+        secrets.CI_SUPABASE_URL != '' &&
+        secrets.CI_SUPABASE_ANON_KEY != '' &&
+        secrets.CI_SUPABASE_SERVICE_ROLE_KEY != '' &&
+        secrets.CI_DEV_AUTH_BYPASS_TOKEN != '' &&
+        secrets.CI_DEV_AUTH_BYPASS_EMAIL != '' &&
+        secrets.CI_DEV_AUTH_BYPASS_PASSWORD != ''
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run admin e2e suite
+        env:
+          SITE_LOCK_ENABLED: "0"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
+          DEV_AUTH_BYPASS_ENABLED: "1"
+          DEV_AUTH_BYPASS_TOKEN: ${{ secrets.CI_DEV_AUTH_BYPASS_TOKEN }}
+          DEV_AUTH_BYPASS_EMAIL: ${{ secrets.CI_DEV_AUTH_BYPASS_EMAIL }}
+          DEV_AUTH_BYPASS_PASSWORD: ${{ secrets.CI_DEV_AUTH_BYPASS_PASSWORD }}
+          ADMIN_EMAIL_ALLOWLIST: ${{ secrets.CI_DEV_AUTH_BYPASS_EMAIL }}
+        run: npm run test:e2e:admin
+
+      - name: Upload admin e2e artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-e2e-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  admin-e2e-secrets-missing:
+    if: >-
+      ${{
+        !(
+          secrets.CI_SUPABASE_URL != '' &&
+          secrets.CI_SUPABASE_ANON_KEY != '' &&
+          secrets.CI_SUPABASE_SERVICE_ROLE_KEY != '' &&
+          secrets.CI_DEV_AUTH_BYPASS_TOKEN != '' &&
+          secrets.CI_DEV_AUTH_BYPASS_EMAIL != '' &&
+          secrets.CI_DEV_AUTH_BYPASS_PASSWORD != ''
+        )
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report skipped admin e2e due to missing secrets
+        run: |
+          echo "::notice::Admin E2E skipped: missing one or more required secrets."
+          echo "::notice::Required: CI_SUPABASE_URL, CI_SUPABASE_ANON_KEY, CI_SUPABASE_SERVICE_ROLE_KEY, CI_DEV_AUTH_BYPASS_TOKEN, CI_DEV_AUTH_BYPASS_EMAIL, CI_DEV_AUTH_BYPASS_PASSWORD."

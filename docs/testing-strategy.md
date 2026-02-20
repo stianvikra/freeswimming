@@ -55,6 +55,7 @@ Useful commands:
 - `npm run verify:public` for full verification with public mode forced (`SITE_LOCK_ENABLED=0`).
 - `npm run test:e2e:private-gate` for private access gate checks (`SITE_LOCK_ENABLED=1`, `PW_SITE_LOCK_PASSWORD` required).
 - `npm run test:e2e:security` for concentrated API/access-control regressions.
+- `npm run test:e2e:admin` for authenticated admin flows (foundation/parity/notes).
 - `npm run verify:pre-pr` and `npm run verify:pre-merge` for release gates.
 
 ## Public vs Private Mode Test Rules
@@ -79,6 +80,15 @@ Useful commands:
    - `npm run verify:public`
    - `npm run test:e2e:extended`
    - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
+5. Dedicated admin regression (manual + nightly workflow):
+   - run `.github/workflows/admin-e2e.yml`
+   - requires repository secrets:
+     - `CI_SUPABASE_URL`
+     - `CI_SUPABASE_ANON_KEY`
+     - `CI_SUPABASE_SERVICE_ROLE_KEY`
+     - `CI_DEV_AUTH_BYPASS_TOKEN`
+     - `CI_DEV_AUTH_BYPASS_EMAIL`
+     - `CI_DEV_AUTH_BYPASS_PASSWORD`
 
 ## Performance Budget Ratchet Policy
 
