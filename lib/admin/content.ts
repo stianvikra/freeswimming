@@ -18,6 +18,7 @@ export type CreateAdminContentPayload = {
   slug?: unknown;
   title?: unknown;
   summary?: unknown;
+  category?: unknown;
   body?: unknown;
   sortOrder?: unknown;
   status?: unknown;
@@ -29,6 +30,7 @@ export type UpdateAdminContentPayload = {
   slug?: unknown;
   title?: unknown;
   summary?: unknown;
+  category?: unknown;
   body?: unknown;
   sortOrder?: unknown;
   status?: unknown;
@@ -40,6 +42,7 @@ type CreateAdminContentNormalized = {
   slug: string;
   title: string;
   summary: string;
+  category: string;
   body: Record<string, unknown>;
   sortOrder: number;
   status: AdminContentStatus;
@@ -51,6 +54,7 @@ type UpdateAdminContentNormalized = {
   slug?: string;
   title?: string;
   summary?: string;
+  category?: string;
   body?: Record<string, unknown>;
   sortOrder?: number;
   status?: AdminContentStatus;
@@ -85,6 +89,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeCategory(value: unknown): string {
+  const collapsed = normalizeString(value).replace(/\s+/g, " ");
+  return collapsed.length > 0 ? collapsed : "General";
 }
 
 function sanitizeSlug(input: string): string {
@@ -139,6 +148,11 @@ export function parseCreateAdminContentPayload(
   }
 
   const summary = normalizeString(payload.summary).slice(0, 500);
+  const category = normalizeCategory(payload.category);
+  if (category.length > 80) {
+    return { ok: false, error: "Category must be 80 characters or less." };
+  }
+
   const body = payload.body;
   if (body !== undefined && !isPlainObject(body)) {
     return { ok: false, error: "Body must be a JSON object." };
@@ -170,6 +184,7 @@ export function parseCreateAdminContentPayload(
       slug,
       title,
       summary,
+      category,
       body: isPlainObject(body) ? body : {},
       sortOrder,
       status: statusRaw as AdminContentStatus,
@@ -227,6 +242,15 @@ export function parseUpdateAdminContentPayload(
     changedFields += 1;
   }
 
+  if (hasOwn(source, "category")) {
+    const category = normalizeCategory(payload.category);
+    if (category.length > 80) {
+      return { ok: false, error: "Category must be 80 characters or less." };
+    }
+    value.category = category;
+    changedFields += 1;
+  }
+
   if (hasOwn(source, "body")) {
     if (!isPlainObject(payload.body)) {
       return { ok: false, error: "Body must be a JSON object." };
@@ -258,8 +282,7 @@ export function parseUpdateAdminContentPayload(
   }
 
   if (hasOwn(source, "parentId")) {
-    const parentIdRaw =
-      payload.parentId === null ? "" : normalizeString(payload.parentId);
+    const parentIdRaw = payload.parentId === null ? "" : normalizeString(payload.parentId);
     if (parentIdRaw && !isUuid(parentIdRaw)) {
       return { ok: false, error: "parentId must be a valid UUID." };
     }

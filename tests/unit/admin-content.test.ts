@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseCreateAdminContentPayload, parseUpdateAdminContentPayload } from "@/lib/admin/content";
+import {
+  parseCreateAdminContentPayload,
+  parseUpdateAdminContentPayload,
+} from "@/lib/admin/content";
 
 describe("parseCreateAdminContentPayload", () => {
   it("normalizes slug from title when slug not provided", () => {
@@ -22,6 +25,7 @@ describe("parseCreateAdminContentPayload", () => {
       title: "Session 2",
       slug: "session-2",
       summary: "A short summary",
+      category: "Technique",
       sortOrder: 4,
       status: "published",
       body: { markdown: "## Hello" },
@@ -31,6 +35,7 @@ describe("parseCreateAdminContentPayload", () => {
     if (!parsed.ok) return;
 
     expect(parsed.value.contentType).toBe("guide_session");
+    expect(parsed.value.category).toBe("Technique");
     expect(parsed.value.status).toBe("published");
     expect(parsed.value.sortOrder).toBe(4);
   });
@@ -67,6 +72,15 @@ describe("parseCreateAdminContentPayload", () => {
     expect(parsed.ok).toBe(false);
   });
 
+  it("rejects category values above max length", () => {
+    const parsed = parseCreateAdminContentPayload({
+      contentType: "course_lesson",
+      title: "Lesson",
+      category: "x".repeat(81),
+    });
+    expect(parsed.ok).toBe(false);
+  });
+
   it("rejects invalid parent uuid", () => {
     const parsed = parseCreateAdminContentPayload({
       contentType: "guide_drill",
@@ -83,6 +97,7 @@ describe("parseUpdateAdminContentPayload", () => {
     const parsed = parseUpdateAdminContentPayload({
       status: "published",
       slug: "  Session___2  ",
+      category: " Endurance ",
     });
 
     expect(parsed.ok).toBe(true);
@@ -91,6 +106,7 @@ describe("parseUpdateAdminContentPayload", () => {
     expect(parsed.value.status).toBe("published");
     expect(parsed.value.hasStatus).toBe(true);
     expect(parsed.value.slug).toBe("session-2");
+    expect(parsed.value.category).toBe("Endurance");
   });
 
   it("rejects update payload with no known fields", () => {

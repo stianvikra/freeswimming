@@ -87,8 +87,21 @@ export function isAdminCommerceSchemaMissing(
   return includesAnyMarker(blob, ["products", "profiles", "role"]);
 }
 
+export function isAdminCategoriesSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  if (!error) return false;
+  if (hasMissingSchemaCode(error)) return true;
+  if (hasLikelySetupCode(error)) return true;
+
+  const blob = buildErrorBlob(error);
+  if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
+
+  return includesAnyMarker(blob, ["admin_categories"]);
+}
+
 export function getAdminSchemaSetupMessage(
-  section: "content" | "operations" | "notes" | "commerce"
+  section: "content" | "operations" | "notes" | "commerce" | "categories"
 ): string {
   const area =
     section === "content"
@@ -97,7 +110,9 @@ export function getAdminSchemaSetupMessage(
         ? "Admin operations"
         : section === "notes"
           ? "Admin notes"
-          : "Admin commerce";
+          : section === "commerce"
+            ? "Admin commerce"
+            : "Admin categories";
 
   return `${area} setup is not ready in this environment yet. Apply latest Supabase migrations (tables + grants + RLS policies), then refresh.`;
 }
