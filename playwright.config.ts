@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = Number(process.env.PW_PORT ?? 3000);
+const port = Number(process.env.PW_PORT ?? 3100);
 const baseURL = `http://127.0.0.1:${port}`;
+const nextDistDir = process.env.NEXT_DIST_DIR ?? ".next-playwright";
+const siteLockEnabled = process.env.SITE_LOCK_ENABLED ?? "0";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -15,9 +17,9 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+    command: `NEXT_DIST_DIR=${nextDistDir} SITE_LOCK_ENABLED=${siteLockEnabled} npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI && process.env.PW_REUSE_EXISTING_SERVER === "1",
     timeout: 120_000,
   },
   projects: [

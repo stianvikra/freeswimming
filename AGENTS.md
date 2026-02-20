@@ -101,6 +101,9 @@ This file defines how coding agents should collaborate in this repository.
 - Default local cadence during implementation:
   - run relevant targeted tests after each meaningful change.
   - run `npm run verify:pre-pr` before every PR update/push checkpoint.
+- For local Playwright:
+  - keep isolated defaults (`PW_PORT=3100`, `NEXT_DIST_DIR=.next-playwright`, `SITE_LOCK_ENABLED=0`).
+  - only use `PW_REUSE_EXISTING_SERVER=1` as explicit debug override.
 - Before merge:
   - run `npm run verify:pre-merge`.
 - Keep Playwright coverage aligned to supported matrix (mobile/tablet/desktop + major engines).

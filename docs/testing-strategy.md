@@ -31,6 +31,16 @@ Project-specific scope rules:
 - keyboard focus trap runs only on `desktop-*` projects.
 - desktop/tablet install entry smoke test runs only on `desktop-*` and `tablet-*` projects.
 
+## Playwright Local Isolation
+
+Local Playwright runs are isolated by default to avoid collisions with owner-run `next dev` sessions:
+
+- default test app port: `3100` (`PW_PORT`)
+- default test Next output dir: `.next-playwright` (`NEXT_DIST_DIR`)
+- default local E2E mode: public (`SITE_LOCK_ENABLED=0`)
+- existing local server is **not** reused unless explicitly enabled:
+  - `PW_REUSE_EXISTING_SERVER=1 npm run test:e2e`
+
 ## Required Checks Before Merge
 
 1. `npm run verify:pre-pr`

@@ -22,6 +22,24 @@ Use this runbook for reliable local validation when private-access (site lock) i
 - Show summary from the latest captured verify run:
   - `npm run verify:last`
 
+## Playwright isolation defaults (local)
+
+To prevent local E2E from being blocked by an already running `next dev`:
+
+- Playwright now starts its own local app server by default.
+- Default port is `3100` (not `3000`).
+- Default Next build dir is `.next-playwright` (isolated from normal `.next`).
+- Public-mode E2E default is `SITE_LOCK_ENABLED=0`.
+
+Optional overrides:
+
+- Reuse an existing local server only when explicitly requested:
+  - `PW_REUSE_EXISTING_SERVER=1 npm run test:e2e`
+- Override test server port:
+  - `PW_PORT=<port> npm run test:e2e`
+- Override isolated Next output dir:
+  - `NEXT_DIST_DIR=<dir> npm run test:e2e`
+
 ## Where results are stored
 
 - Local path: `artifacts/test-runs/<timestamp>/`
