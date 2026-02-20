@@ -49,7 +49,12 @@ export async function GET() {
 
     console.error("[AdminProducts] Could not load products", result.error);
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Could not load products right now." }, { status: 500 })
+      noStoreJson({
+        ok: true,
+        items: [],
+        schemaReady: false,
+        warning: getAdminSchemaSetupMessage("commerce"),
+      })
     );
   }
 

@@ -73,10 +73,13 @@ export async function GET() {
 
     console.error("[AdminOperations] Could not load runtime flags", result.error);
     return applySupabaseCookies(
-      noStoreJson(
-        { ok: false, error: "Could not load operations flags right now." },
-        { status: 500 }
-      )
+      noStoreJson({
+        ok: true,
+        siteLock: getSafeSiteLockSnapshot(),
+        flags: [],
+        schemaReady: false,
+        warning: getAdminSchemaSetupMessage("operations"),
+      })
     );
   }
 

@@ -68,12 +68,9 @@ export async function GET() {
       items = [];
     } else {
       console.error("[AdminContent] Could not load content items", result.error);
-      return applySupabaseCookies(
-        noStoreJson(
-          { ok: false, error: "Could not load admin content right now." },
-          { status: 500 }
-        )
-      );
+      schemaReady = false;
+      warning = getAdminSchemaSetupMessage("content");
+      items = [];
     }
   }
 
