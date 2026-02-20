@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseUpdateAdminProductPayload } from "@/lib/admin/products";
+import { getAdminSchemaSetupMessage, isAdminCommerceSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
@@ -72,6 +73,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (updateResult.error) {
+    if (isAdminCommerceSchemaMissing(updateResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("commerce"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
     console.error("[AdminProducts] Could not update product", updateResult.error);
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not update product right now." }, { status: 500 })
