@@ -243,24 +243,22 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-20 | working tree | implemented phase-4 DB-first published read-path for guides and course (new published mappers/loaders, /api/course/content, dynamic course modules in page/drawer with fallback, mapper unit tests) | finalize validation + commit/push + PR`
 - `2026-02-20 | working tree | hardened phase-5 parity mirror with identity coverage checks (missing/extra samples), drift status, summary coverage mismatch count, admin UI mismatch details, and stronger unit tests | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | phase-1 contract hardening started: expanded content workflow statuses (`draft/review/published/archived`), added manifest metadata/checksum to seed import bodies, and made import route change-aware to reduce redundant rewrites | commit checkpoint + push + PR`
+- `2026-02-20 | working tree | closed deferred hardening slice: added immutable `admin_content_revisions` + notes audit triggers, expanded admin workflow e2e to cover review/archive transitions, and added dedicated admin parity mirror e2e | commit checkpoint + push + PR`
 
 ## Deferred Closeout Items
 
 - `workflow/archive`
-  - Current state: lifecycle statuses now include `draft/review/published/archived` in code + migration.
-  - Gap: dedicated e2e coverage for `review` and `archived` transitions is still pending.
-  - Why deferred: lifecycle logic is implemented and unit-covered first; browser-level flow coverage is staged next.
-  - Exit criteria: admin e2e validates create -> review -> publish -> archive transitions with deterministic UI/API outcomes.
+  - Current state: completed in this phase.
+  - Evidence: `tests/e2e/admin-foundation.spec.ts` now validates `draft -> review -> published -> archived -> draft` transitions.
+  - Remaining gap: none in current brief scope.
 - `audit/revisions`
-  - Current state: content audit logging exists.
-  - Gap: notes audit logging is missing, and immutable content revision history table/model is not yet in place.
-  - Why deferred: present admin workflows function, but governance depth is incomplete.
-  - Exit criteria: notes mutations are fully audited and immutable content revisions are queryable/rollback-ready.
+  - Current state: content audit + notes audit + immutable content revision table/model are implemented.
+  - Evidence: migration `supabase/migrations/20260220233000_admin_notes_audit_and_content_revisions.sql`.
+  - Remaining gap: optional follow-up can add dedicated admin UI/API views for revision browsing and rollback workflows.
 - `parity-e2e`
-  - Current state: parity mirror logic is covered by unit tests and surfaced in admin UI.
-  - Gap: no dedicated parity-focused e2e test that validates mirror health through real browser/admin flow.
-  - Why deferred: core parity logic is validated in unit scope; browser-level contract still needs a dedicated scenario.
-  - Exit criteria: dedicated parity e2e is added and runs in CI for the admin flow.
+  - Current state: completed in this phase.
+  - Evidence: dedicated browser flow in `tests/e2e/admin-content-parity.spec.ts`.
+  - Remaining gap: CI execution can be environment-gated when dev bypass is unavailable (test intentionally skips in that case).
 
 ## Deferred Follow-Up Path
 

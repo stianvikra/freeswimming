@@ -96,8 +96,17 @@ test.describe("admin foundation", () => {
     await expect(createdItem).toHaveCount(1, { timeout: 15_000 });
     await expect(createdItem).toContainText("draft");
 
+    await createdItem.getByRole("button", { name: "Move to review" }).click();
+    await expect(createdItem).toContainText("review");
+
     await createdItem.getByRole("button", { name: "Publish" }).click();
     await expect(createdItem).toContainText("published");
+
+    await createdItem.getByRole("button", { name: "Archive" }).click();
+    await expect(createdItem).toContainText("archived");
+
+    await createdItem.getByRole("button", { name: "Move to draft" }).click();
+    await expect(createdItem).toContainText("draft");
 
     page.once("dialog", (dialog) => dialog.accept());
     await createdItem.getByRole("button", { name: "Delete" }).click();
