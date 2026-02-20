@@ -5,8 +5,8 @@ import {
 } from "@/lib/admin/runtime-flags";
 
 describe("admin runtime flag helpers", () => {
-  it("accepts known runtime flag key", () => {
-    expect(isAdminRuntimeFlagKey("soft_launch_banner")).toBe(true);
+  it("rejects unknown runtime flag keys", () => {
+    expect(isAdminRuntimeFlagKey("soft_launch_banner")).toBe(false);
     expect(isAdminRuntimeFlagKey("unknown_flag")).toBe(false);
   });
 

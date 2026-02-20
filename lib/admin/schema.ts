@@ -26,6 +26,11 @@ function hasSetupBlockedCode(error: PostgrestLikeError): boolean {
   return Boolean(error.code && SETUP_BLOCKED_CODES.has(error.code));
 }
 
+function hasLikelySetupCode(error: PostgrestLikeError): boolean {
+  if (!error.code) return false;
+  return error.code.startsWith("42") || error.code.startsWith("PGRST");
+}
+
 function includesAnyMarker(blob: string, markers: string[]): boolean {
   return markers.some((marker) => blob.includes(marker));
 }
@@ -33,6 +38,7 @@ function includesAnyMarker(blob: string, markers: string[]): boolean {
 export function isAdminContentSchemaMissing(error: PostgrestLikeError | null | undefined): boolean {
   if (!error) return false;
   if (hasMissingSchemaCode(error)) return true;
+  if (hasLikelySetupCode(error)) return true;
 
   const blob = buildErrorBlob(error);
   if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
@@ -49,6 +55,7 @@ export function isAdminRuntimeFlagsSchemaMissing(
 ): boolean {
   if (!error) return false;
   if (hasMissingSchemaCode(error)) return true;
+  if (hasLikelySetupCode(error)) return true;
 
   const blob = buildErrorBlob(error);
   if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
@@ -59,6 +66,7 @@ export function isAdminRuntimeFlagsSchemaMissing(
 export function isAdminNotesSchemaMissing(error: PostgrestLikeError | null | undefined): boolean {
   if (!error) return false;
   if (hasMissingSchemaCode(error)) return true;
+  if (hasLikelySetupCode(error)) return true;
 
   const blob = buildErrorBlob(error);
   if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
@@ -71,6 +79,7 @@ export function isAdminCommerceSchemaMissing(
 ): boolean {
   if (!error) return false;
   if (hasMissingSchemaCode(error)) return true;
+  if (hasLikelySetupCode(error)) return true;
 
   const blob = buildErrorBlob(error);
   if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
