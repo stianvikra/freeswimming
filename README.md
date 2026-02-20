@@ -161,6 +161,27 @@ npm run verify:pre-pr
 npm run verify:pre-merge
 ```
 
+## PR automation (Safari + optional gh CLI)
+
+Open PR page in Safari (active tab):
+
+```bash
+npm run pr:open:safari
+```
+
+Create PR automatically when `gh` is installed/authenticated, then open it in Safari:
+
+```bash
+npm run pr:create:safari
+```
+
+One-time `gh` setup on macOS (optional):
+
+```bash
+brew install gh
+gh auth login
+```
+
 ## Recommended Test Cadence
 
 1. Per implementation step (before checkpoint commit):
