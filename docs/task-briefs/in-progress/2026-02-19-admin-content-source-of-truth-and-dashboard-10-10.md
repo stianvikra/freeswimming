@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-19`
-- `updated`: `2026-02-20`
+- `updated`: `2026-02-21`
 
 ## Goal
 
@@ -45,12 +45,32 @@ Make admin/dashboard the reliable source of truth for platform content (modules,
 - Add read-path strategy:
   - phase-safe dual-read while migrating,
   - final DB-first source of truth.
+- Add SEO data foundation in admin/content model (no full SEO rollout in this brief):
+  - DB fields for admin-managed content SEO metadata (`seo_title`, `seo_description`, `canonical_path`, `robots_index`, `og_image_url`, `schema_type`),
+  - role-gated API validation + audit logging for these fields,
+  - admin form controls for editing these fields with inline validation.
 
 ## Out Of Scope
 
 - Full multi-language rollout and translated editorial UI.
 - Marketing CMS pages outside current app scope.
 - Non-admin public authoring.
+- Full route-level SEO rendering rollout and indexing strategy:
+  - sitemap/robots strategy work,
+  - structured-data rollout by route template,
+  - redirects manager and `llms.txt` policy.
+  - These are owned by `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`.
+
+## Ownership Split (SEO Boundary)
+
+- This brief owns (admin/content foundation):
+  - canonical storage model for SEO metadata in admin content records,
+  - API/UI mutation/read contracts for SEO fields in admin,
+  - RBAC/audit/validation for SEO field writes.
+- SEO/AI brief owns (public rendering and indexing behavior):
+  - route metadata output, canonical/indexing behavior, sitemap/robots, structured data,
+  - redirect policies and AI-discoverability assets,
+  - SEO regression assertions on public pages.
 
 ## Architecture Target (10/10)
 
@@ -129,6 +149,10 @@ Make admin/dashboard the reliable source of truth for platform content (modules,
 - Mirror/parity panel reports alignment between platform content and admin records.
 - All new/changed APIs return deterministic statuses for auth/role/schema/payload errors.
 - Audit/revision evidence exists for content and notes mutations.
+- Admin SEO foundation is implemented for content items:
+  - SEO fields are persisted in DB,
+  - role-gated admin APIs validate and store values safely,
+  - admin users can edit SEO fields with UX validation.
 
 ## Validation
 
@@ -221,6 +245,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. Admin categories + owner support.
 4. Content read-path switch to DB (with temporary fallback contract).
 5. Parity verification, hardening, and cleanup.
+6. Contextual admin notes attachments on content surfaces (`AW-005`).
 
 ## Session Continuity And Recovery
 
