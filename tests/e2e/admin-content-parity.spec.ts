@@ -56,12 +56,17 @@ test.describe("admin content parity", () => {
     await expect(page.getByTestId("admin-content-import-platform")).toHaveCount(0);
     await expect(page.getByTestId("admin-content-item").first()).toBeVisible({ timeout: 20_000 });
 
-    await expect(page.getByRole("heading", { name: "Platform mirror snapshot" })).toBeVisible();
-    await expect(page.getByText("Course modules")).toBeVisible();
-    await expect(page.getByText("Course lessons")).toBeVisible();
-    await expect(page.getByText("0-1000 sessions")).toBeVisible();
-    await expect(page.getByText("Poolside drills")).toBeVisible();
-    await expect(page.getByText("Programs/products")).toBeVisible();
-    await expect(page.getByText(/Platform: \d+ · Admin: \d+/).first()).toBeVisible();
+    const mirrorCard = page
+      .locator("article")
+      .filter({ has: page.getByRole("heading", { name: "Platform mirror snapshot" }) });
+    await expect(
+      mirrorCard.getByRole("heading", { name: "Platform mirror snapshot" })
+    ).toBeVisible();
+    await expect(mirrorCard.getByText("Course modules", { exact: true })).toBeVisible();
+    await expect(mirrorCard.getByText("Course lessons", { exact: true })).toBeVisible();
+    await expect(mirrorCard.getByText("0-1000 sessions", { exact: true })).toBeVisible();
+    await expect(mirrorCard.getByText("Poolside drills", { exact: true })).toBeVisible();
+    await expect(mirrorCard.getByText("Programs/products", { exact: true })).toBeVisible();
+    await expect(mirrorCard.getByText(/Platform: \d+ · Admin: \d+/).first()).toBeVisible();
   });
 });

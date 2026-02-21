@@ -81,6 +81,13 @@ test.describe("admin foundation", () => {
     }
 
     await expect(page.getByRole("heading", { name: "Admin console" })).toBeVisible();
+    const roleBadge = page.getByText(/^Role:\s*/i).first();
+    if (await roleBadge.isVisible().catch(() => false)) {
+      const roleText = ((await roleBadge.textContent()) ?? "").toLowerCase();
+      if (!roleText.includes("admin") && !roleText.includes("editor")) {
+        test.skip(true, "Current admin session is read-only (viewer) in this environment.");
+      }
+    }
 
     const contentProbeResponse = await page.request.get("/api/admin/content");
     if (!contentProbeResponse.ok()) {
@@ -156,6 +163,15 @@ test.describe("admin foundation", () => {
 
     await createdItem.getByRole("button", { name: "Move to draft" }).click();
     await expect(createdItem).toContainText("draft");
+
+    await createdItem.getByRole("button", { name: "Revisions" }).click();
+    await expect(createdItem.getByText("Revision history")).toBeVisible();
+    const revisionEntries = createdItem.getByTestId("admin-content-revision-item");
+    await expect(revisionEntries.first()).toBeVisible({ timeout: 10_000 });
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await revisionEntries.first().getByRole("button", { name: "Restore" }).click();
+    await expect(page.getByText("Revision restored.")).toBeVisible();
 
     page.once("dialog", (dialog) => dialog.accept());
     await createdItem.getByRole("button", { name: "Delete" }).click();
