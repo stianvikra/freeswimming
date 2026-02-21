@@ -279,6 +279,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-21 | working tree | phase-8 revisions/rollback flow implemented end-to-end: added content revisions API (`GET`+ restore`POST`), strict snapshot/payload parsers, admin per-item revision history + restore UI, and hardened admin parity/notes e2e for read-only environments | verify:pre-pr green`
 - `2026-02-21 | working tree | phase-6 contextual notes attachments in progress: added DB context fields for admin notes, context-aware notes API filtering, admin notes context editor fields, and admin-only contextual notes panel (collapse/create/edit/toggle/delete) on lesson/drill/session/product surfaces | add unit+e2e coverage, run verify:pre-pr, push + PR`
 - `2026-02-21 | 4db9d60 | phase-6 contextual notes attachments completed and merged (DB context links + API filters + dashboard/context-surface panels + unit/e2e coverage) | continue remaining source-of-truth slices`
+- `2026-02-21 | working tree | phase-6 notes UX hardening started: replaced free-text context refs in admin notes with DB-backed guided attachment pickers (module/lesson/session/drill/product/page), added context label resolver, and extended notes e2e + unit coverage for catalog mapping | verify:pre-pr green, commit + push + PR`
 
 ## Deferred Closeout Items
 
