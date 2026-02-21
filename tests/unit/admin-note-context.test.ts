@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  deriveCourseModuleRefFromLessonRef,
   formatAdminNoteContextLabel,
   isAdminNoteContextType,
   parseAdminNoteContextInput,
@@ -66,5 +67,19 @@ describe("formatAdminNoteContextLabel", () => {
         contextRef: "mod3-l1",
       })
     ).toBeNull();
+  });
+});
+
+describe("deriveCourseModuleRefFromLessonRef", () => {
+  it("extracts module ref from lesson ref", () => {
+    expect(deriveCourseModuleRefFromLessonRef("mod3-l1")).toBe("mod3");
+  });
+
+  it("normalizes whitespace and casing before extracting", () => {
+    expect(deriveCourseModuleRefFromLessonRef(" MOD10-L12 ")).toBe("mod10");
+  });
+
+  it("returns normalized original when lesson suffix is missing", () => {
+    expect(deriveCourseModuleRefFromLessonRef("mod7")).toBe("mod7");
   });
 });

@@ -2453,6 +2453,7 @@ function CoursePageClient() {
             contextType="course_lesson"
             contextRef={activeLesson.id}
             contextLabel={`Lesson: ${activeLesson.title} (${activeLesson.id})`}
+            includeModuleContextForCourseLesson
             collapsedByDefault
             className="mt-4"
           />

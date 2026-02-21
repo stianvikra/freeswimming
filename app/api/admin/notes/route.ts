@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { parseAdminNoteContextInput } from "@/lib/admin/note-context";
-import { parseCreateAdminNotePayload } from "@/lib/admin/notes";
+import {
+  deriveCourseModuleRefFromLessonRef,
+  parseAdminNoteContextInput,
+} from "@/lib/admin/note-context";
+import { parseCreateAdminNotePayload, type AdminNoteRow } from "@/lib/admin/notes";
 import { getAdminSchemaSetupMessage, isAdminNotesSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -36,6 +39,19 @@ function selectedFields() {
   `;
 }
 
+function sortAdminNotesByNewest(
+  a: { note_date: string; created_at: string },
+  b: {
+    note_date: string;
+    created_at: string;
+  }
+): number {
+  if (a.note_date !== b.note_date) {
+    return b.note_date.localeCompare(a.note_date);
+  }
+  return b.created_at.localeCompare(a.created_at);
+}
+
 export async function GET(request: Request) {
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
   const gate = await requireAdminRoleFromSupabase(supabase, {
@@ -51,6 +67,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const hasContextFilter = searchParams.has("contextType") || searchParams.has("contextRef");
+  const includeModuleContext = searchParams.get("includeModuleContext") === "1";
 
   const contextFilter = hasContextFilter
     ? parseAdminNoteContextInput({
@@ -77,19 +94,115 @@ export async function GET(request: Request) {
     );
   }
 
-  let query = supabase
-    .from("admin_notes")
-    .select(selectedFields())
-    .order("note_date", { ascending: false })
-    .order("created_at", { ascending: false });
+  if (
+    contextFilter.value &&
+    includeModuleContext &&
+    contextFilter.value.contextType === "course_lesson"
+  ) {
+    const lessonRef = contextFilter.value.contextRef;
+    const moduleRef = deriveCourseModuleRefFromLessonRef(lessonRef);
+
+    const lessonResult = await supabase
+      .from("admin_notes")
+      .select(selectedFields())
+      .eq("context_type", "course_lesson")
+      .eq("context_ref", lessonRef)
+      .order("note_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(120);
+
+    if (lessonResult.error) {
+      const resultError = lessonResult.error;
+      if (isAdminNotesSchemaMissing(resultError)) {
+        return applySupabaseCookies(
+          noStoreJson({
+            ok: true,
+            items: [],
+            schemaReady: false,
+            warning: getAdminSchemaSetupMessage("notes"),
+          })
+        );
+      }
+
+      console.error("[AdminNotes] Could not load notes", resultError);
+      return applySupabaseCookies(
+        noStoreJson({
+          ok: true,
+          items: [],
+          schemaReady: false,
+          warning: getAdminSchemaSetupMessage("notes"),
+        })
+      );
+    }
+
+    const lessonRows = (lessonResult.data ?? []) as unknown as AdminNoteRow[];
+    let moduleRows: AdminNoteRow[] = [];
+    if (moduleRef) {
+      const moduleResult = await supabase
+        .from("admin_notes")
+        .select(selectedFields())
+        .eq("context_type", "course_module")
+        .eq("context_ref", moduleRef)
+        .order("note_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(120);
+
+      if (moduleResult.error) {
+        const resultError = moduleResult.error;
+        if (isAdminNotesSchemaMissing(resultError)) {
+          return applySupabaseCookies(
+            noStoreJson({
+              ok: true,
+              items: [],
+              schemaReady: false,
+              warning: getAdminSchemaSetupMessage("notes"),
+            })
+          );
+        }
+
+        console.error("[AdminNotes] Could not load notes", resultError);
+        return applySupabaseCookies(
+          noStoreJson({
+            ok: true,
+            items: [],
+            schemaReady: false,
+            warning: getAdminSchemaSetupMessage("notes"),
+          })
+        );
+      }
+
+      moduleRows = (moduleResult.data ?? []) as unknown as AdminNoteRow[];
+    }
+
+    const merged: AdminNoteRow[] = [...lessonRows, ...moduleRows];
+    const deduped = Array.from(new Map(merged.map((item) => [item.id, item])).values()).sort(
+      sortAdminNotesByNewest
+    );
+
+    return applySupabaseCookies(
+      noStoreJson({
+        ok: true,
+        items: deduped,
+        schemaReady: true,
+        warning: null,
+      })
+    );
+  }
+
+  let query = supabase.from("admin_notes").select(selectedFields());
 
   if (contextFilter.value) {
     query = query
       .eq("context_type", contextFilter.value.contextType)
       .eq("context_ref", contextFilter.value.contextRef)
+      .order("note_date", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(120);
   } else {
-    query = query.limit(300);
+    query = query
+      .order("note_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(300);
   }
 
   const result = await query;

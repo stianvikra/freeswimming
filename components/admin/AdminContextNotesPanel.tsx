@@ -63,6 +63,7 @@ type Props = {
   contextType: AdminNoteContextType;
   contextRef: string;
   contextLabel: string;
+  includeModuleContextForCourseLesson?: boolean;
   collapsedByDefault?: boolean;
   className?: string;
 };
@@ -115,6 +116,7 @@ export default function AdminContextNotesPanel({
   contextType,
   contextRef,
   contextLabel,
+  includeModuleContextForCourseLesson = false,
   collapsedByDefault = true,
   className = "",
 }: Props) {
@@ -156,6 +158,9 @@ export default function AdminContextNotesPanel({
         contextType,
         contextRef: normalizedContextRef,
       });
+      if (contextType === "course_lesson" && includeModuleContextForCourseLesson) {
+        query.set("includeModuleContext", "1");
+      }
       const response = await fetch(`/api/admin/notes?${query.toString()}`, {
         method: "GET",
         cache: "no-store",
@@ -210,7 +215,7 @@ export default function AdminContextNotesPanel({
     } finally {
       setLoading(false);
     }
-  }, [contextType, normalizedContextRef]);
+  }, [contextType, includeModuleContextForCourseLesson, normalizedContextRef]);
 
   useEffect(() => {
     setAuthorized(null);
@@ -385,6 +390,11 @@ export default function AdminContextNotesPanel({
     return null;
   }
 
+  const inheritedModuleCount =
+    contextType === "course_lesson"
+      ? items.filter((item) => item.context_type === "course_module").length
+      : 0;
+
   return (
     <section
       data-testid="admin-context-notes-panel"
@@ -396,7 +406,10 @@ export default function AdminContextNotesPanel({
             Admin notes
           </h3>
           <p className="mt-1 text-sm text-slate-700">{contextLabel}</p>
-          <p className="text-xs text-slate-500">{items.length} attached note(s)</p>
+          <p className="text-xs text-slate-500">
+            {items.length} attached note(s)
+            {inheritedModuleCount > 0 ? ` · ${inheritedModuleCount} inherited from module` : ""}
+          </p>
         </div>
         <button
           type="button"
@@ -475,6 +488,12 @@ export default function AdminContextNotesPanel({
                         <p className="text-xs text-slate-500">
                           {item.category} · {formatDateLabel(item.note_date)}
                         </p>
+                        {contextType === "course_lesson" &&
+                        item.context_type === "course_module" ? (
+                          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                            Inherited from module
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-2">
                         <label className="inline-flex items-center gap-2 text-xs text-slate-700">
