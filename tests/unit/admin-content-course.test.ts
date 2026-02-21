@@ -84,7 +84,43 @@ describe("toPublishedCourseModules", () => {
     });
   });
 
-  it("falls back to hardcoded lesson details when published body omits fields", () => {
+  it("infers module id from lesson id when parent relation is missing", () => {
+    const modules = toPublishedCourseModules(
+      [
+        {
+          id: "module-row-4",
+          slug: "course-module-mod4",
+          title: "DB Module 4",
+          summary: "Module summary",
+          sort_order: 0,
+          body: {
+            moduleId: "mod4",
+          },
+        },
+      ],
+      [
+        {
+          id: "lesson-row-4",
+          parent_id: null,
+          slug: "course-lesson-mod4-l1",
+          title: "DB Lesson 4-1",
+          summary: "Lesson summary",
+          sort_order: 0,
+          body: {
+            lessonId: "mod4-l1",
+            goal: "Keep rhythm",
+          },
+        },
+      ]
+    );
+
+    expect(modules).toHaveLength(1);
+    expect(modules[0]?.id).toBe("mod4");
+    expect(modules[0]?.lessons).toHaveLength(1);
+    expect(modules[0]?.lessons[0]?.id).toBe("mod4-l1");
+  });
+
+  it("uses deterministic defaults when published body omits fields", () => {
     const modules = toPublishedCourseModules(
       [
         {
@@ -113,18 +149,16 @@ describe("toPublishedCourseModules", () => {
       ]
     );
 
-    const fallbackLesson = COURSE_MODULES.flatMap((module) => module.lessons).find(
-      (lesson) => lesson.id === "mod3-l1"
-    );
-    expect(fallbackLesson).toBeTruthy();
-
     const mappedLesson = modules[0]?.lessons[0];
     expect(mappedLesson?.id).toBe("mod3-l1");
     expect(mappedLesson?.title).toBe("Kick Basics mapped");
-    expect(mappedLesson?.youtubeId).toBe(fallbackLesson?.youtubeId);
-    expect(mappedLesson?.cues).toEqual(fallbackLesson?.cues);
-    expect(mappedLesson?.commonMistakes).toEqual(fallbackLesson?.commonMistakes);
-    expect(mappedLesson?.drill).toEqual(fallbackLesson?.drill);
-    expect(mappedLesson?.nextStep).toBe(fallbackLesson?.nextStep);
+    expect(mappedLesson?.youtubeId).toBe("Xh6OblO06LY");
+    expect(mappedLesson?.cues).toEqual(["Swim relaxed and controlled."]);
+    expect(mappedLesson?.commonMistakes).toEqual([]);
+    expect(mappedLesson?.drill).toEqual({
+      title: "Technique drill",
+      steps: ["Mapped summary fallback"],
+    });
+    expect(mappedLesson?.nextStep).toBe("Continue to the next lesson.");
   });
 });
