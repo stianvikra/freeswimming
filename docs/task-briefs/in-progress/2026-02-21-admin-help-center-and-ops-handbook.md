@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-21-admin-help-center-and-ops-handbook`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-21`
 - `updated`: `2026-02-21`
@@ -65,6 +65,23 @@ Give admins a 10/10 non-technical Help/Guide experience so they understand how f
 
 - Help content must not expose secrets or sensitive internal endpoints.
 - Admin-only operational details remain inside admin role-gated surfaces.
+
+## Scorecard Mapping (Target/Supporting/N-A)
+
+| Category                       | Mapping      | Target Threshold                                                                      |
+| ------------------------------ | ------------ | ------------------------------------------------------------------------------------- |
+| UX flow and action clarity     | `target`     | Help/Guide discoverable in one click; users complete key tasks from guide steps only. |
+| UI/design consistency          | `target`     | Uses existing admin visual language and readable structure across desktop/mobile.     |
+| Admin workflow and editability | `target`     | Guide covers content, commerce, operations, notes, categories, and rollback path.     |
+| Security/privacy               | `target`     | No secrets/internal sensitive values shown; admin-only surface remains role-gated.    |
+| Testing/QA automation          | `target`     | Add/extend admin e2e for help-tab discovery and core section visibility.              |
+| Performance/payload            | `supporting` | Static content only, no added heavy dependencies.                                     |
+| Reliability/error handling     | `supporting` | Sectioned content remains readable and deterministic even if other admin APIs fail.   |
+| SEO/AI discoverability         | `N/A`        | Internal admin-only surface (public SEO/AI scoring handled in SEO brief).             |
+
+## Implementation Checkpoint Log
+
+- `2026-02-21 | working tree | moved AW-004 brief to in-progress, added Help/Guide admin tab + initial non-technical ops handbook content + admin help e2e coverage | run verify:pre-pr, push + PR`
 
 ## Platform 10/10 Scorecard Linkage
 

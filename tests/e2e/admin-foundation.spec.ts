@@ -106,6 +106,7 @@ test.describe("admin foundation", () => {
     const tabOperations = page.getByTestId("admin-tab-operations");
     const tabNotes = page.getByTestId("admin-tab-notes");
     const tabCategories = page.getByTestId("admin-tab-categories");
+    const tabHelp = page.getByTestId("admin-tab-help");
     const activeSectionLabel = page.getByTestId("admin-active-section-label");
 
     await expect(tabContent).toHaveAttribute("aria-pressed", "true");
@@ -125,6 +126,10 @@ test.describe("admin foundation", () => {
     await tabCategories.click();
     await expect(activeSectionLabel).toHaveText("Categories");
     await expect(page.getByRole("heading", { name: "Categories" })).toBeVisible();
+
+    await tabHelp.click();
+    await expect(activeSectionLabel).toHaveText("Help/Guide");
+    await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
 
     await tabContent.click();
     await expect(activeSectionLabel).toHaveText("Content");

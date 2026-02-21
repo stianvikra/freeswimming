@@ -14,14 +14,14 @@ Capture good ideas that should be implemented later without blocking the active 
 
 ## Queue
 
-| ID       | Title                                                                      | Priority | Status    |
-| -------- | -------------------------------------------------------------------------- | -------- | --------- |
-| `AW-002` | Email one-time-code UX hardening (magic link first + OTP fallback clarity) | `medium` | `triaged` |
-| `AW-003` | Sign-in code request reliability + cooldown UX redesign (10/10)            | `high`   | `done`    |
-| `AW-004` | Admin Help/Guide center + non-technical operations handbook                | `high`   | `planned` |
-| `AW-005` | Contextual admin notes on lesson/drill/product pages                       | `high`   | `planned` |
-| `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned` |
-| `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `planned` |
+| ID       | Title                                                                      | Priority | Status        |
+| -------- | -------------------------------------------------------------------------- | -------- | ------------- |
+| `AW-002` | Email one-time-code UX hardening (magic link first + OTP fallback clarity) | `medium` | `triaged`     |
+| `AW-003` | Sign-in code request reliability + cooldown UX redesign (10/10)            | `high`   | `done`        |
+| `AW-004` | Admin Help/Guide center + non-technical operations handbook                | `high`   | `in-progress` |
+| `AW-005` | Contextual admin notes on lesson/drill/product pages                       | `high`   | `done`        |
+| `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
+| `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `planned`     |
 
 ## AW-002: Email one-time-code UX hardening
 
@@ -69,7 +69,7 @@ Capture good ideas that should be implemented later without blocking the active 
   - guide has clear sections (`what`, `why`, `how`, `when`, `troubleshoot`),
   - update responsibility is codified in brief/process docs.
 - planned brief:
-  - `docs/task-briefs/planned/2026-02-21-admin-help-center-and-ops-handbook.md`
+  - `docs/task-briefs/in-progress/2026-02-21-admin-help-center-and-ops-handbook.md`
 
 ## AW-005: Contextual admin notes on lesson/drill/product pages
 
@@ -86,7 +86,7 @@ Capture good ideas that should be implemented later without blocking the active 
   - notes are hidden for non-admin users,
   - UX supports compact/collapsed mode by default on dense pages.
 - owner brief:
-  - `docs/task-briefs/in-progress/2026-02-19-admin-content-source-of-truth-and-dashboard-10-10.md` (next slice)
+  - `docs/task-briefs/in-progress/2026-02-19-admin-content-source-of-truth-and-dashboard-10-10.md` (completed in phase-6 slice)
 
 ## AW-006: Full cross-platform visual/UX/readability hardening
 
