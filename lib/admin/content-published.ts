@@ -60,25 +60,16 @@ function toGuide0To1000Session(row: PublishedContentProjection): Guide0To1000Ses
 
 function toPoolsideDrill(row: PublishedContentProjection): PoolsideDrill {
   const body = isRecord(row.body) ? row.body : {};
-  const fallbackById = new Map(
-    GUIDE_POOLSIDE_DRILLS.map((drill) => [drill.id.toUpperCase(), drill])
-  );
   const id = (getString(body.drillId) ?? row.slug).toUpperCase();
-  const fallback = fallbackById.get(id);
 
   return {
     id,
     title: row.title,
     summary: row.summary,
-    setup: getString(body.setup) ?? fallback?.setup ?? row.summary,
-    keyFocus: getStringArray(body.keyFocus).length
-      ? getStringArray(body.keyFocus)
-      : (fallback?.keyFocus ?? [row.summary]),
-    visualAssetPath:
-      getString(body.visualAssetPath) ??
-      fallback?.visualAssetPath ??
-      "/guides/poolside/drill-01.svg",
-    visualAlt: getString(body.visualAlt) ?? fallback?.visualAlt ?? row.title,
+    setup: getString(body.setup) ?? row.summary,
+    keyFocus: getStringArray(body.keyFocus).length ? getStringArray(body.keyFocus) : [row.summary],
+    visualAssetPath: getString(body.visualAssetPath) ?? "/guides/poolside/drill-01.svg",
+    visualAlt: getString(body.visualAlt) ?? row.title,
   };
 }
 

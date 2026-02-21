@@ -68,7 +68,7 @@ describe("toPublishedPoolsideDrills", () => {
     expect(toPublishedPoolsideDrills([])).toEqual(GUIDE_POOLSIDE_DRILLS);
   });
 
-  it("uses fallback drill details when body fields are missing", () => {
+  it("uses deterministic defaults when body fields are missing", () => {
     const rows = [
       {
         id: "row-drill-1",
@@ -87,9 +87,9 @@ describe("toPublishedPoolsideDrills", () => {
     expect(drills[0]?.id).toBe("D01");
     expect(drills[0]?.title).toBe("Mapped drill title");
     expect(drills[0]?.summary).toBe("Mapped summary");
-    expect(drills[0]?.setup).toBe(GUIDE_POOLSIDE_DRILLS[0]?.setup);
-    expect(drills[0]?.keyFocus).toEqual(GUIDE_POOLSIDE_DRILLS[0]?.keyFocus);
-    expect(drills[0]?.visualAssetPath).toBe(GUIDE_POOLSIDE_DRILLS[0]?.visualAssetPath);
-    expect(drills[0]?.visualAlt).toBe(GUIDE_POOLSIDE_DRILLS[0]?.visualAlt);
+    expect(drills[0]?.setup).toBe("Mapped summary");
+    expect(drills[0]?.keyFocus).toEqual(["Mapped summary"]);
+    expect(drills[0]?.visualAssetPath).toBe("/guides/poolside/drill-01.svg");
+    expect(drills[0]?.visualAlt).toBe("Mapped drill title");
   });
 });

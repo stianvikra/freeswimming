@@ -45,6 +45,13 @@ function inferLessonId(slug: string): string {
   return slug;
 }
 
+function inferModuleIdFromLessonId(lessonId: string): string | null {
+  const normalized = lessonId.trim();
+  if (!normalized) return null;
+  const [moduleId] = normalized.split("-l");
+  return moduleId?.trim().length ? moduleId.trim() : null;
+}
+
 function normalizeLessonType(value: unknown): CourseLesson["lessonType"] | undefined {
   const candidate = getString(value);
   if (!candidate) return undefined;
@@ -78,22 +85,6 @@ export function toPublishedCourseModules(
     return fallback;
   }
 
-  const fallbackLessonById = new Map<
-    string,
-    {
-      moduleId: string;
-      lesson: CourseLesson;
-    }
-  >();
-  for (const fallbackModule of fallback) {
-    for (const lesson of fallbackModule.lessons) {
-      fallbackLessonById.set(lesson.id, {
-        moduleId: fallbackModule.id,
-        lesson,
-      });
-    }
-  }
-
   const modules = moduleRows.map((row) => {
     const body = isRecord(row.body) ? row.body : {};
     const moduleId = getString(body.moduleId) ?? inferModuleId(row.slug);
@@ -119,21 +110,19 @@ export function toPublishedCourseModules(
     const lessonId = getString(body.lessonId) ?? inferLessonId(row.slug);
     if (seenLessonIds.has(lessonId)) continue;
 
-    const fallbackEntry = fallbackLessonById.get(lessonId);
     const moduleIdFromParent = row.parent_id ? moduleIdByRowId.get(row.parent_id) : undefined;
     const moduleId =
-      moduleIdFromParent ?? getString(body.moduleId) ?? fallbackEntry?.moduleId ?? null;
+      moduleIdFromParent ?? getString(body.moduleId) ?? inferModuleIdFromLessonId(lessonId) ?? null;
     if (!moduleId) continue;
 
     const targetModule = moduleById.get(moduleId);
     if (!targetModule) continue;
 
-    const fallbackLesson = fallbackEntry?.lesson;
     const cues = getStringArray(body.cues);
     const commonMistakes = getStringArray(body.commonMistakes);
     const tags = getStringArray(body.tags);
 
-    const safeFallbackDrill = fallbackLesson?.drill ?? {
+    const safeFallbackDrill = {
       title: "Technique drill",
       steps: [row.summary || "Repeat calmly and keep your form."],
     };
@@ -141,20 +130,18 @@ export function toPublishedCourseModules(
     const lesson: CourseLesson = {
       id: lessonId,
       title: row.title,
-      youtubeId: getString(body.youtubeId) ?? fallbackLesson?.youtubeId ?? "Xh6OblO06LY",
-      estMinutes: getNumber(body.estMinutes) ?? fallbackLesson?.estMinutes,
-      lessonType: normalizeLessonType(body.lessonType) ?? fallbackLesson?.lessonType,
+      youtubeId: getString(body.youtubeId) ?? "Xh6OblO06LY",
+      estMinutes: getNumber(body.estMinutes),
+      lessonType: normalizeLessonType(body.lessonType),
       passCriteria: getStringArray(body.passCriteria).length
         ? getStringArray(body.passCriteria)
-        : fallbackLesson?.passCriteria,
-      goal: getString(body.goal) ?? row.summary ?? fallbackLesson?.goal ?? "Refine your freestyle.",
-      cues: cues.length > 0 ? cues : (fallbackLesson?.cues ?? ["Swim relaxed and controlled."]),
-      commonMistakes:
-        commonMistakes.length > 0 ? commonMistakes : (fallbackLesson?.commonMistakes ?? []),
+        : undefined,
+      goal: getString(body.goal) ?? row.summary ?? "Refine your freestyle.",
+      cues: cues.length > 0 ? cues : ["Swim relaxed and controlled."],
+      commonMistakes: commonMistakes.length > 0 ? commonMistakes : [],
       drill: normalizeDrill(body.drill, safeFallbackDrill),
-      nextStep:
-        getString(body.nextStep) ?? fallbackLesson?.nextStep ?? "Continue to the next lesson.",
-      tags: tags.length > 0 ? tags : fallbackLesson?.tags,
+      nextStep: getString(body.nextStep) ?? "Continue to the next lesson.",
+      tags: tags.length > 0 ? tags : undefined,
     };
 
     targetModule.lessons.push(lesson);
