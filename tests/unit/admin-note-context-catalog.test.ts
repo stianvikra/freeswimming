@@ -49,12 +49,14 @@ describe("buildAdminNoteContextCatalog", () => {
       slug: "guide-0-1000m-session-s03",
       title: "Session 3",
       body: {},
+      sort_order: 2,
     });
     const drillRow = row({
       content_type: "guide_drill",
       slug: "guide-poolside-drill-d02",
       title: "Drill 2",
       body: {},
+      sort_order: 1,
     });
 
     const catalog = buildAdminNoteContextCatalog({
@@ -70,8 +72,8 @@ describe("buildAdminNoteContextCatalog", () => {
       { ref: "mod3-l1", label: "M3 · L1 · Lesson 1", moduleRef: "mod3" },
     ]);
     expect(catalog.lessonModuleByRef["mod3-l1"]).toBe("mod3");
-    expect(catalog.sessions).toEqual([{ ref: "s03", label: "Session 3" }]);
-    expect(catalog.drills).toEqual([{ ref: "d02", label: "Drill 2" }]);
+    expect(catalog.sessions).toEqual([{ ref: "s03", label: "S3 · Session 3" }]);
+    expect(catalog.drills).toEqual([{ ref: "d02", label: "D2 · Drill 2" }]);
     expect(catalog.products).toEqual([
       { ref: "legacy-plan", label: "Legacy plan (inactive)" },
       { ref: "analysis-video", label: "Video analysis" },
