@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ADMIN_NOTE_CONTEXT_TYPE_VALUES,
-  formatAdminNoteContextLabel,
   type AdminNoteContextType,
 } from "@/lib/admin/note-context";
+import {
+  buildAdminNoteContextCatalog,
+  resolveAdminNoteContextLabel,
+  type AdminNoteContextCatalog,
+} from "@/lib/admin/note-context-catalog";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
+import type { AdminContentItemRow } from "@/lib/admin/content";
 import type { AdminNoteRow } from "@/lib/admin/notes";
 
 type AdminNotesResponse =
@@ -63,6 +68,32 @@ type AdminCategoriesResponse =
       error?: string;
     };
 
+type AdminContentResponse =
+  | {
+      ok: true;
+      items: AdminContentItemRow[];
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
+type AdminProductRow = {
+  slug: string;
+  title: string;
+  active: boolean;
+};
+
+type AdminProductsResponse =
+  | {
+      ok: true;
+      items: AdminProductRow[];
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 type FormState = {
   title: string;
   category: string;
@@ -71,6 +102,7 @@ type FormState = {
   isDone: boolean;
   contextType: AdminNoteContextType | "";
   contextRef: string;
+  contextModuleRef: string;
 };
 
 function todayDateInputValue(): string {
@@ -85,7 +117,22 @@ const INITIAL_FORM: FormState = {
   isDone: false,
   contextType: "",
   contextRef: "",
+  contextModuleRef: "",
 };
+
+const CONTEXT_TYPE_OPTIONS: Array<{ value: AdminNoteContextType; label: string }> = [
+  { value: "course_module", label: "Course module" },
+  { value: "course_lesson", label: "Course lesson" },
+  { value: "guide_session", label: "0-1000 session" },
+  { value: "guide_drill", label: "Poolside drill" },
+  { value: "product", label: "Product page" },
+  { value: "page", label: "Website page" },
+];
+
+const EMPTY_CONTEXT_CATALOG: AdminNoteContextCatalog = buildAdminNoteContextCatalog({
+  contentItems: [],
+  products: [],
+});
 
 function formatDateLabel(value: string): string {
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -110,6 +157,7 @@ function toFormState(note: AdminNoteRow): FormState {
         ? (note.context_type as AdminNoteContextType)
         : "",
     contextRef: note.context_ref ?? "",
+    contextModuleRef: "",
   };
 }
 
@@ -119,12 +167,18 @@ function hasPartialContextSelection(contextType: string, contextRef: string): bo
   return (hasType && !hasRef) || (!hasType && hasRef);
 }
 
+function normalizeContextRef(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 export default function AdminNotesManager() {
   const [items, setItems] = useState<AdminNoteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [schemaReady, setSchemaReady] = useState(true);
+  const [contextCatalog, setContextCatalog] =
+    useState<AdminNoteContextCatalog>(EMPTY_CONTEXT_CATALOG);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -135,7 +189,46 @@ export default function AdminNotesManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editState, setEditState] = useState<FormState | null>(null);
 
-  async function loadNotes() {
+  const loadContextCatalog = useCallback(async () => {
+    try {
+      const [contentResponse, productsResponse] = await Promise.all([
+        fetch("/api/admin/content", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        }),
+        fetch("/api/admin/products", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        }),
+      ]);
+
+      const contentPayload = (await contentResponse.json()) as AdminContentResponse;
+      const productsPayload = (await productsResponse.json()) as AdminProductsResponse;
+
+      if (
+        !contentResponse.ok ||
+        !contentPayload.ok ||
+        !productsResponse.ok ||
+        !productsPayload.ok
+      ) {
+        setContextCatalog(EMPTY_CONTEXT_CATALOG);
+        return;
+      }
+
+      setContextCatalog(
+        buildAdminNoteContextCatalog({
+          contentItems: contentPayload.items,
+          products: productsPayload.items,
+        })
+      );
+    } catch {
+      setContextCatalog(EMPTY_CONTEXT_CATALOG);
+    }
+  }, []);
+
+  const loadNotes = useCallback(async () => {
     setLoading(true);
     setError(null);
     setWarning(null);
@@ -175,19 +268,22 @@ export default function AdminNotesManager() {
       } else {
         setCategoryOptions([]);
       }
+
+      await loadContextCatalog();
     } catch {
       setError("Could not load notes.");
       setItems([]);
       setSchemaReady(true);
+      setContextCatalog(EMPTY_CONTEXT_CATALOG);
       setCategoryOptions([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, [loadContextCatalog]);
 
   useEffect(() => {
     void loadNotes();
-  }, []);
+  }, [loadNotes]);
 
   const noteSummary = useMemo(() => {
     if (items.length === 0) return "No notes yet.";
@@ -195,10 +291,53 @@ export default function AdminNotesManager() {
     const open = items.length - done;
     return `${open} open · ${done} done`;
   }, [items]);
+
+  const createLessonOptions = useMemo(() => {
+    if (formState.contextType !== "course_lesson") return [];
+    const selectedModuleRef = normalizeContextRef(formState.contextModuleRef);
+    if (!selectedModuleRef) return [];
+    return contextCatalog.lessons.filter((entry) => entry.moduleRef === selectedModuleRef);
+  }, [contextCatalog.lessons, formState.contextModuleRef, formState.contextType]);
+
+  const editLessonOptions = useMemo(() => {
+    if (!editState || editState.contextType !== "course_lesson") return [];
+    const selectedModuleRef = normalizeContextRef(
+      editState.contextModuleRef ||
+        contextCatalog.lessonModuleByRef[normalizeContextRef(editState.contextRef)] ||
+        ""
+    );
+    if (!selectedModuleRef) return [];
+    return contextCatalog.lessons.filter((entry) => entry.moduleRef === selectedModuleRef);
+  }, [contextCatalog.lessonModuleByRef, contextCatalog.lessons, editState]);
+
   const createContextInvalid = hasPartialContextSelection(
     formState.contextType,
     formState.contextRef
   );
+
+  function setCreateContextType(nextType: AdminNoteContextType | "") {
+    setFormState((prev) => ({
+      ...prev,
+      contextType: nextType,
+      contextRef: "",
+      contextModuleRef: "",
+    }));
+  }
+
+  function setCreateContextRef(nextRef: string) {
+    setFormState((prev) => ({
+      ...prev,
+      contextRef: normalizeContextRef(nextRef),
+    }));
+  }
+
+  function setCreateContextModuleRef(nextRef: string) {
+    setFormState((prev) => ({
+      ...prev,
+      contextModuleRef: normalizeContextRef(nextRef),
+      contextRef: "",
+    }));
+  }
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -239,8 +378,13 @@ export default function AdminNotesManager() {
     if (updatingId || deletingId) return;
     setActionError(null);
     setActionNotice(null);
+    const nextState = toFormState(item);
+    if (nextState.contextType === "course_lesson" && nextState.contextRef) {
+      nextState.contextModuleRef =
+        contextCatalog.lessonModuleByRef[normalizeContextRef(nextState.contextRef)] ?? "";
+    }
     setEditingId(item.id);
-    setEditState(toFormState(item));
+    setEditState(nextState);
   }
 
   function cancelEdit() {
@@ -251,6 +395,30 @@ export default function AdminNotesManager() {
 
   function setEditField(updater: (prev: FormState) => FormState) {
     setEditState((prev) => (prev ? updater(prev) : prev));
+  }
+
+  function setEditContextType(nextType: AdminNoteContextType | "") {
+    setEditField((prev) => ({
+      ...prev,
+      contextType: nextType,
+      contextRef: "",
+      contextModuleRef: "",
+    }));
+  }
+
+  function setEditContextRef(nextRef: string) {
+    setEditField((prev) => ({
+      ...prev,
+      contextRef: normalizeContextRef(nextRef),
+    }));
+  }
+
+  function setEditContextModuleRef(nextRef: string) {
+    setEditField((prev) => ({
+      ...prev,
+      contextModuleRef: normalizeContextRef(nextRef),
+      contextRef: "",
+    }));
   }
 
   async function saveEdit(itemId: string) {
@@ -451,7 +619,8 @@ export default function AdminNotesManager() {
                       </p>
                       {item.context_type && item.context_ref ? (
                         <p className="mt-1 text-xs font-medium text-slate-600">
-                          {formatAdminNoteContextLabel({
+                          {resolveAdminNoteContextLabel({
+                            catalog: contextCatalog,
                             contextType: item.context_type,
                             contextRef: item.context_ref,
                           })}
@@ -555,35 +724,160 @@ export default function AdminNotesManager() {
                       </label>
 
                       <label className="space-y-1 text-xs font-medium text-slate-700">
-                        <span>Context type</span>
+                        <span>Attach to (optional)</span>
                         <select
                           value={editState.contextType}
                           onChange={(e) => {
-                            const nextValue = e.target.value as AdminNoteContextType | "";
-                            setEditField((prev) => ({ ...prev, contextType: nextValue }));
+                            setEditContextType(e.target.value as AdminNoteContextType | "");
                           }}
+                          data-testid="admin-note-edit-context-type"
                           className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
                         >
-                          <option value="">No context</option>
-                          {ADMIN_NOTE_CONTEXT_TYPE_VALUES.map((value) => (
-                            <option key={value} value={value}>
-                              {value}
+                          <option value="">No attachment</option>
+                          {CONTEXT_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
                             </option>
                           ))}
                         </select>
                       </label>
 
                       <label className="space-y-1 text-xs font-medium text-slate-700">
-                        <span>Context ref</span>
-                        <input
-                          type="text"
-                          value={editState.contextRef}
-                          onChange={(e) => {
-                            setEditField((prev) => ({ ...prev, contextRef: e.target.value }));
-                          }}
-                          placeholder="mod3-l1 / d01 / video-analysis"
-                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                        />
+                        <span>Selected target</span>
+                        {editState.contextType === "" ? (
+                          <input
+                            type="text"
+                            value=""
+                            disabled
+                            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500"
+                            placeholder="No attachment"
+                          />
+                        ) : null}
+                        {editState.contextType === "course_module" ? (
+                          <select
+                            value={editState.contextRef}
+                            onChange={(e) => {
+                              setEditContextRef(e.target.value);
+                            }}
+                            data-testid="admin-note-edit-context-module"
+                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          >
+                            <option value="">Choose module</option>
+                            {contextCatalog.modules.map((option) => (
+                              <option key={option.ref} value={option.ref}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : null}
+                        {editState.contextType === "course_lesson" ? (
+                          <div className="space-y-2">
+                            <select
+                              value={normalizeContextRef(
+                                editState.contextModuleRef ||
+                                  contextCatalog.lessonModuleByRef[
+                                    normalizeContextRef(editState.contextRef)
+                                  ] ||
+                                  ""
+                              )}
+                              onChange={(e) => {
+                                setEditContextModuleRef(e.target.value);
+                              }}
+                              data-testid="admin-note-edit-context-lesson-module"
+                              className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            >
+                              <option value="">Choose module first</option>
+                              {contextCatalog.modules.map((option) => (
+                                <option key={option.ref} value={option.ref}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={editState.contextRef}
+                              onChange={(e) => {
+                                setEditContextRef(e.target.value);
+                              }}
+                              data-testid="admin-note-edit-context-lesson"
+                              className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            >
+                              <option value="">Choose lesson</option>
+                              {editLessonOptions.map((option) => (
+                                <option key={option.ref} value={option.ref}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : null}
+                        {editState.contextType === "guide_session" ? (
+                          <select
+                            value={editState.contextRef}
+                            onChange={(e) => {
+                              setEditContextRef(e.target.value);
+                            }}
+                            data-testid="admin-note-edit-context-session"
+                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          >
+                            <option value="">Choose session</option>
+                            {contextCatalog.sessions.map((option) => (
+                              <option key={option.ref} value={option.ref}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : null}
+                        {editState.contextType === "guide_drill" ? (
+                          <select
+                            value={editState.contextRef}
+                            onChange={(e) => {
+                              setEditContextRef(e.target.value);
+                            }}
+                            data-testid="admin-note-edit-context-drill"
+                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          >
+                            <option value="">Choose drill</option>
+                            {contextCatalog.drills.map((option) => (
+                              <option key={option.ref} value={option.ref}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : null}
+                        {editState.contextType === "product" ? (
+                          <select
+                            value={editState.contextRef}
+                            onChange={(e) => {
+                              setEditContextRef(e.target.value);
+                            }}
+                            data-testid="admin-note-edit-context-product"
+                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          >
+                            <option value="">Choose product</option>
+                            {contextCatalog.products.map((option) => (
+                              <option key={option.ref} value={option.ref}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : null}
+                        {editState.contextType === "page" ? (
+                          <select
+                            value={editState.contextRef}
+                            onChange={(e) => {
+                              setEditContextRef(e.target.value);
+                            }}
+                            data-testid="admin-note-edit-context-page"
+                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          >
+                            <option value="">Choose page</option>
+                            {contextCatalog.pages.map((option) => (
+                              <option key={option.ref} value={option.ref}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : null}
                       </label>
 
                       <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
@@ -693,35 +987,142 @@ export default function AdminNotesManager() {
           </label>
 
           <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Context type</span>
+            <span>Attach to (optional)</span>
             <select
               value={formState.contextType}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  contextType: e.target.value as AdminNoteContextType | "",
-                }))
-              }
+              onChange={(e) => setCreateContextType(e.target.value as AdminNoteContextType | "")}
+              data-testid="admin-note-create-context-type"
               className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
-              <option value="">No context</option>
-              {ADMIN_NOTE_CONTEXT_TYPE_VALUES.map((value) => (
-                <option key={value} value={value}>
-                  {value}
+              <option value="">No attachment</option>
+              {CONTEXT_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Context ref</span>
-            <input
-              type="text"
-              value={formState.contextRef}
-              onChange={(e) => setFormState((prev) => ({ ...prev, contextRef: e.target.value }))}
-              placeholder="mod3-l1 / d01 / video-analysis"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            />
+            <span>Selected target</span>
+            {formState.contextType === "" ? (
+              <input
+                type="text"
+                value=""
+                disabled
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500"
+                placeholder="No attachment"
+              />
+            ) : null}
+            {formState.contextType === "course_module" ? (
+              <select
+                value={formState.contextRef}
+                onChange={(e) => setCreateContextRef(e.target.value)}
+                data-testid="admin-note-create-context-module"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                <option value="">Choose module</option>
+                {contextCatalog.modules.map((option) => (
+                  <option key={option.ref} value={option.ref}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            {formState.contextType === "course_lesson" ? (
+              <div className="space-y-2">
+                <select
+                  value={formState.contextModuleRef}
+                  onChange={(e) => {
+                    setCreateContextModuleRef(e.target.value);
+                  }}
+                  data-testid="admin-note-create-context-lesson-module"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                >
+                  <option value="">Choose module first</option>
+                  {contextCatalog.modules.map((option) => (
+                    <option key={option.ref} value={option.ref}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={formState.contextRef}
+                  onChange={(e) => {
+                    setCreateContextRef(e.target.value);
+                  }}
+                  data-testid="admin-note-create-context-lesson"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                >
+                  <option value="">Choose lesson</option>
+                  {createLessonOptions.map((option) => (
+                    <option key={option.ref} value={option.ref}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            {formState.contextType === "guide_session" ? (
+              <select
+                value={formState.contextRef}
+                onChange={(e) => setCreateContextRef(e.target.value)}
+                data-testid="admin-note-create-context-session"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                <option value="">Choose session</option>
+                {contextCatalog.sessions.map((option) => (
+                  <option key={option.ref} value={option.ref}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            {formState.contextType === "guide_drill" ? (
+              <select
+                value={formState.contextRef}
+                onChange={(e) => setCreateContextRef(e.target.value)}
+                data-testid="admin-note-create-context-drill"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                <option value="">Choose drill</option>
+                {contextCatalog.drills.map((option) => (
+                  <option key={option.ref} value={option.ref}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            {formState.contextType === "product" ? (
+              <select
+                value={formState.contextRef}
+                onChange={(e) => setCreateContextRef(e.target.value)}
+                data-testid="admin-note-create-context-product"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                <option value="">Choose product</option>
+                {contextCatalog.products.map((option) => (
+                  <option key={option.ref} value={option.ref}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            {formState.contextType === "page" ? (
+              <select
+                value={formState.contextRef}
+                onChange={(e) => setCreateContextRef(e.target.value)}
+                data-testid="admin-note-create-context-page"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                <option value="">Choose page</option>
+                {contextCatalog.pages.map((option) => (
+                  <option key={option.ref} value={option.ref}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
           </label>
 
           <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">

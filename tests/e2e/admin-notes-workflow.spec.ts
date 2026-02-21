@@ -67,6 +67,25 @@ test.describe("admin notes workflow", () => {
     await createForm.getByLabel("Category").fill("Operations");
     await createForm.getByLabel("Date").fill("2026-02-20");
     await createForm.getByLabel("Text").fill(body);
+    await createForm.getByTestId("admin-note-create-context-type").selectOption("course_lesson");
+    const modulePicker = createForm.getByTestId("admin-note-create-context-lesson-module");
+    const moduleOptionCount = await modulePicker.locator("option").count();
+    if (moduleOptionCount < 2) {
+      test.skip(
+        true,
+        "No course module options available for context attachment in this environment."
+      );
+    }
+    await modulePicker.selectOption({ index: 1 });
+    const lessonPicker = createForm.getByTestId("admin-note-create-context-lesson");
+    const lessonOptionCount = await lessonPicker.locator("option").count();
+    if (lessonOptionCount < 2) {
+      test.skip(
+        true,
+        "No course lesson options available for context attachment in this environment."
+      );
+    }
+    await lessonPicker.selectOption({ index: 1 });
     await createForm.getByRole("button", { name: "Save note" }).click();
 
     const createdItem = page.getByTestId("admin-note-item").filter({ hasText: title }).first();
@@ -83,6 +102,7 @@ test.describe("admin notes workflow", () => {
     }
     await expect(createdItem).toContainText("Operations");
     await expect(createdItem).toContainText(body);
+    await expect(createdItem).toContainText("Course Lesson:");
 
     await createdItem.getByRole("button", { name: "Edit" }).click();
     const editForm = createdItem.getByTestId("admin-note-edit-form");
