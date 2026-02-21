@@ -4,10 +4,11 @@ import { useMemo, useState } from "react";
 import AdminCommerceManager from "@/components/admin/AdminCommerceManager";
 import AdminContentManager from "@/components/admin/AdminContentManager";
 import AdminCategoriesManager from "@/components/admin/AdminCategoriesManager";
+import AdminHelpCenter from "@/components/admin/AdminHelpCenter";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
 
-type AdminTab = "content" | "commerce" | "operations" | "notes" | "categories";
+type AdminTab = "content" | "commerce" | "operations" | "notes" | "categories" | "help";
 
 const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
   {
@@ -35,6 +36,11 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
     label: "Categories",
     subtitle: "Manage note/content taxonomy for dashboard workflows",
   },
+  {
+    id: "help",
+    label: "Help/Guide",
+    subtitle: "How admin works, what each service does, and recovery playbooks",
+  },
 ];
 
 export default function AdminWorkspace() {
@@ -47,7 +53,7 @@ export default function AdminWorkspace() {
 
   return (
     <div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
@@ -97,6 +103,7 @@ export default function AdminWorkspace() {
         {activeTab === "operations" ? <AdminOperationsManager /> : null}
         {activeTab === "notes" ? <AdminNotesManager /> : null}
         {activeTab === "categories" ? <AdminCategoriesManager /> : null}
+        {activeTab === "help" ? <AdminHelpCenter /> : null}
       </div>
     </div>
   );
