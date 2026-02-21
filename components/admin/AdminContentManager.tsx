@@ -194,9 +194,10 @@ export default function AdminContentManager() {
   }, []);
 
   const groupedCountLabel = useMemo(() => {
+    if (!schemaReady) return "Content catalog will appear after admin content setup is ready.";
     if (items.length === 0) return "No content items yet.";
     return `${items.length} content item${items.length === 1 ? "" : "s"} in admin catalog.`;
-  }, [items]);
+  }, [items, schemaReady]);
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -352,7 +353,7 @@ export default function AdminContentManager() {
           </p>
         ) : null}
 
-        {mirror ? (
+        {schemaReady && mirror ? (
           <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-slate-900">Platform mirror snapshot</h3>
@@ -438,7 +439,7 @@ export default function AdminContentManager() {
           </p>
         ) : null}
 
-        {!loading && !error && items.length === 0 ? (
+        {!loading && !error && schemaReady && items.length === 0 ? (
           <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             No content items created yet. Use the form below to create your first draft.
           </p>
@@ -495,137 +496,147 @@ export default function AdminContentManager() {
         <p className="mt-2 text-sm text-slate-600">
           Create and stage content records that power course and guide experiences in the app.
         </p>
+        {!schemaReady ? (
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Setup is not ready yet. Apply latest admin schema migrations before creating content.
+          </p>
+        ) : null}
         <form
           className="mt-5 grid gap-4 sm:grid-cols-2"
           onSubmit={handleCreate}
           data-testid="admin-content-create-form"
         >
-          <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Type</span>
-            <select
-              value={formState.contentType}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  contentType: e.target.value as AdminContentType,
-                }))
-              }
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            >
-              {CONTENT_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <fieldset
+            disabled={!schemaReady || submitting}
+            className="contents disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            <label className="space-y-1 text-sm font-medium text-slate-700">
+              <span>Type</span>
+              <select
+                value={formState.contentType}
+                onChange={(e) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    contentType: e.target.value as AdminContentType,
+                  }))
+                }
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                {CONTENT_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Status</span>
-            <select
-              value={formState.status}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  status: e.target.value as AdminContentStatus,
-                }))
-              }
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700">
+              <span>Status</span>
+              <select
+                value={formState.status}
+                onChange={(e) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    status: e.target.value as AdminContentStatus,
+                  }))
+                }
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-            <span>Title</span>
-            <input
-              type="text"
-              required
-              value={formState.title}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  title: e.target.value,
-                }))
-              }
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              placeholder="Module 1 foundations"
-            />
-          </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              <span>Title</span>
+              <input
+                type="text"
+                required
+                value={formState.title}
+                onChange={(e) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    title: e.target.value,
+                  }))
+                }
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                placeholder="Module 1 foundations"
+              />
+            </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-            <span>Slug (optional)</span>
-            <input
-              type="text"
-              value={formState.slug}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  slug: e.target.value,
-                }))
-              }
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              placeholder="module-1-foundations"
-            />
-          </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              <span>Slug (optional)</span>
+              <input
+                type="text"
+                value={formState.slug}
+                onChange={(e) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    slug: e.target.value,
+                  }))
+                }
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                placeholder="module-1-foundations"
+              />
+            </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-            <span>Summary</span>
-            <textarea
-              rows={3}
-              value={formState.summary}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  summary: e.target.value,
-                }))
-              }
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-              placeholder="Short purpose or editor note."
-            />
-          </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              <span>Summary</span>
+              <textarea
+                rows={3}
+                value={formState.summary}
+                onChange={(e) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    summary: e.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                placeholder="Short purpose or editor note."
+              />
+            </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-            <span>Category</span>
-            <input
-              type="text"
-              list="admin-content-category-options"
-              value={formState.category}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  category: e.target.value,
-                }))
-              }
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              placeholder="General"
-            />
-            <datalist id="admin-content-category-options">
-              {categoryOptions.map((option) => (
-                <option key={option} value={option} />
-              ))}
-            </datalist>
-          </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              <span>Category</span>
+              <input
+                type="text"
+                list="admin-content-category-options"
+                value={formState.category}
+                onChange={(e) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    category: e.target.value,
+                  }))
+                }
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                placeholder="General"
+              />
+              <datalist id="admin-content-category-options">
+                {categoryOptions.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+            </label>
 
-          {actionError ? (
-            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:col-span-2">
-              {actionError}
-            </p>
-          ) : null}
+            {actionError ? (
+              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:col-span-2">
+                {actionError}
+              </p>
+            ) : null}
 
-          <div className="sm:col-span-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-            >
-              {submitting ? "Saving…" : "Save content item"}
-            </button>
-          </div>
+            <div className="sm:col-span-2">
+              <button
+                type="submit"
+                disabled={!schemaReady || submitting}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+              >
+                {submitting ? "Saving…" : "Save content item"}
+              </button>
+            </div>
+          </fieldset>
         </form>
       </section>
     </div>
