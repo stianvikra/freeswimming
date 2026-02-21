@@ -65,6 +65,14 @@ function inferLessonOrdinalFromRef(lessonRef: string): number | null {
   return extractTrailingNumber(lessonRef, /-l(\d+)$/i);
 }
 
+function inferSessionOrdinalFromRef(sessionRef: string): number | null {
+  return extractTrailingNumber(sessionRef, /s(\d+)$/i);
+}
+
+function inferDrillOrdinalFromRef(drillRef: string): number | null {
+  return extractTrailingNumber(drillRef, /d(\d+)$/i);
+}
+
 function formatModuleLabel(title: string, moduleOrdinal: number | null): string {
   if (!moduleOrdinal) return title;
   return `M${moduleOrdinal} · ${title}`;
@@ -80,6 +88,16 @@ function formatLessonLabel(
   if (lessonOrdinal) prefix.push(`L${lessonOrdinal}`);
   if (prefix.length === 0) return title;
   return `${prefix.join(" · ")} · ${title}`;
+}
+
+function formatSessionLabel(title: string, sessionOrdinal: number | null): string {
+  if (!sessionOrdinal) return title;
+  return `S${sessionOrdinal} · ${title}`;
+}
+
+function formatDrillLabel(title: string, drillOrdinal: number | null): string {
+  if (!drillOrdinal) return title;
+  return `D${drillOrdinal} · ${title}`;
 }
 
 function getBodyRecord(body: AdminContentItemRow["body"]): Record<string, unknown> {
@@ -156,7 +174,9 @@ export function buildAdminNoteContextCatalog(params: {
   const lessonOrdinalByRef = new Map<string, number>();
   const lessonModuleOrdinalByRef = new Map<string, number>();
   const sessionsByRef = new Map<string, AdminNoteContextOption>();
+  const sessionOrdinalByRef = new Map<string, number>();
   const drillsByRef = new Map<string, AdminNoteContextOption>();
+  const drillOrdinalByRef = new Map<string, number>();
   const productsByRef = new Map<string, AdminNoteContextOption>();
   const pagesByRef = new Map<string, AdminNoteContextOption>();
 
@@ -214,7 +234,16 @@ export function buildAdminNoteContextCatalog(params: {
       const sessionRef = normalizeRef(
         getBodyString(item.body, "sessionId") || inferGuideSessionRefFromSlug(item.slug)
       );
-      upsertOption(sessionsByRef, sessionRef, item.title.trim() || sessionRef);
+      const sessionOrdinal =
+        toOrdinalFromSortOrder(item.sort_order) ?? inferSessionOrdinalFromRef(sessionRef);
+      if (sessionOrdinal) {
+        sessionOrdinalByRef.set(sessionRef, sessionOrdinal);
+      }
+      upsertOption(
+        sessionsByRef,
+        sessionRef,
+        formatSessionLabel(item.title.trim() || sessionRef, sessionOrdinal)
+      );
       continue;
     }
 
@@ -222,7 +251,16 @@ export function buildAdminNoteContextCatalog(params: {
       const drillRef = normalizeRef(
         getBodyString(item.body, "drillId") || inferGuideDrillRefFromSlug(item.slug)
       );
-      upsertOption(drillsByRef, drillRef, item.title.trim() || drillRef);
+      const drillOrdinal =
+        toOrdinalFromSortOrder(item.sort_order) ?? inferDrillOrdinalFromRef(drillRef);
+      if (drillOrdinal) {
+        drillOrdinalByRef.set(drillRef, drillOrdinal);
+      }
+      upsertOption(
+        drillsByRef,
+        drillRef,
+        formatDrillLabel(item.title.trim() || drillRef, drillOrdinal)
+      );
     }
   }
 
@@ -269,8 +307,26 @@ export function buildAdminNoteContextCatalog(params: {
     if (aLessonOrdinal === undefined && bLessonOrdinal !== undefined) return 1;
     return a.label.localeCompare(b.label);
   });
-  const sessions = sortOptions([...sessionsByRef.values()]);
-  const drills = sortOptions([...drillsByRef.values()]);
+  const sessions = [...sessionsByRef.values()].sort((a, b) => {
+    const aOrdinal = sessionOrdinalByRef.get(a.ref);
+    const bOrdinal = sessionOrdinalByRef.get(b.ref);
+    if (aOrdinal !== undefined && bOrdinal !== undefined && aOrdinal !== bOrdinal) {
+      return aOrdinal - bOrdinal;
+    }
+    if (aOrdinal !== undefined && bOrdinal === undefined) return -1;
+    if (aOrdinal === undefined && bOrdinal !== undefined) return 1;
+    return a.label.localeCompare(b.label);
+  });
+  const drills = [...drillsByRef.values()].sort((a, b) => {
+    const aOrdinal = drillOrdinalByRef.get(a.ref);
+    const bOrdinal = drillOrdinalByRef.get(b.ref);
+    if (aOrdinal !== undefined && bOrdinal !== undefined && aOrdinal !== bOrdinal) {
+      return aOrdinal - bOrdinal;
+    }
+    if (aOrdinal !== undefined && bOrdinal === undefined) return -1;
+    if (aOrdinal === undefined && bOrdinal !== undefined) return 1;
+    return a.label.localeCompare(b.label);
+  });
   const products = sortOptions([...productsByRef.values()]);
   const pages = sortOptions([...pagesByRef.values()]);
 
