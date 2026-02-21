@@ -34,6 +34,7 @@ describe("buildAdminNoteContextCatalog", () => {
       slug: "course-module-mod3",
       title: "Module 3",
       body: { moduleId: "mod3" },
+      sort_order: 2,
     });
     const lessonRow = row({
       id: "lesson-row",
@@ -64,8 +65,10 @@ describe("buildAdminNoteContextCatalog", () => {
       ],
     });
 
-    expect(catalog.modules).toEqual([{ ref: "mod3", label: "Module 3" }]);
-    expect(catalog.lessons).toEqual([{ ref: "mod3-l1", label: "Lesson 1", moduleRef: "mod3" }]);
+    expect(catalog.modules).toEqual([{ ref: "mod3", label: "M3 · Module 3" }]);
+    expect(catalog.lessons).toEqual([
+      { ref: "mod3-l1", label: "M3 · L1 · Lesson 1", moduleRef: "mod3" },
+    ]);
     expect(catalog.lessonModuleByRef["mod3-l1"]).toBe("mod3");
     expect(catalog.sessions).toEqual([{ ref: "s03", label: "Session 3" }]);
     expect(catalog.drills).toEqual([{ ref: "d02", label: "Drill 2" }]);
@@ -94,7 +97,7 @@ describe("buildAdminNoteContextCatalog", () => {
         contextType: "course_module",
         contextRef: "mod1",
       })
-    ).toBe("Course Module: Module 1 Foundations");
+    ).toBe("Course Module: M1 · Module 1 Foundations");
 
     expect(
       resolveAdminNoteContextLabel({

@@ -44,6 +44,44 @@ function normalizeRef(value: unknown): string {
   return value.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
+function toOrdinalFromSortOrder(value: number | null): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (value < 0) return null;
+  return Math.trunc(value) + 1;
+}
+
+function extractTrailingNumber(value: string, pattern: RegExp): number | null {
+  const match = value.match(pattern);
+  if (!match?.[1]) return null;
+  const parsed = Number.parseInt(match[1], 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function inferModuleOrdinalFromRef(moduleRef: string): number | null {
+  return extractTrailingNumber(moduleRef, /^mod(\d+)$/i);
+}
+
+function inferLessonOrdinalFromRef(lessonRef: string): number | null {
+  return extractTrailingNumber(lessonRef, /-l(\d+)$/i);
+}
+
+function formatModuleLabel(title: string, moduleOrdinal: number | null): string {
+  if (!moduleOrdinal) return title;
+  return `M${moduleOrdinal} · ${title}`;
+}
+
+function formatLessonLabel(
+  title: string,
+  moduleOrdinal: number | null,
+  lessonOrdinal: number | null
+): string {
+  const prefix: string[] = [];
+  if (moduleOrdinal) prefix.push(`M${moduleOrdinal}`);
+  if (lessonOrdinal) prefix.push(`L${lessonOrdinal}`);
+  if (prefix.length === 0) return title;
+  return `${prefix.join(" · ")} · ${title}`;
+}
+
 function getBodyRecord(body: AdminContentItemRow["body"]): Record<string, unknown> {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return {};
@@ -112,8 +150,11 @@ export function buildAdminNoteContextCatalog(params: {
   products: AdminProductSummary[];
 }): AdminNoteContextCatalog {
   const modulesByRef = new Map<string, AdminNoteContextOption>();
+  const moduleOrdinalByRef = new Map<string, number>();
   const moduleByRowId = new Map<string, string>();
   const lessonsByRef = new Map<string, AdminNoteLessonContextOption>();
+  const lessonOrdinalByRef = new Map<string, number>();
+  const lessonModuleOrdinalByRef = new Map<string, number>();
   const sessionsByRef = new Map<string, AdminNoteContextOption>();
   const drillsByRef = new Map<string, AdminNoteContextOption>();
   const productsByRef = new Map<string, AdminNoteContextOption>();
@@ -128,7 +169,12 @@ export function buildAdminNoteContextCatalog(params: {
     const moduleRef = normalizeRef(
       getBodyString(item.body, "moduleId") || inferModuleRefFromSlug(item.slug)
     );
-    const moduleLabel = item.title.trim() || moduleRef;
+    const moduleOrdinal =
+      toOrdinalFromSortOrder(item.sort_order) ?? inferModuleOrdinalFromRef(moduleRef);
+    if (moduleOrdinal) {
+      moduleOrdinalByRef.set(moduleRef, moduleOrdinal);
+    }
+    const moduleLabel = formatModuleLabel(item.title.trim() || moduleRef, moduleOrdinal);
     upsertOption(modulesByRef, moduleRef, moduleLabel);
     moduleByRowId.set(item.id, moduleRef);
   }
@@ -144,10 +190,20 @@ export function buildAdminNoteContextCatalog(params: {
       const moduleRefFromBody = normalizeRef(getBodyString(item.body, "moduleId"));
       const moduleRef =
         moduleRefFromParent || moduleRefFromBody || inferModuleRefFromLessonRef(lessonRef);
+      const moduleOrdinal =
+        moduleOrdinalByRef.get(moduleRef) ?? inferModuleOrdinalFromRef(moduleRef);
+      const lessonOrdinal =
+        toOrdinalFromSortOrder(item.sort_order) ?? inferLessonOrdinalFromRef(lessonRef);
+      if (moduleOrdinal) {
+        lessonModuleOrdinalByRef.set(lessonRef, moduleOrdinal);
+      }
+      if (lessonOrdinal) {
+        lessonOrdinalByRef.set(lessonRef, lessonOrdinal);
+      }
 
       lessonsByRef.set(lessonRef, {
         ref: lessonRef,
-        label: lessonLabel,
+        label: formatLessonLabel(lessonLabel, moduleOrdinal, lessonOrdinal),
         moduleRef: normalizeRef(moduleRef),
       });
 
@@ -177,8 +233,42 @@ export function buildAdminNoteContextCatalog(params: {
     upsertOption(productsByRef, productRef, `${product.title}${suffix}`);
   }
 
-  const modules = sortOptions([...modulesByRef.values()]);
-  const lessons = [...lessonsByRef.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const modules = [...modulesByRef.values()].sort((a, b) => {
+    const aOrdinal = moduleOrdinalByRef.get(a.ref);
+    const bOrdinal = moduleOrdinalByRef.get(b.ref);
+    if (aOrdinal !== undefined && bOrdinal !== undefined && aOrdinal !== bOrdinal) {
+      return aOrdinal - bOrdinal;
+    }
+    if (aOrdinal !== undefined && bOrdinal === undefined) return -1;
+    if (aOrdinal === undefined && bOrdinal !== undefined) return 1;
+    return a.label.localeCompare(b.label);
+  });
+  const lessons = [...lessonsByRef.values()].sort((a, b) => {
+    const aModuleOrdinal = lessonModuleOrdinalByRef.get(a.ref);
+    const bModuleOrdinal = lessonModuleOrdinalByRef.get(b.ref);
+    if (
+      aModuleOrdinal !== undefined &&
+      bModuleOrdinal !== undefined &&
+      aModuleOrdinal !== bModuleOrdinal
+    ) {
+      return aModuleOrdinal - bModuleOrdinal;
+    }
+    if (aModuleOrdinal !== undefined && bModuleOrdinal === undefined) return -1;
+    if (aModuleOrdinal === undefined && bModuleOrdinal !== undefined) return 1;
+
+    const aLessonOrdinal = lessonOrdinalByRef.get(a.ref);
+    const bLessonOrdinal = lessonOrdinalByRef.get(b.ref);
+    if (
+      aLessonOrdinal !== undefined &&
+      bLessonOrdinal !== undefined &&
+      aLessonOrdinal !== bLessonOrdinal
+    ) {
+      return aLessonOrdinal - bLessonOrdinal;
+    }
+    if (aLessonOrdinal !== undefined && bLessonOrdinal === undefined) return -1;
+    if (aLessonOrdinal === undefined && bLessonOrdinal !== undefined) return 1;
+    return a.label.localeCompare(b.label);
+  });
   const sessions = sortOptions([...sessionsByRef.values()]);
   const drills = sortOptions([...drillsByRef.values()]);
   const products = sortOptions([...productsByRef.values()]);
