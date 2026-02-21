@@ -247,6 +247,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-20 | working tree | implemented admin notes edit workflow UX (inline edit + save/cancel + user feedback) and added dedicated e2e create/edit/toggle/delete notes coverage | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | added dedicated admin-e2e CI workflow (manual + nightly, secrets-gated) and documented required secrets/test command | commit checkpoint + push + PR`
 - `2026-02-20 | working tree | hardened admin e2e reliability for schema-mismatch CI environments (skip write-path flows when admin schema is not ready) and avoided noisy profile-role bootstrap attempts when `profiles.role` is absent | commit checkpoint + push + PR`
+- `2026-02-21 | be0a204 | removed hidden per-item hardcoded detail fallbacks in DB read mappers (course/guides), added deterministic row-based defaults + module-id inference from lesson id, and updated mapper unit tests | verify:pre-pr green, push + PR #84`
 
 ## Deferred Closeout Items
 
