@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { buildAdminContentMirrorSnapshot } from "@/lib/admin/content-mirror";
 import { parseCreateAdminContentPayload } from "@/lib/admin/content";
 import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
@@ -33,45 +34,64 @@ export async function GET() {
     );
   }
 
-  const result = await supabase
-    .from("admin_content_items")
-    .select(
-      `
-      id,
-      content_type,
-      parent_id,
-      slug,
-      title,
-      summary,
-      category,
-      body,
-      sort_order,
-      status,
-      published_at,
-      created_by,
-      updated_by,
-      created_at,
-      updated_at
-    `
-    )
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true })
-    .limit(250);
-
-  let items = result.data ?? [];
   let schemaReady = true;
   let warning: string | null = null;
+  let items: Database["public"]["Tables"]["admin_content_items"]["Row"][] = [];
 
-  if (result.error) {
-    if (isAdminContentSchemaMissing(result.error)) {
+  const ensureSeedResult = await ensurePlatformContentSeeded({
+    supabase,
+    actorUserId: gate.role === "admin" ? gate.user.id : null,
+  });
+
+  if (!ensureSeedResult.ok) {
+    if (!ensureSeedResult.schemaReady) {
       schemaReady = false;
-      warning = getAdminSchemaSetupMessage("content");
+      warning = ensureSeedResult.error;
+    } else {
+      console.error("[AdminContent] Could not auto-seed baseline content", {
+        error: ensureSeedResult.error,
+      });
+    }
+  }
+
+  if (schemaReady) {
+    const result = await supabase
+      .from("admin_content_items")
+      .select(
+        `
+        id,
+        content_type,
+        parent_id,
+        slug,
+        title,
+        summary,
+        category,
+        body,
+        sort_order,
+        status,
+        published_at,
+        created_by,
+        updated_by,
+        created_at,
+        updated_at
+      `
+      )
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .limit(250);
+
+    if (result.error) {
+      if (isAdminContentSchemaMissing(result.error)) {
+        schemaReady = false;
+        warning = getAdminSchemaSetupMessage("content");
+      } else {
+        console.error("[AdminContent] Could not load content items", result.error);
+        schemaReady = false;
+        warning = getAdminSchemaSetupMessage("content");
+      }
       items = [];
     } else {
-      console.error("[AdminContent] Could not load content items", result.error);
-      schemaReady = false;
-      warning = getAdminSchemaSetupMessage("content");
-      items = [];
+      items = result.data ?? [];
     }
   }
 

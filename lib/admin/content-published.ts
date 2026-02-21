@@ -1,3 +1,4 @@
+import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { GUIDE_0_TO_1000M_SESSIONS, type Guide0To1000Session } from "@/lib/guides/guide-0-1000m";
@@ -76,8 +77,9 @@ function toPoolsideDrill(row: PublishedContentProjection): PoolsideDrill {
 async function loadPublishedContentRows(
   contentType: AdminContentType
 ): Promise<PublishedContentProjection[] | null> {
-  try {
-    const supabase = createAdminSupabaseClient();
+  const supabase = createAdminSupabaseClient();
+
+  const queryRows = async () => {
     const result = await supabase
       .from("admin_content_items")
       .select("id, slug, title, summary, sort_order, body, created_at")
@@ -86,15 +88,47 @@ async function loadPublishedContentRows(
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
 
-    if (result.error) {
-      if (isAdminContentSchemaMissing(result.error)) {
+    if (result.error) return { ok: false as const, error: result.error };
+    return { ok: true as const, rows: result.data ?? [] };
+  };
+
+  try {
+    let readResult = await queryRows();
+    if (!readResult.ok) {
+      if (isAdminContentSchemaMissing(readResult.error)) {
         return null;
       }
-      console.error(`[PublishedContent] Could not load ${contentType} rows`, result.error);
+      console.error(`[PublishedContent] Could not load ${contentType} rows`, readResult.error);
       return null;
     }
 
-    return (result.data ?? []).map((row) => ({
+    if (readResult.rows.length === 0) {
+      const ensureResult = await ensurePlatformContentSeeded({ supabase });
+      if (!ensureResult.ok) {
+        if (ensureResult.schemaReady) {
+          console.error(
+            `[PublishedContent] Could not auto-seed baseline for ${contentType}`,
+            ensureResult.error
+          );
+        }
+        return null;
+      }
+      if (ensureResult.seeded) {
+        readResult = await queryRows();
+        if (!readResult.ok) {
+          if (isAdminContentSchemaMissing(readResult.error)) {
+            return null;
+          }
+          console.error(
+            `[PublishedContent] Could not reload ${contentType} rows after seeding`,
+            readResult.error
+          );
+          return null;
+        }
+      }
+    }
+
+    return readResult.rows.map((row) => ({
       id: row.id,
       slug: row.slug,
       title: row.title,

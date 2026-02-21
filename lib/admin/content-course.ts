@@ -1,4 +1,5 @@
 import { COURSE_MODULES, type CourseLesson, type CourseModule } from "@/app/course/courseData";
+import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database, Json } from "@/types/database";
@@ -163,43 +164,86 @@ export async function loadPublishedCourseModules(): Promise<CourseModule[]> {
   try {
     const supabase = createAdminSupabaseClient();
 
-    const modulesResult = await supabase
-      .from("admin_content_items")
-      .select("id, slug, title, summary, sort_order, body, created_at")
-      .eq("content_type", "course_module")
-      .eq("status", "published")
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
+    const readRows = async () => {
+      const modulesResult = await supabase
+        .from("admin_content_items")
+        .select("id, slug, title, summary, sort_order, body, created_at")
+        .eq("content_type", "course_module")
+        .eq("status", "published")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
 
-    if (modulesResult.error) {
-      if (!isAdminContentSchemaMissing(modulesResult.error)) {
+      if (modulesResult.error) {
+        return {
+          ok: false as const,
+          error: modulesResult.error,
+          modules: [] as PublishedCourseModuleRow[],
+          lessons: [] as PublishedCourseLessonRow[],
+        };
+      }
+
+      const lessonsResult = await supabase
+        .from("admin_content_items")
+        .select("id, parent_id, slug, title, summary, sort_order, body, created_at")
+        .eq("content_type", "course_lesson")
+        .eq("status", "published")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
+
+      if (lessonsResult.error) {
+        return {
+          ok: false as const,
+          error: lessonsResult.error,
+          modules: [] as PublishedCourseModuleRow[],
+          lessons: [] as PublishedCourseLessonRow[],
+        };
+      }
+
+      return {
+        ok: true as const,
+        modules: (modulesResult.data ?? []) as PublishedCourseModuleRow[],
+        lessons: (lessonsResult.data ?? []) as PublishedCourseLessonRow[],
+      };
+    };
+
+    let readResult = await readRows();
+    if (!readResult.ok) {
+      if (!isAdminContentSchemaMissing(readResult.error)) {
         console.error(
-          "[PublishedContent] Could not load published course modules",
-          modulesResult.error
+          "[PublishedContent] Could not load published course content rows",
+          readResult.error
         );
       }
       return COURSE_MODULES;
     }
 
-    const lessonsResult = await supabase
-      .from("admin_content_items")
-      .select("id, parent_id, slug, title, summary, sort_order, body, created_at")
-      .eq("content_type", "course_lesson")
-      .eq("status", "published")
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    if (lessonsResult.error) {
-      if (!isAdminContentSchemaMissing(lessonsResult.error)) {
-        console.error(
-          "[PublishedContent] Could not load published course lessons",
-          lessonsResult.error
-        );
+    if (readResult.modules.length === 0 || readResult.lessons.length === 0) {
+      const ensureResult = await ensurePlatformContentSeeded({ supabase });
+      if (!ensureResult.ok) {
+        if (ensureResult.schemaReady) {
+          console.error(
+            "[PublishedContent] Could not auto-seed course baseline",
+            ensureResult.error
+          );
+        }
+        return COURSE_MODULES;
       }
-      return COURSE_MODULES;
+      if (ensureResult.seeded) {
+        readResult = await readRows();
+        if (!readResult.ok) {
+          if (!isAdminContentSchemaMissing(readResult.error)) {
+            console.error(
+              "[PublishedContent] Could not reload course content after seeding",
+              readResult.error
+            );
+          }
+          return COURSE_MODULES;
+        }
+      }
     }
 
-    return toPublishedCourseModules(modulesResult.data ?? [], lessonsResult.data ?? []);
+    const publishedModules = toPublishedCourseModules(readResult.modules, readResult.lessons, []);
+    return publishedModules.length > 0 ? publishedModules : COURSE_MODULES;
   } catch (error) {
     console.error("[PublishedContent] Could not query published course content", error);
     return COURSE_MODULES;
