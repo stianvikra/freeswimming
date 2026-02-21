@@ -249,6 +249,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-20 | working tree | hardened admin e2e reliability for schema-mismatch CI environments (skip write-path flows when admin schema is not ready) and avoided noisy profile-role bootstrap attempts when `profiles.role` is absent | commit checkpoint + push + PR`
 - `2026-02-21 | be0a204 | removed hidden per-item hardcoded detail fallbacks in DB read mappers (course/guides), added deterministic row-based defaults + module-id inference from lesson id, and updated mapper unit tests | verify:pre-pr green, push + PR #84`
 
+- `2026-02-21 | working tree | started phase-6 DB-canonical cutover: extracted shared auto-seed engine, enabled backend auto-bootstrap on admin/public content reads, removed manual import button dependency from admin content UI, and hardened drawer focus trap e2e flake | verify:pre-pr green, prepare commit + push + PR`
+
 ## Deferred Closeout Items
 
 - `workflow/archive`

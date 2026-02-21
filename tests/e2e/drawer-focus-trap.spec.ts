@@ -24,11 +24,7 @@ test("drawer traps keyboard focus and restores trigger focus on close", async ({
   await expect(trigger).toBeVisible();
 
   await trigger.focus();
-  await expect
-    .poll(async () => {
-      return page.evaluate(() => document.activeElement?.getAttribute("data-testid") ?? "");
-    })
-    .toBe("header-menu-toggle");
+  await expect(trigger).toBeFocused();
   await page.keyboard.press("Enter");
 
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
@@ -47,9 +43,5 @@ test("drawer traps keyboard focus and restores trigger focus on close", async ({
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
-  await expect
-    .poll(async () => {
-      return page.evaluate(() => document.activeElement?.getAttribute("data-testid") ?? "");
-    })
-    .toBe("header-menu-toggle");
+  await expect(trigger).toBeFocused();
 });

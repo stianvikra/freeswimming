@@ -90,32 +90,6 @@ type AdminContentDeleteResponse =
       error?: string;
     };
 
-type AdminContentImportSummary = {
-  manifestVersion: number;
-  totalItems: number;
-  courseModules: number;
-  courseLessons: number;
-  guideSessions: number;
-  guideDrills: number;
-};
-
-type AdminContentImportResponse =
-  | {
-      ok: true;
-      imported: AdminContentImportSummary;
-      changes?: {
-        parentRowsUpdated: number;
-        childRowsUpdated: number;
-        unchangedRows: number;
-      };
-      productsSynced: number;
-      warning?: string | null;
-    }
-  | {
-      ok: false;
-      error?: string;
-    };
-
 type AdminCategoriesResponse =
   | {
       ok: true;
@@ -156,7 +130,6 @@ export default function AdminContentManager() {
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
-  const [importingBaseline, setImportingBaseline] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -269,45 +242,6 @@ export default function AdminContentManager() {
     }
   }
 
-  async function handleImportBaseline() {
-    if (importingBaseline || submitting || updatingId || deletingId) return;
-
-    setImportingBaseline(true);
-    setActionError(null);
-    setActionNotice(null);
-
-    try {
-      const response = await fetch("/api/admin/content/import", {
-        method: "POST",
-        credentials: "same-origin",
-      });
-      const payload = (await response.json()) as AdminContentImportResponse;
-      if (!response.ok || !payload.ok) {
-        setActionError(
-          payload.ok
-            ? "Could not import platform baseline."
-            : (payload.error ?? "Could not import platform baseline.")
-        );
-        return;
-      }
-
-      const warningSuffix = payload.warning ? ` Warning: ${payload.warning}` : "";
-      const productSuffix =
-        payload.productsSynced > 0 ? ` and synced ${payload.productsSynced} products` : "";
-      const changesSuffix = payload.changes
-        ? ` Updated ${payload.changes.parentRowsUpdated + payload.changes.childRowsUpdated} rows, ${payload.changes.unchangedRows} unchanged.`
-        : "";
-      setActionNotice(
-        `Imported ${payload.imported.totalItems} platform items (manifest v${payload.imported.manifestVersion})${productSuffix}.${changesSuffix}${warningSuffix}`
-      );
-      await loadItems();
-    } catch {
-      setActionError("Could not import platform baseline.");
-    } finally {
-      setImportingBaseline(false);
-    }
-  }
-
   function statusNotice(status: AdminContentStatus): string {
     if (status === "published") return "Content item published.";
     if (status === "review") return "Moved to review.";
@@ -402,15 +336,6 @@ export default function AdminContentManager() {
             <p className="mt-2 text-sm text-slate-600">{groupedCountLabel}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void handleImportBaseline()}
-              disabled={importingBaseline || loading}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-              data-testid="admin-content-import-platform"
-            >
-              {importingBaseline ? "Importing…" : "Import platform baseline"}
-            </button>
             <button
               type="button"
               onClick={() => void loadItems()}

@@ -20,7 +20,9 @@ type AdminContentProbeResponse =
     };
 
 test.describe("admin content parity", () => {
-  test("imports baseline and shows mirror snapshot coverage", async ({ page }, testInfo) => {
+  test("shows db-canonical mirror snapshot coverage without manual import", async ({
+    page,
+  }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
     await page.goto(`/dev/login?next=${encodeURIComponent("/admin")}`);
@@ -51,39 +53,8 @@ test.describe("admin content parity", () => {
 
     await page.getByTestId("admin-tab-content").click();
     await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
-
-    const importButton = page.getByTestId("admin-content-import-platform");
-    await expect(importButton).toBeVisible();
-    await expect(importButton).toBeEnabled();
-    await importButton.click();
-
-    const successNotice = page.getByText(/Imported \d+ platform items/);
-    const schemaNotice = page.getByText(/setup is not ready/i).first();
-    const genericImportError = page.getByText(/Could not import platform baseline\./i).first();
-    const timeoutAt = Date.now() + 20_000;
-    let importState: "success" | "schema" | "error" | "pending" = "pending";
-
-    while (Date.now() < timeoutAt) {
-      if (await successNotice.isVisible().catch(() => false)) {
-        importState = "success";
-        break;
-      }
-      if (await schemaNotice.isVisible().catch(() => false)) {
-        importState = "schema";
-        break;
-      }
-      if (await genericImportError.isVisible().catch(() => false)) {
-        importState = "error";
-        break;
-      }
-      await page.waitForTimeout(250);
-    }
-
-    if (importState === "schema" || importState === "error") {
-      test.skip(true, "Admin content import is not write-ready in this environment.");
-    }
-
-    await expect(successNotice).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("admin-content-import-platform")).toHaveCount(0);
+    await expect(page.getByTestId("admin-content-item").first()).toBeVisible({ timeout: 20_000 });
 
     await expect(page.getByRole("heading", { name: "Platform mirror snapshot" })).toBeVisible();
     await expect(page.getByText("Course modules")).toBeVisible();
