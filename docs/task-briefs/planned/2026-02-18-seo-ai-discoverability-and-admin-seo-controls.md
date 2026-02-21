@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
-- `updated`: `2026-02-19`
+- `updated`: `2026-02-21`
 
 ## Goal
 
@@ -50,12 +50,30 @@ freeswimming.org should have production-grade technical/content SEO and operator
 ## Ownership Split (No Overlap)
 
 - This brief owns:
-  - SEO metadata assertions and crawl/indexing correctness.
+  - public SEO/AI behavior and assertions:
+    - route metadata output,
+    - crawl/indexing behavior,
+    - sitemap/robots consistency,
+    - structured-data output and discoverability assets.
+  - final SEO admin experience around publishing/preview/governance behaviors.
 - Related work owned elsewhere:
+  - admin/content SEO data foundation (schema + role-gated CRUD primitives):
+    - `docs/task-briefs/in-progress/2026-02-19-admin-content-source-of-truth-and-dashboard-10-10.md`
   - visual snapshot baselines and cross-device UI diff checks:
     - `docs/task-briefs/planned/2026-02-18-cross-platform-ux-design-hardening.md`
   - performance budgets and security negative-path hardening:
     - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+
+## Dependency Boundary (From Admin Content Brief)
+
+This brief assumes admin/content foundation provides these primitives first:
+
+- persisted SEO fields per content item:
+  - `seo_title`, `seo_description`, `canonical_path`, `robots_index`, `og_image_url`, `schema_type`,
+- RBAC + audit + validation for SEO field writes,
+- admin edit controls for those fields.
+
+This brief then owns route-level use of those fields in rendered metadata/indexing behavior.
 
 ## Out Of Scope
 
@@ -68,7 +86,7 @@ freeswimming.org should have production-grade technical/content SEO and operator
 - All indexable public pages have unique, valid metadata and canonical URL.
 - Sitemap includes all indexable public URLs and excludes gated/private/admin URLs.
 - Structured data validates with no critical errors on changed templates.
-- Admin can update SEO metadata without deploy and changes are reflected after publish/revalidate.
+- Admin SEO metadata edits (from foundation model) are reflected in public rendering after publish/revalidate.
 - Redirect rules are validated server-side and prevent loops/open redirects.
 - AI-discoverability assets (`llms.txt` if enabled, entity-consistent copy, schema coverage) are documented and shipped.
 - No SEO changes regress current UX, performance, or auth/privacy boundaries.

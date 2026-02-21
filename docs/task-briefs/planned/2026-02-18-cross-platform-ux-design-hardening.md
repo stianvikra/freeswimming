@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
-- `updated`: `2026-02-19`
+- `updated`: `2026-02-21`
 
 ## Goal
 
@@ -20,6 +20,10 @@ Core user journeys should feel polished, fast, and consistent across iPhone, And
   - phone portrait/landscape,
   - tablet portrait/landscape,
   - desktop small/medium/large viewports.
+- Include explicit readability audits:
+  - text hierarchy and paragraph width,
+  - contrast and legibility at each breakpoint,
+  - content density and scannability on all supported OS/browser combinations.
 - Improve interaction consistency:
   - tap target sizes,
   - sticky actions and nav behavior,
@@ -46,6 +50,7 @@ Core user journeys should feel polished, fast, and consistent across iPhone, And
 
 - This brief owns:
   - cross-platform UX consistency and visual diff/snapshot baselines.
+  - AW-006 backlog delivery for full visual/UX/readability hardening.
 - Related work owned elsewhere:
   - SEO metadata/indexing assertions:
     - `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
