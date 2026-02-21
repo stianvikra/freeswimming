@@ -277,6 +277,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-02-21 | working tree | started phase-6 DB-canonical cutover: extracted shared auto-seed engine, enabled backend auto-bootstrap on admin/public content reads, removed manual import button dependency from admin content UI, and hardened drawer focus trap e2e flake | verify:pre-pr green, prepare commit + push + PR`
 - `2026-02-21 | working tree | phase-7 schema-ready UX guardrails: mirror snapshot hidden until setup is ready, create form blocked with explicit setup guidance, and API returns mirror only when schema is ready to avoid misleading drift output | verify:pre-pr green`
 - `2026-02-21 | working tree | phase-8 revisions/rollback flow implemented end-to-end: added content revisions API (`GET`+ restore`POST`), strict snapshot/payload parsers, admin per-item revision history + restore UI, and hardened admin parity/notes e2e for read-only environments | verify:pre-pr green`
+- `2026-02-21 | working tree | phase-6 contextual notes attachments in progress: added DB context fields for admin notes, context-aware notes API filtering, admin notes context editor fields, and admin-only contextual notes panel (collapse/create/edit/toggle/delete) on lesson/drill/session/product surfaces | add unit+e2e coverage, run verify:pre-pr, push + PR`
 
 ## Deferred Closeout Items
 

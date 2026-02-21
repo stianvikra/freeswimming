@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseAdminNoteContextInput } from "@/lib/admin/note-context";
 import { parseCreateAdminNotePayload } from "@/lib/admin/notes";
 import { getAdminSchemaSetupMessage, isAdminNotesSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
@@ -26,6 +27,8 @@ function selectedFields() {
     category,
     note_date,
     is_done,
+    context_type,
+    context_ref,
     created_by,
     updated_by,
     created_at,
@@ -33,7 +36,7 @@ function selectedFields() {
   `;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
   const gate = await requireAdminRoleFromSupabase(supabase, {
     allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
@@ -46,12 +49,50 @@ export async function GET() {
     );
   }
 
-  const result = await supabase
+  const { searchParams } = new URL(request.url);
+  const hasContextFilter = searchParams.has("contextType") || searchParams.has("contextRef");
+
+  const contextFilter = hasContextFilter
+    ? parseAdminNoteContextInput({
+        contextType: searchParams.get("contextType"),
+        contextRef: searchParams.get("contextRef"),
+      })
+    : { ok: true as const, value: null };
+
+  if (!contextFilter.ok) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: contextFilter.error }, { status: 400 })
+    );
+  }
+
+  if (hasContextFilter && !contextFilter.value) {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          error: "Context type and reference are required for contextual note queries.",
+        },
+        { status: 400 }
+      )
+    );
+  }
+
+  let query = supabase
     .from("admin_notes")
     .select(selectedFields())
     .order("note_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(300);
+    .order("created_at", { ascending: false });
+
+  if (contextFilter.value) {
+    query = query
+      .eq("context_type", contextFilter.value.contextType)
+      .eq("context_ref", contextFilter.value.contextRef)
+      .limit(120);
+  } else {
+    query = query.limit(300);
+  }
+
+  const result = await query;
 
   if (result.error) {
     if (isAdminNotesSchemaMissing(result.error)) {
@@ -128,6 +169,8 @@ export async function POST(request: Request) {
       category: parsed.value.category,
       note_date: parsed.value.noteDate,
       is_done: parsed.value.isDone,
+      context_type: parsed.value.contextType,
+      context_ref: parsed.value.contextRef,
       created_by: gate.user.id,
       updated_by: gate.user.id,
     })

@@ -9,6 +9,7 @@ import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import MenuDrawer from "@/components/MenuDrawer";
 import PageIntro from "@/components/PageIntro";
+import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
 import MobileSegmentedNav, {
@@ -2447,6 +2448,14 @@ function CoursePageClient() {
               </div>
             </div>
           </section>
+
+          <AdminContextNotesPanel
+            contextType="course_lesson"
+            contextRef={activeLesson.id}
+            contextLabel={`Lesson: ${activeLesson.title} (${activeLesson.id})`}
+            collapsedByDefault
+            className="mt-4"
+          />
 
           <div className="h-6 sm:hidden" aria-hidden />
 

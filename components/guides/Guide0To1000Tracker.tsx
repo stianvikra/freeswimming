@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import {
   MAX_GUIDE_PROGRESS_ROWS,
   normalizeGuideProgressRows,
@@ -954,6 +955,14 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                   {(focusedSessionProgress?.notes ?? "").length}/{MAX_NOTES_LENGTH}
                 </p>
               </div>
+
+              <AdminContextNotesPanel
+                contextType="guide_session"
+                contextRef={focusedSession.id}
+                contextLabel={`Session: ${focusedSession.title} (${focusedSession.id})`}
+                collapsedByDefault
+                className="mt-4"
+              />
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/20 bg-slate-900/55 p-2 backdrop-blur">
