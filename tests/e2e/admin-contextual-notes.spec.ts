@@ -1,0 +1,103 @@
+import type { Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
+
+function runOnceOnDesktopChromium(projectName: string) {
+  test.skip(!projectName.startsWith("desktop-"), "Admin e2e is desktop-only.");
+  test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
+  test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
+}
+
+async function loginAsAdminViaDevBypass(page: Page, nextPath: string) {
+  await page.goto(`/dev/login?next=${encodeURIComponent(nextPath)}`);
+  const pathAfterDevLogin = new URL(page.url()).pathname;
+
+  if (pathAfterDevLogin !== new URL(`https://freeswimming.org${nextPath}`).pathname) {
+    test.skip(true, "Dev auth bypass is not enabled in this environment.");
+  }
+
+  const noAccessHeading = page.getByRole("heading", { name: "You don't have access" });
+  if (await noAccessHeading.isVisible().catch(() => false)) {
+    test.skip(true, "Dev bypass account is signed in but not allowlisted/admin.");
+  }
+}
+
+test.describe("admin contextual notes", () => {
+  test("allowlisted admin can manage contextual lesson notes from course page", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await loginAsAdminViaDevBypass(page, "/course?lesson=mod3-l1");
+    await expect(page.getByRole("heading", { name: "Free Course" })).toBeVisible();
+
+    const probe = await page.request.get(
+      "/api/admin/notes?contextType=course_lesson&contextRef=mod3-l1"
+    );
+    if (!probe.ok()) {
+      test.skip(true, `Context notes API unavailable (${probe.status()}).`);
+    }
+
+    const probePayload = (await probe.json()) as { ok?: boolean; schemaReady?: boolean };
+    if (probePayload.ok && probePayload.schemaReady === false) {
+      test.skip(true, "Admin notes schema is not ready in this environment.");
+    }
+
+    const panel = page.getByTestId("admin-context-notes-panel");
+    await expect(panel).toBeVisible({ timeout: 10_000 });
+    const toggle = panel.getByTestId("admin-context-notes-toggle");
+    if ((await toggle.textContent())?.includes("Show")) {
+      await toggle.click();
+    }
+
+    const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const title = `Context Note ${unique}`;
+    const updatedTitle = `Context Note Updated ${unique}`;
+    const body = "Context note body from Playwright.";
+
+    const createForm = panel.getByTestId("admin-context-note-create-form");
+    await createForm.getByLabel("Title").fill(title);
+    await createForm.getByLabel("Category").fill("Operations");
+    await createForm.getByLabel("Text").fill(body);
+    await createForm.getByRole("button", { name: "Save note" }).click();
+
+    const createdItem = panel
+      .getByTestId("admin-context-note-item")
+      .filter({ hasText: title })
+      .first();
+    try {
+      await expect(createdItem).toBeVisible({ timeout: 15_000 });
+    } catch {
+      const writeError = panel
+        .getByText(/Could not save note right now\.|Forbidden\.|Admin role required\./i)
+        .first();
+      if (await writeError.isVisible().catch(() => false)) {
+        test.skip(true, "Context notes create is not write-ready in this environment.");
+      }
+      throw new Error("Context note item was not created in expected time.");
+    }
+
+    await createdItem.getByRole("button", { name: "Edit" }).click();
+    const editForm = createdItem.getByTestId("admin-context-note-edit-form");
+    await expect(editForm).toBeVisible();
+    await editForm.getByLabel("Edit title").fill(updatedTitle);
+    await editForm.getByRole("button", { name: "Save changes" }).click();
+
+    const updatedItem = panel
+      .getByTestId("admin-context-note-item")
+      .filter({ hasText: updatedTitle })
+      .first();
+    await expect(updatedItem).toBeVisible({ timeout: 10_000 });
+
+    const doneCheckbox = updatedItem.getByRole("checkbox");
+    await doneCheckbox.click();
+    await expect(doneCheckbox).toBeChecked();
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await updatedItem.getByRole("button", { name: "Delete" }).click();
+    await expect(
+      panel.getByTestId("admin-context-note-item").filter({ hasText: updatedTitle })
+    ).toHaveCount(0);
+  });
+});

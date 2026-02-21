@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import TrackedLink from "@/components/analytics/TrackedLink";
 import SiteChrome from "@/components/SiteChrome";
+import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import { getLibraryItemActionCopy } from "@/lib/commerce/library-item-actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -60,7 +61,9 @@ export default async function LibraryItemPage({ params }: Props) {
     console.error("[LibraryItem] Could not load product title override", productOverrideError);
   }
 
-  const displayTitle = productOverride?.title?.trim() ? productOverride.title.trim() : product.title;
+  const displayTitle = productOverride?.title?.trim()
+    ? productOverride.title.trim()
+    : product.title;
   const actionCopy = getLibraryItemActionCopy(product.id);
 
   return (
@@ -119,6 +122,14 @@ export default async function LibraryItemPage({ params }: Props) {
             </Link>
           </div>
         </div>
+
+        <AdminContextNotesPanel
+          contextType="product"
+          contextRef={product.slug}
+          contextLabel={`Product: ${displayTitle} (${product.slug})`}
+          collapsedByDefault
+          className="mt-4"
+        />
       </section>
     </SiteChrome>
   );

@@ -32,6 +32,8 @@ function selectedFields() {
     category,
     note_date,
     is_done,
+    context_type,
+    context_ref,
     created_by,
     updated_by,
     created_at,
@@ -95,6 +97,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       ...(parsed.value.category !== undefined ? { category: parsed.value.category } : {}),
       ...(parsed.value.noteDate !== undefined ? { note_date: parsed.value.noteDate } : {}),
       ...(parsed.value.isDone !== undefined ? { is_done: parsed.value.isDone } : {}),
+      ...(parsed.value.contextType !== undefined ? { context_type: parsed.value.contextType } : {}),
+      ...(parsed.value.contextRef !== undefined ? { context_ref: parsed.value.contextRef } : {}),
       updated_by: gate.user.id,
     })
     .eq("id", noteId)

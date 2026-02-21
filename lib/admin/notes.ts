@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database";
+import { parseAdminNoteContextInput, type AdminNoteContext } from "@/lib/admin/note-context";
 
 export type AdminNoteRow = Database["public"]["Tables"]["admin_notes"]["Row"];
 
@@ -8,6 +9,8 @@ export type CreateAdminNotePayload = {
   category?: unknown;
   noteDate?: unknown;
   isDone?: unknown;
+  contextType?: unknown;
+  contextRef?: unknown;
 };
 
 export type UpdateAdminNotePayload = {
@@ -16,6 +19,8 @@ export type UpdateAdminNotePayload = {
   category?: unknown;
   noteDate?: unknown;
   isDone?: unknown;
+  contextType?: unknown;
+  contextRef?: unknown;
 };
 
 type CreateAdminNoteNormalized = {
@@ -24,6 +29,8 @@ type CreateAdminNoteNormalized = {
   category: string;
   noteDate: string;
   isDone: boolean;
+  contextType: AdminNoteContext["contextType"] | null;
+  contextRef: string | null;
 };
 
 type UpdateAdminNoteNormalized = {
@@ -32,6 +39,8 @@ type UpdateAdminNoteNormalized = {
   category?: string;
   noteDate?: string;
   isDone?: boolean;
+  contextType?: AdminNoteContext["contextType"] | null;
+  contextRef?: string | null;
 };
 
 type ParseResult<T> =
@@ -93,6 +102,13 @@ export function parseCreateAdminNotePayload(
 
   const noteDate = normalizeDateInput(payload.noteDate) ?? todayIsoDate();
   const isDone = payload.isDone === true;
+  const context = parseAdminNoteContextInput({
+    contextType: payload.contextType,
+    contextRef: payload.contextRef,
+  });
+  if (!context.ok) {
+    return { ok: false, error: context.error };
+  }
 
   return {
     ok: true,
@@ -102,6 +118,8 @@ export function parseCreateAdminNotePayload(
       category,
       noteDate,
       isDone,
+      contextType: context.value?.contextType ?? null,
+      contextRef: context.value?.contextRef ?? null,
     },
   };
 }
@@ -154,6 +172,19 @@ export function parseUpdateAdminNotePayload(
       return { ok: false, error: "Done must be true or false." };
     }
     value.isDone = payload.isDone;
+    changed += 1;
+  }
+
+  if (hasOwn(source, "contextType") || hasOwn(source, "contextRef")) {
+    const context = parseAdminNoteContextInput({
+      contextType: payload.contextType,
+      contextRef: payload.contextRef,
+    });
+    if (!context.ok) {
+      return { ok: false, error: context.error };
+    }
+    value.contextType = context.value?.contextType ?? null;
+    value.contextRef = context.value?.contextRef ?? null;
     changed += 1;
   }
 

@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  ADMIN_NOTE_CONTEXT_TYPE_VALUES,
+  formatAdminNoteContextLabel,
+  type AdminNoteContextType,
+} from "@/lib/admin/note-context";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import type { AdminNoteRow } from "@/lib/admin/notes";
 
@@ -64,6 +69,8 @@ type FormState = {
   noteDate: string;
   body: string;
   isDone: boolean;
+  contextType: AdminNoteContextType | "";
+  contextRef: string;
 };
 
 function todayDateInputValue(): string {
@@ -76,6 +83,8 @@ const INITIAL_FORM: FormState = {
   noteDate: todayDateInputValue(),
   body: "",
   isDone: false,
+  contextType: "",
+  contextRef: "",
 };
 
 function formatDateLabel(value: string): string {
@@ -95,7 +104,19 @@ function toFormState(note: AdminNoteRow): FormState {
     noteDate: note.note_date,
     body: note.body,
     isDone: note.is_done,
+    contextType:
+      note.context_type &&
+      ADMIN_NOTE_CONTEXT_TYPE_VALUES.includes(note.context_type as AdminNoteContextType)
+        ? (note.context_type as AdminNoteContextType)
+        : "",
+    contextRef: note.context_ref ?? "",
   };
+}
+
+function hasPartialContextSelection(contextType: string, contextRef: string): boolean {
+  const hasType = contextType.trim().length > 0;
+  const hasRef = contextRef.trim().length > 0;
+  return (hasType && !hasRef) || (!hasType && hasRef);
 }
 
 export default function AdminNotesManager() {
@@ -174,6 +195,10 @@ export default function AdminNotesManager() {
     const open = items.length - done;
     return `${open} open · ${done} done`;
   }, [items]);
+  const createContextInvalid = hasPartialContextSelection(
+    formState.contextType,
+    formState.contextRef
+  );
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -404,6 +429,9 @@ export default function AdminNotesManager() {
               const isUpdating = updatingId === item.id;
               const isDeleting = deletingId === item.id;
               const isEditing = editingId === item.id && editState !== null;
+              const editContextInvalid = isEditing
+                ? hasPartialContextSelection(editState.contextType, editState.contextRef)
+                : false;
               return (
                 <li
                   key={item.id}
@@ -421,6 +449,14 @@ export default function AdminNotesManager() {
                       <p className="mt-1 text-xs text-slate-500">
                         {item.category} · {formatDateLabel(item.note_date)}
                       </p>
+                      {item.context_type && item.context_ref ? (
+                        <p className="mt-1 text-xs font-medium text-slate-600">
+                          {formatAdminNoteContextLabel({
+                            contextType: item.context_type,
+                            contextRef: item.context_ref,
+                          })}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-2">
                       <label className="inline-flex items-center gap-2 text-xs text-slate-700">
@@ -518,6 +554,38 @@ export default function AdminNotesManager() {
                         />
                       </label>
 
+                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <span>Context type</span>
+                        <select
+                          value={editState.contextType}
+                          onChange={(e) => {
+                            const nextValue = e.target.value as AdminNoteContextType | "";
+                            setEditField((prev) => ({ ...prev, contextType: nextValue }));
+                          }}
+                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        >
+                          <option value="">No context</option>
+                          {ADMIN_NOTE_CONTEXT_TYPE_VALUES.map((value) => (
+                            <option key={value} value={value}>
+                              {value}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <span>Context ref</span>
+                        <input
+                          type="text"
+                          value={editState.contextRef}
+                          onChange={(e) => {
+                            setEditField((prev) => ({ ...prev, contextRef: e.target.value }));
+                          }}
+                          placeholder="mod3-l1 / d01 / video-analysis"
+                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        />
+                      </label>
+
                       <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
                         <input
                           type="checkbox"
@@ -534,7 +602,7 @@ export default function AdminNotesManager() {
                         <button
                           type="submit"
                           className="inline-flex h-8 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-                          disabled={Boolean(updatingId || deletingId)}
+                          disabled={Boolean(updatingId || deletingId || editContextInvalid)}
                         >
                           {isUpdating ? "Saving…" : "Save changes"}
                         </button>
@@ -547,6 +615,11 @@ export default function AdminNotesManager() {
                           Cancel
                         </button>
                       </div>
+                      {editContextInvalid ? (
+                        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:col-span-2">
+                          Set both context type and context ref, or clear both.
+                        </p>
+                      ) : null}
                     </form>
                   ) : item.body ? (
                     <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{item.body}</p>
@@ -619,6 +692,38 @@ export default function AdminNotesManager() {
             />
           </label>
 
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span>Context type</span>
+            <select
+              value={formState.contextType}
+              onChange={(e) =>
+                setFormState((prev) => ({
+                  ...prev,
+                  contextType: e.target.value as AdminNoteContextType | "",
+                }))
+              }
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              <option value="">No context</option>
+              {ADMIN_NOTE_CONTEXT_TYPE_VALUES.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span>Context ref</span>
+            <input
+              type="text"
+              value={formState.contextRef}
+              onChange={(e) => setFormState((prev) => ({ ...prev, contextRef: e.target.value }))}
+              placeholder="mod3-l1 / d01 / video-analysis"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            />
+          </label>
+
           <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
             <input
               type="checkbox"
@@ -632,12 +737,17 @@ export default function AdminNotesManager() {
           <div className="sm:col-span-2">
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || createContextInvalid}
               className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
               {submitting ? "Saving…" : "Save note"}
             </button>
           </div>
+          {createContextInvalid ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
+              Set both context type and context ref, or leave both empty.
+            </p>
+          ) : null}
         </form>
       </section>
     </div>

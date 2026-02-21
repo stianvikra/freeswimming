@@ -435,6 +435,8 @@ export type Database = {
         Row: {
           body: string;
           category: string;
+          context_ref: string | null;
+          context_type: string | null;
           created_at: string;
           created_by: string | null;
           id: string;
@@ -447,6 +449,8 @@ export type Database = {
         Insert: {
           body?: string;
           category?: string;
+          context_ref?: string | null;
+          context_type?: string | null;
           created_at?: string;
           created_by?: string | null;
           id?: string;
@@ -459,6 +463,8 @@ export type Database = {
         Update: {
           body?: string;
           category?: string;
+          context_ref?: string | null;
+          context_type?: string | null;
           created_at?: string;
           created_by?: string | null;
           id?: string;

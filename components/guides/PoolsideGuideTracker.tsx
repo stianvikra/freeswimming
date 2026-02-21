@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import {
   MAX_GUIDE_PROGRESS_ROWS,
   normalizeGuideProgressRows,
@@ -998,6 +999,13 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                   <span>{formatUpdatedAt(currentDrillProgress?.updatedAt)}</span>
                 </div>
               </div>
+
+              <AdminContextNotesPanel
+                contextType="guide_drill"
+                contextRef={currentDrill.id}
+                contextLabel={`Drill: ${currentDrill.title} (${currentDrill.id})`}
+                collapsedByDefault
+              />
             </div>
 
             <div className="space-y-3">
