@@ -95,16 +95,19 @@ export async function GET() {
     }
   }
 
-  const productsResult = await supabase.from("products").select("id, active").eq("active", true);
-  let productRows: Array<Pick<Database["public"]["Tables"]["products"]["Row"], "id" | "active">> =
-    [];
-  if (productsResult.error) {
-    console.error("[AdminContent] Could not load products mirror snapshot", productsResult.error);
-  } else {
-    productRows = productsResult.data ?? [];
-  }
+  let mirror: ReturnType<typeof buildAdminContentMirrorSnapshot> | null = null;
+  if (schemaReady) {
+    const productsResult = await supabase.from("products").select("id, active").eq("active", true);
+    let productRows: Array<Pick<Database["public"]["Tables"]["products"]["Row"], "id" | "active">> =
+      [];
+    if (productsResult.error) {
+      console.error("[AdminContent] Could not load products mirror snapshot", productsResult.error);
+    } else {
+      productRows = productsResult.data ?? [];
+    }
 
-  const mirror = buildAdminContentMirrorSnapshot(items, productRows);
+    mirror = buildAdminContentMirrorSnapshot(items, productRows);
+  }
 
   return applySupabaseCookies(
     noStoreJson({
