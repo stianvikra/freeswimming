@@ -251,6 +251,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-02-21 | working tree | started phase-6 DB-canonical cutover: extracted shared auto-seed engine, enabled backend auto-bootstrap on admin/public content reads, removed manual import button dependency from admin content UI, and hardened drawer focus trap e2e flake | verify:pre-pr green, prepare commit + push + PR`
 - `2026-02-21 | working tree | phase-7 schema-ready UX guardrails: mirror snapshot hidden until setup is ready, create form blocked with explicit setup guidance, and API returns mirror only when schema is ready to avoid misleading drift output | verify:pre-pr green`
+- `2026-02-21 | working tree | phase-8 revisions/rollback flow implemented end-to-end: added content revisions API (`GET`+ restore`POST`), strict snapshot/payload parsers, admin per-item revision history + restore UI, and hardened admin parity/notes e2e for read-only environments | verify:pre-pr green`
 
 ## Deferred Closeout Items
 
@@ -259,9 +260,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - Evidence: `tests/e2e/admin-foundation.spec.ts` now validates `draft -> review -> published -> archived -> draft` transitions.
   - Remaining gap: none in current brief scope.
 - `audit/revisions`
-  - Current state: content audit + notes audit + immutable content revision table/model are implemented.
-  - Evidence: migration `supabase/migrations/20260220233000_admin_notes_audit_and_content_revisions.sql`.
-  - Remaining gap: optional follow-up can add dedicated admin UI/API views for revision browsing and rollback workflows.
+  - Current state: completed in this phase.
+  - Evidence: migration `supabase/migrations/20260220233000_admin_notes_audit_and_content_revisions.sql`, route `app/api/admin/content/[id]/revisions/route.ts`, UI in `components/admin/AdminContentManager.tsx`, and test coverage in `tests/unit/admin-content-revisions.test.ts` + `tests/e2e/admin-foundation.spec.ts`.
+  - Remaining gap: none in current brief scope.
 - `parity-e2e`
   - Current state: completed in this phase.
   - Evidence: dedicated browser flow in `tests/e2e/admin-content-parity.spec.ts`.

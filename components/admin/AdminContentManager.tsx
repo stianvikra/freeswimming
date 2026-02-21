@@ -90,6 +90,38 @@ type AdminContentDeleteResponse =
       error?: string;
     };
 
+type ContentRevisionItem = {
+  id: string;
+  revisionNumber: number;
+  action: string;
+  changedByEmail: string | null;
+  createdAt: string;
+  snapshotTitle: string;
+  snapshotStatus: string;
+};
+
+type AdminContentRevisionsResponse =
+  | {
+      ok: true;
+      canRestore: boolean;
+      items: ContentRevisionItem[];
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
+type AdminContentRestoreResponse =
+  | {
+      ok: true;
+      item: AdminContentItemRow;
+      restoredRevisionId: string;
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 type AdminCategoriesResponse =
   | {
       ok: true;
@@ -134,6 +166,22 @@ export default function AdminContentManager() {
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [openRevisionsItemId, setOpenRevisionsItemId] = useState<string | null>(null);
+  const [revisionsByItemId, setRevisionsByItemId] = useState<Record<string, ContentRevisionItem[]>>(
+    {}
+  );
+  const [canRestoreByItemId, setCanRestoreByItemId] = useState<Record<string, boolean>>({});
+  const [revisionsLoadingItemId, setRevisionsLoadingItemId] = useState<string | null>(null);
+  const [restoringRevisionId, setRestoringRevisionId] = useState<string | null>(null);
+
+  function formatRevisionDate(iso: string): string {
+    const parsed = new Date(iso);
+    if (Number.isNaN(parsed.getTime())) return "Unknown time";
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(parsed);
+  }
 
   async function loadItems() {
     setLoading(true);
@@ -328,6 +376,100 @@ export default function AdminContentManager() {
     }
   }
 
+  async function loadRevisionsForItem(itemId: string, force = false): Promise<boolean> {
+    if (!force && revisionsByItemId[itemId]) {
+      return true;
+    }
+
+    setRevisionsLoadingItemId(itemId);
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/admin/content/${itemId}/revisions`, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as AdminContentRevisionsResponse;
+      if (!response.ok || !payload.ok) {
+        setActionError(
+          payload.ok
+            ? "Could not load revision history."
+            : (payload.error ?? "Could not load revision history.")
+        );
+        return false;
+      }
+
+      setRevisionsByItemId((prev) => ({
+        ...prev,
+        [itemId]: payload.items,
+      }));
+      setCanRestoreByItemId((prev) => ({
+        ...prev,
+        [itemId]: payload.canRestore,
+      }));
+      return true;
+    } catch {
+      setActionError("Could not load revision history.");
+      return false;
+    } finally {
+      setRevisionsLoadingItemId(null);
+    }
+  }
+
+  async function handleToggleRevisions(itemId: string) {
+    if (openRevisionsItemId === itemId) {
+      setOpenRevisionsItemId(null);
+      return;
+    }
+
+    const loaded = await loadRevisionsForItem(itemId);
+    if (!loaded) return;
+
+    setOpenRevisionsItemId(itemId);
+  }
+
+  async function handleRestoreRevision(item: AdminContentItemRow, revisionId: string) {
+    if (restoringRevisionId || updatingId || deletingId) return;
+    const confirmed = window.confirm(
+      `Restore "${item.title}" to this revision? Current values will be replaced.`
+    );
+    if (!confirmed) return;
+
+    setActionError(null);
+    setActionNotice(null);
+    setRestoringRevisionId(revisionId);
+
+    try {
+      const response = await fetch(`/api/admin/content/${item.id}/revisions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({ revisionId }),
+      });
+      const payload = (await response.json()) as AdminContentRestoreResponse;
+      if (!response.ok || !payload.ok) {
+        setActionError(
+          payload.ok
+            ? "Could not restore revision."
+            : (payload.error ?? "Could not restore revision.")
+        );
+        return;
+      }
+
+      setItems((prev) =>
+        prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+      );
+      await loadRevisionsForItem(item.id, true);
+      setActionNotice("Revision restored.");
+    } catch {
+      setActionError("Could not restore revision.");
+    } finally {
+      setRestoringRevisionId(null);
+    }
+  }
+
   return (
     <div className="space-y-6" data-testid="admin-content-manager">
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -462,6 +604,14 @@ export default function AdminContentManager() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-slate-500">Order: {item.sort_order}</span>
+                    <button
+                      type="button"
+                      onClick={() => void handleToggleRevisions(item.id)}
+                      disabled={Boolean(updatingId || deletingId || restoringRevisionId)}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {openRevisionsItemId === item.id ? "Hide revisions" : "Revisions"}
+                    </button>
                     {STATUS_OPTIONS.filter((option) => option.value !== item.status).map(
                       (option) => (
                         <button
@@ -485,6 +635,58 @@ export default function AdminContentManager() {
                     </button>
                   </div>
                 </div>
+                {openRevisionsItemId === item.id ? (
+                  <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Revision history
+                    </h4>
+                    {revisionsLoadingItemId === item.id ? (
+                      <p className="mt-2 text-xs text-slate-500">Loading revisions…</p>
+                    ) : null}
+                    {revisionsLoadingItemId !== item.id &&
+                    (revisionsByItemId[item.id] ?? []).length === 0 ? (
+                      <p className="mt-2 text-xs text-slate-500">No revisions yet.</p>
+                    ) : null}
+                    {revisionsLoadingItemId !== item.id &&
+                    (revisionsByItemId[item.id] ?? []).length > 0 ? (
+                      <ul className="mt-2 space-y-2">
+                        {(revisionsByItemId[item.id] ?? []).map((revision) => (
+                          <li
+                            key={revision.id}
+                            data-testid="admin-content-revision-item"
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                          >
+                            <div>
+                              <p className="text-xs font-semibold text-slate-700">
+                                Rev {revision.revisionNumber} · {revision.action}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                {revision.snapshotTitle} · {revision.snapshotStatus} ·{" "}
+                                {formatRevisionDate(revision.createdAt)}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                {revision.changedByEmail ?? "Unknown actor"}
+                              </p>
+                            </div>
+                            {canRestoreByItemId[item.id] ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleRestoreRevision(item, revision.id)}
+                                disabled={
+                                  Boolean(updatingId || deletingId || restoringRevisionId) ||
+                                  revision.action === "delete"
+                                }
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {restoringRevisionId === revision.id ? "Restoring…" : "Restore"}
+                              </button>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
