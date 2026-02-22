@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-21-login-flow-ux-hardening-10-10-v2`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-21`
 - `updated`: `2026-02-22`
@@ -77,3 +77,4 @@ Make sign-in request UX deterministic and clear on first click and repeated atte
   - validation checkpoint:
     - targeted unit + targeted e2e passed,
     - `npm run verify:pre-pr` passed (`66 passed`, `138 skipped`).
+  - merged to `main` via PR `#96` (`feat/login-flow-ux-hardening-v2-phase1`) with 9/9 green checks.
