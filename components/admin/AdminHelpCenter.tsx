@@ -94,7 +94,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Content items list",
     detail:
-      "Shows all records currently in admin catalog. Each row gives quick workflow actions like review, publish, archive, revisions, and delete.",
+      "Shows all records currently in admin catalog. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
   },
   {
     title: "Create content item form",
@@ -116,6 +116,19 @@ const BUTTON_GUIDE = [
         label: "Refresh",
         meaning:
           "Loads latest data from server. Use this after changes, imports, or when list looks outdated.",
+      },
+      {
+        label: "Edit",
+        meaning:
+          "Opens edit mode on that row. In this phase, module and lesson rows can be edited directly.",
+      },
+      {
+        label: "Save changes",
+        meaning: "Stores your edits for that row. If there are no changes, nothing is saved.",
+      },
+      {
+        label: "Cancel",
+        meaning: "Closes edit mode. If you changed something, you will be asked before discarding.",
       },
       {
         label: "Revisions / Hide revisions",
@@ -287,6 +300,7 @@ export default function AdminHelpCenter() {
             <p className="text-sm font-semibold text-emerald-900">Available now</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-emerald-900">
               <li>Create new content records (module/lesson/session/drill/product).</li>
+              <li>Edit existing course modules and course lessons directly in the list.</li>
               <li>Change lifecycle status (draft, review, published, archived).</li>
               <li>Open revisions and restore older versions.</li>
               <li>Create, edit, attach, and delete notes.</li>
@@ -296,8 +310,8 @@ export default function AdminHelpCenter() {
           <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
             <p className="text-sm font-semibold text-amber-900">Planned next improvements</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-900">
-              <li>Dedicated full-field edit mode directly on existing content rows.</li>
-              <li>Expanded in-place editors for long lesson/session/drill text fields.</li>
+              <li>Expanded edit mode for session, drill, page, and product rows.</li>
+              <li>More in-place editors for long text fields and richer body content.</li>
               <li>More guided editing helpers for large content batches.</li>
             </ul>
           </article>

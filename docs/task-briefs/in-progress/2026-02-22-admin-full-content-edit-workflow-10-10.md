@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-22-admin-full-content-edit-workflow-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-22`
 - `updated`: `2026-02-22`
@@ -213,3 +213,12 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
 - This brief marks scorecard categories as `target`/`supporting`/`N/A` with measurable thresholds.
 - Closeout must include achieved scores (`0-5`) for target categories and explicit defer/fix for any target `<4`.
+
+## Automation Execution Contract
+
+- Mode: `automation-first`.
+- Assistant executes implementation, validation, commit/push, PR open/update, and check follow-up by default.
+- Required gates:
+  - before PR update/push: `npm run verify:pre-pr`
+  - before merge recommendation: `npm run verify:pre-merge` and required CI green.
+- Manual owner steps only when blocked by credentials, UI-only actions, or sandbox/escalation limits.

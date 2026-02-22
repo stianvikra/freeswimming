@@ -182,6 +182,14 @@ brew install gh
 gh auth login
 ```
 
+## Automation-first collaboration
+
+- Default mode: assistant executes implementation, validation, git checkpoints, PR open/update, and CI follow-up directly.
+- Manual handoff is only used when blocked by credentials, UI-only actions, or sandbox/escalation limits.
+- Required gates:
+  - before PR update/push: `npm run verify:pre-pr`
+  - before merge recommendation: `npm run verify:pre-merge` + required checks green.
+
 ## Recommended Test Cadence
 
 1. Per implementation step (before checkpoint commit):

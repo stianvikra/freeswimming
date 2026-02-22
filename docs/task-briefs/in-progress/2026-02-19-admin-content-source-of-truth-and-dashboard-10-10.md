@@ -321,3 +321,12 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
 - This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
 - Closeout must record achieved score (`0-5`) for each target category.
+
+## Automation Execution Contract
+
+- Mode: `automation-first`.
+- Assistant executes implementation, validation, commit/push, PR open/update, and check follow-up by default.
+- Required gates:
+  - before PR update/push: `npm run verify:pre-pr`
+  - before merge recommendation: `npm run verify:pre-merge` and required CI green.
+- Manual owner steps only when blocked by credentials, UI-only actions, or sandbox/escalation limits.

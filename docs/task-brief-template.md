@@ -18,6 +18,7 @@ Use this quick check so the task execution is precise:
 - State PR browser rule (open PR/merge links in Safari by default unless owner requests otherwise)
 - State manual QA link rule (assistant opens each QA URL in Safari before asking for `done`)
 - State local tooling prerequisite (Node LTS + npm installed where local validation runs)
+- State automation mode (`automation-first` default, or explicit manual checkpoints)
 - State platform scorecard mapping (`docs/quality/platform-10-10-scorecard.md`)
 - State closeout gate (completion audit + final 10/10 quality/safety/perf/regression sweep + move/cleanup prompts)
 
@@ -256,6 +257,21 @@ Define concrete git execution defaults so quality does not depend on memory.
 - Assistant prompting contract:
   - after each validated step, assistant must explicitly ask whether to commit+push now,
   - after every `2` pushed checkpoints (or one completed slice), assistant must explicitly ask whether to open/refresh PR to `main`.
+
+## Automation Mode (Required)
+
+Define whether execution is `automation-first` or `manual-checkpoint`.
+
+- `automation-first` (default):
+  - assistant executes coding, tests, git checkpoints, push, PR open/update, and check monitoring directly,
+  - assistant only pauses when blocked by credentials/UI-only actions/sandbox approvals or explicit owner decisions.
+- `manual-checkpoint`:
+  - owner requests explicit confirmation before selected milestones (must list which milestones).
+
+Also include:
+
+- expected assistant-owned commands (`verify:pre-pr`, `verify:pre-merge`, PR open/update),
+- fallback manual handoff text when automation is blocked.
 
 ## Branch Hygiene Defaults (Required)
 

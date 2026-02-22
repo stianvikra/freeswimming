@@ -157,6 +157,36 @@ test.describe("admin foundation", () => {
     }
     await expect(createdItem).toContainText("draft");
 
+    const editedTitle = `${title} Updated`;
+    const editedSlug = `${slug}-updated`;
+    await createdItem.getByRole("button", { name: "Edit" }).click();
+    const editForm = createdItem.getByTestId("admin-content-edit-form");
+    await expect(editForm).toBeVisible();
+    await editForm.getByLabel("Title").fill(editedTitle);
+    await editForm.getByLabel("Slug").fill(editedSlug);
+    await editForm.getByLabel("Category").fill("E2E QA");
+    await editForm.getByLabel("Sort order").fill("5");
+    await editForm.getByLabel("Summary").fill("Updated by Playwright admin e2e.");
+    await editForm.getByRole("button", { name: "Save changes" }).click();
+    await expect(createdItem).toContainText(editedTitle);
+    await expect(createdItem).toContainText("/" + editedSlug);
+    await expect(createdItem).toContainText("E2E QA");
+    await expect(createdItem).toContainText("Order: 5");
+    await expect(page.getByText("Content item updated.")).toBeVisible();
+
+    await createdItem.getByRole("button", { name: "Edit" }).click();
+    const editFormDirty = createdItem.getByTestId("admin-content-edit-form");
+    await expect(editFormDirty).toBeVisible();
+    await editFormDirty.getByLabel("Title").fill(`${editedTitle} Unsaved`);
+
+    page.once("dialog", (dialog) => dialog.dismiss());
+    await editFormDirty.getByRole("button", { name: "Cancel" }).click();
+    await expect(createdItem.getByTestId("admin-content-edit-form")).toBeVisible();
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await editFormDirty.getByRole("button", { name: "Cancel" }).click();
+    await expect(createdItem.getByTestId("admin-content-edit-form")).toHaveCount(0);
+
     await createdItem.getByRole("button", { name: "Move to review" }).click();
     await expect(createdItem).toContainText("review");
 
