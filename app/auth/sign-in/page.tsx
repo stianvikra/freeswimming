@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import AuthErrorNotice from "@/components/auth/AuthErrorNotice";
+import AuthRequestStatus from "@/components/auth/AuthRequestStatus";
+import AuthResendButton from "@/components/auth/AuthResendButton";
+import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
 import SiteChrome from "@/components/SiteChrome";
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import { requestMagicLink, verifySignInCode } from "@/app/auth/sign-in/actions";
@@ -46,13 +48,7 @@ export default async function SignInPage({ searchParams }: Props) {
             Enter your email and we&apos;ll send an e-mail with your one-time login code.
           </p>
 
-          {sent ? (
-            <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              Sign-in email sent. Enter the code below.
-            </p>
-          ) : null}
-
-          {error ? <AuthErrorNotice message={error} cooldownUntilMs={cooldownUntil} /> : null}
+          <AuthRequestStatus sent={sent} error={error} cooldownUntilMs={cooldownUntil} />
 
           {tokenMode ? (
             <div className="mt-6 space-y-4">
@@ -93,12 +89,12 @@ export default async function SignInPage({ searchParams }: Props) {
                       placeholder="123456"
                     />
                   </div>
-                  <button
-                    type="submit"
+                  <AuthSubmitButton
+                    idleLabel="Sign in with code"
+                    pendingLabel="Signing in..."
+                    testId="auth-submit-code"
                     className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-                  >
-                    Sign in with code
-                  </button>
+                  />
                 </div>
               </form>
 
@@ -106,12 +102,7 @@ export default async function SignInPage({ searchParams }: Props) {
                 <input type="hidden" name="next" value={nextPath} />
                 <input type="hidden" name="email" value={email} />
                 <input type="hidden" name="resend" value="1" />
-                <button
-                  type="submit"
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                >
-                  Request new login code
-                </button>
+                <AuthResendButton cooldownUntilMs={cooldownUntil} />
               </form>
             </div>
           ) : (
@@ -132,12 +123,12 @@ export default async function SignInPage({ searchParams }: Props) {
                   placeholder="you@example.com"
                 />
               </div>
-              <button
-                type="submit"
+              <AuthSubmitButton
+                idleLabel="Request login code"
+                pendingLabel="Requesting login code..."
+                testId="auth-submit-request"
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-              >
-                Request login code
-              </button>
+              />
             </form>
           )}
         </div>
