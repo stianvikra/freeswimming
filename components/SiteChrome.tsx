@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import MenuDrawer from "@/components/MenuDrawer";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
@@ -11,6 +12,11 @@ import MobileSegmentedNav, {
   type MobileSegmentedNavItem,
 } from "@/components/ui/MobileSegmentedNav";
 import { getMainMenuItems } from "@/components/navigation/mainMenuItems";
+import {
+  getAdminPageContextLabel,
+  hasDedicatedContextNotesForPage,
+  normalizeAdminPageContextRef,
+} from "@/lib/admin/page-note-context";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 type CustomMenu = {
@@ -122,6 +128,14 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const isLibraryRoute = pathname === "/my-library" || pathname?.startsWith("/my-library/");
   const isCheckoutRoute = pathname === "/checkout/success" || pathname?.startsWith("/checkout/");
   const isPublicRoute = !isAuthRoute && !isLibraryRoute && !isCheckoutRoute;
+  const normalizedPageContextRef = normalizeAdminPageContextRef(pathname ?? "/");
+  const pageContextLabel = getAdminPageContextLabel(normalizedPageContextRef);
+  const showAdminPageNotes =
+    dashboardVisible &&
+    !isAdminRoute &&
+    !isAuthRoute &&
+    !isCheckoutRoute &&
+    !hasDedicatedContextNotesForPage(normalizedPageContextRef);
 
   const hasCustomBottomBar = Boolean(bottomBar);
   const authHref = signedInEmail ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
@@ -315,7 +329,20 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
         />
       ) : null}
 
-      <div className={isPublicRoute ? "pt-12 sm:pt-14" : undefined}>{children}</div>
+      <div className={isPublicRoute ? "pt-12 sm:pt-14" : undefined}>
+        {children}
+        {showAdminPageNotes ? (
+          <div className="mx-auto w-full max-w-[1100px] px-4 pb-8">
+            <AdminContextNotesPanel
+              contextType="page"
+              contextRef={normalizedPageContextRef}
+              contextLabel={pageContextLabel}
+              collapsedByDefault
+              className="mt-6"
+            />
+          </div>
+        ) : null}
+      </div>
       {showDefaultMobileNav ? defaultMobileNav : null}
 
       {bottomBar ? (
