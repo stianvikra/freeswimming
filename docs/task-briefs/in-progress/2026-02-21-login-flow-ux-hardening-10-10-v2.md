@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-02-21-login-flow-ux-hardening-10-10-v2`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-21`
-- `updated`: `2026-02-21`
+- `updated`: `2026-02-22`
 
 ## Goal
 
@@ -65,3 +65,15 @@ Make sign-in request UX deterministic and clear on first click and repeated atte
 - Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
 - This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
 - Closeout must record achieved score (`0-5`) for each target category.
+
+## Implementation Checkpoint Log
+
+- `2026-02-22`:
+  - moved brief to `in-progress`.
+  - started deterministic request-state implementation (`idle/sending/sent/cooldown/error`) and split auth CTA/status UI into dedicated components.
+  - added auth UX regression coverage:
+    - `tests/unit/sign-in-ui-state.test.ts`,
+    - `tests/e2e/auth-sign-in-ux.spec.ts` (desktop-chromium run-once).
+  - validation checkpoint:
+    - targeted unit + targeted e2e passed,
+    - `npm run verify:pre-pr` passed (`66 passed`, `138 skipped`).

@@ -416,7 +416,13 @@ export async function requestMagicLink(formData: FormData) {
   const cadenceCooldownMs = getMagicLinkCadenceCooldownMs(cadenceCount);
   await setCooldownTtl(cooldownLockKey, cadenceCooldownMs);
 
-  redirect(buildSignInPath(nextPath, { sent: "1", email }));
+  redirect(
+    buildSignInPath(nextPath, {
+      sent: "1",
+      email,
+      cooldownUntil: String(Date.now() + cadenceCooldownMs),
+    })
+  );
 }
 
 export async function verifySignInCode(formData: FormData) {
