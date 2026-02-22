@@ -37,6 +37,13 @@ function normalizeContextRef(value: string): string {
   return value.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
+export function deriveCourseModuleRefFromLessonRef(lessonRef: string): string {
+  const normalized = normalizeContextRef(lessonRef);
+  if (!normalized) return "";
+  const [moduleRef] = normalized.split("-l");
+  return normalizeContextRef(moduleRef ?? "");
+}
+
 export function parseAdminNoteContextInput(input: {
   contextType?: unknown;
   contextRef?: unknown;

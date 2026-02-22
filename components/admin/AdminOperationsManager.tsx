@@ -185,7 +185,7 @@ export default function AdminOperationsManager() {
         <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-slate-900">
-              Private Access Gate (site lock)
+              Private Access Gate (env-controlled)
             </h3>
             <span
               className={[
@@ -199,16 +199,16 @@ export default function AdminOperationsManager() {
             </span>
           </div>
           <p className="mt-2 text-sm text-slate-600">
-            This is a hard gate controlled by environment variables. Keep this server-side for
-            security.
+            This lock is read-only in Admin. It is controlled by environment variables in hosting
+            settings for security.
           </p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
             <p>
-              <span className="font-semibold text-slate-700">Configured:</span>{" "}
+              <span className="font-semibold text-slate-700">Environment setup:</span>{" "}
               {siteLock.configured ? "yes" : "no"}
             </p>
             <p>
-              <span className="font-semibold text-slate-700">Mode:</span> {siteLock.mode}
+              <span className="font-semibold text-slate-700">Access method:</span> {siteLock.mode}
             </p>
             <p>
               <span className="font-semibold text-slate-700">Session TTL:</span>{" "}
@@ -220,15 +220,19 @@ export default function AdminOperationsManager() {
               href="/preview-access?next=%2Fadmin"
               className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              Open preview gate
+              Open password page
             </a>
             <a
               href="/preview-access/clear?next=%2Fadmin"
               className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              Clear my preview session
+              Sign out this browser
             </a>
           </div>
+          <p className="mt-3 text-xs text-slate-500">
+            To turn this off: set <code>SITE_LOCK_ENABLED=0</code> in hosting environment settings
+            and redeploy.
+          </p>
           <p className="mt-3 text-xs text-slate-500">
             Required env vars: <code>SITE_LOCK_ENABLED</code>, <code>SITE_LOCK_PASSWORD_HASH</code>,{" "}
             <code>SITE_LOCK_BYPASS_TOKEN</code>.

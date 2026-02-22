@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-17`
-- `updated`: `2026-02-21`
+- `updated`: `2026-02-22`
 
 ## Purpose
 
@@ -22,6 +22,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-005` | Contextual admin notes on lesson/drill/product pages                       | `high`   | `done`        |
 | `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
 | `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `planned`     |
+| `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `planned`     |
 
 ## AW-002: Email one-time-code UX hardening
 
@@ -117,12 +118,50 @@ Capture good ideas that should be implemented later without blocking the active 
 - planned brief:
   - `docs/task-briefs/planned/2026-02-21-login-flow-ux-hardening-10-10-v2.md`
 
+## AW-008: One-click site-lock operations (safe lock on/off workflow)
+
+- Trigger:
+  - Admin needs fast and safe lock/unlock operations without manual env editing each time.
+  - Current Operations card is informational for hard lock by design (env-controlled), which is correct for security but not ideal for day-to-day operations ergonomics.
+- Goal:
+  - Add a secure one-click operational workflow for `SITE_LOCK_ENABLED` on/off with approval, auditability, deployment verification, and rollback-ready behavior.
+- Direction (locked):
+  - keep hard lock env-controlled (no direct runtime toggle in app UI),
+  - expose controlled operation via GitHub Actions workflow-dispatch,
+  - action choices: `lock_on` / `lock_off`,
+  - environment choices: `preview` / `production`,
+  - production changes require manual approval gate,
+  - after change: trigger deploy + run smoke verification:
+    - `lock_on` expects redirect to `/preview-access`,
+    - `lock_off` expects normal public route access.
+- Security and safety baseline:
+  - role-restricted execution (repo admins/operators only),
+  - strict input allowlist (no freeform env mutation),
+  - no secret leakage in logs,
+  - explicit run summary: who/when/what/result,
+  - emergency rollback path documented (run opposite action or Vercel manual fallback).
+- UX baseline (operator/admin):
+  - clear wording in workflow inputs (`Lock site now`, `Unlock site now`),
+  - plain-language operation summary and status,
+  - failure output includes deterministic next step (retry, approve, rollback).
+- Observability baseline:
+  - workflow artifact/summary includes changed target env, deploy URL, and smoke result,
+  - optional analytics/admin event for lock-change operation (no secret data).
+- Acceptance baseline:
+  - preview lock toggle can be completed in under 2 minutes end-to-end,
+  - production lock toggle always requires human approval and leaves audit trail,
+  - smoke checks pass for both actions in preview,
+  - negative-path tests cover unauthorized/invalid action inputs.
+- Planned follow-up brief:
+  - `docs/task-briefs/planned/2026-02-22-site-lock-ops-one-click-control.md` (to be created when work starts)
+
 ## Recommended Execution Order
 
 1. `AW-007` login UX stabilization (highest user-impact, smallest scope).
 2. `AW-005` contextual admin notes on content surfaces.
 3. `AW-004` admin Help/Guide center + maintenance contract.
 4. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
+5. `AW-008` one-click site-lock operations workflow (before public launch cadence).
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
