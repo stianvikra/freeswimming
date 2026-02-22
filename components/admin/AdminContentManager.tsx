@@ -15,6 +15,13 @@ const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = 
   { value: "guide_drill", label: "Guide drill" },
 ];
 
+const CONTENT_TYPE_LABEL: Record<AdminContentType, string> = {
+  course_module: "Course module",
+  course_lesson: "Course lesson",
+  guide_session: "Guide session",
+  guide_drill: "Guide drill",
+};
+
 const STATUS_OPTIONS: Array<{ value: AdminContentStatus; label: string }> = [
   { value: "draft", label: "Draft" },
   { value: "review", label: "Review" },
@@ -210,6 +217,8 @@ export default function AdminContentManager() {
   const [editBaselineState, setEditBaselineState] = useState<EditFormState | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
+  const [listQuery, setListQuery] = useState("");
+  const [listTypeFilter, setListTypeFilter] = useState<"all" | AdminContentType>("all");
 
   const moduleOptions = useMemo(
     () =>
@@ -227,6 +236,29 @@ export default function AdminContentManager() {
     () => new Set(moduleOptions.map((entry) => entry.id)),
     [moduleOptions]
   );
+
+  const moduleLabelById = useMemo(
+    () => new Map(moduleOptions.map((entry) => [entry.id, entry.label] as const)),
+    [moduleOptions]
+  );
+
+  const filteredItems = useMemo(() => {
+    const normalizedQuery = listQuery.trim().toLowerCase();
+    return items.filter((item) => {
+      if (listTypeFilter !== "all" && item.content_type !== listTypeFilter) return false;
+      if (!normalizedQuery) return true;
+      const haystack = [
+        item.title,
+        item.slug,
+        item.category,
+        item.summary ?? "",
+        CONTENT_TYPE_LABEL[item.content_type],
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [items, listQuery, listTypeFilter]);
 
   const isEditDirty = useMemo(() => {
     if (!editingItemId || !editFormState || !editBaselineState) return false;
@@ -336,6 +368,12 @@ export default function AdminContentManager() {
     if (items.length === 0) return "No content items yet.";
     return `${items.length} content item${items.length === 1 ? "" : "s"} in admin catalog.`;
   }, [items, schemaReady]);
+
+  const filteredCountLabel = useMemo(() => {
+    if (items.length === 0) return null;
+    if (filteredItems.length === items.length) return "Showing all items";
+    return `Showing ${filteredItems.length} of ${items.length}`;
+  }, [filteredItems.length, items.length]);
 
   function canEditInline(item: AdminContentItemRow): boolean {
     return EDITABLE_CONTENT_TYPES.has(item.content_type);
@@ -545,6 +583,48 @@ export default function AdminContentManager() {
     return "Move to draft";
   }
 
+  function parseBodyNumber(body: unknown, key: string): number | null {
+    if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+    const value = (body as Record<string, unknown>)[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string") {
+      const parsed = Number.parseInt(value, 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  }
+
+  function parseBodyString(body: unknown, key: string): string | null {
+    if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+    const value = (body as Record<string, unknown>)[key];
+    if (typeof value !== "string") return null;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  function rowContextHint(item: AdminContentItemRow): string | null {
+    if (item.content_type === "course_module") {
+      return `Module ${item.sort_order + 1}`;
+    }
+
+    if (item.content_type === "course_lesson") {
+      const parentLabel = item.parent_id ? moduleLabelById.get(item.parent_id) : null;
+      return parentLabel ? `Parent: ${parentLabel}` : "Parent module not linked";
+    }
+
+    if (item.content_type === "guide_session") {
+      const weekNumber = parseBodyNumber(item.body, "weekNumber");
+      const sessionId = parseBodyString(item.body, "sessionId");
+      if (weekNumber) return `Week ${weekNumber}${sessionId ? ` · ${sessionId}` : ""}`;
+      if (sessionId) return sessionId;
+      return `Session ${item.sort_order + 1}`;
+    }
+
+    const drillId = parseBodyString(item.body, "drillId");
+    if (drillId) return drillId;
+    return `Drill ${item.sort_order + 1}`;
+  }
+
   async function handleSetStatus(item: AdminContentItemRow, nextStatus: AdminContentStatus) {
     if (updatingId || deletingId) return;
     if (item.status === nextStatus) return;
@@ -717,8 +797,40 @@ export default function AdminContentManager() {
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Content items</h2>
             <p className="mt-2 text-sm text-slate-600">{groupedCountLabel}</p>
+            {filteredCountLabel ? (
+              <p className="mt-1 text-xs text-slate-500">{filteredCountLabel}</p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <label className="sr-only" htmlFor="admin-content-search">
+              Search content items
+            </label>
+            <input
+              id="admin-content-search"
+              type="search"
+              value={listQuery}
+              onChange={(event) => setListQuery(event.target.value)}
+              placeholder="Search title, slug, category..."
+              className="h-10 w-56 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            />
+            <label className="sr-only" htmlFor="admin-content-type-filter">
+              Filter by type
+            </label>
+            <select
+              id="admin-content-type-filter"
+              value={listTypeFilter}
+              onChange={(event) =>
+                setListTypeFilter(event.target.value as "all" | AdminContentType)
+              }
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              <option value="all">All types</option>
+              {CONTENT_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               onClick={() => void loadItems()}
@@ -827,14 +939,22 @@ export default function AdminContentManager() {
           </p>
         ) : null}
 
-        {!loading && !error && items.length > 0 ? (
+        {!loading && !error && items.length > 0 && filteredItems.length === 0 ? (
+          <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            No content items match current search/filter.
+          </p>
+        ) : null}
+
+        {!loading && !error && filteredItems.length > 0 ? (
           <ul className="mt-5 space-y-2">
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               const isEditingRow = editingItemId === item.id;
               const isInlineEditable = canEditInline(item);
               const rowBusy = Boolean(
                 updatingId || deletingId || restoringRevisionId || savingEditId
               );
+              const rowTypeLabel = CONTENT_TYPE_LABEL[item.content_type];
+              const rowHint = rowContextHint(item);
 
               return (
                 <li
@@ -846,8 +966,9 @@ export default function AdminContentManager() {
                     <div className="min-w-[280px] flex-1">
                       <p className="font-semibold text-slate-900">{item.title}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {item.content_type} · {item.category} · {item.status} · /{item.slug}
+                        {rowTypeLabel} · {item.category} · {item.status} · /{item.slug}
                       </p>
+                      {rowHint ? <p className="mt-1 text-xs text-slate-500">{rowHint}</p> : null}
 
                       {isEditingRow && editFormState ? (
                         <div

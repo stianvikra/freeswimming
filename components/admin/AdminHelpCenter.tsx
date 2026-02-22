@@ -94,7 +94,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Content items list",
     detail:
-      "Shows all records currently in admin catalog. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
+      "Shows all records currently in admin catalog. You can search by text and filter by content type. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
   },
   {
     title: "Create content item form",
@@ -121,6 +121,16 @@ const BUTTON_GUIDE = [
         label: "Edit",
         meaning:
           "Opens edit mode on that row. In this phase, module, lesson, session, and drill rows can be edited directly.",
+      },
+      {
+        label: "Search field",
+        meaning:
+          "Filters the list by title, slug, category, summary, and type label so you can find the right row quickly.",
+      },
+      {
+        label: "All types filter",
+        meaning:
+          "Limits the list to one content type (for example only lessons or only drills). Use this before bulk edits.",
       },
       {
         label: "Save changes",

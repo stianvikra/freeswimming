@@ -157,6 +157,18 @@ test.describe("admin foundation", () => {
     }
     await expect(createdItem).toContainText("draft");
 
+    const listTypeFilter = page.getByLabel("Filter by type");
+    const listSearch = page.getByLabel("Search content items");
+    await expect(listTypeFilter).toBeVisible();
+    await expect(listSearch).toBeVisible();
+
+    await listTypeFilter.selectOption("course_module");
+    await expect(createdItem).toBeVisible();
+    await listSearch.fill(title);
+    await expect(createdItem).toBeVisible();
+    await listSearch.fill("");
+    await listTypeFilter.selectOption("all");
+
     const editedTitle = `${title} Updated`;
     const editedSlug = `${slug}-updated`;
     await createdItem.getByRole("button", { name: "Edit" }).click();
