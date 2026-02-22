@@ -187,6 +187,30 @@ test.describe("admin foundation", () => {
     await editFormDirty.getByRole("button", { name: "Cancel" }).click();
     await expect(createdItem.getByTestId("admin-content-edit-form")).toHaveCount(0);
 
+    const guideSessionItem = page
+      .getByTestId("admin-content-item")
+      .filter({ hasText: "Baseline and breathing rhythm" })
+      .first();
+    await expect(guideSessionItem).toContainText("guide_session");
+    await guideSessionItem.getByRole("button", { name: "Edit" }).click();
+    const guideSessionEditForm = guideSessionItem.getByTestId("admin-content-edit-form");
+    await expect(guideSessionEditForm).toBeVisible();
+    await expect(guideSessionEditForm.getByText("Parent module")).toHaveCount(0);
+    await guideSessionEditForm.getByRole("button", { name: "Cancel" }).click();
+    await expect(guideSessionItem.getByTestId("admin-content-edit-form")).toHaveCount(0);
+
+    const guideDrillItem = page
+      .getByTestId("admin-content-item")
+      .filter({ hasText: "Streamline push and glide reset" })
+      .first();
+    await expect(guideDrillItem).toContainText("guide_drill");
+    await guideDrillItem.getByRole("button", { name: "Edit" }).click();
+    const guideDrillEditForm = guideDrillItem.getByTestId("admin-content-edit-form");
+    await expect(guideDrillEditForm).toBeVisible();
+    await expect(guideDrillEditForm.getByText("Parent module")).toHaveCount(0);
+    await guideDrillEditForm.getByRole("button", { name: "Cancel" }).click();
+    await expect(guideDrillItem.getByTestId("admin-content-edit-form")).toHaveCount(0);
+
     await createdItem.getByRole("button", { name: "Move to review" }).click();
     await expect(createdItem).toContainText("review");
 
