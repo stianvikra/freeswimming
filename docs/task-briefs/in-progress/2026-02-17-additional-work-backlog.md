@@ -23,6 +23,17 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
 | `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `planned`     |
 | `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `planned`     |
+| `AW-009` | Admin email templates and message governance                               | `high`   | `planned`     |
+| `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `planned`     |
+| `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
+| `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `planned`     |
+| `AW-013` | Full admin content editing UX (modules/lessons/pages/products)             | `high`   | `planned`     |
+
+## Already delivered (no new brief required)
+
+- Notes `Delete` action is already implemented in both surfaces:
+  - `components/admin/AdminNotesManager.tsx`
+  - `components/admin/AdminContextNotesPanel.tsx`
 
 ## AW-002: Email one-time-code UX hardening
 
@@ -98,6 +109,7 @@ Capture good ideas that should be implemented later without blocking the active 
 - Acceptance baseline:
   - no P1 layout/readability issues on required matrix,
   - consistent spacing/type hierarchy/interactions across breakpoints,
+  - color/contrast and visual hierarchy stay readable on low/high quality displays,
   - validated through device matrix + visual/e2e checks.
 - owner brief:
   - `docs/task-briefs/planned/2026-02-18-cross-platform-ux-design-hardening.md`
@@ -155,13 +167,95 @@ Capture good ideas that should be implemented later without blocking the active 
 - Planned follow-up brief:
   - `docs/task-briefs/planned/2026-02-22-site-lock-ops-one-click-control.md` (to be created when work starts)
 
+## AW-009: Admin email templates and message governance
+
+- Trigger:
+  - Need editable, controlled email copy for platform messages without code changes for every wording update.
+- Goal:
+  - Add a safe admin workflow for email templates with preview, validation, and audit trail.
+- Direction (locked):
+  - central template storage with version history,
+  - preview rendering for key templates (auth/contact/operational),
+  - strict placeholder validation and fallback defaults,
+  - role-gated publish flow (`draft/review/published`) for template changes.
+- Acceptance baseline:
+  - admin can update template copy safely with preview and rollback,
+  - no broken placeholders in sent emails,
+  - all template mutations logged and recoverable.
+
+## AW-010: PageSpeed/Lighthouse governance for password-gated environments
+
+- Trigger:
+  - Need deterministic performance checks even while site lock is enabled.
+- Goal:
+  - Make 10/10 performance verification repeatable for both gated and public states.
+- Direction (locked):
+  - define PageSpeed/Lighthouse runbook for locked routes and unlocked routes,
+  - run with approved auth/gate context where needed (no secret leakage),
+  - record route-level budgets and trend history.
+- Acceptance baseline:
+  - baseline reports available for core routes in both states,
+  - regressions fail agreed gates,
+  - runbook clear for manual and CI usage.
+
+## AW-011: Terms/Privacy compliance lifecycle and policy ops
+
+- Trigger:
+  - Need policy text/process to stay aligned with actual app behavior over time.
+- Goal:
+  - Keep Terms and Privacy accurate, versioned, and easy to maintain as features evolve.
+- Direction (locked):
+  - define policy ownership and update cadence,
+  - add change-log linkage between product changes and policy updates,
+  - include pre-merge compliance checklist for data/analytics/auth changes.
+- Acceptance baseline:
+  - policy pages track real behavior for data collection, auth, and third-party services,
+  - policy updates are documented and reviewable,
+  - compliance review is part of release flow.
+
+## AW-012: Full admin 10/10 audit brief with checklist and e2e gates
+
+- Trigger:
+  - Need one formal audit pass across all admin workflows to close remaining UX/logic/security gaps.
+- Goal:
+  - Produce a complete admin quality audit with deterministic pass/fail criteria and automated gates.
+- Direction (locked):
+  - define checklist covering UX, logic correctness, RBAC, error handling, and recoverability,
+  - map each admin tab and core workflow to tests (positive + negative paths),
+  - produce explicit remediation queue with owners and deadlines.
+- Acceptance baseline:
+  - every admin critical flow has clear quality score and test evidence,
+  - unresolved gaps are tracked as concrete follow-up slices,
+  - audit can be rerun on schedule as release gate.
+
+## AW-013: Full admin content editing UX (modules/lessons/pages/products)
+
+- Trigger:
+  - Admin needs explicit full-field editing for existing content rows, not only status/revision/delete controls.
+- Goal:
+  - Deliver a clear and safe editing workflow for all core content entities with 10/10 UX, UI, readability, and navigation.
+- Direction (locked):
+  - add clear `Edit` entrypoint for existing content and product rows,
+  - add type-aware edit fields with validation, dirty-state warning, and save/cancel flow,
+  - keep workflow safety (`draft/review/published/archived`) and revision restore intact,
+  - improve parent/child navigation cues and ordering labels for large content sets.
+- Acceptance baseline:
+  - admin can edit and save existing module/lesson/session/drill/page/product records end-to-end,
+  - unauthorized edit attempts fail closed (`401/403`),
+  - Help/Guide includes plain-language explanation of edit flow and button behavior.
+- planned brief:
+  - `docs/task-briefs/planned/2026-02-22-admin-full-content-edit-workflow-10-10.md`
+
 ## Recommended Execution Order
 
 1. `AW-007` login UX stabilization (highest user-impact, smallest scope).
-2. `AW-005` contextual admin notes on content surfaces.
-3. `AW-004` admin Help/Guide center + maintenance contract.
-4. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
-5. `AW-008` one-click site-lock operations workflow (before public launch cadence).
+2. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
+3. `AW-008` one-click site-lock operations workflow (before public launch cadence).
+4. `AW-012` full admin 10/10 audit with checklist + e2e gates.
+5. `AW-009` admin email templates and governance.
+6. `AW-011` terms/privacy compliance lifecycle.
+7. `AW-010` gated + public performance governance runbook.
+8. `AW-013` full admin content editing UX (modules/lessons/pages/products).
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
