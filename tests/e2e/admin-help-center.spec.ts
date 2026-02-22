@@ -31,8 +31,15 @@ test.describe("admin help center", () => {
     await expect(page.getByTestId("admin-active-section-label")).toHaveText("Help/Guide");
     await expect(page.getByTestId("admin-help-center")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "How the Content page works" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Buttons and what they do" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "What can be edited right now" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Connected services" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Daily playbooks" })).toBeVisible();
+    await expect(
+      page.getByText("Move to draft / Move to review / Publish / Archive:")
+    ).toBeVisible();
+    await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(
       page.getByText("If a workflow changes, update this Help/Guide page in the same PR.")
     ).toBeVisible();

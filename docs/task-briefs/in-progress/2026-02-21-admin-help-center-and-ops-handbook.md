@@ -18,6 +18,9 @@ Give admins a 10/10 non-technical Help/Guide experience so they understand how f
 - Build a structured help surface in plain language:
   - app overview,
   - admin dashboard overview by tab and primary actions,
+  - full Content-page behavior map (snapshot, list, workflow actions, create form),
+  - explicit button glossary (what each button does, when to use it, expected result),
+  - explicit "what can be edited now vs later" section so admin knows current limits,
   - connected services and what each service is used for,
   - operational playbooks (`publish`, `rollback`, `notes`, `categories`, `runtime flags`),
   - troubleshooting and escalation flow.
@@ -38,6 +41,7 @@ Give admins a 10/10 non-technical Help/Guide experience so they understand how f
 
 - Admin can find `Help/Guide` from admin navigation in one click.
 - Core operational tasks are executable from guide steps without technical interpretation.
+- Button meanings are explicit for Content/Operations/Notes/Categories/Commerce actions.
 - Help content is structured and searchable/scannable.
 - Help page supports `loading`, `empty`, `error`, `retry` states.
 - Governance checklist explicitly requires updating help docs when workflows/features change.
@@ -60,6 +64,7 @@ Give admins a 10/10 non-technical Help/Guide experience so they understand how f
   - what can go wrong,
   - how to recover.
 - Examples use real app labels/buttons so admin can follow directly.
+- Help content explicitly documents current edit capabilities and not-yet-shipped edit flows.
 
 ## Security And Access Control
 
@@ -82,6 +87,7 @@ Give admins a 10/10 non-technical Help/Guide experience so they understand how f
 ## Implementation Checkpoint Log
 
 - `2026-02-21 | working tree | moved AW-004 brief to in-progress, added Help/Guide admin tab + initial non-technical ops handbook content + admin help e2e coverage | run verify:pre-pr, push + PR`
+- `2026-02-22 | working tree | expanded Help/Guide to include full content-page walkthrough, button glossary, and edit-scope section in plain language; updated admin-help e2e assertions accordingly | run verify:pre-pr, push + PR`
 
 ## Platform 10/10 Scorecard Linkage
 

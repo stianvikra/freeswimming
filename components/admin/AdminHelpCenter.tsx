@@ -3,6 +3,9 @@
 const QUICK_ACTIONS = [
   { id: "overview", label: "What this is" },
   { id: "tabs", label: "Dashboard tabs" },
+  { id: "content-page", label: "How Content page works" },
+  { id: "buttons", label: "Buttons explained" },
+  { id: "edit-scope", label: "What can be edited now" },
   { id: "services", label: "Connected services" },
   { id: "playbooks", label: "Daily playbooks" },
   { id: "troubleshoot", label: "Troubleshoot" },
@@ -82,6 +85,105 @@ const DAILY_PLAYBOOKS = [
   },
 ];
 
+const CONTENT_PAGE_FLOW = [
+  {
+    title: "Platform mirror snapshot",
+    detail:
+      "Shows if admin content is aligned with platform baseline (modules, lessons, sessions, drills, products). Green means aligned. Yellow means something is missing or extra.",
+  },
+  {
+    title: "Content items list",
+    detail:
+      "Shows all records currently in admin catalog. Each row gives quick workflow actions like review, publish, archive, revisions, and delete.",
+  },
+  {
+    title: "Create content item form",
+    detail:
+      "Lets you create a new record with type, status, title, slug, summary, body, order, and category. This is used to stage work safely before publish.",
+  },
+  {
+    title: "Status workflow",
+    detail:
+      "Use draft for work-in-progress, review for internal checking, and published when ready for users. Archive hides old records without deleting history.",
+  },
+];
+
+const BUTTON_GUIDE = [
+  {
+    section: "Content tab",
+    actions: [
+      {
+        label: "Refresh",
+        meaning:
+          "Loads latest data from server. Use this after changes, imports, or when list looks outdated.",
+      },
+      {
+        label: "Revisions / Hide revisions",
+        meaning:
+          "Opens or closes the change history for one item. Use this to inspect earlier versions.",
+      },
+      {
+        label: "Restore",
+        meaning: "Reverts one item back to a chosen earlier version from revision history.",
+      },
+      {
+        label: "Move to draft / Move to review / Publish / Archive",
+        meaning:
+          "Changes lifecycle state. Use these to control what is being edited, checked, live, or retired.",
+      },
+      {
+        label: "Delete",
+        meaning:
+          "Permanently removes that record from admin catalog. Use only when record should no longer exist.",
+      },
+      {
+        label: "Save content item",
+        meaning: "Creates a new content record from the form at the bottom of Content tab.",
+      },
+      {
+        label: "Retry",
+        meaning: "Tries the same request again after a failed load or action.",
+      },
+    ],
+  },
+  {
+    section: "Operations tab",
+    actions: [
+      {
+        label: "Open password page",
+        meaning: "Opens the private access page used by site lock. Use when testing gate behavior.",
+      },
+      {
+        label: "Sign out this browser",
+        meaning:
+          "Clears preview gate session in current browser so you can test gated access from a clean state.",
+      },
+      {
+        label: "Refresh",
+        meaning: "Reloads operations snapshot and runtime flag values from server.",
+      },
+    ],
+  },
+  {
+    section: "Notes, Categories, and Commerce",
+    actions: [
+      {
+        label: "Save note / Save changes / Delete",
+        meaning:
+          "Creates, updates, or removes admin notes. Notes can be attached to module, lesson, session, drill, product, or page route.",
+      },
+      {
+        label: "Save category / Delete",
+        meaning: "Maintains taxonomy used by notes/content workflows.",
+      },
+      {
+        label: "Save product",
+        meaning: "Updates product setup data used by commerce and entitlement flows.",
+      },
+    ],
+  },
+];
+
 export default function AdminHelpCenter() {
   return (
     <div className="space-y-6">
@@ -130,6 +232,75 @@ export default function AdminHelpCenter() {
               <p className="mt-1 text-sm text-slate-700">{tab.useCase}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section id="content-page" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">How the Content page works</h3>
+        <p className="mt-2 text-sm text-slate-700">
+          Content page has three layers: alignment snapshot, existing items, and create form. Start
+          at the top, then move down.
+        </p>
+        <div className="mt-3 space-y-3">
+          {CONTENT_PAGE_FLOW.map((item) => (
+            <article
+              key={item.title}
+              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+            >
+              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="buttons" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">Buttons and what they do</h3>
+        <p className="mt-2 text-sm text-slate-700">
+          If a button feels unclear, check this list first. The wording here matches the labels you
+          see in Admin.
+        </p>
+        <div className="mt-3 space-y-3">
+          {BUTTON_GUIDE.map((group) => (
+            <article
+              key={group.section}
+              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+            >
+              <p className="text-sm font-semibold text-slate-900">{group.section}</p>
+              <ul className="mt-2 space-y-2">
+                {group.actions.map((action) => (
+                  <li key={action.label} className="text-sm text-slate-700">
+                    <span className="font-semibold text-slate-900">{action.label}:</span>{" "}
+                    {action.meaning}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="edit-scope" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">What can be edited right now</h3>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <article className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
+            <p className="text-sm font-semibold text-emerald-900">Available now</p>
+            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-emerald-900">
+              <li>Create new content records (module/lesson/session/drill/product).</li>
+              <li>Change lifecycle status (draft, review, published, archived).</li>
+              <li>Open revisions and restore older versions.</li>
+              <li>Create, edit, attach, and delete notes.</li>
+              <li>Update categories and commerce product rows.</li>
+            </ul>
+          </article>
+          <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <p className="text-sm font-semibold text-amber-900">Planned next improvements</p>
+            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-900">
+              <li>Dedicated full-field edit mode directly on existing content rows.</li>
+              <li>Expanded in-place editors for long lesson/session/drill text fields.</li>
+              <li>More guided editing helpers for large content batches.</li>
+            </ul>
+          </article>
         </div>
       </section>
 
