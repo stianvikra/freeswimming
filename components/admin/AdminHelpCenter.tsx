@@ -94,7 +94,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Content items list",
     detail:
-      "Shows all records currently in admin catalog. You can search by text and filter by content type. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
+      "Shows all records currently in admin catalog. You can search by text, filter by type/status, click quick type buttons, and sort the list. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
   },
   {
     title: "Create content item form",
@@ -131,6 +131,21 @@ const BUTTON_GUIDE = [
         label: "All types filter",
         meaning:
           "Limits the list to one content type (for example only lessons or only drills). Use this before bulk edits.",
+      },
+      {
+        label: "Quick type buttons",
+        meaning:
+          "One-click filter for modules, lessons, sessions, or drills, with count badges. Fastest way to jump to one group.",
+      },
+      {
+        label: "All statuses filter",
+        meaning:
+          "Limits rows by lifecycle state (draft, review, published, archived). Useful when checking only publish-ready or only in-progress items.",
+      },
+      {
+        label: "Sort content list",
+        meaning:
+          "Changes row order (default, title, update time, or status/order grouping) so you can review and edit in a predictable sequence.",
       },
       {
         label: "Save changes",

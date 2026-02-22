@@ -29,6 +29,30 @@ const STATUS_OPTIONS: Array<{ value: AdminContentStatus; label: string }> = [
   { value: "archived", label: "Archived" },
 ];
 
+type ListSortOption =
+  | "default"
+  | "title_asc"
+  | "title_desc"
+  | "updated_desc"
+  | "updated_asc"
+  | "status_then_order";
+
+const SORT_OPTIONS: Array<{ value: ListSortOption; label: string }> = [
+  { value: "default", label: "Default order" },
+  { value: "title_asc", label: "Title (A-Z)" },
+  { value: "title_desc", label: "Title (Z-A)" },
+  { value: "updated_desc", label: "Last updated (newest)" },
+  { value: "updated_asc", label: "Last updated (oldest)" },
+  { value: "status_then_order", label: "Status then order" },
+];
+
+const STATUS_SORT_RANK: Record<AdminContentStatus, number> = {
+  draft: 0,
+  review: 1,
+  published: 2,
+  archived: 3,
+};
+
 const EDITABLE_CONTENT_TYPES: ReadonlySet<AdminContentType> = new Set([
   "course_module",
   "course_lesson",
@@ -219,6 +243,8 @@ export default function AdminContentManager() {
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [listQuery, setListQuery] = useState("");
   const [listTypeFilter, setListTypeFilter] = useState<"all" | AdminContentType>("all");
+  const [listStatusFilter, setListStatusFilter] = useState<"all" | AdminContentStatus>("all");
+  const [listSort, setListSort] = useState<ListSortOption>("default");
 
   const moduleOptions = useMemo(
     () =>
@@ -246,6 +272,7 @@ export default function AdminContentManager() {
     const normalizedQuery = listQuery.trim().toLowerCase();
     return items.filter((item) => {
       if (listTypeFilter !== "all" && item.content_type !== listTypeFilter) return false;
+      if (listStatusFilter !== "all" && item.status !== listStatusFilter) return false;
       if (!normalizedQuery) return true;
       const haystack = [
         item.title,
@@ -258,7 +285,47 @@ export default function AdminContentManager() {
         .toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [items, listQuery, listTypeFilter]);
+  }, [items, listQuery, listTypeFilter, listStatusFilter]);
+
+  const sortedItems = useMemo(() => {
+    if (listSort === "default") return filteredItems;
+
+    const sorted = [...filteredItems];
+    sorted.sort((left, right) => {
+      if (listSort === "title_asc") return left.title.localeCompare(right.title);
+      if (listSort === "title_desc") return right.title.localeCompare(left.title);
+      if (listSort === "updated_desc") return right.updated_at.localeCompare(left.updated_at);
+      if (listSort === "updated_asc") return left.updated_at.localeCompare(right.updated_at);
+
+      const statusDelta = STATUS_SORT_RANK[left.status] - STATUS_SORT_RANK[right.status];
+      if (statusDelta !== 0) return statusDelta;
+      const typeDelta = CONTENT_TYPE_LABEL[left.content_type].localeCompare(
+        CONTENT_TYPE_LABEL[right.content_type]
+      );
+      if (typeDelta !== 0) return typeDelta;
+      const orderDelta = left.sort_order - right.sort_order;
+      if (orderDelta !== 0) return orderDelta;
+      return left.title.localeCompare(right.title);
+    });
+
+    return sorted;
+  }, [filteredItems, listSort]);
+
+  const typeCounts = useMemo(() => {
+    const counts: Record<"all" | AdminContentType, number> = {
+      all: items.length,
+      course_module: 0,
+      course_lesson: 0,
+      guide_session: 0,
+      guide_drill: 0,
+    };
+
+    for (const item of items) {
+      counts[item.content_type] += 1;
+    }
+
+    return counts;
+  }, [items]);
 
   const isEditDirty = useMemo(() => {
     if (!editingItemId || !editFormState || !editBaselineState) return false;
@@ -801,7 +868,7 @@ export default function AdminContentManager() {
               <p className="mt-1 text-xs text-slate-500">{filteredCountLabel}</p>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <label className="sr-only" htmlFor="admin-content-search">
               Search content items
             </label>
@@ -811,7 +878,7 @@ export default function AdminContentManager() {
               value={listQuery}
               onChange={(event) => setListQuery(event.target.value)}
               placeholder="Search title, slug, category..."
-              className="h-10 w-56 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className="h-10 w-56 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 md:w-64"
             />
             <label className="sr-only" htmlFor="admin-content-type-filter">
               Filter by type
@@ -831,6 +898,39 @@ export default function AdminContentManager() {
                 </option>
               ))}
             </select>
+            <label className="sr-only" htmlFor="admin-content-status-filter">
+              Filter by status
+            </label>
+            <select
+              id="admin-content-status-filter"
+              value={listStatusFilter}
+              onChange={(event) =>
+                setListStatusFilter(event.target.value as "all" | AdminContentStatus)
+              }
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              <option value="all">All statuses</option>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <label className="sr-only" htmlFor="admin-content-sort">
+              Sort content list
+            </label>
+            <select
+              id="admin-content-sort"
+              value={listSort}
+              onChange={(event) => setListSort(event.target.value as ListSortOption)}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               onClick={() => void loadItems()}
@@ -839,6 +939,38 @@ export default function AdminContentManager() {
               Refresh
             </button>
           </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            data-testid="admin-content-type-chip-all"
+            onClick={() => setListTypeFilter("all")}
+            className={[
+              "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
+              listTypeFilter === "all"
+                ? "border-blue-300 bg-blue-50 text-blue-800"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+            ].join(" ")}
+          >
+            All ({typeCounts.all})
+          </button>
+          {CONTENT_TYPE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              data-testid={`admin-content-type-chip-${option.value}`}
+              onClick={() => setListTypeFilter(option.value)}
+              className={[
+                "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
+                listTypeFilter === option.value
+                  ? "border-blue-300 bg-blue-50 text-blue-800"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+              ].join(" ")}
+            >
+              {option.label} ({typeCounts[option.value]})
+            </button>
+          ))}
         </div>
 
         {!schemaReady && warning ? (
@@ -939,15 +1071,15 @@ export default function AdminContentManager() {
           </p>
         ) : null}
 
-        {!loading && !error && items.length > 0 && filteredItems.length === 0 ? (
+        {!loading && !error && items.length > 0 && sortedItems.length === 0 ? (
           <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             No content items match current search/filter.
           </p>
         ) : null}
 
-        {!loading && !error && filteredItems.length > 0 ? (
+        {!loading && !error && sortedItems.length > 0 ? (
           <ul className="mt-5 space-y-2">
-            {filteredItems.map((item) => {
+            {sortedItems.map((item) => {
               const isEditingRow = editingItemId === item.id;
               const isInlineEditable = canEditInline(item);
               const rowBusy = Boolean(

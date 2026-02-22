@@ -210,6 +210,13 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-02-23`: Slice 4 ready for PR on branch `feat/admin-content-edit-phase4-filter-sort-aw013`.
+  - Added admin list controls for `status` filter and `sort` selection.
+  - Added one-click type chips with counts (`All`, `Course module`, `Course lesson`, `Guide session`, `Guide drill`) for faster findability.
+  - Kept existing search + type filter and expanded help text with new control explanations.
+  - Updated admin e2e coverage for status/sort controls and quick-type chips.
+  - Validation: targeted admin e2e passed; `npm run verify:pre-pr` passed (`66 passed`, `138 skipped`).
+
 - `2026-02-23`: Slice 3 ready for PR on branch `feat/admin-content-edit-phase3-hierarchy-aw013`.
   - Added admin content list search + type filter for faster findability.
   - Added clearer per-row metadata context for modules/lessons/sessions/drills.

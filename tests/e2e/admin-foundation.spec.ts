@@ -158,15 +158,33 @@ test.describe("admin foundation", () => {
     await expect(createdItem).toContainText("draft");
 
     const listTypeFilter = page.getByLabel("Filter by type");
+    const listStatusFilter = page.getByLabel("Filter by status");
+    const listSort = page.getByLabel("Sort content list");
     const listSearch = page.getByLabel("Search content items");
+    const moduleTypeChip = page.getByTestId("admin-content-type-chip-course_module");
+    const allTypeChip = page.getByTestId("admin-content-type-chip-all");
     await expect(listTypeFilter).toBeVisible();
+    await expect(listStatusFilter).toBeVisible();
+    await expect(listSort).toBeVisible();
     await expect(listSearch).toBeVisible();
+    await expect(moduleTypeChip).toBeVisible();
+    await expect(allTypeChip).toBeVisible();
 
     await listTypeFilter.selectOption("course_module");
     await expect(createdItem).toBeVisible();
     await listSearch.fill(title);
     await expect(createdItem).toBeVisible();
     await listSearch.fill("");
+    await listStatusFilter.selectOption("published");
+    await expect(createdItem).toHaveCount(0);
+    await listStatusFilter.selectOption("draft");
+    await expect(createdItem).toBeVisible();
+    await listSort.selectOption("updated_desc");
+    await expect(createdItem).toBeVisible();
+    await moduleTypeChip.click();
+    await expect(createdItem).toBeVisible();
+    await allTypeChip.click();
+    await listStatusFilter.selectOption("all");
     await listTypeFilter.selectOption("all");
 
     const editedTitle = `${title} Updated`;
