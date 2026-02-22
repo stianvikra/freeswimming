@@ -27,6 +27,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `planned`     |
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
 | `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `planned`     |
+| `AW-013` | Full admin content editing UX (modules/lessons/pages/products)             | `high`   | `planned`     |
 
 ## Already delivered (no new brief required)
 
@@ -227,6 +228,24 @@ Capture good ideas that should be implemented later without blocking the active 
   - unresolved gaps are tracked as concrete follow-up slices,
   - audit can be rerun on schedule as release gate.
 
+## AW-013: Full admin content editing UX (modules/lessons/pages/products)
+
+- Trigger:
+  - Admin needs explicit full-field editing for existing content rows, not only status/revision/delete controls.
+- Goal:
+  - Deliver a clear and safe editing workflow for all core content entities with 10/10 UX, UI, readability, and navigation.
+- Direction (locked):
+  - add clear `Edit` entrypoint for existing content and product rows,
+  - add type-aware edit fields with validation, dirty-state warning, and save/cancel flow,
+  - keep workflow safety (`draft/review/published/archived`) and revision restore intact,
+  - improve parent/child navigation cues and ordering labels for large content sets.
+- Acceptance baseline:
+  - admin can edit and save existing module/lesson/session/drill/page/product records end-to-end,
+  - unauthorized edit attempts fail closed (`401/403`),
+  - Help/Guide includes plain-language explanation of edit flow and button behavior.
+- planned brief:
+  - `docs/task-briefs/planned/2026-02-22-admin-full-content-edit-workflow-10-10.md`
+
 ## Recommended Execution Order
 
 1. `AW-007` login UX stabilization (highest user-impact, smallest scope).
@@ -236,6 +255,7 @@ Capture good ideas that should be implemented later without blocking the active 
 5. `AW-009` admin email templates and governance.
 6. `AW-011` terms/privacy compliance lifecycle.
 7. `AW-010` gated + public performance governance runbook.
+8. `AW-013` full admin content editing UX (modules/lessons/pages/products).
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
