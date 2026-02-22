@@ -15,7 +15,7 @@ const QUICK_ACTIONS = [
 const DASHBOARD_TABS = [
   {
     name: "Content",
-    useCase: "Create and edit modules, lessons, guides, and publish states.",
+    useCase: "Create and edit modules, lessons, guide sessions/drills, and publish states.",
   },
   {
     name: "Commerce",
@@ -120,7 +120,7 @@ const BUTTON_GUIDE = [
       {
         label: "Edit",
         meaning:
-          "Opens edit mode on that row. In this phase, module and lesson rows can be edited directly.",
+          "Opens edit mode on that row. In this phase, module, lesson, session, and drill rows can be edited directly.",
       },
       {
         label: "Save changes",
@@ -300,7 +300,7 @@ export default function AdminHelpCenter() {
             <p className="text-sm font-semibold text-emerald-900">Available now</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-emerald-900">
               <li>Create new content records (module/lesson/session/drill/product).</li>
-              <li>Edit existing course modules and course lessons directly in the list.</li>
+              <li>Edit existing course modules, lessons, guide sessions, and guide drills.</li>
               <li>Change lifecycle status (draft, review, published, archived).</li>
               <li>Open revisions and restore older versions.</li>
               <li>Create, edit, attach, and delete notes.</li>
@@ -310,7 +310,7 @@ export default function AdminHelpCenter() {
           <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
             <p className="text-sm font-semibold text-amber-900">Planned next improvements</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-900">
-              <li>Expanded edit mode for session, drill, page, and product rows.</li>
+              <li>Expanded edit mode for page and product rows.</li>
               <li>More in-place editors for long text fields and richer body content.</li>
               <li>More guided editing helpers for large content batches.</li>
             </ul>

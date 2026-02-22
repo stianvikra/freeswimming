@@ -25,6 +25,8 @@ const STATUS_OPTIONS: Array<{ value: AdminContentStatus; label: string }> = [
 const EDITABLE_CONTENT_TYPES: ReadonlySet<AdminContentType> = new Set([
   "course_module",
   "course_lesson",
+  "guide_session",
+  "guide_drill",
 ]);
 
 type MirrorMetric = {
@@ -356,9 +358,7 @@ export default function AdminContentManager() {
 
   function handleStartEdit(item: AdminContentItemRow) {
     if (!canEditInline(item)) {
-      setActionNotice(
-        "Inline edit is available for course modules and course lessons in this phase."
-      );
+      setActionNotice("Inline edit is not available for this content type yet.");
       return;
     }
     if (savingEditId || updatingId || deletingId || restoringRevisionId) return;

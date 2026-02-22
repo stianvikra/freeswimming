@@ -40,6 +40,9 @@ test.describe("admin help center", () => {
       page.getByText("Move to draft / Move to review / Publish / Archive:")
     ).toBeVisible();
     await expect(page.getByText("Edit:")).toBeVisible();
+    await expect(
+      page.getByText("module, lesson, session, and drill rows can be edited directly.")
+    ).toBeVisible();
     await expect(page.getByText("Save changes:")).toBeVisible();
     await expect(page.getByText("Cancel:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
