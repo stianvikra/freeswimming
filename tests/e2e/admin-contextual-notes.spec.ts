@@ -100,4 +100,65 @@ test.describe("admin contextual notes", () => {
       panel.getByTestId("admin-context-note-item").filter({ hasText: updatedTitle })
     ).toHaveCount(0);
   });
+
+  test("allowlisted admin can manage contextual page notes from plans page", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await loginAsAdminViaDevBypass(page, "/plans");
+    expect(new URL(page.url()).pathname).toBe("/plans");
+
+    const probe = await page.request.get("/api/admin/notes?contextType=page&contextRef=%2Fplans");
+    if (!probe.ok()) {
+      test.skip(true, `Context notes API unavailable (${probe.status()}).`);
+    }
+
+    const probePayload = (await probe.json()) as { ok?: boolean; schemaReady?: boolean };
+    if (probePayload.ok && probePayload.schemaReady === false) {
+      test.skip(true, "Admin notes schema is not ready in this environment.");
+    }
+
+    const panel = page.getByTestId("admin-context-notes-panel");
+    await expect(panel).toBeVisible({ timeout: 10_000 });
+    const toggle = panel.getByTestId("admin-context-notes-toggle");
+    if ((await toggle.textContent())?.includes("Show")) {
+      await toggle.click();
+    }
+
+    const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const title = `Plans Note ${unique}`;
+
+    const createForm = panel.getByTestId("admin-context-note-create-form");
+    await createForm.getByLabel("Title").fill(title);
+    await createForm.getByLabel("Category").fill("Content");
+    await createForm.getByLabel("Text").fill("Page-level admin note for plans.");
+    await createForm.getByRole("button", { name: "Save note" }).click();
+
+    const createdItem = panel
+      .getByTestId("admin-context-note-item")
+      .filter({ hasText: title })
+      .first();
+    try {
+      await expect(createdItem).toBeVisible({ timeout: 15_000 });
+    } catch {
+      const writeError = panel
+        .getByText(/Could not save note right now\.|Forbidden\.|Admin role required\./i)
+        .first();
+      if (await writeError.isVisible().catch(() => false)) {
+        test.skip(true, "Context notes create is not write-ready in this environment.");
+      }
+      throw new Error("Page note item was not created in expected time.");
+    }
+
+    const doneCheckbox = createdItem.getByRole("checkbox");
+    await doneCheckbox.click();
+    await expect(doneCheckbox).toBeChecked();
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await createdItem.getByRole("button", { name: "Delete" }).click();
+    await expect(
+      panel.getByTestId("admin-context-note-item").filter({ hasText: title })
+    ).toHaveCount(0);
+  });
 });

@@ -1,4 +1,5 @@
 import type { AdminContentItemRow } from "@/lib/admin/content";
+import { ADMIN_PAGE_CONTEXT_OPTIONS } from "@/lib/admin/page-note-context";
 import { type AdminNoteContextType, formatAdminNoteContextLabel } from "@/lib/admin/note-context";
 
 type AdminProductSummary = {
@@ -26,18 +27,6 @@ export type AdminNoteContextCatalog = {
   labelsByContextKey: Record<string, string>;
   lessonModuleByRef: Record<string, string>;
 };
-
-const PAGE_OPTIONS: AdminNoteContextOption[] = [
-  { ref: "/admin", label: "Admin dashboard" },
-  { ref: "/course", label: "Course page" },
-  { ref: "/guides/0-1000m", label: "0-1000 guide" },
-  { ref: "/guides/poolside", label: "Poolside guide" },
-  { ref: "/my-library", label: "My Library" },
-  { ref: "/my-library/goals", label: "My Library goals" },
-  { ref: "/plans", label: "Plans page" },
-  { ref: "/analysis", label: "Analysis page" },
-  { ref: "/", label: "Home page" },
-];
 
 function normalizeRef(value: unknown): string {
   if (typeof value !== "string") return "";
@@ -180,7 +169,7 @@ export function buildAdminNoteContextCatalog(params: {
   const productsByRef = new Map<string, AdminNoteContextOption>();
   const pagesByRef = new Map<string, AdminNoteContextOption>();
 
-  for (const page of PAGE_OPTIONS) {
+  for (const page of ADMIN_PAGE_CONTEXT_OPTIONS) {
     upsertOption(pagesByRef, page.ref, page.label);
   }
 
