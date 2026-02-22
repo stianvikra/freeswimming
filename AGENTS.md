@@ -64,6 +64,9 @@ This file defines how coding agents should collaborate in this repository.
 - Default to one actionable step at a time when guiding the repository owner in UI or terminal flows.
 - Keep instructions short and concrete.
 - Only provide multi-step batches when explicitly requested.
+- Automation-first default:
+  - assistant should execute implement/test/git/PR prep steps directly whenever tooling + permissions allow,
+  - assistant should only hand off manual steps when they require owner credentials, UI-only actions, or explicit escalation approval.
 - Before reporting `npm`/`node` as missing, always attempt `nvm` bootstrap first:
   - `export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"`
   - `[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"`
@@ -74,6 +77,27 @@ This file defines how coding agents should collaborate in this repository.
 - After `2` consecutive weekly green runs on baseline performance budgets:
   - explicitly prompt the owner to tighten one stretch target step.
   - record tighten/hold/revert decision in the active brief or PR summary.
+
+## Automation-First Delivery Contract (Required)
+
+- For normal feature slices, assistant owns end-to-end execution by default:
+  - create/switch branch from `main`,
+  - implement scoped changes,
+  - run required local validation,
+  - commit + push,
+  - open/update PR in Safari (`npm run pr:create:safari` preferred),
+  - monitor required checks and summarize merge readiness.
+- Assistant should not pause for permission between normal sub-steps unless blocked by:
+  - missing credentials/secrets,
+  - sandbox/escalation requirement,
+  - explicit owner decision needed for product tradeoff.
+- Required gate sequence under automation:
+  - before PR update/push: `npm run verify:pre-pr`,
+  - before merge recommendation: `npm run verify:pre-merge` + required CI green.
+- If automation cannot complete a step, assistant must provide:
+  - exact blocker,
+  - exact next command/UI click,
+  - resume point after owner completes it.
 
 ## Merge And Release Gates (Required)
 

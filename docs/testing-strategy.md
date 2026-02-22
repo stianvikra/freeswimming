@@ -58,6 +58,12 @@ Useful commands:
 - `npm run test:e2e:admin` for authenticated admin flows (foundation/parity/notes).
 - `npm run verify:pre-pr` and `npm run verify:pre-merge` for release gates.
 
+## Automation-first execution
+
+- Default: assistant should run these checks automatically at the right checkpoint.
+- Only fall back to owner-run manual commands when blocked by credentials, UI-only actions, or sandbox/escalation limits.
+- Handoff must include command evidence and clear resume step when manual intervention is needed.
+
 ## Public vs Private Mode Test Rules
 
 - Default CI/full product checks should run in public mode:

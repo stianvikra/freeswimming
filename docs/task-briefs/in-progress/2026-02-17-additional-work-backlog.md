@@ -27,7 +27,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `planned`     |
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
 | `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `planned`     |
-| `AW-013` | Full admin content editing UX (modules/lessons/pages/products)             | `high`   | `planned`     |
+| `AW-013` | Full admin content editing UX (modules/lessons/pages/products)             | `high`   | `in-progress` |
 
 ## Already delivered (no new brief required)
 
@@ -291,3 +291,12 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 - Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
 - This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
 - Closeout must record achieved score (`0-5`) for each target category.
+
+## Automation Execution Contract
+
+- Mode: `automation-first`.
+- Assistant executes implementation, validation, commit/push, PR open/update, and check follow-up by default.
+- Required gates:
+  - before PR update/push: `npm run verify:pre-pr`
+  - before merge recommendation: `npm run verify:pre-merge` and required CI green.
+- Manual owner steps only when blocked by credentials, UI-only actions, or sandbox/escalation limits.

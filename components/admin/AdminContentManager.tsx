@@ -22,6 +22,11 @@ const STATUS_OPTIONS: Array<{ value: AdminContentStatus; label: string }> = [
   { value: "archived", label: "Archived" },
 ];
 
+const EDITABLE_CONTENT_TYPES: ReadonlySet<AdminContentType> = new Set([
+  "course_module",
+  "course_lesson",
+]);
+
 type MirrorMetric = {
   key: "course_module" | "course_lesson" | "guide_session" | "guide_drill" | "programs";
   label: string;
@@ -143,6 +148,15 @@ type FormState = {
   status: AdminContentStatus;
 };
 
+type EditFormState = {
+  title: string;
+  slug: string;
+  summary: string;
+  category: string;
+  sortOrder: string;
+  parentId: string;
+};
+
 const INITIAL_FORM: FormState = {
   contentType: "course_module",
   title: "",
@@ -151,6 +165,22 @@ const INITIAL_FORM: FormState = {
   category: "General",
   status: "draft",
 };
+
+function normalizeCategoryInput(value: string): string {
+  const collapsed = value.trim().replace(/\s+/g, " ");
+  return collapsed.length > 0 ? collapsed : "General";
+}
+
+function toEditFormState(item: AdminContentItemRow): EditFormState {
+  return {
+    title: item.title,
+    slug: item.slug,
+    summary: item.summary ?? "",
+    category: item.category,
+    sortOrder: String(item.sort_order),
+    parentId: item.parent_id ?? "",
+  };
+}
 
 export default function AdminContentManager() {
   const [items, setItems] = useState<AdminContentItemRow[]>([]);
@@ -173,6 +203,50 @@ export default function AdminContentManager() {
   const [canRestoreByItemId, setCanRestoreByItemId] = useState<Record<string, boolean>>({});
   const [revisionsLoadingItemId, setRevisionsLoadingItemId] = useState<string | null>(null);
   const [restoringRevisionId, setRestoringRevisionId] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editFormState, setEditFormState] = useState<EditFormState | null>(null);
+  const [editBaselineState, setEditBaselineState] = useState<EditFormState | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [savingEditId, setSavingEditId] = useState<string | null>(null);
+
+  const moduleOptions = useMemo(
+    () =>
+      items
+        .filter((item) => item.content_type === "course_module")
+        .sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title))
+        .map((item) => ({
+          id: item.id,
+          label: `${item.sort_order + 1}. ${item.title}`,
+        })),
+    [items]
+  );
+
+  const moduleIdSet = useMemo(
+    () => new Set(moduleOptions.map((entry) => entry.id)),
+    [moduleOptions]
+  );
+
+  const isEditDirty = useMemo(() => {
+    if (!editingItemId || !editFormState || !editBaselineState) return false;
+    const normalize = (value: EditFormState) => ({
+      title: value.title.trim(),
+      slug: value.slug.trim(),
+      summary: value.summary.trim(),
+      category: normalizeCategoryInput(value.category),
+      sortOrder: Number.parseInt(value.sortOrder, 10),
+      parentId: value.parentId.trim(),
+    });
+    const current = normalize(editFormState);
+    const baseline = normalize(editBaselineState);
+    return (
+      current.title !== baseline.title ||
+      current.slug !== baseline.slug ||
+      current.summary !== baseline.summary ||
+      current.category !== baseline.category ||
+      current.sortOrder !== baseline.sortOrder ||
+      current.parentId !== baseline.parentId
+    );
+  }, [editingItemId, editFormState, editBaselineState]);
 
   function formatRevisionDate(iso: string): string {
     const parsed = new Date(iso);
@@ -241,11 +315,177 @@ export default function AdminContentManager() {
     void loadItems();
   }, []);
 
+  useEffect(() => {
+    if (!isEditDirty) return;
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isEditDirty]);
+
   const groupedCountLabel = useMemo(() => {
     if (!schemaReady) return "Content catalog will appear after admin content setup is ready.";
     if (items.length === 0) return "No content items yet.";
     return `${items.length} content item${items.length === 1 ? "" : "s"} in admin catalog.`;
   }, [items, schemaReady]);
+
+  function canEditInline(item: AdminContentItemRow): boolean {
+    return EDITABLE_CONTENT_TYPES.has(item.content_type);
+  }
+
+  function closeEditMode(force = false): boolean {
+    if (!force && isEditDirty) {
+      const confirmed = window.confirm(
+        "You have unsaved changes. Cancel edit and discard these changes?"
+      );
+      if (!confirmed) return false;
+    }
+
+    setEditingItemId(null);
+    setEditFormState(null);
+    setEditBaselineState(null);
+    setEditError(null);
+    return true;
+  }
+
+  function handleStartEdit(item: AdminContentItemRow) {
+    if (!canEditInline(item)) {
+      setActionNotice(
+        "Inline edit is available for course modules and course lessons in this phase."
+      );
+      return;
+    }
+    if (savingEditId || updatingId || deletingId || restoringRevisionId) return;
+    if (!closeEditMode()) return;
+
+    const nextState = toEditFormState(item);
+    setEditingItemId(item.id);
+    setEditFormState(nextState);
+    setEditBaselineState(nextState);
+    setActionError(null);
+    setActionNotice(null);
+  }
+
+  function validateEditForm(item: AdminContentItemRow, form: EditFormState): string | null {
+    const title = form.title.trim();
+    if (title.length < 2 || title.length > 120) {
+      return "Title must be between 2 and 120 characters.";
+    }
+
+    const slug = form.slug.trim();
+    if (slug.length < 2) {
+      return "Slug must be at least 2 characters.";
+    }
+
+    const category = normalizeCategoryInput(form.category);
+    if (category.length > 80) {
+      return "Category must be 80 characters or less.";
+    }
+
+    const sortOrder = Number.parseInt(form.sortOrder, 10);
+    if (!Number.isFinite(sortOrder) || sortOrder < -10000 || sortOrder > 10000) {
+      return "Sort order must be between -10000 and 10000.";
+    }
+
+    if (item.content_type === "course_lesson") {
+      const parentId = form.parentId.trim();
+      if (!parentId) {
+        return "Course lesson must be linked to a parent module.";
+      }
+      if (!moduleIdSet.has(parentId)) {
+        return "Selected parent module is invalid.";
+      }
+    }
+
+    return null;
+  }
+
+  async function handleSaveEdit(item: AdminContentItemRow) {
+    if (!editFormState || savingEditId || updatingId || deletingId || restoringRevisionId) return;
+    setActionError(null);
+    setActionNotice(null);
+    setEditError(null);
+
+    const validationError = validateEditForm(item, editFormState);
+    if (validationError) {
+      setEditError(validationError);
+      return;
+    }
+
+    const normalizedTitle = editFormState.title.trim();
+    const normalizedSlug = editFormState.slug.trim();
+    const normalizedSummary = editFormState.summary.trim();
+    const normalizedCategory = normalizeCategoryInput(editFormState.category);
+    const normalizedSortOrder = Number.parseInt(editFormState.sortOrder, 10);
+    const normalizedParentId = editFormState.parentId.trim();
+
+    const updatePayload: Record<string, unknown> = {};
+    if (normalizedTitle !== item.title) {
+      updatePayload.title = normalizedTitle;
+    }
+    if (normalizedSlug !== item.slug) {
+      updatePayload.slug = normalizedSlug;
+    }
+    if (normalizedSummary !== (item.summary ?? "")) {
+      updatePayload.summary = normalizedSummary;
+    }
+    if (normalizedCategory !== item.category) {
+      updatePayload.category = normalizedCategory;
+    }
+    if (normalizedSortOrder !== item.sort_order) {
+      updatePayload.sortOrder = normalizedSortOrder;
+    }
+
+    if (item.content_type === "course_lesson") {
+      const itemParentId = item.parent_id ?? "";
+      if (normalizedParentId !== itemParentId) {
+        updatePayload.parentId = normalizedParentId || null;
+      }
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      setActionNotice("No changes to save.");
+      closeEditMode(true);
+      return;
+    }
+
+    setSavingEditId(item.id);
+    try {
+      const response = await fetch(`/api/admin/content/${item.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify(updatePayload),
+      });
+      const payload = (await response.json()) as AdminContentUpdateResponse;
+      if (!response.ok || !payload.ok) {
+        setEditError(
+          payload.ok
+            ? "Could not save content changes."
+            : (payload.error ?? "Could not save content changes.")
+        );
+        return;
+      }
+
+      setItems((prev) =>
+        prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+      );
+      setActionNotice("Content item updated.");
+      closeEditMode(true);
+    } catch {
+      setEditError("Could not save content changes.");
+    } finally {
+      setSavingEditId(null);
+    }
+  }
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -589,106 +829,269 @@ export default function AdminContentManager() {
 
         {!loading && !error && items.length > 0 ? (
           <ul className="mt-5 space-y-2">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                data-testid="admin-content-item"
-                className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {item.content_type} · {item.category} · {item.status} · /{item.slug}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500">Order: {item.sort_order}</span>
-                    <button
-                      type="button"
-                      onClick={() => void handleToggleRevisions(item.id)}
-                      disabled={Boolean(updatingId || deletingId || restoringRevisionId)}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {openRevisionsItemId === item.id ? "Hide revisions" : "Revisions"}
-                    </button>
-                    {STATUS_OPTIONS.filter((option) => option.value !== item.status).map(
-                      (option) => (
-                        <button
-                          key={`${item.id}-${option.value}`}
-                          type="button"
-                          onClick={() => void handleSetStatus(item, option.value)}
-                          disabled={Boolean(updatingId || deletingId)}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            {items.map((item) => {
+              const isEditingRow = editingItemId === item.id;
+              const isInlineEditable = canEditInline(item);
+              const rowBusy = Boolean(
+                updatingId || deletingId || restoringRevisionId || savingEditId
+              );
+
+              return (
+                <li
+                  key={item.id}
+                  data-testid="admin-content-item"
+                  className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-[280px] flex-1">
+                      <p className="font-semibold text-slate-900">{item.title}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {item.content_type} · {item.category} · {item.status} · /{item.slug}
+                      </p>
+
+                      {isEditingRow && editFormState ? (
+                        <div
+                          className="mt-3 rounded-lg border border-blue-200 bg-white p-3"
+                          data-testid="admin-content-edit-form"
                         >
-                          {updatingId === item.id ? "Saving…" : statusActionLabel(option.value)}
-                        </button>
-                      )
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(item)}
-                      disabled={Boolean(updatingId || deletingId)}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {deletingId === item.id ? "Deleting…" : "Delete"}
-                    </button>
-                  </div>
-                </div>
-                {openRevisionsItemId === item.id ? (
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
-                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Revision history
-                    </h4>
-                    {revisionsLoadingItemId === item.id ? (
-                      <p className="mt-2 text-xs text-slate-500">Loading revisions…</p>
-                    ) : null}
-                    {revisionsLoadingItemId !== item.id &&
-                    (revisionsByItemId[item.id] ?? []).length === 0 ? (
-                      <p className="mt-2 text-xs text-slate-500">No revisions yet.</p>
-                    ) : null}
-                    {revisionsLoadingItemId !== item.id &&
-                    (revisionsByItemId[item.id] ?? []).length > 0 ? (
-                      <ul className="mt-2 space-y-2">
-                        {(revisionsByItemId[item.id] ?? []).map((revision) => (
-                          <li
-                            key={revision.id}
-                            data-testid="admin-content-revision-item"
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                          >
-                            <div>
-                              <p className="text-xs font-semibold text-slate-700">
-                                Rev {revision.revisionNumber} · {revision.action}
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500">
-                                {revision.snapshotTitle} · {revision.snapshotStatus} ·{" "}
-                                {formatRevisionDate(revision.createdAt)}
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500">
-                                {revision.changedByEmail ?? "Unknown actor"}
-                              </p>
-                            </div>
-                            {canRestoreByItemId[item.id] ? (
-                              <button
-                                type="button"
-                                onClick={() => void handleRestoreRevision(item, revision.id)}
-                                disabled={
-                                  Boolean(updatingId || deletingId || restoringRevisionId) ||
-                                  revision.action === "delete"
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                              <span>Title</span>
+                              <input
+                                type="text"
+                                value={editFormState.title}
+                                onChange={(event) =>
+                                  setEditFormState((prev) =>
+                                    prev ? { ...prev, title: event.target.value } : prev
+                                  )
                                 }
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                {restoringRevisionId === revision.id ? "Restoring…" : "Restore"}
-                              </button>
+                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                              />
+                            </label>
+
+                            <label className="space-y-1 text-xs font-medium text-slate-700">
+                              <span>Slug</span>
+                              <input
+                                type="text"
+                                value={editFormState.slug}
+                                onChange={(event) =>
+                                  setEditFormState((prev) =>
+                                    prev ? { ...prev, slug: event.target.value } : prev
+                                  )
+                                }
+                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                              />
+                            </label>
+
+                            <label className="space-y-1 text-xs font-medium text-slate-700">
+                              <span>Category</span>
+                              <input
+                                type="text"
+                                value={editFormState.category}
+                                onChange={(event) =>
+                                  setEditFormState((prev) =>
+                                    prev ? { ...prev, category: event.target.value } : prev
+                                  )
+                                }
+                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                              />
+                            </label>
+
+                            <label className="space-y-1 text-xs font-medium text-slate-700">
+                              <span>Sort order</span>
+                              <input
+                                type="number"
+                                value={editFormState.sortOrder}
+                                onChange={(event) =>
+                                  setEditFormState((prev) =>
+                                    prev ? { ...prev, sortOrder: event.target.value } : prev
+                                  )
+                                }
+                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                              />
+                            </label>
+
+                            {item.content_type === "course_lesson" ? (
+                              <label className="space-y-1 text-xs font-medium text-slate-700">
+                                <span>Parent module</span>
+                                <select
+                                  value={editFormState.parentId}
+                                  onChange={(event) =>
+                                    setEditFormState((prev) =>
+                                      prev ? { ...prev, parentId: event.target.value } : prev
+                                    )
+                                  }
+                                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                >
+                                  <option value="">Select module</option>
+                                  {moduleOptions.map((option) => (
+                                    <option key={option.id} value={option.id}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
                             ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
+
+                            <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                              <span>Summary</span>
+                              <textarea
+                                rows={3}
+                                value={editFormState.summary}
+                                onChange={(event) =>
+                                  setEditFormState((prev) =>
+                                    prev ? { ...prev, summary: event.target.value } : prev
+                                  )
+                                }
+                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                              />
+                            </label>
+                          </div>
+
+                          {isEditDirty ? (
+                            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                              You have unsaved changes.
+                            </p>
+                          ) : null}
+
+                          {editError ? (
+                            <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                              {editError}
+                            </p>
+                          ) : null}
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleSaveEdit(item)}
+                              disabled={Boolean(rowBusy)}
+                              className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {savingEditId === item.id ? "Saving…" : "Save changes"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeEditMode();
+                              }}
+                              disabled={Boolean(rowBusy)}
+                              className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <span className="text-xs text-slate-500">Order: {item.sort_order}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleStartEdit(item);
+                        }}
+                        disabled={Boolean(rowBusy) || (Boolean(editingItemId) && !isEditingRow)}
+                        className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isEditingRow ? "Editing" : isInlineEditable ? "Edit" : "Edit (soon)"}
+                      </button>
+                      {!isEditingRow ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => void handleToggleRevisions(item.id)}
+                            disabled={Boolean(rowBusy)}
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {openRevisionsItemId === item.id ? "Hide revisions" : "Revisions"}
+                          </button>
+                          {STATUS_OPTIONS.filter((option) => option.value !== item.status).map(
+                            (option) => (
+                              <button
+                                key={`${item.id}-${option.value}`}
+                                type="button"
+                                onClick={() => void handleSetStatus(item, option.value)}
+                                disabled={Boolean(updatingId || deletingId || savingEditId)}
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {updatingId === item.id
+                                  ? "Saving…"
+                                  : statusActionLabel(option.value)}
+                              </button>
+                            )
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(item)}
+                            disabled={Boolean(updatingId || deletingId || savingEditId)}
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletingId === item.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
                   </div>
-                ) : null}
-              </li>
-            ))}
+                  {openRevisionsItemId === item.id ? (
+                    <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Revision history
+                      </h4>
+                      {revisionsLoadingItemId === item.id ? (
+                        <p className="mt-2 text-xs text-slate-500">Loading revisions…</p>
+                      ) : null}
+                      {revisionsLoadingItemId !== item.id &&
+                      (revisionsByItemId[item.id] ?? []).length === 0 ? (
+                        <p className="mt-2 text-xs text-slate-500">No revisions yet.</p>
+                      ) : null}
+                      {revisionsLoadingItemId !== item.id &&
+                      (revisionsByItemId[item.id] ?? []).length > 0 ? (
+                        <ul className="mt-2 space-y-2">
+                          {(revisionsByItemId[item.id] ?? []).map((revision) => (
+                            <li
+                              key={revision.id}
+                              data-testid="admin-content-revision-item"
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                            >
+                              <div>
+                                <p className="text-xs font-semibold text-slate-700">
+                                  Rev {revision.revisionNumber} · {revision.action}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {revision.snapshotTitle} · {revision.snapshotStatus} ·{" "}
+                                  {formatRevisionDate(revision.createdAt)}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {revision.changedByEmail ?? "Unknown actor"}
+                                </p>
+                              </div>
+                              {canRestoreByItemId[item.id] ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleRestoreRevision(item, revision.id)}
+                                  disabled={
+                                    Boolean(
+                                      updatingId ||
+                                      deletingId ||
+                                      restoringRevisionId ||
+                                      savingEditId
+                                    ) || revision.action === "delete"
+                                  }
+                                  className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {restoringRevisionId === revision.id ? "Restoring…" : "Restore"}
+                                </button>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         ) : null}
       </section>

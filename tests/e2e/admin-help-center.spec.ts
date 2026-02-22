@@ -39,6 +39,9 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Move to draft / Move to review / Publish / Archive:")
     ).toBeVisible();
+    await expect(page.getByText("Edit:")).toBeVisible();
+    await expect(page.getByText("Save changes:")).toBeVisible();
+    await expect(page.getByText("Cancel:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(
       page.getByText("If a workflow changes, update this Help/Guide page in the same PR.")
