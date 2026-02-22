@@ -43,6 +43,8 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("module, lesson, session, and drill rows can be edited directly.")
     ).toBeVisible();
+    await expect(page.getByText("Search field:")).toBeVisible();
+    await expect(page.getByText("All types filter:")).toBeVisible();
     await expect(page.getByText("Save changes:")).toBeVisible();
     await expect(page.getByText("Cancel:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();

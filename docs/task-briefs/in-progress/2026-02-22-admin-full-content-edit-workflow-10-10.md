@@ -210,6 +210,19 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-02-23`: Slice 3 ready for PR on branch `feat/admin-content-edit-phase3-hierarchy-aw013`.
+  - Added admin content list search + type filter for faster findability.
+  - Added clearer per-row metadata context for modules/lessons/sessions/drills.
+  - Updated Help/Guide with search/filter and expanded content edit scope wording.
+  - Updated e2e coverage for new controls and help text.
+  - Validation: `npm run verify:pre-pr` passed (`66 passed`, `138 skipped`).
+
+- `2026-02-23`: Slice 2 merged to `main` (PR #100, commit `a7868fd`).
+  - Inline edit now covers: `course_module`, `course_lesson`, `guide_session`, `guide_drill`.
+  - Help/Guide reflects updated edit scope and button behavior.
+  - Post-merge hygiene complete: local `main` synced and feature branch cleaned up.
+  - Next recommended slice: hierarchy/readability polish + prepare page/product edit scope.
+
 - `2026-02-23`: Slice 2 started on branch `feat/admin-content-edit-phase2-guide-types-aw013`.
   - Expanded inline edit support to `guide_session` and `guide_drill`.
   - Updated Help/Guide copy to reflect current edit scope.
