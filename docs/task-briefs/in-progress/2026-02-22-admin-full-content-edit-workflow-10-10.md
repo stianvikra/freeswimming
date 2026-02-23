@@ -210,7 +210,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
-- `2026-02-23`: Slice 5 in progress on branch `feat/admin-content-edit-phase5-page-product-aw013`.
+- `2026-02-23`: Slice 5 ready for PR on branch `feat/admin-content-edit-phase5-page-product-aw013` (PR #105, commit `26ac1d7`).
   - Added `page` and `product` as admin content types in schema contracts (`lib/admin/content.ts`, `types/database.ts`) with migration `20260223110000_admin_content_type_page_product.sql`.
   - Expanded content manager type filters/chips and inline edit support labels to include page/product rows.
   - Updated row context hints for new types (`Route: /slug`, product metadata hint).
@@ -219,7 +219,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
     - `tests/unit/admin-content.test.ts` for page/product payload parsing.
     - `tests/e2e/admin-foundation.spec.ts` UI coverage for page/product filter/type options.
     - `tests/e2e/admin-help-center.spec.ts` help copy assertion updates.
-  - Next step: run targeted tests + `npm run verify:pre-pr`, then commit/push/PR.
+  - Validation: targeted admin tests passed; `npm run verify:pre-pr` passed (`66 passed`, `138 skipped`).
+  - Next step: wait for required CI checks on PR #105, then run `npm run verify:pre-merge` before merge.
 
 - `2026-02-23`: Slice 4 merged to `main` (PR #102, commit `77c89c7`).
   - Added status filter, sorting controls, and one-click type chips with counts.
