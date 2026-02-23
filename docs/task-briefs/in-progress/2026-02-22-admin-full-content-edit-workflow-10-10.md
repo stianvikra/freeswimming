@@ -210,6 +210,19 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-02-23`: Slice 6 ready for PR on branch `feat/admin-content-edit-phase6-negative-path-aw013`.
+  - Added dedicated admin content API guard regression coverage:
+    - `tests/e2e/admin-content-api-guards.spec.ts`
+    - covers unauthenticated mutation deny-paths for `POST/PATCH/DELETE /api/admin/content`,
+    - covers malformed payload guards for authenticated mutation calls (`415`, `400`, no `500` for expected validation errors).
+  - Updated admin e2e suite command so guard coverage is part of CI/admin workflow:
+    - `package.json` -> `test:e2e:admin` now includes `tests/e2e/admin-content-api-guards.spec.ts`.
+  - Validation:
+    - targeted: `npx playwright test tests/e2e/admin-content-api-guards.spec.ts --project=desktop-chromium` (pass with expected skip on dev-bypass-dependent case in local env),
+    - suite: `npm run test:e2e:admin` (pass with environment-based skips),
+    - gate: `npm run verify:pre-pr` (pass: `67 passed`, `149 skipped`).
+  - Next step: open PR, wait for required checks, then run `npm run verify:pre-merge` before merge.
+
 - `2026-02-23`: Slice 5 ready for PR on branch `feat/admin-content-edit-phase5-page-product-aw013` (PR #105, commit `26ac1d7`).
   - Added `page` and `product` as admin content types in schema contracts (`lib/admin/content.ts`, `types/database.ts`) with migration `20260223110000_admin_content_type_page_product.sql`.
   - Expanded content manager type filters/chips and inline edit support labels to include page/product rows.

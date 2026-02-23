@@ -19,7 +19,7 @@
     "test:e2e:smoke": "playwright test tests/e2e/contact-api-security.spec.ts tests/e2e/sitemap.spec.ts tests/e2e/soft-launch-banner.spec.ts tests/e2e/mobile-nav.spec.ts tests/e2e/course-nav-contextual.spec.ts --project=mobile-chromium --project=desktop-chromium",
     "test:e2e:site-lock": "SITE_LOCK_ENABLED=1 PW_PORT=3101 NEXT_DIST_DIR=.next-playwright-lock playwright test tests/e2e/private-access-gate.spec.ts --project=mobile-chromium --project=desktop-chromium",
     "test:e2e:private-gate": "npm run test:e2e:site-lock",
-    "test:e2e:admin": "playwright test tests/e2e/admin-foundation.spec.ts tests/e2e/admin-content-parity.spec.ts tests/e2e/admin-notes-workflow.spec.ts --project=desktop-chromium",
+    "test:e2e:admin": "playwright test tests/e2e/admin-foundation.spec.ts tests/e2e/admin-content-api-guards.spec.ts tests/e2e/admin-content-parity.spec.ts tests/e2e/admin-notes-workflow.spec.ts --project=desktop-chromium",
     "test:e2e:security": "playwright test tests/e2e/contact-api-security.spec.ts tests/e2e/private-access-gate.spec.ts tests/e2e/admin-foundation.spec.ts tests/e2e/admin-content-parity.spec.ts --project=desktop-chromium",
     "test:e2e:mobile": "playwright test --project=mobile-chromium --project=mobile-iphone-13-pro-max",
     "test:e2e:extended": "playwright test --project=tablet-ipad-pro-11 --project=desktop-chromium --project=desktop-webkit --project=desktop-firefox",
