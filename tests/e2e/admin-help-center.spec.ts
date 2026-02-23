@@ -41,7 +41,9 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(page.getByText("Edit:")).toBeVisible();
     await expect(
-      page.getByText("module, lesson, session, and drill rows can be edited directly.")
+      page.getByText(
+        "Module, lesson, session, drill, page, and product-copy rows can be edited directly."
+      )
     ).toBeVisible();
     await expect(page.getByText("Search field:")).toBeVisible();
     await expect(page.getByText("All types filter:")).toBeVisible();

@@ -162,13 +162,20 @@ test.describe("admin foundation", () => {
     const listSort = page.getByLabel("Sort content list");
     const listSearch = page.getByLabel("Search content items");
     const moduleTypeChip = page.getByTestId("admin-content-type-chip-course_module");
+    const pageTypeChip = page.getByTestId("admin-content-type-chip-page");
+    const productTypeChip = page.getByTestId("admin-content-type-chip-product");
     const allTypeChip = page.getByTestId("admin-content-type-chip-all");
+    const typeSelect = createForm.getByLabel("Type");
     await expect(listTypeFilter).toBeVisible();
     await expect(listStatusFilter).toBeVisible();
     await expect(listSort).toBeVisible();
     await expect(listSearch).toBeVisible();
     await expect(moduleTypeChip).toBeVisible();
+    await expect(pageTypeChip).toBeVisible();
+    await expect(productTypeChip).toBeVisible();
     await expect(allTypeChip).toBeVisible();
+    await expect(typeSelect.locator("option[value='page']")).toHaveCount(1);
+    await expect(typeSelect.locator("option[value='product']")).toHaveCount(1);
 
     await listTypeFilter.selectOption("course_module");
     await expect(createdItem).toBeVisible();

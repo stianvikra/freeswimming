@@ -5,6 +5,8 @@ export const ADMIN_CONTENT_TYPE_VALUES = [
   "course_lesson",
   "guide_session",
   "guide_drill",
+  "page",
+  "product",
 ] as const;
 
 export const ADMIN_CONTENT_STATUS_VALUES = ["draft", "review", "published", "archived"] as const;

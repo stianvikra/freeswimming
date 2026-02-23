@@ -210,6 +210,24 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-02-23`: Slice 5 in progress on branch `feat/admin-content-edit-phase5-page-product-aw013`.
+  - Added `page` and `product` as admin content types in schema contracts (`lib/admin/content.ts`, `types/database.ts`) with migration `20260223110000_admin_content_type_page_product.sql`.
+  - Expanded content manager type filters/chips and inline edit support labels to include page/product rows.
+  - Updated row context hints for new types (`Route: /slug`, product metadata hint).
+  - Updated Help/Guide button and edit-scope copy to match new edit availability.
+  - Added/updated tests:
+    - `tests/unit/admin-content.test.ts` for page/product payload parsing.
+    - `tests/e2e/admin-foundation.spec.ts` UI coverage for page/product filter/type options.
+    - `tests/e2e/admin-help-center.spec.ts` help copy assertion updates.
+  - Next step: run targeted tests + `npm run verify:pre-pr`, then commit/push/PR.
+
+- `2026-02-23`: Slice 4 merged to `main` (PR #102, commit `77c89c7`).
+  - Added status filter, sorting controls, and one-click type chips with counts.
+  - Help/Guide now explains filter/sort controls in plain language.
+  - Admin e2e assertions updated for filter/sort/findability behavior.
+  - Post-merge hygiene complete: local `main` synced and feature branch cleaned up.
+  - Next recommended slice: add full inline edit for `page` and `product` content types with validation and tests.
+
 - `2026-02-23`: Slice 4 ready for PR on branch `feat/admin-content-edit-phase4-filter-sort-aw013`.
   - Added admin list controls for `status` filter and `sort` selection.
   - Added one-click type chips with counts (`All`, `Course module`, `Course lesson`, `Guide session`, `Guide drill`) for faster findability.

@@ -63,6 +63,29 @@ describe("parseCreateAdminContentPayload", () => {
     }
   });
 
+  it("accepts page and product content types", () => {
+    const pageParsed = parseCreateAdminContentPayload({
+      contentType: "page",
+      title: "Our Method page",
+      slug: "our-method",
+    });
+    const productParsed = parseCreateAdminContentPayload({
+      contentType: "product",
+      title: "0-1000m product copy",
+      slug: "guide-0-1000m-copy",
+    });
+
+    expect(pageParsed.ok).toBe(true);
+    if (pageParsed.ok) {
+      expect(pageParsed.value.contentType).toBe("page");
+    }
+
+    expect(productParsed.ok).toBe(true);
+    if (productParsed.ok) {
+      expect(productParsed.value.contentType).toBe("product");
+    }
+  });
+
   it("collapses invalid slug separators and trims slug edges", () => {
     const parsed = parseCreateAdminContentPayload({
       contentType: "guide_session",

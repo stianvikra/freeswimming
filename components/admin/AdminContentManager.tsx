@@ -13,6 +13,8 @@ const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = 
   { value: "course_lesson", label: "Course lesson" },
   { value: "guide_session", label: "Guide session" },
   { value: "guide_drill", label: "Guide drill" },
+  { value: "page", label: "Page" },
+  { value: "product", label: "Product metadata" },
 ];
 
 const CONTENT_TYPE_LABEL: Record<AdminContentType, string> = {
@@ -20,6 +22,8 @@ const CONTENT_TYPE_LABEL: Record<AdminContentType, string> = {
   course_lesson: "Course lesson",
   guide_session: "Guide session",
   guide_drill: "Guide drill",
+  page: "Page",
+  product: "Product metadata",
 };
 
 const STATUS_OPTIONS: Array<{ value: AdminContentStatus; label: string }> = [
@@ -58,6 +62,8 @@ const EDITABLE_CONTENT_TYPES: ReadonlySet<AdminContentType> = new Set([
   "course_lesson",
   "guide_session",
   "guide_drill",
+  "page",
+  "product",
 ]);
 
 type MirrorMetric = {
@@ -318,6 +324,8 @@ export default function AdminContentManager() {
       course_lesson: 0,
       guide_session: 0,
       guide_drill: 0,
+      page: 0,
+      product: 0,
     };
 
     for (const item of items) {
@@ -687,9 +695,22 @@ export default function AdminContentManager() {
       return `Session ${item.sort_order + 1}`;
     }
 
-    const drillId = parseBodyString(item.body, "drillId");
-    if (drillId) return drillId;
-    return `Drill ${item.sort_order + 1}`;
+    if (item.content_type === "guide_drill") {
+      const drillId = parseBodyString(item.body, "drillId");
+      if (drillId) return drillId;
+      return `Drill ${item.sort_order + 1}`;
+    }
+
+    if (item.content_type === "page") {
+      return `Route: /${item.slug}`;
+    }
+
+    if (item.content_type === "product") {
+      const productId = parseBodyString(item.body, "productId");
+      return productId ? `Linked product id: ${productId}` : "Use this for product-specific copy.";
+    }
+
+    return null;
   }
 
   async function handleSetStatus(item: AdminContentItemRow, nextStatus: AdminContentStatus) {
@@ -1352,7 +1373,7 @@ export default function AdminContentManager() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900">Create content item</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Create and stage content records that power course and guide experiences in the app.
+          Create and stage content records for modules, lessons, guides, pages, and product copy.
         </p>
         {!schemaReady ? (
           <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
