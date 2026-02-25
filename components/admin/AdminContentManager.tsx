@@ -194,7 +194,40 @@ type EditFormState = {
   category: string;
   sortOrder: string;
   parentId: string;
+  lessonBody: LessonBodyEditState | null;
 };
+
+type LessonTypeOption = "learn" | "drill" | "swim" | "";
+
+type LessonBodyEditState = {
+  lessonId: string;
+  lessonType: LessonTypeOption;
+  goal: string;
+  cues: string;
+  commonMistakes: string;
+  drillTitle: string;
+  drillSteps: string;
+  nextStep: string;
+  passCriteria: string;
+};
+
+type CourseLessonWorkspaceItem = {
+  id: string;
+  title: string;
+  slug: string;
+  sortOrder: number;
+  parentId: string | null;
+  moduleLabel: string | null;
+  runtimeLessonId: string;
+};
+
+const WORKSPACE_UNLINKED_MODULE_ID = "__unlinked__";
+const LESSON_TYPE_OPTIONS: Array<{ value: LessonTypeOption; label: string }> = [
+  { value: "", label: "Not set" },
+  { value: "learn", label: "Learn" },
+  { value: "drill", label: "Drill" },
+  { value: "swim", label: "Swim" },
+];
 
 const INITIAL_FORM: FormState = {
   contentType: "course_module",
@@ -210,6 +243,134 @@ function normalizeCategoryInput(value: string): string {
   return collapsed.length > 0 ? collapsed : "General";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeLinesInput(value: string): string[] {
+  return value
+    .split("\n")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function joinLines(value: string[]): string {
+  return value.join("\n");
+}
+
+function inferLessonIdFromSlug(slug: string): string {
+  const match = slug.match(/course-lesson-(.+)$/i);
+  if (match?.[1]) return match[1].trim();
+  return slug.trim();
+}
+
+function parseBodyString(body: unknown, key: string): string | null {
+  if (!isRecord(body)) return null;
+  const value = body[key];
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function parseBodyNumber(body: unknown, key: string): number | null {
+  if (!isRecord(body)) return null;
+  const value = body[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parseBodyStringArray(body: unknown, key: string): string[] {
+  if (!isRecord(body)) return [];
+  const value = body[key];
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter((entry) => entry.length > 0);
+}
+
+function resolveLessonType(value: string | null): LessonTypeOption {
+  if (value === "learn" || value === "drill" || value === "swim") return value;
+  return "";
+}
+
+function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
+  const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+  const drillBody = isRecord(item.body) && isRecord(item.body.drill) ? item.body.drill : null;
+  const drillTitleRaw =
+    drillBody && typeof drillBody.title === "string" ? drillBody.title.trim() : "";
+  const drillStepsRaw =
+    drillBody && Array.isArray(drillBody.steps)
+      ? drillBody.steps
+          .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+          .filter((entry) => entry.length > 0)
+      : [];
+
+  return {
+    lessonId,
+    lessonType: resolveLessonType(parseBodyString(item.body, "lessonType")),
+    goal: parseBodyString(item.body, "goal") ?? item.summary ?? "",
+    cues: joinLines(parseBodyStringArray(item.body, "cues")),
+    commonMistakes: joinLines(parseBodyStringArray(item.body, "commonMistakes")),
+    drillTitle: drillTitleRaw,
+    drillSteps: joinLines(drillStepsRaw),
+    nextStep: parseBodyString(item.body, "nextStep") ?? "",
+    passCriteria: joinLines(parseBodyStringArray(item.body, "passCriteria")),
+  };
+}
+
+function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
+  return {
+    lessonId: value.lessonId.trim(),
+    lessonType: value.lessonType,
+    goal: value.goal.trim(),
+    cues: normalizeLinesInput(value.cues),
+    commonMistakes: normalizeLinesInput(value.commonMistakes),
+    drillTitle: value.drillTitle.trim(),
+    drillSteps: normalizeLinesInput(value.drillSteps),
+    nextStep: value.nextStep.trim(),
+    passCriteria: normalizeLinesInput(value.passCriteria),
+  };
+}
+
+function buildLessonBodyPayload(
+  existingBody: unknown,
+  value: LessonBodyEditState
+): Record<string, unknown> {
+  const nextBody: Record<string, unknown> = isRecord(existingBody) ? { ...existingBody } : {};
+  const normalized = normalizeLessonBodyForCompare(value);
+
+  nextBody.lessonId = normalized.lessonId;
+  if (normalized.lessonType) {
+    nextBody.lessonType = normalized.lessonType;
+  } else {
+    delete nextBody.lessonType;
+  }
+  nextBody.goal = normalized.goal;
+  nextBody.cues = normalized.cues;
+  nextBody.commonMistakes = normalized.commonMistakes;
+  nextBody.drill = {
+    title: normalized.drillTitle,
+    steps: normalized.drillSteps,
+  };
+  nextBody.nextStep = normalized.nextStep;
+  if (normalized.passCriteria.length > 0) {
+    nextBody.passCriteria = normalized.passCriteria;
+  } else {
+    delete nextBody.passCriteria;
+  }
+
+  return nextBody;
+}
+
+function lessonOpenHref(item: AdminContentItemRow): string {
+  const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+  return `/course?lesson=${encodeURIComponent(lessonId)}`;
+}
+
 function toEditFormState(item: AdminContentItemRow): EditFormState {
   return {
     title: item.title,
@@ -218,6 +379,7 @@ function toEditFormState(item: AdminContentItemRow): EditFormState {
     category: item.category,
     sortOrder: String(item.sort_order),
     parentId: item.parent_id ?? "",
+    lessonBody: item.content_type === "course_lesson" ? toLessonBodyEditState(item) : null,
   };
 }
 
@@ -251,6 +413,7 @@ export default function AdminContentManager() {
   const [listTypeFilter, setListTypeFilter] = useState<"all" | AdminContentType>("all");
   const [listStatusFilter, setListStatusFilter] = useState<"all" | AdminContentStatus>("all");
   const [listSort, setListSort] = useState<ListSortOption>("default");
+  const [workspaceModuleId, setWorkspaceModuleId] = useState("");
 
   const moduleOptions = useMemo(
     () =>
@@ -273,6 +436,44 @@ export default function AdminContentManager() {
     () => new Map(moduleOptions.map((entry) => [entry.id, entry.label] as const)),
     [moduleOptions]
   );
+
+  const courseLessonWorkspaceItems = useMemo<CourseLessonWorkspaceItem[]>(
+    () =>
+      items
+        .filter((item) => item.content_type === "course_lesson")
+        .sort(
+          (left, right) =>
+            left.sort_order - right.sort_order || left.title.localeCompare(right.title)
+        )
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          slug: item.slug,
+          sortOrder: item.sort_order,
+          parentId: item.parent_id,
+          moduleLabel: item.parent_id ? (moduleLabelById.get(item.parent_id) ?? null) : null,
+          runtimeLessonId:
+            parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug),
+        })),
+    [items, moduleLabelById]
+  );
+
+  const unlinkedLessonCount = useMemo(
+    () =>
+      courseLessonWorkspaceItems.filter((item) => !item.parentId || !moduleIdSet.has(item.parentId))
+        .length,
+    [courseLessonWorkspaceItems, moduleIdSet]
+  );
+
+  const workspaceLessons = useMemo(() => {
+    if (!workspaceModuleId) return [];
+    if (workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID) {
+      return courseLessonWorkspaceItems.filter(
+        (item) => !item.parentId || !moduleIdSet.has(item.parentId)
+      );
+    }
+    return courseLessonWorkspaceItems.filter((item) => item.parentId === workspaceModuleId);
+  }, [courseLessonWorkspaceItems, moduleIdSet, workspaceModuleId]);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = listQuery.trim().toLowerCase();
@@ -344,6 +545,7 @@ export default function AdminContentManager() {
       category: normalizeCategoryInput(value.category),
       sortOrder: Number.parseInt(value.sortOrder, 10),
       parentId: value.parentId.trim(),
+      lessonBody: value.lessonBody ? normalizeLessonBodyForCompare(value.lessonBody) : null,
     });
     const current = normalize(editFormState);
     const baseline = normalize(editBaselineState);
@@ -353,7 +555,8 @@ export default function AdminContentManager() {
       current.summary !== baseline.summary ||
       current.category !== baseline.category ||
       current.sortOrder !== baseline.sortOrder ||
-      current.parentId !== baseline.parentId
+      current.parentId !== baseline.parentId ||
+      JSON.stringify(current.lessonBody) !== JSON.stringify(baseline.lessonBody)
     );
   }, [editingItemId, editFormState, editBaselineState]);
 
@@ -438,6 +641,25 @@ export default function AdminContentManager() {
     };
   }, [isEditDirty]);
 
+  useEffect(() => {
+    if (moduleOptions.length === 0 && unlinkedLessonCount === 0) {
+      if (workspaceModuleId) setWorkspaceModuleId("");
+      return;
+    }
+
+    const hasSelectedModule =
+      workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID ||
+      moduleOptions.some((option) => option.id === workspaceModuleId);
+
+    if (hasSelectedModule) return;
+
+    const fallbackId =
+      moduleOptions[0]?.id ?? (unlinkedLessonCount > 0 ? WORKSPACE_UNLINKED_MODULE_ID : "");
+    if (fallbackId) {
+      setWorkspaceModuleId(fallbackId);
+    }
+  }, [moduleOptions, unlinkedLessonCount, workspaceModuleId]);
+
   const groupedCountLabel = useMemo(() => {
     if (!schemaReady) return "Content catalog will appear after admin content setup is ready.";
     if (items.length === 0) return "No content items yet.";
@@ -485,6 +707,27 @@ export default function AdminContentManager() {
     setActionNotice(null);
   }
 
+  function scrollToContentRow(itemId: string) {
+    if (typeof document === "undefined") return;
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById(`admin-content-item-${itemId}`);
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  function handleWorkspaceEditLesson(itemId: string) {
+    const lessonItem = items.find(
+      (item) => item.id === itemId && item.content_type === "course_lesson"
+    );
+    if (!lessonItem) return;
+    handleStartEdit(lessonItem);
+    setListTypeFilter("course_lesson");
+    setListStatusFilter("all");
+    setListQuery("");
+    setListSort("default");
+    scrollToContentRow(itemId);
+  }
+
   function validateEditForm(item: AdminContentItemRow, form: EditFormState): string | null {
     const title = form.title.trim();
     if (title.length < 2 || title.length > 120) {
@@ -513,6 +756,30 @@ export default function AdminContentManager() {
       }
       if (!moduleIdSet.has(parentId)) {
         return "Selected parent module is invalid.";
+      }
+
+      if (!form.lessonBody) {
+        return "Lesson body editor is not ready for this lesson.";
+      }
+
+      const normalizedBody = normalizeLessonBodyForCompare(form.lessonBody);
+      if (normalizedBody.lessonId.length < 2 || normalizedBody.lessonId.length > 120) {
+        return "Lesson id must be between 2 and 120 characters.";
+      }
+      if (normalizedBody.goal.length < 5 || normalizedBody.goal.length > 500) {
+        return "Lesson goal must be between 5 and 500 characters.";
+      }
+      if (normalizedBody.cues.length === 0) {
+        return "Add at least one cue (one line per cue).";
+      }
+      if (normalizedBody.drillTitle.length < 2 || normalizedBody.drillTitle.length > 120) {
+        return "Drill title must be between 2 and 120 characters.";
+      }
+      if (normalizedBody.drillSteps.length === 0) {
+        return "Add at least one drill step (one line per step).";
+      }
+      if (normalizedBody.nextStep.length < 2 || normalizedBody.nextStep.length > 240) {
+        return "Next step must be between 2 and 240 characters.";
       }
     }
 
@@ -559,6 +826,9 @@ export default function AdminContentManager() {
       const itemParentId = item.parent_id ?? "";
       if (normalizedParentId !== itemParentId) {
         updatePayload.parentId = normalizedParentId || null;
+      }
+      if (editFormState.lessonBody) {
+        updatePayload.body = buildLessonBodyPayload(item.body, editFormState.lessonBody);
       }
     }
 
@@ -658,25 +928,6 @@ export default function AdminContentManager() {
     return "Move to draft";
   }
 
-  function parseBodyNumber(body: unknown, key: string): number | null {
-    if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-    const value = (body as Record<string, unknown>)[key];
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string") {
-      const parsed = Number.parseInt(value, 10);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    return null;
-  }
-
-  function parseBodyString(body: unknown, key: string): string | null {
-    if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-    const value = (body as Record<string, unknown>)[key];
-    if (typeof value !== "string") return null;
-    const normalized = value.trim();
-    return normalized.length > 0 ? normalized : null;
-  }
-
   function rowContextHint(item: AdminContentItemRow): string | null {
     if (item.content_type === "course_module") {
       return `Module ${item.sort_order + 1}`;
@@ -684,7 +935,11 @@ export default function AdminContentManager() {
 
     if (item.content_type === "course_lesson") {
       const parentLabel = item.parent_id ? moduleLabelById.get(item.parent_id) : null;
-      return parentLabel ? `Parent: ${parentLabel}` : "Parent module not linked";
+      const runtimeLessonId =
+        parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+      return parentLabel
+        ? `Parent: ${parentLabel} · Lesson id: ${runtimeLessonId}`
+        : `Parent module not linked · Lesson id: ${runtimeLessonId}`;
     }
 
     if (item.content_type === "guide_session") {
@@ -1061,6 +1316,96 @@ export default function AdminContentManager() {
           </article>
         ) : null}
 
+        {schemaReady && courseLessonWorkspaceItems.length > 0 ? (
+          <article
+            className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4"
+            data-testid="admin-course-lesson-workspace"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Module -&gt; lessons workspace
+              </h3>
+              <p className="text-xs text-slate-500">
+                {courseLessonWorkspaceItems.length} lesson
+                {courseLessonWorkspaceItems.length === 1 ? "" : "s"} ready for edit
+              </p>
+            </div>
+            <p className="mt-2 text-xs text-slate-600">
+              Pick a module to see its lessons, then jump straight to row edit or open the public
+              lesson page.
+            </p>
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <label className="space-y-1 text-xs font-medium text-slate-700">
+                <span>Module workspace</span>
+                <select
+                  value={workspaceModuleId}
+                  onChange={(event) => setWorkspaceModuleId(event.target.value)}
+                  className="h-9 min-w-[240px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                >
+                  {moduleOptions.map((option) => {
+                    const moduleLessonCount = courseLessonWorkspaceItems.filter(
+                      (item) => item.parentId === option.id
+                    ).length;
+                    return (
+                      <option key={option.id} value={option.id}>
+                        {option.label} ({moduleLessonCount})
+                      </option>
+                    );
+                  })}
+                  {unlinkedLessonCount > 0 ? (
+                    <option value={WORKSPACE_UNLINKED_MODULE_ID}>
+                      Unlinked lessons ({unlinkedLessonCount})
+                    </option>
+                  ) : null}
+                </select>
+              </label>
+            </div>
+
+            {workspaceLessons.length === 0 ? (
+              <p className="mt-3 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-xs text-slate-600">
+                No lessons in this module yet.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {workspaceLessons.map((lesson, index) => (
+                  <li
+                    key={lesson.id}
+                    data-testid="admin-workspace-lesson-row"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                  >
+                    <div className="min-w-[220px]">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Lesson {index + 1}: {lesson.title}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {lesson.moduleLabel ?? "Unlinked module"} · /{lesson.slug} · id:{" "}
+                        {lesson.runtimeLessonId}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleWorkspaceEditLesson(lesson.id)}
+                        className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+                      >
+                        Edit lesson
+                      </button>
+                      <a
+                        href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Open lesson
+                      </a>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+        ) : null}
+
         {loading ? (
           <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             Loading content list…
@@ -1112,6 +1457,7 @@ export default function AdminContentManager() {
               return (
                 <li
                   key={item.id}
+                  id={`admin-content-item-${item.id}`}
                   data-testid="admin-content-item"
                   className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700"
                 >
@@ -1220,6 +1566,226 @@ export default function AdminContentManager() {
                                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
                               />
                             </label>
+
+                            {item.content_type === "course_lesson" && editFormState.lessonBody ? (
+                              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                  Lesson body editor
+                                </h4>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  This controls what appears in the lesson page (goal, cues, drill,
+                                  checkpoint criteria, and next step).
+                                </p>
+
+                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                    <span>Lesson id (for open lesson link)</span>
+                                    <input
+                                      type="text"
+                                      value={editFormState.lessonBody.lessonId}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  lessonId: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                    />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                    <span>Lesson type</span>
+                                    <select
+                                      value={editFormState.lessonBody.lessonType}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  lessonType: event.target
+                                                    .value as LessonTypeOption,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                    >
+                                      {LESSON_TYPE_OPTIONS.map((option) => (
+                                        <option key={option.value || "empty"} value={option.value}>
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                    <span>Lesson goal</span>
+                                    <textarea
+                                      rows={3}
+                                      value={editFormState.lessonBody.goal}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  goal: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                    />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                    <span>Cues (one per line)</span>
+                                    <textarea
+                                      rows={4}
+                                      value={editFormState.lessonBody.cues}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  cues: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                      placeholder="One focus at a time"
+                                    />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                    <span>Common mistakes (one per line)</span>
+                                    <textarea
+                                      rows={4}
+                                      value={editFormState.lessonBody.commonMistakes}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  commonMistakes: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                    />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                    <span>Drill title</span>
+                                    <input
+                                      type="text"
+                                      value={editFormState.lessonBody.drillTitle}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  drillTitle: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                    />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                    <span>Drill steps (one per line)</span>
+                                    <textarea
+                                      rows={4}
+                                      value={editFormState.lessonBody.drillSteps}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  drillSteps: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                    />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                    <span>Checkpoint criteria (one per line)</span>
+                                    <textarea
+                                      rows={3}
+                                      value={editFormState.lessonBody.passCriteria}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  passCriteria: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                      placeholder="Do not mark done before you can swim 12.5m relaxed."
+                                    />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                    <span>Next step</span>
+                                    <textarea
+                                      rows={3}
+                                      value={editFormState.lessonBody.nextStep}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  nextStep: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
 
                           {isEditDirty ? (
@@ -1272,6 +1838,16 @@ export default function AdminContentManager() {
                       </button>
                       {!isEditingRow ? (
                         <>
+                          {item.content_type === "course_lesson" ? (
+                            <a
+                              href={lessonOpenHref(item)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            >
+                              Open lesson
+                            </a>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => void handleToggleRevisions(item.id)}

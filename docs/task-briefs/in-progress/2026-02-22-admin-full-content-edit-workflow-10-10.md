@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-22`
-- `updated`: `2026-02-23`
+- `updated`: `2026-02-25`
 
 ## Goal
 
@@ -192,6 +192,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 4. Revision and rollback UX alignment with edit mode.
 5. Help/Guide expansion and non-technical documentation pass.
 6. Negative-path hardening and e2e regression gates.
+7. Module -> lessons workspace, Open lesson jump, and lesson body editor (goal/cues/drill/checkpoint/next step).
 
 ## Risks And Mitigations
 
@@ -209,6 +210,27 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. reopen this brief and continue from current implementation slice.
 
 ## Checkpoint Log
+
+- `2026-02-25`: Slice 7 started on branch `feat/admin-content-edit-phase7-workspace-aw013`.
+  - Added module-to-lesson workspace block in admin content tab:
+    - module picker with lesson counts,
+    - lesson list per selected module,
+    - direct `Edit lesson` jump + `Open lesson` link.
+  - Expanded course lesson inline editor with lesson-body fields:
+    - lesson id, lesson type, goal, cues, common mistakes,
+    - drill title + drill steps,
+    - checkpoint criteria (`passCriteria`) + next step.
+  - Save path now persists lesson-body edits via `body` merge (keeps existing body keys).
+  - Help/Guide updated with new actions and lesson-body editor explanation.
+  - Tests updated:
+    - `tests/e2e/admin-foundation.spec.ts` for workspace + lesson body edit flow.
+    - `tests/e2e/admin-help-center.spec.ts` for new button/help copy.
+  - Validation:
+    - `npm run lint` (pass),
+    - `npm run typecheck` (pass),
+    - `npx playwright test tests/e2e/admin-foundation.spec.ts tests/e2e/admin-help-center.spec.ts --project=desktop-chromium` (pass with expected env-based skip on dev-bypass-dependent admin flow),
+    - `npm run verify:pre-pr` (pass: `67 passed`, `149 skipped`).
+  - Next step: open PR for slice 7, wait required checks, run `npm run verify:pre-merge` before merge recommendation.
 
 - `2026-02-23`: Slice 6 ready for PR on branch `feat/admin-content-edit-phase6-negative-path-aw013` (PR #106, commit `2a475d9`).
   - Added dedicated admin content API guard regression coverage:

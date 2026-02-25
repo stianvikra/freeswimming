@@ -98,6 +98,11 @@ const CONTENT_PAGE_FLOW = [
       "Shows all records currently in admin catalog. You can search by text, filter by type/status, click quick type buttons, and sort the list. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
   },
   {
+    title: "Module -> lessons workspace",
+    detail:
+      "Lets you choose one module and immediately see its lessons in order. Use Edit lesson to jump directly into editor, or Open lesson to view the public lesson page.",
+  },
+  {
     title: "Create content item form",
     detail:
       "Lets you create a new record with type, status, title, slug, summary, body, order, and category. This is used to stage work safely before publish.",
@@ -139,6 +144,21 @@ const BUTTON_GUIDE = [
           "One-click filter for modules, lessons, sessions, or drills, with count badges. Fastest way to jump to one group.",
       },
       {
+        label: "Module workspace",
+        meaning:
+          "Shows one module at a time with all its lessons in order, so you can edit lesson-by-lesson without searching.",
+      },
+      {
+        label: "Edit lesson",
+        meaning:
+          "Opens edit mode for that lesson row and jumps to it in the content list. Use this for lesson body updates.",
+      },
+      {
+        label: "Open lesson",
+        meaning:
+          "Opens the real lesson page in a new tab so you can verify exactly what users will see.",
+      },
+      {
         label: "All statuses filter",
         meaning:
           "Limits rows by lifecycle state (draft, review, published, archived). Useful when checking only publish-ready or only in-progress items.",
@@ -151,6 +171,11 @@ const BUTTON_GUIDE = [
       {
         label: "Save changes",
         meaning: "Stores your edits for that row. If there are no changes, nothing is saved.",
+      },
+      {
+        label: "Lesson body editor",
+        meaning:
+          "For course lessons, this edits lesson goal, cues, common mistakes, drill title/steps, checkpoint criteria, and next step.",
       },
       {
         label: "Cancel",
@@ -329,6 +354,14 @@ export default function AdminHelpCenter() {
               <li>
                 Edit existing course modules, lessons, guide sessions, guide drills, page rows, and
                 product-copy rows.
+              </li>
+              <li>
+                Use module workspace to jump directly between module lessons and open live lesson
+                view.
+              </li>
+              <li>
+                Update lesson body fields (goal, cues, drill, checkpoint criteria, next step) in one
+                edit panel.
               </li>
               <li>Change lifecycle status (draft, review, published, archived).</li>
               <li>Open revisions and restore older versions.</li>
