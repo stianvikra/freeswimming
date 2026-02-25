@@ -231,9 +231,12 @@ test.describe("admin foundation", () => {
     await expect(seededLessonEditForm.getByLabel("Lesson id (for open lesson link)")).toHaveValue(
       "mod1-l1"
     );
+    const cuesVisibilityToggle = seededLessonEditForm.getByLabel("Show cues section");
+    await expect(cuesVisibilityToggle).toBeChecked();
 
     const checkpointCriteriaText = `Swim 12.5m relaxed and controlled ${unique}`;
     await seededLessonEditForm.getByLabel("Lesson goal").fill(`Lesson goal update ${unique}`);
+    await cuesVisibilityToggle.uncheck();
     await seededLessonEditForm.getByLabel("Cues (one per line)").fill("Relax shoulders\nLong line");
     await seededLessonEditForm
       .getByLabel("Common mistakes (one per line)")
@@ -263,6 +266,7 @@ test.describe("admin foundation", () => {
     await expect(
       reopenedLessonEditForm.getByLabel("Checkpoint criteria (one per line)")
     ).toHaveValue(checkpointCriteriaText);
+    await expect(reopenedLessonEditForm.getByLabel("Show cues section")).not.toBeChecked();
     await reopenedLessonEditForm.getByRole("button", { name: "Cancel" }).click();
 
     const editedTitle = `${title} Updated`;

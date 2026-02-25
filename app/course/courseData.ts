@@ -7,6 +7,12 @@ export type CourseLesson = {
   estMinutes?: number;
   lessonType?: "learn" | "drill" | "swim";
   passCriteria?: string[];
+  display?: {
+    cues?: boolean;
+    commonMistakes?: boolean;
+    checkpoint?: boolean;
+    nextStep?: boolean;
+  };
 
   goal: string;
   cues: string[];

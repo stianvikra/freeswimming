@@ -194,6 +194,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 6. Negative-path hardening and e2e regression gates.
 7. Module -> lessons workspace, Open lesson jump, and lesson body editor (goal/cues/drill/checkpoint/next step).
 8. Learner-side done checkpoint gate UX (explicit confirmation before marking drill/swim lessons as done).
+9. Lesson section visibility controls (admin show/hide toggles for cues/common mistakes/checkpoint/next step).
 
 ## Risks And Mitigations
 
@@ -211,6 +212,21 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. reopen this brief and continue from current implementation slice.
 
 ## Checkpoint Log
+
+- `2026-02-25`: Slice 9 started on branch `feat/admin-content-edit-phase7-workspace-aw013`.
+  - Added explicit visibility toggles in lesson body editor:
+    - `Show cues section`,
+    - `Show common mistakes`,
+    - `Show pass criteria`,
+    - `Show next step`.
+  - Persisted as server-canonical lesson body config (`body.display`) rather than text sentinels.
+  - Course lesson UI now respects visibility flags when rendering published lessons.
+  - Help/Guide updated with plain-language explanation for section visibility toggles.
+  - Tests updated:
+    - `tests/unit/admin-content-course.test.ts` for published content display mapping.
+    - `tests/e2e/admin-foundation.spec.ts` for toggle persistence in lesson edit workflow.
+    - `tests/e2e/admin-help-center.spec.ts` for Help/Guide button glossary coverage.
+  - Validation: pending local run (`npm run verify:pre-pr`) before PR update.
 
 - `2026-02-25`: Slice 7 started on branch `feat/admin-content-edit-phase7-workspace-aw013`.
   - Added module-to-lesson workspace block in admin content tab:

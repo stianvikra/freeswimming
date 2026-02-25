@@ -34,6 +34,10 @@ function getNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+function getBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
 function inferModuleId(slug: string): string {
   const match = slug.match(/course-module-(.+)$/i);
   if (match?.[1]) return match[1];
@@ -75,6 +79,29 @@ function normalizeDrill(value: unknown, fallback: CourseLesson["drill"]): Course
     title,
     steps: steps.length > 0 ? steps : fallback.steps,
   };
+}
+
+function normalizeLessonDisplay(value: unknown): CourseLesson["display"] | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const raw = value as Record<string, unknown>;
+  const display: NonNullable<CourseLesson["display"]> = {};
+
+  const cues = getBoolean(raw.cues);
+  if (typeof cues === "boolean") display.cues = cues;
+
+  const commonMistakes = getBoolean(raw.commonMistakes);
+  if (typeof commonMistakes === "boolean") display.commonMistakes = commonMistakes;
+
+  const checkpoint = getBoolean(raw.checkpoint);
+  if (typeof checkpoint === "boolean") display.checkpoint = checkpoint;
+
+  const nextStep = getBoolean(raw.nextStep);
+  if (typeof nextStep === "boolean") display.nextStep = nextStep;
+
+  return Object.keys(display).length > 0 ? display : undefined;
 }
 
 export function toPublishedCourseModules(
@@ -137,6 +164,7 @@ export function toPublishedCourseModules(
       passCriteria: getStringArray(body.passCriteria).length
         ? getStringArray(body.passCriteria)
         : undefined,
+      display: normalizeLessonDisplay(body.display),
       goal: getString(body.goal) ?? row.summary ?? "Refine your freestyle.",
       cues: cues.length > 0 ? cues : ["Swim relaxed and controlled."],
       commonMistakes: commonMistakes.length > 0 ? commonMistakes : [],

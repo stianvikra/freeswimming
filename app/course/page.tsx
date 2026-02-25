@@ -1223,7 +1223,15 @@ function CoursePageClient() {
   }, [courseLessonsFlat, nextId]);
   const isLessonDone = doneLessonIds.includes(activeLesson.id);
   const lessonType = activeLesson.lessonType ?? "drill";
-  const showPassCriteria = lessonType === "drill" || lessonType === "swim";
+  const lessonDisplay = activeLesson.display;
+  const commonMistakes = activeLesson.commonMistakes ?? [];
+  const showCuesSection = lessonDisplay?.cues !== false;
+  const showCommonMistakesSection =
+    lessonDisplay?.commonMistakes !== false && commonMistakes.length > 0;
+  const showPassCriteria =
+    (lessonType === "drill" || lessonType === "swim") && lessonDisplay?.checkpoint !== false;
+  const showNextStepSection = lessonDisplay?.nextStep !== false;
+  const showSupportCard = showPassCriteria || showNextStepSection;
   const passCriteria = activeLesson.passCriteria?.length
     ? activeLesson.passCriteria
     : DEFAULT_PASS_CRITERIA;
@@ -2338,21 +2346,23 @@ function CoursePageClient() {
               <h2 className="text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>
               <p className="mt-2 text-[15px] leading-7 text-slate-700">{activeLesson.goal}</p>
 
-              <div className="mt-5">
-                <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">
-                  Cues (pick one)
-                </h3>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
-                  {activeLesson.cues.map((c) => (
-                    <li key={c}>{c}</li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-[12px] font-medium text-slate-500">
-                  Keep it simple: choose one cue per session.
-                </p>
-              </div>
+              {showCuesSection ? (
+                <div className="mt-5">
+                  <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">
+                    Cues (pick one)
+                  </h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
+                    {activeLesson.cues.map((c) => (
+                      <li key={c}>{c}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-[12px] font-medium text-slate-500">
+                    Keep it simple: choose one cue per session.
+                  </p>
+                </div>
+              ) : null}
 
-              {activeLesson.commonMistakes?.length ? (
+              {showCommonMistakesSection ? (
                 <div className="border-slate-200/72 bg-white/72 mt-5 rounded-2xl border p-3">
                   <PressButton
                     tier="nav"
@@ -2372,7 +2382,7 @@ function CoursePageClient() {
                       id="common-mistakes-list"
                       className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700"
                     >
-                      {activeLesson.commonMistakes.map((m) => (
+                      {commonMistakes.map((m) => (
                         <li key={m}>{m}</li>
                       ))}
                     </ul>
@@ -2400,27 +2410,29 @@ function CoursePageClient() {
                 ))}
               </ol>
 
-              <div className={cx("mt-5 p-4", supportCardClass)}>
-                <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-                  {showPassCriteria ? "Pass criteria" : "Next step"}
-                </div>
-                {showPassCriteria ? (
-                  <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
-                    {passCriteria.map((criterion) => (
-                      <li key={criterion}>{criterion}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="mt-1 text-[14px] leading-6 text-slate-800">
-                    {activeLesson.nextStep}
+              {showSupportCard ? (
+                <div className={cx("mt-5 p-4", supportCardClass)}>
+                  <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                    {showPassCriteria ? "Pass criteria" : "Next step"}
                   </div>
-                )}
-                {showPassCriteria ? (
-                  <p className="border-slate-200/72 mt-2 border-t pt-2 text-[12px] font-medium leading-5 text-slate-500">
-                    When these are met, mark lesson as done in overview.
-                  </p>
-                ) : null}
-              </div>
+                  {showPassCriteria ? (
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
+                      {passCriteria.map((criterion) => (
+                        <li key={criterion}>{criterion}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="mt-1 text-[14px] leading-6 text-slate-800">
+                      {activeLesson.nextStep}
+                    </div>
+                  )}
+                  {showPassCriteria ? (
+                    <p className="border-slate-200/72 mt-2 border-t pt-2 text-[12px] font-medium leading-5 text-slate-500">
+                      When these are met, mark lesson as done in overview.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="border-slate-200/68 mt-5 rounded-2xl border bg-white/80 p-4">
                 <h3 className="text-[14px] font-semibold tracking-wide text-slate-900">

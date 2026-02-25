@@ -203,6 +203,10 @@ type LessonBodyEditState = {
   lessonId: string;
   lessonType: LessonTypeOption;
   goal: string;
+  displayCues: boolean;
+  displayCommonMistakes: boolean;
+  displayCheckpoint: boolean;
+  displayNextStep: boolean;
   cues: string;
   commonMistakes: string;
   drillTitle: string;
@@ -272,6 +276,13 @@ function parseBodyString(body: unknown, key: string): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function parseBodyBoolean(body: unknown, key: string): boolean | null {
+  if (!isRecord(body)) return null;
+  const value = body[key];
+  if (typeof value === "boolean") return value;
+  return null;
+}
+
 function parseBodyNumber(body: unknown, key: string): number | null {
   if (!isRecord(body)) return null;
   const value = body[key];
@@ -300,6 +311,7 @@ function resolveLessonType(value: string | null): LessonTypeOption {
 function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
   const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
   const drillBody = isRecord(item.body) && isRecord(item.body.drill) ? item.body.drill : null;
+  const displayBody = isRecord(item.body) && isRecord(item.body.display) ? item.body.display : null;
   const drillTitleRaw =
     drillBody && typeof drillBody.title === "string" ? drillBody.title.trim() : "";
   const drillStepsRaw =
@@ -313,6 +325,10 @@ function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
     lessonId,
     lessonType: resolveLessonType(parseBodyString(item.body, "lessonType")),
     goal: parseBodyString(item.body, "goal") ?? item.summary ?? "",
+    displayCues: parseBodyBoolean(displayBody, "cues") ?? true,
+    displayCommonMistakes: parseBodyBoolean(displayBody, "commonMistakes") ?? true,
+    displayCheckpoint: parseBodyBoolean(displayBody, "checkpoint") ?? true,
+    displayNextStep: parseBodyBoolean(displayBody, "nextStep") ?? true,
     cues: joinLines(parseBodyStringArray(item.body, "cues")),
     commonMistakes: joinLines(parseBodyStringArray(item.body, "commonMistakes")),
     drillTitle: drillTitleRaw,
@@ -327,6 +343,10 @@ function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
     lessonId: value.lessonId.trim(),
     lessonType: value.lessonType,
     goal: value.goal.trim(),
+    displayCues: value.displayCues,
+    displayCommonMistakes: value.displayCommonMistakes,
+    displayCheckpoint: value.displayCheckpoint,
+    displayNextStep: value.displayNextStep,
     cues: normalizeLinesInput(value.cues),
     commonMistakes: normalizeLinesInput(value.commonMistakes),
     drillTitle: value.drillTitle.trim(),
@@ -356,6 +376,12 @@ function buildLessonBodyPayload(
     title: normalized.drillTitle,
     steps: normalized.drillSteps,
   };
+  const existingDisplay = isRecord(nextBody.display) ? { ...nextBody.display } : {};
+  existingDisplay.cues = normalized.displayCues;
+  existingDisplay.commonMistakes = normalized.displayCommonMistakes;
+  existingDisplay.checkpoint = normalized.displayCheckpoint;
+  existingDisplay.nextStep = normalized.displayNextStep;
+  nextBody.display = existingDisplay;
   nextBody.nextStep = normalized.nextStep;
   if (normalized.passCriteria.length > 0) {
     nextBody.passCriteria = normalized.passCriteria;
@@ -769,7 +795,7 @@ export default function AdminContentManager() {
       if (normalizedBody.goal.length < 5 || normalizedBody.goal.length > 500) {
         return "Lesson goal must be between 5 and 500 characters.";
       }
-      if (normalizedBody.cues.length === 0) {
+      if (normalizedBody.displayCues && normalizedBody.cues.length === 0) {
         return "Add at least one cue (one line per cue).";
       }
       if (normalizedBody.drillTitle.length < 2 || normalizedBody.drillTitle.length > 120) {
@@ -778,7 +804,10 @@ export default function AdminContentManager() {
       if (normalizedBody.drillSteps.length === 0) {
         return "Add at least one drill step (one line per step).";
       }
-      if (normalizedBody.nextStep.length < 2 || normalizedBody.nextStep.length > 240) {
+      if (
+        normalizedBody.displayNextStep &&
+        (normalizedBody.nextStep.length < 2 || normalizedBody.nextStep.length > 240)
+      ) {
         return "Next step must be between 2 and 240 characters.";
       }
     }
@@ -1649,6 +1678,101 @@ export default function AdminContentManager() {
                                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
                                     />
                                   </label>
+
+                                  <fieldset className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 sm:col-span-2">
+                                    <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                      Section visibility
+                                    </legend>
+                                    <p className="text-xs text-slate-500">
+                                      Use these toggles to show or hide sections on the lesson page.
+                                    </p>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={editFormState.lessonBody.displayCues}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      displayCues: event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show cues section</span>
+                                      </label>
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={editFormState.lessonBody.displayCommonMistakes}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      displayCommonMistakes: event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show common mistakes</span>
+                                      </label>
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={editFormState.lessonBody.displayCheckpoint}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      displayCheckpoint: event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show pass criteria</span>
+                                      </label>
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={editFormState.lessonBody.displayNextStep}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      displayNextStep: event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show next step</span>
+                                      </label>
+                                    </div>
+                                  </fieldset>
 
                                   <label className="space-y-1 text-xs font-medium text-slate-700">
                                     <span>Cues (one per line)</span>
