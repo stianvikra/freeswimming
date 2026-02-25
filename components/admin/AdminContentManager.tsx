@@ -225,6 +225,13 @@ type CourseLessonWorkspaceItem = {
   runtimeLessonId: string;
 };
 
+type ContentListFocusState = {
+  source: "mirror" | "workspace";
+  label: string;
+  detail: string;
+};
+
+const WORKSPACE_ALL_MODULES_ID = "__all__";
 const WORKSPACE_UNLINKED_MODULE_ID = "__unlinked__";
 const LESSON_TYPE_OPTIONS: Array<{ value: LessonTypeOption; label: string }> = [
   { value: "", label: "Not set" },
@@ -439,7 +446,9 @@ export default function AdminContentManager() {
   const [listTypeFilter, setListTypeFilter] = useState<"all" | AdminContentType>("all");
   const [listStatusFilter, setListStatusFilter] = useState<"all" | AdminContentStatus>("all");
   const [listSort, setListSort] = useState<ListSortOption>("default");
-  const [workspaceModuleId, setWorkspaceModuleId] = useState("");
+  const [listModuleFilter, setListModuleFilter] = useState("");
+  const [listFocusState, setListFocusState] = useState<ContentListFocusState | null>(null);
+  const [workspaceModuleId, setWorkspaceModuleId] = useState(WORKSPACE_ALL_MODULES_ID);
 
   const moduleOptions = useMemo(
     () =>
@@ -493,6 +502,7 @@ export default function AdminContentManager() {
 
   const workspaceLessons = useMemo(() => {
     if (!workspaceModuleId) return [];
+    if (workspaceModuleId === WORKSPACE_ALL_MODULES_ID) return courseLessonWorkspaceItems;
     if (workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID) {
       return courseLessonWorkspaceItems.filter(
         (item) => !item.parentId || !moduleIdSet.has(item.parentId)
@@ -505,6 +515,13 @@ export default function AdminContentManager() {
     const normalizedQuery = listQuery.trim().toLowerCase();
     return items.filter((item) => {
       if (listTypeFilter !== "all" && item.content_type !== listTypeFilter) return false;
+      if (listModuleFilter) {
+        if (item.content_type !== "course_lesson") return false;
+        if (listModuleFilter === WORKSPACE_UNLINKED_MODULE_ID) {
+          return !item.parent_id || !moduleIdSet.has(item.parent_id);
+        }
+        if (item.parent_id !== listModuleFilter) return false;
+      }
       if (listStatusFilter !== "all" && item.status !== listStatusFilter) return false;
       if (!normalizedQuery) return true;
       const haystack = [
@@ -518,7 +535,7 @@ export default function AdminContentManager() {
         .toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [items, listQuery, listTypeFilter, listStatusFilter]);
+  }, [items, listModuleFilter, listQuery, listStatusFilter, listTypeFilter, moduleIdSet]);
 
   const sortedItems = useMemo(() => {
     if (listSort === "default") return filteredItems;
@@ -669,21 +686,20 @@ export default function AdminContentManager() {
 
   useEffect(() => {
     if (moduleOptions.length === 0 && unlinkedLessonCount === 0) {
-      if (workspaceModuleId) setWorkspaceModuleId("");
+      if (workspaceModuleId !== WORKSPACE_ALL_MODULES_ID) {
+        setWorkspaceModuleId(WORKSPACE_ALL_MODULES_ID);
+      }
       return;
     }
 
     const hasSelectedModule =
+      workspaceModuleId === WORKSPACE_ALL_MODULES_ID ||
       workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID ||
       moduleOptions.some((option) => option.id === workspaceModuleId);
 
     if (hasSelectedModule) return;
 
-    const fallbackId =
-      moduleOptions[0]?.id ?? (unlinkedLessonCount > 0 ? WORKSPACE_UNLINKED_MODULE_ID : "");
-    if (fallbackId) {
-      setWorkspaceModuleId(fallbackId);
-    }
+    setWorkspaceModuleId(WORKSPACE_ALL_MODULES_ID);
   }, [moduleOptions, unlinkedLessonCount, workspaceModuleId]);
 
   const groupedCountLabel = useMemo(() => {
@@ -697,6 +713,12 @@ export default function AdminContentManager() {
     if (filteredItems.length === items.length) return "Showing all items";
     return `Showing ${filteredItems.length} of ${items.length}`;
   }, [filteredItems.length, items.length]);
+
+  const moduleScopeLabel = useMemo(() => {
+    if (!listModuleFilter) return null;
+    if (listModuleFilter === WORKSPACE_UNLINKED_MODULE_ID) return "Module scope: Unlinked lessons";
+    return `Module scope: ${moduleLabelById.get(listModuleFilter) ?? "Selected module"}`;
+  }, [listModuleFilter, moduleLabelById]);
 
   function canEditInline(item: AdminContentItemRow): boolean {
     return EDITABLE_CONTENT_TYPES.has(item.content_type);
@@ -741,16 +763,122 @@ export default function AdminContentManager() {
     });
   }
 
+  function scrollToContentList() {
+    if (typeof document === "undefined") return;
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById("admin-content-list-anchor");
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function clearFocusMode() {
+    setListFocusState(null);
+    setListQuery("");
+    setListTypeFilter("all");
+    setListStatusFilter("all");
+    setListSort("default");
+    setListModuleFilter("");
+    setWorkspaceModuleId(WORKSPACE_ALL_MODULES_ID);
+  }
+
+  function handleWorkspaceScopeChange(nextWorkspaceModuleId: string) {
+    setWorkspaceModuleId(nextWorkspaceModuleId);
+    setListTypeFilter("course_lesson");
+    setListStatusFilter("all");
+    setListQuery("");
+    setListSort("default");
+
+    if (nextWorkspaceModuleId === WORKSPACE_ALL_MODULES_ID) {
+      setListModuleFilter("");
+      setListFocusState({
+        source: "workspace",
+        label: "Focus mode: all course lessons",
+        detail: "Workspace and content list are synced to show all lessons.",
+      });
+      scrollToContentList();
+      return;
+    }
+
+    if (nextWorkspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID) {
+      setListModuleFilter(WORKSPACE_UNLINKED_MODULE_ID);
+      setListFocusState({
+        source: "workspace",
+        label: "Focus mode: unlinked lessons",
+        detail: "Showing lessons that are not attached to a valid module yet.",
+      });
+      scrollToContentList();
+      return;
+    }
+
+    setListModuleFilter(nextWorkspaceModuleId);
+    const moduleLabel = moduleLabelById.get(nextWorkspaceModuleId) ?? "selected module";
+    setListFocusState({
+      source: "workspace",
+      label: `Focus mode: ${moduleLabel}`,
+      detail: "Workspace and content list are synced to this module.",
+    });
+    scrollToContentList();
+  }
+
+  function handleMirrorMetricFocus(metric: MirrorMetric) {
+    const metricTypeMap: Record<MirrorMetric["key"], AdminContentType> = {
+      course_module: "course_module",
+      course_lesson: "course_lesson",
+      guide_session: "guide_session",
+      guide_drill: "guide_drill",
+      programs: "product",
+    };
+    const targetType = metricTypeMap[metric.key];
+    setListTypeFilter(targetType);
+    setListStatusFilter("all");
+    setListQuery("");
+    setListSort("default");
+    setListModuleFilter("");
+    if (targetType === "course_lesson") {
+      setWorkspaceModuleId(WORKSPACE_ALL_MODULES_ID);
+    }
+    setListFocusState({
+      source: "mirror",
+      label: `Focus mode: ${metric.label}`,
+      detail:
+        metric.status === "matched"
+          ? "Counts are aligned. Use this view to spot-check content quality."
+          : "Mismatch detected. Use this filtered view to resolve missing/extra records.",
+    });
+    scrollToContentList();
+  }
+
+  function handleManualTypeFilterChange(nextType: "all" | AdminContentType) {
+    setListFocusState(null);
+    setListTypeFilter(nextType);
+    setListModuleFilter("");
+    if (nextType === "course_lesson") {
+      setWorkspaceModuleId(WORKSPACE_ALL_MODULES_ID);
+    }
+  }
+
   function handleWorkspaceEditLesson(itemId: string) {
     const lessonItem = items.find(
       (item) => item.id === itemId && item.content_type === "course_lesson"
     );
     if (!lessonItem) return;
     handleStartEdit(lessonItem);
+    const moduleScope =
+      lessonItem.parent_id && moduleIdSet.has(lessonItem.parent_id)
+        ? lessonItem.parent_id
+        : WORKSPACE_UNLINKED_MODULE_ID;
+    setWorkspaceModuleId(moduleScope);
     setListTypeFilter("course_lesson");
     setListStatusFilter("all");
     setListQuery("");
     setListSort("default");
+    setListModuleFilter(moduleScope);
+    const moduleLabel = moduleLabelById.get(moduleScope) ?? "unlinked lessons";
+    setListFocusState({
+      source: "workspace",
+      label: `Focus mode: ${moduleLabel}`,
+      detail: "Editing one lesson inside a module-scoped workspace.",
+    });
     scrollToContentRow(itemId);
   }
 
@@ -1167,10 +1295,15 @@ export default function AdminContentManager() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Content items</h2>
+            <h2 id="admin-content-list-anchor" className="text-lg font-semibold text-slate-900">
+              Content items
+            </h2>
             <p className="mt-2 text-sm text-slate-600">{groupedCountLabel}</p>
             {filteredCountLabel ? (
               <p className="mt-1 text-xs text-slate-500">{filteredCountLabel}</p>
+            ) : null}
+            {moduleScopeLabel ? (
+              <p className="mt-1 text-xs font-medium text-blue-700">{moduleScopeLabel}</p>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1181,7 +1314,10 @@ export default function AdminContentManager() {
               id="admin-content-search"
               type="search"
               value={listQuery}
-              onChange={(event) => setListQuery(event.target.value)}
+              onChange={(event) => {
+                setListFocusState(null);
+                setListQuery(event.target.value);
+              }}
               placeholder="Search title, slug, category..."
               className="h-10 w-56 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 md:w-64"
             />
@@ -1192,7 +1328,7 @@ export default function AdminContentManager() {
               id="admin-content-type-filter"
               value={listTypeFilter}
               onChange={(event) =>
-                setListTypeFilter(event.target.value as "all" | AdminContentType)
+                handleManualTypeFilterChange(event.target.value as "all" | AdminContentType)
               }
               className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
@@ -1209,9 +1345,10 @@ export default function AdminContentManager() {
             <select
               id="admin-content-status-filter"
               value={listStatusFilter}
-              onChange={(event) =>
-                setListStatusFilter(event.target.value as "all" | AdminContentStatus)
-              }
+              onChange={(event) => {
+                setListFocusState(null);
+                setListStatusFilter(event.target.value as "all" | AdminContentStatus);
+              }}
               className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
               <option value="all">All statuses</option>
@@ -1227,7 +1364,10 @@ export default function AdminContentManager() {
             <select
               id="admin-content-sort"
               value={listSort}
-              onChange={(event) => setListSort(event.target.value as ListSortOption)}
+              onChange={(event) => {
+                setListFocusState(null);
+                setListSort(event.target.value as ListSortOption);
+              }}
               className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
               {SORT_OPTIONS.map((option) => (
@@ -1250,7 +1390,7 @@ export default function AdminContentManager() {
           <button
             type="button"
             data-testid="admin-content-type-chip-all"
-            onClick={() => setListTypeFilter("all")}
+            onClick={() => handleManualTypeFilterChange("all")}
             className={[
               "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
               listTypeFilter === "all"
@@ -1265,7 +1405,7 @@ export default function AdminContentManager() {
               key={option.value}
               type="button"
               data-testid={`admin-content-type-chip-${option.value}`}
-              onClick={() => setListTypeFilter(option.value)}
+              onClick={() => handleManualTypeFilterChange(option.value)}
               className={[
                 "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
                 listTypeFilter === option.value
@@ -1277,6 +1417,25 @@ export default function AdminContentManager() {
             </button>
           ))}
         </div>
+
+        {listFocusState ? (
+          <div
+            data-testid="admin-content-focus-mode"
+            className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3"
+          >
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-blue-900">{listFocusState.label}</p>
+              <p className="text-xs text-blue-800">{listFocusState.detail}</p>
+            </div>
+            <button
+              type="button"
+              onClick={clearFocusMode}
+              className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+            >
+              Clear focus
+            </button>
+          </div>
+        ) : null}
 
         {!schemaReady && warning ? (
           <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -1303,38 +1462,45 @@ export default function AdminContentManager() {
             </div>
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {mirror.metrics.map((metric) => (
-                <li
-                  key={metric.key}
-                  className={[
-                    "rounded-lg border px-3 py-2 text-xs",
-                    metric.status === "matched"
-                      ? "border-emerald-200 bg-emerald-50/70 text-emerald-800"
-                      : "border-amber-200 bg-amber-50 text-amber-900",
-                  ].join(" ")}
-                >
-                  <p className="font-semibold">{metric.label}</p>
-                  <p className="mt-1">
-                    Platform: {metric.platformCount} · Admin: {metric.adminCount}
-                    {metric.delta !== 0
-                      ? ` · Delta: ${metric.delta > 0 ? "+" : ""}${metric.delta}`
-                      : ""}
-                  </p>
-                  {metric.coverage.missingCount > 0 ? (
+                <li key={metric.key}>
+                  <button
+                    type="button"
+                    data-testid={`admin-mirror-metric-${metric.key}`}
+                    onClick={() => handleMirrorMetricFocus(metric)}
+                    className={[
+                      "w-full rounded-lg border px-3 py-2 text-left text-xs transition hover:brightness-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300",
+                      metric.status === "matched"
+                        ? "border-emerald-200 bg-emerald-50/70 text-emerald-800"
+                        : "border-amber-200 bg-amber-50 text-amber-900",
+                    ].join(" ")}
+                  >
+                    <p className="font-semibold">{metric.label}</p>
                     <p className="mt-1">
-                      Missing IDs: {metric.coverage.missingCount}
-                      {metric.coverage.missingSamples.length > 0
-                        ? ` (${metric.coverage.missingSamples.join(", ")})`
+                      Platform: {metric.platformCount} · Admin: {metric.adminCount}
+                      {metric.delta !== 0
+                        ? ` · Delta: ${metric.delta > 0 ? "+" : ""}${metric.delta}`
                         : ""}
                     </p>
-                  ) : null}
-                  {metric.coverage.extraCount > 0 ? (
-                    <p className="mt-1">
-                      Extra IDs: {metric.coverage.extraCount}
-                      {metric.coverage.extraSamples.length > 0
-                        ? ` (${metric.coverage.extraSamples.join(", ")})`
-                        : ""}
+                    {metric.coverage.missingCount > 0 ? (
+                      <p className="mt-1">
+                        Missing IDs: {metric.coverage.missingCount}
+                        {metric.coverage.missingSamples.length > 0
+                          ? ` (${metric.coverage.missingSamples.join(", ")})`
+                          : ""}
+                      </p>
+                    ) : null}
+                    {metric.coverage.extraCount > 0 ? (
+                      <p className="mt-1">
+                        Extra IDs: {metric.coverage.extraCount}
+                        {metric.coverage.extraSamples.length > 0
+                          ? ` (${metric.coverage.extraSamples.join(", ")})`
+                          : ""}
+                      </p>
+                    ) : null}
+                    <p className="mt-2 text-[11px] font-medium opacity-80">
+                      Click to focus content list
                     </p>
-                  ) : null}
+                  </button>
                 </li>
               ))}
             </ul>
@@ -1360,17 +1526,20 @@ export default function AdminContentManager() {
               </p>
             </div>
             <p className="mt-2 text-xs text-slate-600">
-              Pick a module to see its lessons, then jump straight to row edit or open the public
-              lesson page.
+              Pick a module scope to sync workspace and list view, then jump straight to row edit or
+              open the public lesson page.
             </p>
             <div className="mt-3 flex flex-wrap items-end gap-2">
               <label className="space-y-1 text-xs font-medium text-slate-700">
                 <span>Module workspace</span>
                 <select
                   value={workspaceModuleId}
-                  onChange={(event) => setWorkspaceModuleId(event.target.value)}
+                  onChange={(event) => handleWorkspaceScopeChange(event.target.value)}
                   className="h-9 min-w-[240px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
                 >
+                  <option value={WORKSPACE_ALL_MODULES_ID}>
+                    All modules ({courseLessonWorkspaceItems.length})
+                  </option>
                   {moduleOptions.map((option) => {
                     const moduleLessonCount = courseLessonWorkspaceItems.filter(
                       (item) => item.parentId === option.id

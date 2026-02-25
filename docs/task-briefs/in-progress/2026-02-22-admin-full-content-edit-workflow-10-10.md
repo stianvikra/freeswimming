@@ -195,6 +195,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 7. Module -> lessons workspace, Open lesson jump, and lesson body editor (goal/cues/drill/checkpoint/next step).
 8. Learner-side done checkpoint gate UX (explicit confirmation before marking drill/swim lessons as done).
 9. Lesson section visibility controls (admin show/hide toggles for cues/common mistakes/checkpoint/next step).
+10. Mirror snapshot -> list focus sync and module workspace/list coupling for faster admin findability.
 
 ## Risks And Mitigations
 
@@ -212,6 +213,27 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. reopen this brief and continue from current implementation slice.
 
 ## Checkpoint Log
+
+- `2026-02-25`: Slice 10 ready for PR on branch `feat/admin-content-edit-phase9-mirror-focus-aw013`.
+  - Added mirror snapshot click-to-focus behavior:
+    - each metric card now focuses content list to matching type (`course_module`, `course_lesson`, `guide_session`, `guide_drill`, `product`),
+    - auto-scrolls to the content list anchor.
+  - Added explicit focus-mode UX:
+    - visible focus banner with context label and details,
+    - `Clear focus` action resets query/type/status/sort/module scope to default.
+  - Synced module workspace and list filters:
+    - workspace module scope now drives lesson list filter in the content list,
+    - added `All modules` workspace option and module-scope label near list counts.
+  - Help/Guide updated with plain-language docs for:
+    - mirror snapshot card actions,
+    - synchronized workspace/list behavior,
+    - focus-clear workflow.
+  - Tests updated:
+    - `tests/e2e/admin-foundation.spec.ts` (mirror-focus + workspace-sync flow),
+    - `tests/e2e/admin-help-center.spec.ts` (new help entries).
+  - Validation:
+    - `npm run verify:pre-pr` (pass: `67 passed`, `149 skipped`).
+  - Next step: commit + push + open PR in Safari, then run required CI checks before merge recommendation.
 
 - `2026-02-25`: Slice 9 started on branch `feat/admin-content-edit-phase7-workspace-aw013`.
   - Added explicit visibility toggles in lesson body editor:
