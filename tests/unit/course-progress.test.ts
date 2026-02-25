@@ -52,6 +52,7 @@ describe("course progress helpers", () => {
       {
         lessonId: "mod1-l1",
         done: true,
+        doneConfirmedAt: null,
         videoSeconds: 20,
         updatedAt: "2026-02-16T10:05:00.000Z",
       },
@@ -62,6 +63,7 @@ describe("course progress helpers", () => {
     const rows = buildCourseProgressRowsFromLocal(
       {
         doneLessonIds: [],
+        doneConfirmationByLessonId: {},
         videoProgressByLessonId: {},
       },
       {
@@ -74,6 +76,7 @@ describe("course progress helpers", () => {
       {
         lessonId: "mod1-l1",
         done: false,
+        doneConfirmedAt: null,
         videoSeconds: 0,
         updatedAt: "2026-02-16T10:10:00.000Z",
       },
@@ -86,6 +89,7 @@ describe("course progress helpers", () => {
         {
           lessonId: "mod1-l1",
           done: true,
+          doneConfirmedAt: null,
           videoSeconds: 30,
           updatedAt: "2026-02-16T10:00:00.000Z",
         },
@@ -94,12 +98,14 @@ describe("course progress helpers", () => {
         {
           lessonId: "mod1-l1",
           done: false,
+          doneConfirmedAt: null,
           videoSeconds: 35,
           updatedAt: "2026-02-16T09:00:00.000Z",
         },
         {
           lessonId: "mod1-l2",
           done: true,
+          doneConfirmedAt: null,
           videoSeconds: 0,
           updatedAt: "2026-02-16T11:00:00.000Z",
         },
@@ -110,12 +116,14 @@ describe("course progress helpers", () => {
       {
         lessonId: "mod1-l1",
         done: true,
+        doneConfirmedAt: null,
         videoSeconds: 35,
         updatedAt: "2026-02-16T10:00:00.000Z",
       },
       {
         lessonId: "mod1-l2",
         done: true,
+        doneConfirmedAt: null,
         videoSeconds: 0,
         updatedAt: "2026-02-16T11:00:00.000Z",
       },
@@ -129,6 +137,7 @@ describe("course progress helpers", () => {
           {
             lessonId: "mod1-l1",
             done: true,
+            doneConfirmedAt: null,
             videoSeconds: 35,
             updatedAt: "2026-02-16T10:00:00.000Z",
           },
@@ -137,6 +146,7 @@ describe("course progress helpers", () => {
           {
             lessonId: "mod1-l1",
             done: true,
+            doneConfirmedAt: null,
             videoSeconds: 35,
             updatedAt: "2026-02-16T11:00:00.000Z",
           },
@@ -150,12 +160,14 @@ describe("course progress helpers", () => {
       {
         lessonId: "mod1-l1",
         done: true,
+        doneConfirmedAt: "2026-02-16T10:05:00.000Z",
         videoSeconds: 42,
         updatedAt: "2026-02-16T10:00:00.000Z",
       },
       {
         lessonId: "mod1-l2",
         done: false,
+        doneConfirmedAt: null,
         videoSeconds: 0,
         updatedAt: "2026-02-16T10:00:00.000Z",
       },
@@ -163,6 +175,9 @@ describe("course progress helpers", () => {
 
     expect(local).toEqual({
       doneLessonIds: ["mod1-l1"],
+      doneConfirmationByLessonId: {
+        "mod1-l1": "2026-02-16T10:05:00.000Z",
+      },
       videoProgressByLessonId: {
         "mod1-l1": 42,
       },
@@ -176,6 +191,7 @@ describe("course progress helpers", () => {
         {
           lessonId: "mod1-l1",
           done: false,
+          doneConfirmedAt: null,
           videoSeconds: 0,
           updatedAt: "2026-02-17T10:00:00.000Z",
         },
@@ -184,6 +200,7 @@ describe("course progress helpers", () => {
         {
           lessonId: "mod1-l1",
           done: false,
+          doneConfirmedAt: null,
           videoSeconds: 0,
           updatedAt: "2026-02-17T10:01:00.000Z",
         },
@@ -200,12 +217,14 @@ describe("course progress helpers", () => {
         {
           lessonId: "mod1-l1",
           done: true,
+          doneConfirmedAt: null,
           videoSeconds: 0,
           updatedAt: "2026-02-17T10:00:00.000Z",
         },
         {
           lessonId: "mod1-l2",
           done: false,
+          doneConfirmedAt: null,
           videoSeconds: 0,
           updatedAt: "2026-02-17T10:00:00.000Z",
         },
@@ -214,6 +233,7 @@ describe("course progress helpers", () => {
         {
           lessonId: "mod1-l1",
           done: false,
+          doneConfirmedAt: null,
           videoSeconds: 0,
           updatedAt: "2026-02-17T10:01:00.000Z",
         },
@@ -221,5 +241,75 @@ describe("course progress helpers", () => {
     });
 
     expect(dirty).toEqual(["mod1-l1", "mod1-l2"]);
+  });
+
+  it("keeps done confirmation timestamps only for done lessons", () => {
+    const rows = normalizeCourseProgressRows([
+      {
+        lessonId: "mod1-l1",
+        done: true,
+        doneConfirmedAt: "2026-02-17T11:00:00.000Z",
+        videoSeconds: 0,
+        updatedAt: "2026-02-17T11:00:00.000Z",
+      },
+      {
+        lessonId: "mod1-l2",
+        done: false,
+        doneConfirmedAt: "2026-02-17T11:00:00.000Z",
+        videoSeconds: 0,
+        updatedAt: "2026-02-17T11:00:00.000Z",
+      },
+    ]);
+
+    expect(rows).toEqual([
+      {
+        lessonId: "mod1-l1",
+        done: true,
+        doneConfirmedAt: "2026-02-17T11:00:00.000Z",
+        videoSeconds: 0,
+        updatedAt: "2026-02-17T11:00:00.000Z",
+      },
+      {
+        lessonId: "mod1-l2",
+        done: false,
+        doneConfirmedAt: null,
+        videoSeconds: 0,
+        updatedAt: "2026-02-17T11:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("builds sync rows with done confirmation for completed lessons", () => {
+    const rows = buildCourseProgressRowsFromLocal(
+      {
+        doneLessonIds: ["mod1-l1"],
+        doneConfirmationByLessonId: {
+          "mod1-l1": "2026-02-18T09:00:00.000Z",
+          "mod1-l2": "2026-02-18T09:00:00.000Z",
+        },
+        videoProgressByLessonId: {},
+      },
+      {
+        knownLessonIds: ["mod1-l1", "mod1-l2"],
+        updatedAt: "2026-02-18T10:00:00.000Z",
+      }
+    );
+
+    expect(rows).toEqual([
+      {
+        lessonId: "mod1-l1",
+        done: true,
+        doneConfirmedAt: "2026-02-18T09:00:00.000Z",
+        videoSeconds: 0,
+        updatedAt: "2026-02-18T10:00:00.000Z",
+      },
+      {
+        lessonId: "mod1-l2",
+        done: false,
+        doneConfirmedAt: null,
+        videoSeconds: 0,
+        updatedAt: "2026-02-18T10:00:00.000Z",
+      },
+    ]);
   });
 });

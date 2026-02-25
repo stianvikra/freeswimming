@@ -14,6 +14,18 @@ type ProgressBody = {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function isMissingDoneConfirmationColumnError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String(error.code ?? "") : "";
+  const message = "message" in error ? String(error.message ?? "") : "";
+
+  if (code === "42703" || code === "PGRST204") {
+    return message.includes("done_confirmed_at") || message.includes("done confirmed");
+  }
+
+  return false;
+}
+
 function jsonNoStore(body: unknown, status = 200) {
   return NextResponse.json(body, {
     status,
@@ -42,11 +54,28 @@ export async function GET() {
     return jsonNoStore({ ok: false, error: "Unauthorized." }, 401);
   }
 
-  const { data, error } = await supabase
-    .from("course_progress")
-    .select("lesson_id, done, video_seconds, updated_at")
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
+  let data: unknown = null;
+  let error: unknown = null;
+
+  {
+    const result = await supabase
+      .from("course_progress")
+      .select("lesson_id, done, done_confirmed_at, video_seconds, updated_at")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false });
+    data = result.data;
+    error = result.error;
+  }
+
+  if (error && isMissingDoneConfirmationColumnError(error)) {
+    const fallbackResult = await supabase
+      .from("course_progress")
+      .select("lesson_id, done, video_seconds, updated_at")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false });
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+  }
 
   if (error) {
     console.error("[CourseProgressApi] Could not load progress", error);
@@ -96,16 +125,32 @@ export async function POST(request: Request) {
     return jsonNoStore({ ok: true, upserted: 0 });
   }
 
-  const { error } = await supabase.from("course_progress").upsert(
-    normalizedRows.map((row) => ({
+  const rowsWithDoneConfirmation = normalizedRows.map((row) => ({
+    user_id: userId,
+    lesson_id: row.lessonId,
+    done: row.done,
+    done_confirmed_at: row.doneConfirmedAt,
+    video_seconds: row.videoSeconds,
+    updated_at: row.updatedAt,
+  }));
+
+  let { error } = await supabase.from("course_progress").upsert(rowsWithDoneConfirmation, {
+    onConflict: "user_id,lesson_id",
+  });
+
+  if (error && isMissingDoneConfirmationColumnError(error)) {
+    const rowsWithoutDoneConfirmation = normalizedRows.map((row) => ({
       user_id: userId,
       lesson_id: row.lessonId,
       done: row.done,
       video_seconds: row.videoSeconds,
       updated_at: row.updatedAt,
-    })),
-    { onConflict: "user_id,lesson_id" }
-  );
+    }));
+
+    ({ error } = await supabase.from("course_progress").upsert(rowsWithoutDoneConfirmation, {
+      onConflict: "user_id,lesson_id",
+    }));
+  }
 
   if (error) {
     console.error("[CourseProgressApi] Could not save progress", error);

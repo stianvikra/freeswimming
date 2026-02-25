@@ -5,12 +5,14 @@ const MAX_VIDEO_SECONDS = 86_400;
 export type CourseProgressRow = {
   lessonId: string;
   done: boolean;
+  doneConfirmedAt: string | null;
   videoSeconds: number;
   updatedAt: string;
 };
 
 export type LocalCourseProgress = {
   doneLessonIds: string[];
+  doneConfirmationByLessonId: Record<string, string>;
   videoProgressByLessonId: Record<string, number>;
 };
 
@@ -55,9 +57,23 @@ function mergeProgressRow(
   existing: CourseProgressRow,
   incoming: CourseProgressRow
 ): CourseProgressRow {
+  const mergedDone = existing.done || incoming.done;
+
+  let doneConfirmedAt: string | null = null;
+  if (mergedDone) {
+    const left = existing.doneConfirmedAt;
+    const right = incoming.doneConfirmedAt;
+    if (left && right) {
+      doneConfirmedAt = compareIso(left, right) >= 0 ? left : right;
+    } else {
+      doneConfirmedAt = left ?? right ?? null;
+    }
+  }
+
   return {
     lessonId: existing.lessonId,
-    done: existing.done || incoming.done,
+    done: mergedDone,
+    doneConfirmedAt,
     videoSeconds: Math.max(existing.videoSeconds, incoming.videoSeconds),
     updatedAt:
       compareIso(existing.updatedAt, incoming.updatedAt) >= 0
@@ -70,11 +86,20 @@ type ProgressLike = {
   lessonId?: unknown;
   lesson_id?: unknown;
   done?: unknown;
+  doneConfirmedAt?: unknown;
+  done_confirmed_at?: unknown;
   videoSeconds?: unknown;
   video_seconds?: unknown;
   updatedAt?: unknown;
   updated_at?: unknown;
 };
+
+function normalizeDoneConfirmedAt(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const ts = Date.parse(value);
+  if (!Number.isFinite(ts)) return null;
+  return new Date(ts).toISOString();
+}
 
 export function normalizeCourseProgressRows(
   input: unknown,
@@ -97,9 +122,15 @@ export function normalizeCourseProgressRows(
     const normalizedRow: CourseProgressRow = {
       lessonId,
       done: row.done === true,
+      doneConfirmedAt: null,
       videoSeconds: normalizeVideoSeconds(row.videoSeconds ?? row.video_seconds),
       updatedAt: normalizeUpdatedAt(row.updatedAt ?? row.updated_at, fallback),
     };
+    if (normalizedRow.done) {
+      normalizedRow.doneConfirmedAt = normalizeDoneConfirmedAt(
+        row.doneConfirmedAt ?? row.done_confirmed_at
+      );
+    }
 
     const existing = merged.get(lessonId);
     if (!existing) {
@@ -144,6 +175,23 @@ export function normalizeVideoProgressRecord(input: unknown): Record<string, num
   return normalized;
 }
 
+export function normalizeDoneConfirmationRecord(input: unknown): Record<string, string> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return {};
+  }
+
+  const normalized: Record<string, string> = {};
+  for (const [rawLessonId, rawValue] of Object.entries(input)) {
+    const lessonId = normalizeLessonId(rawLessonId);
+    if (!lessonId) continue;
+    const confirmedAt = normalizeDoneConfirmedAt(rawValue);
+    if (!confirmedAt) continue;
+    normalized[lessonId] = confirmedAt;
+  }
+
+  return normalized;
+}
+
 function normalizeKnownLessonIds(knownLessonIds: Iterable<string> | undefined): Set<string> {
   const normalized = new Set<string>();
   if (!knownLessonIds) return normalized;
@@ -166,6 +214,9 @@ export function buildCourseProgressRowsFromLocal(
 ): CourseProgressRow[] {
   const fallbackUpdatedAt = normalizeUpdatedAt(options?.updatedAt, new Date().toISOString());
   const doneLessonIds = normalizeDoneLessonIds(local.doneLessonIds);
+  const doneConfirmationByLessonId = normalizeDoneConfirmationRecord(
+    local.doneConfirmationByLessonId
+  );
   const doneSet = new Set(doneLessonIds);
   const videoProgress = normalizeVideoProgressRecord(local.videoProgressByLessonId);
   const knownLessonIds = normalizeKnownLessonIds(options?.knownLessonIds);
@@ -187,6 +238,7 @@ export function buildCourseProgressRowsFromLocal(
     rows.push({
       lessonId,
       done,
+      doneConfirmedAt: done ? (doneConfirmationByLessonId[lessonId] ?? null) : null,
       videoSeconds,
       updatedAt: fallbackUpdatedAt,
     });
@@ -199,10 +251,14 @@ export function buildLocalCourseProgressFromRows(rows: unknown): LocalCourseProg
   const normalizedRows = normalizeCourseProgressRows(rows);
 
   const doneLessonIds: string[] = [];
+  const doneConfirmationByLessonId: Record<string, string> = {};
   const videoProgressByLessonId: Record<string, number> = {};
 
   for (const row of normalizedRows) {
     if (row.done) doneLessonIds.push(row.lessonId);
+    if (row.done && row.doneConfirmedAt) {
+      doneConfirmationByLessonId[row.lessonId] = row.doneConfirmedAt;
+    }
     if (row.videoSeconds > 0) {
       videoProgressByLessonId[row.lessonId] = row.videoSeconds;
     }
@@ -210,6 +266,7 @@ export function buildLocalCourseProgressFromRows(rows: unknown): LocalCourseProg
 
   return {
     doneLessonIds,
+    doneConfirmationByLessonId,
     videoProgressByLessonId,
   };
 }
@@ -237,6 +294,7 @@ export function areCourseProgressRowsEqual(localRows: unknown, remoteRows: unkno
     const b = right[i];
     if (a.lessonId !== b.lessonId) return false;
     if (a.done !== b.done) return false;
+    if ((a.doneConfirmedAt ?? null) !== (b.doneConfirmedAt ?? null)) return false;
     if (a.videoSeconds !== b.videoSeconds) return false;
   }
 

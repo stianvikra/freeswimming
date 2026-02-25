@@ -37,6 +37,7 @@ import {
   normalizeCourseProgressRows,
   normalizeDoneLessonIds,
   resolveCourseDirtyLessonIdsAfterHydrate,
+  normalizeDoneConfirmationRecord,
   normalizeVideoProgressRecord,
   type CourseProgressRow,
 } from "@/lib/course/progress";
@@ -54,6 +55,7 @@ import {
 const STORAGE_KEY = COURSE_LAST_LESSON_STORAGE_KEY;
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 const DONE_STORAGE_KEY = "fs_course_done_lessons";
+const DONE_CONFIRMATION_STORAGE_KEY = "fs_course_done_confirmations";
 const VIDEO_PROGRESS_STORAGE_KEY = "fs_course_video_progress";
 const SWIPE_NUX_STORAGE_KEY = "fs_course_swipe_nux_seen";
 const SWIPE_ZONE_INSET_PX = 12;
@@ -216,6 +218,14 @@ function CoursePageClient() {
   const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(false);
   const [doneLessonIds, setDoneLessonIds] = useState<string[]>([]);
   const [doneLessonIdsLoaded, setDoneLessonIdsLoaded] = useState(false);
+  const [doneConfirmationByLessonId, setDoneConfirmationByLessonId] = useState<
+    Record<string, string>
+  >({});
+  const [doneConfirmationLoaded, setDoneConfirmationLoaded] = useState(false);
+  const [doneGateChecksByLessonId, setDoneGateChecksByLessonId] = useState<
+    Record<string, string[]>
+  >({});
+  const [doneGateFeedback, setDoneGateFeedback] = useState<string | null>(null);
   const [videoStarted, setVideoStarted] = useState(false);
   const [videoPaused, setVideoPaused] = useState(false);
   const [youtubeApiReady, setYoutubeApiReady] = useState(false);
@@ -267,6 +277,7 @@ function CoursePageClient() {
   const courseProgressMutationRef = useRef(0);
   const knownProgressLessonIdsRef = useRef<Set<string>>(new Set());
   const doneLessonIdsRef = useRef<string[]>([]);
+  const doneConfirmationByLessonIdRef = useRef<Record<string, string>>({});
   const hydratedProgressUserIdRef = useRef<string | null>(null);
   const swipeTouchIdRef = useRef<number | null>(null);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
@@ -321,7 +332,8 @@ function CoursePageClient() {
     );
   }, [courseModules]);
 
-  const localCourseProgressLoaded = doneLessonIdsLoaded && playbackProgressLoaded;
+  const localCourseProgressLoaded =
+    doneLessonIdsLoaded && doneConfirmationLoaded && playbackProgressLoaded;
 
   const clearCourseSyncTimer = useCallback(() => {
     if (courseSyncTimerRef.current == null) return;
@@ -344,8 +356,15 @@ function CoursePageClient() {
   }, []);
 
   const applyLocalCourseProgress = useCallback(
-    (next: { doneLessonIds: string[]; videoProgressByLessonId: Record<string, number> }) => {
+    (next: {
+      doneLessonIds: string[];
+      doneConfirmationByLessonId: Record<string, string>;
+      videoProgressByLessonId: Record<string, number>;
+    }) => {
       const normalizedDoneLessonIds = normalizeDoneLessonIds(next.doneLessonIds);
+      const normalizedDoneConfirmationByLessonId = normalizeDoneConfirmationRecord(
+        next.doneConfirmationByLessonId
+      );
       const normalizedVideoProgress = normalizeVideoProgressRecord(next.videoProgressByLessonId);
 
       for (const lessonId of normalizedDoneLessonIds) {
@@ -358,11 +377,17 @@ function CoursePageClient() {
 
       playbackProgressRef.current = normalizedVideoProgress;
       doneLessonIdsRef.current = normalizedDoneLessonIds;
+      doneConfirmationByLessonIdRef.current = normalizedDoneConfirmationByLessonId;
       setDoneLessonIds(normalizedDoneLessonIds);
+      setDoneConfirmationByLessonId(normalizedDoneConfirmationByLessonId);
       setResumeAvailable(Math.floor(normalizedVideoProgress[activeLesson.id] ?? 0) >= 2);
 
       try {
         localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(normalizedDoneLessonIds));
+        localStorage.setItem(
+          DONE_CONFIRMATION_STORAGE_KEY,
+          JSON.stringify(normalizedDoneConfirmationByLessonId)
+        );
         localStorage.setItem(VIDEO_PROGRESS_STORAGE_KEY, JSON.stringify(normalizedVideoProgress));
       } catch {}
     },
@@ -373,6 +398,7 @@ function CoursePageClient() {
     return buildCourseProgressRowsFromLocal(
       {
         doneLessonIds: doneLessonIdsRef.current,
+        doneConfirmationByLessonId: doneConfirmationByLessonIdRef.current,
         videoProgressByLessonId: playbackProgressRef.current,
       },
       {
@@ -565,6 +591,19 @@ function CoursePageClient() {
   }, []);
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DONE_CONFIRMATION_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const normalizedDoneConfirmationByLessonId = normalizeDoneConfirmationRecord(parsed);
+        doneConfirmationByLessonIdRef.current = normalizedDoneConfirmationByLessonId;
+        setDoneConfirmationByLessonId(normalizedDoneConfirmationByLessonId);
+      }
+    } catch {}
+    setDoneConfirmationLoaded(true);
+  }, []);
+
+  useEffect(() => {
     if (!doneLessonIdsLoaded) return;
     try {
       localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(doneLessonIds));
@@ -572,8 +611,22 @@ function CoursePageClient() {
   }, [doneLessonIds, doneLessonIdsLoaded]);
 
   useEffect(() => {
+    if (!doneConfirmationLoaded) return;
+    try {
+      localStorage.setItem(
+        DONE_CONFIRMATION_STORAGE_KEY,
+        JSON.stringify(doneConfirmationByLessonId)
+      );
+    } catch {}
+  }, [doneConfirmationByLessonId, doneConfirmationLoaded]);
+
+  useEffect(() => {
     doneLessonIdsRef.current = doneLessonIds;
   }, [doneLessonIds]);
+
+  useEffect(() => {
+    doneConfirmationByLessonIdRef.current = doneConfirmationByLessonId;
+  }, [doneConfirmationByLessonId]);
 
   useEffect(() => {
     try {
@@ -1029,8 +1082,31 @@ function CoursePageClient() {
     setInstallPromptFeedback(null);
   }, [clearInstallPromptTimer, install.isInstalled]);
 
+  function toggleDoneGateCriterion(criterion: string) {
+    setDoneGateFeedback(null);
+    setDoneGateChecksByLessonId((prev) => {
+      const existing = prev[activeLesson.id] ?? [];
+      const nextSet = new Set(existing);
+      if (nextSet.has(criterion)) {
+        nextSet.delete(criterion);
+      } else {
+        nextSet.add(criterion);
+      }
+
+      return {
+        ...prev,
+        [activeLesson.id]: passCriteria.filter((item) => nextSet.has(item)),
+      };
+    });
+  }
+
   function toggleLessonDone() {
     const willMarkAsDone = !doneLessonIds.includes(activeLesson.id);
+    if (willMarkAsDone && markDoneBlockedByGate) {
+      setDoneGateFeedback("Check each pass criterion before marking this lesson as done.");
+      return;
+    }
+
     knownProgressLessonIdsRef.current.add(activeLesson.id);
     markCourseProgressDirty(activeLesson.id);
 
@@ -1044,8 +1120,22 @@ function CoursePageClient() {
       return nextDoneLessonIds;
     });
     if (willMarkAsDone) {
+      if (doneGateRequired) {
+        setDoneConfirmationByLessonId((prev) => ({
+          ...prev,
+          [activeLesson.id]: new Date().toISOString(),
+        }));
+      }
       queueAutoInstallPrompt();
+      return;
     }
+
+    setDoneConfirmationByLessonId((prev) => {
+      if (!(activeLesson.id in prev)) return prev;
+      const next = { ...prev };
+      delete next[activeLesson.id];
+      return next;
+    });
   }
 
   const resetSwipeGesture = useCallback(() => {
@@ -1235,6 +1325,22 @@ function CoursePageClient() {
   const passCriteria = activeLesson.passCriteria?.length
     ? activeLesson.passCriteria
     : DEFAULT_PASS_CRITERIA;
+  const doneGateChecks = useMemo(
+    () => doneGateChecksByLessonId[activeLesson.id] ?? [],
+    [activeLesson.id, doneGateChecksByLessonId]
+  );
+  const doneGateChecksSet = useMemo(() => new Set(doneGateChecks), [doneGateChecks]);
+  const doneGateRequired = showPassCriteria && !isLessonDone;
+  const doneGateSatisfied =
+    !doneGateRequired || passCriteria.every((criterion) => doneGateChecksSet.has(criterion));
+  const markDoneBlockedByGate = !isLessonDone && !doneGateSatisfied;
+  const doneConfirmedAt = doneConfirmationByLessonId[activeLesson.id] ?? null;
+  const doneConfirmedLabel = useMemo(() => {
+    if (!doneConfirmedAt) return null;
+    const parsed = Date.parse(doneConfirmedAt);
+    if (!Number.isFinite(parsed)) return null;
+    return new Date(parsed).toLocaleString();
+  }, [doneConfirmedAt]);
   const showVideoOverlay = !videoStarted || videoPaused;
   const showResumeState = videoStarted && videoPaused;
   const showResumeCta = showResumeState || (!videoStarted && resumeAvailable);
@@ -1275,6 +1381,10 @@ function CoursePageClient() {
 
   useEffect(() => {
     setCommonMistakesExpanded(false);
+  }, [activeLesson.id]);
+
+  useEffect(() => {
+    setDoneGateFeedback(null);
   }, [activeLesson.id]);
 
   useEffect(() => {
@@ -1972,13 +2082,17 @@ function CoursePageClient() {
                   <PressButton
                     tier="nav"
                     onClick={toggleLessonDone}
+                    disabled={markDoneBlockedByGate}
                     aria-pressed={isLessonDone}
+                    aria-describedby={doneGateFeedback ? "course-done-gate-feedback" : undefined}
                     data-testid="course-mark-done-button"
                     className={cx(
                       "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
                       isLessonDone
                         ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                        : "bg-white/92 ring-slate-200/72 text-slate-700"
+                        : markDoneBlockedByGate
+                          ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
+                          : "bg-white/92 ring-slate-200/72 text-slate-700"
                     )}
                   >
                     {isLessonDone ? "Done" : "Mark as done"}
@@ -1989,6 +2103,21 @@ function CoursePageClient() {
                     {overviewLabel.moduleName}
                     {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
                   </div>
+                ) : null}
+                {markDoneBlockedByGate ? (
+                  <p
+                    id="course-done-gate-feedback"
+                    className="mt-1 text-[12px] font-medium text-amber-700"
+                  >
+                    Check pass criteria below to unlock Mark as done.
+                  </p>
+                ) : doneGateFeedback ? (
+                  <p
+                    id="course-done-gate-feedback"
+                    className="mt-1 text-[12px] font-medium text-amber-700"
+                  >
+                    {doneGateFeedback}
+                  </p>
                 ) : null}
               </div>
 
@@ -2416,11 +2545,40 @@ function CoursePageClient() {
                     {showPassCriteria ? "Pass criteria" : "Next step"}
                   </div>
                   {showPassCriteria ? (
-                    <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
-                      {passCriteria.map((criterion) => (
-                        <li key={criterion}>{criterion}</li>
-                      ))}
-                    </ul>
+                    doneGateRequired ? (
+                      <ul
+                        data-testid="course-done-gate-checklist"
+                        className="mt-2 space-y-2 text-[13px] leading-6 text-slate-800"
+                      >
+                        {passCriteria.map((criterion, index) => {
+                          const criterionId = `course-done-gate-${activeLesson.id}-${index}`;
+                          const checked = doneGateChecksSet.has(criterion);
+                          return (
+                            <li key={criterionId}>
+                              <label
+                                htmlFor={criterionId}
+                                className="bg-white/76 flex cursor-pointer items-start gap-2 rounded-xl px-2 py-1.5 ring-1 ring-slate-200/70"
+                              >
+                                <input
+                                  id={criterionId}
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleDoneGateCriterion(criterion)}
+                                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>{criterion}</span>
+                              </label>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
+                        {passCriteria.map((criterion) => (
+                          <li key={criterion}>{criterion}</li>
+                        ))}
+                      </ul>
+                    )
                   ) : (
                     <div className="mt-1 text-[14px] leading-6 text-slate-800">
                       {activeLesson.nextStep}
@@ -2428,7 +2586,11 @@ function CoursePageClient() {
                   )}
                   {showPassCriteria ? (
                     <p className="border-slate-200/72 mt-2 border-t pt-2 text-[12px] font-medium leading-5 text-slate-500">
-                      When these are met, mark lesson as done in overview.
+                      {doneGateRequired
+                        ? "Check all items to unlock Mark as done."
+                        : doneConfirmedLabel
+                          ? `Marked done after criteria check on ${doneConfirmedLabel}.`
+                          : "When these are met, mark lesson as done in overview."}
                     </p>
                   ) : null}
                 </div>
