@@ -161,6 +161,7 @@ test.describe("admin foundation", () => {
     const listStatusFilter = page.getByLabel("Filter by status");
     const listSort = page.getByLabel("Sort content list");
     const listSearch = page.getByLabel("Search content items");
+    const focusModeBanner = page.getByTestId("admin-content-focus-mode");
     const moduleTypeChip = page.getByTestId("admin-content-type-chip-course_module");
     const pageTypeChip = page.getByTestId("admin-content-type-chip-page");
     const productTypeChip = page.getByTestId("admin-content-type-chip-product");
@@ -194,6 +195,14 @@ test.describe("admin foundation", () => {
     await listStatusFilter.selectOption("all");
     await listTypeFilter.selectOption("all");
 
+    const mirrorLessonCard = page.getByTestId("admin-mirror-metric-course_lesson");
+    await expect(mirrorLessonCard).toBeVisible();
+    await mirrorLessonCard.click();
+    await expect(listTypeFilter).toHaveValue("course_lesson");
+    await expect(focusModeBanner).toContainText("Focus mode: Course lessons");
+    await focusModeBanner.getByRole("button", { name: "Clear focus" }).click();
+    await expect(listTypeFilter).toHaveValue("all");
+
     const lessonWorkspace = page.getByTestId("admin-course-lesson-workspace");
     await expect(lessonWorkspace).toBeVisible();
     const workspaceModuleSelect = lessonWorkspace.getByLabel("Module workspace");
@@ -209,6 +218,8 @@ test.describe("admin foundation", () => {
       test.skip(true, "Module workspace does not contain Introduction to the Course.");
     }
     await workspaceModuleSelect.selectOption(introModuleValue);
+    await expect(listTypeFilter).toHaveValue("course_lesson");
+    await expect(page.getByText(/Module scope:\s+1\. Introduction to the Course/)).toBeVisible();
 
     const workspaceLessonRow = lessonWorkspace
       .getByTestId("admin-workspace-lesson-row")
@@ -268,6 +279,9 @@ test.describe("admin foundation", () => {
     ).toHaveValue(checkpointCriteriaText);
     await expect(reopenedLessonEditForm.getByLabel("Show cues section")).not.toBeChecked();
     await reopenedLessonEditForm.getByRole("button", { name: "Cancel" }).click();
+    await focusModeBanner.getByRole("button", { name: "Clear focus" }).click();
+    await expect(listTypeFilter).toHaveValue("all");
+    await expect(createdItem).toBeVisible();
 
     const editedTitle = `${title} Updated`;
     const editedSlug = `${slug}-updated`;

@@ -90,7 +90,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Platform mirror snapshot",
     detail:
-      "Shows if admin content is aligned with platform baseline (modules, lessons, sessions, drills, products). Green means aligned. Yellow means something is missing or extra.",
+      "Shows if admin content is aligned with platform baseline (modules, lessons, sessions, drills, products). Green means aligned. Yellow means something is missing or extra. Click any snapshot card to focus the content list on that group.",
   },
   {
     title: "Content items list",
@@ -100,7 +100,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Module -> lessons workspace",
     detail:
-      "Lets you choose one module and immediately see its lessons in order. Use Edit lesson to jump directly into editor, or Open lesson to view the public lesson page.",
+      "Lets you choose a module scope and immediately see lessons in order. The workspace and content list stay synced, so you edit with less searching.",
   },
   {
     title: "Create content item form",
@@ -144,9 +144,14 @@ const BUTTON_GUIDE = [
           "One-click filter for modules, lessons, sessions, or drills, with count badges. Fastest way to jump to one group.",
       },
       {
+        label: "Mirror snapshot cards",
+        meaning:
+          "Click a snapshot card to focus the list on that content group and jump directly to the list area.",
+      },
+      {
         label: "Module workspace",
         meaning:
-          "Shows one module at a time with all its lessons in order, so you can edit lesson-by-lesson without searching.",
+          "Shows module-scoped lessons and keeps the list view in sync so you stay in one editing context.",
       },
       {
         label: "Edit lesson",
@@ -181,6 +186,11 @@ const BUTTON_GUIDE = [
         label: "Section visibility",
         meaning:
           "Use checkboxes to show or hide cues, common mistakes, pass criteria, and next step on the lesson page without deleting text.",
+      },
+      {
+        label: "Clear focus",
+        meaning:
+          "Resets temporary focus mode and returns filters/sort to a broad view when you are done with one editing context.",
       },
       {
         label: "Cancel",
