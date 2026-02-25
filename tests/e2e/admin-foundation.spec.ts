@@ -194,6 +194,77 @@ test.describe("admin foundation", () => {
     await listStatusFilter.selectOption("all");
     await listTypeFilter.selectOption("all");
 
+    const lessonWorkspace = page.getByTestId("admin-course-lesson-workspace");
+    await expect(lessonWorkspace).toBeVisible();
+    const workspaceModuleSelect = lessonWorkspace.getByLabel("Module workspace");
+    await expect(workspaceModuleSelect).toBeVisible();
+    const introModuleValue = await workspaceModuleSelect.evaluate((node) => {
+      const selectElement = node as HTMLSelectElement;
+      const option = [...selectElement.options].find((entry) =>
+        entry.textContent?.includes("Introduction to the Course")
+      );
+      return option?.value ?? "";
+    });
+    if (!introModuleValue) {
+      test.skip(true, "Module workspace does not contain Introduction to the Course.");
+    }
+    await workspaceModuleSelect.selectOption(introModuleValue);
+
+    const workspaceLessonRow = lessonWorkspace
+      .getByTestId("admin-workspace-lesson-row")
+      .filter({ hasText: "Welcome & Course Structure" })
+      .first();
+    await expect(workspaceLessonRow).toBeVisible();
+    await expect(workspaceLessonRow.getByRole("link", { name: "Open lesson" })).toHaveAttribute(
+      "href",
+      /\/course\?lesson=mod1-l1/
+    );
+    await workspaceLessonRow.getByRole("button", { name: "Edit lesson" }).click();
+
+    const seededLessonItem = page
+      .getByTestId("admin-content-item")
+      .filter({ hasText: "Welcome & Course Structure" })
+      .first();
+    const seededLessonEditForm = seededLessonItem.getByTestId("admin-content-edit-form");
+    await expect(seededLessonEditForm).toBeVisible();
+    await expect(seededLessonEditForm.getByText("Lesson body editor")).toBeVisible();
+    await expect(seededLessonEditForm.getByLabel("Lesson id (for open lesson link)")).toHaveValue(
+      "mod1-l1"
+    );
+
+    const checkpointCriteriaText = `Swim 12.5m relaxed and controlled ${unique}`;
+    await seededLessonEditForm.getByLabel("Lesson goal").fill(`Lesson goal update ${unique}`);
+    await seededLessonEditForm.getByLabel("Cues (one per line)").fill("Relax shoulders\nLong line");
+    await seededLessonEditForm
+      .getByLabel("Common mistakes (one per line)")
+      .fill("Rushing the pull\nHolding breath");
+    await seededLessonEditForm.getByLabel("Drill title").fill("Relaxed 12.5m checkpoint");
+    await seededLessonEditForm
+      .getByLabel("Drill steps (one per line)")
+      .fill("Push off calmly\nSwim 12.5m with long exhale");
+    await seededLessonEditForm
+      .getByLabel("Checkpoint criteria (one per line)")
+      .fill(checkpointCriteriaText);
+    await seededLessonEditForm.getByLabel("Next step").fill(`Repeat drill quality x3 ${unique}`);
+    await seededLessonEditForm.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText("Content item updated.")).toBeVisible();
+
+    await seededLessonItem.getByRole("button", { name: "Edit" }).click();
+    const reopenedLessonEditForm = seededLessonItem.getByTestId("admin-content-edit-form");
+    await expect(reopenedLessonEditForm.getByLabel("Lesson goal")).toHaveValue(
+      `Lesson goal update ${unique}`
+    );
+    await expect(reopenedLessonEditForm.getByLabel("Drill title")).toHaveValue(
+      "Relaxed 12.5m checkpoint"
+    );
+    await expect(reopenedLessonEditForm.getByLabel("Next step")).toHaveValue(
+      `Repeat drill quality x3 ${unique}`
+    );
+    await expect(
+      reopenedLessonEditForm.getByLabel("Checkpoint criteria (one per line)")
+    ).toHaveValue(checkpointCriteriaText);
+    await reopenedLessonEditForm.getByRole("button", { name: "Cancel" }).click();
+
     const editedTitle = `${title} Updated`;
     const editedSlug = `${slug}-updated`;
     await createdItem.getByRole("button", { name: "Edit" }).click();

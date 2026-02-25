@@ -48,8 +48,12 @@ test.describe("admin help center", () => {
     await expect(page.getByText("Search field:")).toBeVisible();
     await expect(page.getByText("All types filter:")).toBeVisible();
     await expect(page.getByText("Quick type buttons:")).toBeVisible();
+    await expect(page.getByText("Module workspace:")).toBeVisible();
+    await expect(page.getByText("Edit lesson:")).toBeVisible();
+    await expect(page.getByText("Open lesson:")).toBeVisible();
     await expect(page.getByText("All statuses filter:")).toBeVisible();
     await expect(page.getByText("Sort content list:")).toBeVisible();
+    await expect(page.getByText("Lesson body editor:")).toBeVisible();
     await expect(page.getByText("Save changes:")).toBeVisible();
     await expect(page.getByText("Cancel:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
