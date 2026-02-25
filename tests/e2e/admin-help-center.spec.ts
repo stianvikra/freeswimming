@@ -54,6 +54,7 @@ test.describe("admin help center", () => {
     await expect(page.getByText("All statuses filter:")).toBeVisible();
     await expect(page.getByText("Sort content list:")).toBeVisible();
     await expect(page.getByText("Lesson body editor:")).toBeVisible();
+    await expect(page.getByText("Section visibility:")).toBeVisible();
     await expect(page.getByText("Save changes:")).toBeVisible();
     await expect(page.getByText("Cancel:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();

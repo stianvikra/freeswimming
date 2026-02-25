@@ -178,6 +178,11 @@ const BUTTON_GUIDE = [
           "For course lessons, this edits lesson goal, cues, common mistakes, drill title/steps, checkpoint criteria, and next step.",
       },
       {
+        label: "Section visibility",
+        meaning:
+          "Use checkboxes to show or hide cues, common mistakes, pass criteria, and next step on the lesson page without deleting text.",
+      },
+      {
         label: "Cancel",
         meaning: "Closes edit mode. If you changed something, you will be asked before discarding.",
       },
@@ -363,6 +368,7 @@ export default function AdminHelpCenter() {
                 Update lesson body fields (goal, cues, drill, checkpoint criteria, next step) in one
                 edit panel.
               </li>
+              <li>Show/hide lesson sections using visibility checkboxes in the lesson editor.</li>
               <li>Change lifecycle status (draft, review, published, archived).</li>
               <li>Open revisions and restore older versions.</li>
               <li>Create, edit, attach, and delete notes.</li>

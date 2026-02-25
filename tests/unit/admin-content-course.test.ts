@@ -58,6 +58,12 @@ describe("toPublishedCourseModules", () => {
               title: "Drill block",
               steps: ["Step 1"],
             },
+            display: {
+              cues: false,
+              commonMistakes: true,
+              checkpoint: true,
+              nextStep: false,
+            },
             nextStep: "Move to next lesson",
             tags: ["timing"],
           },
@@ -79,6 +85,12 @@ describe("toPublishedCourseModules", () => {
       lessonType: "drill",
       goal: "Practice drill timing",
       cues: ["Cue A"],
+      display: {
+        cues: false,
+        commonMistakes: true,
+        checkpoint: true,
+        nextStep: false,
+      },
       nextStep: "Move to next lesson",
       tags: ["timing"],
     });
