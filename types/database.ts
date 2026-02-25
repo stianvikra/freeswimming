@@ -6,6 +6,7 @@ export type Database = {
       course_progress: {
         Row: {
           done: boolean;
+          done_confirmed_at: string | null;
           lesson_id: string;
           updated_at: string;
           user_id: string;
@@ -13,6 +14,7 @@ export type Database = {
         };
         Insert: {
           done?: boolean;
+          done_confirmed_at?: string | null;
           lesson_id: string;
           updated_at?: string;
           user_id: string;
@@ -20,6 +22,7 @@ export type Database = {
         };
         Update: {
           done?: boolean;
+          done_confirmed_at?: string | null;
           lesson_id?: string;
           updated_at?: string;
           user_id?: string;

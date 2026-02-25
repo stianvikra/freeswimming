@@ -214,6 +214,27 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-02-25`: Slice 8 started on branch `feat/admin-content-edit-phase8-done-gate-aw013`.
+  - Added learner-side done checkpoint gate for drill/swim lessons:
+    - `Mark as done` is blocked until pass-criteria checklist is explicitly confirmed.
+    - Checklist renders inline in the lesson support card for clear context.
+    - Added clear feedback copy near top controls when gate is active.
+  - Added confirmation persistence in course progress data:
+    - `doneConfirmedAt` now flows in normalized course progress rows.
+    - Local progress snapshot now stores `doneConfirmationByLessonId`.
+    - Course sync API includes `done_confirmed_at` (with fallback for pre-migration environments).
+  - Added migration for server canonical confirmation timestamp:
+    - `supabase/migrations/20260225134000_course_progress_done_confirmation.sql`.
+  - Hardened relevant tests:
+    - `tests/e2e/course-progress-sync.spec.ts` (satisfies gate before mark-done),
+    - `tests/e2e/install-prompt.spec.ts` (satisfies gate in guest/install flows),
+    - `tests/unit/course-progress.test.ts` (confirmation normalization + sync rows).
+  - Validation:
+    - `npx vitest run tests/unit/course-progress.test.ts` (pass),
+    - `npx playwright test tests/e2e/course-progress-sync.spec.ts tests/e2e/install-prompt.spec.ts --project=desktop-chromium --project=mobile-chromium` (pass: `7 passed`, `9 skipped`).
+    - `npm run verify:pre-pr` (pass: `67 passed`, `149 skipped`).
+  - Next step: commit/push and open PR in Safari, then monitor required CI checks before merge recommendation.
+
 - `2026-02-25`: Slice 10 ready for PR on branch `feat/admin-content-edit-phase9-mirror-focus-aw013`.
   - Added mirror snapshot click-to-focus behavior:
     - each metric card now focuses content list to matching type (`course_module`, `course_lesson`, `guide_session`, `guide_drill`, `product`),

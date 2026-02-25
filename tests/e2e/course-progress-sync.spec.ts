@@ -1,5 +1,24 @@
 import { expect, test } from "@playwright/test";
 
+async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
+  const markDoneButton = page.getByTestId("course-mark-done-button");
+  await expect(markDoneButton).toBeVisible();
+  if (await markDoneButton.isEnabled()) return;
+
+  const checklist = page.getByTestId("course-done-gate-checklist");
+  await expect(checklist).toBeVisible();
+
+  const checkboxes = checklist.getByRole("checkbox");
+  const count = await checkboxes.count();
+  for (let i = 0; i < count; i += 1) {
+    const checkbox = checkboxes.nth(i);
+    if (await checkbox.isChecked()) continue;
+    await checkbox.check();
+  }
+
+  await expect(markDoneButton).toBeEnabled();
+}
+
 test("signed-in mark-as-done syncs to account progress API", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
 
@@ -27,6 +46,9 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   const expectedAfterToggle = initialPressed ? "false" : "true";
   const expectedAfterRestore = initialPressed ? "true" : "false";
 
+  if (!initialPressed) {
+    await satisfyDoneGateIfPresent(page);
+  }
   await markDoneButton.click();
   await expect(markDoneButton).toHaveAttribute("aria-pressed", expectedAfterToggle);
 
