@@ -1358,7 +1358,7 @@ function CoursePageClient() {
     : "Lesson and playback progress saved on this device.";
 
   const supportCardClass =
-    "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)]";
+    "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_14px_34px_rgba(15,23,42,0.08)]";
 
   useEffect(() => {
     if (!isGuest) {
@@ -2070,7 +2070,7 @@ function CoursePageClient() {
             }
           />
 
-          <section className="bg-white/88 mt-2 rounded-[20px] border border-slate-200/60 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)]">
+          <section className="lg:bg-white/96 mt-2 rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)] lg:border-slate-300/70 lg:shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex items-center justify-between gap-2">
@@ -2168,7 +2168,7 @@ function CoursePageClient() {
                   onClick={toggleOverview}
                   aria-expanded={overviewExpanded}
                   aria-controls="course-overview-details"
-                  className="bg-white/92 inline-flex min-h-[42px] items-center justify-center rounded-2xl px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70"
+                  className="bg-white/92 inline-flex min-h-[42px] items-center justify-center rounded-2xl px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70 lg:bg-white lg:ring-slate-300/70"
                 >
                   {overviewExpanded ? "Hide details" : "Overview details"}
                 </PressButton>
@@ -2223,7 +2223,7 @@ function CoursePageClient() {
                 onClick={toggleOverview}
                 aria-expanded={overviewExpanded}
                 aria-controls="course-overview-details"
-                className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65"
+                className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65 lg:bg-white lg:ring-slate-300/70"
               >
                 {overviewExpanded ? "Hide details" : "Overview details"}
               </PressButton>
@@ -2232,7 +2232,7 @@ function CoursePageClient() {
             {overviewExpanded ? (
               <div
                 id="course-overview-details"
-                className="border-slate-200/68 bg-white/78 mt-2 rounded-2xl border p-3"
+                className="border-slate-200/68 bg-white/78 lg:bg-white/92 mt-2 rounded-2xl border p-3 lg:border-slate-300/65"
               >
                 <div className="bg-slate-50/72 rounded-2xl border border-slate-200/70 p-3">
                   <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
@@ -2331,7 +2331,7 @@ function CoursePageClient() {
             ) : null}
           </section>
 
-          <section className="border-slate-200/72 bg-white/96 mt-3 rounded-[24px] border p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
+          <section className="border-slate-200/72 bg-white/96 mt-3 rounded-[24px] border p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)] lg:border-slate-300/70 lg:bg-white">
             <div className="relative overflow-hidden rounded-[20px] shadow-[0_12px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/75">
               {!showVideoOverlay ? (
                 <>
@@ -2471,7 +2471,7 @@ function CoursePageClient() {
           </section>
 
           <section className="mt-4 grid gap-3 lg:grid-cols-3">
-            <div className="rounded-[24px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)] lg:col-span-2">
+            <div className="rounded-[24px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/70 lg:bg-white/95 lg:shadow-[0_18px_42px_rgba(15,23,42,0.08)]">
               <h2 className="text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>
               <p className="mt-2 text-[15px] leading-7 text-slate-700">{activeLesson.goal}</p>
 
@@ -2492,7 +2492,7 @@ function CoursePageClient() {
               ) : null}
 
               {showCommonMistakesSection ? (
-                <div className="border-slate-200/72 bg-white/72 mt-5 rounded-2xl border p-3">
+                <div className="border-slate-200/72 bg-white/78 lg:border-slate-300/68 mt-5 rounded-2xl border p-3 lg:bg-white/90">
                   <PressButton
                     tier="nav"
                     onClick={toggleCommonMistakes}
@@ -2524,7 +2524,7 @@ function CoursePageClient() {
               ) : null}
             </div>
 
-            <div className="border-slate-200/72 rounded-[24px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.92))] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.065)]">
+            <div className="border-slate-200/72 lg:border-slate-300/68 lg:bg-white/96 rounded-[24px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.92))] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
               <div className="ring-slate-200/72 inline-flex rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1">
                 Drill
               </div>
@@ -2557,7 +2557,7 @@ function CoursePageClient() {
                             <li key={criterionId}>
                               <label
                                 htmlFor={criterionId}
-                                className="bg-white/76 flex cursor-pointer items-start gap-2 rounded-xl px-2 py-1.5 ring-1 ring-slate-200/70"
+                                className="bg-white/76 flex cursor-pointer items-start gap-2 rounded-xl px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
                               >
                                 <input
                                   id={criterionId}

@@ -18,6 +18,23 @@ body {
   color: #0f172a;
 }
 
+@media (min-width: 1440px) {
+  body {
+    background:
+      radial-gradient(
+        1600px 940px at 50% 18%,
+        rgba(99, 168, 255, 0.28),
+        rgba(255, 255, 255, 0) 64%
+      ),
+      radial-gradient(
+        1200px 760px at 18% 78%,
+        rgba(99, 168, 255, 0.18),
+        rgba(255, 255, 255, 0) 68%
+      ),
+      linear-gradient(180deg, #e6f0ff 0%, #f5f9ff 38%, #ffffff 100%);
+  }
+}
+
 /* Nice font rendering + mobile tap highlight */
 * {
   -webkit-font-smoothing: antialiased;

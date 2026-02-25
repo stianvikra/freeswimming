@@ -146,3 +146,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-02-25 | kickoff | content production v1 track opened after AW-013 phase8 merge; no hard blockers found in active briefs for starting editorial production | next: run Slice 1 production session and capture first friction batch`
+- `2026-02-25 | desktop visual calibration slice | tuned large-screen readability/contrast and widened PageTemplate (wide layout) for course/admin surfaces to reduce washed-out look on large monitors; npm run verify:pre-pr passed (second run after one transient Playwright goto timeout) | next: verify on 49" monitor and capture any residual contrast/layout friction`
