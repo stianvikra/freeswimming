@@ -193,6 +193,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 5. Help/Guide expansion and non-technical documentation pass.
 6. Negative-path hardening and e2e regression gates.
 7. Module -> lessons workspace, Open lesson jump, and lesson body editor (goal/cues/drill/checkpoint/next step).
+8. Learner-side done checkpoint gate UX (explicit confirmation before marking drill/swim lessons as done).
 
 ## Risks And Mitigations
 
