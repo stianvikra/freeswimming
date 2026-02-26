@@ -222,6 +222,16 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-02-26`: Test hardening follow-up on branch `feat/admin-content-edit-phase12-support-policy-aw013`.
+  - Hardened mobile-only nav-state spec to skip before desktop/tablet page fixture setup:
+    - `tests/e2e/mobile-nav-state.spec.ts` now uses file-level skip based on viewport width (`<= 500` = phone profiles).
+  - Intent:
+    - prevent intermittent desktop Firefox `browserContext.newPage` timeout on a test that is out of scope for desktop/tablet.
+  - Validation:
+    - `npx playwright test tests/e2e/mobile-nav-state.spec.ts --project=desktop-firefox` (skipped as expected),
+    - `npx playwright test tests/e2e/mobile-nav-state.spec.ts --project=mobile-iphone-13-pro-max` (pass),
+    - `npm run verify:pre-pr` (pass; 67 passed, 149 skipped).
+
 - `2026-02-26`: Slice 12 started on branch `feat/admin-content-edit-phase12-support-policy-aw013`.
   - Added optional lesson body field:
     - `supportStartAtLessonInModule` in `courseData` and admin lesson editor.
