@@ -204,6 +204,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
     - optional lesson body field `supportStartAtLessonInModule`,
     - keep support card hidden until configured lesson number in current module,
     - preserve safe fallback behavior when field is empty/invalid.
+13. Pass-criteria default visibility + lesson-type edit assurance:
+    - show pass criteria by default on lesson page regardless of lesson type,
+    - preserve explicit admin hide control via `Show pass criteria` toggle,
+    - verify `Lesson type` is editable and persists in admin edit workflow.
 
 ## Risks And Mitigations
 
@@ -221,6 +225,21 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. reopen this brief and continue from current implementation slice.
 
 ## Checkpoint Log
+
+- `2026-02-26`: Slice 13 started on branch `feat/admin-content-edit-phase13-pass-criteria-default-aw013`.
+  - Updated learner lesson rendering:
+    - pass criteria visibility no longer defaults off for `Learn` lessons,
+    - pass criteria now shows by default for all lesson types unless admin explicitly disables `Show pass criteria`.
+  - Confirmed admin lesson type mutability:
+    - `Lesson type` already persisted via lesson body payload,
+    - added e2e assertion to verify value change + persistence.
+  - Tests updated:
+    - `tests/e2e/admin-foundation.spec.ts` now sets `Lesson type` to `swim` and verifies persisted value.
+    - Added `tests/e2e/course-pass-criteria-visibility.spec.ts` to confirm `Learn` lesson shows pass criteria + done-gate checklist by default.
+  - Validation:
+    - `npx playwright test tests/e2e/admin-foundation.spec.ts --project=desktop-chromium` (2 passed, 1 skipped),
+    - `npx playwright test tests/e2e/course-pass-criteria-visibility.spec.ts --project=desktop-chromium` (pass),
+    - `npm run verify:pre-pr` (pass; 68 passed, 154 skipped).
 
 - `2026-02-26`: Test hardening follow-up on branch `feat/admin-content-edit-phase12-support-policy-aw013`.
   - Hardened mobile-only nav-state spec to skip before desktop/tablet page fixture setup:

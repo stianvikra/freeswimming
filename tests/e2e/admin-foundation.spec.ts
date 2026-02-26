@@ -257,6 +257,7 @@ test.describe("admin foundation", () => {
     await seededLessonEditForm
       .getByLabel("Extra help start lesson number in module (optional)")
       .fill(supportStartLessonInModule);
+    await seededLessonEditForm.getByLabel("Lesson type").selectOption("swim");
     await seededLessonEditForm.getByLabel("Lesson goal").fill(`Lesson goal update ${unique}`);
     await cuesVisibilityToggle.uncheck();
     await supportVisibilityToggle.uncheck();
@@ -289,6 +290,7 @@ test.describe("admin foundation", () => {
     await expect(
       reopenedLessonEditForm.getByLabel("Extra help start lesson number in module (optional)")
     ).toHaveValue(supportStartLessonInModule);
+    await expect(reopenedLessonEditForm.getByLabel("Lesson type")).toHaveValue("swim");
     await expect(reopenedLessonEditForm.getByLabel("Next step")).toHaveValue(
       `Repeat drill quality x3 ${unique}`
     );

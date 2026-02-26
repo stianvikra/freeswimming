@@ -1322,8 +1322,7 @@ function CoursePageClient() {
   const showCommonMistakesSection =
     lessonDisplay?.commonMistakes !== false && commonMistakes.length > 0;
   const showDrillSection = lessonDisplay?.drill !== false;
-  const showPassCriteria =
-    (lessonType === "drill" || lessonType === "swim") && lessonDisplay?.checkpoint !== false;
+  const showPassCriteria = lessonDisplay?.checkpoint !== false;
   const showNextStepSection = lessonDisplay?.nextStep !== false;
   const showPassOrNextCard = showPassCriteria || showNextStepSection;
   const supportStartAtLessonInModule = activeLesson.supportStartAtLessonInModule;
