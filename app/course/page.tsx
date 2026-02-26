@@ -1315,13 +1315,21 @@ function CoursePageClient() {
   const lessonType = activeLesson.lessonType ?? "drill";
   const lessonDisplay = activeLesson.display;
   const commonMistakes = activeLesson.commonMistakes ?? [];
+  const showGoalSection = lessonDisplay?.goal !== false;
   const showCuesSection = lessonDisplay?.cues !== false;
   const showCommonMistakesSection =
     lessonDisplay?.commonMistakes !== false && commonMistakes.length > 0;
+  const showDrillSection = lessonDisplay?.drill !== false;
   const showPassCriteria =
     (lessonType === "drill" || lessonType === "swim") && lessonDisplay?.checkpoint !== false;
   const showNextStepSection = lessonDisplay?.nextStep !== false;
-  const showSupportCard = showPassCriteria || showNextStepSection;
+  const showPassOrNextCard = showPassCriteria || showNextStepSection;
+  const showExtraHelpCard = lessonDisplay?.support !== false;
+  const showLessonPrimaryColumn = showGoalSection || showCuesSection || showCommonMistakesSection;
+  const showLessonSecondaryColumn = showDrillSection || showPassOrNextCard || showExtraHelpCard;
+  const drillBadgeLabel =
+    activeLesson.drillLabel?.trim() ||
+    (lessonType === "learn" ? "Learn" : lessonType === "swim" ? "Swim" : "Drill");
   const passCriteria = activeLesson.passCriteria?.length
     ? activeLesson.passCriteria
     : DEFAULT_PASS_CRITERIA;
@@ -2470,158 +2478,199 @@ function CoursePageClient() {
             ) : null}
           </section>
 
-          <section className="mt-4 grid gap-3 lg:grid-cols-3">
-            <div className="rounded-[24px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/70 lg:bg-white/95 lg:shadow-[0_18px_42px_rgba(15,23,42,0.08)]">
-              <h2 className="text-[16px] font-semibold tracking-wide text-slate-900">Goal</h2>
-              <p className="mt-2 text-[15px] leading-7 text-slate-700">{activeLesson.goal}</p>
-
-              {showCuesSection ? (
-                <div className="mt-5">
-                  <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">
-                    Cues (pick one)
-                  </h3>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
-                    {activeLesson.cues.map((c) => (
-                      <li key={c}>{c}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 text-[12px] font-medium text-slate-500">
-                    Keep it simple: choose one cue per session.
-                  </p>
-                </div>
-              ) : null}
-
-              {showCommonMistakesSection ? (
-                <div className="border-slate-200/72 bg-white/78 lg:border-slate-300/68 mt-5 rounded-2xl border p-3 lg:bg-white/90">
-                  <PressButton
-                    tier="nav"
-                    onClick={toggleCommonMistakes}
-                    aria-expanded={commonMistakesExpanded}
-                    aria-controls="common-mistakes-list"
-                    className="inline-flex min-h-[40px] w-full items-center justify-between rounded-xl bg-white/85 px-3 py-2 text-left text-[14px] font-semibold text-slate-900 ring-1 ring-slate-200/70"
-                  >
-                    <span>Common mistakes</span>
-                    <span className="text-[12px] text-slate-600">
-                      {commonMistakesExpanded ? "Hide" : "Show"}
-                    </span>
-                  </PressButton>
-
-                  {commonMistakesExpanded ? (
-                    <ul
-                      id="common-mistakes-list"
-                      className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700"
-                    >
-                      {commonMistakes.map((m) => (
-                        <li key={m}>{m}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-2 text-[12px] font-medium text-slate-600">
-                      Expand to review common errors for this lesson.
-                    </p>
+          {showLessonPrimaryColumn || showLessonSecondaryColumn ? (
+            <section className="mt-4 grid gap-3 lg:grid-cols-3">
+              {showLessonPrimaryColumn ? (
+                <div
+                  className={cx(
+                    "rounded-[24px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)] lg:border-slate-300/70 lg:bg-white/95 lg:shadow-[0_18px_42px_rgba(15,23,42,0.08)]",
+                    showLessonSecondaryColumn ? "lg:col-span-2" : "lg:col-span-3"
                   )}
-                </div>
-              ) : null}
-            </div>
+                >
+                  {showGoalSection ? (
+                    <>
+                      <h2 className="text-[16px] font-semibold tracking-wide text-slate-900">
+                        Goal
+                      </h2>
+                      <p className="mt-2 text-[15px] leading-7 text-slate-700">
+                        {activeLesson.goal}
+                      </p>
+                    </>
+                  ) : null}
 
-            <div className="border-slate-200/72 lg:border-slate-300/68 lg:bg-white/96 rounded-[24px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.92))] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
-              <div className="ring-slate-200/72 inline-flex rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1">
-                Drill
-              </div>
-
-              <h2 className="mt-3 text-[18px] font-semibold text-slate-900">
-                {activeLesson.drill.title}
-              </h2>
-
-              <ol className="mt-3 list-decimal space-y-2 pl-5 text-[14px] leading-7 text-slate-800">
-                {activeLesson.drill.steps.map((s) => (
-                  <li key={s}>{s}</li>
-                ))}
-              </ol>
-
-              {showSupportCard ? (
-                <div className={cx("mt-5 p-4", supportCardClass)}>
-                  <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-                    {showPassCriteria ? "Pass criteria" : "Next step"}
-                  </div>
-                  {showPassCriteria ? (
-                    doneGateRequired ? (
-                      <ul
-                        data-testid="course-done-gate-checklist"
-                        className="mt-2 space-y-2 text-[13px] leading-6 text-slate-800"
-                      >
-                        {passCriteria.map((criterion, index) => {
-                          const criterionId = `course-done-gate-${activeLesson.id}-${index}`;
-                          const checked = doneGateChecksSet.has(criterion);
-                          return (
-                            <li key={criterionId}>
-                              <label
-                                htmlFor={criterionId}
-                                className="bg-white/76 flex cursor-pointer items-start gap-2 rounded-xl px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
-                              >
-                                <input
-                                  id={criterionId}
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleDoneGateCriterion(criterion)}
-                                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span>{criterion}</span>
-                              </label>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : (
-                      <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
-                        {passCriteria.map((criterion) => (
-                          <li key={criterion}>{criterion}</li>
+                  {showCuesSection ? (
+                    <div className={showGoalSection ? "mt-5" : ""}>
+                      <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">
+                        Cues (pick one)
+                      </h3>
+                      <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
+                        {activeLesson.cues.map((c) => (
+                          <li key={c}>{c}</li>
                         ))}
                       </ul>
-                    )
-                  ) : (
-                    <div className="mt-1 text-[14px] leading-6 text-slate-800">
-                      {activeLesson.nextStep}
+                      <p className="mt-2 text-[12px] font-medium text-slate-500">
+                        Keep it simple: choose one cue per session.
+                      </p>
                     </div>
-                  )}
-                  {showPassCriteria ? (
-                    <p className="border-slate-200/72 mt-2 border-t pt-2 text-[12px] font-medium leading-5 text-slate-500">
-                      {doneGateRequired
-                        ? "Check all items to unlock Mark as done."
-                        : doneConfirmedLabel
-                          ? `Marked done after criteria check on ${doneConfirmedLabel}.`
-                          : "When these are met, mark lesson as done in overview."}
-                    </p>
+                  ) : null}
+
+                  {showCommonMistakesSection ? (
+                    <div
+                      className={cx(
+                        "border-slate-200/72 bg-white/78 lg:border-slate-300/68 rounded-2xl border p-3 lg:bg-white/90",
+                        showGoalSection || showCuesSection ? "mt-5" : ""
+                      )}
+                    >
+                      <PressButton
+                        tier="nav"
+                        onClick={toggleCommonMistakes}
+                        aria-expanded={commonMistakesExpanded}
+                        aria-controls="common-mistakes-list"
+                        className="inline-flex min-h-[40px] w-full items-center justify-between rounded-xl bg-white/85 px-3 py-2 text-left text-[14px] font-semibold text-slate-900 ring-1 ring-slate-200/70"
+                      >
+                        <span>Common mistakes</span>
+                        <span className="text-[12px] text-slate-600">
+                          {commonMistakesExpanded ? "Hide" : "Show"}
+                        </span>
+                      </PressButton>
+
+                      {commonMistakesExpanded ? (
+                        <ul
+                          id="common-mistakes-list"
+                          className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700"
+                        >
+                          {commonMistakes.map((m) => (
+                            <li key={m}>{m}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-[12px] font-medium text-slate-600">
+                          Expand to review common errors for this lesson.
+                        </p>
+                      )}
+                    </div>
                   ) : null}
                 </div>
               ) : null}
 
-              <div className="border-slate-200/68 mt-5 rounded-2xl border bg-white/80 p-4">
-                <h3 className="text-[14px] font-semibold tracking-wide text-slate-900">
-                  Need extra help?
-                </h3>
-                <p className="mt-1 text-[12px] leading-5 text-slate-600">
-                  If this doesn&apos;t click after 2-3 sessions, your #1 limiter may be elsewhere.
-                </p>
-                <div className="mt-3 flex flex-col gap-2">
-                  <PressLink
-                    tier="cta"
-                    href="/analysis"
-                    className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                  >
-                    Video Analysis (Optional)
-                  </PressLink>
-                  <PressLink
-                    tier="nav"
-                    href="/programs"
-                    className="bg-white/92 flex items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70"
-                  >
-                    Poolside Guide
-                  </PressLink>
+              {showLessonSecondaryColumn ? (
+                <div
+                  className={cx(
+                    "border-slate-200/72 lg:border-slate-300/68 lg:bg-white/96 rounded-[24px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.92))] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:shadow-[0_16px_36px_rgba(15,23,42,0.08)]",
+                    showLessonPrimaryColumn ? "" : "lg:col-span-3"
+                  )}
+                >
+                  {showDrillSection ? (
+                    <>
+                      <div className="ring-slate-200/72 inline-flex rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1">
+                        {drillBadgeLabel}
+                      </div>
+
+                      <h2 className="mt-3 text-[18px] font-semibold text-slate-900">
+                        {activeLesson.drill.title}
+                      </h2>
+
+                      <ol className="mt-3 list-decimal space-y-2 pl-5 text-[14px] leading-7 text-slate-800">
+                        {activeLesson.drill.steps.map((s) => (
+                          <li key={s}>{s}</li>
+                        ))}
+                      </ol>
+                    </>
+                  ) : null}
+
+                  {showPassOrNextCard ? (
+                    <div className={cx(showDrillSection ? "mt-5 p-4" : "p-4", supportCardClass)}>
+                      <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                        {showPassCriteria ? "Pass criteria" : "Next step"}
+                      </div>
+                      {showPassCriteria ? (
+                        doneGateRequired ? (
+                          <ul
+                            data-testid="course-done-gate-checklist"
+                            className="mt-2 space-y-2 text-[13px] leading-6 text-slate-800"
+                          >
+                            {passCriteria.map((criterion, index) => {
+                              const criterionId = `course-done-gate-${activeLesson.id}-${index}`;
+                              const checked = doneGateChecksSet.has(criterion);
+                              return (
+                                <li key={criterionId}>
+                                  <label
+                                    htmlFor={criterionId}
+                                    className="bg-white/76 flex cursor-pointer items-start gap-2 rounded-xl px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
+                                  >
+                                    <input
+                                      id={criterionId}
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => toggleDoneGateCriterion(criterion)}
+                                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span>{criterion}</span>
+                                  </label>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
+                            {passCriteria.map((criterion) => (
+                              <li key={criterion}>{criterion}</li>
+                            ))}
+                          </ul>
+                        )
+                      ) : (
+                        <div className="mt-1 text-[14px] leading-6 text-slate-800">
+                          {activeLesson.nextStep}
+                        </div>
+                      )}
+                      {showPassCriteria ? (
+                        <p className="border-slate-200/72 mt-2 border-t pt-2 text-[12px] font-medium leading-5 text-slate-500">
+                          {doneGateRequired
+                            ? "Check all items to unlock Mark as done."
+                            : doneConfirmedLabel
+                              ? `Marked done after criteria check on ${doneConfirmedLabel}.`
+                              : "When these are met, mark lesson as done in overview."}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {showExtraHelpCard ? (
+                    <div
+                      className={cx(
+                        "border-slate-200/68 rounded-2xl border bg-white/80 p-4",
+                        showDrillSection || showPassOrNextCard ? "mt-5" : ""
+                      )}
+                    >
+                      <h3 className="text-[14px] font-semibold tracking-wide text-slate-900">
+                        Need extra help?
+                      </h3>
+                      <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                        If this doesn&apos;t click after 2-3 sessions, your #1 limiter may be
+                        elsewhere.
+                      </p>
+                      <div className="mt-3 flex flex-col gap-2">
+                        <PressLink
+                          tier="cta"
+                          href="/analysis"
+                          className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                        >
+                          Video Analysis (Optional)
+                        </PressLink>
+                        <PressLink
+                          tier="nav"
+                          href="/programs"
+                          className="bg-white/92 flex items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70"
+                        >
+                          Poolside Guide
+                        </PressLink>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            </div>
-          </section>
+              ) : null}
+            </section>
+          ) : null}
 
           <AdminContextNotesPanel
             contextType="course_lesson"

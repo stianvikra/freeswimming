@@ -6,12 +6,16 @@ export type CourseLesson = {
   youtubeId: string; // ONLY the video id, not full URL
   estMinutes?: number;
   lessonType?: "learn" | "drill" | "swim";
+  drillLabel?: string;
   passCriteria?: string[];
   display?: {
+    goal?: boolean;
     cues?: boolean;
     commonMistakes?: boolean;
+    drill?: boolean;
     checkpoint?: boolean;
     nextStep?: boolean;
+    support?: boolean;
   };
 
   goal: string;

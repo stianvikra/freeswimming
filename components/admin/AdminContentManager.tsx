@@ -202,11 +202,15 @@ type LessonTypeOption = "learn" | "drill" | "swim" | "";
 type LessonBodyEditState = {
   lessonId: string;
   lessonType: LessonTypeOption;
+  drillLabel: string;
   goal: string;
+  displayGoal: boolean;
   displayCues: boolean;
   displayCommonMistakes: boolean;
+  displayDrill: boolean;
   displayCheckpoint: boolean;
   displayNextStep: boolean;
+  displaySupport: boolean;
   cues: string;
   commonMistakes: string;
   drillTitle: string;
@@ -331,11 +335,15 @@ function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
   return {
     lessonId,
     lessonType: resolveLessonType(parseBodyString(item.body, "lessonType")),
+    drillLabel: parseBodyString(item.body, "drillLabel") ?? "",
     goal: parseBodyString(item.body, "goal") ?? item.summary ?? "",
+    displayGoal: parseBodyBoolean(displayBody, "goal") ?? true,
     displayCues: parseBodyBoolean(displayBody, "cues") ?? true,
     displayCommonMistakes: parseBodyBoolean(displayBody, "commonMistakes") ?? true,
+    displayDrill: parseBodyBoolean(displayBody, "drill") ?? true,
     displayCheckpoint: parseBodyBoolean(displayBody, "checkpoint") ?? true,
     displayNextStep: parseBodyBoolean(displayBody, "nextStep") ?? true,
+    displaySupport: parseBodyBoolean(displayBody, "support") ?? true,
     cues: joinLines(parseBodyStringArray(item.body, "cues")),
     commonMistakes: joinLines(parseBodyStringArray(item.body, "commonMistakes")),
     drillTitle: drillTitleRaw,
@@ -349,11 +357,15 @@ function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
   return {
     lessonId: value.lessonId.trim(),
     lessonType: value.lessonType,
+    drillLabel: value.drillLabel.trim(),
     goal: value.goal.trim(),
+    displayGoal: value.displayGoal,
     displayCues: value.displayCues,
     displayCommonMistakes: value.displayCommonMistakes,
+    displayDrill: value.displayDrill,
     displayCheckpoint: value.displayCheckpoint,
     displayNextStep: value.displayNextStep,
+    displaySupport: value.displaySupport,
     cues: normalizeLinesInput(value.cues),
     commonMistakes: normalizeLinesInput(value.commonMistakes),
     drillTitle: value.drillTitle.trim(),
@@ -376,6 +388,11 @@ function buildLessonBodyPayload(
   } else {
     delete nextBody.lessonType;
   }
+  if (normalized.drillLabel.length > 0) {
+    nextBody.drillLabel = normalized.drillLabel;
+  } else {
+    delete nextBody.drillLabel;
+  }
   nextBody.goal = normalized.goal;
   nextBody.cues = normalized.cues;
   nextBody.commonMistakes = normalized.commonMistakes;
@@ -384,10 +401,13 @@ function buildLessonBodyPayload(
     steps: normalized.drillSteps,
   };
   const existingDisplay = isRecord(nextBody.display) ? { ...nextBody.display } : {};
+  existingDisplay.goal = normalized.displayGoal;
   existingDisplay.cues = normalized.displayCues;
   existingDisplay.commonMistakes = normalized.displayCommonMistakes;
+  existingDisplay.drill = normalized.displayDrill;
   existingDisplay.checkpoint = normalized.displayCheckpoint;
   existingDisplay.nextStep = normalized.displayNextStep;
+  existingDisplay.support = normalized.displaySupport;
   nextBody.display = existingDisplay;
   nextBody.nextStep = normalized.nextStep;
   if (normalized.passCriteria.length > 0) {
@@ -923,13 +943,19 @@ export default function AdminContentManager() {
       if (normalizedBody.goal.length < 5 || normalizedBody.goal.length > 500) {
         return "Lesson goal must be between 5 and 500 characters.";
       }
+      if (normalizedBody.drillLabel.length > 40) {
+        return "Section badge label must be 40 characters or less.";
+      }
       if (normalizedBody.displayCues && normalizedBody.cues.length === 0) {
         return "Add at least one cue (one line per cue).";
       }
-      if (normalizedBody.drillTitle.length < 2 || normalizedBody.drillTitle.length > 120) {
+      if (
+        normalizedBody.displayDrill &&
+        (normalizedBody.drillTitle.length < 2 || normalizedBody.drillTitle.length > 120)
+      ) {
         return "Drill title must be between 2 and 120 characters.";
       }
-      if (normalizedBody.drillSteps.length === 0) {
+      if (normalizedBody.displayDrill && normalizedBody.drillSteps.length === 0) {
         return "Add at least one drill step (one line per step).";
       }
       if (
@@ -1772,7 +1798,7 @@ export default function AdminContentManager() {
                                 </h4>
                                 <p className="mt-1 text-xs text-slate-500">
                                   This controls what appears in the lesson page (goal, cues, drill,
-                                  checkpoint criteria, and next step).
+                                  checkpoint criteria, next step, support card, and section label).
                                 </p>
 
                                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -1827,6 +1853,29 @@ export default function AdminContentManager() {
                                   </label>
 
                                   <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                    <span>Section badge label (optional)</span>
+                                    <input
+                                      type="text"
+                                      value={editFormState.lessonBody.drillLabel}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  drillLabel: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                      placeholder="Defaults to Learn / Drill / Swim"
+                                    />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
                                     <span>Lesson goal</span>
                                     <textarea
                                       rows={3}
@@ -1856,6 +1905,27 @@ export default function AdminContentManager() {
                                       Use these toggles to show or hide sections on the lesson page.
                                     </p>
                                     <div className="grid gap-2 sm:grid-cols-2">
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={editFormState.lessonBody.displayGoal}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      displayGoal: event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show goal section</span>
+                                      </label>
                                       <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
                                         <input
                                           type="checkbox"
@@ -1901,6 +1971,27 @@ export default function AdminContentManager() {
                                       <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
                                         <input
                                           type="checkbox"
+                                          checked={editFormState.lessonBody.displayDrill}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      displayDrill: event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show drill section</span>
+                                      </label>
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
                                           checked={editFormState.lessonBody.displayCheckpoint}
                                           onChange={(event) =>
                                             setEditFormState((prev) =>
@@ -1939,6 +2030,27 @@ export default function AdminContentManager() {
                                           className="h-4 w-4 rounded border border-slate-300"
                                         />
                                         <span>Show next step</span>
+                                      </label>
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={editFormState.lessonBody.displaySupport}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      displaySupport: event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show extra help card</span>
                                       </label>
                                     </div>
                                   </fieldset>
