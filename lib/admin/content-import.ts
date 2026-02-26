@@ -150,6 +150,7 @@ function toLessonSeedItems(): PlatformContentSeedItem[] {
             estMinutes: lesson.estMinutes ?? null,
             lessonType: lesson.lessonType ?? null,
             drillLabel: lesson.drillLabel ?? null,
+            supportStartAtLessonInModule: lesson.supportStartAtLessonInModule ?? null,
             goal: lesson.goal,
             cues: lesson.cues,
             commonMistakes: lesson.commonMistakes ?? [],
