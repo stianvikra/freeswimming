@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-22`
-- `updated`: `2026-02-25`
+- `updated`: `2026-02-26`
 
 ## Goal
 
@@ -196,6 +196,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 8. Learner-side done checkpoint gate UX (explicit confirmation before marking drill/swim lessons as done).
 9. Lesson section visibility controls (admin show/hide toggles for cues/common mistakes/checkpoint/next step).
 10. Mirror snapshot -> list focus sync and module workspace/list coupling for faster admin findability.
+11. Lesson presentation control expansion:
+    - admin toggles for `goal`, `drill block`, and `extra help card`,
+    - optional lesson section badge label override (`Learn/Drill/Swim` fallback),
+    - learner rendering respects these controls with safe defaults.
 
 ## Risks And Mitigations
 
@@ -213,6 +217,24 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. reopen this brief and continue from current implementation slice.
 
 ## Checkpoint Log
+
+- `2026-02-26`: Slice 11 started on branch `feat/admin-content-edit-phase11-lesson-visibility-label-aw013`.
+  - Expanded lesson body editor controls:
+    - added optional section badge label (`drillLabel`),
+    - added visibility toggles for `goal`, `drill`, and `extra help card`,
+    - existing `cues/common mistakes/pass criteria/next step` toggles retained.
+  - Expanded lesson rendering on `/course`:
+    - section badge now uses admin label override when provided,
+    - fallback badge is derived from lesson type (`Learn`, `Drill`, `Swim`),
+    - learner UI respects new visibility toggles for goal/drill/support card while preserving done-gate logic.
+  - Expanded published-content mapping and import parity:
+    - `lib/admin/content-course.ts` now reads `display.goal`, `display.drill`, `display.support`, and `drillLabel`,
+    - baseline import now carries `display`, `passCriteria`, and `drillLabel` for course lessons.
+  - Help/Guide copy updated so non-technical admins can understand new controls.
+  - Tests updated:
+    - `tests/unit/admin-content-course.test.ts` for new display keys + badge label mapping,
+    - `tests/e2e/admin-foundation.spec.ts` for new lesson editor controls and persistence.
+  - Validation: pending `npm run verify:pre-pr` before PR update.
 
 - `2026-02-25`: Slice 8 started on branch `feat/admin-content-edit-phase8-done-gate-aw013`.
   - Added learner-side done checkpoint gate for drill/swim lessons:

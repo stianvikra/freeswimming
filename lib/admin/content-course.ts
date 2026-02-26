@@ -89,17 +89,26 @@ function normalizeLessonDisplay(value: unknown): CourseLesson["display"] | undef
   const raw = value as Record<string, unknown>;
   const display: NonNullable<CourseLesson["display"]> = {};
 
+  const goal = getBoolean(raw.goal);
+  if (typeof goal === "boolean") display.goal = goal;
+
   const cues = getBoolean(raw.cues);
   if (typeof cues === "boolean") display.cues = cues;
 
   const commonMistakes = getBoolean(raw.commonMistakes);
   if (typeof commonMistakes === "boolean") display.commonMistakes = commonMistakes;
 
+  const drill = getBoolean(raw.drill);
+  if (typeof drill === "boolean") display.drill = drill;
+
   const checkpoint = getBoolean(raw.checkpoint);
   if (typeof checkpoint === "boolean") display.checkpoint = checkpoint;
 
   const nextStep = getBoolean(raw.nextStep);
   if (typeof nextStep === "boolean") display.nextStep = nextStep;
+
+  const support = getBoolean(raw.support);
+  if (typeof support === "boolean") display.support = support;
 
   return Object.keys(display).length > 0 ? display : undefined;
 }
@@ -161,6 +170,7 @@ export function toPublishedCourseModules(
       youtubeId: getString(body.youtubeId) ?? "Xh6OblO06LY",
       estMinutes: getNumber(body.estMinutes),
       lessonType: normalizeLessonType(body.lessonType),
+      drillLabel: getString(body.drillLabel) ?? undefined,
       passCriteria: getStringArray(body.passCriteria).length
         ? getStringArray(body.passCriteria)
         : undefined,

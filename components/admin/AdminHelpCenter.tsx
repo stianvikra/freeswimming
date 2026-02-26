@@ -180,12 +180,12 @@ const BUTTON_GUIDE = [
       {
         label: "Lesson body editor",
         meaning:
-          "For course lessons, this edits lesson goal, cues, common mistakes, drill title/steps, checkpoint criteria, and next step.",
+          "For course lessons, this edits lesson goal, section badge label, cues, common mistakes, drill title/steps, checkpoint criteria, and next step.",
       },
       {
         label: "Section visibility",
         meaning:
-          "Use checkboxes to show or hide cues, common mistakes, pass criteria, and next step on the lesson page without deleting text.",
+          "Use checkboxes to show or hide goal, cues, common mistakes, drill block, pass criteria, next step, and the extra help card without deleting text.",
       },
       {
         label: "Clear focus",

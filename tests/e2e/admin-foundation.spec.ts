@@ -242,12 +242,20 @@ test.describe("admin foundation", () => {
     await expect(seededLessonEditForm.getByLabel("Lesson id (for open lesson link)")).toHaveValue(
       "mod1-l1"
     );
+    const goalVisibilityToggle = seededLessonEditForm.getByLabel("Show goal section");
     const cuesVisibilityToggle = seededLessonEditForm.getByLabel("Show cues section");
+    const drillVisibilityToggle = seededLessonEditForm.getByLabel("Show drill section");
+    const supportVisibilityToggle = seededLessonEditForm.getByLabel("Show extra help card");
+    await expect(goalVisibilityToggle).toBeChecked();
     await expect(cuesVisibilityToggle).toBeChecked();
+    await expect(drillVisibilityToggle).toBeChecked();
+    await expect(supportVisibilityToggle).toBeChecked();
 
     const checkpointCriteriaText = `Swim 12.5m relaxed and controlled ${unique}`;
+    await seededLessonEditForm.getByLabel("Section badge label (optional)").fill(`Focus ${unique}`);
     await seededLessonEditForm.getByLabel("Lesson goal").fill(`Lesson goal update ${unique}`);
     await cuesVisibilityToggle.uncheck();
+    await supportVisibilityToggle.uncheck();
     await seededLessonEditForm.getByLabel("Cues (one per line)").fill("Relax shoulders\nLong line");
     await seededLessonEditForm
       .getByLabel("Common mistakes (one per line)")
@@ -271,13 +279,19 @@ test.describe("admin foundation", () => {
     await expect(reopenedLessonEditForm.getByLabel("Drill title")).toHaveValue(
       "Relaxed 12.5m checkpoint"
     );
+    await expect(reopenedLessonEditForm.getByLabel("Section badge label (optional)")).toHaveValue(
+      `Focus ${unique}`
+    );
     await expect(reopenedLessonEditForm.getByLabel("Next step")).toHaveValue(
       `Repeat drill quality x3 ${unique}`
     );
     await expect(
       reopenedLessonEditForm.getByLabel("Checkpoint criteria (one per line)")
     ).toHaveValue(checkpointCriteriaText);
+    await expect(reopenedLessonEditForm.getByLabel("Show goal section")).toBeChecked();
+    await expect(reopenedLessonEditForm.getByLabel("Show drill section")).toBeChecked();
     await expect(reopenedLessonEditForm.getByLabel("Show cues section")).not.toBeChecked();
+    await expect(reopenedLessonEditForm.getByLabel("Show extra help card")).not.toBeChecked();
     await reopenedLessonEditForm.getByRole("button", { name: "Cancel" }).click();
     await focusModeBanner.getByRole("button", { name: "Clear focus" }).click();
     await expect(listTypeFilter).toHaveValue("all");
