@@ -51,6 +51,7 @@ describe("toPublishedCourseModules", () => {
             estMinutes: 7,
             lessonType: "drill",
             drillLabel: "Checkpoint",
+            supportStartAtLessonInModule: "2",
             passCriteria: ["Keep body line long"],
             goal: "Practice drill timing",
             cues: ["Cue A"],
@@ -88,6 +89,7 @@ describe("toPublishedCourseModules", () => {
       youtubeId: "abc123",
       lessonType: "drill",
       drillLabel: "Checkpoint",
+      supportStartAtLessonInModule: 2,
       goal: "Practice drill timing",
       cues: ["Cue A"],
       display: {
@@ -179,6 +181,7 @@ describe("toPublishedCourseModules", () => {
       title: "Technique drill",
       steps: ["Mapped summary fallback"],
     });
+    expect(mappedLesson?.supportStartAtLessonInModule).toBeUndefined();
     expect(mappedLesson?.nextStep).toBe("Continue to the next lesson.");
   });
 });

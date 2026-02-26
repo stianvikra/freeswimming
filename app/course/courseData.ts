@@ -7,6 +7,7 @@ export type CourseLesson = {
   estMinutes?: number;
   lessonType?: "learn" | "drill" | "swim";
   drillLabel?: string;
+  supportStartAtLessonInModule?: number;
   passCriteria?: string[];
   display?: {
     goal?: boolean;

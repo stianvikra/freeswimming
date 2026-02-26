@@ -180,12 +180,17 @@ const BUTTON_GUIDE = [
       {
         label: "Lesson body editor",
         meaning:
-          "For course lessons, this edits lesson goal, section badge label, cues, common mistakes, drill title/steps, checkpoint criteria, and next step.",
+          "For course lessons, this edits lesson goal, section badge label, cues, common mistakes, drill title/steps, checkpoint criteria, next step, and support-card timing.",
       },
       {
         label: "Section visibility",
         meaning:
           "Use checkboxes to show or hide goal, cues, common mistakes, drill block, pass criteria, next step, and the extra help card without deleting text.",
+      },
+      {
+        label: "Extra help start lesson number",
+        meaning:
+          "Use this optional number to delay the extra help card until later in a module (for example start at lesson 4).",
       },
       {
         label: "Clear focus",

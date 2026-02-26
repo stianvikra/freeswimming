@@ -252,7 +252,11 @@ test.describe("admin foundation", () => {
     await expect(supportVisibilityToggle).toBeChecked();
 
     const checkpointCriteriaText = `Swim 12.5m relaxed and controlled ${unique}`;
+    const supportStartLessonInModule = "3";
     await seededLessonEditForm.getByLabel("Section badge label (optional)").fill(`Focus ${unique}`);
+    await seededLessonEditForm
+      .getByLabel("Extra help start lesson number in module (optional)")
+      .fill(supportStartLessonInModule);
     await seededLessonEditForm.getByLabel("Lesson goal").fill(`Lesson goal update ${unique}`);
     await cuesVisibilityToggle.uncheck();
     await supportVisibilityToggle.uncheck();
@@ -282,6 +286,9 @@ test.describe("admin foundation", () => {
     await expect(reopenedLessonEditForm.getByLabel("Section badge label (optional)")).toHaveValue(
       `Focus ${unique}`
     );
+    await expect(
+      reopenedLessonEditForm.getByLabel("Extra help start lesson number in module (optional)")
+    ).toHaveValue(supportStartLessonInModule);
     await expect(reopenedLessonEditForm.getByLabel("Next step")).toHaveValue(
       `Repeat drill quality x3 ${unique}`
     );

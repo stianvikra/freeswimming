@@ -1313,6 +1313,8 @@ function CoursePageClient() {
   }, [courseLessonsFlat, nextId]);
   const isLessonDone = doneLessonIds.includes(activeLesson.id);
   const lessonType = activeLesson.lessonType ?? "drill";
+  const lessonNumberInModule =
+    moduleInfo.lessonIndexInModule >= 0 ? moduleInfo.lessonIndexInModule + 1 : 1;
   const lessonDisplay = activeLesson.display;
   const commonMistakes = activeLesson.commonMistakes ?? [];
   const showGoalSection = lessonDisplay?.goal !== false;
@@ -1324,7 +1326,12 @@ function CoursePageClient() {
     (lessonType === "drill" || lessonType === "swim") && lessonDisplay?.checkpoint !== false;
   const showNextStepSection = lessonDisplay?.nextStep !== false;
   const showPassOrNextCard = showPassCriteria || showNextStepSection;
-  const showExtraHelpCard = lessonDisplay?.support !== false;
+  const supportStartAtLessonInModule = activeLesson.supportStartAtLessonInModule;
+  const supportStartReached =
+    typeof supportStartAtLessonInModule === "number"
+      ? lessonNumberInModule >= supportStartAtLessonInModule
+      : true;
+  const showExtraHelpCard = lessonDisplay?.support !== false && supportStartReached;
   const showLessonPrimaryColumn = showGoalSection || showCuesSection || showCommonMistakesSection;
   const showLessonSecondaryColumn = showDrillSection || showPassOrNextCard || showExtraHelpCard;
   const drillBadgeLabel =

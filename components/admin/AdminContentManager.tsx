@@ -203,6 +203,7 @@ type LessonBodyEditState = {
   lessonId: string;
   lessonType: LessonTypeOption;
   drillLabel: string;
+  supportStartAtLessonInModule: string;
   goal: string;
   displayGoal: boolean;
   displayCues: boolean;
@@ -336,6 +337,10 @@ function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
     lessonId,
     lessonType: resolveLessonType(parseBodyString(item.body, "lessonType")),
     drillLabel: parseBodyString(item.body, "drillLabel") ?? "",
+    supportStartAtLessonInModule: (() => {
+      const value = parseBodyNumber(item.body, "supportStartAtLessonInModule");
+      return value && value >= 1 ? String(Math.floor(value)) : "";
+    })(),
     goal: parseBodyString(item.body, "goal") ?? item.summary ?? "",
     displayGoal: parseBodyBoolean(displayBody, "goal") ?? true,
     displayCues: parseBodyBoolean(displayBody, "cues") ?? true,
@@ -358,6 +363,12 @@ function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
     lessonId: value.lessonId.trim(),
     lessonType: value.lessonType,
     drillLabel: value.drillLabel.trim(),
+    supportStartAtLessonInModule: (() => {
+      const raw = value.supportStartAtLessonInModule.trim();
+      if (!raw) return null;
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isFinite(parsed) && parsed >= 1 ? parsed : Number.NaN;
+    })(),
     goal: value.goal.trim(),
     displayGoal: value.displayGoal,
     displayCues: value.displayCues,
@@ -392,6 +403,14 @@ function buildLessonBodyPayload(
     nextBody.drillLabel = normalized.drillLabel;
   } else {
     delete nextBody.drillLabel;
+  }
+  if (
+    typeof normalized.supportStartAtLessonInModule === "number" &&
+    Number.isFinite(normalized.supportStartAtLessonInModule)
+  ) {
+    nextBody.supportStartAtLessonInModule = normalized.supportStartAtLessonInModule;
+  } else {
+    delete nextBody.supportStartAtLessonInModule;
   }
   nextBody.goal = normalized.goal;
   nextBody.cues = normalized.cues;
@@ -945,6 +964,13 @@ export default function AdminContentManager() {
       }
       if (normalizedBody.drillLabel.length > 40) {
         return "Section badge label must be 40 characters or less.";
+      }
+      if (
+        Number.isNaN(normalizedBody.supportStartAtLessonInModule) ||
+        (typeof normalizedBody.supportStartAtLessonInModule === "number" &&
+          normalizedBody.supportStartAtLessonInModule > 200)
+      ) {
+        return "Extra help start lesson must be an integer between 1 and 200.";
       }
       if (normalizedBody.displayCues && normalizedBody.cues.length === 0) {
         return "Add at least one cue (one line per cue).";
@@ -1873,6 +1899,36 @@ export default function AdminContentManager() {
                                       className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
                                       placeholder="Defaults to Learn / Drill / Swim"
                                     />
+                                  </label>
+
+                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                    <span>Extra help start lesson number in module (optional)</span>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={200}
+                                      step={1}
+                                      value={editFormState.lessonBody.supportStartAtLessonInModule}
+                                      onChange={(event) =>
+                                        setEditFormState((prev) =>
+                                          prev?.lessonBody
+                                            ? {
+                                                ...prev,
+                                                lessonBody: {
+                                                  ...prev.lessonBody,
+                                                  supportStartAtLessonInModule: event.target.value,
+                                                },
+                                              }
+                                            : prev
+                                        )
+                                      }
+                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                      placeholder="Example: 4"
+                                    />
+                                    <p className="text-[11px] font-medium text-slate-500">
+                                      Leave empty to show extra help on all lessons where it is
+                                      enabled.
+                                    </p>
                                   </label>
 
                                   <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">

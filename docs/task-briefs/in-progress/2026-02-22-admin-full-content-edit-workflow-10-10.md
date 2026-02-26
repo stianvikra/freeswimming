@@ -200,6 +200,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
     - admin toggles for `goal`, `drill block`, and `extra help card`,
     - optional lesson section badge label override (`Learn/Drill/Swim` fallback),
     - learner rendering respects these controls with safe defaults.
+12. Lesson support-card timing policy:
+    - optional lesson body field `supportStartAtLessonInModule`,
+    - keep support card hidden until configured lesson number in current module,
+    - preserve safe fallback behavior when field is empty/invalid.
 
 ## Risks And Mitigations
 
@@ -217,6 +221,36 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. reopen this brief and continue from current implementation slice.
 
 ## Checkpoint Log
+
+- `2026-02-26`: Test hardening follow-up on branch `feat/admin-content-edit-phase12-support-policy-aw013`.
+  - Hardened mobile-only nav-state spec to skip before desktop/tablet page fixture setup:
+    - `tests/e2e/mobile-nav-state.spec.ts` now uses file-level skip based on viewport width (`<= 500` = phone profiles).
+  - Intent:
+    - prevent intermittent desktop Firefox `browserContext.newPage` timeout on a test that is out of scope for desktop/tablet.
+  - Validation:
+    - `npx playwright test tests/e2e/mobile-nav-state.spec.ts --project=desktop-firefox` (skipped as expected),
+    - `npx playwright test tests/e2e/mobile-nav-state.spec.ts --project=mobile-iphone-13-pro-max` (pass),
+    - `npm run verify:pre-pr` (pass; 67 passed, 149 skipped).
+
+- `2026-02-26`: Slice 12 started on branch `feat/admin-content-edit-phase12-support-policy-aw013`.
+  - Added optional lesson body field:
+    - `supportStartAtLessonInModule` in `courseData` and admin lesson editor.
+    - Validation enforces integer `1..200` when set.
+  - Persisted and mapped server-canonically:
+    - published mapping reads/normalizes `body.supportStartAtLessonInModule` in `lib/admin/content-course.ts`,
+    - baseline import now writes the field in `lib/admin/content-import.ts`.
+  - Learner rendering update on `/course`:
+    - support card shows only when `display.support !== false` and current lesson number in module is `>= supportStartAtLessonInModule` (when configured),
+    - empty field preserves existing behavior (support card allowed on all lessons where enabled).
+  - Tests updated:
+    - `tests/e2e/admin-foundation.spec.ts` adds edit/persistence assertion for support-start lesson number.
+    - `tests/unit/admin-content-course.test.ts` adds mapping assertion and default/undefined fallback assertion.
+  - Validation:
+    - `npm run test:unit -- tests/unit/admin-content-course.test.ts` (pass),
+    - `npx playwright test tests/e2e/admin-foundation.spec.ts --project=desktop-chromium` (pass with expected dev-bypass-dependent skip),
+    - `npm run verify:pre-pr` retried and showed non-deterministic e2e flake outside slice scope,
+    - targeted rerun for latest failing case:
+      - `npx playwright test tests/e2e/install-prompt.spec.ts --project=mobile-iphone-13-pro-max --grep "guest sees free-account backup prompt after completing three lessons"` (pass).
 
 - `2026-02-26`: Slice 11 started on branch `feat/admin-content-edit-phase11-lesson-visibility-label-aw013`.
   - Expanded lesson body editor controls:

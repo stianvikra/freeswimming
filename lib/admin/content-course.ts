@@ -34,6 +34,18 @@ function getNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+function normalizePositiveInteger(value: unknown): number | undefined {
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed) && parsed >= 1) return parsed;
+    return undefined;
+  }
+  const numeric = getNumber(value);
+  if (typeof numeric !== "number") return undefined;
+  const floored = Math.floor(numeric);
+  return floored >= 1 ? floored : undefined;
+}
+
 function getBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
@@ -171,6 +183,7 @@ export function toPublishedCourseModules(
       estMinutes: getNumber(body.estMinutes),
       lessonType: normalizeLessonType(body.lessonType),
       drillLabel: getString(body.drillLabel) ?? undefined,
+      supportStartAtLessonInModule: normalizePositiveInteger(body.supportStartAtLessonInModule),
       passCriteria: getStringArray(body.passCriteria).length
         ? getStringArray(body.passCriteria)
         : undefined,
