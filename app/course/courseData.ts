@@ -1,5 +1,12 @@
 // app/course/courseData.ts
 
+export type CourseSupportActionId = "videoAnalysis" | "poolsideGuide" | "guide0To1000" | "contact";
+
+export type CourseSupportCard = {
+  actions?: Partial<Record<CourseSupportActionId, boolean>>;
+  primaryAction?: CourseSupportActionId;
+};
+
 export type CourseLesson = {
   id: string; // used in URL: /course?lesson=<id>
   title: string;
@@ -8,6 +15,7 @@ export type CourseLesson = {
   lessonType?: "learn" | "drill" | "swim";
   drillLabel?: string;
   supportStartAtLessonInModule?: number;
+  supportCard?: CourseSupportCard;
   passCriteria?: string[];
   display?: {
     goal?: boolean;

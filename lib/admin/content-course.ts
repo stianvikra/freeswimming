@@ -1,4 +1,9 @@
-import { COURSE_MODULES, type CourseLesson, type CourseModule } from "@/app/course/courseData";
+import {
+  COURSE_MODULES,
+  type CourseLesson,
+  type CourseModule,
+  type CourseSupportActionId,
+} from "@/app/course/courseData";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -14,6 +19,13 @@ type PublishedCourseLessonRow = Pick<
   AdminContentRow,
   "id" | "parent_id" | "slug" | "title" | "summary" | "sort_order" | "body"
 >;
+
+const SUPPORT_ACTION_IDS: CourseSupportActionId[] = [
+  "videoAnalysis",
+  "poolsideGuide",
+  "guide0To1000",
+  "contact",
+];
 
 function isRecord(value: Json): value is Record<string, Json> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -125,6 +137,45 @@ function normalizeLessonDisplay(value: unknown): CourseLesson["display"] | undef
   return Object.keys(display).length > 0 ? display : undefined;
 }
 
+function normalizeSupportActionId(value: unknown): CourseSupportActionId | undefined {
+  const candidate = getString(value);
+  if (!candidate) return undefined;
+  if (candidate === "videoAnalysis") return candidate;
+  if (candidate === "poolsideGuide") return candidate;
+  if (candidate === "guide0To1000") return candidate;
+  if (candidate === "contact") return candidate;
+  return undefined;
+}
+
+function normalizeSupportCard(value: unknown): CourseLesson["supportCard"] | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const raw = value as Record<string, unknown>;
+  const rawActions =
+    raw.actions && typeof raw.actions === "object" && !Array.isArray(raw.actions)
+      ? (raw.actions as Record<string, unknown>)
+      : null;
+  const actions: Partial<Record<CourseSupportActionId, boolean>> = {};
+  if (rawActions) {
+    for (const actionId of SUPPORT_ACTION_IDS) {
+      const maybeValue = getBoolean(rawActions[actionId]);
+      if (typeof maybeValue === "boolean") {
+        actions[actionId] = maybeValue;
+      }
+    }
+  }
+
+  const primaryAction = normalizeSupportActionId(raw.primaryAction);
+  if (Object.keys(actions).length === 0 && !primaryAction) {
+    return undefined;
+  }
+  return {
+    actions: Object.keys(actions).length > 0 ? actions : undefined,
+    primaryAction,
+  };
+}
+
 export function toPublishedCourseModules(
   moduleRows: PublishedCourseModuleRow[],
   lessonRows: PublishedCourseLessonRow[],
@@ -184,6 +235,7 @@ export function toPublishedCourseModules(
       lessonType: normalizeLessonType(body.lessonType),
       drillLabel: getString(body.drillLabel) ?? undefined,
       supportStartAtLessonInModule: normalizePositiveInteger(body.supportStartAtLessonInModule),
+      supportCard: normalizeSupportCard(body.supportCard),
       passCriteria: getStringArray(body.passCriteria).length
         ? getStringArray(body.passCriteria)
         : undefined,

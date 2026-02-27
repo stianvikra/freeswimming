@@ -52,6 +52,15 @@ describe("toPublishedCourseModules", () => {
             lessonType: "drill",
             drillLabel: "Checkpoint",
             supportStartAtLessonInModule: "2",
+            supportCard: {
+              actions: {
+                videoAnalysis: true,
+                poolsideGuide: false,
+                guide0To1000: true,
+                contact: false,
+              },
+              primaryAction: "guide0To1000",
+            },
             passCriteria: ["Keep body line long"],
             goal: "Practice drill timing",
             cues: ["Cue A"],
@@ -90,6 +99,15 @@ describe("toPublishedCourseModules", () => {
       lessonType: "drill",
       drillLabel: "Checkpoint",
       supportStartAtLessonInModule: 2,
+      supportCard: {
+        actions: {
+          videoAnalysis: true,
+          poolsideGuide: false,
+          guide0To1000: true,
+          contact: false,
+        },
+        primaryAction: "guide0To1000",
+      },
       goal: "Practice drill timing",
       cues: ["Cue A"],
       display: {

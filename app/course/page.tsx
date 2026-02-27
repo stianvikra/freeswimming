@@ -48,6 +48,7 @@ import {
   COURSE_MODULES,
   DEFAULT_LESSON_ID,
   COURSE_LESSONS_FLAT,
+  type CourseSupportActionId,
   type CourseModule,
   type CourseLesson,
 } from "./courseData";
@@ -76,6 +77,36 @@ const DEFAULT_PASS_CRITERIA = [
   "Breathing stays controlled without rushing.",
   "Body line stays stable from start to finish.",
 ];
+const SUPPORT_ACTION_ORDER: CourseSupportActionId[] = [
+  "videoAnalysis",
+  "poolsideGuide",
+  "guide0To1000",
+  "contact",
+];
+const SUPPORT_ACTION_META: Record<
+  CourseSupportActionId,
+  {
+    label: string;
+    href: string;
+  }
+> = {
+  videoAnalysis: {
+    label: "Video Analysis (Optional)",
+    href: "/analysis",
+  },
+  poolsideGuide: {
+    label: "Poolside Guide",
+    href: "/plans?focus=poolside",
+  },
+  guide0To1000: {
+    label: "0-1000 Guide",
+    href: "/plans?focus=0-1000m",
+  },
+  contact: {
+    label: "Contact us",
+    href: "/contact",
+  },
+};
 const FALLBACK_LESSON: CourseLesson = COURSE_LESSONS_FLAT[0] ?? {
   id: DEFAULT_LESSON_ID,
   title: "Freestyle lesson",
@@ -1330,7 +1361,20 @@ function CoursePageClient() {
     typeof supportStartAtLessonInModule === "number"
       ? lessonNumberInModule >= supportStartAtLessonInModule
       : true;
-  const showExtraHelpCard = lessonDisplay?.support !== false && supportStartReached;
+  const supportCardActions = activeLesson.supportCard?.actions;
+  const enabledSupportActions = SUPPORT_ACTION_ORDER.filter((actionId) => {
+    if (actionId === "videoAnalysis") return supportCardActions?.videoAnalysis ?? true;
+    if (actionId === "poolsideGuide") return supportCardActions?.poolsideGuide ?? true;
+    if (actionId === "guide0To1000") return supportCardActions?.guide0To1000 ?? false;
+    return supportCardActions?.contact ?? false;
+  }).map((actionId) => ({ id: actionId, ...SUPPORT_ACTION_META[actionId] }));
+  const configuredPrimarySupportAction =
+    activeLesson.supportCard?.primaryAction &&
+    enabledSupportActions.some((action) => action.id === activeLesson.supportCard?.primaryAction)
+      ? activeLesson.supportCard.primaryAction
+      : null;
+  const showExtraHelpCard =
+    lessonDisplay?.support !== false && supportStartReached && enabledSupportActions.length > 0;
   const showLessonPrimaryColumn = showGoalSection || showCuesSection || showCommonMistakesSection;
   const showLessonSecondaryColumn = showDrillSection || showPassOrNextCard || showExtraHelpCard;
   const drillBadgeLabel =
@@ -2656,20 +2700,26 @@ function CoursePageClient() {
                         elsewhere.
                       </p>
                       <div className="mt-3 flex flex-col gap-2">
-                        <PressLink
-                          tier="cta"
-                          href="/analysis"
-                          className="flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                        >
-                          Video Analysis (Optional)
-                        </PressLink>
-                        <PressLink
-                          tier="nav"
-                          href="/programs"
-                          className="bg-white/92 flex items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200/70"
-                        >
-                          Poolside Guide
-                        </PressLink>
+                        {enabledSupportActions.map((action) => {
+                          const isPrimary =
+                            configuredPrimarySupportAction !== null &&
+                            configuredPrimarySupportAction === action.id;
+                          return (
+                            <PressLink
+                              key={action.id}
+                              tier={isPrimary ? "cta" : "nav"}
+                              href={action.href}
+                              className={cx(
+                                "flex items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold",
+                                isPrimary
+                                  ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
+                                  : "bg-white/92 text-slate-900 shadow-sm ring-1 ring-slate-200/70"
+                              )}
+                            >
+                              {action.label}
+                            </PressLink>
+                          );
+                        })}
                       </div>
                     </div>
                   ) : null}

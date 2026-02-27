@@ -180,12 +180,17 @@ const BUTTON_GUIDE = [
       {
         label: "Lesson body editor",
         meaning:
-          "For course lessons, this edits lesson goal, section badge label, cues, common mistakes, drill title/steps, checkpoint criteria, next step, and support-card timing.",
+          "For course lessons, this edits lesson goal, section badge label, cues, common mistakes, drill title/steps, checkpoint criteria, next step, support-card timing, and support-card actions.",
       },
       {
         label: "Section visibility",
         meaning:
           "Use checkboxes to show or hide goal, cues, common mistakes, drill block, pass criteria, next step, and the extra help card without deleting text.",
+      },
+      {
+        label: "Extra help actions",
+        meaning:
+          "Choose which actions appear inside Need extra help (Video Analysis, Poolside guide, 0-1000 guide, Contact) and optionally pick one highlighted primary action. If no primary is chosen, all actions use neutral style.",
       },
       {
         label: "Extra help start lesson number",
