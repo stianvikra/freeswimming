@@ -198,12 +198,19 @@ type EditFormState = {
 };
 
 type LessonTypeOption = "learn" | "drill" | "swim" | "";
+type SupportActionOption = "videoAnalysis" | "poolsideGuide" | "guide0To1000" | "contact";
+type SupportPrimaryActionOption = SupportActionOption | "";
 
 type LessonBodyEditState = {
   lessonId: string;
   lessonType: LessonTypeOption;
   drillLabel: string;
   supportStartAtLessonInModule: string;
+  supportActionVideoAnalysis: boolean;
+  supportActionPoolsideGuide: boolean;
+  supportActionGuide0To1000: boolean;
+  supportActionContact: boolean;
+  supportPrimaryAction: SupportPrimaryActionOption;
   goal: string;
   displayGoal: boolean;
   displayCues: boolean;
@@ -243,6 +250,12 @@ const LESSON_TYPE_OPTIONS: Array<{ value: LessonTypeOption; label: string }> = [
   { value: "learn", label: "Learn" },
   { value: "drill", label: "Drill" },
   { value: "swim", label: "Swim" },
+];
+const SUPPORT_ACTION_OPTIONS: Array<{ value: SupportActionOption; label: string }> = [
+  { value: "videoAnalysis", label: "Video analysis" },
+  { value: "poolsideGuide", label: "Poolside guide" },
+  { value: "guide0To1000", label: "0-1000 guide" },
+  { value: "contact", label: "Contact" },
 ];
 
 const INITIAL_FORM: FormState = {
@@ -320,10 +333,26 @@ function resolveLessonType(value: string | null): LessonTypeOption {
   return "";
 }
 
+function resolveSupportPrimaryAction(value: string | null): SupportPrimaryActionOption {
+  if (
+    value === "videoAnalysis" ||
+    value === "poolsideGuide" ||
+    value === "guide0To1000" ||
+    value === "contact"
+  ) {
+    return value;
+  }
+  return "";
+}
+
 function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
   const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
   const drillBody = isRecord(item.body) && isRecord(item.body.drill) ? item.body.drill : null;
   const displayBody = isRecord(item.body) && isRecord(item.body.display) ? item.body.display : null;
+  const supportCardBody =
+    isRecord(item.body) && isRecord(item.body.supportCard) ? item.body.supportCard : null;
+  const supportActionsBody =
+    supportCardBody && isRecord(supportCardBody.actions) ? supportCardBody.actions : null;
   const drillTitleRaw =
     drillBody && typeof drillBody.title === "string" ? drillBody.title.trim() : "";
   const drillStepsRaw =
@@ -341,6 +370,13 @@ function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
       const value = parseBodyNumber(item.body, "supportStartAtLessonInModule");
       return value && value >= 1 ? String(Math.floor(value)) : "";
     })(),
+    supportActionVideoAnalysis: parseBodyBoolean(supportActionsBody, "videoAnalysis") ?? true,
+    supportActionPoolsideGuide: parseBodyBoolean(supportActionsBody, "poolsideGuide") ?? true,
+    supportActionGuide0To1000: parseBodyBoolean(supportActionsBody, "guide0To1000") ?? false,
+    supportActionContact: parseBodyBoolean(supportActionsBody, "contact") ?? false,
+    supportPrimaryAction: resolveSupportPrimaryAction(
+      parseBodyString(supportCardBody, "primaryAction")
+    ),
     goal: parseBodyString(item.body, "goal") ?? item.summary ?? "",
     displayGoal: parseBodyBoolean(displayBody, "goal") ?? true,
     displayCues: parseBodyBoolean(displayBody, "cues") ?? true,
@@ -359,6 +395,18 @@ function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
 }
 
 function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
+  const supportActionVideoAnalysis = value.supportActionVideoAnalysis;
+  const supportActionPoolsideGuide = value.supportActionPoolsideGuide;
+  const supportActionGuide0To1000 = value.supportActionGuide0To1000;
+  const supportActionContact = value.supportActionContact;
+  const supportPrimaryAction =
+    (value.supportPrimaryAction === "videoAnalysis" && supportActionVideoAnalysis) ||
+    (value.supportPrimaryAction === "poolsideGuide" && supportActionPoolsideGuide) ||
+    (value.supportPrimaryAction === "guide0To1000" && supportActionGuide0To1000) ||
+    (value.supportPrimaryAction === "contact" && supportActionContact)
+      ? value.supportPrimaryAction
+      : "";
+
   return {
     lessonId: value.lessonId.trim(),
     lessonType: value.lessonType,
@@ -369,6 +417,11 @@ function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
       const parsed = Number.parseInt(raw, 10);
       return Number.isFinite(parsed) && parsed >= 1 ? parsed : Number.NaN;
     })(),
+    supportActionVideoAnalysis,
+    supportActionPoolsideGuide,
+    supportActionGuide0To1000,
+    supportActionContact,
+    supportPrimaryAction,
     goal: value.goal.trim(),
     displayGoal: value.displayGoal,
     displayCues: value.displayCues,
@@ -428,6 +481,15 @@ function buildLessonBodyPayload(
   existingDisplay.nextStep = normalized.displayNextStep;
   existingDisplay.support = normalized.displaySupport;
   nextBody.display = existingDisplay;
+  nextBody.supportCard = {
+    actions: {
+      videoAnalysis: normalized.supportActionVideoAnalysis,
+      poolsideGuide: normalized.supportActionPoolsideGuide,
+      guide0To1000: normalized.supportActionGuide0To1000,
+      contact: normalized.supportActionContact,
+    },
+    ...(normalized.supportPrimaryAction ? { primaryAction: normalized.supportPrimaryAction } : {}),
+  };
   nextBody.nextStep = normalized.nextStep;
   if (normalized.passCriteria.length > 0) {
     nextBody.passCriteria = normalized.passCriteria;
@@ -1930,6 +1992,140 @@ export default function AdminContentManager() {
                                       enabled.
                                     </p>
                                   </label>
+
+                                  <fieldset className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 sm:col-span-2">
+                                    <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                      Extra help actions
+                                    </legend>
+                                    <p className="text-xs text-slate-500">
+                                      Choose which actions appear inside the extra help card and
+                                      which one (if any) should be highlighted.
+                                    </p>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={
+                                            editFormState.lessonBody.supportActionVideoAnalysis
+                                          }
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      supportActionVideoAnalysis:
+                                                        event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show Video Analysis</span>
+                                      </label>
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={
+                                            editFormState.lessonBody.supportActionPoolsideGuide
+                                          }
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      supportActionPoolsideGuide:
+                                                        event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show Poolside guide</span>
+                                      </label>
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={
+                                            editFormState.lessonBody.supportActionGuide0To1000
+                                          }
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      supportActionGuide0To1000:
+                                                        event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show 0-1000 guide</span>
+                                      </label>
+                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                        <input
+                                          type="checkbox"
+                                          checked={editFormState.lessonBody.supportActionContact}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev?.lessonBody
+                                                ? {
+                                                    ...prev,
+                                                    lessonBody: {
+                                                      ...prev.lessonBody,
+                                                      supportActionContact: event.target.checked,
+                                                    },
+                                                  }
+                                                : prev
+                                            )
+                                          }
+                                          className="h-4 w-4 rounded border border-slate-300"
+                                        />
+                                        <span>Show Contact</span>
+                                      </label>
+                                    </div>
+
+                                    <label className="space-y-1 text-xs font-medium text-slate-700">
+                                      <span>Primary highlighted action (optional)</span>
+                                      <select
+                                        value={editFormState.lessonBody.supportPrimaryAction}
+                                        onChange={(event) =>
+                                          setEditFormState((prev) =>
+                                            prev?.lessonBody
+                                              ? {
+                                                  ...prev,
+                                                  lessonBody: {
+                                                    ...prev.lessonBody,
+                                                    supportPrimaryAction: event.target
+                                                      .value as SupportPrimaryActionOption,
+                                                  },
+                                                }
+                                              : prev
+                                          )
+                                        }
+                                        className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                      >
+                                        <option value="">None (all neutral)</option>
+                                        {SUPPORT_ACTION_OPTIONS.map((option) => (
+                                          <option key={option.value} value={option.value}>
+                                            {option.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  </fieldset>
 
                                   <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
                                     <span>Lesson goal</span>

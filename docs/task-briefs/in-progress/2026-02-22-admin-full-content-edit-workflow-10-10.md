@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-22`
-- `updated`: `2026-02-26`
+- `updated`: `2026-02-27`
 
 ## Goal
 
@@ -208,6 +208,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
     - show pass criteria by default on lesson page regardless of lesson type,
     - preserve explicit admin hide control via `Show pass criteria` toggle,
     - verify `Lesson type` is editable and persists in admin edit workflow.
+14. Extra-help action configurability:
+    - lesson-level toggles for support actions (`Video analysis`, `Poolside guide`, `0-1000 guide`, `Contact`),
+    - optional primary-highlight selection for support actions (`none` allowed),
+    - learner support card renders only enabled actions and highlights only the selected primary action.
 
 ## Risks And Mitigations
 
@@ -225,6 +229,33 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. reopen this brief and continue from current implementation slice.
 
 ## Checkpoint Log
+
+- `2026-02-27`: Slice 14 started on branch `feat/admin-content-edit-phase14-support-actions-aw013`.
+  - Expanded lesson body editor support-card controls:
+    - added per-action visibility toggles for:
+      - `Video analysis`,
+      - `Poolside guide`,
+      - `0-1000 guide`,
+      - `Contact`.
+    - added `Primary highlighted action` select with explicit `None (all neutral)` option.
+  - Extended server-canonical lesson model and published mapping:
+    - `CourseSupportCard.actions` now controls which support actions render per lesson.
+    - `CourseSupportCard.primaryAction` now controls which action gets blue highlight.
+    - mapper normalization enforces valid action ids and ignores invalid/disabled primary values.
+  - Updated learner `/course` support card rendering:
+    - supports dynamic action list from lesson config,
+    - renders only enabled actions,
+    - applies blue style only to valid selected primary action.
+  - Updated Help/Guide copy for non-technical admins to explain support action controls and primary highlight behavior.
+  - Added/updated tests:
+    - `tests/e2e/course-support-card-actions.spec.ts` (new),
+    - `tests/e2e/admin-foundation.spec.ts` (support action edit/persistence assertions),
+    - `tests/unit/admin-content-course.test.ts` (mapping assertions).
+  - Validation:
+    - `npm run typecheck` (pass),
+    - `npx vitest run tests/unit/admin-content-course.test.ts tests/unit/admin-content.test.ts` (pass),
+    - `npx playwright test tests/e2e/course-support-card-actions.spec.ts tests/e2e/admin-foundation.spec.ts --project=desktop-chromium` (pass, expected env-based skip on allowlisted admin flow),
+    - `npm run verify:pre-pr` (pass: `69 passed`, `159 skipped`).
 
 - `2026-02-26`: Slice 13 started on branch `feat/admin-content-edit-phase13-pass-criteria-default-aw013`.
   - Updated learner lesson rendering:

@@ -246,10 +246,21 @@ test.describe("admin foundation", () => {
     const cuesVisibilityToggle = seededLessonEditForm.getByLabel("Show cues section");
     const drillVisibilityToggle = seededLessonEditForm.getByLabel("Show drill section");
     const supportVisibilityToggle = seededLessonEditForm.getByLabel("Show extra help card");
+    const supportVideoToggle = seededLessonEditForm.getByLabel("Show Video Analysis");
+    const supportPoolsideToggle = seededLessonEditForm.getByLabel("Show Poolside guide");
+    const support0To1000Toggle = seededLessonEditForm.getByLabel("Show 0-1000 guide");
+    const supportContactToggle = seededLessonEditForm.getByLabel("Show Contact");
+    const supportPrimarySelect = seededLessonEditForm.getByLabel(
+      "Primary highlighted action (optional)"
+    );
     await expect(goalVisibilityToggle).toBeChecked();
     await expect(cuesVisibilityToggle).toBeChecked();
     await expect(drillVisibilityToggle).toBeChecked();
     await expect(supportVisibilityToggle).toBeChecked();
+    await expect(supportVideoToggle).toBeChecked();
+    await expect(supportPoolsideToggle).toBeChecked();
+    await expect(support0To1000Toggle).not.toBeChecked();
+    await expect(supportContactToggle).not.toBeChecked();
 
     const checkpointCriteriaText = `Swim 12.5m relaxed and controlled ${unique}`;
     const supportStartLessonInModule = "3";
@@ -261,6 +272,10 @@ test.describe("admin foundation", () => {
     await seededLessonEditForm.getByLabel("Lesson goal").fill(`Lesson goal update ${unique}`);
     await cuesVisibilityToggle.uncheck();
     await supportVisibilityToggle.uncheck();
+    await supportPoolsideToggle.uncheck();
+    await support0To1000Toggle.check();
+    await supportContactToggle.check();
+    await supportPrimarySelect.selectOption("contact");
     await seededLessonEditForm.getByLabel("Cues (one per line)").fill("Relax shoulders\nLong line");
     await seededLessonEditForm
       .getByLabel("Common mistakes (one per line)")
@@ -301,6 +316,13 @@ test.describe("admin foundation", () => {
     await expect(reopenedLessonEditForm.getByLabel("Show drill section")).toBeChecked();
     await expect(reopenedLessonEditForm.getByLabel("Show cues section")).not.toBeChecked();
     await expect(reopenedLessonEditForm.getByLabel("Show extra help card")).not.toBeChecked();
+    await expect(reopenedLessonEditForm.getByLabel("Show Video Analysis")).toBeChecked();
+    await expect(reopenedLessonEditForm.getByLabel("Show Poolside guide")).not.toBeChecked();
+    await expect(reopenedLessonEditForm.getByLabel("Show 0-1000 guide")).toBeChecked();
+    await expect(reopenedLessonEditForm.getByLabel("Show Contact")).toBeChecked();
+    await expect(
+      reopenedLessonEditForm.getByLabel("Primary highlighted action (optional)")
+    ).toHaveValue("contact");
     await reopenedLessonEditForm.getByRole("button", { name: "Cancel" }).click();
     await focusModeBanner.getByRole("button", { name: "Clear focus" }).click();
     await expect(listTypeFilter).toHaveValue("all");
