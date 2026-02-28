@@ -59,6 +59,137 @@ Sizes for 1080p canvas:
 - Max transition length: `180-260ms`
 - Motion easing: `Ease out` (avoid bouncy effects)
 
+### Project Settings Dialog (exact values)
+
+Use these exact values in the Camtasia `Project Settings` popup you showed:
+
+- `Dimensions`: `FHD (1920x1080)`
+- `Width`: `1920`
+- `Height`: `1080`
+- `Color`: `#EAF3FF` (light brand background; avoids black edge flashes)
+- `Frame Rate`: `30 fps`
+- `Auto-normalize loudness`: `Off` (recommended for best control)
+
+If you need speed over precision, you can set `Auto-normalize loudness` to `On`, but then still do a final ear-check for pumping.
+
+## Visual Terms (plain language)
+
+These are the terms used in this pack:
+
+- `Overlay`:
+  - anything placed on top of video (text, labels, boxes, badges).
+  - use when you need to explain a point while footage keeps playing.
+- `Chip`:
+  - a small rounded label (example: `Drill`, `Learn`, `Optional`).
+  - short, 1-2 words only.
+- `Card`:
+  - a larger rounded box grouping related text or buttons.
+  - use when multiple items should be read as one block.
+- `Plate`:
+  - a semi-transparent background behind text for readability.
+  - mainly used on darker swim footage.
+- `Padding`:
+  - empty space inside a shape between border and text.
+  - more padding = calmer, more premium look.
+
+## Where Each Visual Element Is Used In This 60s Video
+
+- `Overlay`:
+  - `[0:00-0:03]` hook headline.
+  - `[0:03-0:09]` problem bullets.
+  - `[0:52-1:00]` CTA text.
+- `Chip`:
+  - `[0:19-0:31]` lesson labels (`Learn`, `Drill`, `Pass criteria`) as quick callouts.
+  - `[0:31-0:41]` optional support labels.
+- `Card`:
+  - `[0:31-0:41]` support block (`Need extra help?`).
+  - `[0:52-1:00]` CTA block with URL.
+- `Plate`:
+  - any swim shot where white text is hard to read.
+  - primary at `[0:00-0:03]` and `[0:41-0:52]`.
+- `Padding`:
+  - all chips/cards/plates, always consistent to keep visual rhythm.
+
+## Camtasia Build Recipe (step-by-step)
+
+Use this once, then reuse as presets for all future videos.
+
+### 1) Build a base chip preset
+
+1. `Annotations` -> add `Rounded Rectangle`.
+2. Fill:
+   - color `#FFFFFF`
+   - opacity `90%`
+3. Border:
+   - color `#E2E8F0`
+   - thickness `1px`
+4. Corner radius: set high (pill look).
+5. Shadow:
+   - blur medium
+   - opacity `12%`
+   - soft downward offset
+6. Add text on top:
+   - font `SF Pro` or `Inter`
+   - size `24-28`
+   - color `#0F172A`
+7. Inner spacing (`padding` target):
+   - top/bottom: `12px`
+   - left/right: `18px`
+8. Select shape + text -> `Group`.
+9. Save group to Library as `FS_Chip_Default`.
+
+### 2) Build a base card preset
+
+1. Duplicate the chip preset.
+2. Resize to larger container.
+3. Increase padding:
+   - top/bottom: `20-24px`
+   - left/right: `24-28px`
+4. Text sizes:
+   - heading `44-56`
+   - body `30-36`
+5. Save as `FS_Card_Default`.
+
+### 3) Build a dark-footage text plate preset
+
+1. Add `Rounded Rectangle`.
+2. Fill:
+   - color `#0F172A`
+   - opacity `58%`
+3. Border: none.
+4. Radius: `12px`.
+5. Text:
+   - color `#FFFFFF`
+6. Padding:
+   - top/bottom: `16px`
+   - left/right: `22px`
+7. Save as `FS_Plate_DarkFootage`.
+
+### 4) Build CTA button preset
+
+1. Add rounded rectangle.
+2. Fill gradient:
+   - top `#3B82F6`
+   - bottom `#2563EB`
+3. Text:
+   - `Semibold`
+   - white
+4. Padding:
+   - top/bottom `14-16px`
+   - left/right `28-34px`
+5. Save as `FS_Button_Primary`.
+
+### 5) Apply in timeline consistently
+
+- Keep visual elements on dedicated tracks:
+  - `Track 1`: base footage
+  - `Track 2`: app captures
+  - `Track 3`: plates/cards
+  - `Track 4`: text/chips
+  - `Track 5`: logo/CTA accents
+- Never freehand-style a new chip/card mid-edit.
+- Always duplicate from Library presets.
+
 ## 60s Master Timeline (Locked)
 
 ### [0:00-0:03] Hook (swim footage + headline)
@@ -154,6 +285,13 @@ For dark swim shots:
 - Text color: `#FFFFFF`
 - Plate radius: `12px`
 - Padding: `16px vertical`, `22px horizontal`
+
+### Overlay spacing rules (fixed)
+
+- Chip text padding: `12px vertical`, `18px horizontal`
+- Card text padding: `20-24px vertical`, `24-28px horizontal`
+- Minimum gap between stacked overlays: `16px`
+- Safe margin from screen edge: `64px` desktop, `90px` if content may be reused in vertical crops
 
 ## Motion and Transitions
 
