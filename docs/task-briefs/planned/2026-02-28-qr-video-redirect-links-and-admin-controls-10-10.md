@@ -12,6 +12,8 @@
 
 QR codes should point to stable freeswimming.org links that can be re-targeted in admin without reprinting QR assets, while remaining secure, measurable, and fast.
 
+Desktop users should also be able to scan a visible QR code with their phone to open the same destination flow quickly.
+
 ## Platform 10/10 Scorecard Mapping (Required)
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
@@ -57,6 +59,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Add stable QR redirect route namespace on freeswimming.org (example: `/go/v/[slug]`).
 - Add admin management UI for QR links:
   - list, create, edit, disable/archive, copy URL.
+  - show generated QR preview for each slug.
+  - show stable URL and current forwarding destination side-by-side.
+  - allow destination edits with clear validation and change confirmation.
 - Add secure destination validation rules:
   - protocol allowlist (`https` only),
   - hostname allowlist (YouTube/Vimeo/freeswimming-owned domains configurable),
@@ -65,6 +70,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - temporary redirect (`302`/`307`) for mutable targets.
 - Add fallback behavior:
   - inactive/missing slug -> controlled fallback page (`404` or help page).
+- Add desktop QR UX on relevant pages:
+  - optional "Open on phone" QR card for desktop/tablet,
+  - hidden on small/mobile viewports by default,
+  - consistent placement and sizing so it is scannable without breaking layout.
 - Add analytics instrumentation for redirect hits.
 - Add QR asset generation tooling:
   - generate SVG + PNG from stable `/go/...` URLs.
@@ -100,7 +109,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - create a slug,
   - set destination,
   - disable/enable/update slug,
-  - copy stable link.
+  - copy stable link,
+  - see QR preview and current destination URL,
+  - edit forwarding URL safely with validation feedback.
+- Desktop users can see a scannable QR entry point on selected routes ("Open on phone"), while mobile users do not get duplicate QR clutter.
 - QR generation outputs deterministic files for configured slugs (`.svg`, `.png`).
 - Analytics event emitted on redirect hit with safe payload.
 
@@ -146,6 +158,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - `loading`, `empty`, `error`, `retry`, `success`.
 - Fast operational flow:
   - add or update one QR target in under 30 seconds.
+- Desktop consumption flow:
+  - QR has sufficient contrast, quiet zone, and minimum physical size target for reliable scanning.
 - Security-first defaults:
   - reject unsafe destination inputs by default.
 - Accessibility:
@@ -212,9 +226,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Implementation Slices (Planned)
 
 1. Data model + secure redirect route (`/go/v/[slug]`) + fallback behavior.
-2. Admin CRUD for QR links + copy stable URL UX.
-3. Analytics events + audit logs + security negative-path tests.
-4. QR asset generation command and runbook.
+2. Admin CRUD for QR links + QR preview + stable/destination URL visibility/edit flow.
+3. Desktop "Open on phone" QR presentation pattern on selected routes.
+4. Analytics events + audit logs + security negative-path tests.
+5. QR asset generation command and runbook.
 
 ## Completion Record (fill when done)
 
