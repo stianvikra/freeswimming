@@ -19,6 +19,9 @@ test.describe("auth sign-in ux", () => {
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "Sign-in email sent. Enter the code below."
     );
+    await expect(page.getByTestId("auth-request-status")).toContainText(
+      "If you don't see it, check your spam/junk folder."
+    );
     await expect(page.getByLabel("Email")).toHaveValue("test@freeswimming.org");
     await expect(page.getByLabel("Sign-in code")).toBeVisible();
     await expect(page.getByTestId("auth-resend-button")).toBeVisible();
