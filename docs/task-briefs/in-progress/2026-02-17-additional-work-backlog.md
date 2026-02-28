@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-17`
-- `updated`: `2026-02-22`
+- `updated`: `2026-02-28`
 
 ## Purpose
 
@@ -28,6 +28,15 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
 | `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `planned`     |
 | `AW-013` | Full admin content editing UX (modules/lessons/pages/products)             | `high`   | `in-progress` |
+| `AW-014` | Workout Builder Garmin-familiar orchestration epic                         | `high`   | `planned`     |
+| `AW-015` | Workout data contract and step engine                                      | `high`   | `planned`     |
+| `AW-016` | Drill library, templates, and favorites                                    | `high`   | `planned`     |
+| `AW-017` | Workout builder + poolside execution UX                                    | `high`   | `planned`     |
+| `AW-018` | Program builder calendar + completion tracking                             | `high`   | `planned`     |
+| `AW-019` | AI plan generator with JSON guardrails                                     | `high`   | `planned`     |
+| `AW-020` | Garmin-ready export adapters + PDF                                         | `high`   | `planned`     |
+| `AW-021` | Garmin Training API partner integration                                    | `high`   | `blocked`     |
+| `AW-022` | Workout commercial + analytics funnel                                      | `high`   | `planned`     |
 
 ## Already delivered (no new brief required)
 
