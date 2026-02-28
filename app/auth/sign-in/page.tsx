@@ -45,7 +45,8 @@ export default async function SignInPage({ searchParams }: Props) {
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Sign in to My Library</h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Enter your email and we&apos;ll send an e-mail with your one-time login code.
+            Enter your email and we&apos;ll send an e-mail with your one-time login code. If you
+            don&apos;t see it after a minute, check your spam/junk folder.
           </p>
 
           <AuthRequestStatus sent={sent} error={error} cooldownUntilMs={cooldownUntil} />

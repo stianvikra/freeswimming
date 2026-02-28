@@ -58,7 +58,7 @@ export default function AuthRequestStatus({ sent, error, cooldownUntilMs }: Prop
         ? formatLoginCodeCooldownMessageFromSeconds(remainingSeconds)
         : "You can request a new login code now."
       : state === "sent"
-        ? "Sign-in email sent. Enter the code below."
+        ? "Sign-in email sent. Enter the code below. If you don't see it, check your spam/junk folder."
         : error;
 
   const style = STYLE_BY_STATE[state];
