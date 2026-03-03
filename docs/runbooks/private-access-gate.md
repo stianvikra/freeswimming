@@ -61,10 +61,10 @@ Preview cookie clear URL:
 
 For Playwright private-gate verification (`npm run test:e2e:private-gate`):
 
-- preferred: `PW_SITE_LOCK_PASSWORD=<plain-preview-password>`
-- fallback: `PW_SITE_LOCK_BYPASS_TOKEN=<same value as SITE_LOCK_BYPASS_TOKEN>`
+- automation default: `PW_SITE_LOCK_BYPASS_TOKEN=<same value as SITE_LOCK_BYPASS_TOKEN>`
+- force password flow coverage: `PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD=<plain-preview-password>`
 
-Use fallback only when password is unavailable; password-backed runs are required when validating unlock UX copy/behavior.
+Password-backed runs are required when validating unlock UX copy/behavior.
 
 ## Security Notes
 

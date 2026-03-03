@@ -77,6 +77,16 @@ This file defines how coding agents should collaborate in this repository.
 - After `2` consecutive weekly green runs on baseline performance budgets:
   - explicitly prompt the owner to tighten one stretch target step.
   - record tighten/hold/revert decision in the active brief or PR summary.
+- Codex sandbox efficiency default:
+  - for known port-binding or local web-server commands, run with escalated permissions first (do not attempt a failing sandbox run first).
+  - treat these as escalation-first commands:
+    - `npm run verify`
+    - `npm run verify:pre-pr`
+    - `npm run verify:pre-merge`
+    - `npm run build`
+    - `npm run test:e2e*` / `npx playwright test`
+    - `npm run dev`
+  - if owner is prompted for command approval, recommend one-time scoped approvals (`Yes, and don't ask again`) for recurring safe prefixes to reduce repeated interruptions.
 
 ## Automation-First Delivery Contract (Required)
 
@@ -132,11 +142,14 @@ This file defines how coding agents should collaborate in this repository.
 - Before merge:
   - run `npm run verify:pre-merge`.
 - For private-gate runs (`SITE_LOCK_ENABLED=1`):
-  - provide `PW_SITE_LOCK_PASSWORD` (preferred, covers real unlock form flow), or
-  - provide `PW_SITE_LOCK_BYPASS_TOKEN` (allowed fallback for owner/debug automation when password is unavailable).
-- If private-gate UX/password behavior changed, do not rely on bypass-only runs; include a password-backed run.
+  - automation default uses `PW_SITE_LOCK_BYPASS_TOKEN` (auto-wired from `SITE_LOCK_BYPASS_TOKEN` or `.env.local` when available),
+  - set `PW_SITE_LOCK_USE_PASSWORD=1` + `PW_SITE_LOCK_PASSWORD` to force real unlock form flow coverage.
+- If private-gate UX/password behavior changed, require at least one password-backed run (`PW_SITE_LOCK_USE_PASSWORD=1`).
 - Keep Playwright coverage aligned to supported matrix (mobile/tablet/desktop + major engines).
 - Do not silently skip tests to make CI pass; document rationale in brief/PR when skips are intentional.
+- Execution behavior in Codex:
+  - run release-gate commands with escalation-first strategy to avoid redundant failed attempts under sandbox networking restrictions.
+  - only fall back to non-escalated runs for fast read-only checks that are known to succeed in sandbox.
 
 ## Failure And Flake Protocol
 

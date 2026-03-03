@@ -17,8 +17,8 @@ Use this runbook for reliable local validation when private-access (site lock) i
   - pre-PR: `npm run verify:pre-pr`
   - pre-merge: `npm run verify:pre-merge`
   - private-gate env when lock is enabled:
-    - preferred: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
-    - fallback: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_BYPASS_TOKEN="<token>" npm run verify:pre-merge`
+    - automation default (auto-wires token when available): `SITE_LOCK_ENABLED=1 npm run verify:pre-merge`
+    - force password-flow coverage: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
 - If npm is missing in a non-interactive shell, run script directly:
   - `bash ./scripts/run-verify-open.sh`
   - script auto-attempts `nvm` bootstrap before failing.
@@ -33,6 +33,16 @@ To prevent local E2E from being blocked by an already running `next dev`:
 - Default port is `3100` (not `3000`).
 - Default Next build dir is `.next-playwright` (isolated from normal `.next`).
 - Public-mode E2E default is `SITE_LOCK_ENABLED=0`.
+
+Codex runtime note:
+
+- In Codex sandbox, full verify/build/e2e commands can fail on local port binding.
+- Use escalation-first execution for these commands to avoid one failing attempt before rerun:
+  - `npm run verify`
+  - `npm run verify:pre-pr`
+  - `npm run verify:pre-merge`
+  - `npm run build`
+  - `npm run test:e2e*` / `npx playwright test`
 
 Optional overrides:
 
@@ -68,7 +78,8 @@ This folder is git-ignored and kept locally.
   - `npm run test:e2e:mobile` (if touching mobile/nav/auth/guide flows)
 - Before merge:
   - run full `npm run verify:pre-merge`.
-  - if testing private mode, provide `PW_SITE_LOCK_PASSWORD` (preferred) or `PW_SITE_LOCK_BYPASS_TOKEN` (fallback).
+  - if validating private unlock UX, force password mode:
+    - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
 
 ## CI and Nightly Automation
 
