@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-03-my-library-new-content-notice-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-03`
 - `updated`: `2026-03-03`
@@ -42,7 +42,7 @@ Logged-in learners get a clear, low-friction notice in `My Library` when new `pu
 - Depends on stable published-content identifiers from course content APIs.
 - Depends on auth identity availability for per-user local seen state keying.
 - Related brief (separate implementation track):
-  - `docs/task-briefs/planned/2026-03-03-admin-preview-mode-and-open-lesson-preview-10-10.md`
+  - `docs/task-briefs/done/2026-03-03-admin-preview-mode-and-open-lesson-preview-10-10.md`
 
 ## Data Placement And Sync Contract (Required)
 
@@ -120,3 +120,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 1. `git status -sb`
 2. `git log --oneline -n 10`
 3. reopen this brief and continue from latest checkpoint.
+
+## Checkpoint Log
+
+- `2026-03-03 | kickoff from main after preview-mode merge | moved brief from planned->in-progress and confirmed execution order (preview-mode done, library notice next) | next: implement notice banner + signature contract + tests`
