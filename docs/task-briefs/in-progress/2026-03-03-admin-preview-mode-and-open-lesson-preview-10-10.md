@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-03-admin-preview-mode-and-open-lesson-preview-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-03`
 - `updated`: `2026-03-03`
@@ -135,3 +135,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 1. `git status -sb`
 2. `git log --oneline -n 10`
 3. reopen this brief and continue from latest checkpoint.
+
+## Checkpoint Log
+
+- `2026-03-03 | c87c5b4 | implementation complete for slice scope | moved brief from planned->in-progress; implemented preview-mode core on admin links + /api/course/content gate + /course banner/state + preview-local progress isolation + noindex headers + new unit/e2e coverage; verification gate npm run verify:pre-pr passed | next: push branch and open/update PR in Safari`

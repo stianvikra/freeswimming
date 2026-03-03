@@ -7,6 +7,7 @@ import type {
   AdminContentType,
 } from "@/lib/admin/content";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
+import { buildCoursePreviewHref, resolveCoursePreviewModeFromStatus } from "@/lib/course/preview";
 
 const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = [
   { value: "course_module", label: "Course module" },
@@ -231,6 +232,7 @@ type CourseLessonWorkspaceItem = {
   id: string;
   title: string;
   slug: string;
+  status: AdminContentStatus;
   sortOrder: number;
   parentId: string | null;
   moduleLabel: string | null;
@@ -505,6 +507,25 @@ function lessonOpenHref(item: AdminContentItemRow): string {
   return `/course?lesson=${encodeURIComponent(lessonId)}`;
 }
 
+function lessonPreviewHref(item: AdminContentItemRow): string {
+  const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+  return buildCoursePreviewHref({
+    lessonId,
+    mode: resolveCoursePreviewModeFromStatus(item.status),
+    previewType: "lesson",
+    previewRef: item.slug,
+  });
+}
+
+function modulePreviewHref(item: AdminContentItemRow, lessonId: string): string {
+  return buildCoursePreviewHref({
+    lessonId,
+    mode: resolveCoursePreviewModeFromStatus(item.status),
+    previewType: "module",
+    previewRef: item.slug,
+  });
+}
+
 function toEditFormState(item: AdminContentItemRow): EditFormState {
   return {
     title: item.title,
@@ -585,6 +606,7 @@ export default function AdminContentManager() {
           id: item.id,
           title: item.title,
           slug: item.slug,
+          status: item.status,
           sortOrder: item.sort_order,
           parentId: item.parent_id,
           moduleLabel: item.parent_id ? (moduleLabelById.get(item.parent_id) ?? null) : null,
@@ -593,6 +615,27 @@ export default function AdminContentManager() {
         })),
     [items, moduleLabelById]
   );
+
+  const firstRuntimeLessonIdByModuleId = useMemo(() => {
+    const byModuleId = new Map<string, string>();
+
+    const sortedLessons = [...courseLessonWorkspaceItems]
+      .filter((item) => item.parentId && moduleIdSet.has(item.parentId))
+      .sort((left, right) => {
+        const parentCompare = (left.parentId ?? "").localeCompare(right.parentId ?? "");
+        if (parentCompare !== 0) return parentCompare;
+        if (left.sortOrder !== right.sortOrder) return left.sortOrder - right.sortOrder;
+        return left.title.localeCompare(right.title);
+      });
+
+    for (const lesson of sortedLessons) {
+      if (!lesson.parentId) continue;
+      if (byModuleId.has(lesson.parentId)) continue;
+      byModuleId.set(lesson.parentId, lesson.runtimeLessonId);
+    }
+
+    return byModuleId;
+  }, [courseLessonWorkspaceItems, moduleIdSet]);
 
   const unlinkedLessonCount = useMemo(
     () =>
@@ -1641,7 +1684,7 @@ export default function AdminContentManager() {
             </div>
             <p className="mt-2 text-xs text-slate-600">
               Pick a module scope to sync workspace and list view, then jump straight to row edit or
-              open the public lesson page.
+              open preview/public lesson pages.
             </p>
             <div className="mt-3 flex flex-wrap items-end gap-2">
               <label className="space-y-1 text-xs font-medium text-slate-700">
@@ -1703,6 +1746,19 @@ export default function AdminContentManager() {
                         Edit lesson
                       </button>
                       <a
+                        href={buildCoursePreviewHref({
+                          lessonId: lesson.runtimeLessonId,
+                          mode: resolveCoursePreviewModeFromStatus(lesson.status),
+                          previewType: "lesson",
+                          previewRef: lesson.slug,
+                        })}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                      >
+                        Open preview
+                      </a>
+                      <a
                         href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
                         target="_blank"
                         rel="noreferrer"
@@ -1760,6 +1816,16 @@ export default function AdminContentManager() {
             {sortedItems.map((item) => {
               const isEditingRow = editingItemId === item.id;
               const isInlineEditable = canEditInline(item);
+              const rowPreviewHref =
+                item.content_type === "course_lesson"
+                  ? lessonPreviewHref(item)
+                  : item.content_type === "course_module"
+                    ? (() => {
+                        const firstLessonId = firstRuntimeLessonIdByModuleId.get(item.id);
+                        if (!firstLessonId) return null;
+                        return modulePreviewHref(item, firstLessonId);
+                      })()
+                    : null;
               const rowBusy = Boolean(
                 updatingId || deletingId || restoringRevisionId || savingEditId
               );
@@ -2495,6 +2561,23 @@ export default function AdminContentManager() {
                       </button>
                       {!isEditingRow ? (
                         <>
+                          {item.content_type === "course_lesson" ||
+                          item.content_type === "course_module" ? (
+                            rowPreviewHref ? (
+                              <a
+                                href={rowPreviewHref}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                              >
+                                Open preview
+                              </a>
+                            ) : (
+                              <span className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 px-3 text-xs font-medium text-slate-500">
+                                Open preview (no lessons)
+                              </span>
+                            )
+                          ) : null}
                           {item.content_type === "course_lesson" ? (
                             <a
                               href={lessonOpenHref(item)}

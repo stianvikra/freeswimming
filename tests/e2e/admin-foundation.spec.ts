@@ -226,6 +226,10 @@ test.describe("admin foundation", () => {
       .filter({ hasText: "Welcome & Course Structure" })
       .first();
     await expect(workspaceLessonRow).toBeVisible();
+    await expect(workspaceLessonRow.getByRole("link", { name: "Open preview" })).toHaveAttribute(
+      "href",
+      /\/course\?lesson=mod1-l1&preview=1&previewMode=published&previewType=lesson&previewRef=course-lesson-mod1-l1/
+    );
     await expect(workspaceLessonRow.getByRole("link", { name: "Open lesson" })).toHaveAttribute(
       "href",
       /\/course\?lesson=mod1-l1/

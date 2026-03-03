@@ -41,7 +41,11 @@ import {
   normalizeVideoProgressRecord,
   type CourseProgressRow,
 } from "@/lib/course/progress";
-import { COURSE_LAST_LESSON_STORAGE_KEY } from "@/lib/course/resume";
+import {
+  getCourseProgressStorageKeys,
+  parseCoursePreviewMode,
+  type CoursePreviewMode,
+} from "@/lib/course/preview";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 import {
@@ -53,11 +57,7 @@ import {
   type CourseLesson,
 } from "./courseData";
 
-const STORAGE_KEY = COURSE_LAST_LESSON_STORAGE_KEY;
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
-const DONE_STORAGE_KEY = "fs_course_done_lessons";
-const DONE_CONFIRMATION_STORAGE_KEY = "fs_course_done_confirmations";
-const VIDEO_PROGRESS_STORAGE_KEY = "fs_course_video_progress";
 const SWIPE_NUX_STORAGE_KEY = "fs_course_swipe_nux_seen";
 const SWIPE_ZONE_INSET_PX = 12;
 const SWIPE_SIDE_ZONE_RATIO = 0.31;
@@ -118,6 +118,13 @@ const FALLBACK_LESSON: CourseLesson = COURSE_LESSONS_FLAT[0] ?? {
     steps: ["Swim easy and keep your body line calm and controlled."],
   },
   nextStep: "Continue to the next lesson.",
+};
+
+const PREVIEW_MODE_COPY: Record<CoursePreviewMode, string> = {
+  published: "Published only",
+  review: "Review only",
+  draft: "Draft only",
+  all: "All statuses",
 };
 
 type SwipeDirection = "prev" | "next";
@@ -219,7 +226,38 @@ function CoursePageClient() {
   const install = useInstallContext();
 
   const lessonParam = searchParams.get("lesson");
+  const previewEnabled = searchParams.get("preview") === "1";
+  const previewModeParam = searchParams.get("previewMode");
+  const parsedPreviewMode = parseCoursePreviewMode(previewModeParam);
+  const previewMode = parsedPreviewMode ?? "published";
+  const previewType = searchParams.get("previewType");
+  const previewRefRaw = searchParams.get("previewRef");
+  const previewRef = previewRefRaw?.trim() ?? "";
+  const previewStorageKeys = useMemo(
+    () =>
+      getCourseProgressStorageKeys({
+        previewEnabled,
+        previewMode,
+      }),
+    [previewEnabled, previewMode]
+  );
+  const courseProgressSyncEnabled = !previewEnabled;
+  const previewContextLabel = useMemo(() => {
+    if (!previewEnabled) return null;
+    if (previewType === "module") {
+      return previewRef ? `Module: ${previewRef}` : "Module preview";
+    }
+    if (previewType === "lesson") {
+      return previewRef ? `Lesson: ${previewRef}` : "Lesson preview";
+    }
+    return previewRef ? `Context: ${previewRef}` : null;
+  }, [previewEnabled, previewRef, previewType]);
+
   const [courseModules, setCourseModules] = useState<CourseModule[]>(COURSE_MODULES);
+  const [courseContentLoadState, setCourseContentLoadState] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [courseContentError, setCourseContentError] = useState<string | null>(null);
   const courseLessonsFlat = useMemo(
     () => courseModules.flatMap((module) => module.lessons),
     [courseModules]
@@ -414,15 +452,26 @@ function CoursePageClient() {
       setResumeAvailable(Math.floor(normalizedVideoProgress[activeLesson.id] ?? 0) >= 2);
 
       try {
-        localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(normalizedDoneLessonIds));
         localStorage.setItem(
-          DONE_CONFIRMATION_STORAGE_KEY,
+          previewStorageKeys.doneLessons,
+          JSON.stringify(normalizedDoneLessonIds)
+        );
+        localStorage.setItem(
+          previewStorageKeys.doneConfirmations,
           JSON.stringify(normalizedDoneConfirmationByLessonId)
         );
-        localStorage.setItem(VIDEO_PROGRESS_STORAGE_KEY, JSON.stringify(normalizedVideoProgress));
+        localStorage.setItem(
+          previewStorageKeys.videoProgress,
+          JSON.stringify(normalizedVideoProgress)
+        );
       } catch {}
     },
-    [activeLesson.id]
+    [
+      activeLesson.id,
+      previewStorageKeys.doneConfirmations,
+      previewStorageKeys.doneLessons,
+      previewStorageKeys.videoProgress,
+    ]
   );
 
   const buildSyncRows = useCallback((updatedAt?: string): CourseProgressRow[] => {
@@ -441,7 +490,7 @@ function CoursePageClient() {
 
   const persistCourseProgressRows = useCallback(
     async (rows: CourseProgressRow[]) => {
-      if (!signedInUserId) return;
+      if (!signedInUserId || !courseProgressSyncEnabled) return;
 
       const response = await fetch(COURSE_PROGRESS_SYNC_API_PATH, {
         method: "POST",
@@ -457,12 +506,12 @@ function CoursePageClient() {
         throw new Error(`Course progress sync failed (${response.status})`);
       }
     },
-    [signedInUserId]
+    [courseProgressSyncEnabled, signedInUserId]
   );
 
   const syncCourseProgressNow = useCallback(
     async (options?: { force?: boolean }) => {
-      if (!signedInUserId || !localCourseProgressLoaded) return;
+      if (!courseProgressSyncEnabled || !signedInUserId || !localCourseProgressLoaded) return;
       if (!options?.force && !courseSyncDirtyRef.current) return;
       if (courseSyncInFlightRef.current) return;
 
@@ -500,34 +549,55 @@ function CoursePageClient() {
         courseSyncInFlightRef.current = false;
       }
     },
-    [buildSyncRows, localCourseProgressLoaded, persistCourseProgressRows, signedInUserId]
+    [
+      buildSyncRows,
+      courseProgressSyncEnabled,
+      localCourseProgressLoaded,
+      persistCourseProgressRows,
+      signedInUserId,
+    ]
   );
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, activeLesson.id);
+      localStorage.setItem(previewStorageKeys.lastLesson, activeLesson.id);
     } catch {}
-  }, [activeLesson.id]);
+  }, [activeLesson.id, previewStorageKeys.lastLesson]);
 
   useEffect(() => {
     if (lessonParam) return;
 
     try {
-      const last = localStorage.getItem(STORAGE_KEY);
+      const last = localStorage.getItem(previewStorageKeys.lastLesson);
       const next = last || defaultLessonId;
       router.replace(`${pathname}?lesson=${encodeURIComponent(next)}`);
     } catch {
       router.replace(`${pathname}?lesson=${encodeURIComponent(defaultLessonId)}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [defaultLessonId, pathname, previewStorageKeys.lastLesson, router]);
 
   useEffect(() => {
     let cancelled = false;
 
-    const loadPublishedCourseContent = async () => {
+    const loadCourseContent = async () => {
+      setCourseContentLoadState("loading");
+      setCourseContentError(null);
+
+      const params = new URLSearchParams();
+      if (previewEnabled) {
+        params.set("preview", "1");
+        if (previewModeParam) {
+          params.set("previewMode", previewModeParam);
+        } else {
+          params.set("previewMode", "published");
+        }
+      }
+      const requestPath =
+        params.size > 0 ? `/api/course/content?${params.toString()}` : "/api/course/content";
+
       try {
-        const response = await fetch("/api/course/content", {
+        const response = await fetch(requestPath, {
           method: "GET",
           credentials: "same-origin",
           cache: "no-store",
@@ -536,29 +606,45 @@ function CoursePageClient() {
         const payload = (await response.json()) as {
           ok?: boolean;
           modules?: CourseModule[];
+          error?: string;
         };
 
-        if (
-          cancelled ||
-          !response.ok ||
-          !payload.ok ||
-          !Array.isArray(payload.modules) ||
-          payload.modules.length === 0
-        ) {
+        if (cancelled) {
           return;
         }
 
-        setCourseModules(payload.modules);
+        if (!response.ok || !payload.ok || !Array.isArray(payload.modules)) {
+          const fallbackError = previewEnabled
+            ? "Could not load preview content."
+            : "Could not load course content.";
+          setCourseContentError(payload.error ?? fallbackError);
+          setCourseContentLoadState(previewEnabled ? "error" : "success");
+          if (!previewEnabled) {
+            setCourseModules(COURSE_MODULES);
+          }
+          return;
+        }
+
+        setCourseModules(
+          payload.modules.length > 0 ? payload.modules : previewEnabled ? [] : COURSE_MODULES
+        );
+        setCourseContentLoadState("success");
       } catch {
-        // keep safe default
+        if (cancelled) return;
+        setCourseContentError(previewEnabled ? "Could not load preview content." : null);
+        setCourseContentLoadState(previewEnabled ? "error" : "success");
+        if (!previewEnabled) {
+          // keep safe default
+          setCourseModules(COURSE_MODULES);
+        }
       }
     };
 
-    void loadPublishedCourseContent();
+    void loadCourseContent();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [previewEnabled, previewMode, previewModeParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -607,7 +693,7 @@ function CoursePageClient() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(DONE_STORAGE_KEY);
+      const raw = localStorage.getItem(previewStorageKeys.doneLessons);
       if (raw) {
         const parsed = JSON.parse(raw);
         const normalizedDoneLessonIds = normalizeDoneLessonIds(parsed);
@@ -619,11 +705,11 @@ function CoursePageClient() {
       }
     } catch {}
     setDoneLessonIdsLoaded(true);
-  }, []);
+  }, [previewStorageKeys.doneLessons]);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(DONE_CONFIRMATION_STORAGE_KEY);
+      const raw = localStorage.getItem(previewStorageKeys.doneConfirmations);
       if (raw) {
         const parsed = JSON.parse(raw);
         const normalizedDoneConfirmationByLessonId = normalizeDoneConfirmationRecord(parsed);
@@ -632,24 +718,24 @@ function CoursePageClient() {
       }
     } catch {}
     setDoneConfirmationLoaded(true);
-  }, []);
+  }, [previewStorageKeys.doneConfirmations]);
 
   useEffect(() => {
     if (!doneLessonIdsLoaded) return;
     try {
-      localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(doneLessonIds));
+      localStorage.setItem(previewStorageKeys.doneLessons, JSON.stringify(doneLessonIds));
     } catch {}
-  }, [doneLessonIds, doneLessonIdsLoaded]);
+  }, [doneLessonIds, doneLessonIdsLoaded, previewStorageKeys.doneLessons]);
 
   useEffect(() => {
     if (!doneConfirmationLoaded) return;
     try {
       localStorage.setItem(
-        DONE_CONFIRMATION_STORAGE_KEY,
+        previewStorageKeys.doneConfirmations,
         JSON.stringify(doneConfirmationByLessonId)
       );
     } catch {}
-  }, [doneConfirmationByLessonId, doneConfirmationLoaded]);
+  }, [doneConfirmationByLessonId, doneConfirmationLoaded, previewStorageKeys.doneConfirmations]);
 
   useEffect(() => {
     doneLessonIdsRef.current = doneLessonIds;
@@ -661,7 +747,7 @@ function CoursePageClient() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(VIDEO_PROGRESS_STORAGE_KEY);
+      const raw = localStorage.getItem(previewStorageKeys.videoProgress);
       if (raw) {
         const parsed = JSON.parse(raw);
         const normalized = normalizeVideoProgressRecord(parsed);
@@ -672,7 +758,7 @@ function CoursePageClient() {
       }
     } catch {}
     setPlaybackProgressLoaded(true);
-  }, []);
+  }, [previewStorageKeys.videoProgress]);
 
   useEffect(() => {
     let mounted = true;
@@ -704,7 +790,7 @@ function CoursePageClient() {
   }, []);
 
   useEffect(() => {
-    if (signedInUserId) return;
+    if (courseProgressSyncEnabled && signedInUserId) return;
     clearCourseSyncTimer();
     hydratedProgressUserIdRef.current = null;
     courseSyncDirtyRef.current = false;
@@ -712,10 +798,16 @@ function CoursePageClient() {
     courseSyncInFlightRef.current = false;
     setCourseSyncStatus("idle");
     setLastCourseSyncAtMs(null);
-  }, [clearCourseSyncTimer, signedInUserId]);
+  }, [clearCourseSyncTimer, courseProgressSyncEnabled, signedInUserId]);
 
   useEffect(() => {
-    if (!authStateLoaded || !localCourseProgressLoaded || !signedInUserId) return;
+    if (
+      !courseProgressSyncEnabled ||
+      !authStateLoaded ||
+      !localCourseProgressLoaded ||
+      !signedInUserId
+    )
+      return;
     if (hydratedProgressUserIdRef.current === signedInUserId) return;
 
     hydratedProgressUserIdRef.current = signedInUserId;
@@ -792,13 +884,14 @@ function CoursePageClient() {
     applyLocalCourseProgress,
     authStateLoaded,
     buildSyncRows,
+    courseProgressSyncEnabled,
     localCourseProgressLoaded,
     signedInUserId,
     syncCourseProgressNow,
   ]);
 
   useEffect(() => {
-    if (!signedInUserId || !localCourseProgressLoaded) return;
+    if (!courseProgressSyncEnabled || !signedInUserId || !localCourseProgressLoaded) return;
     clearCourseSyncTimer();
     courseSyncTimerRef.current = window.setInterval(() => {
       void syncCourseProgressNow();
@@ -807,10 +900,16 @@ function CoursePageClient() {
     return () => {
       clearCourseSyncTimer();
     };
-  }, [clearCourseSyncTimer, localCourseProgressLoaded, signedInUserId, syncCourseProgressNow]);
+  }, [
+    clearCourseSyncTimer,
+    courseProgressSyncEnabled,
+    localCourseProgressLoaded,
+    signedInUserId,
+    syncCourseProgressNow,
+  ]);
 
   useEffect(() => {
-    if (!signedInUserId) return;
+    if (!courseProgressSyncEnabled || !signedInUserId) return;
 
     const flushWhenBackgrounded = () => {
       if (document.visibilityState !== "hidden") return;
@@ -828,13 +927,19 @@ function CoursePageClient() {
       document.removeEventListener("visibilitychange", flushWhenBackgrounded);
       window.removeEventListener("pagehide", flushOnPageHide);
     };
-  }, [signedInUserId, syncCourseProgressNow]);
+  }, [courseProgressSyncEnabled, signedInUserId, syncCourseProgressNow]);
 
   useEffect(() => {
-    if (!signedInUserId || !doneLessonIdsLoaded) return;
+    if (!courseProgressSyncEnabled || !signedInUserId || !doneLessonIdsLoaded) return;
     if (!courseSyncDirtyRef.current) return;
     void syncCourseProgressNow({ force: true });
-  }, [doneLessonIds, doneLessonIdsLoaded, signedInUserId, syncCourseProgressNow]);
+  }, [
+    courseProgressSyncEnabled,
+    doneLessonIds,
+    doneLessonIdsLoaded,
+    signedInUserId,
+    syncCourseProgressNow,
+  ]);
 
   useEffect(() => {
     if (!playbackProgressLoaded) return;
@@ -863,9 +968,12 @@ function CoursePageClient() {
 
   const persistPlaybackProgress = useCallback(() => {
     try {
-      localStorage.setItem(VIDEO_PROGRESS_STORAGE_KEY, JSON.stringify(playbackProgressRef.current));
+      localStorage.setItem(
+        previewStorageKeys.videoProgress,
+        JSON.stringify(playbackProgressRef.current)
+      );
     } catch {}
-  }, []);
+  }, [previewStorageKeys.videoProgress]);
 
   const stopProgressSaveTimer = useCallback(() => {
     if (progressSaveTimerRef.current == null) return;
@@ -1402,24 +1510,26 @@ function CoursePageClient() {
   const showVideoOverlay = !videoStarted || videoPaused;
   const showResumeState = videoStarted && videoPaused;
   const showResumeCta = showResumeState || (!videoStarted && resumeAvailable);
-  const isSignedIn = Boolean(signedInUserId);
-  const isGuest = authStateLoaded && !signedInUserId;
+  const isSignedIn = courseProgressSyncEnabled && Boolean(signedInUserId);
+  const isGuest = courseProgressSyncEnabled && authStateLoaded && !signedInUserId;
   const backupSignInHref = `/auth/sign-in?next=${encodeURIComponent(
     `${pathname}?lesson=${encodeURIComponent(activeLesson.id)}`
   )}`;
-  const courseProgressStatusCopy = isSignedIn
-    ? courseSyncStatus === "error"
-      ? "Sync paused right now. We'll retry automatically."
-      : courseSyncStatus === "syncing"
-        ? "Syncing lesson progress to your account..."
-        : formatSyncStatusAgeLabel(lastCourseSyncAtMs)
-    : "Lesson and playback progress saved on this device.";
+  const courseProgressStatusCopy = previewEnabled
+    ? "Preview progress is local only and isolated from learner progress."
+    : isSignedIn
+      ? courseSyncStatus === "error"
+        ? "Sync paused right now. We'll retry automatically."
+        : courseSyncStatus === "syncing"
+          ? "Syncing lesson progress to your account..."
+          : formatSyncStatusAgeLabel(lastCourseSyncAtMs)
+      : "Lesson and playback progress saved on this device.";
 
   const supportCardClass =
     "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_14px_34px_rgba(15,23,42,0.08)]";
 
   useEffect(() => {
-    if (!isGuest) {
+    if (previewEnabled || !isGuest) {
       setShowBackupPrompt(false);
       return;
     }
@@ -1435,7 +1545,7 @@ function CoursePageClient() {
     } catch {}
 
     setShowBackupPrompt(true);
-  }, [doneLessonsCount, isGuest]);
+  }, [doneLessonsCount, isGuest, previewEnabled]);
 
   useEffect(() => {
     setCommonMistakesExpanded(false);
@@ -2081,6 +2191,110 @@ function CoursePageClient() {
     [safePreviewLessonIndex, setOverviewDragging, totalLessons]
   );
 
+  const previewBanner = previewEnabled ? (
+    <section
+      className="mt-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+      data-testid="course-preview-mode-banner"
+      aria-live="polite"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-semibold text-amber-900">
+          Preview mode - not visible to learners
+        </p>
+        <span className="rounded-full border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800">
+          {PREVIEW_MODE_COPY[previewMode]}
+        </span>
+        {previewContextLabel ? (
+          <span className="rounded-full border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-800">
+            {previewContextLabel}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-1 text-xs text-amber-800">
+        Preview state is isolated to this browser and does not change learner progress.
+      </p>
+    </section>
+  ) : null;
+
+  const previewSurfaceState = previewEnabled
+    ? courseContentLoadState === "loading" || courseContentLoadState === "idle"
+      ? "loading"
+      : courseContentLoadState === "error"
+        ? "error"
+        : courseModules.length === 0
+          ? "empty"
+          : "ready"
+    : "ready";
+
+  if (previewEnabled && previewSurfaceState !== "ready") {
+    return (
+      <SiteChrome
+        menu={{
+          mode: "custom",
+          isOpen: drawerOpen,
+          onOpen: () => {
+            setDrawerView("course");
+            setDrawerOpen(true);
+          },
+          onClose: () => setDrawerOpen(false),
+          ariaLabel: "Toggle lessons",
+        }}
+        bottomBar={bottomBar}
+      >
+        <PageTemplate size="wide" showBack={false}>
+          <PageIntro
+            title="Free Course"
+            subtitle="Learn. Drill. Swim."
+            variant="compact"
+            belowDivider={
+              <div className="flex items-baseline gap-1 text-[12px] font-medium sm:text-[13px]">
+                <span className="shrink-0 text-slate-500">Current lesson:</span>
+                <span className="min-w-0 truncate text-slate-800">{activeLesson.title}</span>
+              </div>
+            }
+          />
+          {previewBanner}
+          <section className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-4">
+            {previewSurfaceState === "loading" ? (
+              <p className="text-sm text-slate-700">Loading preview content...</p>
+            ) : null}
+            {previewSurfaceState === "empty" ? (
+              <p className="text-sm text-slate-700">
+                No lessons available for this preview mode yet. Publish or reclassify content and
+                try again.
+              </p>
+            ) : null}
+            {previewSurfaceState === "error" ? (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-rose-700">
+                  {courseContentError ?? "Could not load preview content."}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <PressButton
+                    tier="nav"
+                    onClick={() => router.refresh()}
+                    className="inline-flex min-h-[36px] items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
+                  >
+                    Retry
+                  </PressButton>
+                  <PressLink
+                    tier="nav"
+                    href={
+                      lessonParam ? `/course?lesson=${encodeURIComponent(lessonParam)}` : "/course"
+                    }
+                    className="inline-flex min-h-[36px] items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
+                  >
+                    Open learner view
+                  </PressLink>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        </PageTemplate>
+      </SiteChrome>
+    );
+  }
+
   return (
     <SiteChrome
       menu={{
@@ -2127,6 +2341,7 @@ function CoursePageClient() {
               </CourseNavButton>
             }
           />
+          {previewBanner}
 
           <section className="lg:bg-white/96 mt-2 rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)] lg:border-slate-300/70 lg:shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">

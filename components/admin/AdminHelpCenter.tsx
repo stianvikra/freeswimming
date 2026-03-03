@@ -159,6 +159,11 @@ const BUTTON_GUIDE = [
           "Opens edit mode for that lesson row and jumps to it in the content list. Use this for lesson body updates.",
       },
       {
+        label: "Open preview",
+        meaning:
+          "Opens admin preview mode in a new tab using the row status (draft/review/published/all) with a clear preview banner.",
+      },
+      {
         label: "Open lesson",
         meaning:
           "Opens the real lesson page in a new tab so you can verify exactly what users will see.",
