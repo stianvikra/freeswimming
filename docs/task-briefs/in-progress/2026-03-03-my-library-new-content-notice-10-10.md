@@ -123,4 +123,5 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-03 | 80c8921 | implementation complete for slice scope | added auth-gated new-content signal API, deterministic published-lesson signature/tokens, My Library notice banner with open/dismiss + persistence + retry handling, analytics events, and unit/e2e coverage; npm run verify:pre-pr passed | next: push branch and open PR in Safari`
 - `2026-03-03 | kickoff from main after preview-mode merge | moved brief from planned->in-progress and confirmed execution order (preview-mode done, library notice next) | next: implement notice banner + signature contract + tests`
