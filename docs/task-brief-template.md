@@ -114,7 +114,8 @@ Which commands should pass?
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
 - `npm run verify:public` (when private gate can affect route visibility)
-- `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate` (for private-gate coverage)
+- `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate` (preferred private-gate coverage)
+- `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_BYPASS_TOKEN="<token>" npm run test:e2e:private-gate` (fallback when password is unavailable)
 
 ## Local Tooling Prerequisite (Required)
 

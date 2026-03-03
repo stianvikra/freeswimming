@@ -131,6 +131,10 @@ This file defines how coding agents should collaborate in this repository.
   - only use `PW_REUSE_EXISTING_SERVER=1` as explicit debug override.
 - Before merge:
   - run `npm run verify:pre-merge`.
+- For private-gate runs (`SITE_LOCK_ENABLED=1`):
+  - provide `PW_SITE_LOCK_PASSWORD` (preferred, covers real unlock form flow), or
+  - provide `PW_SITE_LOCK_BYPASS_TOKEN` (allowed fallback for owner/debug automation when password is unavailable).
+- If private-gate UX/password behavior changed, do not rely on bypass-only runs; include a password-backed run.
 - Keep Playwright coverage aligned to supported matrix (mobile/tablet/desktop + major engines).
 - Do not silently skip tests to make CI pass; document rationale in brief/PR when skips are intentional.
 

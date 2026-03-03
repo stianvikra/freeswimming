@@ -53,7 +53,9 @@ Useful commands:
 - `npm run test:e2e:mobile` for fast mobile install/nav checks.
 - `npm run test:e2e:extended` for tablet/desktop matrix checks.
 - `npm run verify:public` for full verification with public mode forced (`SITE_LOCK_ENABLED=0`).
-- `npm run test:e2e:private-gate` for private access gate checks (`SITE_LOCK_ENABLED=1`, `PW_SITE_LOCK_PASSWORD` required).
+- `npm run test:e2e:private-gate` for private access gate checks (`SITE_LOCK_ENABLED=1`).
+  - `PW_SITE_LOCK_PASSWORD` (preferred)
+  - `PW_SITE_LOCK_BYPASS_TOKEN` (fallback)
 - `npm run test:e2e:security` for concentrated API/access-control regressions.
 - `npm run test:e2e:admin` for authenticated admin flows (foundation/parity/notes).
 - `npm run verify:pre-pr` and `npm run verify:pre-merge` for release gates.
@@ -69,7 +71,8 @@ Useful commands:
 - Default CI/full product checks should run in public mode:
   - `npm run verify:public`
 - Private gate behavior should be verified separately:
-  - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
+  - preferred: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
+  - fallback: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_BYPASS_TOKEN=\"<token>\" npm run test:e2e:private-gate`
 - Do not rely on one mode only. Public mode catches product/UI regressions; private mode catches access-control regressions.
 
 ## Recommended Test Cadence (Best Practice)
@@ -86,6 +89,7 @@ Useful commands:
    - `npm run verify:public`
    - `npm run test:e2e:extended`
    - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
+   - optionally fallback (owner/debug): `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_BYPASS_TOKEN=\"<token>\" npm run test:e2e:private-gate`
 5. Dedicated admin regression (manual + nightly workflow):
    - run `.github/workflows/admin-e2e.yml`
    - requires repository secrets:

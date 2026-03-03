@@ -16,6 +16,9 @@ Use this runbook for reliable local validation when private-access (site lock) i
 - Run release gates with one command:
   - pre-PR: `npm run verify:pre-pr`
   - pre-merge: `npm run verify:pre-merge`
+  - private-gate env when lock is enabled:
+    - preferred: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
+    - fallback: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_BYPASS_TOKEN="<token>" npm run verify:pre-merge`
 - If npm is missing in a non-interactive shell, run script directly:
   - `bash ./scripts/run-verify-open.sh`
   - script auto-attempts `nvm` bootstrap before failing.
@@ -65,6 +68,7 @@ This folder is git-ignored and kept locally.
   - `npm run test:e2e:mobile` (if touching mobile/nav/auth/guide flows)
 - Before merge:
   - run full `npm run verify:pre-merge`.
+  - if testing private mode, provide `PW_SITE_LOCK_PASSWORD` (preferred) or `PW_SITE_LOCK_BYPASS_TOKEN` (fallback).
 
 ## CI and Nightly Automation
 
