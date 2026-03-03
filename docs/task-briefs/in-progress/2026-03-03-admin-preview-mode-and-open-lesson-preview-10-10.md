@@ -138,4 +138,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
-- `2026-03-03 | implementation started | moved brief from planned->in-progress; implemented preview-mode core on admin links + /api/course/content gate + /course banner/state + preview-local progress isolation + noindex headers + new unit/e2e coverage | next: run validation gates, then commit/push/PR`
+- `2026-03-03 | c87c5b4 | implementation complete for slice scope | moved brief from planned->in-progress; implemented preview-mode core on admin links + /api/course/content gate + /course banner/state + preview-local progress isolation + noindex headers + new unit/e2e coverage; verification gate npm run verify:pre-pr passed | next: push branch and open/update PR in Safari`
