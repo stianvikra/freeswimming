@@ -8,6 +8,7 @@ import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
 import LibrarySectionTabs from "@/components/my-library/LibrarySectionTabs";
+import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
@@ -127,6 +128,7 @@ export default async function MyLibraryPage() {
 
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
+            <MyLibraryNewContentNotice userId={user.id} />
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -183,8 +185,8 @@ export default async function MyLibraryPage() {
                     <p className="mt-2 text-sm text-slate-600">{getKindCopy(product)}</p>
                     {!product.active ? (
                       <p className="mt-2 text-xs text-amber-700">
-                        This item remains available in your library, but it is currently hidden
-                        from new sales.
+                        This item remains available in your library, but it is currently hidden from
+                        new sales.
                       </p>
                     ) : null}
                     <div className="mt-4">
