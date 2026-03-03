@@ -86,6 +86,13 @@ describe("/api/my-library/new-content-signal route", () => {
         signature?: string;
         lessonCount?: number;
         firstLessonId?: string | null;
+        lessons?: Array<{
+          lessonId?: string;
+          lessonTitle?: string;
+          moduleId?: string;
+          moduleTitle?: string;
+          lessonToken?: string;
+        }>;
       };
     };
 
@@ -94,6 +101,14 @@ describe("/api/my-library/new-content-signal route", () => {
     expect(payload.signal?.lessonCount).toBe(1);
     expect(payload.signal?.firstLessonId).toBe("mod1-l1");
     expect(payload.signal?.signature?.startsWith("v1:")).toBe(true);
+    expect(payload.signal?.lessons).toHaveLength(1);
+    expect(payload.signal?.lessons?.[0]).toMatchObject({
+      lessonId: "mod1-l1",
+      lessonTitle: "Lesson 1",
+      moduleId: "mod1",
+      moduleTitle: "Intro",
+    });
+    expect(payload.signal?.lessons?.[0]?.lessonToken).toMatch(/^[0-9a-f]{16}$/);
     expect(loadCourseModulesByStatusMock).toHaveBeenCalledWith({
       statuses: ["published"],
       fallback: [],
