@@ -53,7 +53,9 @@ Useful commands:
 - `npm run test:e2e:mobile` for fast mobile install/nav checks.
 - `npm run test:e2e:extended` for tablet/desktop matrix checks.
 - `npm run verify:public` for full verification with public mode forced (`SITE_LOCK_ENABLED=0`).
-- `npm run test:e2e:private-gate` for private access gate checks (`SITE_LOCK_ENABLED=1`, `PW_SITE_LOCK_PASSWORD` required).
+- `npm run test:e2e:private-gate` for private access gate checks (`SITE_LOCK_ENABLED=1`).
+  - automation default: `PW_SITE_LOCK_BYPASS_TOKEN` (auto-wired by `verify:pre-merge` when available)
+  - force password flow: `PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD`
 - `npm run test:e2e:security` for concentrated API/access-control regressions.
 - `npm run test:e2e:admin` for authenticated admin flows (foundation/parity/notes).
 - `npm run verify:pre-pr` and `npm run verify:pre-merge` for release gates.
@@ -62,6 +64,7 @@ Useful commands:
 
 - Default: assistant should run these checks automatically at the right checkpoint.
 - Only fall back to owner-run manual commands when blocked by credentials, UI-only actions, or sandbox/escalation limits.
+- In Codex sandbox runtime, use escalation-first for full verify/build/Playwright commands to avoid avoidable first-failure reruns caused by local port-binding limits.
 - Handoff must include command evidence and clear resume step when manual intervention is needed.
 
 ## Public vs Private Mode Test Rules
@@ -69,7 +72,8 @@ Useful commands:
 - Default CI/full product checks should run in public mode:
   - `npm run verify:public`
 - Private gate behavior should be verified separately:
-  - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
+  - automation default: `SITE_LOCK_ENABLED=1 npm run test:e2e:private-gate`
+  - force password unlock path: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
 - Do not rely on one mode only. Public mode catches product/UI regressions; private mode catches access-control regressions.
 
 ## Recommended Test Cadence (Best Practice)
@@ -85,7 +89,9 @@ Useful commands:
 4. Nightly/regular regression run:
    - `npm run verify:public`
    - `npm run test:e2e:extended`
-   - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
+   - `SITE_LOCK_ENABLED=1 npm run test:e2e:private-gate` (automation default)
+   - add one password-forced run when unlock UX/password behavior changes:
+     `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD=\"<password>\" npm run test:e2e:private-gate`
 5. Dedicated admin regression (manual + nightly workflow):
    - run `.github/workflows/admin-e2e.yml`
    - requires repository secrets:

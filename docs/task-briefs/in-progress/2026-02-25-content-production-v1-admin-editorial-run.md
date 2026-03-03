@@ -145,6 +145,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-03 | planning gate for library notice + admin preview mode | verified branch/main parity and no half-finished local diff for these features; created dedicated planned briefs: docs/task-briefs/planned/2026-03-03-my-library-new-content-notice-10-10.md and docs/task-briefs/planned/2026-03-03-admin-preview-mode-and-open-lesson-preview-10-10.md | next: execute preview-mode brief first, then library notice brief`
 - `2026-02-25 | kickoff | content production v1 track opened after AW-013 phase8 merge; no hard blockers found in active briefs for starting editorial production | next: run Slice 1 production session and capture first friction batch`
 - `2026-02-25 | desktop visual calibration slice | tuned large-screen readability/contrast and widened PageTemplate (wide layout) for course/admin surfaces to reduce washed-out look on large monitors; npm run verify:pre-pr passed (second run after one transient Playwright goto timeout) | next: verify on 49" monitor and capture any residual contrast/layout friction`
 - `2026-02-27 | intro-video production pack | added complete 60s course intro video production package (timing, script, shot types, Camtasia specs, subtitles, YouTube metadata) in docs/video-production/intro-course-60s/production-pack.md + docs/video-production/intro-course-60s/subtitles.en.srt | next: produce first export cut in Camtasia and review against acceptance checklist`

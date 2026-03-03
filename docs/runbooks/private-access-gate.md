@@ -57,6 +57,15 @@ Preview cookie clear URL:
 - API endpoints (except explicit bypasses) return locked response while private mode is enabled.
 - `robots.txt` disallows all and `sitemap.xml` is empty while lock is enabled.
 
+## Automated Test Inputs
+
+For Playwright private-gate verification (`npm run test:e2e:private-gate`):
+
+- automation default: `PW_SITE_LOCK_BYPASS_TOKEN=<same value as SITE_LOCK_BYPASS_TOKEN>`
+- force password flow coverage: `PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD=<plain-preview-password>`
+
+Password-backed runs are required when validating unlock UX copy/behavior.
+
 ## Security Notes
 
 - Do not store plain password in repository files.
