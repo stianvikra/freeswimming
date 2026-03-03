@@ -18,13 +18,13 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!config.enabled || isSiteLockPathBypassed(request.nextUrl.pathname)) {
-    return updateSupabaseSession(request);
+    return withCoursePreviewHeadersIfNeeded(await updateSupabaseSession(request), request);
   }
 
   if (
     isSiteLockBypassTokenValid(request.headers.get("x-site-lock-bypass-token"), config.bypassToken)
   ) {
-    return updateSupabaseSession(request);
+    return withCoursePreviewHeadersIfNeeded(await updateSupabaseSession(request), request);
   }
 
   const siteLockCookie = request.cookies.get(config.cookieName)?.value;
@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
       maxAgeSeconds: config.sessionMaxAgeSeconds,
     })
   ) {
-    return updateSupabaseSession(request);
+    return withCoursePreviewHeadersIfNeeded(await updateSupabaseSession(request), request);
   }
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
@@ -46,6 +46,25 @@ export async function proxy(request: NextRequest) {
 }
 
 function withNoStoreHeaders(response: NextResponse): NextResponse {
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  return response;
+}
+
+function isCoursePreviewRequest(request: NextRequest): boolean {
+  return (
+    request.nextUrl.pathname === "/course" && request.nextUrl.searchParams.get("preview") === "1"
+  );
+}
+
+function withCoursePreviewHeadersIfNeeded(
+  response: NextResponse,
+  request: NextRequest
+): NextResponse {
+  if (!isCoursePreviewRequest(request)) {
+    return response;
+  }
+
   response.headers.set("Cache-Control", "no-store");
   response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   return response;

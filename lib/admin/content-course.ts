@@ -6,16 +6,17 @@ import {
 } from "@/app/course/courseData";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
+import type { CourseContentReadStatus } from "@/lib/course/preview";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database, Json } from "@/types/database";
 
 type AdminContentRow = Database["public"]["Tables"]["admin_content_items"]["Row"];
 
-type PublishedCourseModuleRow = Pick<
+type CourseModuleContentRow = Pick<
   AdminContentRow,
   "id" | "slug" | "title" | "summary" | "sort_order" | "body"
 >;
-type PublishedCourseLessonRow = Pick<
+type CourseLessonContentRow = Pick<
   AdminContentRow,
   "id" | "parent_id" | "slug" | "title" | "summary" | "sort_order" | "body"
 >;
@@ -177,8 +178,8 @@ function normalizeSupportCard(value: unknown): CourseLesson["supportCard"] | und
 }
 
 export function toPublishedCourseModules(
-  moduleRows: PublishedCourseModuleRow[],
-  lessonRows: PublishedCourseLessonRow[],
+  moduleRows: CourseModuleContentRow[],
+  lessonRows: CourseLessonContentRow[],
   fallback: CourseModule[] = COURSE_MODULES
 ): CourseModule[] {
   if (moduleRows.length === 0 || lessonRows.length === 0) {
@@ -263,49 +264,91 @@ export function toPublishedCourseModules(
   return normalizedModules;
 }
 
-export async function loadPublishedCourseModules(): Promise<CourseModule[]> {
+type LoadCourseModulesByStatusInput = {
+  statuses: CourseContentReadStatus[];
+  fallback: CourseModule[];
+  autoSeedWhenEmpty: boolean;
+};
+
+function normalizeReadStatuses(
+  statuses: readonly CourseContentReadStatus[]
+): CourseContentReadStatus[] {
+  const unique = new Set<CourseContentReadStatus>();
+  for (const status of statuses) {
+    if (
+      status === "draft" ||
+      status === "review" ||
+      status === "published" ||
+      status === "archived"
+    ) {
+      unique.add(status);
+    }
+  }
+
+  if (unique.size === 0) {
+    return ["published"];
+  }
+
+  return Array.from(unique);
+}
+
+export async function loadCourseModulesByStatus(
+  input: LoadCourseModulesByStatusInput
+): Promise<CourseModule[]> {
+  const statuses = normalizeReadStatuses(input.statuses);
+
   try {
     const supabase = createAdminSupabaseClient();
 
     const readRows = async () => {
-      const modulesResult = await supabase
+      const modulesQuery = supabase
         .from("admin_content_items")
         .select("id, slug, title, summary, sort_order, body, created_at")
         .eq("content_type", "course_module")
-        .eq("status", "published")
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });
+      if (statuses.length === 1) {
+        modulesQuery.eq("status", statuses[0]);
+      } else {
+        modulesQuery.in("status", statuses);
+      }
+      const modulesResult = await modulesQuery;
 
       if (modulesResult.error) {
         return {
           ok: false as const,
           error: modulesResult.error,
-          modules: [] as PublishedCourseModuleRow[],
-          lessons: [] as PublishedCourseLessonRow[],
+          modules: [] as CourseModuleContentRow[],
+          lessons: [] as CourseLessonContentRow[],
         };
       }
 
-      const lessonsResult = await supabase
+      const lessonsQuery = supabase
         .from("admin_content_items")
         .select("id, parent_id, slug, title, summary, sort_order, body, created_at")
         .eq("content_type", "course_lesson")
-        .eq("status", "published")
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });
+      if (statuses.length === 1) {
+        lessonsQuery.eq("status", statuses[0]);
+      } else {
+        lessonsQuery.in("status", statuses);
+      }
+      const lessonsResult = await lessonsQuery;
 
       if (lessonsResult.error) {
         return {
           ok: false as const,
           error: lessonsResult.error,
-          modules: [] as PublishedCourseModuleRow[],
-          lessons: [] as PublishedCourseLessonRow[],
+          modules: [] as CourseModuleContentRow[],
+          lessons: [] as CourseLessonContentRow[],
         };
       }
 
       return {
         ok: true as const,
-        modules: (modulesResult.data ?? []) as PublishedCourseModuleRow[],
-        lessons: (lessonsResult.data ?? []) as PublishedCourseLessonRow[],
+        modules: (modulesResult.data ?? []) as CourseModuleContentRow[],
+        lessons: (lessonsResult.data ?? []) as CourseLessonContentRow[],
       };
     };
 
@@ -317,10 +360,13 @@ export async function loadPublishedCourseModules(): Promise<CourseModule[]> {
           readResult.error
         );
       }
-      return COURSE_MODULES;
+      return input.fallback;
     }
 
-    if (readResult.modules.length === 0 || readResult.lessons.length === 0) {
+    if (
+      input.autoSeedWhenEmpty &&
+      (readResult.modules.length === 0 || readResult.lessons.length === 0)
+    ) {
       const ensureResult = await ensurePlatformContentSeeded({ supabase });
       if (!ensureResult.ok) {
         if (ensureResult.schemaReady) {
@@ -329,7 +375,7 @@ export async function loadPublishedCourseModules(): Promise<CourseModule[]> {
             ensureResult.error
           );
         }
-        return COURSE_MODULES;
+        return input.fallback;
       }
       if (ensureResult.seeded) {
         readResult = await readRows();
@@ -340,15 +386,23 @@ export async function loadPublishedCourseModules(): Promise<CourseModule[]> {
               readResult.error
             );
           }
-          return COURSE_MODULES;
+          return input.fallback;
         }
       }
     }
 
     const publishedModules = toPublishedCourseModules(readResult.modules, readResult.lessons, []);
-    return publishedModules.length > 0 ? publishedModules : COURSE_MODULES;
+    return publishedModules.length > 0 ? publishedModules : input.fallback;
   } catch (error) {
     console.error("[PublishedContent] Could not query published course content", error);
-    return COURSE_MODULES;
+    return input.fallback;
   }
+}
+
+export async function loadPublishedCourseModules(): Promise<CourseModule[]> {
+  return loadCourseModulesByStatus({
+    statuses: ["published"],
+    fallback: COURSE_MODULES,
+    autoSeedWhenEmpty: true,
+  });
 }

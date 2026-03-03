@@ -51,6 +51,7 @@ test.describe("admin help center", () => {
     await expect(page.getByText("Mirror snapshot cards:")).toBeVisible();
     await expect(page.getByText("Module workspace:")).toBeVisible();
     await expect(page.getByText("Edit lesson:")).toBeVisible();
+    await expect(page.getByText("Open preview:")).toBeVisible();
     await expect(page.getByText("Open lesson:")).toBeVisible();
     await expect(page.getByText("All statuses filter:")).toBeVisible();
     await expect(page.getByText("Sort content list:")).toBeVisible();
