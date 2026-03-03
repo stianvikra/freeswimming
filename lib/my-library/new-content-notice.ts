@@ -7,6 +7,15 @@ export type MyLibraryCourseSignal = {
   lessonCount: number;
   lessonTokens: string[];
   firstLessonId: string | null;
+  lessons: MyLibrarySignalLesson[];
+};
+
+export type MyLibrarySignalLesson = {
+  lessonId: string;
+  lessonTitle: string;
+  moduleId: string;
+  moduleTitle: string;
+  lessonToken: string;
 };
 
 export type MyLibrarySeenState = {
@@ -21,11 +30,13 @@ type NewContentDecision =
   | {
       state: "show";
       newLessonCount: number;
+      newLessons: MyLibrarySignalLesson[];
       shouldPersistCurrent: false;
     }
   | {
       state: "hidden";
       newLessonCount: 0;
+      newLessons: [];
       shouldPersistCurrent: boolean;
     };
 
@@ -52,21 +63,40 @@ function normalizeLessonId(value: unknown): string | null {
 }
 
 export function buildMyLibraryCourseSignal(modules: CourseModule[]): MyLibraryCourseSignal {
-  const lessonIds = modules
-    .flatMap((module) => module.lessons)
-    .map((lesson) => normalizeLessonId(lesson.id))
-    .filter((lessonId): lessonId is string => Boolean(lessonId));
+  const seenLessonIds = new Set<string>();
+  const lessons: MyLibrarySignalLesson[] = [];
 
-  const uniqueLessonIds = Array.from(new Set(lessonIds)).sort((a, b) => a.localeCompare(b));
-  const lessonTokens = uniqueLessonIds.map((lessonId) => stableHash(`lesson:${lessonId}`));
+  for (const courseModule of modules) {
+    const moduleId = normalizeLessonId(courseModule.id) ?? "module";
+    const moduleTitle = courseModule.title.trim().length > 0 ? courseModule.title.trim() : moduleId;
+    for (const lesson of courseModule.lessons) {
+      const lessonId = normalizeLessonId(lesson.id);
+      if (!lessonId || seenLessonIds.has(lessonId)) continue;
+      seenLessonIds.add(lessonId);
+      const lessonTitle = lesson.title.trim().length > 0 ? lesson.title.trim() : lessonId;
+      const lessonToken = stableHash(`lesson:${lessonId}`);
+      lessons.push({
+        lessonId,
+        lessonTitle,
+        moduleId,
+        moduleTitle,
+        lessonToken,
+      });
+    }
+  }
+
+  const lessonTokens = lessons
+    .map((lesson) => lesson.lessonToken)
+    .sort((a, b) => a.localeCompare(b));
   const signatureBase = lessonTokens.join("|");
   const signature = stableHash(`v1:${signatureBase}`);
 
   return {
     signature: `v1:${signature}`,
-    lessonCount: uniqueLessonIds.length,
+    lessonCount: lessons.length,
     lessonTokens,
-    firstLessonId: uniqueLessonIds[0] ?? null,
+    firstLessonId: lessons[0]?.lessonId ?? null,
+    lessons,
   };
 }
 
@@ -123,6 +153,7 @@ export function resolveNewContentDecision(
     return {
       state: "hidden",
       newLessonCount: 0,
+      newLessons: [],
       shouldPersistCurrent: Boolean(seen),
     };
   }
@@ -131,6 +162,7 @@ export function resolveNewContentDecision(
     return {
       state: "show",
       newLessonCount: signal.lessonCount,
+      newLessons: signal.lessons,
       shouldPersistCurrent: false,
     };
   }
@@ -139,23 +171,26 @@ export function resolveNewContentDecision(
     return {
       state: "hidden",
       newLessonCount: 0,
+      newLessons: [],
       shouldPersistCurrent: false,
     };
   }
 
   const seenTokens = new Set(seen.lessonTokens);
-  const addedCount = signal.lessonTokens.filter((token) => !seenTokens.has(token)).length;
-  if (addedCount <= 0) {
+  const addedLessons = signal.lessons.filter((lesson) => !seenTokens.has(lesson.lessonToken));
+  if (addedLessons.length <= 0) {
     return {
       state: "hidden",
       newLessonCount: 0,
+      newLessons: [],
       shouldPersistCurrent: true,
     };
   }
 
   return {
     state: "show",
-    newLessonCount: addedCount,
+    newLessonCount: addedLessons.length,
+    newLessons: addedLessons,
     shouldPersistCurrent: false,
   };
 }

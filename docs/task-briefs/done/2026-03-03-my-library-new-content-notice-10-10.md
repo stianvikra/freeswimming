@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-03-my-library-new-content-notice-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-03`
 - `updated`: `2026-03-03`
@@ -123,5 +123,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-03 | d5d688c (main) | merged via PR #124 | my-library new-content notice slice merged to main with required CI checks green and npm run verify:pre-merge passed; brief moved to done | next: monitor production deploy on main and continue parent editorial run`
 - `2026-03-03 | 80c8921 | implementation complete for slice scope | added auth-gated new-content signal API, deterministic published-lesson signature/tokens, My Library notice banner with open/dismiss + persistence + retry handling, analytics events, and unit/e2e coverage; npm run verify:pre-pr passed | next: push branch and open PR in Safari`
 - `2026-03-03 | kickoff from main after preview-mode merge | moved brief from planned->in-progress and confirmed execution order (preview-mode done, library notice next) | next: implement notice banner + signature contract + tests`

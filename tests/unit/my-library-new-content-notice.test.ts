@@ -34,10 +34,11 @@ describe("my-library new content notice helpers", () => {
     const signal = buildMyLibraryCourseSignal(buildModules(["mod1-l2", "mod1-l1", "mod1-l2"]));
 
     expect(signal.lessonCount).toBe(2);
-    expect(signal.firstLessonId).toBe("mod1-l1");
+    expect(signal.firstLessonId).toBe("mod1-l2");
     expect(signal.signature.startsWith("v1:")).toBe(true);
     expect(signal.lessonTokens).toHaveLength(2);
-    expect(signal.lessonTokens[0]).not.toBe("mod1-l1");
+    expect(signal.lessons.map((lesson) => lesson.lessonId)).toEqual(["mod1-l2", "mod1-l1"]);
+    expect(signal.lessonTokens[0]).not.toBe("mod1-l2");
   });
 
   it("creates a user-scoped storage key", () => {
@@ -50,6 +51,7 @@ describe("my-library new content notice helpers", () => {
     expect(resolveNewContentDecision(signal, null)).toEqual({
       state: "show",
       newLessonCount: 2,
+      newLessons: signal.lessons,
       shouldPersistCurrent: false,
     });
   });
@@ -61,6 +63,7 @@ describe("my-library new content notice helpers", () => {
     expect(resolveNewContentDecision(signal, seen)).toEqual({
       state: "hidden",
       newLessonCount: 0,
+      newLessons: [],
       shouldPersistCurrent: false,
     });
   });
@@ -70,11 +73,15 @@ describe("my-library new content notice helpers", () => {
     const seen = buildMyLibrarySeenState(previousSignal);
     const nextSignal = buildMyLibraryCourseSignal(buildModules(["mod1-l1", "mod1-l2", "mod1-l3"]));
 
-    expect(resolveNewContentDecision(nextSignal, seen)).toEqual({
+    const decision = resolveNewContentDecision(nextSignal, seen);
+
+    expect(decision).toEqual({
       state: "show",
       newLessonCount: 2,
+      newLessons: nextSignal.lessons.slice(1),
       shouldPersistCurrent: false,
     });
+    expect(decision.newLessons.map((lesson) => lesson.lessonId)).toEqual(["mod1-l2", "mod1-l3"]);
   });
 
   it("reconciles silently when signature changes without newly added lessons", () => {
@@ -85,6 +92,7 @@ describe("my-library new content notice helpers", () => {
     expect(resolveNewContentDecision(nextSignal, seen)).toEqual({
       state: "hidden",
       newLessonCount: 0,
+      newLessons: [],
       shouldPersistCurrent: true,
     });
   });

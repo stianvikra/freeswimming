@@ -40,6 +40,14 @@ test.describe("my library new content notice", () => {
     const banner = page.getByTestId("my-library-new-content-notice");
     await expect(banner).toBeVisible();
     await expect(banner).toContainText(/\+\d+ nye leksjoner i Free Course/);
+    await expect(page.getByTestId("my-library-new-content-list")).toBeVisible();
+
+    await page.getByTestId("my-library-new-content-open").click();
+    await expect(page).toHaveURL(/\/course(\?|$)/);
+
+    await page.goto("/my-library");
+    await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
 
     await page.getByTestId("my-library-new-content-dismiss").click();
     await expect(banner).toBeHidden();
@@ -66,7 +74,7 @@ test.describe("my library new content notice", () => {
 
     await page.reload();
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
-    await page.getByTestId("my-library-new-content-open").click();
+    await page.getByTestId("my-library-new-content-item-mod1-l1").click();
     await expect(page).toHaveURL(/\/course(\?|$)/);
   });
 

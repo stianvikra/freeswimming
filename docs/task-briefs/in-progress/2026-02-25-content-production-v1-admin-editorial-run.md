@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-25`
-- `updated`: `2026-02-27`
+- `updated`: `2026-03-03`
 
 ## Goal
 
@@ -145,6 +145,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-03 | 96f91e5 | implementation complete | delivered follow-up sticky-dismiss + linked-new-lessons behavior for my-library notice with updated signal model, UI behavior, and tests; npm run verify:pre-pr passed | next: push branch and open PR in Safari`
+- `2026-03-03 | kickoff | opened follow-up slice for my-library new-content notice sticky-dismiss + linked-new-lessons list (explicit X close only); created in-progress brief docs/task-briefs/in-progress/2026-03-03-my-library-new-content-notice-sticky-list-links-10-10.md | next: implement behavior and run verify:pre-pr before PR update`
+- `2026-03-03 | d5d688c (main) | my-library new-content notice merged | PR #124 merged and closed; brief moved from in-progress to done after local npm run verify:pre-merge and green required CI checks | next: monitor production deploy on main and continue next editorial-production slice`
 - `2026-03-03 | 80c8921 | my-library new-content notice slice delivered | implemented published-content signal route + per-user local seen signature flow + library banner UX (open/dismiss/retry) + analytics events + unit/e2e coverage; npm run verify:pre-pr passed | next: open/update PR in Safari and monitor required checks`
 - `2026-03-03 | 6c4cca1 (main) | admin preview mode merged | PR #123 merged and closed; admin preview mode slice completed and brief moved to done | next: start my-library new-content notice slice from main`
 - `2026-03-03 | c87c5b4 | admin preview mode slice delivered | shipped admin preview links for module/lesson rows, server-gated preview mode content reads, explicit /course preview banner + loading/error/empty states, preview-local progress key isolation, and non-index headers; added unit + e2e coverage and passed npm run verify:pre-pr | next: open/update PR in Safari; after merge continue with my-library new-content notice slice`
