@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-25`
-- `updated`: `2026-03-03`
+- `updated`: `2026-03-04`
 
 ## Goal
 
@@ -137,6 +137,40 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Risk: production flow pauses due unknown edge cases.
   - Mitigation: classify P0 quickly and prioritize unblock PRs immediately.
 
+## Core-Flow Gap Scan (2026-03-04)
+
+- Timebox: ~55 minutes
+- Routes scanned: `/`, `/course`, `/my-library`, `/admin`
+- Evidence baseline:
+  - current green verify baseline from latest merged slices (`npm run verify:pre-pr` / `npm run verify:pre-merge`),
+  - existing route-relevant e2e/unit coverage:
+    - home/site lock/a11y: `tests/e2e/a11y-home.spec.ts`, `tests/e2e/private-access-gate.spec.ts`
+    - course flow/progress/support: `tests/e2e/course-progress-sync.spec.ts`, `tests/e2e/course-support-card-actions.spec.ts`
+    - my-library notice/actions: `tests/e2e/my-library-new-content-notice.spec.ts`
+    - admin auth/content/preview: `tests/e2e/admin-content-api-guards.spec.ts`, `tests/e2e/admin-preview-mode.spec.ts`, `tests/e2e/admin-foundation.spec.ts`
+
+### Must Fix Before Further Content Entry
+
+- None found (`target` categories below are all `>=4/5` for current editorial-production need).
+
+| Gate Category                                 | Score (0-5) | Decision     | Notes                                                                          |
+| --------------------------------------------- | ----------- | ------------ | ------------------------------------------------------------------------------ |
+| Business logic correctness and data integrity | `4/5`       | continue now | no known corruption/silent overwrite path in current content/admin flows       |
+| Security and authz                            | `4/5`       | continue now | admin and protected-route negative paths covered; fail-closed posture retained |
+| Reliability and failure handling              | `4/5`       | continue now | loading/error/retry/success states covered on touched core surfaces            |
+| Admin workflow and editability                | `4/5`       | continue now | real edit/save smoke validated; preview/edit flow available for active work    |
+
+### Plan Next (Not Blocking Current Content Entry)
+
+| Category Track                                            | Score (0-5) | Decision                           | Brief Link                                                                                        |
+| --------------------------------------------------------- | ----------- | ---------------------------------- | ------------------------------------------------------------------------------------------------- |
+| SEO and AI discoverability                                | `3/5`       | planned follow-up                  | `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`            |
+| QR redirect and campaign operations                       | `2/5`       | planned follow-up                  | `docs/task-briefs/planned/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`         |
+| Performance stretch + security hardening depth            | `3/5`       | planned follow-up                  | `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md` |
+| Incident/support + finance/reporting + i18n ops readiness | `3/5`       | new planned follow-up (score `<4`) | `docs/task-briefs/planned/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`         |
+
+- Brief creation policy applied: new brief created only for categories with `target-score <4` that were not already covered by an active planned brief.
+
 ## Session Continuity And Recovery
 
 1. `git status -sb`
@@ -145,6 +179,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-04 | working tree | core-flow gap scan completed for /, /course, /my-library, /admin using current verify evidence (unit/e2e/build green) | no P0 blockers found for continued content entry; planning follow-up captured in docs/task-briefs/planned/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md for non-blocking readiness categories (incident/finance/i18n) | next: continue revision-1 content production and log first real friction batch (P0/P1/P2)`
 - `2026-03-03 | b3847e1 (main) | ready-for-tomorrow checkpoint | synced local main after sticky-list-links merge and confirmed manual admin lesson edit/save smoke works; no blocking issues observed | next: continue revision-1 content entry and log first friction batch`
 - `2026-03-03 | 96f91e5 | implementation complete | delivered follow-up sticky-dismiss + linked-new-lessons behavior for my-library notice with updated signal model, UI behavior, and tests; npm run verify:pre-pr passed | next: push branch and open PR in Safari`
 - `2026-03-03 | kickoff | opened follow-up slice for my-library new-content notice sticky-dismiss + linked-new-lessons list (explicit X close only); created in-progress brief docs/task-briefs/in-progress/2026-03-03-my-library-new-content-notice-sticky-list-links-10-10.md | next: implement behavior and run verify:pre-pr before PR update`

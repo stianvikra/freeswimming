@@ -1,0 +1,144 @@
+# Task Brief: Operations, Finance, and i18n Readiness Baseline (10/10)
+
+## Metadata
+
+- `id`: `2026-03-04-operations-finance-i18n-readiness-baseline-10-10`
+- `status`: `planned`
+- `owner`: `stianvikra`
+- `created`: `2026-03-04`
+- `updated`: `2026-03-04`
+
+## Goal
+
+Establish production-safe operational readiness for core flows (`/`, `/course`, `/my-library`, `/admin`) across incident/support response, finance/reporting confidence, and i18n expansion readiness.
+
+## Why This Brief Exists
+
+- Core user/admin flows are stable enough to continue content production.
+- Readiness categories (`incident/support`, `finance/reporting`, `i18n`) are important before scale, but are not primary blockers for daily content entry right now.
+- We need explicit baseline controls so these areas move from implicit assumptions to auditable contracts.
+
+## Gap Trigger (Why This Is A New Brief)
+
+- Triggered by core-flow gap scan on `2026-03-04` with the policy: create new briefs only for `target-score <4`.
+- Scan result for this track: `3/5` (non-blocking for immediate content entry, but below target threshold for 10/10 readiness planning).
+- This brief captures the concrete follow-up needed to raise this area to `>=4/5` and eventually `5/5` where required.
+
+## Dependencies And Boundaries
+
+- Uses current source-of-truth/content/admin foundations:
+  - `docs/task-briefs/in-progress/2026-02-19-admin-content-source-of-truth-and-dashboard-10-10.md`
+  - `docs/task-briefs/in-progress/2026-02-22-admin-full-content-edit-workflow-10-10.md`
+  - `docs/task-briefs/in-progress/2026-02-25-content-production-v1-admin-editorial-run.md`
+- Related planned work with no overlap:
+  - SEO/AI: `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
+  - performance/security hardening: `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+  - QR redirect operations: `docs/task-briefs/planned/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`
+
+## Data Placement And Sync Contract (Required)
+
+- Server-canonical:
+  - identity, entitlements, content entities, progress rows, audit trails, commerce transaction identifiers.
+- Local-only:
+  - UI preferences and transient unsaved state that do not affect business truth.
+- Sync policy:
+  - server responses remain source of truth for content/progress/entitlements,
+  - readiness checks document how to detect and recover from stale/conflicting state.
+- Retention/sensitivity:
+  - no sensitive values in support diagnostics or operational runbooks.
+- Cache/invalidation:
+  - document route-level freshness expectations and invalidation triggers for changed core reads.
+
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                 | Evidence                               |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------- | -------------------------------------- |
+| Product goals and IA                          | `supporting` | N/A                                                                              | N/A                                    |
+| UX flow clarity                               | `target`     | Incident/help paths for core flows have clear next-step guidance.                | runbook walkthrough + QA notes         |
+| Visual design quality                         | `supporting` | N/A                                                                              | N/A                                    |
+| Business logic correctness and data integrity | `target`     | Reporting/ops checks detect data mismatch deterministically (no silent drift).   | unit checks + reconciliation checklist |
+| Admin editor ergonomics                       | `supporting` | N/A                                                                              | N/A                                    |
+| Accessibility (a11y)                          | `supporting` | N/A                                                                              | N/A                                    |
+| Performance (CWV + payloads)                  | `supporting` | N/A                                                                              | N/A                                    |
+| Data placement and sync boundaries            | `target`     | Local/server ownership is explicitly documented for all core-flow state.         | brief contract + code references       |
+| Caching and invalidation strategy             | `supporting` | N/A                                                                              | N/A                                    |
+| Reliability and failure handling              | `target`     | Core failures map to actionable runbook steps with no ambiguous escalation path. | runbook simulation                     |
+| Security and authz                            | `target`     | Operational procedures preserve fail-closed authz posture.                       | negative-path test references          |
+| Privacy and compliance                        | `target`     | Support/reporting diagnostics redact sensitive data by default.                  | log/event review checklist             |
+| Content governance                            | `supporting` | N/A                                                                              | N/A                                    |
+| Admin workflow and editability                | `supporting` | N/A                                                                              | N/A                                    |
+| SEO and crawlability                          | `supporting` | N/A                                                                              | N/A                                    |
+| AI discoverability                            | `supporting` | N/A                                                                              | N/A                                    |
+| Analytics and KPI observability               | `target`     | Required ops/reconciliation events are defined with safe payload contracts.      | event contract list                    |
+| Commerce and revenue ops                      | `target`     | Entitlement/checkout/reporting IDs remain traceable and reconcilable end-to-end. | reconciliation test plan               |
+| Incident response and support operations      | `target`     | P1/P0 incident response path is documented and runnable in <= 10 minutes.        | tabletop run output                    |
+| Finance and reporting operations              | `target`     | Weekly baseline report checks are documented and reproducible.                   | reporting checklist                    |
+| i18n operational readiness                    | `target`     | No critical blockers for adding locale routing/content metadata are unresolved.  | i18n readiness audit                   |
+| Stack-fit and dependency discipline           | `target`     | No unnecessary dependency growth for readiness baseline.                         | dependency diff                        |
+| Testing and QA automation                     | `target`     | Readiness-sensitive negative paths are covered by existing or added tests.       | test evidence                          |
+| Scalability and cost efficiency               | `supporting` | N/A                                                                              | N/A                                    |
+| DevOps and rollback readiness                 | `target`     | Rollback/escalation checklist exists for core-flow regressions.                  | rollback runbook                       |
+
+## Scope
+
+- Define and document operational readiness baseline for:
+  - incident/support handling for core routes and critical APIs,
+  - finance/reporting validation around entitlements/checkout metadata,
+  - i18n expansion readiness audit and blockers list.
+- Add/refresh deterministic checklists:
+  - incident triage,
+  - reconciliation checks,
+  - i18n schema/route readiness checks.
+- Add minimal targeted test/assertion references for critical negative paths where missing.
+
+## Out Of Scope
+
+- Full localization rollout (copy translation, locale UX, language switcher).
+- Full BI dashboard implementation.
+- Organization-wide on-call tooling rollout outside repo scope.
+
+## Acceptance Criteria
+
+1. Core-flow incident/support runbook exists with clear owner/escalation path.
+2. Finance/reporting baseline checklist exists and is reproducible.
+3. i18n readiness audit identifies blockers with owner/date.
+4. Security/privacy handling for support/reporting diagnostics is explicit and fail-safe.
+5. Any newly discovered critical gaps are linked to concrete follow-up briefs.
+
+## Validation
+
+- `npm run lint:briefs`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:unit`
+- targeted e2e/negative-path checks for touched contracts
+- `npm run verify:pre-pr`
+- before merge: `npm run verify:pre-merge`
+
+## Manual QA Environments
+
+- Local:
+  - `http://127.0.0.1:3000/`
+  - `http://127.0.0.1:3000/course`
+  - `http://127.0.0.1:3000/my-library`
+  - `http://127.0.0.1:3000/admin`
+- Preview:
+  - PR Vercel URL for runbook spot-check links
+
+## 10/10 Quality Bar
+
+- Runbooks must be concise, executable, and owner-assigned.
+- No vague “investigate” steps without concrete commands or log locations.
+- Support/finance/i18n readiness checks must be reproducible by someone other than author.
+
+## Session Continuity And Recovery
+
+1. `git status -sb`
+2. `git log --oneline -n 10`
+3. reopen this brief and continue from latest checkpoint.
+
+## Checkpoint Log
+
+- `2026-03-04 | planned | brief created from core-flow gap scan to cover non-blocking readiness categories (incident/finance/i18n) | next: prioritize slice and move to in-progress when implementation starts`
