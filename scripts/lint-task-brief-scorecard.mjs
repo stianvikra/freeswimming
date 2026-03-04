@@ -1,0 +1,293 @@
+#!/usr/bin/env node
+
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+
+const BRIEF_ROOT = "docs/task-briefs";
+const SCORECARD_PATH = "docs/quality/platform-10-10-scorecard.md";
+
+function run(command) {
+  try {
+    return execSync(command, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function parseArgs(argv) {
+  return {
+    all: argv.includes("--all"),
+    debug: argv.includes("--debug"),
+  };
+}
+
+function toCells(line) {
+  const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+  return trimmed.split("|").map((cell) => cell.trim());
+}
+
+function isSeparatorRow(line) {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("|")) return false;
+  const cells = toCells(trimmed);
+  if (cells.length === 0) return false;
+  return cells.every((cell) => /^:?-{3,}:?$/.test(cell.replace(/\s+/g, "")));
+}
+
+function extractMarkdownTables(text) {
+  const lines = text.split(/\r?\n/);
+  const tables = [];
+
+  for (let i = 0; i < lines.length - 1; i += 1) {
+    if (!lines[i].trim().startsWith("|")) continue;
+    if (!isSeparatorRow(lines[i + 1])) continue;
+
+    const header = toCells(lines[i]);
+    const rows = [];
+    let j = i + 2;
+
+    while (j < lines.length && lines[j].trim().startsWith("|")) {
+      if (!isSeparatorRow(lines[j])) {
+        rows.push(toCells(lines[j]));
+      }
+      j += 1;
+    }
+
+    tables.push({
+      header,
+      rows,
+      startLine: i + 1,
+      endLine: j,
+    });
+    i = j - 1;
+  }
+
+  return tables;
+}
+
+function normalizeCategory(input) {
+  return input
+    .toLowerCase()
+    .replace(/[`*_]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeMapping(input) {
+  const value = input
+    .toLowerCase()
+    .replace(/[`*_]/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+
+  if (value === "n/a" || value === "na") return "n/a";
+  return value;
+}
+
+function nonEmptyValue(input) {
+  const value = input.replace(/[`*_]/g, "").trim().toLowerCase();
+  return Boolean(value && value !== "n/a" && value !== "na" && value !== "-");
+}
+
+function parseCanonicalCategories() {
+  const scorecardText = readFileSync(SCORECARD_PATH, "utf8");
+  const tables = extractMarkdownTables(scorecardText);
+  const canonicalTable = tables.find((table) => {
+    const headers = table.header.map((value) => value.toLowerCase());
+    return headers.some((header) => header.includes("category"));
+  });
+
+  if (!canonicalTable) {
+    throw new Error(`Could not find category table in ${SCORECARD_PATH}.`);
+  }
+
+  const categoryIndex = canonicalTable.header.findIndex((value) =>
+    value.toLowerCase().includes("category")
+  );
+
+  if (categoryIndex < 0) {
+    throw new Error(`Could not detect category column in ${SCORECARD_PATH}.`);
+  }
+
+  return canonicalTable.rows
+    .map((row) => row[categoryIndex] ?? "")
+    .map((value) => value.replace(/[`*_]/g, "").trim())
+    .filter(Boolean);
+}
+
+function refExists(ref) {
+  return Boolean(run(`git rev-parse --verify ${ref}`));
+}
+
+function getCurrentBranch() {
+  return run("git branch --show-current");
+}
+
+function detectBaseRef() {
+  const explicit = process.env.BRIEF_LINT_BASE_REF?.trim();
+  if (explicit) return explicit;
+
+  const ghBase = process.env.GITHUB_BASE_REF?.trim();
+  if (ghBase) {
+    const remoteRef = `origin/${ghBase}`;
+    if (refExists(remoteRef)) return remoteRef;
+  }
+
+  const branch = getCurrentBranch();
+  if (branch && branch !== "main" && branch !== "master") {
+    if (refExists("origin/main")) return "origin/main";
+    if (refExists("origin/master")) return "origin/master";
+  }
+
+  if (refExists("HEAD~1")) return "HEAD~1";
+  return "";
+}
+
+function listAllBriefFiles() {
+  const output = run(`find ${BRIEF_ROOT} -type f -name "*.md" | sort`);
+  if (!output) return [];
+  return output.split("\n").map((line) => line.trim()).filter(Boolean);
+}
+
+function listChangedBriefFiles(baseRef) {
+  if (!baseRef) return [];
+  const output = run(`git diff --name-only --diff-filter=ACMR ${baseRef}...HEAD -- ${BRIEF_ROOT}`);
+  if (!output) return [];
+  return output
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.endsWith(".md"));
+}
+
+function findBriefScorecardTable(text) {
+  const tables = extractMarkdownTables(text);
+  return tables.find((table) => {
+    const headers = table.header.map((value) => value.toLowerCase());
+    const hasCategory = headers.some((header) => header.includes("category"));
+    const hasMapping = headers.some(
+      (header) => header.includes("mapping") || header.includes("class")
+    );
+    return hasCategory && hasMapping;
+  });
+}
+
+function lintBrief(filePath, canonicalCategories) {
+  const content = readFileSync(filePath, "utf8");
+  const errors = [];
+  const warnings = [];
+
+  if (!content.includes("docs/quality/platform-10-10-scorecard.md")) {
+    errors.push("Missing explicit scorecard reference to docs/quality/platform-10-10-scorecard.md.");
+  }
+
+  const table = findBriefScorecardTable(content);
+  if (!table) {
+    errors.push("Missing scorecard mapping table with `Category` + `Mapping/Class` columns.");
+    return { filePath, errors, warnings };
+  }
+
+  const header = table.header.map((value) => value.toLowerCase());
+  const categoryIndex = header.findIndex((value) => value.includes("category"));
+  const mappingIndex = header.findIndex(
+    (value) => value.includes("mapping") || value.includes("class")
+  );
+  const thresholdIndex = header.findIndex((value) => value.includes("threshold"));
+  const evidenceIndex = header.findIndex((value) => value.includes("evidence"));
+
+  if (thresholdIndex < 0) {
+    errors.push("Missing `threshold` column in scorecard mapping table.");
+  }
+
+  if (evidenceIndex < 0) {
+    errors.push("Missing `evidence` column in scorecard mapping table.");
+  }
+
+  const rowMap = new Map();
+  for (const row of table.rows) {
+    const categoryRaw = row[categoryIndex] ?? "";
+    const mappingRaw = row[mappingIndex] ?? "";
+    const categoryKey = normalizeCategory(categoryRaw);
+    const mapping = normalizeMapping(mappingRaw);
+    if (!categoryKey) continue;
+
+    rowMap.set(categoryKey, row);
+
+    if (!["target", "supporting", "n/a"].includes(mapping)) {
+      errors.push(
+        `Category "${categoryRaw}" has invalid mapping "${mappingRaw}". Use target/supporting/N/A.`
+      );
+      continue;
+    }
+
+    if (mapping === "target") {
+      if (thresholdIndex >= 0 && !nonEmptyValue(row[thresholdIndex] ?? "")) {
+        errors.push(`Category "${categoryRaw}" is target but has empty threshold.`);
+      }
+      if (evidenceIndex >= 0 && !nonEmptyValue(row[evidenceIndex] ?? "")) {
+        errors.push(`Category "${categoryRaw}" is target but has empty evidence source.`);
+      }
+    }
+  }
+
+  const missingCategories = canonicalCategories.filter(
+    (category) => !rowMap.has(normalizeCategory(category))
+  );
+  if (missingCategories.length > 0) {
+    errors.push(
+      `Missing canonical categories: ${missingCategories
+        .map((category) => `"${category}"`)
+        .join(", ")}.`
+    );
+  }
+
+  return { filePath, errors, warnings };
+}
+
+function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const canonicalCategories = parseCanonicalCategories();
+  const baseRef = detectBaseRef();
+  const files = args.all ? listAllBriefFiles() : listChangedBriefFiles(baseRef);
+
+  if (args.debug) {
+    console.log(`[brief-lint] baseRef=${baseRef || "(none)"}`);
+    console.log(`[brief-lint] files=${files.length}`);
+  }
+
+  if (files.length === 0) {
+    console.log("[brief-lint] No changed task briefs found. Skipping.");
+    process.exit(0);
+  }
+
+  const results = files.map((file) => lintBrief(file, canonicalCategories));
+  const errorResults = results.filter((result) => result.errors.length > 0);
+
+  for (const result of results) {
+    if (result.errors.length === 0 && result.warnings.length === 0) {
+      console.log(`[brief-lint] PASS ${result.filePath}`);
+      continue;
+    }
+
+    if (result.errors.length > 0) {
+      console.error(`[brief-lint] FAIL ${result.filePath}`);
+      for (const error of result.errors) {
+        console.error(`  - ${error}`);
+      }
+    }
+
+    for (const warning of result.warnings) {
+      console.warn(`[brief-lint] WARN ${result.filePath}: ${warning}`);
+    }
+  }
+
+  if (errorResults.length > 0) {
+    console.error(
+      `[brief-lint] ${errorResults.length}/${results.length} brief file(s) failed scorecard checks.`
+    );
+    process.exit(1);
+  }
+
+  console.log(`[brief-lint] All ${results.length} changed brief file(s) passed.`);
+}
+
+main();

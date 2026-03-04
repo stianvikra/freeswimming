@@ -71,6 +71,12 @@ Include:
 - evidence source (test, metric, manual QA, log),
 - expected closeout score (`0-5`) target.
 
+Automation gate:
+
+- changed briefs must pass `npm run lint:briefs`,
+- include all canonical scorecard categories (`target`/`supporting`/`N/A`),
+- each `target` row must have non-empty threshold + evidence.
+
 ## Data Placement And Sync Contract (Required For Stateful Features)
 
 For stateful work, define explicit boundaries:
@@ -105,6 +111,7 @@ List measurable outcomes.
 Which commands should pass?
 
 - `npm ci`
+- `npm run lint:briefs`
 - `npm run lint`
 - `npm run typecheck`
 - `npm run test:unit`
