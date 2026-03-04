@@ -29,6 +29,7 @@ This file defines how coding agents should collaborate in this repository.
 4. Accessibility semantics are preserved for changed UI.
 5. Related docs are updated when rules/contracts change.
 6. Business logic invariants and data integrity constraints for changed scope are explicitly validated (tests and/or deterministic runtime guards).
+7. Changed task briefs pass `npm run lint:briefs` (scorecard categories + target threshold/evidence checks).
 
 ## Platform 10/10 Governance
 
@@ -36,6 +37,10 @@ This file defines how coding agents should collaborate in this repository.
 - For every new or updated task brief, include explicit scorecard mapping:
   - categories marked `target`, `supporting`, or `N/A`,
   - measurable thresholds for each `target` category.
+- Enforcement:
+  - changed task briefs must pass `npm run lint:briefs`,
+  - scorecard table must include all canonical categories from `docs/quality/platform-10-10-scorecard.md`,
+  - each `target` row must include measurable threshold + evidence.
 - In final handoff for implementation work, include:
   - achieved score per target category (`0-5`),
   - remaining gaps (if any),

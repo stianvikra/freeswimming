@@ -1,11 +1,51 @@
 import { expect, test } from "@playwright/test";
 import { isDesktopProject } from "./project-guards";
 
+const DETERMINISTIC_COURSE_MODULES = [
+  {
+    id: "mod1",
+    title: "Module 1",
+    subtitle: "Deterministic e2e fixture",
+    lessons: [
+      {
+        id: "mod1-l1",
+        title: "Fixture lesson",
+        youtubeId: "Xh6OblO06LY",
+        estMinutes: 3,
+        lessonType: "learn",
+        goal: "Fixture goal",
+        cues: ["Fixture cue"],
+        commonMistakes: ["Fixture mistake"],
+        drill: {
+          title: "Fixture drill",
+          steps: ["Fixture step 1", "Fixture step 2"],
+        },
+        nextStep: "Fixture next step",
+      },
+    ],
+  },
+];
+
 test("course support card defaults to video analysis and poolside actions", async ({
   page,
 }, testInfo) => {
   test.skip(!isDesktopProject(testInfo), "Runs once on desktop profile.");
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
+
+  await page.route("**/api/course/content*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        modules: DETERMINISTIC_COURSE_MODULES,
+        preview: {
+          enabled: false,
+          mode: "published",
+        },
+      }),
+    });
+  });
 
   await page.goto("/course?lesson=mod1-l1");
 

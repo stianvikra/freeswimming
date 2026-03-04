@@ -14,6 +14,7 @@
 
 ## Test Evidence
 
+- [ ] `npm run lint:briefs`
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm run test:unit`
@@ -34,6 +35,8 @@
 
 - [ ] Acceptance criteria are met
 - [ ] Docs updated for behavior/contract changes
+- [ ] Changed task briefs include full 10/10 scorecard mapping (all categories marked target/supporting/N/A)
+- [ ] Every `target` scorecard row has measurable threshold + evidence source
 - [ ] PR is <= 500 changed lines, or intentionally split/explained
 - [ ] No secrets or sensitive data added
 
