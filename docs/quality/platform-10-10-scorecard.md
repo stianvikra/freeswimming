@@ -11,6 +11,32 @@ Use this scorecard as the shared quality contract across product, admin, and pla
 - `1`: missing baseline.
 - `0`: not implemented.
 
+## Score Conversion And Gates
+
+- `5/5 = 10/10`
+- `4/5 = 8/10`
+- `3/5 = 6/10`
+- `2/5 = 4/10`
+- `1/5 = 2/10`
+- `0/5 = 0/10`
+
+Gate policy:
+
+- Release gate:
+  - all `target` categories must be `>= 4/5` (minimum `8/10`).
+- 10/10 claim gate:
+  - all `target` categories must be `>= 4/5`,
+  - all explicitly designated `critical target` categories must be `5/5` (`10/10`).
+- Strict 10/10 mode (optional, brief-defined):
+  - all `target` categories must be `5/5`.
+
+Critical target categories must be listed explicitly in each brief closeout, and should normally include at least:
+
+- business logic correctness and data integrity,
+- security and authz,
+- reliability and failure handling,
+- testing and QA automation.
+
 ## Required Categories
 
 For each active brief, mark each category as `target`, `supporting`, or `N/A`, and define measurable thresholds.
@@ -49,6 +75,7 @@ For each active brief, mark each category as `target`, `supporting`, or `N/A`, a
 2. Brief acceptance criteria must include measurable outcomes for target categories.
 3. Final closeout must state score outcome (`0-5`) for each target category.
 4. If any target category is `<4`, the brief cannot move to `done` without explicit deferral.
+5. A brief may only claim `10/10` if all declared critical target categories are `5/5`.
 
 ## Analytics / GA Recommendation
 

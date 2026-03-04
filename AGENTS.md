@@ -45,6 +45,10 @@ This file defines how coding agents should collaborate in this repository.
   - achieved score per target category (`0-5`),
   - remaining gaps (if any),
   - defer/fix recommendation when a target score is `<4`.
+  - if claiming `10/10`, explicitly list critical target categories and confirm each is `5/5`.
+- Gate interpretation:
+  - release gate: all target categories `>=4/5` (`8/10` minimum),
+  - 10/10 claim gate: all critical target categories `5/5` (`10/10`).
 - Treat these categories as first-class quality gates across the full platform:
   - UX, UI/design, business logic correctness, data integrity, admin workflow, security/privacy, performance, reliability, SEO/AI discoverability, analytics/KPI, testing, and release/rollback readiness.
   - Include enterprise readiness where relevant:

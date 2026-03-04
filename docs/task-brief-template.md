@@ -70,6 +70,12 @@ Include:
 - threshold(s) for each `target` category,
 - evidence source (test, metric, manual QA, log),
 - expected closeout score (`0-5`) target.
+- critical target categories for `10/10` claim (must be `5/5` in closeout).
+
+Score gate policy:
+
+- release gate: all `target` categories `>=4/5` (`8/10` minimum),
+- 10/10 claim gate: all critical target categories `5/5` (`10/10`).
 
 Automation gate:
 
@@ -346,6 +352,9 @@ Run this gate before proposing lifecycle move/cleanup:
   - Security/privacy/compliance: check changed auth/data/payment paths against brief controls.
   - Performance/ops: check no obvious regressions in changed flows (including CWV-sensitive surfaces where relevant).
   - Regression safety: verify changes do not break adjacent routes/shared components.
+  - Score gate check:
+    - release gate: all target categories `>=4/5`,
+    - 10/10 claim: all critical target categories `5/5`.
 - Cleanup readiness:
   - confirm tests/QA evidence is captured in brief.
   - confirm branch/PR status is ready for post-merge hygiene.
