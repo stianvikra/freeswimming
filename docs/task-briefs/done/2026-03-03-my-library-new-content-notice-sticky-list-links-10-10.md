@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-03-my-library-new-content-notice-sticky-list-links-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-03`
 - `updated`: `2026-03-03`
@@ -94,6 +94,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-03 | b3847e1 (main) | merged and closed | PR #125 merged and branch deployed; sticky dismiss + linked-list notice behavior now live on main | next: continue editorial content-production run`
 - `2026-03-03 | 96f91e5 | implementation complete for sticky-list scope | updated signal model to include lesson metadata + added-lesson diff list, changed notice behavior to persist until explicit X dismiss, added direct per-lesson links, and updated unit/e2e/API tests; npm run verify:pre-pr passed | next: push branch and open PR in Safari`
 - `2026-03-03 | kickoff from main after PR #124 merge | moved brief planned->in-progress and confirmed scope: sticky notice until explicit X dismiss + linked list of new lessons | next: implement signal/model/UI/test updates and run verify:pre-pr`
 - `2026-03-03 | planned | sticky dismiss + linked new lessons follow-up scope captured from owner UX request | next: move brief to in-progress and implement`
