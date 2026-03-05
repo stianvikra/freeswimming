@@ -95,7 +95,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Content items list",
     detail:
-      "Shows all records currently in admin catalog. You can search by text, filter by type/status, click quick type buttons, and sort the list. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
+      "Shows one active content scope at a time (modules, lessons, 0-1000 sessions, poolside drills, products, pages). Use All content (audit) only when you need a full mixed list. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
   },
   {
     title: "Module -> lessons workspace",
@@ -136,12 +136,12 @@ const BUTTON_GUIDE = [
       {
         label: "All types filter",
         meaning:
-          "Limits the list to one content type (for example only lessons or only drills). Use this before bulk edits.",
+          "Selects active content scope. Keep one scope active for faster editing. Use All content (audit) only when you need cross-type review.",
       },
       {
         label: "Quick type buttons",
         meaning:
-          "One-click filter for modules, lessons, sessions, or drills, with count badges. Fastest way to jump to one group.",
+          "One-click scope launcher for modules, lessons, 0-1000 sessions, poolside drills, products, pages, or full audit mode.",
       },
       {
         label: "Course Workspace / All Content tabs",

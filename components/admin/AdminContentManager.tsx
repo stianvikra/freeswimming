@@ -25,6 +25,18 @@ const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = 
   { value: "product", label: "Product metadata" },
 ];
 
+const ALL_CONTENT_SCOPE_STORAGE_KEY = "fs_admin_all_content_scope";
+const DEFAULT_ALL_CONTENT_SCOPE: AdminContentType = "course_module";
+const ALL_CONTENT_SCOPE_OPTIONS: Array<{ value: "all" | AdminContentType; label: string }> = [
+  { value: "all", label: "All content (audit)" },
+  { value: "course_module", label: "Course modules" },
+  { value: "course_lesson", label: "Course lessons" },
+  { value: "guide_session", label: "0-1000 sessions" },
+  { value: "guide_drill", label: "Poolside drills" },
+  { value: "product", label: "Programs/products" },
+  { value: "page", label: "Pages" },
+];
+
 const CONTENT_TYPE_LABEL: Record<AdminContentType, string> = {
   course_module: "Course module",
   course_lesson: "Course lesson",
@@ -116,6 +128,14 @@ type MirrorSnapshot = {
     mismatchCount: number;
     coverageMismatchCount: number;
   };
+};
+
+const MIRROR_METRIC_KEY_BY_CONTENT_TYPE: Partial<Record<AdminContentType, MirrorMetric["key"]>> = {
+  course_module: "course_module",
+  course_lesson: "course_lesson",
+  guide_session: "guide_session",
+  guide_drill: "guide_drill",
+  product: "programs",
 };
 
 type AdminContentListResponse =
@@ -360,6 +380,17 @@ const INITIAL_FORM: FormState = {
 function normalizeCategoryInput(value: string): string {
   const collapsed = value.trim().replace(/\s+/g, " ");
   return collapsed.length > 0 ? collapsed : "General";
+}
+
+function isAdminContentType(value: string): value is AdminContentType {
+  return CONTENT_TYPE_OPTIONS.some((option) => option.value === value);
+}
+
+function parseStoredAllContentScope(value: string | null): "all" | AdminContentType | null {
+  if (!value) return null;
+  if (value === "all") return "all";
+  if (isAdminContentType(value)) return value;
+  return null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -662,7 +693,13 @@ export default function AdminContentManager() {
   const [editError, setEditError] = useState<string | null>(null);
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [listQuery, setListQuery] = useState("");
-  const [listTypeFilter, setListTypeFilter] = useState<"all" | AdminContentType>("all");
+  const [listTypeFilter, setListTypeFilter] = useState<"all" | AdminContentType>(() => {
+    if (typeof window === "undefined") return DEFAULT_ALL_CONTENT_SCOPE;
+    const storedScope = parseStoredAllContentScope(
+      window.localStorage.getItem(ALL_CONTENT_SCOPE_STORAGE_KEY)
+    );
+    return storedScope ?? DEFAULT_ALL_CONTENT_SCOPE;
+  });
   const [listStatusFilter, setListStatusFilter] = useState<"all" | AdminContentStatus>("all");
   const [listSort, setListSort] = useState<ListSortOption>("default");
   const [listModuleFilter, setListModuleFilter] = useState("");
@@ -1288,6 +1325,11 @@ export default function AdminContentManager() {
     });
   }, [courseLessonWorkspaceItems, moduleIdSet, moduleOptions]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(ALL_CONTENT_SCOPE_STORAGE_KEY, listTypeFilter);
+  }, [listTypeFilter]);
+
   const groupedCountLabel = useMemo(() => {
     if (!schemaReady) return "Content catalog will appear after admin content setup is ready.";
     if (items.length === 0) return "No content items yet.";
@@ -1305,6 +1347,11 @@ export default function AdminContentManager() {
     if (listModuleFilter === WORKSPACE_UNLINKED_MODULE_ID) return "Module scope: Unlinked lessons";
     return `Module scope: ${moduleLabelById.get(listModuleFilter) ?? "Selected module"}`;
   }, [listModuleFilter, moduleLabelById]);
+
+  const activeMirrorMetricKey = useMemo(() => {
+    if (listTypeFilter === "all") return null;
+    return MIRROR_METRIC_KEY_BY_CONTENT_TYPE[listTypeFilter] ?? null;
+  }, [listTypeFilter]);
 
   const courseStructureIntegrityFragments = useMemo(() => {
     const fragments: string[] = [];
@@ -1378,7 +1425,7 @@ export default function AdminContentManager() {
   function clearFocusMode() {
     setListFocusState(null);
     setListQuery("");
-    setListTypeFilter("all");
+    setListTypeFilter(DEFAULT_ALL_CONTENT_SCOPE);
     setListStatusFilter("all");
     setListSort("default");
     setListModuleFilter("");
@@ -2037,8 +2084,7 @@ export default function AdminContentManager() {
                 }
                 className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
               >
-                <option value="all">All types</option>
-                {CONTENT_TYPE_OPTIONS.map((option) => (
+                {ALL_CONTENT_SCOPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -2126,37 +2172,38 @@ export default function AdminContentManager() {
         </div>
 
         {isAllContentView ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              data-testid="admin-content-type-chip-all"
-              onClick={() => handleManualTypeFilterChange("all")}
-              className={[
-                "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
-                listTypeFilter === "all"
-                  ? "border-blue-300 bg-blue-50 text-blue-800"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-              ].join(" ")}
-            >
-              All ({typeCounts.all})
-            </button>
-            {CONTENT_TYPE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                data-testid={`admin-content-type-chip-${option.value}`}
-                onClick={() => handleManualTypeFilterChange(option.value)}
-                className={[
-                  "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
-                  listTypeFilter === option.value
-                    ? "border-blue-300 bg-blue-50 text-blue-800"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                ].join(" ")}
-              >
-                {option.label} ({typeCounts[option.value]})
-              </button>
-            ))}
+          <div className="mt-4 space-y-2">
+            <p className="text-xs text-slate-600">
+              Content scope: choose one group to avoid long mixed scrolling. Use{" "}
+              <span className="font-semibold">All content (audit)</span> only when you need full
+              cross-type review.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {ALL_CONTENT_SCOPE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-testid={`admin-content-type-chip-${option.value}`}
+                  onClick={() => handleManualTypeFilterChange(option.value)}
+                  className={[
+                    "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
+                    listTypeFilter === option.value
+                      ? "border-blue-300 bg-blue-50 text-blue-800"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {option.label} (
+                  {option.value === "all" ? typeCounts.all : typeCounts[option.value]})
+                </button>
+              ))}
+            </div>
           </div>
+        ) : null}
+
+        {isAllContentView && listTypeFilter === "all" ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            All content audit mode is enabled. This can be a long mixed list.
+          </p>
         ) : null}
 
         {isAllContentView && schemaReady && courseLessonWorkspaceItems.length > 0 ? (
@@ -2221,11 +2268,13 @@ export default function AdminContentManager() {
                     type="button"
                     data-testid={`admin-mirror-metric-${metric.key}`}
                     onClick={() => handleMirrorMetricFocus(metric)}
+                    aria-pressed={activeMirrorMetricKey === metric.key}
                     className={[
                       "w-full rounded-lg border px-3 py-2 text-left text-xs transition hover:brightness-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300",
                       metric.status === "matched"
                         ? "border-emerald-200 bg-emerald-50/70 text-emerald-800"
                         : "border-amber-200 bg-amber-50 text-amber-900",
+                      activeMirrorMetricKey === metric.key ? "ring-2 ring-blue-300" : "",
                     ].join(" ")}
                   >
                     <p className="font-semibold">{metric.label}</p>
@@ -2252,7 +2301,9 @@ export default function AdminContentManager() {
                       </p>
                     ) : null}
                     <p className="mt-2 text-[11px] font-medium opacity-80">
-                      Click to focus content list
+                      {activeMirrorMetricKey === metric.key
+                        ? "Active scope"
+                        : "Click to focus content list"}
                     </p>
                   </button>
                 </li>

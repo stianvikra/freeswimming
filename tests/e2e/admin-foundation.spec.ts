@@ -175,6 +175,7 @@ test.describe("admin foundation", () => {
     const productTypeChip = page.getByTestId("admin-content-type-chip-product");
     const allTypeChip = page.getByTestId("admin-content-type-chip-all");
     const typeSelect = createForm.getByLabel("Type");
+    await expect(listTypeFilter).toHaveValue("course_module");
     await expect(listTypeFilter).toBeVisible();
     await expect(listStatusFilter).toBeVisible();
     await expect(listSort).toBeVisible();
@@ -216,7 +217,7 @@ test.describe("admin foundation", () => {
     await expect(listTypeFilter).toHaveValue("course_lesson");
     await expect(focusModeBanner).toContainText("Focus mode: Course lessons");
     await focusModeBanner.getByRole("button", { name: "Clear focus" }).click();
-    await expect(listTypeFilter).toHaveValue("all");
+    await expect(listTypeFilter).toHaveValue("course_module");
 
     await courseWorkspaceTab.click();
     await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
@@ -352,7 +353,7 @@ test.describe("admin foundation", () => {
     ).toHaveValue("contact");
     await reopenedLessonEditForm.getByRole("button", { name: "Cancel" }).click();
     await focusModeBanner.getByRole("button", { name: "Clear focus" }).click();
-    await expect(listTypeFilter).toHaveValue("all");
+    await expect(listTypeFilter).toHaveValue("course_module");
     await expect(createdItem).toBeVisible();
 
     const editedTitle = `${title} Updated`;
