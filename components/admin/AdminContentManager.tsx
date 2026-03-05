@@ -41,6 +41,25 @@ const STATUS_OPTIONS: Array<{ value: AdminContentStatus; label: string }> = [
   { value: "archived", label: "Archived" },
 ];
 
+const COURSE_CONTENT_TYPES: ReadonlySet<AdminContentType> = new Set([
+  "course_module",
+  "course_lesson",
+]);
+
+const STATUS_LABEL_BY_VALUE: Record<AdminContentStatus, string> = {
+  draft: "Draft",
+  review: "Review",
+  published: "Published",
+  archived: "Archived",
+};
+
+const STATUS_CHIP_CLASS_BY_VALUE: Record<AdminContentStatus, string> = {
+  draft: "border-slate-300 bg-slate-100 text-slate-700",
+  review: "border-amber-300 bg-amber-100 text-amber-800",
+  published: "border-emerald-300 bg-emerald-100 text-emerald-800",
+  archived: "border-slate-300 bg-slate-200 text-slate-700",
+};
+
 type ListSortOption =
   | "default"
   | "title_asc"
@@ -261,6 +280,16 @@ type CourseLessonWorkspaceItem = {
   runtimeLessonId: string;
 };
 
+type CourseModuleWorkspaceItem = {
+  id: string;
+  title: string;
+  slug: string;
+  status: AdminContentStatus;
+  sortOrder: number;
+};
+
+type StatusCountByState = Record<AdminContentStatus, number>;
+
 type ContentListFocusState = {
   source: "mirror" | "workspace";
   label: string;
@@ -350,6 +379,15 @@ function inferLessonIdFromSlug(slug: string): string {
   const match = slug.match(/course-lesson-(.+)$/i);
   if (match?.[1]) return match[1].trim();
   return slug.trim();
+}
+
+function createStatusCountByState(): StatusCountByState {
+  return {
+    draft: 0,
+    review: 0,
+    published: 0,
+    archived: 0,
+  };
 }
 
 function parseBodyString(body: unknown, key: string): string | null {
@@ -627,6 +665,7 @@ export default function AdminContentManager() {
   const [listSort, setListSort] = useState<ListSortOption>("default");
   const [listModuleFilter, setListModuleFilter] = useState("");
   const [listFocusState, setListFocusState] = useState<ContentListFocusState | null>(null);
+  const [showCourseRowsInContentList, setShowCourseRowsInContentList] = useState(false);
   const [workspaceModuleId, setWorkspaceModuleId] = useState(WORKSPACE_ALL_MODULES_ID);
   const [courseStructureBusy, setCourseStructureBusy] = useState(false);
   const [courseStructureMessage, setCourseStructureMessage] = useState<string | null>(null);
@@ -678,6 +717,24 @@ export default function AdminContentManager() {
             parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug),
         })),
     [items, moduleLabelById]
+  );
+
+  const courseModuleWorkspaceItems = useMemo<CourseModuleWorkspaceItem[]>(
+    () =>
+      items
+        .filter((item) => item.content_type === "course_module")
+        .sort(
+          (left, right) =>
+            left.sort_order - right.sort_order || left.title.localeCompare(right.title)
+        )
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          slug: item.slug,
+          status: item.status,
+          sortOrder: item.sort_order,
+        })),
+    [items]
   );
 
   const courseStructureModuleRows = useMemo<CourseStructureModuleRow[]>(
@@ -767,6 +824,49 @@ export default function AdminContentManager() {
     [courseLessonWorkspaceItems, moduleIdSet]
   );
 
+  const moduleStatusCounts = useMemo<StatusCountByState>(() => {
+    const counts = createStatusCountByState();
+    for (const moduleItem of courseModuleWorkspaceItems) {
+      counts[moduleItem.status] += 1;
+    }
+    return counts;
+  }, [courseModuleWorkspaceItems]);
+
+  const lessonStatusCounts = useMemo<StatusCountByState>(() => {
+    const counts = createStatusCountByState();
+    for (const lessonItem of courseLessonWorkspaceItems) {
+      counts[lessonItem.status] += 1;
+    }
+    return counts;
+  }, [courseLessonWorkspaceItems]);
+
+  const lessonStatusCountsByModuleId = useMemo(() => {
+    const byModuleId = new Map<string, StatusCountByState>();
+    for (const moduleItem of courseModuleWorkspaceItems) {
+      byModuleId.set(moduleItem.id, createStatusCountByState());
+    }
+
+    for (const lessonItem of courseLessonWorkspaceItems) {
+      if (!lessonItem.parentId || !byModuleId.has(lessonItem.parentId)) continue;
+      const counts = byModuleId.get(lessonItem.parentId);
+      if (!counts) continue;
+      counts[lessonItem.status] += 1;
+    }
+
+    return byModuleId;
+  }, [courseLessonWorkspaceItems, courseModuleWorkspaceItems]);
+
+  const hasNonCourseItems = useMemo(
+    () => items.some((item) => !COURSE_CONTENT_TYPES.has(item.content_type)),
+    [items]
+  );
+
+  const shouldHideCourseRowsInCatalog =
+    !showCourseRowsInContentList &&
+    listTypeFilter === "all" &&
+    listModuleFilter.length === 0 &&
+    hasNonCourseItems;
+
   const workspaceLessons = useMemo(() => {
     if (!workspaceModuleId) return [];
     if (workspaceModuleId === WORKSPACE_ALL_MODULES_ID) return courseLessonWorkspaceItems;
@@ -781,6 +881,9 @@ export default function AdminContentManager() {
   const filteredItems = useMemo(() => {
     const normalizedQuery = listQuery.trim().toLowerCase();
     return items.filter((item) => {
+      if (shouldHideCourseRowsInCatalog && COURSE_CONTENT_TYPES.has(item.content_type)) {
+        return false;
+      }
       if (listTypeFilter !== "all" && item.content_type !== listTypeFilter) return false;
       if (listModuleFilter) {
         if (item.content_type !== "course_lesson") return false;
@@ -802,7 +905,15 @@ export default function AdminContentManager() {
         .toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [items, listModuleFilter, listQuery, listStatusFilter, listTypeFilter, moduleIdSet]);
+  }, [
+    items,
+    listModuleFilter,
+    listQuery,
+    listStatusFilter,
+    listTypeFilter,
+    moduleIdSet,
+    shouldHideCourseRowsInCatalog,
+  ]);
 
   const sortedItems = useMemo(() => {
     if (listSort === "default") return filteredItems;
@@ -1332,6 +1443,32 @@ export default function AdminContentManager() {
     }
   }
 
+  function handleWorkspaceFocusModule(moduleId: string) {
+    handleWorkspaceScopeChange(moduleId);
+  }
+
+  function handleWorkspaceEditModule(itemId: string) {
+    const moduleItem = items.find(
+      (item) => item.id === itemId && item.content_type === "course_module"
+    );
+    if (!moduleItem) return;
+    handleStartEdit(moduleItem);
+    setWorkspaceModuleId(itemId);
+    setShowCourseRowsInContentList(true);
+    setListTypeFilter("course_module");
+    setListStatusFilter("all");
+    setListQuery("");
+    setListSort("default");
+    setListModuleFilter("");
+    const moduleLabel = moduleLabelById.get(itemId) ?? moduleItem.title;
+    setListFocusState({
+      source: "workspace",
+      label: `Focus mode: ${moduleLabel}`,
+      detail: "Editing one module inside the course workspace.",
+    });
+    scrollToContentRow(itemId);
+  }
+
   function handleWorkspaceEditLesson(itemId: string) {
     const lessonItem = items.find(
       (item) => item.id === itemId && item.content_type === "course_lesson"
@@ -1570,6 +1707,9 @@ export default function AdminContentManager() {
       }
 
       setItems((prev) => [payload.item, ...prev]);
+      if (COURSE_CONTENT_TYPES.has(payload.item.content_type)) {
+        setShowCourseRowsInContentList(true);
+      }
       setFormState(INITIAL_FORM);
       setActionNotice("Content item created.");
     } catch {
@@ -1591,6 +1731,20 @@ export default function AdminContentManager() {
     if (status === "review") return "Move to review";
     if (status === "archived") return "Archive";
     return "Move to draft";
+  }
+
+  function statusLabel(status: AdminContentStatus): string {
+    return STATUS_LABEL_BY_VALUE[status];
+  }
+
+  function statusChipClass(status: AdminContentStatus): string {
+    return STATUS_CHIP_CLASS_BY_VALUE[status];
+  }
+
+  function statusCountSummary(counts: StatusCountByState): string {
+    return STATUS_OPTIONS.map(
+      (option) => `${counts[option.value]} ${option.label.toLowerCase()}`
+    ).join(" · ");
   }
 
   function rowContextHint(item: AdminContentItemRow): string | null {
@@ -1817,6 +1971,13 @@ export default function AdminContentManager() {
             {moduleScopeLabel ? (
               <p className="mt-1 text-xs font-medium text-blue-700">{moduleScopeLabel}</p>
             ) : null}
+            {schemaReady && courseLessonWorkspaceItems.length > 0 ? (
+              <p className="mt-1 text-xs text-slate-500">
+                {shouldHideCourseRowsInCatalog
+                  ? "Course module/lesson rows are hidden in full catalog by default. Use workspace or enable full list visibility."
+                  : "Course module/lesson rows are visible in full catalog."}
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <label className="sr-only" htmlFor="admin-content-search">
@@ -1930,6 +2091,19 @@ export default function AdminContentManager() {
           ))}
         </div>
 
+        {schemaReady && courseLessonWorkspaceItems.length > 0 ? (
+          <label className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={showCourseRowsInContentList}
+              onChange={(event) => setShowCourseRowsInContentList(event.target.checked)}
+              data-testid="admin-course-list-visibility-toggle"
+              className="h-4 w-4 border border-slate-300"
+            />
+            Show course modules and lessons in full content list
+          </label>
+        ) : null}
+
         {listFocusState ? (
           <div
             data-testid="admin-content-focus-mode"
@@ -2030,7 +2204,7 @@ export default function AdminContentManager() {
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-slate-900">
-                Module -&gt; lessons workspace
+                Course workspace: modules -&gt; lessons
               </h3>
               <p className="text-xs text-slate-500">
                 {courseLessonWorkspaceItems.length} lesson
@@ -2038,9 +2212,119 @@ export default function AdminContentManager() {
               </p>
             </div>
             <p className="mt-2 text-xs text-slate-600">
-              Pick a module scope to sync workspace and list view, then jump straight to row edit or
-              open preview/public lesson pages.
+              Status board + module-scoped lesson actions in one place. Use this first, then open
+              full list only when needed.
             </p>
+
+            <div
+              className="mt-3 grid gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-2"
+              data-testid="admin-course-status-overview"
+            >
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Modules
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">
+                  {courseModuleWorkspaceItems.length} total
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  {statusCountSummary(moduleStatusCounts)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Lessons
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">
+                  {courseLessonWorkspaceItems.length} total
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  {statusCountSummary(lessonStatusCounts)}
+                </p>
+              </div>
+            </div>
+
+            {courseModuleWorkspaceItems.length > 0 ? (
+              <ul
+                className="mt-3 grid gap-2 lg:grid-cols-2"
+                data-testid="admin-course-module-status-list"
+              >
+                {courseModuleWorkspaceItems.map((moduleItem) => {
+                  const moduleLessonCounts =
+                    lessonStatusCountsByModuleId.get(moduleItem.id) ?? createStatusCountByState();
+                  const moduleLessonCount = Object.values(moduleLessonCounts).reduce(
+                    (sum, value) => sum + value,
+                    0
+                  );
+                  const modulePreviewLessonId = firstRuntimeLessonIdByModuleId.get(moduleItem.id);
+                  const modulePreviewUrl = modulePreviewLessonId
+                    ? buildCoursePreviewHref({
+                        lessonId: modulePreviewLessonId,
+                        mode: resolveCoursePreviewModeFromStatus(moduleItem.status),
+                        previewType: "module",
+                        previewRef: moduleItem.slug,
+                      })
+                    : null;
+
+                  return (
+                    <li
+                      key={moduleItem.id}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+                      data-testid="admin-course-module-status-row"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {moduleItem.sortOrder + 1}. {moduleItem.title}
+                        </p>
+                        <span
+                          className={[
+                            "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold",
+                            statusChipClass(moduleItem.status),
+                          ].join(" ")}
+                        >
+                          {statusLabel(moduleItem.status)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-600">
+                        {moduleLessonCount} linked lesson{moduleLessonCount === 1 ? "" : "s"} ·{" "}
+                        {statusCountSummary(moduleLessonCounts)}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleWorkspaceFocusModule(moduleItem.id)}
+                          className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Open module scope
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleWorkspaceEditModule(moduleItem.id)}
+                          className="inline-flex h-7 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-medium text-blue-800 transition hover:bg-blue-100"
+                        >
+                          Edit module
+                        </button>
+                        {modulePreviewUrl ? (
+                          <a
+                            href={modulePreviewUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                          >
+                            Open module preview
+                          </a>
+                        ) : (
+                          <span className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 px-3 text-xs font-medium text-slate-500">
+                            Open module preview (no lessons)
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+
             <div className="mt-3 flex flex-wrap items-end gap-2">
               <label className="space-y-1 text-xs font-medium text-slate-700">
                 <span>Module workspace</span>
@@ -2099,9 +2383,19 @@ export default function AdminContentManager() {
                       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
                     >
                       <div className="min-w-[220px]">
-                        <p className="text-sm font-semibold text-slate-900">
-                          Lesson {index + 1}: {lesson.title}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-900">
+                            Lesson {index + 1}: {lesson.title}
+                          </p>
+                          <span
+                            className={[
+                              "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold",
+                              statusChipClass(lesson.status),
+                            ].join(" ")}
+                          >
+                            {statusLabel(lesson.status)}
+                          </span>
+                        </div>
                         <p className="mt-1 text-xs text-slate-500">
                           {lesson.moduleLabel ?? "Unlinked module"} · /{lesson.slug} · id:{" "}
                           {lesson.runtimeLessonId}

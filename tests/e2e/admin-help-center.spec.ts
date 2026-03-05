@@ -50,6 +50,10 @@ test.describe("admin help center", () => {
     await expect(page.getByText("Quick type buttons:")).toBeVisible();
     await expect(page.getByText("Mirror snapshot cards:")).toBeVisible();
     await expect(page.getByText("Module workspace:")).toBeVisible();
+    await expect(page.getByText("Course status board:")).toBeVisible();
+    await expect(
+      page.getByText("Show course modules and lessons in full content list:")
+    ).toBeVisible();
     await expect(page.getByText("Edit lesson:")).toBeVisible();
     await expect(page.getByText("Open preview:")).toBeVisible();
     await expect(page.getByText("Open lesson:")).toBeVisible();

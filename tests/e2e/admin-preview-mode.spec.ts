@@ -59,15 +59,14 @@ test.describe("admin preview mode", () => {
       /preview=1&previewMode=published&previewType=lesson/
     );
 
-    const moduleRow = page
-      .getByTestId("admin-content-item")
+    const moduleWorkspaceRow = page
+      .getByTestId("admin-course-module-status-row")
       .filter({ hasText: "Introduction to the Course" })
       .first();
-    await expect(moduleRow).toBeVisible();
-    await expect(moduleRow.getByRole("link", { name: "Open preview" })).toHaveAttribute(
-      "href",
-      /preview=1&previewMode=published&previewType=module/
-    );
+    await expect(moduleWorkspaceRow).toBeVisible();
+    await expect(
+      moduleWorkspaceRow.getByRole("link", { name: "Open module preview" })
+    ).toHaveAttribute("href", /preview=1&previewMode=published&previewType=module/);
 
     const [previewPage] = await Promise.all([
       page.context().waitForEvent("page"),

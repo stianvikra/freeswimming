@@ -154,6 +154,16 @@ const BUTTON_GUIDE = [
           "Shows module-scoped lessons and keeps the list view in sync so you stay in one editing context.",
       },
       {
+        label: "Course status board",
+        meaning:
+          "Shows module and lesson lifecycle counts (draft/review/published/archived) so you can audit status before editing.",
+      },
+      {
+        label: "Show course modules and lessons in full content list",
+        meaning:
+          "Turns duplicate course rows on/off in the full catalog. Keep it off to reduce clutter and use workspace as the primary course surface.",
+      },
+      {
         label: "Edit lesson",
         meaning:
           "Opens edit mode for that lesson row and jumps to it in the content list. Use this for lesson body updates.",
