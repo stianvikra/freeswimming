@@ -106,5 +106,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-05 | 7eda80d | committed scope-first All Content + mirror launcher follow-up on active PR branch (PR #132) | local verify:pre-pr green; next: monitor CI checks and update PR handoff`
 - `2026-03-05 | working tree | implemented scope-first All Content (default scope + explicit audit mode), mirror-card active-state focus, local scope persistence, updated Help/Guide copy, and adjusted admin foundation e2e assertions for new clear-focus behavior | npm run verify:pre-pr passed (73 passed / 179 skipped) | next: commit, push, update PR in Safari`
 - `2026-03-05 | kickoff | follow-up slice started for scope-first All Content + mirror launcher UX to reduce mixed-list friction | next: implement UI/filter state + update tests + run verify:pre-pr`
