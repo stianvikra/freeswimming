@@ -151,5 +151,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-05 | a1191ca | committed admin content tab split + test stabilization and opened PR #132 (https://github.com/stianvikra/freeswimming/pull/132) in Safari | local verify:pre-pr green; CI required checks pending`
 - `2026-03-05 | working tree | implemented admin Content top-level split (Course Workspace vs All Content), updated help center copy, refreshed admin e2e contracts, and hardened two existing flaky e2e specs (`install-entry`, `install-prompt`, `my-library notice`) encountered during gate execution | verify:pre-pr passed (73 passed / 179 skipped) | next: commit, push, open PR in Safari`
 - `2026-03-05 | kickoff | opened in-progress brief for top-level Content tab split (Course Workspace vs All Content) after merge of workspace-status overview slice | next: implement tabs + regression coverage and run verify:pre-pr`
