@@ -53,6 +53,10 @@ test.describe("admin content parity", () => {
 
     await page.getByTestId("admin-tab-content").click();
     await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
+    const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
+    await expect(allContentTab).toBeVisible();
+    await allContentTab.click();
+    await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("admin-content-import-platform")).toHaveCount(0);
     await expect(page.getByTestId("admin-content-item").first()).toBeVisible({ timeout: 20_000 });
 

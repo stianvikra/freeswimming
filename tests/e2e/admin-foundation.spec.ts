@@ -134,6 +134,12 @@ test.describe("admin foundation", () => {
     await tabContent.click();
     await expect(activeSectionLabel).toHaveText("Content");
     await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
+    const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
+    const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
+    await expect(courseWorkspaceTab).toBeVisible();
+    await expect(allContentTab).toBeVisible();
+    await allContentTab.click();
+    await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
 
     const createForm = page.getByTestId("admin-content-create-form");
     await createForm.getByLabel("Title").fill(title);
@@ -197,7 +203,14 @@ test.describe("admin foundation", () => {
     await listStatusFilter.selectOption("all");
     await listTypeFilter.selectOption("all");
 
+    await courseWorkspaceTab.click();
+    await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
+
     const mirrorLessonCard = page.getByTestId("admin-mirror-metric-course_lesson");
+    await expect(mirrorLessonCard).toHaveCount(0);
+    await allContentTab.click();
+    await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("admin-course-list-visibility-toggle")).toBeVisible();
     await expect(mirrorLessonCard).toBeVisible();
     await mirrorLessonCard.click();
     await expect(listTypeFilter).toHaveValue("course_lesson");
@@ -205,10 +218,12 @@ test.describe("admin foundation", () => {
     await focusModeBanner.getByRole("button", { name: "Clear focus" }).click();
     await expect(listTypeFilter).toHaveValue("all");
 
+    await courseWorkspaceTab.click();
+    await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
+
     const lessonWorkspace = page.getByTestId("admin-course-lesson-workspace");
     await expect(lessonWorkspace).toBeVisible();
     await expect(page.getByTestId("admin-course-status-overview")).toBeVisible();
-    await expect(page.getByTestId("admin-course-list-visibility-toggle")).toBeVisible();
     const workspaceModuleSelect = lessonWorkspace.getByLabel("Module workspace");
     await expect(workspaceModuleSelect).toBeVisible();
     const introModuleValue = await workspaceModuleSelect.evaluate((node) => {

@@ -144,6 +144,11 @@ const BUTTON_GUIDE = [
           "One-click filter for modules, lessons, sessions, or drills, with count badges. Fastest way to jump to one group.",
       },
       {
+        label: "Course Workspace / All Content tabs",
+        meaning:
+          "Use Course Workspace for module+lesson production flow, and All Content for full catalog filtering, row editing, and creating new items.",
+      },
+      {
         label: "Mirror snapshot cards",
         meaning:
           "Click a snapshot card to focus the list on that content group and jump directly to the list area.",

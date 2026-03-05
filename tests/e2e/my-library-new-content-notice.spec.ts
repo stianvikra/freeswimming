@@ -21,6 +21,12 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 }
 
 test.describe("my library new content notice", () => {
+  async function waitForNoticeResolution(page: Page) {
+    await expect(page.getByTestId("my-library-new-content-notice-loading")).toHaveCount(0, {
+      timeout: 15_000,
+    });
+  }
+
   test("shows, dismisses, persists, and reappears on stale seen signature", async ({
     page,
   }, testInfo) => {
@@ -37,6 +43,7 @@ test.describe("my library new content notice", () => {
     });
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await waitForNoticeResolution(page);
 
     const banner = page.getByTestId("my-library-new-content-notice");
     await expect(banner).toBeVisible();
@@ -48,6 +55,7 @@ test.describe("my library new content notice", () => {
 
     await page.goto("/my-library");
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
 
     await page.getByTestId("my-library-new-content-dismiss").click();
@@ -55,6 +63,7 @@ test.describe("my library new content notice", () => {
 
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toHaveCount(0);
 
     await page.evaluate(() => {
@@ -74,6 +83,7 @@ test.describe("my library new content notice", () => {
     });
 
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
+    await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
     await page.getByTestId("my-library-new-content-item-mod1-l1").click();
     await expect(page).toHaveURL(/\/course(\?|$)/);
@@ -97,6 +107,7 @@ test.describe("my library new content notice", () => {
 
     await loginToMyLibraryViaDevBypass(page);
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice-error")).toBeVisible();
     await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
   });

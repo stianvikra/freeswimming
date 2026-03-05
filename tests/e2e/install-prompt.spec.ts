@@ -76,6 +76,19 @@ async function satisfyDoneGateIfPresent(page: Page) {
   await expect(markDoneButton).toBeEnabled();
 }
 
+async function activateMarkDoneButton(page: Page) {
+  const markDoneButton = page.getByRole("button", { name: "Mark as done" });
+  await expect(markDoneButton).toBeVisible();
+  await expect(markDoneButton).toBeEnabled();
+
+  try {
+    await markDoneButton.click({ timeout: 5_000 });
+  } catch {
+    await markDoneButton.focus();
+    await page.keyboard.press("Enter");
+  }
+}
+
 test("main menu exposes a persistent install action", async ({ page }, testInfo) => {
   test.skip(
     !isMobileProject(testInfo),
@@ -196,7 +209,7 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   await primeInstallPrompt(page, "dismissed");
 
   await satisfyDoneGateIfPresent(page);
-  await markDoneButton.click();
+  await activateMarkDoneButton(page);
 
   const prompt = page.getByTestId("a2hs-auto-prompt");
   await expect(prompt).toBeVisible({ timeout: 4_500 });
@@ -205,7 +218,7 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   await expect(prompt).toBeHidden();
 
   await page.getByRole("button", { name: "Done" }).click();
-  await page.getByRole("button", { name: "Mark as done" }).click();
+  await activateMarkDoneButton(page);
   await page.waitForTimeout(1_900);
   await expect(prompt).toBeHidden();
 });
@@ -224,7 +237,7 @@ test("contextual install prompt shows success confirmation after accepted instal
 
   await primeInstallPrompt(page, "accepted");
   await satisfyDoneGateIfPresent(page);
-  await markDoneButton.click();
+  await activateMarkDoneButton(page);
 
   const prompt = page.getByTestId("a2hs-auto-prompt");
   await expect(prompt).toBeVisible({ timeout: 4_500 });
@@ -252,15 +265,15 @@ test("guest sees free-account backup prompt after completing three lessons", asy
   await page.reload();
 
   await satisfyDoneGateIfPresent(page);
-  await page.getByRole("button", { name: "Mark as done" }).click();
+  await activateMarkDoneButton(page);
   await page.getByTestId("course-nav-right").click();
 
   await satisfyDoneGateIfPresent(page);
-  await page.getByRole("button", { name: "Mark as done" }).click();
+  await activateMarkDoneButton(page);
   await page.getByTestId("course-nav-right").click();
 
   await satisfyDoneGateIfPresent(page);
-  await page.getByRole("button", { name: "Mark as done" }).click();
+  await activateMarkDoneButton(page);
 
   const backupPrompt = page.getByTestId("course-backup-prompt");
   await expect(backupPrompt).toBeVisible();

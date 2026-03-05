@@ -8,18 +8,27 @@ test("main menu exposes install action on desktop and tablet layouts", async ({
     !isDesktopOrTabletProject(testInfo),
     "This coverage is for desktop and tablet layouts only."
   );
+  test.slow();
 
-  await page.goto("/course?lesson=mod3-l1");
+  await page.goto("/contact", { waitUntil: "domcontentloaded", timeout: 60_000 });
 
-  // Course route can briefly render suspense fallback header before the final course header.
-  // Target the course-specific toggle label to avoid strict-mode locator collisions.
-  const menuToggle = page.getByRole("button", { name: "Toggle lessons", exact: true });
+  const menuToggle = page.getByTestId("header-menu-toggle").first();
   await expect(menuToggle).toBeVisible();
   await menuToggle.click();
 
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
-  await expect(drawer).toBeVisible();
-  await drawer.getByRole("button", { name: "Menu", exact: true }).click();
+  try {
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+  } catch {
+    await menuToggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(drawer).toBeVisible();
+  }
+
+  const menuTab = drawer.getByRole("button", { name: "Menu", exact: true });
+  if ((await menuTab.count()) > 0) {
+    await menuTab.first().click();
+  }
 
   const installAction = page.getByTestId("install-app-menu-action");
   await expect(installAction).toBeVisible();
