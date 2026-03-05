@@ -25,6 +25,18 @@ const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = 
   { value: "product", label: "Product metadata" },
 ];
 
+const ALL_CONTENT_SCOPE_STORAGE_KEY = "fs_admin_all_content_scope";
+const DEFAULT_ALL_CONTENT_SCOPE: AdminContentType = "course_module";
+const ALL_CONTENT_SCOPE_OPTIONS: Array<{ value: "all" | AdminContentType; label: string }> = [
+  { value: "all", label: "All content (audit)" },
+  { value: "course_module", label: "Course modules" },
+  { value: "course_lesson", label: "Course lessons" },
+  { value: "guide_session", label: "0-1000 sessions" },
+  { value: "guide_drill", label: "Poolside drills" },
+  { value: "product", label: "Programs/products" },
+  { value: "page", label: "Pages" },
+];
+
 const CONTENT_TYPE_LABEL: Record<AdminContentType, string> = {
   course_module: "Course module",
   course_lesson: "Course lesson",
@@ -116,6 +128,14 @@ type MirrorSnapshot = {
     mismatchCount: number;
     coverageMismatchCount: number;
   };
+};
+
+const MIRROR_METRIC_KEY_BY_CONTENT_TYPE: Partial<Record<AdminContentType, MirrorMetric["key"]>> = {
+  course_module: "course_module",
+  course_lesson: "course_lesson",
+  guide_session: "guide_session",
+  guide_drill: "guide_drill",
+  product: "programs",
 };
 
 type AdminContentListResponse =
@@ -296,6 +316,8 @@ type ContentListFocusState = {
   detail: string;
 };
 
+type ContentPrimaryView = "course_workspace" | "all_content";
+
 type CourseStructureActionPayload =
   | {
       action: "move_module";
@@ -358,6 +380,17 @@ const INITIAL_FORM: FormState = {
 function normalizeCategoryInput(value: string): string {
   const collapsed = value.trim().replace(/\s+/g, " ");
   return collapsed.length > 0 ? collapsed : "General";
+}
+
+function isAdminContentType(value: string): value is AdminContentType {
+  return CONTENT_TYPE_OPTIONS.some((option) => option.value === value);
+}
+
+function parseStoredAllContentScope(value: string | null): "all" | AdminContentType | null {
+  if (!value) return null;
+  if (value === "all") return "all";
+  if (isAdminContentType(value)) return value;
+  return null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -660,11 +693,19 @@ export default function AdminContentManager() {
   const [editError, setEditError] = useState<string | null>(null);
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [listQuery, setListQuery] = useState("");
-  const [listTypeFilter, setListTypeFilter] = useState<"all" | AdminContentType>("all");
+  const [listTypeFilter, setListTypeFilter] = useState<"all" | AdminContentType>(() => {
+    if (typeof window === "undefined") return DEFAULT_ALL_CONTENT_SCOPE;
+    const storedScope = parseStoredAllContentScope(
+      window.localStorage.getItem(ALL_CONTENT_SCOPE_STORAGE_KEY)
+    );
+    return storedScope ?? DEFAULT_ALL_CONTENT_SCOPE;
+  });
   const [listStatusFilter, setListStatusFilter] = useState<"all" | AdminContentStatus>("all");
   const [listSort, setListSort] = useState<ListSortOption>("default");
   const [listModuleFilter, setListModuleFilter] = useState("");
   const [listFocusState, setListFocusState] = useState<ContentListFocusState | null>(null);
+  const [contentPrimaryView, setContentPrimaryView] =
+    useState<ContentPrimaryView>("course_workspace");
   const [showCourseRowsInContentList, setShowCourseRowsInContentList] = useState(false);
   const [workspaceModuleId, setWorkspaceModuleId] = useState(WORKSPACE_ALL_MODULES_ID);
   const [courseStructureBusy, setCourseStructureBusy] = useState(false);
@@ -860,6 +901,12 @@ export default function AdminContentManager() {
     () => items.some((item) => !COURSE_CONTENT_TYPES.has(item.content_type)),
     [items]
   );
+
+  const hasCourseWorkspaceItems =
+    schemaReady && (courseModuleWorkspaceItems.length > 0 || courseLessonWorkspaceItems.length > 0);
+  const isCourseWorkspaceView =
+    contentPrimaryView === "course_workspace" && hasCourseWorkspaceItems;
+  const isAllContentView = !isCourseWorkspaceView;
 
   const shouldHideCourseRowsInCatalog =
     !showCourseRowsInContentList &&
@@ -1245,6 +1292,14 @@ export default function AdminContentManager() {
   }, [moduleOptions, unlinkedLessonCount, workspaceModuleId]);
 
   useEffect(() => {
+    if (loading) return;
+    if (hasCourseWorkspaceItems) return;
+    if (contentPrimaryView !== "all_content") {
+      setContentPrimaryView("all_content");
+    }
+  }, [contentPrimaryView, hasCourseWorkspaceItems, loading]);
+
+  useEffect(() => {
     setLessonMoveTargetById((previous) => {
       const next: Record<string, string> = {};
       const fallbackModuleId = moduleOptions[0]?.id ?? "";
@@ -1270,6 +1325,11 @@ export default function AdminContentManager() {
     });
   }, [courseLessonWorkspaceItems, moduleIdSet, moduleOptions]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(ALL_CONTENT_SCOPE_STORAGE_KEY, listTypeFilter);
+  }, [listTypeFilter]);
+
   const groupedCountLabel = useMemo(() => {
     if (!schemaReady) return "Content catalog will appear after admin content setup is ready.";
     if (items.length === 0) return "No content items yet.";
@@ -1287,6 +1347,11 @@ export default function AdminContentManager() {
     if (listModuleFilter === WORKSPACE_UNLINKED_MODULE_ID) return "Module scope: Unlinked lessons";
     return `Module scope: ${moduleLabelById.get(listModuleFilter) ?? "Selected module"}`;
   }, [listModuleFilter, moduleLabelById]);
+
+  const activeMirrorMetricKey = useMemo(() => {
+    if (listTypeFilter === "all") return null;
+    return MIRROR_METRIC_KEY_BY_CONTENT_TYPE[listTypeFilter] ?? null;
+  }, [listTypeFilter]);
 
   const courseStructureIntegrityFragments = useMemo(() => {
     const fragments: string[] = [];
@@ -1360,11 +1425,16 @@ export default function AdminContentManager() {
   function clearFocusMode() {
     setListFocusState(null);
     setListQuery("");
-    setListTypeFilter("all");
+    setListTypeFilter(DEFAULT_ALL_CONTENT_SCOPE);
     setListStatusFilter("all");
     setListSort("default");
     setListModuleFilter("");
     setWorkspaceModuleId(WORKSPACE_ALL_MODULES_ID);
+  }
+
+  function handleContentPrimaryViewChange(nextView: ContentPrimaryView) {
+    if (nextView === "course_workspace" && !hasCourseWorkspaceItems) return;
+    setContentPrimaryView(nextView);
   }
 
   function handleWorkspaceScopeChange(nextWorkspaceModuleId: string) {
@@ -1415,6 +1485,7 @@ export default function AdminContentManager() {
       programs: "product",
     };
     const targetType = metricTypeMap[metric.key];
+    setContentPrimaryView("all_content");
     setListTypeFilter(targetType);
     setListStatusFilter("all");
     setListQuery("");
@@ -1453,6 +1524,7 @@ export default function AdminContentManager() {
     );
     if (!moduleItem) return;
     handleStartEdit(moduleItem);
+    setContentPrimaryView("all_content");
     setWorkspaceModuleId(itemId);
     setShowCourseRowsInContentList(true);
     setListTypeFilter("course_module");
@@ -1475,6 +1547,7 @@ export default function AdminContentManager() {
     );
     if (!lessonItem) return;
     handleStartEdit(lessonItem);
+    setContentPrimaryView("all_content");
     const moduleScope =
       lessonItem.parent_id && moduleIdSet.has(lessonItem.parent_id)
         ? lessonItem.parent_id
@@ -1965,133 +2038,175 @@ export default function AdminContentManager() {
               Content items
             </h2>
             <p className="mt-2 text-sm text-slate-600">{groupedCountLabel}</p>
-            {filteredCountLabel ? (
+            {isAllContentView && filteredCountLabel ? (
               <p className="mt-1 text-xs text-slate-500">{filteredCountLabel}</p>
             ) : null}
-            {moduleScopeLabel ? (
+            {isAllContentView && moduleScopeLabel ? (
               <p className="mt-1 text-xs font-medium text-blue-700">{moduleScopeLabel}</p>
             ) : null}
-            {schemaReady && courseLessonWorkspaceItems.length > 0 ? (
+            {isAllContentView && schemaReady && courseLessonWorkspaceItems.length > 0 ? (
               <p className="mt-1 text-xs text-slate-500">
                 {shouldHideCourseRowsInCatalog
                   ? "Course module/lesson rows are hidden in full catalog by default. Use workspace or enable full list visibility."
                   : "Course module/lesson rows are visible in full catalog."}
               </p>
             ) : null}
+            {isCourseWorkspaceView ? (
+              <p className="mt-1 text-xs text-slate-500">
+                Workspace-first mode for course modules and lessons.
+              </p>
+            ) : null}
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <label className="sr-only" htmlFor="admin-content-search">
-              Search content items
-            </label>
-            <input
-              id="admin-content-search"
-              type="search"
-              value={listQuery}
-              onChange={(event) => {
-                setListFocusState(null);
-                setListQuery(event.target.value);
-              }}
-              placeholder="Search title, slug, category..."
-              className="h-10 w-56 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 md:w-64"
-            />
-            <label className="sr-only" htmlFor="admin-content-type-filter">
-              Filter by type
-            </label>
-            <select
-              id="admin-content-type-filter"
-              value={listTypeFilter}
-              onChange={(event) =>
-                handleManualTypeFilterChange(event.target.value as "all" | AdminContentType)
-              }
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            >
-              <option value="all">All types</option>
-              {CONTENT_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <label className="sr-only" htmlFor="admin-content-status-filter">
-              Filter by status
-            </label>
-            <select
-              id="admin-content-status-filter"
-              value={listStatusFilter}
-              onChange={(event) => {
-                setListFocusState(null);
-                setListStatusFilter(event.target.value as "all" | AdminContentStatus);
-              }}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            >
-              <option value="all">All statuses</option>
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <label className="sr-only" htmlFor="admin-content-sort">
-              Sort content list
-            </label>
-            <select
-              id="admin-content-sort"
-              value={listSort}
-              onChange={(event) => {
-                setListFocusState(null);
-                setListSort(event.target.value as ListSortOption);
-              }}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => void loadItems()}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Refresh
-            </button>
-          </div>
+          {isAllContentView ? (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <label className="sr-only" htmlFor="admin-content-search">
+                Search content items
+              </label>
+              <input
+                id="admin-content-search"
+                type="search"
+                value={listQuery}
+                onChange={(event) => {
+                  setListFocusState(null);
+                  setListQuery(event.target.value);
+                }}
+                placeholder="Search title, slug, category..."
+                className="h-10 w-56 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 md:w-64"
+              />
+              <label className="sr-only" htmlFor="admin-content-type-filter">
+                Filter by type
+              </label>
+              <select
+                id="admin-content-type-filter"
+                value={listTypeFilter}
+                onChange={(event) =>
+                  handleManualTypeFilterChange(event.target.value as "all" | AdminContentType)
+                }
+                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                {ALL_CONTENT_SCOPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <label className="sr-only" htmlFor="admin-content-status-filter">
+                Filter by status
+              </label>
+              <select
+                id="admin-content-status-filter"
+                value={listStatusFilter}
+                onChange={(event) => {
+                  setListFocusState(null);
+                  setListStatusFilter(event.target.value as "all" | AdminContentStatus);
+                }}
+                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                <option value="all">All statuses</option>
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <label className="sr-only" htmlFor="admin-content-sort">
+                Sort content list
+              </label>
+              <select
+                id="admin-content-sort"
+                value={listSort}
+                onChange={(event) => {
+                  setListFocusState(null);
+                  setListSort(event.target.value as ListSortOption);
+                }}
+                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => void loadItems()}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Refresh
+              </button>
+            </div>
+          ) : null}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4 inline-flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
           <button
             type="button"
-            data-testid="admin-content-type-chip-all"
-            onClick={() => handleManualTypeFilterChange("all")}
+            data-testid="admin-content-view-tab-course-workspace"
+            onClick={() => handleContentPrimaryViewChange("course_workspace")}
+            aria-pressed={isCourseWorkspaceView}
+            disabled={!hasCourseWorkspaceItems}
             className={[
-              "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
-              listTypeFilter === "all"
-                ? "border-blue-300 bg-blue-50 text-blue-800"
-                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+              "inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold transition",
+              isCourseWorkspaceView
+                ? "bg-white text-blue-800 shadow-sm"
+                : "text-slate-700 hover:bg-white/70",
+              !hasCourseWorkspaceItems ? "cursor-not-allowed opacity-60" : "",
             ].join(" ")}
           >
-            All ({typeCounts.all})
+            Course Workspace
           </button>
-          {CONTENT_TYPE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              data-testid={`admin-content-type-chip-${option.value}`}
-              onClick={() => handleManualTypeFilterChange(option.value)}
-              className={[
-                "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
-                listTypeFilter === option.value
-                  ? "border-blue-300 bg-blue-50 text-blue-800"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-              ].join(" ")}
-            >
-              {option.label} ({typeCounts[option.value]})
-            </button>
-          ))}
+          <button
+            type="button"
+            data-testid="admin-content-view-tab-all-content"
+            onClick={() => handleContentPrimaryViewChange("all_content")}
+            aria-pressed={isAllContentView}
+            className={[
+              "inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold transition",
+              isAllContentView
+                ? "bg-white text-blue-800 shadow-sm"
+                : "text-slate-700 hover:bg-white/70",
+            ].join(" ")}
+          >
+            All Content
+          </button>
         </div>
 
-        {schemaReady && courseLessonWorkspaceItems.length > 0 ? (
+        {isAllContentView ? (
+          <div className="mt-4 space-y-2">
+            <p className="text-xs text-slate-600">
+              Content scope: choose one group to avoid long mixed scrolling. Use{" "}
+              <span className="font-semibold">All content (audit)</span> only when you need full
+              cross-type review.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {ALL_CONTENT_SCOPE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-testid={`admin-content-type-chip-${option.value}`}
+                  onClick={() => handleManualTypeFilterChange(option.value)}
+                  className={[
+                    "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
+                    listTypeFilter === option.value
+                      ? "border-blue-300 bg-blue-50 text-blue-800"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {option.label} (
+                  {option.value === "all" ? typeCounts.all : typeCounts[option.value]})
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {isAllContentView && listTypeFilter === "all" ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            All content audit mode is enabled. This can be a long mixed list.
+          </p>
+        ) : null}
+
+        {isAllContentView && schemaReady && courseLessonWorkspaceItems.length > 0 ? (
           <label className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
             <input
               type="checkbox"
@@ -2104,7 +2219,7 @@ export default function AdminContentManager() {
           </label>
         ) : null}
 
-        {listFocusState ? (
+        {isAllContentView && listFocusState ? (
           <div
             data-testid="admin-content-focus-mode"
             className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3"
@@ -2129,7 +2244,7 @@ export default function AdminContentManager() {
           </p>
         ) : null}
 
-        {schemaReady && mirror ? (
+        {isAllContentView && schemaReady && mirror ? (
           <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-slate-900">Platform mirror snapshot</h3>
@@ -2153,11 +2268,13 @@ export default function AdminContentManager() {
                     type="button"
                     data-testid={`admin-mirror-metric-${metric.key}`}
                     onClick={() => handleMirrorMetricFocus(metric)}
+                    aria-pressed={activeMirrorMetricKey === metric.key}
                     className={[
                       "w-full rounded-lg border px-3 py-2 text-left text-xs transition hover:brightness-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300",
                       metric.status === "matched"
                         ? "border-emerald-200 bg-emerald-50/70 text-emerald-800"
                         : "border-amber-200 bg-amber-50 text-amber-900",
+                      activeMirrorMetricKey === metric.key ? "ring-2 ring-blue-300" : "",
                     ].join(" ")}
                   >
                     <p className="font-semibold">{metric.label}</p>
@@ -2184,7 +2301,9 @@ export default function AdminContentManager() {
                       </p>
                     ) : null}
                     <p className="mt-2 text-[11px] font-medium opacity-80">
-                      Click to focus content list
+                      {activeMirrorMetricKey === metric.key
+                        ? "Active scope"
+                        : "Click to focus content list"}
                     </p>
                   </button>
                 </li>
@@ -2197,7 +2316,7 @@ export default function AdminContentManager() {
           </article>
         ) : null}
 
-        {schemaReady && courseLessonWorkspaceItems.length > 0 ? (
+        {isCourseWorkspaceView ? (
           <article
             className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4"
             data-testid="admin-course-lesson-workspace"
@@ -2541,19 +2660,19 @@ export default function AdminContentManager() {
           </p>
         ) : null}
 
-        {!loading && !error && schemaReady && items.length === 0 ? (
+        {isAllContentView && !loading && !error && schemaReady && items.length === 0 ? (
           <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             No content items created yet. Use the form below to create your first draft.
           </p>
         ) : null}
 
-        {!loading && !error && items.length > 0 && sortedItems.length === 0 ? (
+        {isAllContentView && !loading && !error && items.length > 0 && sortedItems.length === 0 ? (
           <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             No content items match current search/filter.
           </p>
         ) : null}
 
-        {!loading && !error && sortedItems.length > 0 ? (
+        {isAllContentView && !loading && !error && sortedItems.length > 0 ? (
           <ul className="mt-5 space-y-2">
             {sortedItems.map((item) => {
               const isEditingRow = editingItemId === item.id;
@@ -3628,154 +3747,156 @@ export default function AdminContentManager() {
           })()
         : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Create content item</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Create and stage content records for modules, lessons, guides, pages, and product copy.
-        </p>
-        {!schemaReady ? (
-          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Setup is not ready yet. Apply latest admin schema migrations before creating content.
+      {isAllContentView ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Create content item</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Create and stage content records for modules, lessons, guides, pages, and product copy.
           </p>
-        ) : null}
-        <form
-          className="mt-5 grid gap-4 sm:grid-cols-2"
-          onSubmit={handleCreate}
-          data-testid="admin-content-create-form"
-        >
-          <fieldset
-            disabled={!schemaReady || submitting}
-            className="contents disabled:cursor-not-allowed disabled:opacity-70"
+          {!schemaReady ? (
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Setup is not ready yet. Apply latest admin schema migrations before creating content.
+            </p>
+          ) : null}
+          <form
+            className="mt-5 grid gap-4 sm:grid-cols-2"
+            onSubmit={handleCreate}
+            data-testid="admin-content-create-form"
           >
-            <label className="space-y-1 text-sm font-medium text-slate-700">
-              <span>Type</span>
-              <select
-                value={formState.contentType}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    contentType: e.target.value as AdminContentType,
-                  }))
-                }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              >
-                {CONTENT_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <fieldset
+              disabled={!schemaReady || submitting}
+              className="contents disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                <span>Type</span>
+                <select
+                  value={formState.contentType}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      contentType: e.target.value as AdminContentType,
+                    }))
+                  }
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                >
+                  {CONTENT_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="space-y-1 text-sm font-medium text-slate-700">
-              <span>Status</span>
-              <select
-                value={formState.status}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    status: e.target.value as AdminContentStatus,
-                  }))
-                }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                <span>Status</span>
+                <select
+                  value={formState.status}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      status: e.target.value as AdminContentStatus,
+                    }))
+                  }
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                >
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-              <span>Title</span>
-              <input
-                type="text"
-                required
-                value={formState.title}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    title: e.target.value,
-                  }))
-                }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                placeholder="Module 1 foundations"
-              />
-            </label>
+              <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                <span>Title</span>
+                <input
+                  type="text"
+                  required
+                  value={formState.title}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      title: e.target.value,
+                    }))
+                  }
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  placeholder="Module 1 foundations"
+                />
+              </label>
 
-            <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-              <span>Slug (optional)</span>
-              <input
-                type="text"
-                value={formState.slug}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    slug: e.target.value,
-                  }))
-                }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                placeholder="module-1-foundations"
-              />
-            </label>
+              <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                <span>Slug (optional)</span>
+                <input
+                  type="text"
+                  value={formState.slug}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      slug: e.target.value,
+                    }))
+                  }
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  placeholder="module-1-foundations"
+                />
+              </label>
 
-            <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-              <span>Summary</span>
-              <textarea
-                rows={3}
-                value={formState.summary}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    summary: e.target.value,
-                  }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-                placeholder="Short purpose or editor note."
-              />
-            </label>
+              <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                <span>Summary</span>
+                <textarea
+                  rows={3}
+                  value={formState.summary}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      summary: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                  placeholder="Short purpose or editor note."
+                />
+              </label>
 
-            <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-              <span>Category</span>
-              <input
-                type="text"
-                list="admin-content-category-options"
-                value={formState.category}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    category: e.target.value,
-                  }))
-                }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                placeholder="General"
-              />
-              <datalist id="admin-content-category-options">
-                {categoryOptions.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
-            </label>
+              <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                <span>Category</span>
+                <input
+                  type="text"
+                  list="admin-content-category-options"
+                  value={formState.category}
+                  onChange={(e) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      category: e.target.value,
+                    }))
+                  }
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  placeholder="General"
+                />
+                <datalist id="admin-content-category-options">
+                  {categoryOptions.map((option) => (
+                    <option key={option} value={option} />
+                  ))}
+                </datalist>
+              </label>
 
-            {actionError ? (
-              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:col-span-2">
-                {actionError}
-              </p>
-            ) : null}
+              {actionError ? (
+                <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:col-span-2">
+                  {actionError}
+                </p>
+              ) : null}
 
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={!schemaReady || submitting}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-              >
-                {submitting ? "Saving…" : "Save content item"}
-              </button>
-            </div>
-          </fieldset>
-        </form>
-      </section>
+              <div className="sm:col-span-2">
+                <button
+                  type="submit"
+                  disabled={!schemaReady || submitting}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                >
+                  {submitting ? "Saving…" : "Save content item"}
+                </button>
+              </div>
+            </fieldset>
+          </form>
+        </section>
+      ) : null}
     </div>
   );
 }

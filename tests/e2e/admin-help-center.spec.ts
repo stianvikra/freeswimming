@@ -48,6 +48,7 @@ test.describe("admin help center", () => {
     await expect(page.getByText("Search field:")).toBeVisible();
     await expect(page.getByText("All types filter:")).toBeVisible();
     await expect(page.getByText("Quick type buttons:")).toBeVisible();
+    await expect(page.getByText("Course Workspace / All Content tabs:")).toBeVisible();
     await expect(page.getByText("Mirror snapshot cards:")).toBeVisible();
     await expect(page.getByText("Module workspace:")).toBeVisible();
     await expect(page.getByText("Course status board:")).toBeVisible();
