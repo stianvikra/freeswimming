@@ -157,5 +157,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-05 | 774e6d7 | PR opened | pushed branch and opened PR #131 in Safari after local npm run verify:pre-pr green; required CI checks are running | next: monitor required checks, run npm run verify:pre-merge before merge recommendation`
 - `2026-03-05 | implementation + local validation complete | shipped consolidated course workspace status board (module/lesson lifecycle counts + per-module status summaries), added workspace status chips, introduced full-list course visibility toggle to reduce duplicate cognitive load, and preserved all existing module/lesson actions; updated help-center labels and admin e2e coverage; npm run verify:pre-pr passed | next: commit, push, open PR in Safari, monitor required checks`
 - `2026-03-05 | kickoff | opened 10/10 in-progress brief for admin course status-overview + workspace consolidation while preserving all existing functions | next: implement consolidated course workspace/status UI and update e2e coverage`
