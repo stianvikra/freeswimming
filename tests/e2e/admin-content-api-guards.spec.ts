@@ -61,6 +61,13 @@ test.describe("admin content API guards", () => {
         method: "DELETE",
         url: `/api/admin/content/${dummyContentId}`,
       },
+      {
+        method: "POST",
+        url: "/api/admin/content/course-structure",
+        body: {
+          action: "normalize",
+        },
+      },
     ] as const;
 
     for (const call of unauthenticatedCalls) {
@@ -170,6 +177,52 @@ test.describe("admin content API guards", () => {
     await expect(invalidJsonCreate.json()).resolves.toMatchObject({
       ok: false,
       error: "Invalid JSON.",
+    });
+
+    const unsupportedCourseStructure = await page.request.post(
+      "/api/admin/content/course-structure",
+      {
+        headers: {
+          "content-type": "text/plain",
+        },
+        data: "invalid",
+      }
+    );
+    expect(unsupportedCourseStructure.status()).toBe(415);
+
+    const invalidJsonCourseStructure = await page.request.fetch(
+      "/api/admin/content/course-structure",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        data: "{",
+      }
+    );
+    expect(invalidJsonCourseStructure.status()).toBe(400);
+    await expect(invalidJsonCourseStructure.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Invalid JSON.",
+    });
+
+    const invalidCourseStructurePayload = await page.request.post(
+      "/api/admin/content/course-structure",
+      {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          action: "move_module",
+          moduleId: "not-a-uuid",
+          direction: "up",
+        }),
+      }
+    );
+    expect(invalidCourseStructurePayload.status()).toBe(400);
+    await expect(invalidCourseStructurePayload.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Invalid module id.",
     });
   });
 });

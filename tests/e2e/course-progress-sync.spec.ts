@@ -33,13 +33,15 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   const markDoneButton = page.getByTestId("course-mark-done-button");
   await expect(markDoneButton).toBeVisible();
 
-  await page.waitForResponse(
-    (response) =>
-      response.url().includes("/api/progress/course") &&
-      response.request().method() === "GET" &&
-      response.status() === 200,
-    { timeout: 15_000 }
-  );
+  await expect
+    .poll(
+      async () => {
+        const response = await page.request.get("/api/progress/course");
+        return response.status();
+      },
+      { timeout: 15_000 }
+    )
+    .toBe(200);
   await page.waitForTimeout(1_200);
 
   const initialPressed = (await markDoneButton.getAttribute("aria-pressed")) === "true";

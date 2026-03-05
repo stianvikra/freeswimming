@@ -156,6 +156,8 @@ test.describe("admin foundation", () => {
       throw new Error("Admin content item was not created in expected time.");
     }
     await expect(createdItem).toContainText("draft");
+    await expect(createdItem.getByRole("button", { name: "Move up" })).toBeVisible();
+    await expect(createdItem.getByRole("button", { name: "Move down" })).toBeVisible();
 
     const listTypeFilter = page.getByLabel("Filter by type");
     const listStatusFilter = page.getByLabel("Filter by status");
@@ -226,6 +228,9 @@ test.describe("admin foundation", () => {
       .filter({ hasText: "Welcome & Course Structure" })
       .first();
     await expect(workspaceLessonRow).toBeVisible();
+    await expect(workspaceLessonRow.getByRole("button", { name: "Move up" })).toBeVisible();
+    await expect(workspaceLessonRow.getByRole("button", { name: "Move down" })).toBeVisible();
+    await expect(workspaceLessonRow.getByRole("button", { name: "Move to module" })).toBeVisible();
     await expect(workspaceLessonRow.getByRole("link", { name: "Open preview" })).toHaveAttribute(
       "href",
       /\/course\?lesson=mod1-l1&preview=1&previewMode=published&previewType=lesson&previewRef=course-lesson-mod1-l1/
@@ -407,8 +412,10 @@ test.describe("admin foundation", () => {
     await revisionEntries.first().getByRole("button", { name: "Restore" }).click();
     await expect(page.getByText("Revision restored.")).toBeVisible();
 
-    page.once("dialog", (dialog) => dialog.accept());
     await createdItem.getByRole("button", { name: "Delete" }).click();
+    const moduleDeleteDialog = page.getByTestId("admin-module-delete-dialog");
+    await expect(moduleDeleteDialog).toBeVisible();
+    await moduleDeleteDialog.getByRole("button", { name: "Delete module" }).click();
     await expect(page.getByTestId("admin-content-item").filter({ hasText: title })).toHaveCount(0);
   });
 });
