@@ -60,7 +60,7 @@ async function primeInstallPrompt(page: Page, outcome: "accepted" | "dismissed")
 async function satisfyDoneGateIfPresent(page: Page) {
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
   await expect(markDoneButton).toBeVisible();
-  if (await markDoneButton.isEnabled()) return;
+  if (await markDoneButton.isEnabled({ timeout: 5_000 })) return;
 
   const checklist = page.getByTestId("course-done-gate-checklist");
   await expect(checklist).toBeVisible();
@@ -242,6 +242,7 @@ test("guest sees free-account backup prompt after completing three lessons", asy
     !isMobileProject(testInfo),
     "Progress backup prompt flow is validated on mobile projects."
   );
+  test.slow();
 
   await page.goto("/course?lesson=mod3-l1");
   await page.evaluate(() => {

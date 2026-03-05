@@ -6,6 +6,13 @@ import type {
   AdminContentStatus,
   AdminContentType,
 } from "@/lib/admin/content";
+import {
+  buildCourseStructureIntegrity,
+  getAdjacentLessonId,
+  getAdjacentModuleId,
+  type CourseStructureLessonRow,
+  type CourseStructureModuleRow,
+} from "@/lib/admin/course-structure";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import { buildCoursePreviewHref, resolveCoursePreviewModeFromStatus } from "@/lib/course/preview";
 
@@ -135,6 +142,21 @@ type AdminContentDeleteResponse =
       error?: string;
     };
 
+type CourseStructureActionResponse =
+  | {
+      ok: true;
+      integrity?: {
+        unlinkedLessonCount: number;
+        duplicateModuleSortOrderCount: number;
+        duplicateLessonSortGroupCount: number;
+        duplicateLessonSortEntryCount: number;
+      };
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 type ContentRevisionItem = {
   id: string;
   revisionNumber: number;
@@ -243,6 +265,41 @@ type ContentListFocusState = {
   source: "mirror" | "workspace";
   label: string;
   detail: string;
+};
+
+type CourseStructureActionPayload =
+  | {
+      action: "move_module";
+      moduleId: string;
+      direction: "up" | "down";
+    }
+  | {
+      action: "move_lesson";
+      lessonId: string;
+      direction: "up" | "down";
+    }
+  | {
+      action: "move_lesson_to_module";
+      lessonId: string;
+      targetModuleId: string;
+      targetPosition?: "start" | "end";
+    }
+  | {
+      action: "delete_module";
+      moduleId: string;
+      strategy: "reassign" | "archive_lessons" | "unlink_lessons";
+      targetModuleId?: string;
+    }
+  | {
+      action: "normalize";
+    };
+
+type PendingModuleDeleteState = {
+  moduleId: string;
+  moduleTitle: string;
+  lessonCount: number;
+  strategy: "reassign" | "archive_lessons" | "unlink_lessons";
+  targetModuleId: string;
 };
 
 const WORKSPACE_ALL_MODULES_ID = "__all__";
@@ -571,6 +628,13 @@ export default function AdminContentManager() {
   const [listModuleFilter, setListModuleFilter] = useState("");
   const [listFocusState, setListFocusState] = useState<ContentListFocusState | null>(null);
   const [workspaceModuleId, setWorkspaceModuleId] = useState(WORKSPACE_ALL_MODULES_ID);
+  const [courseStructureBusy, setCourseStructureBusy] = useState(false);
+  const [courseStructureMessage, setCourseStructureMessage] = useState<string | null>(null);
+  const [lessonMoveTargetById, setLessonMoveTargetById] = useState<Record<string, string>>({});
+  const [pendingModuleDelete, setPendingModuleDelete] = useState<PendingModuleDeleteState | null>(
+    null
+  );
+  const [moduleDeleteSubmitting, setModuleDeleteSubmitting] = useState(false);
 
   const moduleOptions = useMemo(
     () =>
@@ -615,6 +679,65 @@ export default function AdminContentManager() {
         })),
     [items, moduleLabelById]
   );
+
+  const courseStructureModuleRows = useMemo<CourseStructureModuleRow[]>(
+    () =>
+      items
+        .filter((item) => item.content_type === "course_module")
+        .map((item) => ({
+          id: item.id,
+          sortOrder: item.sort_order,
+          createdAt: item.created_at,
+          title: item.title,
+        })),
+    [items]
+  );
+
+  const courseStructureLessonRows = useMemo<CourseStructureLessonRow[]>(
+    () =>
+      items
+        .filter((item) => item.content_type === "course_lesson")
+        .map((item) => ({
+          id: item.id,
+          parentId: item.parent_id,
+          sortOrder: item.sort_order,
+          createdAt: item.created_at,
+          title: item.title,
+        })),
+    [items]
+  );
+
+  const courseStructureIntegrity = useMemo(
+    () =>
+      buildCourseStructureIntegrity(
+        courseStructureModuleRows,
+        courseStructureLessonRows,
+        moduleIdSet
+      ),
+    [courseStructureLessonRows, courseStructureModuleRows, moduleIdSet]
+  );
+
+  const moduleMoveBoundsById = useMemo(() => {
+    const bounds = new Map<string, { canMoveUp: boolean; canMoveDown: boolean }>();
+    for (const moduleRow of courseStructureModuleRows) {
+      bounds.set(moduleRow.id, {
+        canMoveUp: Boolean(getAdjacentModuleId(courseStructureModuleRows, moduleRow.id, "up")),
+        canMoveDown: Boolean(getAdjacentModuleId(courseStructureModuleRows, moduleRow.id, "down")),
+      });
+    }
+    return bounds;
+  }, [courseStructureModuleRows]);
+
+  const lessonMoveBoundsById = useMemo(() => {
+    const bounds = new Map<string, { canMoveUp: boolean; canMoveDown: boolean }>();
+    for (const lesson of courseStructureLessonRows) {
+      bounds.set(lesson.id, {
+        canMoveUp: Boolean(getAdjacentLessonId(courseStructureLessonRows, lesson.id, "up")),
+        canMoveDown: Boolean(getAdjacentLessonId(courseStructureLessonRows, lesson.id, "down")),
+      });
+    }
+    return bounds;
+  }, [courseStructureLessonRows]);
 
   const firstRuntimeLessonIdByModuleId = useMemo(() => {
     const byModuleId = new Map<string, string>();
@@ -810,6 +933,170 @@ export default function AdminContentManager() {
     }
   }
 
+  function clearModuleDeleteDialog() {
+    if (moduleDeleteSubmitting) return;
+    setPendingModuleDelete(null);
+    setCourseStructureMessage(null);
+  }
+
+  async function runCourseStructureAction(
+    payload: CourseStructureActionPayload,
+    options?: {
+      successNotice?: string;
+      reloadItems?: boolean;
+    }
+  ): Promise<boolean> {
+    if (courseStructureBusy || moduleDeleteSubmitting) return false;
+    setCourseStructureBusy(true);
+    setActionError(null);
+    setCourseStructureMessage(null);
+    setActionNotice(null);
+
+    try {
+      const response = await fetch("/api/admin/content/course-structure", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify(payload),
+      });
+      const actionPayload = (await response.json()) as CourseStructureActionResponse;
+      if (!response.ok || !actionPayload.ok) {
+        setActionError(
+          actionPayload.ok
+            ? "Could not update course structure."
+            : (actionPayload.error ?? "Could not update course structure.")
+        );
+        return false;
+      }
+
+      if (options?.reloadItems !== false) {
+        await loadItems();
+      }
+
+      const integrity = actionPayload.integrity;
+      if (integrity) {
+        const fragments: string[] = [];
+        if (integrity.unlinkedLessonCount > 0) {
+          fragments.push(`${integrity.unlinkedLessonCount} unlinked lesson(s)`);
+        }
+        if (integrity.duplicateModuleSortOrderCount > 0) {
+          fragments.push(
+            `${integrity.duplicateModuleSortOrderCount} duplicate module sort order slot(s)`
+          );
+        }
+        if (integrity.duplicateLessonSortGroupCount > 0) {
+          fragments.push(
+            `${integrity.duplicateLessonSortGroupCount} lesson group(s) with duplicate sort orders`
+          );
+        }
+        if (fragments.length > 0) {
+          setCourseStructureMessage(`Integrity check: ${fragments.join(" · ")}.`);
+        }
+      }
+
+      setActionNotice(options?.successNotice ?? "Course structure updated.");
+      return true;
+    } catch {
+      setActionError("Could not update course structure.");
+      return false;
+    } finally {
+      setCourseStructureBusy(false);
+    }
+  }
+
+  async function handleMoveModule(moduleId: string, direction: "up" | "down") {
+    await runCourseStructureAction(
+      {
+        action: "move_module",
+        moduleId,
+        direction,
+      },
+      {
+        successNotice: direction === "up" ? "Module moved up." : "Module moved down.",
+      }
+    );
+  }
+
+  async function handleMoveLesson(lessonId: string, direction: "up" | "down") {
+    await runCourseStructureAction(
+      {
+        action: "move_lesson",
+        lessonId,
+        direction,
+      },
+      {
+        successNotice: direction === "up" ? "Lesson moved up." : "Lesson moved down.",
+      }
+    );
+  }
+
+  async function handleMoveLessonToModule(lessonId: string, targetModuleId: string) {
+    await runCourseStructureAction(
+      {
+        action: "move_lesson_to_module",
+        lessonId,
+        targetModuleId,
+        targetPosition: "end",
+      },
+      {
+        successNotice: "Lesson moved to target module.",
+      }
+    );
+  }
+
+  function openModuleDeleteDialog(item: AdminContentItemRow) {
+    const lessonCount = items.filter(
+      (entry) => entry.content_type === "course_lesson" && entry.parent_id === item.id
+    ).length;
+    const alternativeModules = moduleOptions.filter((entry) => entry.id !== item.id);
+    const defaultStrategy =
+      lessonCount > 0 && alternativeModules.length > 0 ? "reassign" : "archive_lessons";
+    setPendingModuleDelete({
+      moduleId: item.id,
+      moduleTitle: item.title,
+      lessonCount,
+      strategy: defaultStrategy,
+      targetModuleId: alternativeModules[0]?.id ?? "",
+    });
+    setCourseStructureMessage(null);
+    setActionError(null);
+  }
+
+  async function confirmModuleDelete() {
+    if (!pendingModuleDelete || moduleDeleteSubmitting) return;
+    if (
+      pendingModuleDelete.lessonCount > 0 &&
+      pendingModuleDelete.strategy === "reassign" &&
+      !pendingModuleDelete.targetModuleId
+    ) {
+      setCourseStructureMessage("Select target module before deleting.");
+      return;
+    }
+
+    setModuleDeleteSubmitting(true);
+    const ok = await runCourseStructureAction(
+      {
+        action: "delete_module",
+        moduleId: pendingModuleDelete.moduleId,
+        strategy: pendingModuleDelete.strategy,
+        targetModuleId:
+          pendingModuleDelete.strategy === "reassign"
+            ? pendingModuleDelete.targetModuleId
+            : undefined,
+      },
+      {
+        successNotice: "Module deleted with selected lesson handling strategy.",
+      }
+    );
+    setModuleDeleteSubmitting(false);
+    if (ok) {
+      setPendingModuleDelete(null);
+      setCourseStructureMessage(null);
+    }
+  }
+
   useEffect(() => {
     void loadItems();
   }, []);
@@ -846,6 +1133,32 @@ export default function AdminContentManager() {
     setWorkspaceModuleId(WORKSPACE_ALL_MODULES_ID);
   }, [moduleOptions, unlinkedLessonCount, workspaceModuleId]);
 
+  useEffect(() => {
+    setLessonMoveTargetById((previous) => {
+      const next: Record<string, string> = {};
+      const fallbackModuleId = moduleOptions[0]?.id ?? "";
+
+      for (const lesson of courseLessonWorkspaceItems) {
+        const currentParentId = lesson.parentId ?? "";
+        const existingTarget = previous[lesson.id];
+
+        if (existingTarget && moduleIdSet.has(existingTarget)) {
+          next[lesson.id] = existingTarget;
+          continue;
+        }
+
+        if (currentParentId && moduleIdSet.has(currentParentId)) {
+          next[lesson.id] = currentParentId;
+          continue;
+        }
+
+        next[lesson.id] = fallbackModuleId;
+      }
+
+      return next;
+    });
+  }, [courseLessonWorkspaceItems, moduleIdSet, moduleOptions]);
+
   const groupedCountLabel = useMemo(() => {
     if (!schemaReady) return "Content catalog will appear after admin content setup is ready.";
     if (items.length === 0) return "No content items yet.";
@@ -863,6 +1176,24 @@ export default function AdminContentManager() {
     if (listModuleFilter === WORKSPACE_UNLINKED_MODULE_ID) return "Module scope: Unlinked lessons";
     return `Module scope: ${moduleLabelById.get(listModuleFilter) ?? "Selected module"}`;
   }, [listModuleFilter, moduleLabelById]);
+
+  const courseStructureIntegrityFragments = useMemo(() => {
+    const fragments: string[] = [];
+    if (courseStructureIntegrity.unlinkedLessonCount > 0) {
+      fragments.push(`${courseStructureIntegrity.unlinkedLessonCount} unlinked lesson(s)`);
+    }
+    if (courseStructureIntegrity.duplicateModuleSortOrderCount > 0) {
+      fragments.push(
+        `${courseStructureIntegrity.duplicateModuleSortOrderCount} duplicate module sort order slot(s)`
+      );
+    }
+    if (courseStructureIntegrity.duplicateLessonSortGroupCount > 0) {
+      fragments.push(
+        `${courseStructureIntegrity.duplicateLessonSortGroupCount} lesson group(s) with duplicate sort orders`
+      );
+    }
+    return fragments;
+  }, [courseStructureIntegrity]);
 
   function canEditInline(item: AdminContentItemRow): boolean {
     return EDITABLE_CONTENT_TYPES.has(item.content_type);
@@ -1175,7 +1506,27 @@ export default function AdminContentManager() {
       setItems((prev) =>
         prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
       );
-      setActionNotice("Content item updated.");
+
+      const shouldNormalizeCourseStructure =
+        (item.content_type === "course_module" || item.content_type === "course_lesson") &&
+        ("sortOrder" in updatePayload || "parentId" in updatePayload);
+
+      if (shouldNormalizeCourseStructure) {
+        const normalized = await runCourseStructureAction(
+          { action: "normalize" },
+          {
+            successNotice: "Content item updated and course order normalized.",
+          }
+        );
+        if (!normalized) {
+          setCourseStructureMessage(
+            "Content item was saved, but order normalization failed. Retry normalization from course structure actions."
+          );
+        }
+      } else {
+        setActionNotice("Content item updated.");
+      }
+
       closeEditMode(true);
     } catch {
       setEditError("Could not save content changes.");
@@ -1321,6 +1672,10 @@ export default function AdminContentManager() {
 
   async function handleDelete(item: AdminContentItemRow) {
     if (updatingId || deletingId) return;
+    if (item.content_type === "course_module") {
+      openModuleDeleteDialog(item);
+      return;
+    }
     const confirmed = window.confirm(
       `Delete "${item.title}"? This cannot be undone and removes this content record.`
     );
@@ -1722,53 +2077,117 @@ export default function AdminContentManager() {
               </p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {workspaceLessons.map((lesson, index) => (
-                  <li
-                    key={lesson.id}
-                    data-testid="admin-workspace-lesson-row"
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
-                  >
-                    <div className="min-w-[220px]">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Lesson {index + 1}: {lesson.title}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {lesson.moduleLabel ?? "Unlinked module"} · /{lesson.slug} · id:{" "}
-                        {lesson.runtimeLessonId}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleWorkspaceEditLesson(lesson.id)}
-                        className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
-                      >
-                        Edit lesson
-                      </button>
-                      <a
-                        href={buildCoursePreviewHref({
-                          lessonId: lesson.runtimeLessonId,
-                          mode: resolveCoursePreviewModeFromStatus(lesson.status),
-                          previewType: "lesson",
-                          previewRef: lesson.slug,
-                        })}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
-                      >
-                        Open preview
-                      </a>
-                      <a
-                        href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                      >
-                        Open lesson
-                      </a>
-                    </div>
-                  </li>
-                ))}
+                {workspaceLessons.map((lesson, index) => {
+                  const moveBounds = lessonMoveBoundsById.get(lesson.id);
+                  const selectedTargetModuleId = lessonMoveTargetById[lesson.id] ?? "";
+                  const canMoveToTargetModule =
+                    selectedTargetModuleId.length > 0 &&
+                    selectedTargetModuleId !== (lesson.parentId ?? "");
+                  const workspaceActionBusy = Boolean(
+                    courseStructureBusy ||
+                    moduleDeleteSubmitting ||
+                    updatingId ||
+                    deletingId ||
+                    restoringRevisionId ||
+                    savingEditId
+                  );
+
+                  return (
+                    <li
+                      key={lesson.id}
+                      data-testid="admin-workspace-lesson-row"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                    >
+                      <div className="min-w-[220px]">
+                        <p className="text-sm font-semibold text-slate-900">
+                          Lesson {index + 1}: {lesson.title}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {lesson.moduleLabel ?? "Unlinked module"} · /{lesson.slug} · id:{" "}
+                          {lesson.runtimeLessonId}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleMoveLesson(lesson.id, "up")}
+                          disabled={workspaceActionBusy || !moveBounds?.canMoveUp}
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Move up
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleMoveLesson(lesson.id, "down")}
+                          disabled={workspaceActionBusy || !moveBounds?.canMoveDown}
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Move down
+                        </button>
+                        <label className="sr-only" htmlFor={`workspace-move-target-${lesson.id}`}>
+                          Move lesson to module
+                        </label>
+                        <select
+                          id={`workspace-move-target-${lesson.id}`}
+                          value={selectedTargetModuleId}
+                          onChange={(event) =>
+                            setLessonMoveTargetById((previous) => ({
+                              ...previous,
+                              [lesson.id]: event.target.value,
+                            }))
+                          }
+                          disabled={workspaceActionBusy || moduleOptions.length === 0}
+                          className="h-8 min-w-[170px] rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-900"
+                        >
+                          <option value="">Select module</option>
+                          {moduleOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleMoveLessonToModule(lesson.id, selectedTargetModuleId)
+                          }
+                          disabled={workspaceActionBusy || !canMoveToTargetModule}
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-medium text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Move to module
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleWorkspaceEditLesson(lesson.id)}
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+                        >
+                          Edit lesson
+                        </button>
+                        <a
+                          href={buildCoursePreviewHref({
+                            lessonId: lesson.runtimeLessonId,
+                            mode: resolveCoursePreviewModeFromStatus(lesson.status),
+                            previewType: "lesson",
+                            previewRef: lesson.slug,
+                          })}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                        >
+                          Open preview
+                        </a>
+                        <a
+                          href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Open lesson
+                        </a>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </article>
@@ -1791,6 +2210,35 @@ export default function AdminContentManager() {
               Retry
             </button>
           </div>
+        ) : null}
+
+        {!loading && !error && courseStructureIntegrityFragments.length > 0 ? (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm text-amber-800">
+              Course structure integrity warning: {courseStructureIntegrityFragments.join(" · ")}.
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                void runCourseStructureAction(
+                  { action: "normalize" },
+                  {
+                    successNotice: "Course order normalized.",
+                  }
+                )
+              }
+              disabled={courseStructureBusy || moduleDeleteSubmitting}
+              className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {courseStructureBusy ? "Normalizing…" : "Normalize order"}
+            </button>
+          </div>
+        ) : null}
+
+        {courseStructureMessage ? (
+          <p className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            {courseStructureMessage}
+          </p>
         ) : null}
 
         {actionNotice ? (
@@ -1827,10 +2275,23 @@ export default function AdminContentManager() {
                       })()
                     : null;
               const rowBusy = Boolean(
-                updatingId || deletingId || restoringRevisionId || savingEditId
+                courseStructureBusy ||
+                moduleDeleteSubmitting ||
+                updatingId ||
+                deletingId ||
+                restoringRevisionId ||
+                savingEditId
               );
               const rowTypeLabel = CONTENT_TYPE_LABEL[item.content_type];
               const rowHint = rowContextHint(item);
+              const moduleMoveBounds =
+                item.content_type === "course_module"
+                  ? moduleMoveBoundsById.get(item.id)
+                  : undefined;
+              const lessonMoveBounds =
+                item.content_type === "course_lesson"
+                  ? lessonMoveBoundsById.get(item.id)
+                  : undefined;
 
               return (
                 <li
@@ -2561,6 +3022,46 @@ export default function AdminContentManager() {
                       </button>
                       {!isEditingRow ? (
                         <>
+                          {item.content_type === "course_module" ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => void handleMoveModule(item.id, "up")}
+                                disabled={Boolean(rowBusy) || !moduleMoveBounds?.canMoveUp}
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Move up
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleMoveModule(item.id, "down")}
+                                disabled={Boolean(rowBusy) || !moduleMoveBounds?.canMoveDown}
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Move down
+                              </button>
+                            </>
+                          ) : null}
+                          {item.content_type === "course_lesson" ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => void handleMoveLesson(item.id, "up")}
+                                disabled={Boolean(rowBusy) || !lessonMoveBounds?.canMoveUp}
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Move up
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleMoveLesson(item.id, "down")}
+                                disabled={Boolean(rowBusy) || !lessonMoveBounds?.canMoveDown}
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Move down
+                              </button>
+                            </>
+                          ) : null}
                           {item.content_type === "course_lesson" ||
                           item.content_type === "course_module" ? (
                             rowPreviewHref ? (
@@ -2602,7 +3103,7 @@ export default function AdminContentManager() {
                                 key={`${item.id}-${option.value}`}
                                 type="button"
                                 onClick={() => void handleSetStatus(item, option.value)}
-                                disabled={Boolean(updatingId || deletingId || savingEditId)}
+                                disabled={Boolean(rowBusy)}
                                 className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 {updatingId === item.id
@@ -2614,7 +3115,7 @@ export default function AdminContentManager() {
                           <button
                             type="button"
                             onClick={() => void handleDelete(item)}
-                            disabled={Boolean(updatingId || deletingId || savingEditId)}
+                            disabled={Boolean(rowBusy)}
                             className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {deletingId === item.id ? "Deleting…" : "Delete"}
@@ -2685,6 +3186,153 @@ export default function AdminContentManager() {
           </ul>
         ) : null}
       </section>
+
+      {pendingModuleDelete
+        ? (() => {
+            const alternativeModules = moduleOptions.filter(
+              (option) => option.id !== pendingModuleDelete.moduleId
+            );
+            const canReassign = alternativeModules.length > 0;
+            const requiresTargetModule =
+              pendingModuleDelete.lessonCount > 0 && pendingModuleDelete.strategy === "reassign";
+            const deleteDisabled =
+              moduleDeleteSubmitting ||
+              (requiresTargetModule &&
+                (!pendingModuleDelete.targetModuleId ||
+                  pendingModuleDelete.targetModuleId === pendingModuleDelete.moduleId));
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 px-4 py-6">
+                <div
+                  className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+                  data-testid="admin-module-delete-dialog"
+                >
+                  <h3 className="text-base font-semibold text-slate-900">Delete module</h3>
+                  <p className="mt-2 text-sm text-slate-700">
+                    Delete <span className="font-semibold">{pendingModuleDelete.moduleTitle}</span>?
+                    {pendingModuleDelete.lessonCount > 0
+                      ? ` ${pendingModuleDelete.lessonCount} lesson${
+                          pendingModuleDelete.lessonCount === 1 ? "" : "s"
+                        } will be handled based on the strategy below.`
+                      : " No lessons are currently linked to this module."}
+                  </p>
+
+                  {pendingModuleDelete.lessonCount > 0 ? (
+                    <fieldset className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                        Lesson handling strategy
+                      </legend>
+                      <label className="flex items-start gap-2 text-sm text-slate-700">
+                        <input
+                          type="radio"
+                          name="module-delete-strategy"
+                          checked={pendingModuleDelete.strategy === "reassign"}
+                          disabled={!canReassign || moduleDeleteSubmitting}
+                          onChange={() =>
+                            setPendingModuleDelete((previous) =>
+                              previous
+                                ? {
+                                    ...previous,
+                                    strategy: "reassign",
+                                    targetModuleId:
+                                      previous.targetModuleId || alternativeModules[0]?.id || "",
+                                  }
+                                : previous
+                            )
+                          }
+                          className="mt-1 h-4 w-4 border border-slate-300"
+                        />
+                        <span>
+                          Reassign lessons to another module
+                          {!canReassign ? " (no target module available)" : ""}
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-2 text-sm text-slate-700">
+                        <input
+                          type="radio"
+                          name="module-delete-strategy"
+                          checked={pendingModuleDelete.strategy === "archive_lessons"}
+                          disabled={moduleDeleteSubmitting}
+                          onChange={() =>
+                            setPendingModuleDelete((previous) =>
+                              previous ? { ...previous, strategy: "archive_lessons" } : previous
+                            )
+                          }
+                          className="mt-1 h-4 w-4 border border-slate-300"
+                        />
+                        <span>Archive lessons and unlink from module</span>
+                      </label>
+                      <label className="flex items-start gap-2 text-sm text-slate-700">
+                        <input
+                          type="radio"
+                          name="module-delete-strategy"
+                          checked={pendingModuleDelete.strategy === "unlink_lessons"}
+                          disabled={moduleDeleteSubmitting}
+                          onChange={() =>
+                            setPendingModuleDelete((previous) =>
+                              previous ? { ...previous, strategy: "unlink_lessons" } : previous
+                            )
+                          }
+                          className="mt-1 h-4 w-4 border border-slate-300"
+                        />
+                        <span>Unlink lessons only (keep current status)</span>
+                      </label>
+
+                      {pendingModuleDelete.strategy === "reassign" ? (
+                        <label className="mt-2 block space-y-1 text-xs font-medium text-slate-700">
+                          <span>Target module</span>
+                          <select
+                            value={pendingModuleDelete.targetModuleId}
+                            onChange={(event) =>
+                              setPendingModuleDelete((previous) =>
+                                previous
+                                  ? {
+                                      ...previous,
+                                      targetModuleId: event.target.value,
+                                    }
+                                  : previous
+                              )
+                            }
+                            disabled={!canReassign || moduleDeleteSubmitting}
+                            data-testid="admin-module-delete-target-select"
+                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          >
+                            <option value="">Select target module</option>
+                            {alternativeModules.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : null}
+                    </fieldset>
+                  ) : null}
+
+                  <div className="mt-5 flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={clearModuleDeleteDialog}
+                      disabled={moduleDeleteSubmitting}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void confirmModuleDelete()}
+                      disabled={deleteDisabled}
+                      data-testid="admin-module-delete-confirm"
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {moduleDeleteSubmitting ? "Deleting module…" : "Delete module"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()
+        : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900">Create content item</h2>

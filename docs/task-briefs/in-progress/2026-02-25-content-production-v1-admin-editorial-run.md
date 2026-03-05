@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-25`
-- `updated`: `2026-03-04`
+- `updated`: `2026-03-05`
 
 ## Goal
 
@@ -179,6 +179,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-05 | P0 reorder/delete safety slice delivered (local) | implemented admin module/lesson structure actions with deterministic normalization + integrity guards, explicit module delete strategy modal, and updated unit/e2e coverage; hardened flaky desktop course-progress/new-content notice waits; npm run verify:pre-pr passed | next: push branch, open PR in Safari, monitor required checks; then continue content production with structure-safe workflow`
+- `2026-03-05 | P0 classification from live content run | identified critical admin structure risk: reorder/delete safety + data integrity gaps (module/lesson moves, delete handling, sort normalization, integrity checks) | opened dedicated in-progress P0 brief docs/task-briefs/in-progress/2026-03-05-admin-course-reorder-delete-safety-and-integrity-10-10.md for immediate implementation | next: execute P0 brief before further high-volume course structure edits`
 - `2026-03-04 | working tree | core-flow gap scan completed for /, /course, /my-library, /admin using current verify evidence (unit/e2e/build green) | no P0 blockers found for continued content entry; planning follow-up captured in docs/task-briefs/planned/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md for non-blocking readiness categories (incident/finance/i18n) | next: continue revision-1 content production and log first real friction batch (P0/P1/P2)`
 - `2026-03-03 | b3847e1 (main) | ready-for-tomorrow checkpoint | synced local main after sticky-list-links merge and confirmed manual admin lesson edit/save smoke works; no blocking issues observed | next: continue revision-1 content entry and log first friction batch`
 - `2026-03-03 | 96f91e5 | implementation complete | delivered follow-up sticky-dismiss + linked-new-lessons behavior for my-library notice with updated signal model, UI behavior, and tests; npm run verify:pre-pr passed | next: push branch and open PR in Safari`

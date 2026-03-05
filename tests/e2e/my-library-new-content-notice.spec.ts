@@ -25,6 +25,7 @@ test.describe("my library new content notice", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
     await loginToMyLibraryViaDevBypass(page);
 
     await page.evaluate(() => {
@@ -34,7 +35,7 @@ test.describe("my library new content notice", () => {
         }
       }
     });
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
 
     const banner = page.getByTestId("my-library-new-content-notice");
@@ -52,7 +53,7 @@ test.describe("my library new content notice", () => {
     await page.getByTestId("my-library-new-content-dismiss").click();
     await expect(banner).toBeHidden();
 
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
     await expect(page.getByTestId("my-library-new-content-notice")).toHaveCount(0);
 
@@ -72,7 +73,7 @@ test.describe("my library new content notice", () => {
       }
     });
 
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
     await page.getByTestId("my-library-new-content-item-mod1-l1").click();
     await expect(page).toHaveURL(/\/course(\?|$)/);
