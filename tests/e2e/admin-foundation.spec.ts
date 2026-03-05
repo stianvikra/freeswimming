@@ -207,6 +207,8 @@ test.describe("admin foundation", () => {
 
     const lessonWorkspace = page.getByTestId("admin-course-lesson-workspace");
     await expect(lessonWorkspace).toBeVisible();
+    await expect(page.getByTestId("admin-course-status-overview")).toBeVisible();
+    await expect(page.getByTestId("admin-course-list-visibility-toggle")).toBeVisible();
     const workspaceModuleSelect = lessonWorkspace.getByLabel("Module workspace");
     await expect(workspaceModuleSelect).toBeVisible();
     const introModuleValue = await workspaceModuleSelect.evaluate((node) => {
@@ -228,6 +230,7 @@ test.describe("admin foundation", () => {
       .filter({ hasText: "Welcome & Course Structure" })
       .first();
     await expect(workspaceLessonRow).toBeVisible();
+    await expect(workspaceLessonRow.getByText("Published")).toBeVisible();
     await expect(workspaceLessonRow.getByRole("button", { name: "Move up" })).toBeVisible();
     await expect(workspaceLessonRow.getByRole("button", { name: "Move down" })).toBeVisible();
     await expect(workspaceLessonRow.getByRole("button", { name: "Move to module" })).toBeVisible();
