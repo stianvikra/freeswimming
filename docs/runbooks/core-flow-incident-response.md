@@ -43,6 +43,15 @@ Provide a deterministic first-response flow for production incidents on core rou
 | `/my-library` | Library list missing, entitlement mismatch, retry loops             | Confirm library reads + entitlement state and recent commerce changes                       |
 | `/admin`      | Access gate loops, content mutations fail, save errors              | Confirm auth role path, admin API responses (`401/403` vs `500`), schema readiness warnings |
 
+## i18n Triage Overlay (When Locale Work Starts)
+
+Add these checks when incident scope is locale-specific:
+
+1. Confirm locale route resolution for affected URL (`default` vs target locale path).
+2. Confirm fallback behavior when localized content is missing (no blank route or `500`).
+3. Confirm canonical/metadata response is consistent with locale state.
+4. Confirm analytics/event payload still carries stable non-locale identifiers.
+
 ## Containment And Rollback
 
 1. If `P0` and recent deploy is suspected:
