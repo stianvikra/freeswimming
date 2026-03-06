@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AdminContentItemRow } from "@/lib/admin/content";
 import { parseAdminQrPrefillFromSearch } from "@/lib/qr-links/admin-prefill";
 import { generateQrAssets } from "@/lib/qr-links/codegen";
@@ -164,6 +164,9 @@ export default function AdminQrLinksManager() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editState, setEditState] = useState<LinkFormState | null>(null);
+  const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
+  const [isAdvancedCreateOpen, setIsAdvancedCreateOpen] = useState(false);
+  const [openMoreActionsId, setOpenMoreActionsId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | QrLinkStatus>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
@@ -196,12 +199,14 @@ export default function AdminQrLinksManager() {
       contentLabel: queryPrefill.contentLabel || prev.contentLabel,
       placementKey: queryPrefill.placementKey || prev.placementKey,
     }));
+    setIsCreatePanelOpen(true);
+    setIsAdvancedCreateOpen(true);
     setActionError(null);
     setActionNotice("Prefilled from lesson context. Review fields and create QR link.");
     setPrefillApplied(true);
   }, [origin, prefillApplied, queryPrefill]);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     setWarning(null);
@@ -236,6 +241,9 @@ export default function AdminQrLinksManager() {
         setItems(qrPayload.items);
         setSchemaReady(qrPayload.schemaReady !== false);
         setWarning(qrPayload.warning ?? null);
+        if (!queryPrefill && qrPayload.items.length === 0) {
+          setIsCreatePanelOpen(true);
+        }
       }
 
       if (contentResponse.ok && contentPayload.ok) {
@@ -251,11 +259,11 @@ export default function AdminQrLinksManager() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [queryPrefill]);
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [loadData]);
 
   const contentItemById = useMemo(
     () =>
@@ -301,6 +309,34 @@ export default function AdminQrLinksManager() {
   function stableLinkForSlug(slug: string): string {
     const resolvedOrigin = origin || (typeof window !== "undefined" ? window.location.origin : "");
     return `${resolvedOrigin}/go/v/${slug}`;
+  }
+
+  function openCreatePanel() {
+    setIsCreatePanelOpen(true);
+  }
+
+  function clearFilters() {
+    setStatusFilter("all");
+    setSearchQuery("");
+  }
+
+  function applyExampleDraft() {
+    const fallbackOrigin =
+      origin ||
+      (typeof window !== "undefined" ? window.location.origin : "https://freeswimming.org");
+    setFormState({
+      slug: "intro-video",
+      destinationUrl: `${fallbackOrigin}/course?lesson=mod1-l1`,
+      status: "draft",
+      contentItemId: "",
+      contentLabel: "Module 1 intro",
+      placementKey: "course.support-card",
+      ownerUserId: "",
+    });
+    setIsCreatePanelOpen(true);
+    setIsAdvancedCreateOpen(true);
+    setActionError(null);
+    setActionNotice("Example values loaded. Adjust fields and create your first QR link.");
   }
 
   async function copyStableLink(item: QrRedirectLinkRow) {
@@ -400,6 +436,8 @@ export default function AdminQrLinksManager() {
 
       setItems((prev) => [payload.item, ...prev]);
       setFormState(INITIAL_FORM);
+      setIsCreatePanelOpen(false);
+      setIsAdvancedCreateOpen(false);
       setActionNotice("QR link created.");
     } catch {
       setActionError("Could not create QR link.");
@@ -412,6 +450,7 @@ export default function AdminQrLinksManager() {
     if (savingId || deletingId) return;
     setEditingId(item.id);
     setEditState(toEditState(item));
+    setOpenMoreActionsId(null);
     setActionError(null);
     setActionNotice(null);
   }
@@ -497,6 +536,7 @@ export default function AdminQrLinksManager() {
       setItems((prev) =>
         prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
       );
+      setOpenMoreActionsId(null);
       setActionNotice(nextStatus === "active" ? "QR link activated." : "QR link disabled.");
     } catch {
       setActionError("Could not update QR status.");
@@ -529,6 +569,7 @@ export default function AdminQrLinksManager() {
         return;
       }
       setItems((prev) => prev.filter((entry) => entry.id !== payload.id));
+      setOpenMoreActionsId(null);
       setActionNotice("QR link deleted.");
     } catch {
       setActionError("Could not delete QR link.");
@@ -538,6 +579,11 @@ export default function AdminQrLinksManager() {
   }
 
   const summaryLabel = `${items.length} total · ${statusCounts.active} active · ${statusCounts.draft} draft · ${statusCounts.disabled} disabled · ${statusCounts.archived} archived`;
+  const hasItems = items.length > 0;
+  const hasFilteredItems = filteredItems.length > 0;
+  const showEmptyState = !loading && !error && !hasItems;
+  const showNoMatches = !loading && !error && hasItems && !hasFilteredItems;
+  const exampleStableLink = `${origin || "https://freeswimming.org"}/go/v/intro-video`;
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -546,13 +592,25 @@ export default function AdminQrLinksManager() {
           <h2 className="text-lg font-semibold text-slate-900">QR registry</h2>
           <p className="mt-2 text-sm text-slate-600">{summaryLabel}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadData()}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          Refresh
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsCreatePanelOpen((prev) => !prev)}
+            aria-expanded={isCreatePanelOpen}
+            aria-controls="admin-qr-link-create-panel"
+            data-testid="admin-qr-link-create-toggle"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+          >
+            {isCreatePanelOpen ? "Hide new link" : "New link"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void loadData()}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {!schemaReady && warning ? (
@@ -592,115 +650,6 @@ export default function AdminQrLinksManager() {
         </p>
       ) : null}
 
-      <form
-        onSubmit={(event) => void handleCreate(event)}
-        className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2"
-        data-testid="admin-qr-link-create-form"
-      >
-        <label className="space-y-1 text-sm font-medium text-slate-700">
-          <span>Slug</span>
-          <input
-            type="text"
-            value={formState.slug}
-            onChange={(event) => setFormState((prev) => ({ ...prev, slug: event.target.value }))}
-            placeholder="intro-video"
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-          />
-        </label>
-        <label className="space-y-1 text-sm font-medium text-slate-700">
-          <span>Status</span>
-          <select
-            value={formState.status}
-            onChange={(event) =>
-              setFormState((prev) => ({
-                ...prev,
-                status: event.target.value as QrLinkStatus,
-              }))
-            }
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
-          <span>Destination URL (https)</span>
-          <input
-            type="url"
-            value={formState.destinationUrl}
-            onChange={(event) =>
-              setFormState((prev) => ({ ...prev, destinationUrl: event.target.value }))
-            }
-            placeholder="https://freeswimming.org/course?lesson=mod1-l1"
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-          />
-        </label>
-        <label className="space-y-1 text-sm font-medium text-slate-700">
-          <span>Attach to content item (optional)</span>
-          <select
-            value={formState.contentItemId}
-            onChange={(event) =>
-              setFormState((prev) => ({ ...prev, contentItemId: event.target.value }))
-            }
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-          >
-            <option value="">Not attached</option>
-            {contentItems.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title} ({item.content_type})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-1 text-sm font-medium text-slate-700">
-          <span>Content label (optional)</span>
-          <input
-            type="text"
-            value={formState.contentLabel}
-            onChange={(event) =>
-              setFormState((prev) => ({ ...prev, contentLabel: event.target.value }))
-            }
-            placeholder="Module 1 intro"
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-          />
-        </label>
-        <label className="space-y-1 text-sm font-medium text-slate-700">
-          <span>Placement key (optional)</span>
-          <input
-            type="text"
-            value={formState.placementKey}
-            onChange={(event) =>
-              setFormState((prev) => ({ ...prev, placementKey: event.target.value }))
-            }
-            placeholder="course.support-card"
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-          />
-        </label>
-        <label className="space-y-1 text-sm font-medium text-slate-700">
-          <span>Owner user id (optional UUID)</span>
-          <input
-            type="text"
-            value={formState.ownerUserId}
-            onChange={(event) =>
-              setFormState((prev) => ({ ...prev, ownerUserId: event.target.value }))
-            }
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-          />
-        </label>
-        <div className="sm:col-span-2">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-          >
-            {submitting ? "Creating…" : "Create QR link"}
-          </button>
-        </div>
-      </form>
-
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-sm font-medium text-slate-700">
           <span>Filter by status</span>
@@ -730,13 +679,49 @@ export default function AdminQrLinksManager() {
         </label>
       </div>
 
-      {!loading && !error && filteredItems.length === 0 ? (
-        <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          No QR links match current filters.
-        </p>
+      {showEmptyState ? (
+        <div
+          className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4"
+          data-testid="admin-qr-empty-state"
+        >
+          <p className="text-sm font-semibold text-slate-900">No QR links yet</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Start with one stable slug. Example stable link:{" "}
+            <span className="font-medium text-slate-800">{exampleStableLink}</span>
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={openCreatePanel}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+            >
+              Create first QR link
+            </button>
+            <button
+              type="button"
+              onClick={applyExampleDraft}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              Use example values
+            </button>
+          </div>
+        </div>
       ) : null}
 
-      {!loading && !error && filteredItems.length > 0 ? (
+      {showNoMatches ? (
+        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <p>No QR links match current filters.</p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            Clear filters
+          </button>
+        </div>
+      ) : null}
+
+      {hasFilteredItems ? (
         <ul className="mt-5 space-y-3" data-testid="admin-qr-link-list">
           {filteredItems.map((item) => {
             const attachment = item.content_item_id ? contentItemById[item.content_item_id] : null;
@@ -745,6 +730,7 @@ export default function AdminQrLinksManager() {
             const isBusy = savingId === item.id || deletingId === item.id;
             const qrAssetState = qrAssetsById[item.id] ?? { status: "idle" };
             const isQrPreviewOpen = openQrPreviewId === item.id;
+            const isMoreActionsOpen = openMoreActionsId === item.id;
 
             return (
               <li
@@ -814,7 +800,7 @@ export default function AdminQrLinksManager() {
                       <button
                         type="button"
                         onClick={() => void copyStableLink(item)}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                       >
                         {copiedLinkId === item.id ? "Copied" : "Copy link"}
                       </button>
@@ -836,21 +822,36 @@ export default function AdminQrLinksManager() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void toggleActiveState(item)}
+                        onClick={() =>
+                          setOpenMoreActionsId((prev) => (prev === item.id ? null : item.id))
+                        }
                         disabled={isBusy}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-sm font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-70"
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
                       >
-                        {item.status === "active" ? "Disable" : "Activate"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void deleteItem(item)}
-                        disabled={isBusy}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
-                      >
-                        {deletingId === item.id ? "Deleting…" : "Delete"}
+                        {isMoreActionsOpen ? "Hide actions" : "More actions"}
                       </button>
                     </div>
+
+                    {isMoreActionsOpen ? (
+                      <div className="mt-2 flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-white p-2">
+                        <button
+                          type="button"
+                          onClick={() => void toggleActiveState(item)}
+                          disabled={isBusy}
+                          className="inline-flex h-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-sm font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {item.status === "active" ? "Disable" : "Activate"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteItem(item)}
+                          disabled={isBusy}
+                          className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {deletingId === item.id ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
+                    ) : null}
 
                     {isQrPreviewOpen ? (
                       <div className="mt-3 rounded-lg border border-teal-200 bg-white p-3">
@@ -1046,6 +1047,194 @@ export default function AdminQrLinksManager() {
           })}
         </ul>
       ) : null}
+
+      <div
+        id="admin-qr-link-create-panel"
+        className="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">New link</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Create links from stable slug to HTTPS destination. Required fields first.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCreatePanelOpen((prev) => !prev)}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            {isCreatePanelOpen ? "Hide form" : "Open form"}
+          </button>
+        </div>
+
+        {isCreatePanelOpen ? (
+          <form
+            onSubmit={(event) => void handleCreate(event)}
+            className="mt-4 space-y-3"
+            data-testid="admin-qr-link-create-form"
+          >
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-sm font-semibold text-slate-900">Required</p>
+              <p className="mt-1 text-xs text-slate-600">
+                Slug and HTTPS destination are mandatory. Status defaults to draft.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  <span>Slug</span>
+                  <input
+                    type="text"
+                    value={formState.slug}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, slug: event.target.value }))
+                    }
+                    placeholder="intro-video"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  <span>Status</span>
+                  <select
+                    value={formState.status}
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        status: event.target.value as QrLinkStatus,
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                  <span>Destination URL (https)</span>
+                  <input
+                    type="url"
+                    value={formState.destinationUrl}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, destinationUrl: event.target.value }))
+                    }
+                    placeholder="https://freeswimming.org/course?lesson=mod1-l1"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <button
+                type="button"
+                onClick={() => setIsAdvancedCreateOpen((prev) => !prev)}
+                aria-expanded={isAdvancedCreateOpen}
+                aria-controls="admin-qr-create-advanced"
+                className="flex w-full items-center justify-between gap-3 text-left"
+              >
+                <span className="text-sm font-semibold text-slate-900">Advanced (optional)</span>
+                <span className="text-xs font-medium text-slate-600">
+                  {isAdvancedCreateOpen ? "Hide" : "Show"}
+                </span>
+              </button>
+
+              {isAdvancedCreateOpen ? (
+                <div id="admin-qr-create-advanced" className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <span>Attach to content item (optional)</span>
+                    <select
+                      value={formState.contentItemId}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, contentItemId: event.target.value }))
+                      }
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    >
+                      <option value="">Not attached</option>
+                      {contentItems.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.title} ({item.content_type})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <span>Content label (optional)</span>
+                    <input
+                      type="text"
+                      value={formState.contentLabel}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, contentLabel: event.target.value }))
+                      }
+                      placeholder="Module 1 intro"
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <span>Placement key (optional)</span>
+                    <input
+                      type="text"
+                      value={formState.placementKey}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, placementKey: event.target.value }))
+                      }
+                      placeholder="course.support-card"
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <span>Owner user id (optional UUID)</span>
+                    <input
+                      type="text"
+                      value={formState.ownerUserId}
+                      onChange={(event) =>
+                        setFormState((prev) => ({ ...prev, ownerUserId: event.target.value }))
+                      }
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-slate-600">
+                  Attach metadata when you need ownership and placement traceability.
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+              >
+                {submitting ? "Creating…" : "Create QR link"}
+              </button>
+              <button
+                type="button"
+                onClick={applyExampleDraft}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              >
+                Use example values
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormState(INITIAL_FORM);
+                  setIsAdvancedCreateOpen(false);
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              >
+                Clear form
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+            Open form to create a new stable QR link.
+          </p>
+        )}
+      </div>
     </section>
   );
 }

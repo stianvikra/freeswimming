@@ -57,8 +57,11 @@ test.describe("admin help center", () => {
     ).toBeVisible();
 
     await expect(page.getByText("Course Workspace / All Content tabs:")).toBeVisible();
-    await expect(page.getByText("Create QR link:")).toBeVisible();
+    await expect(page.getByText("New link / Hide new link:")).toBeVisible();
+    await expect(page.getByText("Required / Advanced (optional):")).toBeVisible();
+    await expect(page.getByText("Create first QR link / Use example values:")).toBeVisible();
     await expect(page.getByText("Show QR:")).toBeVisible();
+    await expect(page.getByText("More actions:")).toBeVisible();
     await expect(page.getByText("Activate / Disable:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(
