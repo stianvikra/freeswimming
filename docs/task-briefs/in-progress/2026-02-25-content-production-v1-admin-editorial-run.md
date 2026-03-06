@@ -182,6 +182,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-07 | 141e58f (main) | resumed after PR #145 governance merge | synced local main + removed merged branch; no new P0 blockers introduced by PR-governance automation | next: continue revision-1 content production run and log first new live friction batch (P0/P1/P2), while tracking locale-routing + finance-process blockers in ops readiness brief`
 - `2026-03-06 | working tree | moved operations/finance/i18n readiness brief from planned to in-progress and delivered slice-1 baseline docs (incident runbook + finance checklist + i18n checklist) | next: continue content production track while logging blockers from checklist/runbook execution`
 - `2026-03-06 | working tree | QR Slice 1 local delivery complete under in-progress QR brief: canonical redirect model migration + secure `/go/v/[slug]` route + fallback page + policy guards + unit tests; npm run verify:pre-pr PASS | next: commit/push QR Slice 1 and open/update PR in Safari before continuing QR admin-registry slice`
 - `2026-03-06 | working tree | approved QR redirect/admin-controls brief refresh and moved docs/task-briefs/planned/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md -> docs/task-briefs/in-progress/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md | next: execute Slice 1 redirect foundation (`/go/v/[slug]` + fallback + security guards) with tests`
