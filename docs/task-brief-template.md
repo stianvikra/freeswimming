@@ -83,6 +83,8 @@ Automation gate:
 - changed briefs must pass `npm run lint:briefs`,
 - include all canonical scorecard categories (`target`/`supporting`/`N/A`),
 - each `target` row must have non-empty threshold + evidence.
+- for `Incident response and support operations`, `Finance and reporting operations`, and `i18n operational readiness`:
+  if mapped `N/A`, include explicit scope rationale in threshold or evidence (plain `N/A` is not accepted).
 
 ## Data Placement And Sync Contract (Required For Stateful Features)
 
@@ -213,6 +215,8 @@ For each brief, explicitly state scope or `N/A` for these categories so quality 
   - reconciliation impact for commerce/entitlement/refund related changes.
 - i18n operational readiness
   - ensure changed models/routes/metadata do not block future multi-language rollout.
+- for incident/finance/i18n rows:
+  - if `N/A`, add concrete rationale tied to changed scope (not generic `N/A`).
 - Stack-fit and dependency discipline
   - prefer stack-native patterns and avoid unnecessary dependencies.
 - Scalability and cost efficiency

@@ -43,6 +43,11 @@ Each new brief should explicitly include:
 - session continuity and recovery protocol (checkpoint cadence + resume steps).
 - platform 10/10 scorecard mapping with category status (`target`/`supporting`/`N/A`) and measurable thresholds:
   - `docs/quality/platform-10-10-scorecard.md`
+- explicit handling of enterprise-readiness rows in planned/in-progress briefs:
+  - `Incident response and support operations`
+  - `Finance and reporting operations`
+  - `i18n operational readiness`
+  - if any of these are `N/A`, include concrete scope rationale (not plain `N/A`).
 
 ## Final Closeout Gate (Required Before Move To `done`)
 

@@ -43,6 +43,8 @@ This file defines how coding agents should collaborate in this repository.
   - changed task briefs must pass `npm run lint:briefs`,
   - scorecard table must include all canonical categories from `docs/quality/platform-10-10-scorecard.md`,
   - each `target` row must include measurable threshold + evidence.
+  - for `Incident response and support operations`, `Finance and reporting operations`, and `i18n operational readiness`:
+    - if mapped `N/A`, threshold or evidence must include explicit scope rationale (plain `N/A` is not accepted).
 - In final handoff for implementation work, include:
   - achieved score per target category (`0-5`),
   - remaining gaps (if any),
