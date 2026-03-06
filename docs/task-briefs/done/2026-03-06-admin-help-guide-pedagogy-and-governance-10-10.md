@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-06-admin-help-guide-pedagogy-and-governance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `priority`: `P1`
 - `owner`: `stianvikra`
 - `created`: `2026-03-06`
@@ -145,5 +145,12 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-06 | 90fdc0c (main) | PR #139 merged and closed; Help/Guide pedagogy + governance controls released with required CI green and local verify:pre-merge PASS | next: brief moved to done`
 - `2026-03-06 | working tree | delivered Help/Guide pedagogical refresh (onboarding path, QR workflow, button glossary, 10/10 quality matrix, documentation controls), patched governance docs (AGENTS + task-brief template + task-briefs README + in-progress brief help-alignment clauses), updated admin help e2e assertions, and ran targeted help e2e + full npm run verify:pre-pr PASS | next: commit, push, open PR in Safari`
 - `2026-03-06 | kickoff | opened in-progress brief for Help/Guide pedagogy + governance-controls hardening; next: implement help copy refresh + governance docs + e2e updates`
+
+## Completion Record
+
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/139`
+- `merge`: `PR #139` -> `main`
+- `result`: Help/Guide upgraded to 10/10 operator-training surface with governance controls and updated e2e contract.
