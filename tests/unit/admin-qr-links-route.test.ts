@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createRouteHandlerSupabaseClientMock, requireAdminRoleFromSupabaseMock } = vi.hoisted(
-  () => ({
-    createRouteHandlerSupabaseClientMock: vi.fn(),
-    requireAdminRoleFromSupabaseMock: vi.fn(),
-  })
-);
+const {
+  createRouteHandlerSupabaseClientMock,
+  requireAdminRoleFromSupabaseMock,
+  trackAnalyticsEventMock,
+} = vi.hoisted(() => ({
+  createRouteHandlerSupabaseClientMock: vi.fn(),
+  requireAdminRoleFromSupabaseMock: vi.fn(),
+  trackAnalyticsEventMock: vi.fn(),
+}));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
@@ -13,6 +16,10 @@ vi.mock("@/lib/supabase/route-handler", () => ({
 
 vi.mock("@/lib/admin/server", () => ({
   requireAdminRoleFromSupabase: requireAdminRoleFromSupabaseMock,
+}));
+
+vi.mock("@/lib/analytics/events", () => ({
+  trackAnalyticsEvent: trackAnalyticsEventMock,
 }));
 
 import { GET, POST } from "@/app/api/admin/qr-links/route";
@@ -51,6 +58,7 @@ function buildPostSupabase({
 
 describe("/api/admin/qr-links route", () => {
   beforeEach(() => {
+    trackAnalyticsEventMock.mockImplementation(() => {});
     requireAdminRoleFromSupabaseMock.mockResolvedValue({
       ok: true,
       user: { id: "admin-user-id" },
@@ -147,6 +155,7 @@ describe("/api/admin/qr-links route", () => {
       error: "destinationUrl host is not allowlisted.",
     });
     expect(supabase.insert).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
   it("creates qr link for valid payload", async () => {
@@ -189,5 +198,16 @@ describe("/api/admin/qr-links route", () => {
       slug: "intro-video",
       status: "active",
     });
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "qr_link_created",
+        userId: "admin-user-id",
+        payload: expect.objectContaining({
+          slug: "intro-video",
+          status: "active",
+          destinationHost: "freeswimming.org",
+        }),
+      })
+    );
   });
 });

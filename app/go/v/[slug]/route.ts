@@ -72,12 +72,30 @@ function trackQrRedirectHit(input: {
   });
 }
 
+function logQrRedirectFallback(input: {
+  slug: string | null;
+  reason: FallbackReason;
+  details?: Record<string, unknown>;
+}) {
+  console.warn("[QrRedirect] Redirecting to fallback", {
+    slug: input.slug ?? "unknown",
+    reason: input.reason,
+    ...(input.details ?? {}),
+  });
+}
+
 export async function GET(request: Request, context: RouteContext) {
   const requestUrl = new URL(request.url);
   const params = await context.params;
   const slug = parseQrSlug(params.slug);
 
   if (!slug) {
+    logQrRedirectFallback({
+      slug: null,
+      reason: "invalid_slug",
+      details: { rawSlug: params.slug },
+    });
+
     trackQrRedirectHit({
       slug: null,
       outcome: "fallback",
@@ -108,6 +126,13 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     const reason: FallbackReason = schemaNotReady ? "schema_not_ready" : "lookup_failed";
+    logQrRedirectFallback({
+      slug,
+      reason,
+      details: {
+        schemaNotReady,
+      },
+    });
     trackQrRedirectHit({
       slug,
       outcome: "fallback",
@@ -124,6 +149,11 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   if (!linkResult.data) {
+    logQrRedirectFallback({
+      slug,
+      reason: "not_found",
+    });
+
     trackQrRedirectHit({
       slug,
       outcome: "fallback",
@@ -150,6 +180,10 @@ export async function GET(request: Request, context: RouteContext) {
 
   if (!destinationValidation.ok) {
     console.error("[QrRedirect] Blocked unsafe destination URL", {
+      slug,
+      reason: destinationValidation.reason,
+    });
+    logQrRedirectFallback({
       slug,
       reason: destinationValidation.reason,
     });
