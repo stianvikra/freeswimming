@@ -168,9 +168,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 | Category Track                                            | Score (0-5) | Decision                           | Brief Link                                                                                        |
 | --------------------------------------------------------- | ----------- | ---------------------------------- | ------------------------------------------------------------------------------------------------- |
 | SEO and AI discoverability                                | `3/5`       | planned follow-up                  | `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`            |
-| QR redirect and campaign operations                       | `2/5`       | planned follow-up                  | `docs/task-briefs/planned/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`         |
+| QR redirect and campaign operations                       | `4/5`       | delivered follow-up                | `docs/task-briefs/done/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`            |
 | Performance stretch + security hardening depth            | `3/5`       | planned follow-up                  | `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md` |
-| Incident/support + finance/reporting + i18n ops readiness | `3/5`       | new planned follow-up (score `<4`) | `docs/task-briefs/planned/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`         |
+| Incident/support + finance/reporting + i18n ops readiness | `3/5`       | in progress follow-up (score `<4`) | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`     |
 
 - Brief creation policy applied: new brief created only for categories with `target-score <4` that were not already covered by an active planned brief.
 
@@ -182,6 +182,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-06 | working tree | moved operations/finance/i18n readiness brief from planned to in-progress and delivered slice-1 baseline docs (incident runbook + finance checklist + i18n checklist) | next: continue content production track while logging blockers from checklist/runbook execution`
 - `2026-03-06 | working tree | QR Slice 1 local delivery complete under in-progress QR brief: canonical redirect model migration + secure `/go/v/[slug]` route + fallback page + policy guards + unit tests; npm run verify:pre-pr PASS | next: commit/push QR Slice 1 and open/update PR in Safari before continuing QR admin-registry slice`
 - `2026-03-06 | working tree | approved QR redirect/admin-controls brief refresh and moved docs/task-briefs/planned/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md -> docs/task-briefs/in-progress/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md | next: execute Slice 1 redirect foundation (`/go/v/[slug]` + fallback + security guards) with tests`
 - `2026-03-05 | 5a4d0b0 (main) | PR #132 merged and closed | shipped admin Content mode split (`Course Workspace`vs`All Content`) with local npm run verify:pre-merge PASS and required CI checks green; normalized required-check mapping to check-run contexts to clear stale Expected state | next: continue revision-1 content production on feat/content-production-v1-batch-2 and log first new friction batch`
