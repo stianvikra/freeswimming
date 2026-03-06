@@ -31,43 +31,41 @@ test.describe("admin help center", () => {
     await expect(page.getByTestId("admin-active-section-label")).toHaveText("Help/Guide");
     await expect(page.getByTestId("admin-help-center")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
+    await expect(page.getByText("Last updated:")).toBeVisible();
+
+    await expect(
+      page.getByRole("heading", { name: "Operator learning path (first day)" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Dashboard tabs and when to use them" })
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "How the Content page works" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "How QR Links work" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Buttons and what they do" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "What can be edited right now" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "10/10 Help/Training quality coverage matrix" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Documentation controls (required)" })
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Connected services" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Daily playbooks" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Troubleshoot fast" })).toBeVisible();
     await expect(
-      page.getByText("Move to draft / Move to review / Publish / Archive:")
+      page.getByRole("heading", { name: "Change governance and freshness" })
     ).toBeVisible();
-    await expect(page.getByText("Edit:")).toBeVisible();
-    await expect(
-      page.getByText(
-        "Module, lesson, session, drill, page, and product-copy rows can be edited directly."
-      )
-    ).toBeVisible();
-    await expect(page.getByText("Search field:")).toBeVisible();
-    await expect(page.getByText("All types filter:")).toBeVisible();
-    await expect(page.getByText("Quick type buttons:")).toBeVisible();
+
     await expect(page.getByText("Course Workspace / All Content tabs:")).toBeVisible();
-    await expect(page.getByText("Mirror snapshot cards:")).toBeVisible();
-    await expect(page.getByText("Module workspace:")).toBeVisible();
-    await expect(page.getByText("Course status board:")).toBeVisible();
-    await expect(
-      page.getByText("Show course modules and lessons in full content list:")
-    ).toBeVisible();
-    await expect(page.getByText("Edit lesson:")).toBeVisible();
-    await expect(page.getByText("Open preview:")).toBeVisible();
-    await expect(page.getByText("Open lesson:")).toBeVisible();
-    await expect(page.getByText("All statuses filter:")).toBeVisible();
-    await expect(page.getByText("Sort content list:")).toBeVisible();
-    await expect(page.getByText("Lesson body editor:")).toBeVisible();
-    await expect(page.getByText("Section visibility:")).toBeVisible();
-    await expect(page.getByText("Clear focus:")).toBeVisible();
-    await expect(page.getByText("Save changes:")).toBeVisible();
-    await expect(page.getByText("Cancel:")).toBeVisible();
+    await expect(page.getByText("Create QR link:")).toBeVisible();
+    await expect(page.getByText("Show QR:")).toBeVisible();
+    await expect(page.getByText("Activate / Disable:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(
-      page.getByText("If a workflow changes, update this Help/Guide page in the same PR.")
+      page.getByText(
+        "Every new/updated brief must declare Help/Guide impact as: required update or explicit N/A with reason."
+      )
     ).toBeVisible();
+    await expect(page.getByText("docs/runbooks/qr-redirect-operations.md")).toBeVisible();
   });
 });

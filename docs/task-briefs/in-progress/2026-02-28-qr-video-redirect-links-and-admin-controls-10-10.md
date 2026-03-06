@@ -164,6 +164,10 @@ The registry must answer at a glance:
 7. Desktop/tablet shows scannable QR on selected placements; mobile defaults to share/copy UX without QR clutter.
 8. Redirect and mutation events are emitted with safe payloads.
 9. Required negative-path tests cover unauthorized admin access, bad slug, and unsafe destination attempts.
+10. Help/Guide and runbook governance is respected:
+
+- if QR workflow labels/actions/recovery behavior changed, Help/Guide and QR runbook are updated in same PR,
+- otherwise explicit `N/A` rationale is documented.
 
 ## Validation
 
