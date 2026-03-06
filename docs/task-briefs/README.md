@@ -43,9 +43,6 @@ Each new brief should explicitly include:
 - session continuity and recovery protocol (checkpoint cadence + resume steps).
 - platform 10/10 scorecard mapping with category status (`target`/`supporting`/`N/A`) and measurable thresholds:
   - `docs/quality/platform-10-10-scorecard.md`
-- Help/Guide impact declaration:
-  - if workflow labels/actions/recovery behavior changed, Help/Guide + relevant runbook updates are required in the same PR,
-  - otherwise explicit `N/A` rationale is required.
 
 ## Final Closeout Gate (Required Before Move To `done`)
 
@@ -60,7 +57,6 @@ Before moving any brief to `done/`, run a final closeout gate:
    - security/privacy/compliance check for auth/data/payments,
    - performance/regression sanity check so adjacent app flows are not degraded.
    - score target categories from `docs/quality/platform-10-10-scorecard.md` (`0-5`) and record results.
-   - verify Help/Guide freshness for changed workflows (and runbook links where relevant).
 3. cleanup readiness:
    - tests + manual QA evidence recorded in brief,
    - PR/branch ready for merge and post-merge hygiene.
