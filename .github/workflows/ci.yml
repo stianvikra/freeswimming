@@ -21,6 +21,10 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Validate PR body required sections
+        if: github.event_name == 'pull_request'
+        run: node ./scripts/lint-pr-body-sections.mjs
+
       - name: Install dependencies
         run: npm ci
 

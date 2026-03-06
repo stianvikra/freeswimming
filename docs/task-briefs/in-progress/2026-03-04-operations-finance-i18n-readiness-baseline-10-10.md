@@ -129,6 +129,20 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - `docs/runbooks/core-flow-incident-response.md` (`i18n triage overlay`).
 - Logged first blocker set with severity, owner, and target date in the execution log.
 
+## Slice 3 Deliverables (2026-03-06)
+
+- Added automated PR-governance scaffolding so readiness requirements are enforced in routine delivery:
+  - PR body auto-generation from active brief + latest local verify snapshot:
+    - `scripts/generate-pr-body.mjs`
+  - Safari PR create/update flow now uses generated structured body by default:
+    - `scripts/pr-create-safari.sh`
+  - CI verify workflow now fails pull requests with missing/empty required PR body sections:
+    - `.github/workflows/ci.yml`
+    - `scripts/lint-pr-body-sections.mjs`
+- Outcome target for Slice 3:
+  - reduce manual drift in PR evidence quality,
+  - keep ops/finance/i18n governance visible and auditable in every PR/merge cycle.
+
 ## Current Readiness Snapshot (Post Slice 2)
 
 - Incident/support operations: `4/5` (runbook executable, blockers tracked).
@@ -172,3 +186,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-04 | planned | brief created from core-flow gap scan to cover non-blocking readiness categories (incident/finance/i18n) | next: prioritize slice and move to in-progress when implementation starts`
 - `2026-03-06 | working tree | moved brief to in-progress and delivered Slice 1 baseline artifacts (incident runbook + finance checklist + i18n checklist) | next: validate runbook steps against current admin/public routes and log first blockers with owner/date`
 - `2026-03-06 | working tree | delivered Slice 2 validation pass: added execution log and first blocker register (owner/target-date), and extended incident runbook with i18n triage overlay | next: keep brief in-progress and close open P1 blockers (locale routing decision + finance reconciliation process maturity)`
+- `2026-03-06 | working tree | delivered Slice 3 PR-governance automation: added auto PR-body generation + CI required-section lint and wired Safari PR create/update flow to structured body defaults | next: open/update PR, run required CI, and merge; then continue blocker closure work for locale routing + finance process maturity`
