@@ -18,3 +18,7 @@ export function isQrRedirectSchemaMissing(error: PostgrestLikeError | null | und
   if (error.code && (error.code.startsWith("42") || error.code.startsWith("PGRST"))) return true;
   return includesSchemaMarker(error);
 }
+
+export function getQrRedirectSchemaSetupMessage(): string {
+  return "QR redirect setup is not ready in this environment yet. Apply latest Supabase migrations (tables + grants + RLS policies), then refresh.";
+}

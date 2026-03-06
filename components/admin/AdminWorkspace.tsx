@@ -7,14 +7,27 @@ import AdminCategoriesManager from "@/components/admin/AdminCategoriesManager";
 import AdminHelpCenter from "@/components/admin/AdminHelpCenter";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
+import AdminQrLinksManager from "@/components/admin/AdminQrLinksManager";
 
-type AdminTab = "content" | "commerce" | "operations" | "notes" | "categories" | "help";
+type AdminTab =
+  | "content"
+  | "qr-links"
+  | "commerce"
+  | "operations"
+  | "notes"
+  | "categories"
+  | "help";
 
 const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
   {
     id: "content",
     label: "Content",
     subtitle: "Lessons, guides, and publish state",
+  },
+  {
+    id: "qr-links",
+    label: "QR Links",
+    subtitle: "Stable redirect registry and ownership",
   },
   {
     id: "commerce",
@@ -53,7 +66,7 @@ export default function AdminWorkspace() {
 
   return (
     <div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
@@ -99,6 +112,7 @@ export default function AdminWorkspace() {
 
       <div className="mt-6 space-y-6">
         {activeTab === "content" ? <AdminContentManager /> : null}
+        {activeTab === "qr-links" ? <AdminQrLinksManager /> : null}
         {activeTab === "commerce" ? <AdminCommerceManager /> : null}
         {activeTab === "operations" ? <AdminOperationsManager /> : null}
         {activeTab === "notes" ? <AdminNotesManager /> : null}

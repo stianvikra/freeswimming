@@ -102,6 +102,7 @@ test.describe("admin foundation", () => {
     }
 
     const tabContent = page.getByTestId("admin-tab-content");
+    const tabQrLinks = page.getByTestId("admin-tab-qr-links");
     const tabCommerce = page.getByTestId("admin-tab-commerce");
     const tabOperations = page.getByTestId("admin-tab-operations");
     const tabNotes = page.getByTestId("admin-tab-notes");
@@ -110,6 +111,10 @@ test.describe("admin foundation", () => {
     const activeSectionLabel = page.getByTestId("admin-active-section-label");
 
     await expect(tabContent).toHaveAttribute("aria-pressed", "true");
+
+    await tabQrLinks.click();
+    await expect(activeSectionLabel).toHaveText("QR Links");
+    await expect(page.getByRole("heading", { name: "QR registry" })).toBeVisible();
 
     await tabCommerce.click();
     await expect(activeSectionLabel).toHaveText("Commerce");
