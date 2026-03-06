@@ -15,6 +15,7 @@ import {
 } from "@/lib/admin/course-structure";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import { buildCoursePreviewHref, resolveCoursePreviewModeFromStatus } from "@/lib/course/preview";
+import { buildAdminQrPrefillHref } from "@/lib/qr-links/admin-prefill";
 
 const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = [
   { value: "course_module", label: "Course module" },
@@ -651,6 +652,17 @@ function modulePreviewHref(item: AdminContentItemRow, lessonId: string): string 
     mode: resolveCoursePreviewModeFromStatus(item.status),
     previewType: "module",
     previewRef: item.slug,
+  });
+}
+
+function lessonQrPrefillHref(item: AdminContentItemRow): string {
+  const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+  return buildAdminQrPrefillHref({
+    slugHint: lessonId,
+    destinationPath: lessonOpenHref(item),
+    contentItemId: item.id,
+    contentLabel: item.title,
+    placementKey: "course.lesson.share",
   });
 }
 
@@ -3491,6 +3503,14 @@ export default function AdminContentManager() {
                                 Open preview (no lessons)
                               </span>
                             )
+                          ) : null}
+                          {item.content_type === "course_lesson" ? (
+                            <a
+                              href={lessonQrPrefillHref(item)}
+                              className="inline-flex h-8 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-3 text-xs font-medium text-teal-800 transition hover:bg-teal-100"
+                            >
+                              Create QR link
+                            </a>
                           ) : null}
                           {item.content_type === "course_lesson" ? (
                             <a

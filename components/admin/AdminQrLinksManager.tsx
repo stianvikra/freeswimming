@@ -1,7 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { AdminContentItemRow } from "@/lib/admin/content";
+import { parseAdminQrPrefillFromSearch } from "@/lib/qr-links/admin-prefill";
+import { generateQrAssets } from "@/lib/qr-links/codegen";
 import {
   QR_LINK_STATUS_VALUES,
   type QrLinkStatus,
@@ -69,6 +72,23 @@ type LinkFormState = {
   placementKey: string;
   ownerUserId: string;
 };
+
+type QrAssetState =
+  | {
+      status: "idle";
+    }
+  | {
+      status: "loading";
+    }
+  | {
+      status: "ready";
+      svgDataUrl: string;
+      pngDataUrl: string;
+    }
+  | {
+      status: "error";
+      message: string;
+    };
 
 const STATUS_OPTIONS: Array<{ value: QrLinkStatus; label: string }> = [
   { value: "draft", label: "Draft" },
@@ -147,11 +167,39 @@ export default function AdminQrLinksManager() {
   const [statusFilter, setStatusFilter] = useState<"all" | QrLinkStatus>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [openQrPreviewId, setOpenQrPreviewId] = useState<string | null>(null);
+  const [qrAssetsById, setQrAssetsById] = useState<Record<string, QrAssetState>>({});
+  const [prefillApplied, setPrefillApplied] = useState(false);
+  const [queryPrefill] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return parseAdminQrPrefillFromSearch(window.location.search);
+  });
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
+
+  useEffect(() => {
+    if (!queryPrefill || prefillApplied) return;
+    if (queryPrefill.destinationPath && !origin) return;
+
+    const prefillsDestination = queryPrefill.destinationPath
+      ? `${origin}${queryPrefill.destinationPath}`
+      : "";
+
+    setFormState((prev) => ({
+      ...prev,
+      slug: queryPrefill.slug || prev.slug,
+      destinationUrl: prefillsDestination || prev.destinationUrl,
+      contentItemId: queryPrefill.contentItemId || prev.contentItemId,
+      contentLabel: queryPrefill.contentLabel || prev.contentLabel,
+      placementKey: queryPrefill.placementKey || prev.placementKey,
+    }));
+    setActionError(null);
+    setActionNotice("Prefilled from lesson context. Review fields and create QR link.");
+    setPrefillApplied(true);
+  }, [origin, prefillApplied, queryPrefill]);
 
   async function loadData() {
     setLoading(true);
@@ -250,15 +298,69 @@ export default function AdminQrLinksManager() {
     return base;
   }, [items]);
 
+  function stableLinkForSlug(slug: string): string {
+    const resolvedOrigin = origin || (typeof window !== "undefined" ? window.location.origin : "");
+    return `${resolvedOrigin}/go/v/${slug}`;
+  }
+
   async function copyStableLink(item: QrRedirectLinkRow) {
     setCopiedLinkId(null);
-    const link = `${origin || ""}/go/v/${item.slug}`;
+    const link = stableLinkForSlug(item.slug);
     try {
       await navigator.clipboard.writeText(link);
       setCopiedLinkId(item.id);
       setActionNotice("Stable link copied.");
     } catch {
       setActionError("Could not copy link automatically. Copy it manually from the card.");
+    }
+  }
+
+  function downloadDataUrl(dataUrl: string, fileName: string) {
+    const anchor = document.createElement("a");
+    anchor.href = dataUrl;
+    anchor.download = fileName;
+    anchor.rel = "noopener";
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }
+
+  async function ensureQrAssets(item: QrRedirectLinkRow) {
+    const currentState = qrAssetsById[item.id];
+    if (currentState?.status === "loading" || currentState?.status === "ready") return;
+
+    setQrAssetsById((prev) => ({
+      ...prev,
+      [item.id]: { status: "loading" },
+    }));
+
+    try {
+      const assets = await generateQrAssets(stableLinkForSlug(item.slug));
+      setQrAssetsById((prev) => ({
+        ...prev,
+        [item.id]: {
+          status: "ready",
+          svgDataUrl: assets.svgDataUrl,
+          pngDataUrl: assets.pngDataUrl,
+        },
+      }));
+    } catch {
+      setQrAssetsById((prev) => ({
+        ...prev,
+        [item.id]: {
+          status: "error",
+          message: "Could not generate QR assets right now.",
+        },
+      }));
+    }
+  }
+
+  function toggleQrPreview(item: QrRedirectLinkRow) {
+    const shouldOpen = openQrPreviewId !== item.id;
+    setOpenQrPreviewId(shouldOpen ? item.id : null);
+    if (shouldOpen) {
+      void ensureQrAssets(item);
     }
   }
 
@@ -638,9 +740,11 @@ export default function AdminQrLinksManager() {
         <ul className="mt-5 space-y-3" data-testid="admin-qr-link-list">
           {filteredItems.map((item) => {
             const attachment = item.content_item_id ? contentItemById[item.content_item_id] : null;
-            const stableLink = `${origin || ""}/go/v/${item.slug}`;
+            const stableLink = stableLinkForSlug(item.slug);
             const isEditing = editingId === item.id && editState !== null;
             const isBusy = savingId === item.id || deletingId === item.id;
+            const qrAssetState = qrAssetsById[item.id] ?? { status: "idle" };
+            const isQrPreviewOpen = openQrPreviewId === item.id;
 
             return (
               <li
@@ -716,6 +820,14 @@ export default function AdminQrLinksManager() {
                       </button>
                       <button
                         type="button"
+                        onClick={() => toggleQrPreview(item)}
+                        disabled={isBusy}
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-3 text-sm font-medium text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {isQrPreviewOpen ? "Hide QR" : "Show QR"}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => startEdit(item)}
                         disabled={isBusy}
                         className="inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
@@ -739,6 +851,71 @@ export default function AdminQrLinksManager() {
                         {deletingId === item.id ? "Deleting…" : "Delete"}
                       </button>
                     </div>
+
+                    {isQrPreviewOpen ? (
+                      <div className="mt-3 rounded-lg border border-teal-200 bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
+                          QR preview
+                        </p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          Scan from desktop to continue on mobile. Stable link: {stableLink}
+                        </p>
+
+                        {qrAssetState.status === "loading" ? (
+                          <p className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                            Generating QR assets…
+                          </p>
+                        ) : null}
+
+                        {qrAssetState.status === "error" ? (
+                          <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2">
+                            <p className="text-sm text-rose-700">{qrAssetState.message}</p>
+                            <button
+                              type="button"
+                              onClick={() => void ensureQrAssets(item)}
+                              className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        ) : null}
+
+                        {qrAssetState.status === "ready" ? (
+                          <div className="mt-3 flex flex-wrap items-start gap-3">
+                            <Image
+                              src={qrAssetState.svgDataUrl}
+                              alt={`QR code for ${item.slug}`}
+                              width={112}
+                              height={112}
+                              unoptimized
+                              className="h-28 w-28 rounded-lg border border-slate-200 bg-white p-1"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  downloadDataUrl(qrAssetState.svgDataUrl, `${item.slug}.svg`);
+                                  setActionNotice("QR SVG downloaded.");
+                                }}
+                                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                              >
+                                Download SVG
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  downloadDataUrl(qrAssetState.pngDataUrl, `${item.slug}.png`);
+                                  setActionNotice("QR PNG downloaded.");
+                                }}
+                                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                              >
+                                Download PNG
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">

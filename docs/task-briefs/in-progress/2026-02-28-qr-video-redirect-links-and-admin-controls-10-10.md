@@ -279,6 +279,7 @@ The registry must answer at a glance:
 
 ## Checkpoint Log
 
+- `2026-03-06 | working tree | Slice 3 delivered locally: added in-app QR asset generation utility (`svg`+`png`) with unit coverage, shipped QR preview + download actions in admin QR registry rows, added lesson-context prefill flow (`Create QR link`from lesson rows ->`/admin?tab=qr-links` prefilled form), and extended admin foundation e2e with prefill assertion | next: run full npm run verify:pre-pr, push branch, and open/update PR in Safari`
 - `2026-03-06 | working tree | Slice 1 delivered locally: added Supabase QR redirect foundation migration (`qr_redirect_links`+`qr_link_status`+ RLS + audit trigger), implemented`/go/v/[slug]` secure redirect route with deterministic fallback (`/go/unavailable`) and strict HTTPS/host allowlist policy, added unit coverage for redirect/policy/analytics event name, and ran full npm run verify:pre-pr PASS | next: commit/push slice and open/update PR in Safari`
 - `2026-03-06 | working tree | brief approved and moved planned -> in-progress; final scope locked for secure redirect foundation + admin registry + in-app QR generation + desktop/mobile placement contract | next: implement Slice 1 (redirect foundation + fallback + security validation) with tests`
 
