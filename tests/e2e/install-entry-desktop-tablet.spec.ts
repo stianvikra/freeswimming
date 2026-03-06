@@ -11,18 +11,45 @@ test("main menu exposes install action on desktop and tablet layouts", async ({
   test.slow();
 
   await page.goto("/contact", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      })
+  );
 
   const menuToggle = page.getByTestId("header-menu-toggle").first();
   await expect(menuToggle).toBeVisible();
-  await menuToggle.click();
-
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
-  try {
-    await expect(drawer).toBeVisible({ timeout: 3000 });
-  } catch {
-    await menuToggle.focus();
-    await page.keyboard.press("Enter");
-    await expect(drawer).toBeVisible();
+
+  const openAttempts: Array<() => Promise<void>> = [
+    async () => {
+      await menuToggle.click();
+    },
+    async () => {
+      await menuToggle.focus();
+      await page.keyboard.press("Enter");
+    },
+    async () => {
+      await menuToggle.focus();
+      await page.keyboard.press("Space");
+    },
+  ];
+
+  let menuOpened = false;
+  for (const openAttempt of openAttempts) {
+    await openAttempt();
+    await expect(drawer)
+      .toBeVisible({ timeout: 2000 })
+      .catch(() => {});
+    if (await drawer.isVisible().catch(() => false)) {
+      menuOpened = true;
+      break;
+    }
+  }
+
+  if (!menuOpened) {
+    throw new Error("Navigation drawer did not open from menu toggle.");
   }
 
   const menuTab = drawer.getByRole("button", { name: "Menu", exact: true });

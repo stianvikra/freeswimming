@@ -5,6 +5,13 @@ import { readFileSync } from "node:fs";
 
 const BRIEF_ROOT = "docs/task-briefs";
 const SCORECARD_PATH = "docs/quality/platform-10-10-scorecard.md";
+const BRIEF_PATH_PATTERN =
+  /^docs\/task-briefs\/(planned|in-progress|done|deferred|blocked)\/\d{4}-\d{2}-\d{2}-.+\.md$/;
+const EXPLICIT_NA_RATIONALE_CATEGORIES = new Set([
+  "incident response and support operations",
+  "finance and reporting operations",
+  "i18n operational readiness",
+]);
 
 function run(command) {
   try {
@@ -84,9 +91,18 @@ function normalizeMapping(input) {
   return value;
 }
 
+function normalizeCellText(input) {
+  return input.replace(/[`*_]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 function nonEmptyValue(input) {
   const value = input.replace(/[`*_]/g, "").trim().toLowerCase();
   return Boolean(value && value !== "n/a" && value !== "na" && value !== "-");
+}
+
+function isGenericNA(input) {
+  const value = normalizeCellText(input);
+  return value === "" || value === "n/a" || value === "na" || value === "-" || value === "none";
 }
 
 function parseCanonicalCategories() {
@@ -146,7 +162,10 @@ function detectBaseRef() {
 function listAllBriefFiles() {
   const output = run(`find ${BRIEF_ROOT} -type f -name "*.md" | sort`);
   if (!output) return [];
-  return output.split("\n").map((line) => line.trim()).filter(Boolean);
+  return output
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => BRIEF_PATH_PATTERN.test(line));
 }
 
 function listChangedBriefFiles(baseRef) {
@@ -156,7 +175,7 @@ function listChangedBriefFiles(baseRef) {
   return output
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.endsWith(".md"));
+    .filter((line) => BRIEF_PATH_PATTERN.test(line));
 }
 
 function findBriefScorecardTable(text) {
@@ -225,6 +244,22 @@ function lintBrief(filePath, canonicalCategories) {
       }
       if (evidenceIndex >= 0 && !nonEmptyValue(row[evidenceIndex] ?? "")) {
         errors.push(`Category "${categoryRaw}" is target but has empty evidence source.`);
+      }
+    }
+
+    if (
+      mapping === "n/a" &&
+      EXPLICIT_NA_RATIONALE_CATEGORIES.has(categoryKey) &&
+      thresholdIndex >= 0 &&
+      evidenceIndex >= 0
+    ) {
+      const thresholdRaw = row[thresholdIndex] ?? "";
+      const evidenceRaw = row[evidenceIndex] ?? "";
+      const hasExplicitRationale = !isGenericNA(thresholdRaw) || !isGenericNA(evidenceRaw);
+      if (!hasExplicitRationale) {
+        errors.push(
+          `Category "${categoryRaw}" is N/A and requires explicit rationale in threshold or evidence (not plain N/A).`
+        );
       }
     }
   }
