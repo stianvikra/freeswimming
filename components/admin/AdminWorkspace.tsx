@@ -56,8 +56,19 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
   },
 ];
 
+function parseAdminTab(value: string | null): AdminTab | null {
+  if (!value) return null;
+  return TAB_LABELS.some((tab) => tab.id === value) ? (value as AdminTab) : null;
+}
+
+function resolveInitialAdminTab(): AdminTab {
+  if (typeof window === "undefined") return "content";
+  const params = new URLSearchParams(window.location.search);
+  return parseAdminTab(params.get("tab")) ?? "content";
+}
+
 export default function AdminWorkspace() {
-  const [activeTab, setActiveTab] = useState<AdminTab>("content");
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => resolveInitialAdminTab());
 
   const activeMeta = useMemo(
     () => TAB_LABELS.find((tab) => tab.id === activeTab) ?? TAB_LABELS[0],
