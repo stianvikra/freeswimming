@@ -56,11 +56,13 @@ function parseRedirectLocation(response: Response): URL {
 describe("/go/v/[slug] route", () => {
   beforeEach(() => {
     trackAnalyticsEventMock.mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubEnv("QR_REDIRECT_ALLOWED_HOSTS", "freeswimming.org,www.freeswimming.org");
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -113,6 +115,13 @@ describe("/go/v/[slug] route", () => {
     expect(location.pathname).toBe("/go/unavailable");
     expect(location.searchParams.get("slug")).toBe("intro-video");
     expect(location.searchParams.get("reason")).toBe("not_found");
+    expect(console.warn).toHaveBeenCalledWith(
+      "[QrRedirect] Redirecting to fallback",
+      expect.objectContaining({
+        slug: "intro-video",
+        reason: "not_found",
+      })
+    );
     expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: "qr_redirect_hit",
@@ -177,6 +186,14 @@ describe("/go/v/[slug] route", () => {
     expect(response.status).toBe(302);
     expect(location.pathname).toBe("/go/unavailable");
     expect(location.searchParams.get("reason")).toBe("invalid_slug");
+    expect(console.warn).toHaveBeenCalledWith(
+      "[QrRedirect] Redirecting to fallback",
+      expect.objectContaining({
+        slug: "unknown",
+        reason: "invalid_slug",
+        rawSlug: "invalid_slug",
+      })
+    );
     expect(createServerSupabaseClientMock).not.toHaveBeenCalled();
   });
 });

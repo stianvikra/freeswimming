@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { isUuid } from "@/lib/admin/content";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
-import { parseUpdateQrRedirectLinkPayload } from "@/lib/qr-links/admin";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
+import { parseUpdateQrRedirectLinkPayload, type QrRedirectLinkRow } from "@/lib/qr-links/admin";
 import { getQrRedirectSchemaSetupMessage, isQrRedirectSchemaMissing } from "@/lib/qr-links/schema";
 import {
   resolveQrRedirectAllowedHosts,
@@ -19,6 +20,8 @@ type DestinationValidationFailureReason =
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
+
+type ExistingQrLinkRecord = Pick<QrRedirectLinkRow, "id" | "slug" | "status">;
 
 function noStoreJson(
   body: Record<string, unknown>,
@@ -67,6 +70,14 @@ function mapDestinationValidationReasonToError(reason: DestinationValidationFail
   }
 }
 
+function readDestinationHost(destinationUrl: string): string {
+  try {
+    return new URL(destinationUrl).hostname;
+  } catch {
+    return "";
+  }
+}
+
 async function resolveId(context: RouteContext): Promise<string> {
   const params = await context.params;
   return params.id;
@@ -110,6 +121,40 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!parsed.ok) {
     return applySupabaseCookies(noStoreJson({ ok: false, error: parsed.error }, { status: 400 }));
   }
+
+  const existingResult = await supabase
+    .from("qr_redirect_links")
+    .select("id, slug, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (existingResult.error) {
+    if (isQrRedirectSchemaMissing(existingResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getQrRedirectSchemaSetupMessage(),
+            code: "QR_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
+    console.error("[AdminQrLinks] Could not read existing QR link", existingResult.error);
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Could not update QR link right now." }, { status: 500 })
+    );
+  }
+
+  if (!existingResult.data) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "QR link not found." }, { status: 404 })
+    );
+  }
+
+  const existingRecord = existingResult.data as unknown as ExistingQrLinkRecord;
 
   const updatePayload: Database["public"]["Tables"]["qr_redirect_links"]["Update"] = {
     updated_by: gate.user.id,
@@ -219,10 +264,51 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  const updatedItem = updateResult.data as unknown as QrRedirectLinkRow;
+  const previousStatus = existingRecord.status;
+  const nextStatus = updatedItem.status;
+
+  trackAnalyticsEvent({
+    eventName: "qr_link_updated",
+    channel: "server",
+    userId: gate.user.id,
+    payload: {
+      qrLinkId: updatedItem.id,
+      slug: updatedItem.slug,
+      previousStatus,
+      nextStatus,
+      destinationHost: readDestinationHost(updatedItem.destination_url),
+      placementKey: updatedItem.placement_key ?? "",
+      contentItemId: updatedItem.content_item_id ?? "",
+    },
+  });
+
+  if (previousStatus !== nextStatus) {
+    trackAnalyticsEvent({
+      eventName: "qr_link_status_changed",
+      channel: "server",
+      userId: gate.user.id,
+      payload: {
+        qrLinkId: updatedItem.id,
+        slug: updatedItem.slug,
+        previousStatus,
+        nextStatus,
+      },
+    });
+  }
+
+  console.info("[AdminQrLinks] Updated QR link", {
+    id: updatedItem.id,
+    slug: updatedItem.slug,
+    previousStatus,
+    nextStatus,
+    actorUserId: gate.user.id,
+  });
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
-      item: updateResult.data,
+      item: updatedItem,
     })
   );
 }
@@ -277,6 +363,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
       noStoreJson({ ok: false, error: "QR link not found." }, { status: 404 })
     );
   }
+
+  console.info("[AdminQrLinks] Deleted QR link", {
+    id: deleteResult.data.id,
+    actorUserId: gate.user.id,
+  });
 
   return applySupabaseCookies(
     noStoreJson({

@@ -68,6 +68,26 @@ test.describe("admin content API guards", () => {
           action: "normalize",
         },
       },
+      {
+        method: "POST",
+        url: "/api/admin/qr-links",
+        body: {
+          slug: "unauth-qr-probe",
+          destinationUrl: "https://freeswimming.org/course",
+          status: "active",
+        },
+      },
+      {
+        method: "PATCH",
+        url: `/api/admin/qr-links/${dummyContentId}`,
+        body: {
+          status: "disabled",
+        },
+      },
+      {
+        method: "DELETE",
+        url: `/api/admin/qr-links/${dummyContentId}`,
+      },
     ] as const;
 
     for (const call of unauthenticatedCalls) {
@@ -223,6 +243,95 @@ test.describe("admin content API guards", () => {
     await expect(invalidCourseStructurePayload.json()).resolves.toMatchObject({
       ok: false,
       error: "Invalid module id.",
+    });
+
+    const unsupportedQrCreate = await page.request.post("/api/admin/qr-links", {
+      headers: {
+        "content-type": "text/plain",
+      },
+      data: "invalid",
+    });
+    expect(unsupportedQrCreate.status()).toBe(415);
+
+    const invalidJsonQrCreate = await page.request.fetch("/api/admin/qr-links", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      data: "{",
+    });
+    expect(invalidJsonQrCreate.status()).toBe(400);
+    await expect(invalidJsonQrCreate.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Invalid JSON.",
+    });
+
+    const unsafeQrCreate = await page.request.post("/api/admin/qr-links", {
+      headers: {
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({
+        slug: `guard-unsafe-${Date.now().toString(36)}`,
+        destinationUrl: "https://evil.example/phish",
+        status: "active",
+      }),
+    });
+    expect(unsafeQrCreate.status()).toBe(400);
+    await expect(unsafeQrCreate.json()).resolves.toMatchObject({
+      ok: false,
+      error: "destinationUrl host is not allowlisted.",
+    });
+
+    const createdQrResponse = await page.request.post("/api/admin/qr-links", {
+      headers: {
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({
+        slug: `guard-safe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        destinationUrl: "https://freeswimming.org/course",
+        status: "active",
+      }),
+    });
+    expect(createdQrResponse.status()).toBe(200);
+    const createdQrPayload = (await createdQrResponse.json()) as {
+      item?: { id?: string };
+    };
+    const createdQrId = createdQrPayload.item?.id;
+    expect(createdQrId).toBeTruthy();
+
+    const unsupportedQrPatch = await page.request.patch(`/api/admin/qr-links/${createdQrId}`, {
+      headers: {
+        "content-type": "text/plain",
+      },
+      data: "invalid",
+    });
+    expect(unsupportedQrPatch.status()).toBe(415);
+
+    const invalidJsonQrPatch = await page.request.fetch(`/api/admin/qr-links/${createdQrId}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      data: "{",
+    });
+    expect(invalidJsonQrPatch.status()).toBe(400);
+    await expect(invalidJsonQrPatch.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Invalid JSON.",
+    });
+
+    const unsafeQrPatch = await page.request.patch(`/api/admin/qr-links/${createdQrId}`, {
+      headers: {
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({
+        destinationUrl: "https://evil.example/redirect",
+      }),
+    });
+    expect(unsafeQrPatch.status()).toBe(400);
+    await expect(unsafeQrPatch.json()).resolves.toMatchObject({
+      ok: false,
+      error: "destinationUrl host is not allowlisted.",
     });
   });
 });

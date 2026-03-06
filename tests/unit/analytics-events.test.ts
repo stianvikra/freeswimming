@@ -10,6 +10,9 @@ describe("analytics events", () => {
     expect(isAnalyticsEventName("checkout_started")).toBe(true);
     expect(isAnalyticsEventName("entitlement_granted")).toBe(true);
     expect(isAnalyticsEventName("qr_redirect_hit")).toBe(true);
+    expect(isAnalyticsEventName("qr_link_created")).toBe(true);
+    expect(isAnalyticsEventName("qr_link_updated")).toBe(true);
+    expect(isAnalyticsEventName("qr_link_status_changed")).toBe(true);
     expect(isAnalyticsEventName("unknown_event")).toBe(false);
   });
 

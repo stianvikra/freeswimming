@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { parseCreateQrRedirectLinkPayload, type QrRedirectLinkRow } from "@/lib/qr-links/admin";
 import { getQrRedirectSchemaSetupMessage, isQrRedirectSchemaMissing } from "@/lib/qr-links/schema";
 import {
@@ -59,6 +60,14 @@ function mapDestinationValidationReasonToError(reason: DestinationValidationFail
       return "destinationUrl host is not allowlisted.";
     default:
       return "Invalid destinationUrl.";
+  }
+}
+
+function readDestinationHost(destinationUrl: string): string {
+  try {
+    return new URL(destinationUrl).hostname;
+  } catch {
+    return "";
   }
 }
 
@@ -230,10 +239,32 @@ export async function POST(request: Request) {
     );
   }
 
+  const insertedItem = insertResult.data as unknown as QrRedirectLinkRow;
+
+  trackAnalyticsEvent({
+    eventName: "qr_link_created",
+    channel: "server",
+    userId: gate.user.id,
+    payload: {
+      qrLinkId: insertedItem.id,
+      slug: insertedItem.slug,
+      status: insertedItem.status,
+      destinationHost: readDestinationHost(insertedItem.destination_url),
+      placementKey: insertedItem.placement_key ?? "",
+      contentItemId: insertedItem.content_item_id ?? "",
+    },
+  });
+  console.info("[AdminQrLinks] Created QR link", {
+    id: insertedItem.id,
+    slug: insertedItem.slug,
+    status: insertedItem.status,
+    actorUserId: gate.user.id,
+  });
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
-      item: insertResult.data,
+      item: insertedItem,
     })
   );
 }
