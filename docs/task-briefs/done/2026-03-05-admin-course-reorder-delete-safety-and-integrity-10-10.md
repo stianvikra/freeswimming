@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-05-admin-course-reorder-delete-safety-and-integrity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `priority`: `P0`
 - `owner`: `stianvikra`
 - `created`: `2026-03-05`
@@ -157,6 +157,13 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-05 | 9606a2d (main) | PR #130 merged and closed; reorder/delete safety + integrity slice released with required CI green and local verify:pre-merge completed before merge recommendation | next: brief moved to done`
 - `2026-03-05 | 754ef2d | PR opened | pushed branch and opened PR #130 in Safari after local npm run verify:pre-pr green; CI checks are running/pending | next: monitor required CI and run npm run verify:pre-merge before merge recommendation`
 - `2026-03-05 | implementation + validation complete (local) | shipped admin course structure API (`move_module`, `move_lesson`, `move_lesson_to_module`, `delete_module`, `normalize`) with role gating (`editor`+`admin` for delete); added deterministic normalization + integrity computation helpers; wired admin UI move controls (module/lesson up/down + lesson-to-module reassignment), persistent integrity warning + normalize action, and explicit module delete strategy modal (reassign/archive/unlink); updated e2e guards and hardened flaky desktop e2e waits; npm run verify:pre-pr passed | next: commit, push, open PR in Safari, monitor required checks`
 - `2026-03-05 | kickoff (P0) | brief opened directly in-progress from editorial run due structural admin reorder/delete integrity risk | next: implement safe reorder workflow + module-delete strategy flow + invariant checks`
+
+## Completion Record
+
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/130`
+- `merge`: `PR #130` -> `main`
+- `result`: safe reorder/delete workflow and integrity guardrails shipped for course module/lesson structure operations.

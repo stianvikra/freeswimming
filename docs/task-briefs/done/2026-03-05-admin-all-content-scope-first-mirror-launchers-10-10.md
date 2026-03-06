@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-05-admin-all-content-scope-first-mirror-launchers-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `priority`: `P1`
 - `owner`: `stianvikra`
 - `created`: `2026-03-05`
@@ -106,6 +106,13 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-05 | 5a4d0b0 (main) | PR #132 merged and closed; scope-first All Content + mirror launcher slice released with required CI green and local verify:pre-merge completed before merge recommendation | next: brief moved to done`
 - `2026-03-05 | 7eda80d | committed scope-first All Content + mirror launcher follow-up on active PR branch (PR #132) | local verify:pre-pr green; next: monitor CI checks and update PR handoff`
 - `2026-03-05 | working tree | implemented scope-first All Content (default scope + explicit audit mode), mirror-card active-state focus, local scope persistence, updated Help/Guide copy, and adjusted admin foundation e2e assertions for new clear-focus behavior | npm run verify:pre-pr passed (73 passed / 179 skipped) | next: commit, push, update PR in Safari`
 - `2026-03-05 | kickoff | follow-up slice started for scope-first All Content + mirror launcher UX to reduce mixed-list friction | next: implement UI/filter state + update tests + run verify:pre-pr`
+
+## Completion Record
+
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/132`
+- `merge`: `PR #132` -> `main`
+- `result`: scope-first All Content and mirror launcher workflow shipped; brief lifecycle closed after merge.

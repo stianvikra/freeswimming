@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-28-qr-video-redirect-links-and-admin-controls-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `priority`: `P1`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
@@ -285,6 +285,7 @@ The registry must answer at a glance:
 
 ## Checkpoint Log
 
+- `2026-03-06 | ece15c3 (main) | PR #140 merged and closed; QR redirect/admin controls track completed through Slice 6 (list-first QR registry UX polish) with required CI green and local verify:pre-merge PASS | next: brief moved to done`
 - `2026-03-06 | working tree | Slice 6 delivered locally: refactored QR registry to list-first flow with collapsible New link panel, required vs advanced create sections, first-link empty-state onboarding with example prefill, and cleaner per-row action hierarchy; updated Help/Guide QR workflow/button glossary + admin e2e contracts; npm run verify:pre-pr PASS | next: commit, push, open/update PR in Safari, then monitor required checks`
 - `2026-03-06 | kickoff | started Slice 6 (QR admin UX polish): list-first registry, collapsible New link, required/advanced form split, improved empty state, and action hierarchy cleanup; next: implement UI + e2e/help updates and run verify:pre-pr`
 - `2026-03-06 | working tree | Slice 5 delivered locally: added admin QR mutation analytics events (`qr_link_created`, `qr_link_updated`, `qr_link_status_changed`), standardized structured fallback logging for `/go/v/[slug]` fallback paths, expanded negative-path coverage (unit + e2e) for unauthorized/malformed/unsafe QR admin API calls, and added ops runbook docs/runbooks/qr-redirect-operations.md | next: run full npm run verify:pre-pr, push branch, and open/update PR in Safari`
@@ -292,8 +293,8 @@ The registry must answer at a glance:
 - `2026-03-06 | working tree | Slice 1 delivered locally: added Supabase QR redirect foundation migration (`qr_redirect_links`+`qr_link_status`+ RLS + audit trigger), implemented`/go/v/[slug]` secure redirect route with deterministic fallback (`/go/unavailable`) and strict HTTPS/host allowlist policy, added unit coverage for redirect/policy/analytics event name, and ran full npm run verify:pre-pr PASS | next: commit/push slice and open/update PR in Safari`
 - `2026-03-06 | working tree | brief approved and moved planned -> in-progress; final scope locked for secure redirect foundation + admin registry + in-app QR generation + desktop/mobile placement contract | next: implement Slice 1 (redirect foundation + fallback + security validation) with tests`
 
-## Completion Record (fill when done)
+## Completion Record
 
-- `PR`: link
-- `merge`: source -> target
-- `result`: short summary
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/140`
+- `merge`: `PR #140` -> `main`
+- `result`: end-to-end QR redirect/admin registry system shipped, including secure redirect policy, admin CRUD + QR assets, learner placements, observability hardening, and list-first QR admin UX.
