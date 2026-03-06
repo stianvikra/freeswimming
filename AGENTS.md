@@ -28,8 +28,10 @@ This file defines how coding agents should collaborate in this repository.
 3. `npm run verify:pre-pr` passes locally; use `npm run verify:pre-merge` before merge.
 4. Accessibility semantics are preserved for changed UI.
 5. Related docs are updated when rules/contracts change.
-6. Business logic invariants and data integrity constraints for changed scope are explicitly validated (tests and/or deterministic runtime guards).
-7. Changed task briefs pass `npm run lint:briefs` (scorecard categories + target threshold/evidence checks).
+6. If admin/user workflow labels, actions, or recovery behavior changed, `Help/Guide` and relevant runbooks are updated in the same PR.
+7. Business logic invariants and data integrity constraints for changed scope are explicitly validated (tests and/or deterministic runtime guards).
+8. Changed task briefs pass `npm run lint:briefs` (scorecard categories + target threshold/evidence checks).
+9. Help-center assertions are updated when Help/Guide content contract changes.
 
 ## Platform 10/10 Governance
 
@@ -60,6 +62,9 @@ This file defines how coding agents should collaborate in this repository.
   - what is server-canonical,
   - sync/conflict/invalidation behavior.
 - For performance-sensitive work, always set route-level speed targets (CWV/payload) for changed core routes.
+- For admin/user workflow changes, briefs must include explicit Help/Guide impact:
+  - required Help/Guide update in same PR, or
+  - explicit `N/A` rationale.
 
 ## Guardrails
 

@@ -1,88 +1,96 @@
 "use client";
 
+type TabGuide = {
+  name: string;
+  primaryJob: string;
+  commonRisk: string;
+};
+
+type Playbook = {
+  title: string;
+  steps: string[];
+};
+
+type ActionGroup = {
+  section: string;
+  actions: Array<{ label: string; meaning: string }>;
+};
+
+const LAST_UPDATED = "2026-03-06";
+
 const QUICK_ACTIONS = [
-  { id: "overview", label: "What this is" },
+  { id: "overview", label: "Start here" },
+  { id: "learning-path", label: "Learning path" },
   { id: "tabs", label: "Dashboard tabs" },
-  { id: "content-page", label: "How Content page works" },
+  { id: "content-page", label: "Content workflow" },
+  { id: "qr-links", label: "QR workflow" },
   { id: "buttons", label: "Buttons explained" },
-  { id: "edit-scope", label: "What can be edited now" },
+  { id: "quality-matrix", label: "10/10 matrix" },
+  { id: "controls", label: "Doc controls" },
   { id: "services", label: "Connected services" },
   { id: "playbooks", label: "Daily playbooks" },
   { id: "troubleshoot", label: "Troubleshoot" },
-  { id: "change-log", label: "Changes and roadmap" },
+  { id: "change-log", label: "Change governance" },
 ];
 
-const DASHBOARD_TABS = [
+const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Content",
-    useCase:
-      "Create and edit modules, lessons, guide sessions/drills, page rows, and publish states.",
+    primaryJob: "Create, edit, review, publish, and archive content records safely.",
+    commonRisk: "Wrong status or wrong order can publish incomplete learning flow.",
+  },
+  {
+    name: "QR Links",
+    primaryJob: "Manage stable short links and downloadable QR files for campaigns and lessons.",
+    commonRisk: "Wrong destination or status can send users to broken/non-live pages.",
   },
   {
     name: "Commerce",
-    useCase: "Manage product names, slugs, and active sales setup.",
+    primaryJob: "Keep product labels/slugs aligned with active sales setup.",
+    commonRisk: "Mismatch between product setup and checkout configuration.",
   },
   {
     name: "Operations",
-    useCase: "Control runtime flags and private-access behavior.",
+    primaryJob: "Control runtime flags and private-access lock behavior.",
+    commonRisk: "Flag changes without verification can hide or expose routes unexpectedly.",
   },
   {
     name: "Notes",
-    useCase: "Track work items and internal follow-ups.",
+    primaryJob: "Capture internal tasks with clear context and completion status.",
+    commonRisk: "Unlinked notes lose context and slow follow-up.",
   },
   {
     name: "Categories",
-    useCase: "Keep content and notes grouped in a clean taxonomy.",
+    primaryJob: "Maintain category taxonomy used by content and notes workflows.",
+    commonRisk: "Inconsistent naming makes filtering and reporting noisy.",
+  },
+  {
+    name: "Help/Guide",
+    primaryJob: "Learn workflows, recovery steps, and operational ownership.",
+    commonRisk: "Outdated guidance causes avoidable operator mistakes.",
   },
 ];
 
-const CONNECTED_SERVICES = [
+const LEARNING_PATH = [
   {
-    name: "Supabase",
-    purpose: "Stores app data, user accounts, and admin records.",
-    caution: "If migrations are missing, admin setup warnings will appear.",
+    title: "Step 1: Understand structure (5 min)",
+    detail:
+      "Read Dashboard tabs, then Content workflow. This gives you a shared mental model before editing anything.",
   },
   {
-    name: "Stripe",
-    purpose: "Handles payments and product entitlement flow.",
-    caution: "Product IDs and price IDs must stay aligned with admin product data.",
+    title: "Step 2: Safe content edit cycle (10 min)",
+    detail:
+      "In Content tab: draft -> review -> preview -> publish. Use revisions for rollback if needed.",
   },
   {
-    name: "Vercel",
-    purpose: "Runs deployments and preview environments.",
-    caution: "A successful preview does not replace required CI checks.",
+    title: "Step 3: QR publishing cycle (10 min)",
+    detail:
+      "In QR Links: create slug, verify destination, activate, test stable link, then download QR files.",
   },
   {
-    name: "GitHub Actions",
-    purpose: "Runs verify, smoke, and security automation.",
-    caution: "Never merge when required checks are red.",
-  },
-];
-
-const DAILY_PLAYBOOKS = [
-  {
-    title: "Publish new content safely",
-    steps: [
-      "Create or update content in draft.",
-      "Move to review and verify text, ordering, and category.",
-      "Publish only after preview and CI checks are green.",
-    ],
-  },
-  {
-    title: "Rollback quickly",
-    steps: [
-      "Open revisions on the affected content item.",
-      "Restore the last known good revision.",
-      "Refresh public page and confirm the issue is gone.",
-    ],
-  },
-  {
-    title: "Capture work notes while reviewing pages",
-    steps: [
-      "Open the page you are reviewing (lesson, drill, session, or product).",
-      "Expand the admin notes panel.",
-      "Create or update notes so context stays attached to the exact page.",
-    ],
+    title: "Step 4: Recovery drill (5 min)",
+    detail:
+      "Practice one rollback flow: disable broken QR or restore a content revision and confirm public result.",
   },
 ];
 
@@ -90,168 +98,138 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Platform mirror snapshot",
     detail:
-      "Shows if admin content is aligned with platform baseline (modules, lessons, sessions, drills, products). Green means aligned. Yellow means something is missing or extra. Click any snapshot card to focus the content list on that group.",
+      "Shows if admin data aligns with platform data by group (modules, lessons, sessions, drills, products). Click a card to focus content list.",
   },
   {
-    title: "Content items list",
+    title: "Course workspace (modules -> lessons)",
     detail:
-      "Shows one active content scope at a time (modules, lessons, 0-1000 sessions, poolside drills, products, pages). Use All content (audit) only when you need a full mixed list. Each row gives workflow actions like edit, review, publish, archive, revisions, and delete.",
+      "Use this first for day-to-day course production. It keeps module context and linked lessons together.",
   },
   {
-    title: "Module -> lessons workspace",
+    title: "All content list",
     detail:
-      "Lets you choose a module scope and immediately see lessons in order. The workspace and content list stay synced, so you edit with less searching.",
+      "Use this for cross-type audits and bulk filtering. Keep a single scope active when editing to reduce mistakes.",
   },
   {
     title: "Create content item form",
     detail:
-      "Lets you create a new record with type, status, title, slug, summary, body, order, and category. This is used to stage work safely before publish.",
+      "Create new draft records safely before review/publish. Required fields should be set before status upgrades.",
   },
   {
     title: "Status workflow",
     detail:
-      "Use draft for work-in-progress, review for internal checking, and published when ready for users. Archive hides old records without deleting history.",
+      "Draft = work in progress. Review = internal quality gate. Published = live for users. Archived = hidden but retained.",
   },
 ];
 
-const BUTTON_GUIDE = [
+const QR_WORKFLOW = [
+  {
+    title: "Create draft link",
+    detail:
+      "Set slug + HTTPS destination first. Keep status draft while verifying where it should point.",
+  },
+  {
+    title: "Attach ownership metadata",
+    detail:
+      "Optionally attach content item, content label, placement key, and owner user id for traceability.",
+  },
+  {
+    title: "Activate after verification",
+    detail: "Switch to active only after destination and ownership fields are confirmed.",
+  },
+  {
+    title: "Test stable link",
+    detail: "Open `/go/v/<slug>` in a new tab and confirm it lands at the intended destination.",
+  },
+  {
+    title: "Generate and download QR assets",
+    detail: "Use Show QR, then download SVG/PNG for campaign or print surfaces.",
+  },
+  {
+    title: "Rollback fast if something is wrong",
+    detail:
+      "Immediate rollback options: Disable status or restore a safe destination URL, then retest stable link.",
+  },
+];
+
+const BUTTON_GUIDE: ActionGroup[] = [
   {
     section: "Content tab",
     actions: [
       {
-        label: "Refresh",
-        meaning:
-          "Loads latest data from server. Use this after changes, imports, or when list looks outdated.",
-      },
-      {
-        label: "Edit",
-        meaning:
-          "Opens edit mode on that row. Module, lesson, session, drill, page, and product-copy rows can be edited directly.",
-      },
-      {
-        label: "Search field",
-        meaning:
-          "Filters the list by title, slug, category, summary, and type label so you can find the right row quickly.",
-      },
-      {
-        label: "All types filter",
-        meaning:
-          "Selects active content scope. Keep one scope active for faster editing. Use All content (audit) only when you need cross-type review.",
-      },
-      {
-        label: "Quick type buttons",
-        meaning:
-          "One-click scope launcher for modules, lessons, 0-1000 sessions, poolside drills, products, pages, or full audit mode.",
-      },
-      {
         label: "Course Workspace / All Content tabs",
         meaning:
-          "Use Course Workspace for module+lesson production flow, and All Content for full catalog filtering, row editing, and creating new items.",
+          "Course Workspace is the default production flow. All Content is for audits and cross-type filtering.",
       },
       {
         label: "Mirror snapshot cards",
-        meaning:
-          "Click a snapshot card to focus the list on that content group and jump directly to the list area.",
-      },
-      {
-        label: "Module workspace",
-        meaning:
-          "Shows module-scoped lessons and keeps the list view in sync so you stay in one editing context.",
-      },
-      {
-        label: "Course status board",
-        meaning:
-          "Shows module and lesson lifecycle counts (draft/review/published/archived) so you can audit status before editing.",
-      },
-      {
-        label: "Show course modules and lessons in full content list",
-        meaning:
-          "Turns duplicate course rows on/off in the full catalog. Keep it off to reduce clutter and use workspace as the primary course surface.",
+        meaning: "Focuses list scope to the selected data group and jumps to the list workflow.",
       },
       {
         label: "Edit lesson",
-        meaning:
-          "Opens edit mode for that lesson row and jumps to it in the content list. Use this for lesson body updates.",
+        meaning: "Opens lesson row edit with body fields and section visibility controls.",
       },
       {
         label: "Open preview",
-        meaning:
-          "Opens admin preview mode in a new tab using the row status (draft/review/published/all) with a clear preview banner.",
+        meaning: "Opens admin preview mode with clear preview banner and status context.",
       },
       {
         label: "Open lesson",
-        meaning:
-          "Opens the real lesson page in a new tab so you can verify exactly what users will see.",
+        meaning: "Opens public lesson page exactly as users see it.",
       },
       {
-        label: "All statuses filter",
-        meaning:
-          "Limits rows by lifecycle state (draft, review, published, archived). Useful when checking only publish-ready or only in-progress items.",
-      },
-      {
-        label: "Sort content list",
-        meaning:
-          "Changes row order (default, title, update time, or status/order grouping) so you can review and edit in a predictable sequence.",
-      },
-      {
-        label: "Save changes",
-        meaning: "Stores your edits for that row. If there are no changes, nothing is saved.",
-      },
-      {
-        label: "Lesson body editor",
-        meaning:
-          "For course lessons, this edits lesson goal, section badge label, cues, common mistakes, drill title/steps, checkpoint criteria, next step, support-card timing, and support-card actions.",
-      },
-      {
-        label: "Section visibility",
-        meaning:
-          "Use checkboxes to show or hide goal, cues, common mistakes, drill block, pass criteria, next step, and the extra help card without deleting text.",
-      },
-      {
-        label: "Extra help actions",
-        meaning:
-          "Choose which actions appear inside Need extra help (Video Analysis, Poolside guide, 0-1000 guide, Contact) and optionally pick one highlighted primary action. If no primary is chosen, all actions use neutral style.",
-      },
-      {
-        label: "Extra help start lesson number",
-        meaning:
-          "Use this optional number to delay the extra help card until later in a module (for example start at lesson 4).",
-      },
-      {
-        label: "Clear focus",
-        meaning:
-          "Resets temporary focus mode and returns filters/sort to a broad view when you are done with one editing context.",
-      },
-      {
-        label: "Cancel",
-        meaning: "Closes edit mode. If you changed something, you will be asked before discarding.",
-      },
-      {
-        label: "Revisions / Hide revisions",
-        meaning:
-          "Opens or closes the change history for one item. Use this to inspect earlier versions.",
-      },
-      {
-        label: "Restore",
-        meaning: "Reverts one item back to a chosen earlier version from revision history.",
+        label: "Revisions / Restore",
+        meaning: "Inspect previous versions and restore the last known good state when needed.",
       },
       {
         label: "Move to draft / Move to review / Publish / Archive",
-        meaning:
-          "Changes lifecycle state. Use these to control what is being edited, checked, live, or retired.",
+        meaning: "Moves item through lifecycle states with explicit intent.",
       },
       {
         label: "Delete",
+        meaning: "Permanent remove. Use only when you are sure record should no longer exist.",
+      },
+      {
+        label: "Clear focus",
+        meaning: "Returns to broad view after finishing a focused edit sequence.",
+      },
+      {
+        label: "Refresh / Retry",
+        meaning: "Reloads latest server state or retries the same failed operation.",
+      },
+    ],
+  },
+  {
+    section: "QR Links tab",
+    actions: [
+      {
+        label: "Create QR link",
         meaning:
-          "Permanently removes that record from admin catalog. Use only when record should no longer exist.",
+          "Creates a new registry row. Required fields: slug + HTTPS destination + intended status.",
       },
       {
-        label: "Save content item",
-        meaning: "Creates a new content record from the form at the bottom of Content tab.",
+        label: "Filter by status / Search",
+        meaning: "Narrow list to active/draft/disabled/archived rows or find by slug/destination.",
       },
       {
-        label: "Retry",
-        meaning: "Tries the same request again after a failed load or action.",
+        label: "Copy link",
+        meaning: "Copies stable redirect URL (`/go/v/<slug>`) for sharing/testing.",
+      },
+      {
+        label: "Show QR",
+        meaning: "Generates QR preview and unlocks SVG/PNG download buttons.",
+      },
+      {
+        label: "Edit",
+        meaning: "Updates slug, destination, status, and metadata for existing row.",
+      },
+      {
+        label: "Activate / Disable",
+        meaning: "Fast operational switch for live routing.",
+      },
+      {
+        label: "Delete",
+        meaning: "Permanent remove of QR row. Prefer disable when unsure.",
       },
     ],
   },
@@ -260,16 +238,15 @@ const BUTTON_GUIDE = [
     actions: [
       {
         label: "Open password page",
-        meaning: "Opens the private access page used by site lock. Use when testing gate behavior.",
+        meaning: "Opens private-access page for gate behavior testing.",
       },
       {
         label: "Sign out this browser",
-        meaning:
-          "Clears preview gate session in current browser so you can test gated access from a clean state.",
+        meaning: "Clears local preview-gate session to re-test restricted access from clean state.",
       },
       {
         label: "Refresh",
-        meaning: "Reloads operations snapshot and runtime flag values from server.",
+        meaning: "Reloads operations snapshot and runtime flags from server.",
       },
     ],
   },
@@ -278,19 +255,145 @@ const BUTTON_GUIDE = [
     actions: [
       {
         label: "Save note / Save changes / Delete",
-        meaning:
-          "Creates, updates, or removes admin notes. Notes can be attached to module, lesson, session, drill, product, or page route.",
+        meaning: "Creates, updates, or removes task notes with route/content context.",
       },
       {
         label: "Save category / Delete",
-        meaning: "Maintains taxonomy used by notes/content workflows.",
+        meaning: "Maintains taxonomy used by note/content filtering and dashboards.",
       },
       {
         label: "Save product",
-        meaning: "Updates product setup data used by commerce and entitlement flows.",
+        meaning: "Updates commerce display data used by sales surfaces.",
       },
     ],
   },
+];
+
+const QUALITY_MATRIX = [
+  {
+    category: "UX flow clarity",
+    contract: "Every workflow has next step + rollback step in plain language.",
+    where: "Learning path + playbooks + troubleshoot.",
+  },
+  {
+    category: "UI/design",
+    contract: "Scannable sections, short cards, no dense text blocks.",
+    where: "All Help/Guide sections.",
+  },
+  {
+    category: "Business logic + data integrity",
+    contract: "Status and rollback guidance matches real state transitions.",
+    where: "Content/QR workflows + button glossary.",
+  },
+  {
+    category: "Security/privacy",
+    contract: "No secrets in docs; no insecure bypass instructions.",
+    where: "Controls + troubleshoot sections.",
+  },
+  {
+    category: "Reliability + failure handling",
+    contract: "Known failure modes map to deterministic recovery steps.",
+    where: "Troubleshoot + runbook references.",
+  },
+  {
+    category: "Admin workflow + editability",
+    contract: "High-frequency actions explained with expected outcome.",
+    where: "Button glossary.",
+  },
+  {
+    category: "Testing/QA automation",
+    contract: "Help text changes are backed by e2e assertions.",
+    where: "`tests/e2e/admin-help-center.spec.ts`.",
+  },
+  {
+    category: "Incident/support operations",
+    contract: "Escalation and rollback path are explicit.",
+    where: "Playbooks + troubleshoot + runbook links.",
+  },
+  {
+    category: "i18n readiness",
+    contract: "Copy avoids logic dependence on hardcoded phrasing.",
+    where: "Governance controls + brief template checks.",
+  },
+  {
+    category: "DevOps/rollback readiness",
+    contract: "Workflow changes require Help + runbook alignment in same PR.",
+    where: "Governance controls section.",
+  },
+];
+
+const DOC_CONTROLS = [
+  "If any admin label/button/workflow changes, update Help/Guide in the same PR.",
+  "If recovery behavior changes, update relevant runbook in the same PR.",
+  "If the change affects operators, add/refresh at least one help-center e2e assertion.",
+  "Every new/updated brief must declare Help/Guide impact as: required update or explicit N/A with reason.",
+  "Do not mark brief done if Help/Guide is stale for changed workflows.",
+];
+
+const CONNECTED_SERVICES = [
+  {
+    name: "Supabase",
+    purpose: "Stores user/admin data and enforces data access policies.",
+    caution: "Missing migrations create setup warnings or unavailable admin features.",
+  },
+  {
+    name: "Stripe",
+    purpose: "Handles payment and entitlement-related product flow.",
+    caution: "Product/price alignment must be verified before publishing commerce changes.",
+  },
+  {
+    name: "Vercel",
+    purpose: "Hosts production and preview deployments.",
+    caution: "Preview green does not replace required CI checks.",
+  },
+  {
+    name: "GitHub Actions",
+    purpose: "Runs required CI checks for merge safety.",
+    caution: "Never merge with red required checks.",
+  },
+];
+
+const DAILY_PLAYBOOKS: Playbook[] = [
+  {
+    title: "Publish new content safely",
+    steps: [
+      "Create/edit in draft first.",
+      "Move to review and validate copy, status, and ordering.",
+      "Open preview and verify key lesson/module pages.",
+      "Publish only when checks are green.",
+    ],
+  },
+  {
+    title: "Run a safe QR release",
+    steps: [
+      "Create draft QR link with final destination.",
+      "Attach metadata (content/placement/owner) for traceability.",
+      "Activate and test stable URL (`/go/v/<slug>`).",
+      "Download SVG/PNG and distribute only after link test passes.",
+    ],
+  },
+  {
+    title: "Rollback quickly",
+    steps: [
+      "For content: open revisions and restore last known good version.",
+      "For QR: disable link immediately or restore safe destination.",
+      "Retest public route and document the recovery in notes.",
+    ],
+  },
+  {
+    title: "Capture review notes with context",
+    steps: [
+      "Open the exact page/content row you are reviewing.",
+      "Create note with category and context link.",
+      "Mark completion status once resolved.",
+    ],
+  },
+];
+
+const RUNBOOK_LINKS = [
+  "docs/runbooks/qr-redirect-operations.md",
+  "docs/runbooks/post-merge-local-sync.md",
+  "docs/runbooks/ci-unblock.md",
 ];
 
 export default function AdminHelpCenter() {
@@ -300,10 +403,13 @@ export default function AdminHelpCenter() {
         className="rounded-2xl border border-slate-200 bg-white p-6"
         data-testid="admin-help-center"
       >
-        <h2 className="text-lg font-semibold text-slate-900">Help/Guide</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-slate-900">Help/Guide</h2>
+          <p className="text-xs font-medium text-slate-500">Last updated: {LAST_UPDATED}</p>
+        </div>
         <p className="mt-2 max-w-3xl text-sm text-slate-700">
-          This page explains how to run the platform safely without technical language. Use it as
-          the single reference for daily admin work.
+          This is the operator training surface for admin. Use it to learn daily workflows, avoid
+          common mistakes, and recover quickly when something fails.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {QUICK_ACTIONS.map((action) => (
@@ -321,10 +427,26 @@ export default function AdminHelpCenter() {
       <section id="overview" className="rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="text-base font-semibold text-slate-900">What this dashboard is for</h3>
         <p className="mt-2 text-sm text-slate-700">
-          Use Admin to control content, product setup, and operational flags. Normal visitors should
-          never see admin tools. If you do not have access, ask an owner to verify your admin
-          allowlist and role.
+          Admin controls content, QR routing, product setup, and operational flags. If you do not
+          have access, ask an owner to verify allowlist + role before troubleshooting UI behavior.
         </p>
+      </section>
+
+      <section id="learning-path" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">
+          Operator learning path (first day)
+        </h3>
+        <div className="mt-3 space-y-3">
+          {LEARNING_PATH.map((item) => (
+            <article
+              key={item.title}
+              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+            >
+              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section id="tabs" className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -338,7 +460,12 @@ export default function AdminHelpCenter() {
               className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
             >
               <p className="text-sm font-semibold text-slate-900">{tab.name}</p>
-              <p className="mt-1 text-sm text-slate-700">{tab.useCase}</p>
+              <p className="mt-1 text-sm text-slate-700">
+                <span className="font-semibold text-slate-900">Primary job:</span> {tab.primaryJob}
+              </p>
+              <p className="mt-1 text-sm text-slate-700">
+                <span className="font-semibold text-slate-900">Common risk:</span> {tab.commonRisk}
+              </p>
             </article>
           ))}
         </div>
@@ -347,8 +474,7 @@ export default function AdminHelpCenter() {
       <section id="content-page" className="rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="text-base font-semibold text-slate-900">How the Content page works</h3>
         <p className="mt-2 text-sm text-slate-700">
-          Content page has three layers: alignment snapshot, existing items, and create form. Start
-          at the top, then move down.
+          Work top-down: snapshot to workspace/list to row actions to create form.
         </p>
         <div className="mt-3 space-y-3">
           {CONTENT_PAGE_FLOW.map((item) => (
@@ -363,11 +489,30 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
+      <section id="qr-links" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">How QR Links work</h3>
+        <p className="mt-2 text-sm text-slate-700">
+          QR Links is your stable redirect registry. Keep slugs stable, destinations verified, and
+          status intentional.
+        </p>
+        <div className="mt-3 space-y-3">
+          {QR_WORKFLOW.map((item) => (
+            <article
+              key={item.title}
+              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+            >
+              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section id="buttons" className="rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="text-base font-semibold text-slate-900">Buttons and what they do</h3>
         <p className="mt-2 text-sm text-slate-700">
-          If a button feels unclear, check this list first. The wording here matches the labels you
-          see in Admin.
+          These meanings must stay aligned with real admin labels. Update this section whenever a
+          label, action, or workflow changes.
         </p>
         <div className="mt-3 space-y-3">
           {BUTTON_GUIDE.map((group) => (
@@ -395,34 +540,78 @@ export default function AdminHelpCenter() {
           <article className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
             <p className="text-sm font-semibold text-emerald-900">Available now</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-emerald-900">
-              <li>Create new content records (module/lesson/session/drill/page/product-copy).</li>
-              <li>
-                Edit existing course modules, lessons, guide sessions, guide drills, page rows, and
-                product-copy rows.
-              </li>
-              <li>
-                Use module workspace to jump directly between module lessons and open live lesson
-                view.
-              </li>
-              <li>
-                Update lesson body fields (goal, cues, drill, checkpoint criteria, next step) in one
-                edit panel.
-              </li>
-              <li>Show/hide lesson sections using visibility checkboxes in the lesson editor.</li>
-              <li>Change lifecycle status (draft, review, published, archived).</li>
-              <li>Open revisions and restore older versions.</li>
-              <li>Create, edit, attach, and delete notes.</li>
-              <li>Update categories and commerce product rows.</li>
+              <li>Create/edit/publish/archive content rows.</li>
+              <li>Move/reorder module and lesson structure using safe workflows.</li>
+              <li>Create/edit/activate/disable/delete QR registry rows.</li>
+              <li>Generate/download QR assets (SVG/PNG) from registry rows.</li>
+              <li>Maintain notes, categories, and commerce labels.</li>
+              <li>Run revision restore and QR rollback operations.</li>
             </ul>
           </article>
           <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-            <p className="text-sm font-semibold text-amber-900">Planned next improvements</p>
+            <p className="text-sm font-semibold text-amber-900">Guardrails</p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-900">
-              <li>More in-place editors for long text fields and richer body content.</li>
-              <li>More guided editing helpers for large content batches.</li>
+              <li>Use draft/review before publish for non-trivial changes.</li>
+              <li>Prefer disable over delete when operational risk is uncertain.</li>
+              <li>Run required verify gates before PR update/merge.</li>
+              <li>Update Help/Guide + runbook in same PR when workflow changes.</li>
             </ul>
           </article>
         </div>
+      </section>
+
+      <section id="quality-matrix" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">
+          10/10 Help/Training quality coverage matrix
+        </h3>
+        <p className="mt-2 text-sm text-slate-700">
+          This matrix defines what must be documented for high-quality operator guidance.
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-slate-700">
+                <th className="px-2 py-2 font-semibold">Category</th>
+                <th className="px-2 py-2 font-semibold">Documentation contract</th>
+                <th className="px-2 py-2 font-semibold">Where covered</th>
+              </tr>
+            </thead>
+            <tbody>
+              {QUALITY_MATRIX.map((row) => (
+                <tr
+                  key={row.category}
+                  className="border-b border-slate-100 align-top text-slate-700"
+                >
+                  <td className="px-2 py-2 font-medium text-slate-900">{row.category}</td>
+                  <td className="px-2 py-2">{row.contract}</td>
+                  <td className="px-2 py-2">{row.where}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="controls" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">
+          Documentation controls (required)
+        </h3>
+        <ul className="mt-3 list-inside list-disc space-y-2 text-sm text-slate-700">
+          {DOC_CONTROLS.map((control) => (
+            <li key={control}>{control}</li>
+          ))}
+        </ul>
+        <p className="mt-3 text-sm text-slate-700">
+          Runbook references:{" "}
+          {RUNBOOK_LINKS.map((path, index) => (
+            <span key={path}>
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">
+                {path}
+              </code>
+              {index < RUNBOOK_LINKS.length - 1 ? ", " : ""}
+            </span>
+          ))}
+        </p>
       </section>
 
       <section id="services" className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -466,23 +655,37 @@ export default function AdminHelpCenter() {
           <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
             <p className="text-sm font-semibold text-amber-900">Admin setup warning appears</p>
             <p className="mt-1 text-sm text-amber-800">
-              Apply latest database migrations, then refresh Admin.
+              Apply latest migrations, refresh admin, then retest affected workflow.
+            </p>
+          </article>
+          <article className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+            <p className="text-sm font-semibold text-rose-900">QR scan does not land correctly</p>
+            <p className="mt-1 text-sm text-rose-800">
+              Open stable link directly (`/go/v/&lt;slug&gt;`), disable or fix destination, then
+              retest.
             </p>
           </article>
           <article className="rounded-xl border border-rose-200 bg-rose-50 p-3">
             <p className="text-sm font-semibold text-rose-900">Create or publish action fails</p>
             <p className="mt-1 text-sm text-rose-800">
-              Check API error text, verify role/allowlist, and confirm CI is green before retry.
+              Read API error text, verify role/allowlist, and confirm required CI checks are green.
+            </p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-sm font-semibold text-slate-900">Need escalation</p>
+            <p className="mt-1 text-sm text-slate-700">
+              Capture exact route, item id/slug, error text, and latest deployment/check status
+              before escalating.
             </p>
           </article>
         </div>
       </section>
 
       <section id="change-log" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">Changes and planned work</h3>
+        <h3 className="text-base font-semibold text-slate-900">Change governance and freshness</h3>
         <p className="mt-2 text-sm text-slate-700">
-          Review active and planned tasks in the task-brief folders before major admin operations.
-          If a workflow changes, update this Help/Guide page in the same PR.
+          Help/Guide is part of release quality. If workflow labels, behavior, or recovery steps
+          change, update this page in the same PR and keep help e2e assertions aligned.
         </p>
       </section>
     </div>

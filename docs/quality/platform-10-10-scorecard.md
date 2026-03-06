@@ -76,6 +76,8 @@ For each active brief, mark each category as `target`, `supporting`, or `N/A`, a
 3. Final closeout must state score outcome (`0-5`) for each target category.
 4. If any target category is `<4`, the brief cannot move to `done` without explicit deferral.
 5. A brief may only claim `10/10` if all declared critical target categories are `5/5`.
+6. If a brief changes admin/user workflows, labels, or failure/recovery behavior, Help/Guide impact must be documented:
+   - update required in same PR, or explicit `N/A` rationale.
 
 ## Analytics / GA Recommendation
 

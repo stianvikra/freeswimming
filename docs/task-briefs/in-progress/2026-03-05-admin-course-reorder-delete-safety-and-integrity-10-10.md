@@ -104,6 +104,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 4. No orphaned/unlinked lessons can remain unnoticed after destructive operations.
 5. API rejects invalid reorder/delete payloads with clear 4xx errors (no ambiguous 500 behavior).
 6. Required tests and validation gates pass before PR update/merge recommendation.
+7. Help/Guide governance is satisfied:
+   - workflow-label/action/recovery changes must update Help/Guide + relevant runbook in same PR,
+   - or explicit `N/A` rationale must be recorded.
 
 ## Validation
 

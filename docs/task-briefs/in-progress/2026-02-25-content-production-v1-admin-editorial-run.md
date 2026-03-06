@@ -103,6 +103,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. P1 issues are either fixed in-sprint or explicitly deferred with owner/date.
 4. Every content mutation path used in production has deterministic validation + recoverable error UX.
 5. Brief checkpoint log is updated per slice with hash, completed scope, and next step.
+6. For any slice that changes workflow labels/actions/recovery behavior:
+   - update Help/Guide and relevant runbook in the same PR,
+   - or log explicit `N/A` rationale in checkpoint + PR summary.
 
 ## Validation
 

@@ -20,6 +20,7 @@ Use this quick check so the task execution is precise:
 - State local tooling prerequisite (Node LTS + npm installed where local validation runs)
 - State automation mode (`automation-first` default, or explicit manual checkpoints)
 - State platform scorecard mapping (`docs/quality/platform-10-10-scorecard.md`)
+- State Help/Guide impact rule (required update or explicit `N/A` rationale for workflow changes)
 - State closeout gate (completion audit + final 10/10 quality/safety/perf/regression sweep + move/cleanup prompts)
 
 Suggested prompt wrapper:
@@ -220,10 +221,23 @@ For each brief, explicitly state scope or `N/A` for these categories so quality 
   - rollout plan, backward compatibility window, rollback path.
 - Definition of done quant targets
   - explicit measurable pass criteria (for example zero unexpected `500` on covered paths).
+- Help/Guide and operator training documentation
+  - workflow labels/actions/recovery steps updated in Help/Guide for changed scope, or explicit `N/A` rationale.
 
 Also ensure alignment with the canonical platform scorecard:
 
 - `docs/quality/platform-10-10-scorecard.md`
+
+## Help/Guide And Operator Training Contract (Required For Workflow Changes)
+
+If this brief changes admin/user workflows, labels, status transitions, or recovery behavior:
+
+- update relevant Help/Guide copy in the same PR,
+- update runbook references when recovery/ops behavior changes,
+- update at least one automated assertion (unit/e2e) that validates the updated help contract,
+- include brief closeout note proving Help/Guide is aligned with shipped behavior.
+
+If not applicable, add explicit `N/A` and rationale.
 
 ## Security, Privacy, and Compliance (Required For Auth/Data/Payments)
 
