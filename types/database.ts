@@ -434,6 +434,62 @@ export type Database = {
         };
         Relationships: [];
       };
+      qr_redirect_links: {
+        Row: {
+          content_item_id: string | null;
+          content_label: string;
+          created_at: string;
+          created_by: string | null;
+          destination_url: string;
+          id: string;
+          last_resolved_at: string | null;
+          owner_user_id: string | null;
+          placement_key: string;
+          slug: string;
+          status: Database["public"]["Enums"]["qr_link_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          content_item_id?: string | null;
+          content_label?: string;
+          created_at?: string;
+          created_by?: string | null;
+          destination_url: string;
+          id?: string;
+          last_resolved_at?: string | null;
+          owner_user_id?: string | null;
+          placement_key?: string;
+          slug: string;
+          status?: Database["public"]["Enums"]["qr_link_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          content_item_id?: string | null;
+          content_label?: string;
+          created_at?: string;
+          created_by?: string | null;
+          destination_url?: string;
+          id?: string;
+          last_resolved_at?: string | null;
+          owner_user_id?: string | null;
+          placement_key?: string;
+          slug?: string;
+          status?: Database["public"]["Enums"]["qr_link_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "qr_redirect_links_content_item_id_fkey";
+            columns: ["content_item_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_content_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       admin_notes: {
         Row: {
           body: string;
@@ -583,6 +639,7 @@ export type Database = {
         | "guide_drill"
         | "page"
         | "product";
+      qr_link_status: "draft" | "active" | "disabled" | "archived";
     };
     CompositeTypes: {
       [_ in never]: never;

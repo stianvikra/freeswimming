@@ -16,6 +16,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "resume_clicked",
   "progress_synced",
   "sync_failed",
+  "qr_redirect_hit",
   "support_clicked",
   "upsell_presented",
   "upsell_accepted",

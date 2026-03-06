@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-05-admin-content-course-workspace-vs-all-content-tabs-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `priority`: `P1`
 - `owner`: `stianvikra`
 - `created`: `2026-03-05`
@@ -151,6 +151,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-05 | 5a4d0b0 (main) | PR #132 merged and closed | required CI checks normalized to check-run contexts (`verify`, `Analyze (javascript-typescript)`, `size-check`), all 9 checks green, and local npm run verify:pre-merge passed before merge; brief moved from in-progress to done | next: continue content-production batch on feat/content-production-v1-batch-2`
 - `2026-03-05 | a1191ca | committed admin content tab split + test stabilization and opened PR #132 (https://github.com/stianvikra/freeswimming/pull/132) in Safari | local verify:pre-pr green; CI required checks pending`
 - `2026-03-05 | working tree | implemented admin Content top-level split (Course Workspace vs All Content), updated help center copy, refreshed admin e2e contracts, and hardened two existing flaky e2e specs (`install-entry`, `install-prompt`, `my-library notice`) encountered during gate execution | verify:pre-pr passed (73 passed / 179 skipped) | next: commit, push, open PR in Safari`
 - `2026-03-05 | kickoff | opened in-progress brief for top-level Content tab split (Course Workspace vs All Content) after merge of workspace-status overview slice | next: implement tabs + regression coverage and run verify:pre-pr`
