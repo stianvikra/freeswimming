@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-02-19-performance-budgets-and-security-negative-path-hardening`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-19`
-- `updated`: `2026-02-19`
+- `updated`: `2026-03-07`
 
 ## Goal
 
@@ -233,6 +233,26 @@ State scope or `N/A` for each category during implementation and closeout:
 - This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
 - Closeout must record achieved score (`0-5`) for each target category.
 
+### Scorecard Mapping (This Brief)
+
+| Category                     | Scope      | Threshold / Evidence                                                                                         |
+| ---------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| UX                           | supporting | No regression in required `loading/error/retry` states for touched flows.                                    |
+| UI/design                    | N/A        | No design-system redesign in this brief scope.                                                               |
+| Business logic correctness   | target     | Covered deny-path contracts match intended statuses (`401/403/423/429`) in automated tests.                  |
+| Data integrity               | target     | Deny/error paths do not mutate protected data; invalid payload paths are deterministic.                      |
+| Admin workflow               | supporting | Admin deny-path behavior remains explicit and non-ambiguous for operators.                                   |
+| Security/privacy             | target     | Zero expected-deny `500` in covered routes; no sensitive internals in API error payloads.                    |
+| Performance                  | target     | Baseline CI budgets enforced for `/`, `/plans`, `/course`, `/my-library` (LCP<=2.5s, CLS<=0.10, TBT<=200ms). |
+| Reliability                  | target     | Negative-path tests are stable and deterministic across supported CI projects.                               |
+| SEO/AI discoverability       | N/A        | SEO/AI scope handled in separate brief unless route-level perf overlap requires note.                        |
+| Analytics/KPI                | target     | Budget pass/fail and deny-path status trends are logged/documented for weekly review.                        |
+| Testing                      | target     | Unit+e2e negative-path coverage extended without duplicate-suite sprawl.                                     |
+| Release/rollback readiness   | target     | Gates wired to pre-PR/pre-merge/nightly with reproducible commands and rollback notes.                       |
+| Incident/support operations  | supporting | Runbook/checklist updated with failure triage and ownership path.                                            |
+| Finance/reporting operations | supporting | Budget trend evidence available for operational review cadence.                                              |
+| i18n operational readiness   | supporting | No i18n safety regression from new guards/gates; locale-aware behavior documented if touched.                |
+
 ## Automation Execution Contract
 
 - Mode: `automation-first`.
@@ -241,3 +261,8 @@ State scope or `N/A` for each category during implementation and closeout:
   - before PR update/push: `npm run verify:pre-pr`
   - before merge recommendation: `npm run verify:pre-merge` and required CI green.
 - Manual owner steps only when blocked by credentials, UI-only actions, or sandbox/escalation limits.
+
+## Checkpoint Log
+
+- `2026-03-07 | working tree | Slice 1 delivered locally: added production-start performance budget gate (`test:perf:budgets`) for `/`, `/plans`, `/course`, `/my-library`with CI/nightly artifact wiring; added focused e2e security negative-path spec for portal/checkout guardrails and wired into`test:e2e:security`; updated testing/runbook docs + active brief references to in-progress path; npm run verify:pre-pr PASS (75 passed, 189 skipped) | next: commit/push and open PR in Safari, then monitor required checks`
+- `2026-03-07 | e3e8971 (main) | moved brief planned -> in-progress and aligned scorecard mapping with explicit target/supporting/N/A thresholds | next: implement Slice 1 baseline budget + security gate scaffolding (commands + CI wiring + first deterministic negative-path assertions)`

@@ -57,6 +57,7 @@ Useful commands:
   - automation default: `PW_SITE_LOCK_BYPASS_TOKEN` (auto-wired by `verify:pre-merge` when available)
   - force password flow: `PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD`
 - `npm run test:e2e:security` for concentrated API/access-control regressions.
+- `npm run test:perf:budgets` for production-start performance budget gates on `/`, `/plans`, `/course`, `/my-library`.
 - `npm run test:e2e:admin` for authenticated admin flows (foundation/parity/notes).
 - `npm run verify:pre-pr` and `npm run verify:pre-merge` for release gates.
 
@@ -87,6 +88,7 @@ Useful commands:
 3. Before merge to `main`:
    - `npm run verify:pre-merge`
 4. Nightly/regular regression run:
+   - `npm run test:perf:budgets`
    - `npm run verify:public`
    - `npm run test:e2e:extended`
    - `SITE_LOCK_ENABLED=1 npm run test:e2e:private-gate` (automation default)
