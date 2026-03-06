@@ -124,14 +124,19 @@ const CONTENT_PAGE_FLOW = [
 
 const QR_WORKFLOW = [
   {
-    title: "Create draft link",
+    title: "Start with list-first overview",
     detail:
-      "Set slug + HTTPS destination first. Keep status draft while verifying where it should point.",
+      "Use filters and search first to avoid duplicates. Open `New link` only when you need to create or patch a row.",
   },
   {
-    title: "Attach ownership metadata",
+    title: "Create from required fields first",
     detail:
-      "Optionally attach content item, content label, placement key, and owner user id for traceability.",
+      "Required block = slug + HTTPS destination + status. Keep status draft while verifying where it should point.",
+  },
+  {
+    title: "Use advanced metadata only when needed",
+    detail:
+      "Advanced block is optional: content item, content label, placement key, and owner user id for traceability.",
   },
   {
     title: "Activate after verification",
@@ -203,9 +208,18 @@ const BUTTON_GUIDE: ActionGroup[] = [
     section: "QR Links tab",
     actions: [
       {
-        label: "Create QR link",
+        label: "New link / Hide new link",
         meaning:
-          "Creates a new registry row. Required fields: slug + HTTPS destination + intended status.",
+          "Toggles the create panel so list/filter can stay primary while you audit existing rows.",
+      },
+      {
+        label: "Create first QR link / Use example values",
+        meaning:
+          "Empty-state fast start. Loads practical starter values that you can edit before saving.",
+      },
+      {
+        label: "Required / Advanced (optional)",
+        meaning: "Required keeps common create flow short; Advanced holds traceability metadata.",
       },
       {
         label: "Filter by status / Search",
@@ -221,15 +235,20 @@ const BUTTON_GUIDE: ActionGroup[] = [
       },
       {
         label: "Edit",
-        meaning: "Updates slug, destination, status, and metadata for existing row.",
+        meaning: "Updates slug, destination, status, and metadata for an existing row.",
+      },
+      {
+        label: "More actions",
+        meaning: "Opens lower-frequency actions so row-level primary actions stay clear.",
       },
       {
         label: "Activate / Disable",
-        meaning: "Fast operational switch for live routing.",
+        meaning: "Fast operational switch for live routing, grouped under More actions.",
       },
       {
         label: "Delete",
-        meaning: "Permanent remove of QR row. Prefer disable when unsure.",
+        meaning:
+          "Permanent remove of QR row, grouped under More actions. Prefer disable when unsure.",
       },
     ],
   },
@@ -366,7 +385,8 @@ const DAILY_PLAYBOOKS: Playbook[] = [
   {
     title: "Run a safe QR release",
     steps: [
-      "Create draft QR link with final destination.",
+      "Search/filter registry first to confirm slug is not already in use.",
+      "Open New link and complete required fields (slug + HTTPS destination + status).",
       "Attach metadata (content/placement/owner) for traceability.",
       "Activate and test stable URL (`/go/v/<slug>`).",
       "Download SVG/PNG and distribute only after link test passes.",

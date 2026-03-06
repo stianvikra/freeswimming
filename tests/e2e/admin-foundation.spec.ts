@@ -119,7 +119,12 @@ test.describe("admin foundation", () => {
       "/admin?tab=qr-links&qrSlug=mod3-l1&qrDestinationPath=%2Fcourse%3Flesson%3Dmod3-l1&qrContentLabel=Kick%20Basics%20Support%20Not%20Speed&qrPlacementKey=course.lesson.share"
     );
     await expect(activeSectionLabel).toHaveText("QR Links");
+    const qrCreateToggle = page.getByTestId("admin-qr-link-create-toggle");
+    await expect(qrCreateToggle).toHaveAttribute("aria-expanded", "true");
     const qrCreateForm = page.getByTestId("admin-qr-link-create-form");
+    if (!(await qrCreateForm.isVisible().catch(() => false))) {
+      await qrCreateToggle.click();
+    }
     await expect(qrCreateForm.getByLabel("Slug")).toHaveValue("mod3-l1");
     await expect(qrCreateForm.getByLabel("Destination URL (https)")).toHaveValue(
       /\/course\?lesson=mod3-l1$/

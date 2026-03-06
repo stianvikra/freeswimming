@@ -280,9 +280,13 @@ The registry must answer at a glance:
    - desktop QR cards + mobile share/copy behavior.
 5. Observability and hardening:
    - analytics/audit/logging + negative-path tests + runbook.
+6. QR admin UX polish:
+   - list-first information architecture, collapsible `New link` panel, `Required` vs `Advanced` create fields, clearer empty-state onboarding, and stricter per-row action hierarchy.
 
 ## Checkpoint Log
 
+- `2026-03-06 | working tree | Slice 6 delivered locally: refactored QR registry to list-first flow with collapsible New link panel, required vs advanced create sections, first-link empty-state onboarding with example prefill, and cleaner per-row action hierarchy; updated Help/Guide QR workflow/button glossary + admin e2e contracts; npm run verify:pre-pr PASS | next: commit, push, open/update PR in Safari, then monitor required checks`
+- `2026-03-06 | kickoff | started Slice 6 (QR admin UX polish): list-first registry, collapsible New link, required/advanced form split, improved empty state, and action hierarchy cleanup; next: implement UI + e2e/help updates and run verify:pre-pr`
 - `2026-03-06 | working tree | Slice 5 delivered locally: added admin QR mutation analytics events (`qr_link_created`, `qr_link_updated`, `qr_link_status_changed`), standardized structured fallback logging for `/go/v/[slug]` fallback paths, expanded negative-path coverage (unit + e2e) for unauthorized/malformed/unsafe QR admin API calls, and added ops runbook docs/runbooks/qr-redirect-operations.md | next: run full npm run verify:pre-pr, push branch, and open/update PR in Safari`
 - `2026-03-06 | working tree | Slice 3 delivered locally: added in-app QR asset generation utility (`svg`+`png`) with unit coverage, shipped QR preview + download actions in admin QR registry rows, added lesson-context prefill flow (`Create QR link`from lesson rows ->`/admin?tab=qr-links` prefilled form), and extended admin foundation e2e with prefill assertion | next: run full npm run verify:pre-pr, push branch, and open/update PR in Safari`
 - `2026-03-06 | working tree | Slice 1 delivered locally: added Supabase QR redirect foundation migration (`qr_redirect_links`+`qr_link_status`+ RLS + audit trigger), implemented`/go/v/[slug]` secure redirect route with deterministic fallback (`/go/unavailable`) and strict HTTPS/host allowlist policy, added unit coverage for redirect/policy/analytics event name, and ran full npm run verify:pre-pr PASS | next: commit/push slice and open/update PR in Safari`
