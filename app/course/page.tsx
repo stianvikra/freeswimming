@@ -9,6 +9,7 @@ import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import MenuDrawer from "@/components/MenuDrawer";
 import PageIntro from "@/components/PageIntro";
+import CourseOpenOnPhoneCard from "@/components/course/CourseOpenOnPhoneCard";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
@@ -1483,6 +1484,11 @@ function CoursePageClient() {
       : null;
   const showExtraHelpCard =
     lessonDisplay?.support !== false && supportStartReached && enabledSupportActions.length > 0;
+  const showOpenOnPhoneCard = showExtraHelpCard && !previewEnabled;
+  const openOnPhoneSharePath = useMemo(
+    () => `/course?lesson=${encodeURIComponent(activeLesson.id)}`,
+    [activeLesson.id]
+  );
   const showLessonPrimaryColumn = showGoalSection || showCuesSection || showCommonMistakesSection;
   const showLessonSecondaryColumn = showDrillSection || showPassOrNextCard || showExtraHelpCard;
   const drillBadgeLabel =
@@ -2936,6 +2942,12 @@ function CoursePageClient() {
                           );
                         })}
                       </div>
+                      {showOpenOnPhoneCard ? (
+                        <CourseOpenOnPhoneCard
+                          lessonTitle={activeLesson.title}
+                          sharePath={openOnPhoneSharePath}
+                        />
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
