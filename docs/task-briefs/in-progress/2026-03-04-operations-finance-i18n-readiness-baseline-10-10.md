@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-04-operations-finance-i18n-readiness-baseline-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-04`
-- `updated`: `2026-03-04`
+- `updated`: `2026-03-06`
 
 ## Goal
 
@@ -33,7 +33,7 @@ Establish production-safe operational readiness for core flows (`/`, `/course`, 
 - Related planned work with no overlap:
   - SEO/AI: `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
   - performance/security hardening: `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
-  - QR redirect operations: `docs/task-briefs/planned/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`
+  - QR redirect operations: `docs/task-briefs/done/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`
 
 ## Data Placement And Sync Contract (Required)
 
@@ -92,6 +92,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - reconciliation checks,
   - i18n schema/route readiness checks.
 - Add minimal targeted test/assertion references for critical negative paths where missing.
+- Publish baseline artifacts in this slice:
+  - incident/support runbook: `docs/runbooks/core-flow-incident-response.md`,
+  - finance/reporting checklist: `docs/checklists/finance-reporting-baseline.md`,
+  - i18n readiness checklist: `docs/checklists/i18n-operational-readiness.md`.
 
 ## Out Of Scope
 
@@ -106,6 +110,16 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. i18n readiness audit identifies blockers with owner/date.
 4. Security/privacy handling for support/reporting diagnostics is explicit and fail-safe.
 5. Any newly discovered critical gaps are linked to concrete follow-up briefs.
+
+## Slice 1 Deliverables (2026-03-06)
+
+- Created runbook/checklist baseline for this brief:
+  - `docs/runbooks/core-flow-incident-response.md`
+  - `docs/checklists/finance-reporting-baseline.md`
+  - `docs/checklists/i18n-operational-readiness.md`
+- Outcome target for Slice 1:
+  - move readiness evidence from implicit to explicit and repeatable,
+  - enable quick operational execution without requiring implementation context.
 
 ## Validation
 
@@ -142,3 +156,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-04 | planned | brief created from core-flow gap scan to cover non-blocking readiness categories (incident/finance/i18n) | next: prioritize slice and move to in-progress when implementation starts`
+- `2026-03-06 | working tree | moved brief to in-progress and delivered Slice 1 baseline artifacts (incident runbook + finance checklist + i18n checklist) | next: validate runbook steps against current admin/public routes and log first blockers with owner/date`
