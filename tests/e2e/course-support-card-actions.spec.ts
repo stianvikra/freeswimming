@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { isDesktopProject } from "./project-guards";
+import { isDesktopProject, isMobileProject } from "./project-guards";
 
 const DETERMINISTIC_COURSE_MODULES = [
   {
@@ -54,4 +54,37 @@ test("course support card defaults to video analysis and poolside actions", asyn
   await expect(page.getByRole("link", { name: "Poolside Guide" })).toBeVisible();
   await expect(page.getByRole("link", { name: "0-1000 Guide" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Contact us" })).toHaveCount(0);
+  await expect(page.getByTestId("course-open-on-phone-card")).toBeVisible();
+  await expect(page.getByTestId("course-open-on-phone-qr")).toBeVisible();
+  await expect(page.getByTestId("course-open-on-phone-share")).toBeVisible();
+  await expect(page.getByTestId("course-open-on-phone-copy")).toBeVisible();
+});
+
+test("course support card hides static QR on mobile and keeps share actions", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isMobileProject(testInfo), "Runs once on mobile profile.");
+  test.skip(testInfo.project.name !== "mobile-chromium", "Runs once on mobile Chromium.");
+
+  await page.route("**/api/course/content*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        modules: DETERMINISTIC_COURSE_MODULES,
+        preview: {
+          enabled: false,
+          mode: "published",
+        },
+      }),
+    });
+  });
+
+  await page.goto("/course?lesson=mod1-l1");
+
+  await expect(page.getByTestId("course-open-on-phone-card")).toBeVisible();
+  await expect(page.getByTestId("course-open-on-phone-share")).toBeVisible();
+  await expect(page.getByTestId("course-open-on-phone-copy")).toBeVisible();
+  await expect(page.getByTestId("course-open-on-phone-qr")).not.toBeVisible();
 });
