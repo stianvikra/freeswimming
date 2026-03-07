@@ -55,7 +55,7 @@ Core user journeys should feel polished, fast, and consistent across iPhone, And
   - SEO metadata/indexing assertions:
     - `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
   - performance budget gates and security negative-path hardening:
-    - `docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+    - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
 
 ## Out Of Scope
 
