@@ -380,11 +380,22 @@ async function run() {
 
     console.log("[perf-budget] PASS");
   } finally {
-    await closeServer();
+    const serverClosed = await Promise.race([
+      closeServer().then(() => true),
+      sleep(12_000).then(() => false),
+    ]);
+
+    if (!serverClosed) {
+      console.warn("[perf-budget] Timed out while closing perf-budget server; continuing shutdown.");
+    }
   }
 }
 
-run().catch((error) => {
-  console.error("[perf-budget] Fatal error", error);
-  process.exitCode = 1;
-});
+run()
+  .then(() => {
+    process.exit(process.exitCode ?? 0);
+  })
+  .catch((error) => {
+    console.error("[perf-budget] Fatal error", error);
+    process.exit(1);
+  });
