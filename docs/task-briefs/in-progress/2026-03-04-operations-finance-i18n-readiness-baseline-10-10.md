@@ -32,7 +32,7 @@ Establish production-safe operational readiness for core flows (`/`, `/course`, 
   - `docs/task-briefs/in-progress/2026-02-25-content-production-v1-admin-editorial-run.md`
 - Related planned work with no overlap:
   - SEO/AI: `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
-  - performance/security hardening: `docs/task-briefs/in-progress/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+  - performance/security hardening: `docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
   - QR redirect operations: `docs/task-briefs/done/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`
 
 ## Data Placement And Sync Contract (Required)

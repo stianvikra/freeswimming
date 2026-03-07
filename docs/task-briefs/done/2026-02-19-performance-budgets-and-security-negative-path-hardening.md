@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-19-performance-budgets-and-security-negative-path-hardening`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-19`
 - `updated`: `2026-03-07`
@@ -221,11 +221,27 @@ State scope or `N/A` for each category during implementation and closeout:
   - regression safety for adjacent routes/components.
 - Confirm CI artifacts and commands are documented and reproducible.
 
-## Completion Record (fill when done)
+## Completion Record
 
-- `PR`: link
-- `merge`: source -> target
-- `result`: short summary
+- `PR`: https://github.com/stianvikra/freeswimming/pull/147, https://github.com/stianvikra/freeswimming/pull/148, https://github.com/stianvikra/freeswimming/pull/149, https://github.com/stianvikra/freeswimming/pull/150
+- `merge`: `feat/perf-security-hardening-slice1..4` -> `main`
+- `result`: Baseline performance budget gate and P0/P1 API negative-path hardening are fully shipped; required CI checks were green for all slices and `npm run verify:pre-merge` passed before final merge.
+- `deferred`: Stretch budget ratchet (`LCP<=2.2s`, `CLS<=0.05`, `TBT<=150ms`) stays on weekly policy after two consecutive green baseline weeks.
+
+## Closeout Scores (2026-03-07)
+
+| Target Category                               | Score (0-5) | Closeout Notes                                                                                          |
+| --------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------- |
+| Business logic correctness and data integrity | 5           | Deny-path status contracts hardened across P0/P1 routes with deterministic non-500 behavior assertions. |
+| Performance (CWV + payloads)                  | 4           | Baseline route budgets are enforced in CI/nightly; stretch ratchet intentionally deferred per policy.   |
+| Reliability and failure handling              | 4           | Verify/pre-merge flow is deterministic and automated; long-running verify jobs remain monitored.        |
+| Security and authz                            | 5           | Extended admin/progress/user/checkout/portal unauthorized mutations are covered and fail closed.        |
+| Privacy and compliance                        | 5           | Negative-path payload assertions guard against internal stack and sensitive error leakage.              |
+| Analytics and KPI observability               | 4           | Perf budget report artifacts and deny-path logs/events are captured in CI and review workflows.         |
+| Commerce and revenue ops                      | 4           | Checkout/portal negative-path contracts are hardened; broader finance ops tracked in dedicated brief.   |
+| Stack-fit and dependency discipline           | 5           | No new dependencies were added for this hardening track.                                                |
+| Testing and QA automation                     | 5           | Security and performance gates are integrated into verify pre-PR/pre-merge and CI cadence.              |
+| DevOps and rollback readiness                 | 4           | Gate wiring and rollback surfaces are versioned and reversible through focused workflow/script changes. |
 
 ## Platform 10/10 Scorecard Linkage
 
@@ -274,6 +290,8 @@ State scope or `N/A` for each category during implementation and closeout:
 
 ## Checkpoint Log
 
+- `2026-03-07 | working tree | closeout slice prepared: updated completion record, target score outcomes, and deferred stretch-ratchet decision; moving brief from in-progress to done | next: continue content-production track while monitoring weekly budget-ratchet reminder policy`
+- `2026-03-07 | 8a44068 (main) | PR #150 merged and closed | completed Slice 4 with extended admin mutation deny-path coverage (`/api/admin/content/[id]`, `/api/admin/notes`POST,`/api/admin/categories/content`+`/[id]`, `/api/admin/qr-links/[id]`); required checks green (9/9) and local npm run verify:pre-merge PASS before merge | next: close out this brief and move to done`
 - `2026-03-07 | working tree | Slice 4 local hardening delivered: expanded extended admin negative-path coverage in `api-security-negative-paths.spec.ts` to remaining mutation surfaces (`/api/admin/content/[id]`, `/api/admin/notes`POST,`/api/admin/categories/content`+`/[id]`, `/api/admin/qr-links/[id]`) while preserving deterministic deny contract (`401`, `Cache-Control: no-store`, no sensitive leak markers); targeted desktop-chromium run PASS (3 passed) and full npm run verify:pre-pr PASS (77 passed, 199 skipped) | next: commit/push Slice 4 and open PR in Safari, then monitor required checks`
 - `2026-03-07 | working tree | Slice 3 local hardening delivered: extended admin API negative-path coverage in `api-security-negative-paths.spec.ts`(content + course-structure + revisions + import + products + notes + categories + qr routes) with deterministic`401`+`no-store`+ no-sensitive-leak assertions; added transient network retry guard for request-context`ECONNRESET/ECONNREFUSED` flake resilience; targeted desktop-chromium run PASS (3 passed) and full npm run verify:pre-pr PASS (77 passed, 199 skipped) | next: commit/push Slice 3 branch and open PR in Safari, then monitor required checks`
 - `2026-03-07 | working tree | Slice 2 local hardening delivered: extended api security negative-path e2e coverage with deterministic unauthorized/no-leak assertions for P1 routes (`/api/progress/course`, `/api/progress/guide`, `/api/user/export`, `/api/user/delete`); targeted desktop-chromium run PASS and full npm run verify:pre-pr PASS (76 passed, 194 skipped) | next: commit/push Slice 2 branch and open PR in Safari, then monitor required checks`

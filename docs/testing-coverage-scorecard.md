@@ -47,7 +47,7 @@ Principle:
 - Keep baseline budget gate stable and start weekly ratchet decisions toward stretch targets.
 - Ensure trend reporting stays visible in CI/nightly artifacts.
 - tracked in:
-  - `docs/task-briefs/in-progress/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+  - `docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
 
 2. Visual diff assertions (P1)
 
@@ -60,7 +60,7 @@ Principle:
 
 - Add focused API tests for admin/content mutation negative paths and auth abuse/rate-limit boundaries.
 - tracked in:
-  - `docs/task-briefs/in-progress/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+  - `docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
 
 4. SEO metadata validation (P1)
 
