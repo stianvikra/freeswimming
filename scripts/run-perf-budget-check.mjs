@@ -271,15 +271,51 @@ async function run() {
     process.stderr.write(`[perf-budget-server] ${String(chunk)}`);
   });
 
+  const waitForServerClose = async (timeoutMs) => {
+    if (server.exitCode !== null || server.signalCode !== null) {
+      return true;
+    }
+
+    return new Promise((resolve) => {
+      let settled = false;
+
+      const onClose = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(true);
+      };
+
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        server.off("close", onClose);
+        resolve(false);
+      }, timeoutMs);
+
+      server.once("close", onClose);
+    });
+  };
+
   const closeServer = async () => {
-    if (server.killed) return;
-    server.kill("SIGTERM");
-    await Promise.race([
-      new Promise((resolve) => server.once("close", resolve)),
-      sleep(5_000).then(() => {
-        if (!server.killed) server.kill("SIGKILL");
-      }),
-    ]);
+    if (server.exitCode !== null || server.signalCode !== null) return;
+
+    try {
+      server.kill("SIGTERM");
+    } catch {
+      return;
+    }
+
+    const closedGracefully = await waitForServerClose(5_000);
+    if (closedGracefully) return;
+
+    try {
+      server.kill("SIGKILL");
+    } catch {
+      return;
+    }
+
+    await waitForServerClose(5_000);
   };
 
   try {
