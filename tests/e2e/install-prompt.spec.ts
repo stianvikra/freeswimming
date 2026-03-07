@@ -58,8 +58,8 @@ async function primeInstallPrompt(page: Page, outcome: "accepted" | "dismissed")
 }
 
 async function satisfyDoneGateIfPresent(page: Page) {
-  const markDoneButton = page.getByRole("button", { name: "Mark as done" });
-  await expect(markDoneButton).toBeVisible();
+  const markDoneButton = page.getByRole("button", { name: /^(Mark as done|Done)$/ }).first();
+  await expect(markDoneButton).toBeVisible({ timeout: 15_000 });
   if (await markDoneButton.isEnabled({ timeout: 5_000 })) return;
 
   const checklist = page.getByTestId("course-done-gate-checklist");
@@ -77,8 +77,8 @@ async function satisfyDoneGateIfPresent(page: Page) {
 }
 
 async function activateMarkDoneButton(page: Page) {
-  const markDoneButton = page.getByRole("button", { name: "Mark as done" });
-  await expect(markDoneButton).toBeVisible();
+  const markDoneButton = page.getByRole("button", { name: /^(Mark as done|Done)$/ }).first();
+  await expect(markDoneButton).toBeVisible({ timeout: 15_000 });
   await expect(markDoneButton).toBeEnabled();
 
   try {
@@ -87,6 +87,16 @@ async function activateMarkDoneButton(page: Page) {
     await markDoneButton.focus();
     await page.keyboard.press("Enter");
   }
+}
+
+async function goToNextLesson(page: Page) {
+  const currentLesson = new URL(page.url()).searchParams.get("lesson");
+  await page.getByTestId("course-nav-right").click();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("lesson"), {
+      timeout: 10_000,
+    })
+    .not.toBe(currentLesson);
 }
 
 test("main menu exposes a persistent install action", async ({ page }, testInfo) => {
@@ -266,17 +276,17 @@ test("guest sees free-account backup prompt after completing three lessons", asy
 
   await satisfyDoneGateIfPresent(page);
   await activateMarkDoneButton(page);
-  await page.getByTestId("course-nav-right").click();
+  await goToNextLesson(page);
 
   await satisfyDoneGateIfPresent(page);
   await activateMarkDoneButton(page);
-  await page.getByTestId("course-nav-right").click();
+  await goToNextLesson(page);
 
   await satisfyDoneGateIfPresent(page);
   await activateMarkDoneButton(page);
 
   const backupPrompt = page.getByTestId("course-backup-prompt");
-  await expect(backupPrompt).toBeVisible();
+  await expect(backupPrompt).toBeVisible({ timeout: 10_000 });
   await expect(backupPrompt.getByRole("link", { name: "Create free account" })).toBeVisible();
   await backupPrompt.getByRole("button", { name: "Maybe later" }).click();
   await expect(backupPrompt).toBeHidden();

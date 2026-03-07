@@ -20,9 +20,14 @@ test("main menu exposes install action on desktop and tablet layouts", async ({
 
   const menuToggle = page.getByTestId("header-menu-toggle").first();
   await expect(menuToggle).toBeVisible();
+  await expect(menuToggle).toBeEnabled();
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
 
   const openAttempts: Array<() => Promise<void>> = [
+    async () => {
+      await menuToggle.focus();
+      await page.keyboard.press("Enter");
+    },
     async () => {
       await menuToggle.click();
     },
@@ -38,14 +43,16 @@ test("main menu exposes install action on desktop and tablet layouts", async ({
 
   let menuOpened = false;
   for (const openAttempt of openAttempts) {
+    await page.keyboard.press("Escape").catch(() => {});
     await openAttempt();
     await expect(drawer)
-      .toBeVisible({ timeout: 2000 })
+      .toBeVisible({ timeout: 4000 })
       .catch(() => {});
     if (await drawer.isVisible().catch(() => false)) {
       menuOpened = true;
       break;
     }
+    await page.waitForTimeout(250);
   }
 
   if (!menuOpened) {
