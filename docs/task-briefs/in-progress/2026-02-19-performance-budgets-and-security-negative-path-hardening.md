@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-02-19-performance-budgets-and-security-negative-path-hardening`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-19`
-- `updated`: `2026-02-19`
+- `updated`: `2026-03-07`
 
 ## Goal
 
@@ -233,6 +233,36 @@ State scope or `N/A` for each category during implementation and closeout:
 - This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
 - Closeout must record achieved score (`0-5`) for each target category.
 
+### Scorecard Mapping (This Brief)
+
+| Category                                      | Mapping      | Target Threshold (for `target`)                                                                             | Evidence                                        |
+| --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Product goals and IA                          | `supporting` | N/A                                                                                                         | brief scope + acceptance criteria               |
+| UX flow clarity                               | `supporting` | N/A                                                                                                         | e2e stability checks                            |
+| Visual design quality                         | `n/a`        | No UI redesign in this hardening brief.                                                                     | explicit scope boundary                         |
+| Business logic correctness and data integrity | `target`     | Negative-path statuses remain deterministic for covered routes with no accidental `500`.                    | `test:e2e:security` + unit route tests          |
+| Admin editor ergonomics                       | `supporting` | N/A                                                                                                         | admin regression suite                          |
+| Accessibility (a11y)                          | `supporting` | N/A                                                                                                         | existing a11y e2e baseline                      |
+| Performance (CWV + payloads)                  | `target`     | Baseline gate enforced on `/`, `/plans`, `/course`, `/my-library` (`LCP<=2.5s`, `CLS<=0.10`, `TBT<=200ms`). | `test:perf:budgets` output + CI artifact        |
+| Data placement and sync boundaries            | `supporting` | N/A                                                                                                         | no data-boundary contract changes in this slice |
+| Caching and invalidation strategy             | `supporting` | N/A                                                                                                         | existing route cache behavior unchanged         |
+| Reliability and failure handling              | `target`     | Performance/security gates execute in pre-PR/pre-merge and nightly with deterministic output.               | verify scripts + workflow runs                  |
+| Security and authz                            | `target`     | Covered portal/checkout/admin deny paths return safe errors and do not leak internals.                      | `api-security-negative-paths.spec.ts` + guards  |
+| Privacy and compliance                        | `target`     | No sensitive internals exposed in covered error payloads.                                                   | negative-path payload assertions                |
+| Content governance                            | `supporting` | N/A                                                                                                         | brief + checkpoint log                          |
+| Admin workflow and editability                | `supporting` | N/A                                                                                                         | unchanged from existing admin slices            |
+| SEO and crawlability                          | `supporting` | N/A (SEO controls are covered in dedicated SEO brief).                                                      | cross-brief dependency note                     |
+| AI discoverability                            | `supporting` | N/A (AI discoverability handled in SEO/AI brief).                                                           | cross-brief dependency note                     |
+| Analytics and KPI observability               | `target`     | Performance-budget report and deny-path signals are available in CI/nightly artifacts/logs.                 | `artifacts/perf-budget-report.json` + CI logs   |
+| Commerce and revenue ops                      | `target`     | Checkout/portal negative paths stay deterministic and non-leaky in unauthenticated/error cases.             | security e2e negative-path assertions           |
+| Incident response and support operations      | `supporting` | N/A (no incident-runbook structure change in this slice).                                                   | runbook references                              |
+| Finance and reporting operations              | `supporting` | N/A (no reconciliation model change in this slice).                                                         | ops/finance readiness brief linkage             |
+| i18n operational readiness                    | `supporting` | N/A (no locale routing/content model changes in this slice).                                                | ops/i18n readiness brief linkage                |
+| Stack-fit and dependency discipline           | `target`     | No new third-party dependency introduced for perf/security gate implementation.                             | `package.json` dependency diff                  |
+| Testing and QA automation                     | `target`     | New perf/security checks are automated and part of release cadence.                                         | `verify`, `test:e2e:security`, nightly workflow |
+| Scalability and cost efficiency               | `supporting` | N/A                                                                                                         | lightweight script + existing CI infra          |
+| DevOps and rollback readiness                 | `target`     | Gate wiring is versioned and can be disabled/reverted through single-script/workflow diffs.                 | workflow + script history in PR                 |
+
 ## Automation Execution Contract
 
 - Mode: `automation-first`.
@@ -241,3 +271,10 @@ State scope or `N/A` for each category during implementation and closeout:
   - before PR update/push: `npm run verify:pre-pr`
   - before merge recommendation: `npm run verify:pre-merge` and required CI green.
 - Manual owner steps only when blocked by credentials, UI-only actions, or sandbox/escalation limits.
+
+## Checkpoint Log
+
+- `2026-03-07 | working tree | follow-up hardening: stabilized `my-library-new-content-notice` e2e stale-signature flow by asserting list-item visibility and navigating via stable "open first" action; targeted desktop-chromium rerun PASS (2 passed) | next: commit/push to PR #147 and let required CI verify rerun end-to-end`
+- `2026-03-07 | working tree | PR #147 follow-up: fixed brief scorecard table format to satisfy lint-task-brief-scorecard gate; hardened install-entry desktop/tablet menu-open flow and install-prompt lesson navigation/assertion timing to remove flaky CI failures; reran full npm run verify:pre-pr PASS (75 passed, 189 skipped) | next: commit/push updates to PR #147 and wait for required checks`
+- `2026-03-07 | working tree | Slice 1 delivered locally: added production-start performance budget gate (`test:perf:budgets`) for `/`, `/plans`, `/course`, `/my-library`with CI/nightly artifact wiring; added focused e2e security negative-path spec for portal/checkout guardrails and wired into`test:e2e:security`; updated testing/runbook docs + active brief references to in-progress path; npm run verify:pre-pr PASS (75 passed, 189 skipped) | next: commit/push and open PR in Safari, then monitor required checks`
+- `2026-03-07 | e3e8971 (main) | moved brief planned -> in-progress and aligned scorecard mapping with explicit target/supporting/N/A thresholds | next: implement Slice 1 baseline budget + security gate scaffolding (commands + CI wiring + first deterministic negative-path assertions)`

@@ -97,7 +97,7 @@ jobs:
       - e2e-smoke
       - site-lock-smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -119,6 +119,7 @@ jobs:
       - name: Run verification suite
         env:
           SITE_LOCK_ENABLED: "0"
+          PERF_BUDGET_OUTPUT: artifacts/perf-budget-report.json
           NEXT_PUBLIC_SUPABASE_URL: https://example.com
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
@@ -137,6 +138,7 @@ jobs:
         with:
           name: ci-verify-artifacts
           path: |
+            artifacts/perf-budget-report.json
             playwright-report
             test-results
           if-no-files-found: ignore

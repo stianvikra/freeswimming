@@ -1,0 +1,401 @@
+#!/usr/bin/env node
+
+import { spawn } from "node:child_process";
+import { mkdir, writeFile } from "node:fs/promises";
+import process from "node:process";
+import { chromium } from "@playwright/test";
+
+const ROUTES = ["/", "/plans", "/course", "/my-library"];
+const PERF_BUDGET_PORT = Number(process.env.PERF_BUDGET_PORT ?? 3200);
+const PERF_BUDGET_HOST = process.env.PERF_BUDGET_HOST ?? "127.0.0.1";
+const PERF_BUDGET_BASE_URL =
+  process.env.PERF_BUDGET_BASE_URL ?? `http://${PERF_BUDGET_HOST}:${PERF_BUDGET_PORT}`;
+const PERF_BUDGET_OUTPUT = process.env.PERF_BUDGET_OUTPUT ?? "";
+const PERF_BUDGET_SETTLE_MS = Number(process.env.PERF_BUDGET_SETTLE_MS ?? 1500);
+const SERVER_READY_TIMEOUT_MS = Number(process.env.PERF_BUDGET_SERVER_TIMEOUT_MS ?? 60_000);
+
+const BUDGETS = {
+  lcpMs: Number(process.env.PERF_BUDGET_LCP_MS ?? 2500),
+  cls: Number(process.env.PERF_BUDGET_CLS ?? 0.1),
+  tbtMs: Number(process.env.PERF_BUDGET_TBT_MS ?? 200),
+  jsTransferKb: Number(process.env.PERF_BUDGET_JS_TRANSFER_KB ?? 450),
+  cssTransferKb: Number(process.env.PERF_BUDGET_CSS_TRANSFER_KB ?? 160),
+  requestCount: Number(process.env.PERF_BUDGET_REQUEST_COUNT ?? 130),
+};
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function waitForServerReady(baseUrl, timeoutMs) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const response = await fetch(baseUrl, { redirect: "manual" });
+      if (response.status >= 200 && response.status < 500) {
+        return;
+      }
+    } catch {
+      // Keep polling until timeout.
+    }
+    await sleep(250);
+  }
+  throw new Error(`Timed out waiting for Next.js server at ${baseUrl}`);
+}
+
+function toKb(valueBytes) {
+  return Number((valueBytes / 1024).toFixed(1));
+}
+
+function formatMs(value) {
+  return `${value.toFixed(1)}ms`;
+}
+
+function formatMetric(value, type) {
+  if (type === "time") return formatMs(value);
+  if (type === "ratio") return value.toFixed(3);
+  if (type === "count") return String(Math.round(value));
+  if (type === "kb") return `${value.toFixed(1)}kb`;
+  return String(value);
+}
+
+async function installPerformanceObservers(page) {
+  await page.addInitScript(() => {
+    window.__fsPerfBudget = {
+      cls: 0,
+      lcp: null,
+      tbt: 0,
+      longTaskCount: 0,
+      observerSetupError: null,
+    };
+
+    try {
+      const state = window.__fsPerfBudget;
+
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          state.lcp = entry.startTime;
+        }
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (!entry.hadRecentInput) {
+            state.cls += entry.value;
+          }
+        }
+      }).observe({ type: "layout-shift", buffered: true });
+
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const blockingTime = Math.max(0, entry.duration - 50);
+          state.tbt += blockingTime;
+          state.longTaskCount += 1;
+        }
+      }).observe({ type: "longtask", buffered: true });
+    } catch (error) {
+      window.__fsPerfBudget.observerSetupError =
+        error instanceof Error ? error.message : "unknown-observer-error";
+    }
+  });
+}
+
+async function collectRouteMetrics(page, route) {
+  await page.goto(route, { waitUntil: "domcontentloaded", timeout: 45_000 });
+  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
+  await page.waitForTimeout(PERF_BUDGET_SETTLE_MS);
+
+  return page.evaluate(() => {
+    const perf = window.performance;
+    const nav = perf.getEntriesByType("navigation")[0];
+    const resources = perf.getEntriesByType("resource");
+    const state = window.__fsPerfBudget ?? {
+      cls: 0,
+      lcp: null,
+      tbt: 0,
+      longTaskCount: 0,
+      observerSetupError: "observers-not-initialized",
+    };
+
+    const jsTransferBytes = resources
+      .filter((entry) => {
+        const name = entry.name.toLowerCase();
+        return (
+          entry.initiatorType === "script" ||
+          name.includes(".js") ||
+          name.includes("_next/static/chunks")
+        );
+      })
+      .reduce((sum, entry) => sum + (entry.transferSize || entry.encodedBodySize || 0), 0);
+
+    const cssTransferBytes = resources
+      .filter((entry) => {
+        const name = entry.name.toLowerCase();
+        return entry.initiatorType === "link" || name.includes(".css");
+      })
+      .reduce((sum, entry) => sum + (entry.transferSize || entry.encodedBodySize || 0), 0);
+
+    return {
+      lcpMs: state.lcp,
+      cls: state.cls,
+      tbtMs: state.tbt,
+      longTaskCount: state.longTaskCount,
+      observerSetupError: state.observerSetupError,
+      jsTransferKb: jsTransferBytes / 1024,
+      cssTransferKb: cssTransferBytes / 1024,
+      requestCount: resources.length,
+      fcpMs:
+        perf
+          .getEntriesByName("first-contentful-paint")
+          .map((entry) => entry.startTime)
+          .at(-1) ?? null,
+      domContentLoadedMs: nav?.domContentLoadedEventEnd ?? null,
+      loadMs: nav?.loadEventEnd ?? null,
+    };
+  });
+}
+
+function buildFailures(route, metrics) {
+  const failures = [];
+
+  if (typeof metrics.lcpMs !== "number" || !Number.isFinite(metrics.lcpMs)) {
+    failures.push({
+      route,
+      metric: "LCP",
+      actual: "missing",
+      threshold: `<= ${BUDGETS.lcpMs}ms`,
+    });
+  } else if (metrics.lcpMs > BUDGETS.lcpMs) {
+    failures.push({
+      route,
+      metric: "LCP",
+      actual: formatMs(metrics.lcpMs),
+      threshold: `<= ${BUDGETS.lcpMs}ms`,
+    });
+  }
+
+  if (metrics.cls > BUDGETS.cls) {
+    failures.push({
+      route,
+      metric: "CLS",
+      actual: metrics.cls.toFixed(3),
+      threshold: `<= ${BUDGETS.cls.toFixed(3)}`,
+    });
+  }
+
+  if (metrics.tbtMs > BUDGETS.tbtMs) {
+    failures.push({
+      route,
+      metric: "TBT",
+      actual: formatMs(metrics.tbtMs),
+      threshold: `<= ${BUDGETS.tbtMs}ms`,
+    });
+  }
+
+  if (metrics.jsTransferKb > BUDGETS.jsTransferKb) {
+    failures.push({
+      route,
+      metric: "JS transfer",
+      actual: `${metrics.jsTransferKb.toFixed(1)}kb`,
+      threshold: `<= ${BUDGETS.jsTransferKb.toFixed(1)}kb`,
+    });
+  }
+
+  if (metrics.cssTransferKb > BUDGETS.cssTransferKb) {
+    failures.push({
+      route,
+      metric: "CSS transfer",
+      actual: `${metrics.cssTransferKb.toFixed(1)}kb`,
+      threshold: `<= ${BUDGETS.cssTransferKb.toFixed(1)}kb`,
+    });
+  }
+
+  if (metrics.requestCount > BUDGETS.requestCount) {
+    failures.push({
+      route,
+      metric: "Request count",
+      actual: `${metrics.requestCount}`,
+      threshold: `<= ${BUDGETS.requestCount}`,
+    });
+  }
+
+  return failures;
+}
+
+function printSummary(routeRows) {
+  console.log("[perf-budget] Route metrics:");
+  for (const row of routeRows) {
+    const cells = [
+      `${row.route.padEnd(12)}`,
+      `LCP ${formatMetric(row.metrics.lcpMs ?? NaN, "time").padStart(8)}`,
+      `CLS ${formatMetric(row.metrics.cls, "ratio").padStart(6)}`,
+      `TBT ${formatMetric(row.metrics.tbtMs, "time").padStart(8)}`,
+      `JS ${formatMetric(row.metrics.jsTransferKb, "kb").padStart(9)}`,
+      `CSS ${formatMetric(row.metrics.cssTransferKb, "kb").padStart(9)}`,
+      `REQ ${formatMetric(row.metrics.requestCount, "count").padStart(4)}`,
+    ];
+    console.log(`  ${cells.join(" | ")}`);
+  }
+}
+
+async function writeReportIfRequested(report) {
+  if (!PERF_BUDGET_OUTPUT) return;
+  const outputPath = PERF_BUDGET_OUTPUT;
+  const outputDir = outputPath.includes("/") ? outputPath.slice(0, outputPath.lastIndexOf("/")) : ".";
+  await mkdir(outputDir, { recursive: true });
+  await writeFile(outputPath, JSON.stringify(report, null, 2), "utf8");
+  console.log(`[perf-budget] Wrote JSON report: ${outputPath}`);
+}
+
+async function run() {
+  const server = spawn(
+    "npx",
+    ["next", "start", "-H", PERF_BUDGET_HOST, "-p", String(PERF_BUDGET_PORT)],
+    {
+      env: {
+        ...process.env,
+        NODE_ENV: "production",
+        SITE_LOCK_ENABLED: "0",
+      },
+      stdio: "pipe",
+    }
+  );
+
+  server.stdout.on("data", (chunk) => {
+    process.stdout.write(`[perf-budget-server] ${String(chunk)}`);
+  });
+
+  server.stderr.on("data", (chunk) => {
+    process.stderr.write(`[perf-budget-server] ${String(chunk)}`);
+  });
+
+  const waitForServerClose = async (timeoutMs) => {
+    if (server.exitCode !== null || server.signalCode !== null) {
+      return true;
+    }
+
+    return new Promise((resolve) => {
+      let settled = false;
+
+      const onClose = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(true);
+      };
+
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        server.off("close", onClose);
+        resolve(false);
+      }, timeoutMs);
+
+      server.once("close", onClose);
+    });
+  };
+
+  const closeServer = async () => {
+    if (server.exitCode !== null || server.signalCode !== null) return;
+
+    try {
+      server.kill("SIGTERM");
+    } catch {
+      return;
+    }
+
+    const closedGracefully = await waitForServerClose(5_000);
+    if (closedGracefully) return;
+
+    try {
+      server.kill("SIGKILL");
+    } catch {
+      return;
+    }
+
+    await waitForServerClose(5_000);
+  };
+
+  try {
+    await waitForServerReady(PERF_BUDGET_BASE_URL, SERVER_READY_TIMEOUT_MS);
+
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ baseURL: PERF_BUDGET_BASE_URL });
+    const page = await context.newPage();
+    await installPerformanceObservers(page);
+
+    const routeRows = [];
+    const failures = [];
+
+    for (const route of ROUTES) {
+      const metrics = await collectRouteMetrics(page, route);
+      const normalizedMetrics = {
+        lcpMs:
+          typeof metrics.lcpMs === "number" && Number.isFinite(metrics.lcpMs) ? metrics.lcpMs : null,
+        cls: Number(metrics.cls ?? 0),
+        tbtMs: Number(metrics.tbtMs ?? 0),
+        longTaskCount: Number(metrics.longTaskCount ?? 0),
+        jsTransferKb: toKb((metrics.jsTransferKb ?? 0) * 1024),
+        cssTransferKb: toKb((metrics.cssTransferKb ?? 0) * 1024),
+        requestCount: Number(metrics.requestCount ?? 0),
+        fcpMs: metrics.fcpMs,
+        domContentLoadedMs: metrics.domContentLoadedMs,
+        loadMs: metrics.loadMs,
+        observerSetupError: metrics.observerSetupError,
+      };
+
+      routeRows.push({
+        route,
+        metrics: normalizedMetrics,
+      });
+      failures.push(...buildFailures(route, normalizedMetrics));
+    }
+
+    await browser.close();
+
+    printSummary(routeRows);
+
+    const report = {
+      generatedAt: new Date().toISOString(),
+      baseUrl: PERF_BUDGET_BASE_URL,
+      budgets: BUDGETS,
+      routes: routeRows,
+      failures,
+    };
+
+    await writeReportIfRequested(report);
+
+    if (failures.length > 0) {
+      console.error("[perf-budget] FAIL: budget regressions detected.");
+      for (const failure of failures) {
+        console.error(
+          `  - ${failure.route} | ${failure.metric}: actual ${failure.actual}, expected ${failure.threshold}`
+        );
+      }
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log("[perf-budget] PASS");
+  } finally {
+    const serverClosed = await Promise.race([
+      closeServer().then(() => true),
+      sleep(12_000).then(() => false),
+    ]);
+
+    if (!serverClosed) {
+      console.warn("[perf-budget] Timed out while closing perf-budget server; continuing shutdown.");
+    }
+  }
+}
+
+run()
+  .then(() => {
+    process.exit(process.exitCode ?? 0);
+  })
+  .catch((error) => {
+    console.error("[perf-budget] Fatal error", error);
+    process.exit(1);
+  });

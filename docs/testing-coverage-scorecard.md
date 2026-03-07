@@ -12,7 +12,7 @@ This scorecard tracks current automated coverage and what is still needed for a 
 | Accessibility            | Axe scans on home + contact, keyboard/focus checks                       | Medium                |
 | SEO/runtime indexability | `sitemap.spec.ts`, robots/sitemap routes in app                          | Medium                |
 | Visual regression        | Screenshot capture spec exists (`mobile-screenshots.spec.ts`)            | Medium (capture only) |
-| Performance budgets      | Build/type checks; no automated CWV budget gates                         | Gap                   |
+| Performance budgets      | `test:perf:budgets` gate on `/`, `/plans`, `/course`, `/my-library`      | Medium-Strong         |
 
 ## Existing Test Inventory (No Duplicate Policy)
 
@@ -44,10 +44,10 @@ Principle:
 
 1. Performance budgets (P0)
 
-- Add Lighthouse CI or equivalent budget gates for core routes (`/`, `/course`, `/my-library`).
-- Track thresholds (LCP/CLS/INP/TBT) and fail on budget regressions.
+- Keep baseline budget gate stable and start weekly ratchet decisions toward stretch targets.
+- Ensure trend reporting stays visible in CI/nightly artifacts.
 - tracked in:
-  - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+  - `docs/task-briefs/in-progress/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
 
 2. Visual diff assertions (P1)
 
@@ -60,7 +60,7 @@ Principle:
 
 - Add focused API tests for admin/content mutation negative paths and auth abuse/rate-limit boundaries.
 - tracked in:
-  - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+  - `docs/task-briefs/in-progress/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
 
 4. SEO metadata validation (P1)
 

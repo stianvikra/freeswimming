@@ -14,6 +14,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  performance-budget-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Build production bundle
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.com
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
+        run: npm run build
+
+      - name: Run performance budget gates
+        env:
+          SITE_LOCK_ENABLED: "0"
+          PERF_BUDGET_OUTPUT: artifacts/perf-budget-report.json
+          NEXT_PUBLIC_SUPABASE_URL: https://example.com
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
+        run: npm run test:perf:budgets
+
+      - name: Upload performance budget artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-performance-budget-artifacts
+          path: |
+            artifacts/perf-budget-report.json
+          if-no-files-found: ignore
+          retention-days: 14
+
   e2e-full-matrix:
     runs-on: ubuntu-latest
     timeout-minutes: 60

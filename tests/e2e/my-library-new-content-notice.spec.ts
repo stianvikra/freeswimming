@@ -85,7 +85,8 @@ test.describe("my library new content notice", () => {
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
-    await page.getByTestId("my-library-new-content-item-mod1-l1").click();
+    await expect(page.getByTestId("my-library-new-content-item-mod1-l1")).toBeVisible();
+    await page.getByTestId("my-library-new-content-open").click();
     await expect(page).toHaveURL(/\/course(\?|$)/);
   });
 
