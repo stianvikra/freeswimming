@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-04`
-- `updated`: `2026-03-06`
+- `updated`: `2026-03-07`
 
 ## Goal
 
@@ -143,6 +143,32 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - reduce manual drift in PR evidence quality,
   - keep ops/finance/i18n governance visible and auditable in every PR/merge cycle.
 
+## Slice 4 Deliverables (2026-03-07)
+
+- Added deterministic local pre-merge evidence marker (`head SHA`, timestamp, mode):
+  - `scripts/run-verify-pre-merge.sh`
+  - marker path: `artifacts/verify-pre-merge/latest.json`
+- Extended PR body generation so `verify:pre-merge` is SHA-aware:
+  - auto-shows `PASS` only when latest marker matches current `HEAD`,
+  - falls back to `PENDING` when stale/missing:
+    - `scripts/generate-pr-body.mjs`
+- Hardened PR-body lint contract:
+  - if `verify:pre-merge` is `PASS`, same evidence line must include current PR `head SHA`:
+    - `scripts/lint-pr-body-sections.mjs`
+- Moved PR-body lint execution into required `CI / verify` job path:
+  - `.github/workflows/ci.yml`
+- Added one-command merge gate for consistent execution:
+  - `npm run gate:pre-merge` -> runs pre-merge verify + refreshes Safari PR body
+  - `scripts/run-pre-merge-gate.sh`
+  - `package.json`
+- Updated operational docs/checklists for new gate flow:
+  - `docs/checklists/release-pr-checklist.md`
+  - `docs/runbooks/local-verify-and-test-artifacts.md`
+
+- Outcome target for Slice 4:
+  - eliminate ambiguity about pre-merge execution freshness,
+  - make assistant/operator behavior deterministic and auditable per-commit.
+
 ## Current Readiness Snapshot (Post Slice 3)
 
 - Incident/support operations: `4/5` (runbook executable, blockers tracked).
@@ -183,6 +209,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-07 | working tree | delivered Slice 4 pre-merge consistency automation: SHA-bound pre-merge marker + PR body generation + lint enforcement + one-command gate + docs updates | next: run npm run gate:pre-merge before merge recommendation on this PR, then continue locale-routing/finance blocker closure`
 - `2026-03-07 | 141e58f (main) | Slice 3 merged and closed in PR #145 | shipped PR-governance automation (auto PR-body generation + required-section CI lint + Safari PR body refresh flow); local post-merge sync completed | next: continue blocker closure for locale routing decision + finance reconciliation process maturity`
 - `2026-03-04 | planned | brief created from core-flow gap scan to cover non-blocking readiness categories (incident/finance/i18n) | next: prioritize slice and move to in-progress when implementation starts`
 - `2026-03-06 | working tree | moved brief to in-progress and delivered Slice 1 baseline artifacts (incident runbook + finance checklist + i18n checklist) | next: validate runbook steps against current admin/public routes and log first blockers with owner/date`

@@ -162,12 +162,81 @@ function readLatestVerifyRun() {
   };
 }
 
+function readLatestPreMergeMarker(headShaFull) {
+  const markerPath = "artifacts/verify-pre-merge/latest.json";
+  if (!existsSync(markerPath)) return null;
+
+  try {
+    const marker = JSON.parse(readFileSync(markerPath, "utf8"));
+    const markerStatus = typeof marker?.status === "string" ? marker.status.toUpperCase() : "UNKNOWN";
+    const markerSha = typeof marker?.headSha === "string" ? marker.headSha.trim().toLowerCase() : "";
+    const currentSha = typeof headShaFull === "string" ? headShaFull.trim().toLowerCase() : "";
+    const shaMatches =
+      Boolean(markerSha && currentSha) &&
+      (markerSha === currentSha || markerSha.startsWith(currentSha) || currentSha.startsWith(markerSha));
+
+    return {
+      status: markerStatus,
+      headSha: marker?.headSha ?? "",
+      shortSha: marker?.shortSha ?? "",
+      timestampUtc: marker?.timestampUtc ?? "",
+      privateGateMode: marker?.privateGateMode ?? "unknown",
+      shaMatches,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function buildPreMergeEvidenceLine(preMergeMarker, headShaShort) {
+  const safeHead = headShaShort || "unknown-sha";
+  if (!preMergeMarker) {
+    return {
+      line: `- \`npm run verify:pre-merge\`: **PENDING** for \`${safeHead}\` (required before merge to \`main\`).`,
+      checked: false,
+    };
+  }
+
+  const markerShort =
+    preMergeMarker.shortSha || (preMergeMarker.headSha ? preMergeMarker.headSha.slice(0, 7) : "unknown-sha");
+  const markerTime = preMergeMarker.timestampUtc || "unknown time";
+  const markerMode = preMergeMarker.privateGateMode || "unknown";
+
+  if (preMergeMarker.status === "PASS" && preMergeMarker.shaMatches) {
+    return {
+      line: `- \`npm run verify:pre-merge\`: **PASS** for \`${safeHead}\` (${markerTime}, mode: ${markerMode}).`,
+      checked: true,
+    };
+  }
+
+  if (preMergeMarker.status === "PASS") {
+    return {
+      line: `- \`npm run verify:pre-merge\`: **PENDING** for \`${safeHead}\` (latest PASS was \`${markerShort}\` at ${markerTime}; rerun on current HEAD).`,
+      checked: false,
+    };
+  }
+
+  return {
+    line: `- \`npm run verify:pre-merge\`: **${preMergeMarker.status}** for \`${markerShort}\` (${markerTime}); rerun on \`${safeHead}\` before merge.`,
+    checked: false,
+  };
+}
+
 function shortList(items, limit = 8) {
   if (items.length <= limit) return items;
   return [...items.slice(0, limit), `... and ${items.length - limit} more file(s)`];
 }
 
-function buildBody({ baseRef, branch, headSha, commitTitle, changedFiles, brief, verifyRun }) {
+function buildBody({
+  baseRef,
+  branch,
+  headShaShort,
+  commitTitle,
+  changedFiles,
+  brief,
+  verifyRun,
+  preMergeMarker,
+}) {
   const generatedAt = new Date().toISOString();
   const changedFileLines = shortList(changedFiles).map((filePath) => `  - \`${filePath}\``);
   const verifySummaryLines =
@@ -178,8 +247,8 @@ function buildBody({ baseRef, branch, headSha, commitTitle, changedFiles, brief,
   const verifyPrePrLine = verifyRun
     ? `- \`npm run verify:pre-pr\`: **${verifyRun.status}** (${verifyRun.runDir})`
     : "- `npm run verify:pre-pr`: **NOT RUN** (run locally before pushing PR updates).";
-  const verifyPreMergeLine =
-    "- `npm run verify:pre-merge`: **PENDING** (required before merge to `main`).";
+  const verifyPreMergeEvidence = buildPreMergeEvidenceLine(preMergeMarker, headShaShort);
+  const verifyPreMergeLine = verifyPreMergeEvidence.line;
 
   const briefLinkLine = brief.path
     ? `- Brief link(s): \`${brief.path}\``
@@ -189,7 +258,7 @@ function buildBody({ baseRef, branch, headSha, commitTitle, changedFiles, brief,
     "## Summary",
     "",
     `- Auto-generated on ${generatedAt} for branch \`${branch}\` (base ref \`${baseRef}\`).`,
-    `- Latest commit: \`${headSha}\` - ${commitTitle || "No commit subject found"}.`,
+    `- Latest commit: \`${headShaShort}\` - ${commitTitle || "No commit subject found"}.`,
     `- User-visible changes: describe the concrete user/admin behavior changed in this PR.`,
     `- Technical changes: describe key files/services/contracts changed.`,
     briefLinkLine,
@@ -211,7 +280,7 @@ function buildBody({ baseRef, branch, headSha, commitTitle, changedFiles, brief,
     "## Risk",
     "",
     "- Main risk: strict PR-body validation can fail existing low-detail PR drafts.",
-    `- Rollback plan: revert \`${headSha}\` if validation blocks expected workflows.`,
+    `- Rollback plan: revert \`${headShaShort}\` if validation blocks expected workflows.`,
     "",
   ];
 
@@ -231,7 +300,7 @@ function buildBody({ baseRef, branch, headSha, commitTitle, changedFiles, brief,
     "- [ ] `npm run build`",
     "- [ ] `npm run test:e2e` (or explain why skipped)",
     `- [${verifyRun?.status === "PASS" ? "x" : " "}] \`npm run verify:pre-pr\``,
-    "- [ ] `npm run verify:pre-merge` (or explain why private-gate step is not required)",
+    `- [${verifyPreMergeEvidence.checked ? "x" : " "}] \`npm run verify:pre-merge\` (must be PASS on current HEAD SHA before merge)`,
     "- [ ] Local manual QA done on dev URL (list URL + browser/device in PR description)",
     "- [ ] Vercel preview manual QA done (paste preview URL + browser/device in PR description)",
     "- [ ] QA covered relevant matrix for this change (mobile, tablet, desktop browsers)",
@@ -296,20 +365,23 @@ function main() {
   const options = parseArgs(process.argv.slice(2));
   const baseRef = resolveBaseRef(options.base);
   const branch = run("git branch --show-current") || "unknown-branch";
-  const headSha = run("git rev-parse --short HEAD") || "unknown-sha";
+  const headShaShort = run("git rev-parse --short HEAD") || "unknown-sha";
+  const headShaFull = run("git rev-parse HEAD") || "";
   const commitTitle = run("git log -1 --pretty=%s");
   const changedFiles = listChangedFiles(baseRef);
   const activeBriefPath = pickActiveBrief(changedFiles);
   const brief = readBriefSummary(activeBriefPath);
   const verifyRun = readLatestVerifyRun();
+  const preMergeMarker = readLatestPreMergeMarker(headShaFull);
   const body = buildBody({
     baseRef,
     branch,
-    headSha,
+    headShaShort,
     commitTitle,
     changedFiles,
     brief,
     verifyRun,
+    preMergeMarker,
   });
 
   if (options.output) {
