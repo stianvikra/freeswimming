@@ -18,6 +18,7 @@ Use this runbook for reliable local validation when private-access (site lock) i
 - Run release gates with one command:
   - pre-PR: `npm run verify:pre-pr`
   - pre-merge: `npm run verify:pre-merge`
+  - pre-merge + PR evidence refresh: `npm run gate:pre-merge`
   - private-gate env when lock is enabled:
     - automation default (auto-wires token when available): `SITE_LOCK_ENABLED=1 npm run verify:pre-merge`
     - force password-flow coverage: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
@@ -68,6 +69,13 @@ Optional overrides:
   - `artifacts/test-runs/latest`
 
 This folder is git-ignored and kept locally.
+
+Pre-merge evidence marker (for PR body refresh automation):
+
+- Local path: `artifacts/verify-pre-merge/`
+- Files:
+  - `<timestamp>.json` (contains PASS marker + head SHA + mode metadata)
+  - `latest.json` symlink to newest marker
 
 ## Recommended regular cadence
 

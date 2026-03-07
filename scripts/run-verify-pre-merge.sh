@@ -21,6 +21,48 @@ read_env_file_value() {
   printf '%s' "$raw"
 }
 
+record_pre_merge_pass() {
+  local runs_root="artifacts/verify-pre-merge"
+  local timestamp_utc
+  local iso_utc
+  local head_sha
+  local short_sha
+  local private_gate_mode="skipped"
+  local marker_file
+
+  timestamp_utc="$(date -u +"%Y%m%d-%H%M%S")"
+  iso_utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  head_sha="$(git rev-parse HEAD 2>/dev/null || printf '')"
+  short_sha="$(git rev-parse --short HEAD 2>/dev/null || printf '')"
+
+  if [ "${SITE_LOCK_ENABLED:-0}" = "1" ]; then
+    if [ "${PW_SITE_LOCK_USE_PASSWORD:-0}" = "1" ] && [ -n "${PW_SITE_LOCK_PASSWORD:-}" ]; then
+      private_gate_mode="password"
+    elif [ -n "${PW_SITE_LOCK_BYPASS_TOKEN:-}" ]; then
+      private_gate_mode="bypass-token"
+    else
+      private_gate_mode="unknown"
+    fi
+  fi
+
+  mkdir -p "${runs_root}"
+  marker_file="${runs_root}/${timestamp_utc}.json"
+
+  cat > "${marker_file}" <<EOF
+{
+  "status": "PASS",
+  "timestampUtc": "${iso_utc}",
+  "headSha": "${head_sha}",
+  "shortSha": "${short_sha}",
+  "siteLockEnabled": "${SITE_LOCK_ENABLED:-0}",
+  "privateGateMode": "${private_gate_mode}"
+}
+EOF
+
+  ln -sfn "$(basename "${marker_file}")" "${runs_root}/latest.json"
+  echo "[verify-pre-merge] Recorded PASS marker: ${marker_file}"
+}
+
 # Ensure npm is available (best-effort nvm bootstrap)
 if ! command -v npm >/dev/null 2>&1; then
   export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
@@ -78,5 +120,6 @@ else
   echo "[verify-pre-merge] If target environment is private-gated, rerun with SITE_LOCK_ENABLED=1 and PW_SITE_LOCK_PASSWORD or PW_SITE_LOCK_BYPASS_TOKEN set."
 fi
 
+record_pre_merge_pass
 
 echo "[verify-pre-merge] PASS"

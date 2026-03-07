@@ -14,6 +14,7 @@ Use this for PRs targeting `main`.
 - PR description includes summary, risk, and test evidence.
 - Required checks are green.
 - `npm run verify:pre-merge` has been run on latest local branch state.
+- Recommended automation: `npm run gate:pre-merge` (runs pre-merge verify and refreshes PR body evidence on current HEAD SHA).
 - Local manual QA is completed for changed flows (record URL + browser/device in PR).
 - Vercel preview works for changed flows (record preview URL + browser/device in PR).
 - QA matrix coverage is appropriate for the risk (mobile + tablet + desktop browsers when relevant).

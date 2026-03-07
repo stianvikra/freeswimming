@@ -68,14 +68,42 @@ function fieldValue(content, label) {
   return match?.[1]?.trim() ?? "";
 }
 
-function hasVerifyStatus(content, commandName) {
-  const regex = new RegExp(`${commandName}[^\\n]*(PASS|FAIL|PENDING|NOT RUN|\\[x\\])`, "i");
-  return regex.test(content);
+function extractVerifyEvidence(content, commandName) {
+  const lines = content.split(/\r?\n/);
+  const evidenceLine = lines.find((line) => new RegExp(commandName, "i").test(line)) ?? "";
+  if (!evidenceLine) {
+    return { line: "", status: "" };
+  }
+
+  const statusMatch = evidenceLine.match(/\b(PASS|FAIL|PENDING|NOT RUN)\b/i);
+  if (statusMatch) {
+    return {
+      line: evidenceLine,
+      status: statusMatch[1].toUpperCase(),
+    };
+  }
+
+  if (/\[[xX]\]/.test(evidenceLine)) {
+    return {
+      line: evidenceLine,
+      status: "PASS",
+    };
+  }
+
+  return { line: evidenceLine, status: "" };
 }
 
-function validatePullRequestBody(body) {
+function lineContainsHeadSha(line, headSha) {
+  if (!line || !headSha) return false;
+  const shortSha = headSha.slice(0, 7);
+  const normalized = line.toLowerCase();
+  return normalized.includes(headSha.toLowerCase()) || normalized.includes(shortSha.toLowerCase());
+}
+
+function validatePullRequestBody(body, options = {}) {
   const errors = [];
   const sections = extractSections(body);
+  const headSha = options.headSha ?? "";
 
   if (!body || !body.trim()) {
     return ["PR body is empty. Fill the required sections from the template."];
@@ -119,14 +147,21 @@ function validatePullRequestBody(body) {
 
   const testEvidence = sectionContent(sections, "Test Evidence");
   if (testEvidence) {
-    if (!hasVerifyStatus(testEvidence, "verify:pre-pr")) {
+    const prePrEvidence = extractVerifyEvidence(testEvidence, "verify:pre-pr");
+    if (!prePrEvidence.status) {
       errors.push(
         'Section "## Test Evidence" must include `verify:pre-pr` with status (PASS/FAIL/PENDING/NOT RUN or checked box).'
       );
     }
-    if (!hasVerifyStatus(testEvidence, "verify:pre-merge")) {
+
+    const preMergeEvidence = extractVerifyEvidence(testEvidence, "verify:pre-merge");
+    if (!preMergeEvidence.status) {
       errors.push(
         'Section "## Test Evidence" must include `verify:pre-merge` with status (PASS/FAIL/PENDING/NOT RUN or checked box).'
+      );
+    } else if (preMergeEvidence.status === "PASS" && !lineContainsHeadSha(preMergeEvidence.line, headSha)) {
+      errors.push(
+        'When `verify:pre-merge` is `PASS`, the same evidence line must include current PR head SHA (short or full).'
       );
     }
   }
@@ -147,7 +182,9 @@ function main() {
     return;
   }
 
-  const errors = validatePullRequestBody(pullRequest.body ?? "");
+  const errors = validatePullRequestBody(pullRequest.body ?? "", {
+    headSha: pullRequest.head?.sha ?? "",
+  });
   if (errors.length === 0) {
     console.log("[pr-body-lint] PASS");
     return;
