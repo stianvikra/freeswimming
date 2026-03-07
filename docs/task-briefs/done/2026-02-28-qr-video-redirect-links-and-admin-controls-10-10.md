@@ -33,7 +33,7 @@ Ship a secure, admin-controlled QR link system where every QR points to a stable
   - `docs/task-briefs/in-progress/2026-02-25-content-production-v1-admin-editorial-run.md`
 - Adjacent planned tracks:
   - `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`
-  - `docs/task-briefs/planned/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
+  - `docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
   - `docs/task-briefs/planned/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`
 - Scope here is redirect + admin operations + QR placement behavior; no broad marketing redesign.
 

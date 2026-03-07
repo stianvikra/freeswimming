@@ -165,12 +165,12 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ### Plan Next (Not Blocking Current Content Entry)
 
-| Category Track                                            | Score (0-5) | Decision                           | Brief Link                                                                                            |
-| --------------------------------------------------------- | ----------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| SEO and AI discoverability                                | `3/5`       | planned follow-up                  | `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`                |
-| QR redirect and campaign operations                       | `4/5`       | delivered follow-up                | `docs/task-briefs/done/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`                |
-| Performance stretch + security hardening depth            | `3/5`       | in-progress follow-up              | `docs/task-briefs/in-progress/2026-02-19-performance-budgets-and-security-negative-path-hardening.md` |
-| Incident/support + finance/reporting + i18n ops readiness | `3/5`       | in progress follow-up (score `<4`) | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`         |
+| Category Track                                            | Score (0-5) | Decision                            | Brief Link                                                                                     |
+| --------------------------------------------------------- | ----------- | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| SEO and AI discoverability                                | `3/5`       | planned follow-up                   | `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`         |
+| QR redirect and campaign operations                       | `4/5`       | delivered follow-up                 | `docs/task-briefs/done/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`         |
+| Performance stretch + security hardening depth            | `3/5`       | delivered baseline; stretch pending | `docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md` |
+| Incident/support + finance/reporting + i18n ops readiness | `3/5`       | in progress follow-up (score `<4`)  | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`  |
 
 - Brief creation policy applied: new brief created only for categories with `target-score <4` that were not already covered by an active planned brief.
 
@@ -182,6 +182,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-07 | 8a44068 (main) | perf/security hardening closeout synced | PR #150 merged and performance+security hardening brief moved to done (`docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`) with baseline gates shipped and stretch ratchet tracked as deferred policy | next: continue revision-1 content production and log next real editorial friction batch (P0/P1/P2)`
 - `2026-03-07 | 141e58f (main) | resumed after PR #145 governance merge | synced local main + removed merged branch; no new P0 blockers introduced by PR-governance automation | next: continue revision-1 content production run and log first new live friction batch (P0/P1/P2), while tracking locale-routing + finance-process blockers in ops readiness brief`
 - `2026-03-06 | working tree | moved operations/finance/i18n readiness brief from planned to in-progress and delivered slice-1 baseline docs (incident runbook + finance checklist + i18n checklist) | next: continue content production track while logging blockers from checklist/runbook execution`
 - `2026-03-06 | working tree | QR Slice 1 local delivery complete under in-progress QR brief: canonical redirect model migration + secure `/go/v/[slug]` route + fallback page + policy guards + unit tests; npm run verify:pre-pr PASS | next: commit/push QR Slice 1 and open/update PR in Safari before continuing QR admin-registry slice`
