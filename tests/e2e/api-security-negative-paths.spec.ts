@@ -1,6 +1,7 @@
 import { expect, test, type APIResponse } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
+const dummyUuid = "11111111-1111-4111-8111-111111111111";
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
@@ -27,6 +28,25 @@ async function expectUnauthorizedNoLeak(response: APIResponse) {
   expect(payloadSerialized).not.toContain("stack");
   expect(payloadSerialized).not.toContain("supabase");
   expect(payloadSerialized).not.toContain("stripe");
+}
+
+async function expectUnauthorizedNoLeakWithTransientRetry(send: () => Promise<APIResponse>) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await expectUnauthorizedNoLeak(await send());
+      return;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isTransientNetworkError =
+        /ECONNRESET|ECONNREFUSED|ETIMEDOUT|Request context disposed|socket hang up/i.test(
+          errorMessage
+        );
+      if (!isTransientNetworkError || attempt === 2) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
 }
 
 test.describe("api security negative paths", () => {
@@ -164,6 +184,127 @@ test.describe("api security negative paths", () => {
         },
         data: JSON.stringify({
           confirm: "DELETE",
+        }),
+      })
+    );
+  });
+
+  test("returns deterministic non-sensitive unauthorized responses for extended admin api set", async ({
+    request,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/content"));
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/content", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          contentType: "course_module",
+          title: "Unauthorized probe",
+          status: "draft",
+        }),
+      })
+    );
+
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/content/course-structure", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          action: "normalize",
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.get(`/api/admin/content/${dummyUuid}/revisions`)
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post(`/api/admin/content/${dummyUuid}/revisions`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          revisionId: dummyUuid,
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/content/import")
+    );
+
+    await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/products"));
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.patch(`/api/admin/products/${dummyUuid}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          title: "Unauthorized product update probe",
+          active: true,
+        }),
+      })
+    );
+
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.get("/api/admin/operations/flags")
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/notes"));
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.patch(`/api/admin/notes/${dummyUuid}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          title: "Unauthorized note update probe",
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.delete(`/api/admin/notes/${dummyUuid}`)
+    );
+
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.get("/api/admin/categories/notes")
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/categories/notes", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          title: "Unauthorized category create probe",
+          slug: "unauthorized-create-probe",
+          sortOrder: 10,
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.patch(`/api/admin/categories/notes/${dummyUuid}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          title: "Unauthorized category update probe",
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.delete(`/api/admin/categories/notes/${dummyUuid}`)
+    );
+
+    await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/qr-links"));
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/qr-links", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          slug: "unauthorized-qr-probe",
+          destinationUrl: "https://freeswimming.org/course",
+          status: "active",
         }),
       })
     );
