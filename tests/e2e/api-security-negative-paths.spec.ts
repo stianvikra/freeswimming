@@ -234,6 +234,19 @@ test.describe("api security negative paths", () => {
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.post("/api/admin/content/import")
     );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.patch(`/api/admin/content/${dummyUuid}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          title: "Unauthorized content update probe",
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.delete(`/api/admin/content/${dummyUuid}`)
+    );
 
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/products"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
@@ -253,6 +266,18 @@ test.describe("api security negative paths", () => {
     );
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/notes"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/notes", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          title: "Unauthorized note create probe",
+          body: "Unauthorized create should fail closed.",
+          category: "Operations",
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.patch(`/api/admin/notes/${dummyUuid}`, {
         headers: {
           "content-type": "application/json",
@@ -270,6 +295,9 @@ test.describe("api security negative paths", () => {
       request.get("/api/admin/categories/notes")
     );
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.get("/api/admin/categories/content")
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.post("/api/admin/categories/notes", {
         headers: {
           "content-type": "application/json",
@@ -278,6 +306,18 @@ test.describe("api security negative paths", () => {
           title: "Unauthorized category create probe",
           slug: "unauthorized-create-probe",
           sortOrder: 10,
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/categories/content", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          title: "Unauthorized content category create probe",
+          slug: "unauthorized-content-category-probe",
+          sortOrder: 5,
         }),
       })
     );
@@ -294,6 +334,19 @@ test.describe("api security negative paths", () => {
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.delete(`/api/admin/categories/notes/${dummyUuid}`)
     );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.patch(`/api/admin/categories/content/${dummyUuid}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          title: "Unauthorized content category update probe",
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.delete(`/api/admin/categories/content/${dummyUuid}`)
+    );
 
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/qr-links"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
@@ -307,6 +360,19 @@ test.describe("api security negative paths", () => {
           status: "active",
         }),
       })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.patch(`/api/admin/qr-links/${dummyUuid}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          status: "disabled",
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.delete(`/api/admin/qr-links/${dummyUuid}`)
     );
   });
 });
