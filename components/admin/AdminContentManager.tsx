@@ -7,6 +7,13 @@ import type {
   AdminContentType,
 } from "@/lib/admin/content";
 import {
+  ALL_CONTENT_SCOPE_STORAGE_KEY,
+  CONTENT_PRIMARY_VIEW_STORAGE_KEY,
+  parseStoredAllContentScope,
+  parseStoredContentPrimaryView,
+  type ContentPrimaryView,
+} from "@/lib/admin/content-view-preferences";
+import {
   buildCourseStructureIntegrity,
   getAdjacentLessonId,
   getAdjacentModuleId,
@@ -26,7 +33,6 @@ const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = 
   { value: "product", label: "Product metadata" },
 ];
 
-const ALL_CONTENT_SCOPE_STORAGE_KEY = "fs_admin_all_content_scope";
 const DEFAULT_ALL_CONTENT_SCOPE: AdminContentType = "course_module";
 const ALL_CONTENT_SCOPE_OPTIONS: Array<{ value: "all" | AdminContentType; label: string }> = [
   { value: "all", label: "All content (audit)" },
@@ -317,8 +323,6 @@ type ContentListFocusState = {
   detail: string;
 };
 
-type ContentPrimaryView = "course_workspace" | "all_content";
-
 type CourseStructureActionPayload =
   | {
       action: "move_module";
@@ -381,17 +385,6 @@ const INITIAL_FORM: FormState = {
 function normalizeCategoryInput(value: string): string {
   const collapsed = value.trim().replace(/\s+/g, " ");
   return collapsed.length > 0 ? collapsed : "General";
-}
-
-function isAdminContentType(value: string): value is AdminContentType {
-  return CONTENT_TYPE_OPTIONS.some((option) => option.value === value);
-}
-
-function parseStoredAllContentScope(value: string | null): "all" | AdminContentType | null {
-  if (!value) return null;
-  if (value === "all") return "all";
-  if (isAdminContentType(value)) return value;
-  return null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -716,8 +709,13 @@ export default function AdminContentManager() {
   const [listSort, setListSort] = useState<ListSortOption>("default");
   const [listModuleFilter, setListModuleFilter] = useState("");
   const [listFocusState, setListFocusState] = useState<ContentListFocusState | null>(null);
-  const [contentPrimaryView, setContentPrimaryView] =
-    useState<ContentPrimaryView>("course_workspace");
+  const [contentPrimaryView, setContentPrimaryView] = useState<ContentPrimaryView>(() => {
+    if (typeof window === "undefined") return "course_workspace";
+    const storedView = parseStoredContentPrimaryView(
+      window.localStorage.getItem(CONTENT_PRIMARY_VIEW_STORAGE_KEY)
+    );
+    return storedView ?? "course_workspace";
+  });
   const [showCourseRowsInContentList, setShowCourseRowsInContentList] = useState(false);
   const [workspaceModuleId, setWorkspaceModuleId] = useState(WORKSPACE_ALL_MODULES_ID);
   const [courseStructureBusy, setCourseStructureBusy] = useState(false);
@@ -1341,6 +1339,11 @@ export default function AdminContentManager() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(ALL_CONTENT_SCOPE_STORAGE_KEY, listTypeFilter);
   }, [listTypeFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(CONTENT_PRIMARY_VIEW_STORAGE_KEY, contentPrimaryView);
+  }, [contentPrimaryView]);
 
   const groupedCountLabel = useMemo(() => {
     if (!schemaReady) return "Content catalog will appear after admin content setup is ready.";
