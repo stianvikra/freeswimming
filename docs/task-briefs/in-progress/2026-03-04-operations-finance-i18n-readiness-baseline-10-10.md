@@ -234,10 +234,27 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - close i18n fallback ambiguity blocker with deterministic route/content/metadata contract,
   - enforce evidence-first checkbox discipline in PR execution flow.
 
-## Current Readiness Snapshot (Post Slice 8)
+## Slice 9 Deliverables (2026-03-08)
+
+- Closed remaining finance export-collection blocker with live collection mode:
+  - `scripts/reconcile-finance-entitlements.mjs`
+  - new mode: `--collect-live --from <YYYY-MM-DD> --to <YYYY-MM-DD>`
+- Added deterministic pagination to entitlement collection so larger ranges do not silently truncate:
+  - `scripts/reconcile-finance-entitlements.mjs`
+- Added unit coverage for date-window and collect-live CLI parsing contracts:
+  - `tests/unit/finance-reconciliation.test.ts`
+- Updated finance/readiness artifacts with live-collection execution contract and blocker closure:
+  - `docs/checklists/finance-reporting-baseline.md`
+  - `docs/checklists/operations-finance-i18n-readiness-log.md`
+
+- Outcome target for Slice 9:
+  - remove manual export-collection friction from weekly finance reconciliation,
+  - raise finance/reporting readiness from `4/5` to `5/5`.
+
+## Current Readiness Snapshot (Post Slice 9)
 
 - Incident/support operations: `5/5` (runbook + in-app template/taxonomy standardized and actionable).
-- Finance/reporting operations: `4/5` (deterministic mismatch + input-dir automation added; export collection remains manual).
+- Finance/reporting operations: `5/5` (live collection + deterministic reconciliation + checklist/run-log evidence).
 - i18n operational readiness: `5/5` (routing strategy + fallback matrix both explicit and blocker-tracked).
 
 ## Validation
@@ -274,6 +291,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-08 | working tree | delivered Slice 9 finance closure: added --collect-live date-window export collection (Stripe + Supabase with pagination), extended finance reconciliation unit tests, updated finance baseline + readiness log, and resolved OPS-FIN-I18N-002 to raise finance/reporting readiness to 5/5 | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`
 - `2026-03-08 | working tree | started Slice 8 i18n fallback closure: added locale-content fallback matrix decision, updated i18n/readiness checklists to resolve OPS-FIN-I18N-004, and added explicit PR checkbox evidence policy in release checklist + PR body generator | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`
 - `2026-03-08 | 512d580 (main) | PR #155 merged and closed | shipped Slice 7 incident-note standardization and raised incident/support readiness to 5/5; local post-merge recovery complete | next: close remaining i18n fallback-matrix blocker to lift i18n readiness from 4/5 to 5/5`
 - `2026-03-08 | working tree | delivered Slice 7 incident-note standardization: added severity templates in Admin Notes, codified runbook template/taxonomy contract, resolved blocker OPS-FIN-I18N-003, and raised incident/support readiness to 5/5 | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`

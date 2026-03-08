@@ -82,14 +82,29 @@ Record actual execution of readiness runbooks/checklists so status is auditable,
     - `docs/checklists/i18n-operational-readiness.md`
   - `OPS-FIN-I18N-004` is resolved.
 
+## 2026-03-08 Slice 9 Finance Export Collection Closure
+
+### Live Stripe + Entitlement Collection
+
+- Scope:
+  - remove remaining manual export-collection blocker before reconciliation.
+- Result:
+  - reconciliation CLI now supports live collection mode:
+    - `npm run finance:reconcile -- --collect-live --from <YYYY-MM-DD> --to <YYYY-MM-DD> ...`
+    - `scripts/reconcile-finance-entitlements.mjs`
+  - Stripe checkout sessions are collected by date window and written as JSON evidence.
+  - Supabase entitlement rows are collected by date window with deterministic pagination (no silent 1000-row truncation).
+  - finance checklist updated with required env contract and preferred live flow.
+  - `OPS-FIN-I18N-002` is resolved.
+
 ## Blocker Register
 
-| ID               | Area       | Severity | Status   | Blocker                                                                          | Owner      | Target date | Current mitigation                                                                            | Follow-up link                                                                                |
-| ---------------- | ---------- | -------- | -------- | -------------------------------------------------------------------------------- | ---------- | ----------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| OPS-FIN-I18N-001 | i18n       | P1       | resolved | Locale routing decision (`subpath` vs `domain`) is not yet locked.               | stianvikra | 2026-03-08  | Decision recorded in `docs/decisions/locale-routing-strategy.md`.                             | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
-| OPS-FIN-I18N-002 | finance    | P2       | open     | Stripe-vs-entitlement export collection is still manual before reconciliation.   | stianvikra | 2026-03-21  | Stage weekly exports in one input dir and run `npm run finance:reconcile -- --input-dir ...`. | `docs/checklists/finance-reporting-baseline.md`                                               |
-| OPS-FIN-I18N-003 | operations | P2       | resolved | Incident note template/taxonomy is not yet standardized in admin notes workflow. | stianvikra | 2026-03-08  | Standardized template + taxonomy shipped in admin notes workflow + runbook.                   | `docs/runbooks/core-flow-incident-response.md`                                                |
-| OPS-FIN-I18N-004 | i18n       | P2       | resolved | Locale-specific content fallback matrix is not finalized yet.                    | stianvikra | 2026-03-08  | Matrix documented in `docs/decisions/locale-content-fallback-matrix.md`.                      | `docs/checklists/i18n-operational-readiness.md`                                               |
+| ID               | Area       | Severity | Status   | Blocker                                                                          | Owner      | Target date | Current mitigation                                                                          | Follow-up link                                                                                |
+| ---------------- | ---------- | -------- | -------- | -------------------------------------------------------------------------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| OPS-FIN-I18N-001 | i18n       | P1       | resolved | Locale routing decision (`subpath` vs `domain`) is not yet locked.               | stianvikra | 2026-03-08  | Decision recorded in `docs/decisions/locale-routing-strategy.md`.                           | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
+| OPS-FIN-I18N-002 | finance    | P2       | resolved | Stripe-vs-entitlement export collection is still manual before reconciliation.   | stianvikra | 2026-03-21  | Live collection mode shipped in `scripts/reconcile-finance-entitlements.mjs` and checklist. | `docs/checklists/finance-reporting-baseline.md`                                               |
+| OPS-FIN-I18N-003 | operations | P2       | resolved | Incident note template/taxonomy is not yet standardized in admin notes workflow. | stianvikra | 2026-03-08  | Standardized template + taxonomy shipped in admin notes workflow + runbook.                 | `docs/runbooks/core-flow-incident-response.md`                                                |
+| OPS-FIN-I18N-004 | i18n       | P2       | resolved | Locale-specific content fallback matrix is not finalized yet.                    | stianvikra | 2026-03-08  | Matrix documented in `docs/decisions/locale-content-fallback-matrix.md`.                    | `docs/checklists/i18n-operational-readiness.md`                                               |
 
 ## Next Validation Cadence
 
