@@ -12,6 +12,10 @@ const PERF_BUDGET_BASE_URL =
   process.env.PERF_BUDGET_BASE_URL ?? `http://${PERF_BUDGET_HOST}:${PERF_BUDGET_PORT}`;
 const PERF_BUDGET_OUTPUT = process.env.PERF_BUDGET_OUTPUT ?? "";
 const PERF_BUDGET_SETTLE_MS = Number(process.env.PERF_BUDGET_SETTLE_MS ?? 1500);
+const PERF_BUDGET_SAMPLES_PER_ROUTE = Math.max(
+  1,
+  Number(process.env.PERF_BUDGET_SAMPLES_PER_ROUTE ?? 3)
+);
 const SERVER_READY_TIMEOUT_MS = Number(process.env.PERF_BUDGET_SERVER_TIMEOUT_MS ?? 60_000);
 
 const BUDGETS = {
@@ -47,6 +51,56 @@ async function waitForServerReady(baseUrl, timeoutMs) {
 
 function toKb(valueBytes) {
   return Number((valueBytes / 1024).toFixed(1));
+}
+
+function toFiniteNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return parsed;
+}
+
+function median(values, fallback = 0) {
+  const finite = values.filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  if (finite.length === 0) return fallback;
+  const center = Math.floor(finite.length / 2);
+  if (finite.length % 2 === 1) return finite[center];
+  return (finite[center - 1] + finite[center]) / 2;
+}
+
+function normalizeRouteMetrics(metrics) {
+  return {
+    lcpMs:
+      typeof metrics.lcpMs === "number" && Number.isFinite(metrics.lcpMs) ? metrics.lcpMs : null,
+    cls: toFiniteNumber(metrics.cls),
+    tbtMs: toFiniteNumber(metrics.tbtMs),
+    longTaskCount: toFiniteNumber(metrics.longTaskCount),
+    jsTransferKb: toKb(toFiniteNumber(metrics.jsTransferKb) * 1024),
+    cssTransferKb: toKb(toFiniteNumber(metrics.cssTransferKb) * 1024),
+    requestCount: toFiniteNumber(metrics.requestCount),
+    fcpMs: metrics.fcpMs,
+    domContentLoadedMs: metrics.domContentLoadedMs,
+    loadMs: metrics.loadMs,
+    observerSetupError: metrics.observerSetupError,
+  };
+}
+
+function aggregateRouteMetricSamples(samples) {
+  return {
+    lcpMs: median(samples.map((sample) => sample.lcpMs), null),
+    cls: median(samples.map((sample) => sample.cls)),
+    tbtMs: median(samples.map((sample) => sample.tbtMs)),
+    longTaskCount: median(samples.map((sample) => sample.longTaskCount)),
+    jsTransferKb: median(samples.map((sample) => sample.jsTransferKb)),
+    cssTransferKb: median(samples.map((sample) => sample.cssTransferKb)),
+    requestCount: median(samples.map((sample) => sample.requestCount)),
+    fcpMs: median(samples.map((sample) => toFiniteNumber(sample.fcpMs, NaN)), null),
+    domContentLoadedMs: median(
+      samples.map((sample) => toFiniteNumber(sample.domContentLoadedMs, NaN)),
+      null
+    ),
+    loadMs: median(samples.map((sample) => toFiniteNumber(sample.loadMs, NaN)), null),
+    observerSetupError: samples.find((sample) => sample.observerSetupError)?.observerSetupError ?? null,
+  };
 }
 
 function formatMs(value) {
@@ -225,7 +279,7 @@ function buildFailures(route, metrics) {
 }
 
 function printSummary(routeRows) {
-  console.log("[perf-budget] Route metrics:");
+  console.log(`[perf-budget] Route metrics (median of ${PERF_BUDGET_SAMPLES_PER_ROUTE} sample(s)):`);
   for (const row of routeRows) {
     const cells = [
       `${row.route.padEnd(12)}`,
@@ -330,24 +384,16 @@ async function run() {
     const failures = [];
 
     for (const route of ROUTES) {
-      const metrics = await collectRouteMetrics(page, route);
-      const normalizedMetrics = {
-        lcpMs:
-          typeof metrics.lcpMs === "number" && Number.isFinite(metrics.lcpMs) ? metrics.lcpMs : null,
-        cls: Number(metrics.cls ?? 0),
-        tbtMs: Number(metrics.tbtMs ?? 0),
-        longTaskCount: Number(metrics.longTaskCount ?? 0),
-        jsTransferKb: toKb((metrics.jsTransferKb ?? 0) * 1024),
-        cssTransferKb: toKb((metrics.cssTransferKb ?? 0) * 1024),
-        requestCount: Number(metrics.requestCount ?? 0),
-        fcpMs: metrics.fcpMs,
-        domContentLoadedMs: metrics.domContentLoadedMs,
-        loadMs: metrics.loadMs,
-        observerSetupError: metrics.observerSetupError,
-      };
+      const samples = [];
+      for (let sampleIndex = 0; sampleIndex < PERF_BUDGET_SAMPLES_PER_ROUTE; sampleIndex += 1) {
+        const metrics = await collectRouteMetrics(page, route);
+        samples.push(normalizeRouteMetrics(metrics));
+      }
+      const normalizedMetrics = aggregateRouteMetricSamples(samples);
 
       routeRows.push({
         route,
+        samples,
         metrics: normalizedMetrics,
       });
       failures.push(...buildFailures(route, normalizedMetrics));
@@ -360,6 +406,7 @@ async function run() {
     const report = {
       generatedAt: new Date().toISOString(),
       baseUrl: PERF_BUDGET_BASE_URL,
+      samplesPerRoute: PERF_BUDGET_SAMPLES_PER_ROUTE,
       budgets: BUDGETS,
       routes: routeRows,
       failures,

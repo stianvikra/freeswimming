@@ -4,13 +4,13 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import MenuDrawer from "@/components/MenuDrawer";
 import PageIntro from "@/components/PageIntro";
 import CourseOpenOnPhoneCard from "@/components/course/CourseOpenOnPhoneCard";
-import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
 import MobileSegmentedNav, {
@@ -57,6 +57,10 @@ import {
   type CourseModule,
   type CourseLesson,
 } from "./courseData";
+
+const AdminContextNotesPanel = dynamic(() => import("@/components/admin/AdminContextNotesPanel"), {
+  loading: () => null,
+});
 
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
 const SWIPE_NUX_STORAGE_KEY = "fs_course_swipe_nux_seen";
@@ -1580,6 +1584,8 @@ function CoursePageClient() {
   }, [videoStarted]);
 
   useEffect(() => {
+    if (!videoStarted) return;
+
     const w = window as unknown as {
       YT?: { Player?: unknown };
       onYouTubeIframeAPIReady?: (() => void) | undefined;
@@ -1609,7 +1615,7 @@ function CoursePageClient() {
         w.onYouTubeIframeAPIReady = prevReady;
       }
     };
-  }, []);
+  }, [videoStarted]);
 
   useEffect(() => {
     savePlaybackPosition(playerLessonIdRef.current);

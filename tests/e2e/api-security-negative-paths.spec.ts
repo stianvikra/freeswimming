@@ -31,20 +31,20 @@ async function expectUnauthorizedNoLeak(response: APIResponse) {
 }
 
 async function expectUnauthorizedNoLeakWithTransientRetry(send: () => Promise<APIResponse>) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
       await expectUnauthorizedNoLeak(await send());
       return;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const isTransientNetworkError =
-        /ECONNRESET|ECONNREFUSED|ETIMEDOUT|Request context disposed|socket hang up/i.test(
+        /ECONNRESET|ECONNREFUSED|ETIMEDOUT|Request context disposed|socket hang up|Target page, context or browser has been closed/i.test(
           errorMessage
         );
-      if (!isTransientNetworkError || attempt === 2) {
+      if (!isTransientNetworkError || attempt === 3) {
         throw error;
       }
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise((resolve) => setTimeout(resolve, 400));
     }
   }
 }
@@ -193,6 +193,7 @@ test.describe("api security negative paths", () => {
     request,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
 
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/content"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>

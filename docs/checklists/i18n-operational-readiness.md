@@ -7,6 +7,13 @@ Use this before enabling additional locales to confirm route/content/admin opera
 - Cadence: at planning kickoff for each locale expansion and after major content/admin schema changes.
 - Owner: product + engineering shared owner for locale rollout.
 
+## Current Baseline Decision
+
+- Locale routing strategy is locked to `subpath` and documented in:
+  - `docs/decisions/locale-routing-strategy.md`
+- Default locale remains canonical at `/`.
+- Non-default locales use `/<locale>/...`.
+
 ## Readiness Checks
 
 - Route strategy:
@@ -32,9 +39,9 @@ Use this before enabling additional locales to confirm route/content/admin opera
 
 ## Blocker Log (Required)
 
-| Blocker                                         | Severity (`P0/P1/P2`) | Owner | Target date | Mitigation                              | Linked brief/PR |
-| ----------------------------------------------- | --------------------- | ----- | ----------- | --------------------------------------- | --------------- |
-| Example: no locale-safe slug policy for lessons | P1                    | owner | YYYY-MM-DD  | lock slug contract before locale launch | brief/PR link   |
+| Blocker                                                       | Severity (`P0/P1/P2`) | Owner      | Target date | Mitigation                                                           | Linked brief/PR                                                                               |
+| ------------------------------------------------------------- | --------------------- | ---------- | ----------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Locale-specific content fallback matrix is not finalized yet. | P2                    | stianvikra | 2026-03-21  | Keep default-locale fallback deterministic until matrix is explicit. | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
 
 ## Exit Criteria For "Ready To Start Locale Work"
 

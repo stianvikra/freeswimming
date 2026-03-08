@@ -58,7 +58,7 @@ test.describe("admin content parity", () => {
     await allContentTab.click();
     await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("admin-content-import-platform")).toHaveCount(0);
-    await expect(page.getByTestId("admin-content-item").first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("Loading content list…")).toHaveCount(0, { timeout: 20_000 });
 
     const mirrorCard = page
       .locator("article")

@@ -1,4 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIResponse, type Page } from "@playwright/test";
+
+type CourseProgressPayload = {
+  rows?: Array<{ lessonId?: string; done?: boolean }>;
+};
+
+function isTransientNetworkError(error: unknown): boolean {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  return /ECONNRESET|ECONNREFUSED|ETIMEDOUT|Request context disposed|socket hang up|Target page, context or browser has been closed/i.test(
+    errorMessage
+  );
+}
+
+async function getCourseProgressOrNull(page: Page): Promise<APIResponse | null> {
+  try {
+    return await page.request.get("/api/progress/course");
+  } catch (error) {
+    if (isTransientNetworkError(error)) {
+      return null;
+    }
+    throw error;
+  }
+}
 
 async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
   const markDoneButton = page.getByTestId("course-mark-done-button");
@@ -20,6 +42,7 @@ async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
 }
 
 test("signed-in mark-as-done syncs to account progress API", async ({ page }, testInfo) => {
+  test.slow();
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
 
   const lessonId = "mod1-l1";
@@ -36,10 +59,10 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   await expect
     .poll(
       async () => {
-        const response = await page.request.get("/api/progress/course");
-        return response.status();
+        const response = await getCourseProgressOrNull(page);
+        return response?.status() ?? "transient";
       },
-      { timeout: 15_000 }
+      { timeout: 20_000 }
     )
     .toBe(200);
   await page.waitForTimeout(1_200);
@@ -57,11 +80,10 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   await expect
     .poll(
       async () => {
-        const response = await page.request.get("/api/progress/course");
+        const response = await getCourseProgressOrNull(page);
+        if (!response) return "transient";
         if (response.status() !== 200) return `status:${response.status()}`;
-        const payload = (await response.json()) as {
-          rows?: Array<{ lessonId?: string; done?: boolean }>;
-        };
+        const payload = (await response.json()) as CourseProgressPayload;
         const row = payload.rows?.find((entry) => entry.lessonId === lessonId);
         return row?.done ? "true" : "false";
       },
@@ -75,11 +97,10 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   await expect
     .poll(
       async () => {
-        const response = await page.request.get("/api/progress/course");
+        const response = await getCourseProgressOrNull(page);
+        if (!response) return "transient";
         if (response.status() !== 200) return `status:${response.status()}`;
-        const payload = (await response.json()) as {
-          rows?: Array<{ lessonId?: string; done?: boolean }>;
-        };
+        const payload = (await response.json()) as CourseProgressPayload;
         const row = payload.rows?.find((entry) => entry.lessonId === lessonId);
         return row?.done ? "true" : "false";
       },

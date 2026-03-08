@@ -31,11 +31,27 @@ Use this weekly to confirm commerce/entitlement/reporting consistency for curren
 - Safety posture:
   - No manual data edits performed without a tracked note (who/when/why).
 
+## Automated Session-ID Reconciliation (Required)
+
+Run this after collecting weekly Stripe + entitlement exports:
+
+```bash
+npm run finance:reconcile -- \
+  --stripe <path-to-stripe-export.csv-or-json> \
+  --entitlements <path-to-entitlements-export.csv-or-json> \
+  --write artifacts/finance-reconciliation/latest.json \
+  --max-unexplained 0
+```
+
+- Command compares paid Stripe checkout session IDs to entitlement `stripe_checkout_session_id`.
+- Command fails with non-zero exit code when unexplained mismatch count exceeds threshold.
+- Store the JSON report path in the weekly evidence note.
+
 ## Evidence Log Template
 
-| Date       | Owner | Period checked         | Catalog OK | Entitlement sample OK | Stripe match OK | Mismatch count | Notes/links     |
-| ---------- | ----- | ---------------------- | ---------- | --------------------- | --------------- | -------------- | --------------- |
-| YYYY-MM-DD | name  | YYYY-MM-DD..YYYY-MM-DD | yes/no     | yes/no                | yes/no          | 0              | link to note/PR |
+| Date       | Owner | Period checked         | Catalog OK | Entitlement sample OK | Stripe match OK | Mismatch count | Automation report                         | Notes/links     |
+| ---------- | ----- | ---------------------- | ---------- | --------------------- | --------------- | -------------- | ----------------------------------------- | --------------- |
+| YYYY-MM-DD | name  | YYYY-MM-DD..YYYY-MM-DD | yes/no     | yes/no                | yes/no          | 0              | `artifacts/finance-reconciliation/*.json` | link to note/PR |
 
 ## Escalation Thresholds
 

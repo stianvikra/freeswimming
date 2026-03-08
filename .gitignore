@@ -17,6 +17,7 @@
 /blob-report
 .husky/_
 /artifacts/test-runs
+/artifacts/finance-reconciliation
 
 # next.js
 /.next/
