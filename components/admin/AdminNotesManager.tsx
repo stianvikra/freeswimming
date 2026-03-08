@@ -12,7 +12,14 @@ import {
 } from "@/lib/admin/note-context-catalog";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import type { AdminContentItemRow } from "@/lib/admin/content";
-import type { AdminNoteRow } from "@/lib/admin/notes";
+import {
+  ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
+  ADMIN_INCIDENT_NOTE_CATEGORY_OPTIONS,
+  INCIDENT_NOTE_SEVERITIES,
+  buildIncidentNoteBodyTemplate,
+  type AdminNoteRow,
+  type IncidentNoteSeverity,
+} from "@/lib/admin/notes";
 
 type AdminNotesResponse =
   | {
@@ -107,6 +114,14 @@ type FormState = {
 
 function todayDateInputValue(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function todayDateLabel(): string {
+  return new Intl.DateTimeFormat("nb-NO", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 const INITIAL_FORM: FormState = {
@@ -292,6 +307,14 @@ export default function AdminNotesManager() {
     return `${open} open · ${done} done`;
   }, [items]);
 
+  const suggestedCategoryOptions = useMemo(() => {
+    return [...categoryOptions, ...ADMIN_INCIDENT_NOTE_CATEGORY_OPTIONS]
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .filter((entry, index, all) => all.indexOf(entry) === index)
+      .sort((left, right) => left.localeCompare(right, "nb-NO"));
+  }, [categoryOptions]);
+
   const createLessonOptions = useMemo(() => {
     if (formState.contextType !== "course_lesson") return [];
     const selectedModuleRef = normalizeContextRef(formState.contextModuleRef);
@@ -337,6 +360,20 @@ export default function AdminNotesManager() {
       contextModuleRef: normalizeContextRef(nextRef),
       contextRef: "",
     }));
+  }
+
+  function applyIncidentTemplate(severity: IncidentNoteSeverity) {
+    const today = todayDateLabel();
+    setFormState((prev) => ({
+      ...prev,
+      title: prev.title || `Incident ${severity} - ${today}`,
+      category: ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY[severity],
+      body: buildIncidentNoteBodyTemplate(severity),
+      noteDate: todayDateInputValue(),
+      isDone: false,
+    }));
+    setActionError(null);
+    setActionNotice(`Applied ${severity} incident template.`);
   }
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
@@ -930,6 +967,25 @@ export default function AdminNotesManager() {
         <p className="mt-2 text-sm text-slate-600">
           Store planning notes with category, date, and completion tracking.
         </p>
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p className="text-xs font-semibold text-amber-900">Incident quick templates</p>
+          <p className="mt-1 text-xs text-amber-800">
+            Use these for runbook incidents so severity, owner, and update cadence stay
+            standardized.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {INCIDENT_NOTE_SEVERITIES.map((severity) => (
+              <button
+                key={severity}
+                type="button"
+                onClick={() => applyIncidentTemplate(severity)}
+                className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900 transition hover:bg-amber-100"
+              >
+                Use {severity} template
+              </button>
+            ))}
+          </div>
+        </div>
 
         <form
           className="mt-5 grid gap-4 sm:grid-cols-2"
@@ -959,7 +1015,7 @@ export default function AdminNotesManager() {
               placeholder="Operations"
             />
             <datalist id="admin-note-category-options">
-              {categoryOptions.map((option) => (
+              {suggestedCategoryOptions.map((option) => (
                 <option key={option} value={option} />
               ))}
             </datalist>

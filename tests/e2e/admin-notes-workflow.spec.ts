@@ -63,6 +63,8 @@ test.describe("admin notes workflow", () => {
     const updatedBody = "Updated note body from Playwright.";
 
     const createForm = page.getByTestId("admin-notes-create-form");
+    await createForm.getByRole("button", { name: "Use P1 template" }).click();
+    await expect(createForm.getByLabel("Category")).toHaveValue("Incident P1");
     await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Category").fill("Operations");
     await createForm.getByLabel("Date").fill("2026-02-20");

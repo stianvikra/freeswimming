@@ -202,9 +202,25 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - reduce operator error in weekly reconciliation execution,
   - keep finance mismatch detection deterministic even when export file paths vary run-to-run.
 
-## Current Readiness Snapshot (Post Slice 6)
+## Slice 7 Deliverables (2026-03-08)
 
-- Incident/support operations: `4/5` (runbook executable, blockers tracked).
+- Standardized incident-note taxonomy + template directly in admin notes workflow:
+  - `lib/admin/notes.ts`
+  - `components/admin/AdminNotesManager.tsx`
+- Added deterministic template contract in incident runbook:
+  - `docs/runbooks/core-flow-incident-response.md`
+- Updated readiness execution log and blocker register to resolve ops template blocker:
+  - `docs/checklists/operations-finance-i18n-readiness-log.md`
+- Added unit coverage for incident template generator:
+  - `tests/unit/admin-notes.test.ts`
+
+- Outcome target for Slice 7:
+  - close incident-note taxonomy ambiguity in day-to-day operations,
+  - ensure incident updates stay structurally consistent across operators.
+
+## Current Readiness Snapshot (Post Slice 7)
+
+- Incident/support operations: `5/5` (runbook + in-app template/taxonomy standardized and actionable).
 - Finance/reporting operations: `4/5` (deterministic mismatch + input-dir automation added; export collection remains manual).
 - i18n operational readiness: `4/5` (routing decision locked; fallback-matrix depth remains follow-up).
 
@@ -242,6 +258,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-08 | working tree | delivered Slice 7 incident-note standardization: added severity templates in Admin Notes, codified runbook template/taxonomy contract, resolved blocker OPS-FIN-I18N-003, and raised incident/support readiness to 5/5 | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`
+- `2026-03-08 | 80d0124 (main) | PR #154 merged and closed | shipped Slice 6 finance operator-friction reduction (--input-dir auto-resolution + tests/docs), post-merge sync complete | next: continue remaining P2 blocker closure (ops template + i18n fallback matrix)`
 - `2026-03-08 | working tree | delivered Slice 6 finance operator-friction pass: added --input-dir auto-resolution for latest Stripe/entitlement exports in reconciliation CLI, extended unit coverage, and updated finance/readiness checklists with filename-hint staging flow | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`
 - `2026-03-08 | 3e7a0bc + d77fd1b (feat/ops-finance-i18n-slice-5) | stabilized remaining E2E gate flakes discovered post-Slice-5: hardened transient `/api/progress/course` polling (`course-progress-sync`), replaced brittle admin parity loading assertion, marked home Axe test as slow, and raised mobile screenshot timeout budget; reran npm run verify:pre-pr and npm run gate:pre-merge to PASS; refreshed PR body evidence in PR #153 | next: monitor required CI checks on PR #153 and merge when green`
 - `2026-03-08 | working tree | delivered Slice 5 blocker-closure pass: locked locale-routing strategy (`subpath`) in decision doc, added deterministic finance reconciliation CLI + unit coverage, and updated readiness/checklist artifacts with blocker status changes | next: run first weekly finance reconciliation using real exports and log evidence; close remaining P2 ops/finance follow-ups`

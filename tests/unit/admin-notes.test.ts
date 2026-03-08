@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseCreateAdminNotePayload, parseUpdateAdminNotePayload } from "@/lib/admin/notes";
+import {
+  ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
+  buildIncidentNoteBodyTemplate,
+  parseCreateAdminNotePayload,
+  parseUpdateAdminNotePayload,
+} from "@/lib/admin/notes";
 
 describe("parseCreateAdminNotePayload", () => {
   it("accepts a valid note payload", () => {
@@ -78,5 +83,22 @@ describe("parseUpdateAdminNotePayload", () => {
   it("rejects unknown/empty updates", () => {
     const parsed = parseUpdateAdminNotePayload({});
     expect(parsed.ok).toBe(false);
+  });
+});
+
+describe("buildIncidentNoteBodyTemplate", () => {
+  it("returns deterministic template with required ops fields", () => {
+    const template = buildIncidentNoteBodyTemplate("P1");
+
+    expect(template).toContain("Severity: P1");
+    expect(template).toContain("Surface: / | /course | /my-library | /admin");
+    expect(template).toContain("Mitigation status: investigating | contained | resolved");
+    expect(template).toContain("Next update (UTC):");
+  });
+
+  it("keeps taxonomy mapping aligned with severity", () => {
+    expect(ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY.P0).toBe("Incident P0");
+    expect(ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY.P1).toBe("Incident P1");
+    expect(ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY.P2).toBe("Incident P2");
   });
 });

@@ -16,7 +16,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-06";
+const LAST_UPDATED = "2026-03-08";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -272,6 +272,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
   {
     section: "Notes, Categories, and Commerce",
     actions: [
+      {
+        label: "Use P0 template / Use P1 template / Use P2 template",
+        meaning:
+          "Prefills standardized incident structure (severity, owner, mitigation, update cadence) for operations notes.",
+      },
       {
         label: "Save note / Save changes / Delete",
         meaning: "Creates, updates, or removes task notes with route/content context.",
