@@ -6,6 +6,7 @@ import {
   buildFinanceReconciliationReport,
   parseCliArgs,
   parseCsv,
+  resolveDateRangeWindow,
   resolveInputPaths,
 } from "../../scripts/reconcile-finance-entitlements.mjs";
 
@@ -93,6 +94,56 @@ describe("parseCliArgs", () => {
       maxUnexplainedMismatch: 2,
       help: false,
     });
+  });
+
+  it("parses collect-live flags", () => {
+    const args = parseCliArgs([
+      "--collect-live",
+      "--from",
+      "2026-03-01",
+      "--to",
+      "2026-03-07",
+      "--collect-dir",
+      "artifacts/finance-exports/live",
+      "--max-unexplained",
+      "1",
+    ]);
+
+    expect(args).toMatchObject({
+      collectLive: true,
+      fromDate: "2026-03-01",
+      toDate: "2026-03-07",
+      collectDir: "artifacts/finance-exports/live",
+      maxUnexplainedMismatch: 1,
+      help: false,
+    });
+  });
+});
+
+describe("resolveDateRangeWindow", () => {
+  it("returns inclusive date window for stripe and supabase filters", () => {
+    const window = resolveDateRangeWindow("2026-03-01", "2026-03-07");
+
+    expect(window).toEqual({
+      fromDate: "2026-03-01",
+      toDate: "2026-03-07",
+      fromIso: "2026-03-01T00:00:00.000Z",
+      toIsoExclusive: "2026-03-08T00:00:00.000Z",
+      stripeCreatedGte: 1772323200,
+      stripeCreatedLte: 1772927999,
+    });
+  });
+
+  it("throws when date format is invalid", () => {
+    expect(() => resolveDateRangeWindow("03-01-2026", "2026-03-07")).toThrow(
+      "--from must use YYYY-MM-DD format."
+    );
+  });
+
+  it("throws when --to is before --from", () => {
+    expect(() => resolveDateRangeWindow("2026-03-08", "2026-03-07")).toThrow(
+      "--to must be on or after --from."
+    );
   });
 });
 

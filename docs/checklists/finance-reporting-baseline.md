@@ -33,7 +33,23 @@ Use this weekly to confirm commerce/entitlement/reporting consistency for curren
 
 ## Automated Session-ID Reconciliation (Required)
 
-Stage both weekly exports in one folder using filename hints:
+Preferred mode: collect live Stripe + Supabase rows directly for the date range:
+
+```bash
+npm run finance:reconcile -- \
+  --collect-live \
+  --from <YYYY-MM-DD> \
+  --to <YYYY-MM-DD> \
+  --collect-dir artifacts/finance-exports/live-<period> \
+  --write artifacts/finance-reconciliation/latest.json \
+  --max-unexplained 0
+```
+
+- Required env: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
+- Date window is UTC and inclusive (`--from..--to`).
+- Command auto-collects Stripe checkout sessions + entitlement rows, writes JSON exports, then runs deterministic mismatch checks.
+
+Fallback mode: stage both exports in one folder using filename hints:
 
 - Stripe export filename includes `stripe` (for example: `stripe-checkout-2026-w10.csv`)
 - Entitlement export filename includes `entitlement` or `entitlements` (for example: `entitlements-2026-w10.csv`)
