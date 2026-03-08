@@ -292,6 +292,7 @@ function buildBody({
     "- Key verify summary:",
     ...verifySummaryLines,
     "- CI links: use PR Checks tab (`CI / verify`, `CodeQL`, `PR Size`, `Vercel`).",
+    "- Checkbox evidence policy: mark a checkbox only when proof is present in this PR; otherwise leave it unchecked or document `N/A` with rationale.",
     "",
     "- [ ] `npm run lint:briefs`",
     "- [ ] `npm run lint`",
@@ -318,6 +319,7 @@ function buildBody({
   const checklist = [
     "## Checklist",
     "",
+    "- [ ] Checked boxes in this PR have supporting evidence (scope + gate/CI/QA proof) or explicit `N/A` rationale",
     "- [ ] Acceptance criteria are met",
     "- [ ] Docs updated for behavior/contract changes",
     "- [ ] Changed task briefs include full 10/10 scorecard mapping (all categories marked target/supporting/N/A)",

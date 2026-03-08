@@ -69,6 +69,19 @@ Record actual execution of readiness runbooks/checklists so status is auditable,
     - `docs/runbooks/core-flow-incident-response.md`
   - `OPS-FIN-I18N-003` is resolved.
 
+## 2026-03-08 Slice 8 i18n Fallback Matrix Closure
+
+### Locale Content Fallback Matrix Decision
+
+- Scope:
+  - remove remaining ambiguity for locale-missing content behavior across route/metadata/analytics/support dimensions.
+- Result:
+  - fallback matrix documented and accepted:
+    - `docs/decisions/locale-content-fallback-matrix.md`
+  - i18n readiness checklist now references explicit fallback contract:
+    - `docs/checklists/i18n-operational-readiness.md`
+  - `OPS-FIN-I18N-004` is resolved.
+
 ## Blocker Register
 
 | ID               | Area       | Severity | Status   | Blocker                                                                          | Owner      | Target date | Current mitigation                                                                            | Follow-up link                                                                                |
@@ -76,8 +89,9 @@ Record actual execution of readiness runbooks/checklists so status is auditable,
 | OPS-FIN-I18N-001 | i18n       | P1       | resolved | Locale routing decision (`subpath` vs `domain`) is not yet locked.               | stianvikra | 2026-03-08  | Decision recorded in `docs/decisions/locale-routing-strategy.md`.                             | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
 | OPS-FIN-I18N-002 | finance    | P2       | open     | Stripe-vs-entitlement export collection is still manual before reconciliation.   | stianvikra | 2026-03-21  | Stage weekly exports in one input dir and run `npm run finance:reconcile -- --input-dir ...`. | `docs/checklists/finance-reporting-baseline.md`                                               |
 | OPS-FIN-I18N-003 | operations | P2       | resolved | Incident note template/taxonomy is not yet standardized in admin notes workflow. | stianvikra | 2026-03-08  | Standardized template + taxonomy shipped in admin notes workflow + runbook.                   | `docs/runbooks/core-flow-incident-response.md`                                                |
+| OPS-FIN-I18N-004 | i18n       | P2       | resolved | Locale-specific content fallback matrix is not finalized yet.                    | stianvikra | 2026-03-08  | Matrix documented in `docs/decisions/locale-content-fallback-matrix.md`.                      | `docs/checklists/i18n-operational-readiness.md`                                               |
 
 ## Next Validation Cadence
 
 - Re-run this log after first weekly finance pass using `npm run finance:reconcile`.
-- Re-run after first locale fallback-matrix definition update.
+- Re-run after first localized-content publish pilot that exercises matrix scenarios end-to-end.
