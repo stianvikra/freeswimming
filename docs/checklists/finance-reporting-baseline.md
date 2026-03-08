@@ -33,16 +33,21 @@ Use this weekly to confirm commerce/entitlement/reporting consistency for curren
 
 ## Automated Session-ID Reconciliation (Required)
 
-Run this after collecting weekly Stripe + entitlement exports:
+Stage both weekly exports in one folder using filename hints:
+
+- Stripe export filename includes `stripe` (for example: `stripe-checkout-2026-w10.csv`)
+- Entitlement export filename includes `entitlement` or `entitlements` (for example: `entitlements-2026-w10.csv`)
+
+Run reconciliation from that input folder:
 
 ```bash
 npm run finance:reconcile -- \
-  --stripe <path-to-stripe-export.csv-or-json> \
-  --entitlements <path-to-entitlements-export.csv-or-json> \
+  --input-dir <path-to-weekly-exports-folder> \
   --write artifacts/finance-reconciliation/latest.json \
   --max-unexplained 0
 ```
 
+- Optional override: pass explicit `--stripe` and `--entitlements` file paths instead of `--input-dir`.
 - Command compares paid Stripe checkout session IDs to entitlement `stripe_checkout_session_id`.
 - Command fails with non-zero exit code when unexplained mismatch count exceeds threshold.
 - Store the JSON report path in the weekly evidence note.
