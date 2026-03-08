@@ -67,6 +67,7 @@ Add these checks when incident scope is locale-specific:
 
 - Open one incident note with:
   - timestamp,
+  - taxonomy category (`Incident P0`, `Incident P1`, `Incident P2`, or `Incident Follow-up`),
   - severity,
   - owner,
   - user impact,
@@ -76,6 +77,26 @@ Add these checks when incident scope is locale-specific:
   - root cause,
   - fix PR link,
   - follow-up brief (if structural gap remains).
+
+### Standard Incident Note Template (Admin -> Notes)
+
+Use this exact structure in note body:
+
+```text
+Severity: P0|P1|P2
+Surface: / | /course | /my-library | /admin
+User impact:
+First seen (UTC):
+Owner:
+Mitigation status: investigating | contained | resolved
+Evidence:
+Next update (UTC):
+```
+
+Notes:
+
+- `Incident P0/P1/P2` categories should match selected severity.
+- Use `Incident Follow-up` for post-incident cleanup tasks after mitigation.
 
 ## Verification Gates Before Incident Closure
 

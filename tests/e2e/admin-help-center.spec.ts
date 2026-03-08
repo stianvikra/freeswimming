@@ -63,6 +63,9 @@ test.describe("admin help center", () => {
     await expect(page.getByText("Show QR:")).toBeVisible();
     await expect(page.getByText("More actions:")).toBeVisible();
     await expect(page.getByText("Activate / Disable:")).toBeVisible();
+    await expect(
+      page.getByText("Use P0 template / Use P1 template / Use P2 template:")
+    ).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(
       page.getByText(

@@ -3,6 +3,20 @@ import { parseAdminNoteContextInput, type AdminNoteContext } from "@/lib/admin/n
 
 export type AdminNoteRow = Database["public"]["Tables"]["admin_notes"]["Row"];
 
+export const INCIDENT_NOTE_SEVERITIES = ["P0", "P1", "P2"] as const;
+export type IncidentNoteSeverity = (typeof INCIDENT_NOTE_SEVERITIES)[number];
+
+export const ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY: Record<IncidentNoteSeverity, string> = {
+  P0: "Incident P0",
+  P1: "Incident P1",
+  P2: "Incident P2",
+};
+
+export const ADMIN_INCIDENT_NOTE_CATEGORY_OPTIONS = [
+  ...INCIDENT_NOTE_SEVERITIES.map((severity) => ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY[severity]),
+  "Incident Follow-up",
+] as const;
+
 export type CreateAdminNotePayload = {
   title?: unknown;
   body?: unknown;
@@ -76,6 +90,19 @@ function normalizeDateInput(raw: unknown): string | null {
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+export function buildIncidentNoteBodyTemplate(severity: IncidentNoteSeverity): string {
+  return [
+    `Severity: ${severity}`,
+    "Surface: / | /course | /my-library | /admin",
+    "User impact:",
+    "First seen (UTC):",
+    "Owner:",
+    "Mitigation status: investigating | contained | resolved",
+    "Evidence:",
+    "Next update (UTC):",
+  ].join("\n");
 }
 
 function hasOwn(payload: Record<string, unknown>, key: string): boolean {
