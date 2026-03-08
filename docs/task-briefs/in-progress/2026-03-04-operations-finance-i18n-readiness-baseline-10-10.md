@@ -218,11 +218,27 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - close incident-note taxonomy ambiguity in day-to-day operations,
   - ensure incident updates stay structurally consistent across operators.
 
-## Current Readiness Snapshot (Post Slice 7)
+## Slice 8 Deliverables (2026-03-08)
+
+- Locked i18n fallback behavior with explicit scenario matrix decision:
+  - `docs/decisions/locale-content-fallback-matrix.md`
+- Updated i18n readiness checklist to reference fallback matrix and close open fallback blocker:
+  - `docs/checklists/i18n-operational-readiness.md`
+- Updated operations readiness execution log + blocker register:
+  - `docs/checklists/operations-finance-i18n-readiness-log.md`
+- Added explicit PR checkbox evidence policy so completion marks are proof-bound:
+  - `docs/checklists/release-pr-checklist.md`
+  - `scripts/generate-pr-body.mjs`
+
+- Outcome target for Slice 8:
+  - close i18n fallback ambiguity blocker with deterministic route/content/metadata contract,
+  - enforce evidence-first checkbox discipline in PR execution flow.
+
+## Current Readiness Snapshot (Post Slice 8)
 
 - Incident/support operations: `5/5` (runbook + in-app template/taxonomy standardized and actionable).
 - Finance/reporting operations: `4/5` (deterministic mismatch + input-dir automation added; export collection remains manual).
-- i18n operational readiness: `4/5` (routing decision locked; fallback-matrix depth remains follow-up).
+- i18n operational readiness: `5/5` (routing strategy + fallback matrix both explicit and blocker-tracked).
 
 ## Validation
 
@@ -258,6 +274,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-08 | working tree | started Slice 8 i18n fallback closure: added locale-content fallback matrix decision, updated i18n/readiness checklists to resolve OPS-FIN-I18N-004, and added explicit PR checkbox evidence policy in release checklist + PR body generator | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`
+- `2026-03-08 | 512d580 (main) | PR #155 merged and closed | shipped Slice 7 incident-note standardization and raised incident/support readiness to 5/5; local post-merge recovery complete | next: close remaining i18n fallback-matrix blocker to lift i18n readiness from 4/5 to 5/5`
 - `2026-03-08 | working tree | delivered Slice 7 incident-note standardization: added severity templates in Admin Notes, codified runbook template/taxonomy contract, resolved blocker OPS-FIN-I18N-003, and raised incident/support readiness to 5/5 | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`
 - `2026-03-08 | 80d0124 (main) | PR #154 merged and closed | shipped Slice 6 finance operator-friction reduction (--input-dir auto-resolution + tests/docs), post-merge sync complete | next: continue remaining P2 blocker closure (ops template + i18n fallback matrix)`
 - `2026-03-08 | working tree | delivered Slice 6 finance operator-friction pass: added --input-dir auto-resolution for latest Stripe/entitlement exports in reconciliation CLI, extended unit coverage, and updated finance/readiness checklists with filename-hint staging flow | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`

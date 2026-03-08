@@ -11,6 +11,8 @@ Use this before enabling additional locales to confirm route/content/admin opera
 
 - Locale routing strategy is locked to `subpath` and documented in:
   - `docs/decisions/locale-routing-strategy.md`
+- Locale content fallback matrix is locked and documented in:
+  - `docs/decisions/locale-content-fallback-matrix.md`
 - Default locale remains canonical at `/`.
 - Non-default locales use `/<locale>/...`.
 
@@ -22,7 +24,7 @@ Use this before enabling additional locales to confirm route/content/admin opera
 - Content model:
   - required translatable fields are identified by content type.
   - non-translatable keys/identifiers remain stable across locales.
-  - fallback behavior is defined when locale content is missing.
+  - fallback behavior is defined when locale content is missing (`docs/decisions/locale-content-fallback-matrix.md`).
 - Admin workflow:
   - clear rule exists for draft/review/published per locale.
   - owner assignment and revision history remain available per localized record.
@@ -39,9 +41,9 @@ Use this before enabling additional locales to confirm route/content/admin opera
 
 ## Blocker Log (Required)
 
-| Blocker                                                       | Severity (`P0/P1/P2`) | Owner      | Target date | Mitigation                                                           | Linked brief/PR                                                                               |
-| ------------------------------------------------------------- | --------------------- | ---------- | ----------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Locale-specific content fallback matrix is not finalized yet. | P2                    | stianvikra | 2026-03-21  | Keep default-locale fallback deterministic until matrix is explicit. | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
+| ID               | Blocker                                                       | Severity (`P0/P1/P2`) | Status   | Owner      | Target date | Mitigation                                                               | Linked brief/PR                                                                               |
+| ---------------- | ------------------------------------------------------------- | --------------------- | -------- | ---------- | ----------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| OPS-FIN-I18N-004 | Locale-specific content fallback matrix is not finalized yet. | P2                    | resolved | stianvikra | 2026-03-08  | Matrix documented in `docs/decisions/locale-content-fallback-matrix.md`. | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
 
 ## Exit Criteria For "Ready To Start Locale Work"
 

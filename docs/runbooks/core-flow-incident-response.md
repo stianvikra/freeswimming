@@ -48,7 +48,8 @@ Provide a deterministic first-response flow for production incidents on core rou
 Add these checks when incident scope is locale-specific:
 
 1. Confirm locale route resolution for affected URL (`default` vs target locale path).
-2. Confirm fallback behavior when localized content is missing (no blank route or `500`).
+2. Confirm fallback behavior when localized content is missing (no blank route or `500`) against:
+   - `docs/decisions/locale-content-fallback-matrix.md`
 3. Confirm canonical/metadata response is consistent with locale state.
 4. Confirm analytics/event payload still carries stable non-locale identifiers.
 

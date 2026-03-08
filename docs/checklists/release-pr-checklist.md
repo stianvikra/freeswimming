@@ -12,6 +12,9 @@ Use this for PRs targeting `main`.
 ## Before Merge
 
 - PR description includes summary, risk, and test evidence.
+- PR checkbox marks are evidence-bound:
+  - check only items with proof in this PR (scope + command/test output + CI/QA evidence),
+  - if out of scope, leave unchecked or mark `N/A` with rationale.
 - Required checks are green.
 - `npm run verify:pre-merge` has been run on latest local branch state.
 - Recommended automation: `npm run gate:pre-merge` (runs pre-merge verify and refreshes PR body evidence on current HEAD SHA).
