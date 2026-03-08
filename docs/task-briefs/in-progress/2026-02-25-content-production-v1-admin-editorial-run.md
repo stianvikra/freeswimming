@@ -170,7 +170,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 | SEO and AI discoverability                                | `3/5`       | planned follow-up                   | `docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md`         |
 | QR redirect and campaign operations                       | `4/5`       | delivered follow-up                 | `docs/task-briefs/done/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`         |
 | Performance stretch + security hardening depth            | `3/5`       | delivered baseline; stretch pending | `docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md` |
-| Incident/support + finance/reporting + i18n ops readiness | `3/5`       | in progress follow-up (score `<4`)  | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`  |
+| Incident/support + finance/reporting + i18n ops readiness | `5/5`       | delivered follow-up                 | `docs/task-briefs/done/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`         |
 
 - Brief creation policy applied: new brief created only for categories with `target-score <4` that were not already covered by an active planned brief.
 
@@ -182,6 +182,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-08 | working tree | short revision-1 admin session executed (desktop Playwright: admin-content-api-guards + admin-foundation); friction batch logged: P0 none, P1 none, P2 automation-only: authenticated write-path checks were skipped in this local session because dev bypass/allowlisted admin was not available (`allowlisted dev account can complete core content workflow` + authenticated malformed-payload guard test skipped) | next: owner continues real content entry and logs next live editorial friction batch; if P0/P1 appears, open targeted fix slice with verify:pre-pr -> PR -> gate:pre-merge`
 - `2026-03-08 | working tree | non-content friction-reduction slice completed before tonight's content session: resolved P2 editorial friction where Admin Content view reset to default after refresh by persisting `Course Workspace`/`All Content`preference; Help/Guide update`N/A` (no workflow labels/actions/recovery text changed); no new live P0/P1 friction captured because owner paused content production tonight | next: resume revision-1 content-production run and log the next real friction batch (P0/P1/P2)`
 - `2026-03-08 | working tree | no revision-1 content production session executed today by owner decision; no new live P0/P1/P2 editorial friction batch captured in this session | next: resume content-production run and log the next real friction batch (P0/P1/P2) in this brief`
 - `2026-03-07 | 8a44068 (main) | perf/security hardening closeout synced | PR #150 merged and performance+security hardening brief moved to done (`docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`) with baseline gates shipped and stretch ratchet tracked as deferred policy | next: continue revision-1 content production and log next real editorial friction batch (P0/P1/P2)`
