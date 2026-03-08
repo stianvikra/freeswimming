@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -36,6 +36,9 @@ const ENTITLEMENT_SESSION_ID_KEYS = [
   "id",
 ];
 const JSON_ARRAY_KEYS = ["data", "rows", "sessions", "entitlements", "results", "items"];
+const SUPPORTED_INPUT_EXTENSIONS = new Set([".csv", ".json"]);
+const STRIPE_FILENAME_HINTS = ["stripe", "checkout", "session"];
+const ENTITLEMENT_FILENAME_HINTS = ["entitlement", "entitlements"];
 
 function normalizeString(value) {
   if (typeof value !== "string") return "";
@@ -299,13 +302,67 @@ async function writeReport(outputPath, report) {
   console.log(`[finance-reconcile] Wrote JSON report: ${fullPath}`);
 }
 
+function filenameHasAnyHint(filename, hints) {
+  const lowered = filename.toLowerCase();
+  return hints.some((hint) => lowered.includes(hint));
+}
+
+async function findLatestInputFile(inputDir, hints, label) {
+  const entries = await readdir(inputDir, { withFileTypes: true });
+  const candidates = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const extension = path.extname(entry.name).toLowerCase();
+    if (!SUPPORTED_INPUT_EXTENSIONS.has(extension)) continue;
+    if (!filenameHasAnyHint(entry.name, hints)) continue;
+
+    const fullPath = path.join(inputDir, entry.name);
+    const fileStat = await stat(fullPath);
+    candidates.push({ fullPath, mtimeMs: fileStat.mtimeMs });
+  }
+
+  if (candidates.length === 0) {
+    throw new Error(
+      `Could not find ${label} export file in --input-dir (${inputDir}). Expected filename hint(s): ${hints.join(", ")}`
+    );
+  }
+
+  candidates.sort((left, right) => right.mtimeMs - left.mtimeMs);
+  return candidates[0].fullPath;
+}
+
+export async function resolveInputPaths(args) {
+  let stripePath = args.stripePath;
+  let entitlementsPath = args.entitlementsPath;
+
+  if (args.inputDir) {
+    if (!stripePath) {
+      stripePath = await findLatestInputFile(args.inputDir, STRIPE_FILENAME_HINTS, "stripe");
+    }
+    if (!entitlementsPath) {
+      entitlementsPath = await findLatestInputFile(
+        args.inputDir,
+        ENTITLEMENT_FILENAME_HINTS,
+        "entitlements"
+      );
+    }
+  }
+
+  return {
+    stripePath,
+    entitlementsPath,
+  };
+}
+
 function printHelp() {
   console.log(`Usage:
-  npm run finance:reconcile -- --stripe <stripe.csv|stripe.json> --entitlements <entitlements.csv|entitlements.json> [--write <report.json>] [--max-unexplained <n>]
+  npm run finance:reconcile -- (--input-dir <dir> | --stripe <stripe.csv|stripe.json> --entitlements <entitlements.csv|entitlements.json>) [--write <report.json>] [--max-unexplained <n>]
 
 Flags:
-  --stripe            Stripe export file path (required)
-  --entitlements      Entitlements export file path (required)
+  --input-dir         Optional directory with exports; auto-picks latest matching files
+  --stripe            Stripe export file path (required unless resolved via --input-dir)
+  --entitlements      Entitlements export file path (required unless resolved via --input-dir)
   --write             Optional output JSON report path
   --max-unexplained   Allowed mismatch count before failing (default: 0)
   --help              Show this help text`);
@@ -315,6 +372,7 @@ export function parseCliArgs(argv) {
   const args = {
     stripePath: "",
     entitlementsPath: "",
+    inputDir: "",
     outputPath: "",
     maxUnexplainedMismatch: 0,
     help: false,
@@ -328,6 +386,11 @@ export function parseCliArgs(argv) {
     }
     if (token === "--stripe") {
       args.stripePath = argv[i + 1] ?? "";
+      i += 1;
+      continue;
+    }
+    if (token === "--input-dir") {
+      args.inputDir = argv[i + 1] ?? "";
       i += 1;
       continue;
     }
@@ -362,16 +425,21 @@ export async function runCli(argv = process.argv.slice(2)) {
     return 0;
   }
 
-  if (!args.stripePath || !args.entitlementsPath) {
-    throw new Error("Both --stripe and --entitlements are required.");
+  const resolvedInputs = await resolveInputPaths(args);
+
+  if (!resolvedInputs.stripePath || !resolvedInputs.entitlementsPath) {
+    throw new Error("Provide either --input-dir, or both --stripe and --entitlements.");
   }
   if (!Number.isFinite(args.maxUnexplainedMismatch) || args.maxUnexplainedMismatch < 0) {
     throw new Error("--max-unexplained must be a non-negative number.");
   }
 
+  console.log(`[finance-reconcile] Using stripe file: ${resolvedInputs.stripePath}`);
+  console.log(`[finance-reconcile] Using entitlement file: ${resolvedInputs.entitlementsPath}`);
+
   const [stripeRows, entitlementRows] = await Promise.all([
-    loadRowsFromFile(args.stripePath),
-    loadRowsFromFile(args.entitlementsPath),
+    loadRowsFromFile(resolvedInputs.stripePath),
+    loadRowsFromFile(resolvedInputs.entitlementsPath),
   ]);
 
   const report = buildFinanceReconciliationReport(stripeRows, entitlementRows, {

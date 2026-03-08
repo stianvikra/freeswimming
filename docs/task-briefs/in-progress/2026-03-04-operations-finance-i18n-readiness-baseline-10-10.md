@@ -187,10 +187,25 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - close locale-routing ambiguity blocker,
   - reduce reconciliation mismatch risk through deterministic session-ID checks.
 
-## Current Readiness Snapshot (Post Slice 5)
+## Slice 6 Deliverables (2026-03-08)
+
+- Reduced manual weekly finance reconciliation friction by adding deterministic input-dir mode:
+  - `scripts/reconcile-finance-entitlements.mjs`
+  - supports `--input-dir` to auto-pick latest matching Stripe + entitlement export files.
+- Added coverage for input-dir resolution behavior:
+  - `tests/unit/finance-reconciliation.test.ts`
+- Updated finance/readiness documentation to enforce filename hints + input-dir flow:
+  - `docs/checklists/finance-reporting-baseline.md`
+  - `docs/checklists/operations-finance-i18n-readiness-log.md`
+
+- Outcome target for Slice 6:
+  - reduce operator error in weekly reconciliation execution,
+  - keep finance mismatch detection deterministic even when export file paths vary run-to-run.
+
+## Current Readiness Snapshot (Post Slice 6)
 
 - Incident/support operations: `4/5` (runbook executable, blockers tracked).
-- Finance/reporting operations: `4/5` (deterministic mismatch check added; export-input collection remains manual).
+- Finance/reporting operations: `4/5` (deterministic mismatch + input-dir automation added; export collection remains manual).
 - i18n operational readiness: `4/5` (routing decision locked; fallback-matrix depth remains follow-up).
 
 ## Validation
@@ -227,6 +242,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-08 | working tree | delivered Slice 6 finance operator-friction pass: added --input-dir auto-resolution for latest Stripe/entitlement exports in reconciliation CLI, extended unit coverage, and updated finance/readiness checklists with filename-hint staging flow | next: run npm run verify:pre-pr, open PR in Safari, then run npm run gate:pre-merge before merge recommendation`
 - `2026-03-08 | 3e7a0bc + d77fd1b (feat/ops-finance-i18n-slice-5) | stabilized remaining E2E gate flakes discovered post-Slice-5: hardened transient `/api/progress/course` polling (`course-progress-sync`), replaced brittle admin parity loading assertion, marked home Axe test as slow, and raised mobile screenshot timeout budget; reran npm run verify:pre-pr and npm run gate:pre-merge to PASS; refreshed PR body evidence in PR #153 | next: monitor required CI checks on PR #153 and merge when green`
 - `2026-03-08 | working tree | delivered Slice 5 blocker-closure pass: locked locale-routing strategy (`subpath`) in decision doc, added deterministic finance reconciliation CLI + unit coverage, and updated readiness/checklist artifacts with blocker status changes | next: run first weekly finance reconciliation using real exports and log evidence; close remaining P2 ops/finance follow-ups`
 - `2026-03-07 | working tree | delivered Slice 4 pre-merge consistency automation: SHA-bound pre-merge marker + PR body generation + lint enforcement + one-command gate + docs updates | next: run npm run gate:pre-merge before merge recommendation on this PR, then continue locale-routing/finance blocker closure`
