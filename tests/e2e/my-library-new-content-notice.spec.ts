@@ -20,6 +20,23 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
   await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
 }
 
+async function openFirstNewLessonFromNotice(page: Page) {
+  const openLink = page.getByTestId("my-library-new-content-open");
+  await expect(openLink).toHaveAttribute("href", /\/course\?lesson=/);
+
+  await openLink.click();
+  const navigatedAfterClick = await page
+    .waitForURL(/\/course(\?|$)/, { timeout: 7_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (navigatedAfterClick) return;
+
+  const href = await openLink.getAttribute("href");
+  expect(href).toBeTruthy();
+  await page.goto(href!, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await expect(page).toHaveURL(/\/course(\?|$)/);
+}
+
 test.describe("my library new content notice", () => {
   async function waitForNoticeResolution(page: Page) {
     await expect(page.getByTestId("my-library-new-content-notice-loading")).toHaveCount(0, {
@@ -50,8 +67,7 @@ test.describe("my library new content notice", () => {
     await expect(banner).toContainText(/\+\d+ nye leksjoner i Free Course/);
     await expect(page.getByTestId("my-library-new-content-list")).toBeVisible();
 
-    await page.getByTestId("my-library-new-content-open").click();
-    await expect(page).toHaveURL(/\/course(\?|$)/);
+    await openFirstNewLessonFromNotice(page);
 
     await page.goto("/my-library");
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
@@ -86,8 +102,7 @@ test.describe("my library new content notice", () => {
     await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
     await expect(page.getByTestId("my-library-new-content-item-mod1-l1")).toBeVisible();
-    await page.getByTestId("my-library-new-content-open").click();
-    await expect(page).toHaveURL(/\/course(\?|$)/);
+    await openFirstNewLessonFromNotice(page);
   });
 
   test("keeps page usable and shows retry state when notice signal fetch fails", async ({

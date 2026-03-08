@@ -32,15 +32,38 @@ Record actual execution of readiness runbooks/checklists so status is auditable,
   - checklist captures route/content/admin/SEO/analytics reliability dimensions.
   - blocker log format is ready for owner/date tracking.
 
+## 2026-03-08 Slice 5 Blocker-Closure Pass
+
+### i18n Locale Routing Decision
+
+- Scope:
+  - lock route strategy and remove ambiguity from i18n readiness baseline.
+- Result:
+  - locale routing decision documented as `subpath` strategy:
+    - `docs/decisions/locale-routing-strategy.md`
+  - `OPS-FIN-I18N-001` is resolved.
+
+### Finance Reconciliation Maturity
+
+- Scope:
+  - reduce manual reconciliation ambiguity using deterministic mismatch detection.
+- Result:
+  - added reconciliation CLI:
+    - `scripts/reconcile-finance-entitlements.mjs`
+    - `npm run finance:reconcile`
+  - command now fails automatically on unexplained session-ID mismatch above threshold.
+  - finance checklist updated with required automation command + evidence output path.
+  - `OPS-FIN-I18N-002` is downgraded from `P1` to `P2` (input-export collection is still manual).
+
 ## Blocker Register
 
-| ID               | Area       | Severity | Blocker                                                                          | Owner      | Target date | Current mitigation                                                         | Follow-up link                                                                                |
-| ---------------- | ---------- | -------- | -------------------------------------------------------------------------------- | ---------- | ----------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| OPS-FIN-I18N-001 | i18n       | P1       | Locale routing decision (`subpath` vs `domain`) is not yet locked.               | stianvikra | 2026-03-17  | Keep single-language runtime as canonical until decision is recorded.      | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
-| OPS-FIN-I18N-002 | finance    | P1       | Weekly reconciliation is manual and depends on operator discipline.              | stianvikra | 2026-03-21  | Run manual weekly checklist and log evidence each run.                     | `docs/checklists/finance-reporting-baseline.md`                                               |
-| OPS-FIN-I18N-003 | operations | P2       | Incident note template/taxonomy is not yet standardized in admin notes workflow. | stianvikra | 2026-03-21  | Use current incident log format from runbook until template is formalized. | `docs/runbooks/core-flow-incident-response.md`                                                |
+| ID               | Area       | Severity | Status   | Blocker                                                                          | Owner      | Target date | Current mitigation                                                                            | Follow-up link                                                                                |
+| ---------------- | ---------- | -------- | -------- | -------------------------------------------------------------------------------- | ---------- | ----------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| OPS-FIN-I18N-001 | i18n       | P1       | resolved | Locale routing decision (`subpath` vs `domain`) is not yet locked.               | stianvikra | 2026-03-08  | Decision recorded in `docs/decisions/locale-routing-strategy.md`.                             | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
+| OPS-FIN-I18N-002 | finance    | P2       | open     | Stripe-vs-entitlement export collection is still manual before reconciliation.   | stianvikra | 2026-03-21  | Use `npm run finance:reconcile` for deterministic mismatch detection after exports are taken. | `docs/checklists/finance-reporting-baseline.md`                                               |
+| OPS-FIN-I18N-003 | operations | P2       | open     | Incident note template/taxonomy is not yet standardized in admin notes workflow. | stianvikra | 2026-03-21  | Use current incident log format from runbook until template is formalized.                    | `docs/runbooks/core-flow-incident-response.md`                                                |
 
 ## Next Validation Cadence
 
-- Re-run this log after first weekly finance pass.
-- Re-run after first locale-strategy decision and update blocker status.
+- Re-run this log after first weekly finance pass using `npm run finance:reconcile`.
+- Re-run after first locale fallback-matrix definition update.

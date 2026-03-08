@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-04`
-- `updated`: `2026-03-07`
+- `updated`: `2026-03-08`
 
 ## Goal
 
@@ -169,11 +169,29 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - eliminate ambiguity about pre-merge execution freshness,
   - make assistant/operator behavior deterministic and auditable per-commit.
 
-## Current Readiness Snapshot (Post Slice 3)
+## Slice 5 Deliverables (2026-03-08)
+
+- Locked locale-routing decision and documented rationale/guardrails:
+  - `docs/decisions/locale-routing-strategy.md`
+  - strategy: `subpath` locale routing with default locale canonical at `/`
+- Upgraded finance reconciliation from checklist-only to deterministic command workflow:
+  - `scripts/reconcile-finance-entitlements.mjs`
+  - `npm run finance:reconcile`
+  - `tests/unit/finance-reconciliation.test.ts`
+- Updated readiness and checklist artifacts to reflect blocker transitions:
+  - `docs/checklists/i18n-operational-readiness.md`
+  - `docs/checklists/finance-reporting-baseline.md`
+  - `docs/checklists/operations-finance-i18n-readiness-log.md`
+
+- Outcome target for Slice 5:
+  - close locale-routing ambiguity blocker,
+  - reduce reconciliation mismatch risk through deterministic session-ID checks.
+
+## Current Readiness Snapshot (Post Slice 5)
 
 - Incident/support operations: `4/5` (runbook executable, blockers tracked).
-- Finance/reporting operations: `4/5` (manual baseline is clear; automation gap logged).
-- i18n operational readiness: `3/5` (checklist ready; routing decision blocker still open).
+- Finance/reporting operations: `4/5` (deterministic mismatch check added; export-input collection remains manual).
+- i18n operational readiness: `4/5` (routing decision locked; fallback-matrix depth remains follow-up).
 
 ## Validation
 
@@ -209,6 +227,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-08 | working tree | delivered Slice 5 blocker-closure pass: locked locale-routing strategy (`subpath`) in decision doc, added deterministic finance reconciliation CLI + unit coverage, and updated readiness/checklist artifacts with blocker status changes | next: run first weekly finance reconciliation using real exports and log evidence; close remaining P2 ops/finance follow-ups`
 - `2026-03-07 | working tree | delivered Slice 4 pre-merge consistency automation: SHA-bound pre-merge marker + PR body generation + lint enforcement + one-command gate + docs updates | next: run npm run gate:pre-merge before merge recommendation on this PR, then continue locale-routing/finance blocker closure`
 - `2026-03-07 | 141e58f (main) | Slice 3 merged and closed in PR #145 | shipped PR-governance automation (auto PR-body generation + required-section CI lint + Safari PR body refresh flow); local post-merge sync completed | next: continue blocker closure for locale routing decision + finance reconciliation process maturity`
 - `2026-03-04 | planned | brief created from core-flow gap scan to cover non-blocking readiness categories (incident/finance/i18n) | next: prioritize slice and move to in-progress when implementation starts`
