@@ -22,6 +22,7 @@
     "test:e2e:site-lock": "SITE_LOCK_ENABLED=1 PW_PORT=3101 NEXT_DIST_DIR=.next-playwright-lock playwright test tests/e2e/private-access-gate.spec.ts --project=mobile-chromium --project=desktop-chromium",
     "test:e2e:private-gate": "npm run test:e2e:site-lock",
     "test:e2e:admin": "playwright test tests/e2e/admin-foundation.spec.ts tests/e2e/admin-content-api-guards.spec.ts tests/e2e/admin-content-parity.spec.ts tests/e2e/admin-notes-workflow.spec.ts --project=desktop-chromium",
+    "test:e2e:admin:short": "bash ./scripts/run-admin-short-session.sh",
     "test:e2e:security": "playwright test tests/e2e/contact-api-security.spec.ts tests/e2e/private-access-gate.spec.ts tests/e2e/admin-foundation.spec.ts tests/e2e/admin-content-parity.spec.ts tests/e2e/api-security-negative-paths.spec.ts --project=desktop-chromium",
     "test:perf:budgets": "node ./scripts/run-perf-budget-check.mjs",
     "test:e2e:mobile": "playwright test --project=mobile-chromium --project=mobile-iphone-13-pro-max",
