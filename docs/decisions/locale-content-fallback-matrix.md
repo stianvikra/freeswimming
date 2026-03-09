@@ -5,7 +5,7 @@
 - Date: `2026-03-08`
 - Status: `accepted`
 - Scope: deterministic fallback behavior for locale-specific content reads
-- Related brief: `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`
+- Related brief: `docs/task-briefs/done/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md`
 
 ## Context
 

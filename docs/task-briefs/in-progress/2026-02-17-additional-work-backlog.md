@@ -175,7 +175,7 @@ Capture good ideas that should be implemented later without blocking the active 
   - smoke checks pass for both actions in preview,
   - negative-path tests cover unauthorized/invalid action inputs.
 - Planned follow-up brief:
-  - `docs/task-briefs/planned/2026-02-22-site-lock-ops-one-click-control.md` (to be created when work starts)
+  - `TBD (brief not created yet; create when work starts)`
 
 ## AW-009: Admin email templates and message governance
 
@@ -335,6 +335,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 - `2026-03-09 | working tree | backlog status-sync slice: marked AW-007 as done with merged evidence, updated AW-013 active brief path, and refreshed execution order for currently open work | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-09 | working tree | closeout sync slice: marked AW-004 as done and linked both merged Help/Guide briefs (initial delivery + pedagogy/governance hardening) | next: run verify:pre-pr, open PR, run gate:pre-merge`
+- `2026-03-09 | working tree | docs link-parity maintenance: replaced missing planned path for AW-008 follow-up brief with explicit TBD note until the brief is created | next: run verify:pre-pr and open PR`
 
 ## Automation Execution Contract
 
