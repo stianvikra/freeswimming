@@ -6,11 +6,17 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-02-28`
+- `updated`: `2026-03-09`
 
 ## Goal
 
 Enable users to convert workouts into clear weekly programs with deterministic completion tracking and review.
+
+## Why This Brief Exists
+
+- Planned workout features need a scorecard-complete execution brief before implementation starts.
+- Calendar scheduling and completion logging are stateful flows and require explicit data-boundary decisions up front.
+- This brief sets measurable 10/10 thresholds so later slices can ship with predictable quality gates.
 
 ## Scope
 
@@ -32,23 +38,66 @@ Enable users to convert workouts into clear weekly programs with deterministic c
 - External activity imports.
 - Garmin partner sync.
 
+## Data Placement And Sync Contract (Required)
+
+- Server-canonical:
+  - program weeks, workout-to-day assignments, completion records, completion notes, completion source metadata.
+- Local-only:
+  - unsaved builder draft edits before explicit save,
+  - temporary UI filters/sort state in builder views.
+- Sync behavior:
+  - optimistic UI allowed only for non-destructive edits,
+  - server response remains source of truth for persisted schedule/completion state,
+  - stale writes must return deterministic conflict guidance and refresh canonical state.
+- Invalidation:
+  - any assignment/completion mutation invalidates weekly summary, adherence metrics, and day cells for affected week.
+
 ## Platform 10/10 Scorecard Mapping
 
-| Category                                      | Class    | Target threshold                                             | Evidence            |
-| --------------------------------------------- | -------- | ------------------------------------------------------------ | ------------------- |
-| UX flow clarity                               | `target` | Users can schedule 1-week plan in <= 3 minutes.              | E2E + manual timing |
-| Business logic correctness and data integrity | `target` | Completion and schedule state remain consistent under edits. | unit/integration    |
-| Analytics and KPI observability               | `target` | Completion and adherence events emitted with safe payloads.  | event tests         |
-| Reliability and failure handling              | `target` | No orphan/duplicate completion records on retries.           | integration tests   |
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                       | Evidence                                     |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| Product goals and IA                          | `target`     | Program builder IA supports create/edit/complete/review in one continuous weekly flow.                 | UX spec + e2e journey assertions             |
+| UX flow clarity                               | `target`     | Users can schedule one week and mark one workout complete in <=3 minutes without documentation.        | timed manual QA + e2e                        |
+| Visual design quality                         | `supporting` | N/A                                                                                                    | N/A                                          |
+| Business logic correctness and data integrity | `target`     | No duplicate or orphan completion records after retries/rapid edits; state transitions deterministic.  | unit/integration invariants                  |
+| Admin editor ergonomics                       | `supporting` | N/A                                                                                                    | N/A                                          |
+| Accessibility (a11y)                          | `target`     | Keyboard-only users can assign/edit/complete workouts with no critical a11y violations on core views.  | e2e a11y + manual keyboard QA                |
+| Performance (CWV + payloads)                  | `target`     | Changed builder routes stay within route budgets and avoid >10% JS payload regression.                 | perf budget checks + bundle diff             |
+| Data placement and sync boundaries            | `target`     | Local-vs-server ownership and conflict policy are explicitly documented and reflected in tests.        | brief contract + integration tests           |
+| Caching and invalidation strategy             | `target`     | Week summary and day-cell views refresh deterministically after any mutation with no stale totals.     | integration tests + cache notes              |
+| Reliability and failure handling              | `target`     | Failure states provide retry/recover paths; no dead-end states for save/complete actions.              | e2e failure-path coverage                    |
+| Security and authz                            | `target`     | Unauthorized schedule/completion mutations fail closed (`401/403`) and never mutate state.             | negative-path API tests                      |
+| Privacy and compliance                        | `supporting` | N/A                                                                                                    | N/A                                          |
+| Content governance                            | `supporting` | N/A                                                                                                    | N/A                                          |
+| Admin workflow and editability                | `supporting` | N/A                                                                                                    | N/A                                          |
+| SEO and crawlability                          | `supporting` | N/A                                                                                                    | N/A                                          |
+| AI discoverability                            | `supporting` | N/A                                                                                                    | N/A                                          |
+| Analytics and KPI observability               | `target`     | Schedule and completion events emit with stable taxonomy and safe payloads for adherence KPI tracking. | analytics event tests + event catalog        |
+| Commerce and revenue ops                      | `supporting` | N/A                                                                                                    | N/A                                          |
+| Incident response and support operations      | `supporting` | N/A                                                                                                    | N/A                                          |
+| Finance and reporting operations              | `supporting` | N/A                                                                                                    | N/A                                          |
+| i18n operational readiness                    | `supporting` | N/A                                                                                                    | N/A                                          |
+| Stack-fit and dependency discipline           | `target`     | Implementation uses existing Next.js/TypeScript/test stack without unnecessary new dependencies.       | package diff + architecture review           |
+| Testing and QA automation                     | `target`     | Critical schedule/complete/edit paths and negative paths are covered in unit+integration+e2e gates.    | test matrix + verify outputs                 |
+| Scalability and cost efficiency               | `supporting` | N/A                                                                                                    | N/A                                          |
+| DevOps and rollback readiness                 | `target`     | Feature rollout includes rollback path and deterministic data repair guidance for partial failures.    | runbook + release notes + rollback checklist |
 
 ## Acceptance Criteria
 
 - Users can build and edit weekly programs quickly.
 - Completion status is reliable and audit-friendly.
 - Program metrics align with canonical workout data.
+- Data-boundary and conflict rules are implemented exactly as specified in this brief.
 
 ## Validation
 
 - targeted unit/integration tests for schedule + completion state
 - e2e for schedule/edit/complete flow
+- `npm run lint:briefs`
 - `npm run verify:pre-pr`
+
+## Checkpoint Log
+
+- `2026-03-09 | working tree | upgraded planned brief to canonical 10/10 scorecard mapping with explicit state-boundary contract and measurable target thresholds | next: use this brief as source when implementation branch starts`
