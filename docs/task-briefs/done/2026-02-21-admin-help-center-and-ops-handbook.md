@@ -71,18 +71,37 @@ Give admins a 10/10 non-technical Help/Guide experience so they understand how f
 - Help content must not expose secrets or sensitive internal endpoints.
 - Admin-only operational details remain inside admin role-gated surfaces.
 
-## Scorecard Mapping (Target/Supporting/N-A)
+## Platform 10/10 Scorecard Mapping (Required)
 
-| Category                       | Mapping      | Target Threshold                                                                      |
-| ------------------------------ | ------------ | ------------------------------------------------------------------------------------- |
-| UX flow and action clarity     | `target`     | Help/Guide discoverable in one click; users complete key tasks from guide steps only. |
-| UI/design consistency          | `target`     | Uses existing admin visual language and readable structure across desktop/mobile.     |
-| Admin workflow and editability | `target`     | Guide covers content, commerce, operations, notes, categories, and rollback path.     |
-| Security/privacy               | `target`     | No secrets/internal sensitive values shown; admin-only surface remains role-gated.    |
-| Testing/QA automation          | `target`     | Add/extend admin e2e for help-tab discovery and core section visibility.              |
-| Performance/payload            | `supporting` | Static content only, no added heavy dependencies.                                     |
-| Reliability/error handling     | `supporting` | Sectioned content remains readable and deterministic even if other admin APIs fail.   |
-| SEO/AI discoverability         | `N/A`        | Internal admin-only surface (public SEO/AI scoring handled in SEO brief).             |
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                   | Evidence                                              |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Product goals and IA                          | `target`     | Help/Guide is discoverable in one click and presents a clear operator onboarding path.             | admin nav + help content in PR #90                    |
+| UX flow clarity                               | `target`     | Core tasks can be executed from guide steps without technical interpretation.                      | help section structure + admin help e2e               |
+| Visual design quality                         | `target`     | Help content remains scannable with clear section hierarchy and no dense text walls.               | card/section layout + manual QA                       |
+| Business logic correctness and data integrity | `supporting` | N/A (docs/help surface only; no new data mutation logic in this brief).                            | scope review                                          |
+| Admin editor ergonomics                       | `target`     | Guide maps content/operations actions to expected outcomes with explicit button glossary.          | help button glossary + workflow map                   |
+| Accessibility (a11y)                          | `target`     | Help navigation and headings preserve accessible semantics for admin users.                        | admin help e2e assertions + existing admin semantics  |
+| Performance (CWV + payloads)                  | `supporting` | Static help content adds no heavy runtime dependencies.                                            | dependency diff (docs/UI only)                        |
+| Data placement and sync boundaries            | `supporting` | N/A (no persistence ownership or sync model changes in this brief).                                | scope review                                          |
+| Caching and invalidation strategy             | `supporting` | N/A (no cache policy changes; standard deploy refresh applies).                                    | no runtime caching contract changes                   |
+| Reliability and failure handling              | `supporting` | Help includes deterministic troubleshooting and recovery guidance for common admin issues.         | help troubleshooting sections                         |
+| Security and authz                            | `target`     | Help remains admin-only and excludes secrets/internal sensitive operational values.                | role-gated admin route + content review               |
+| Privacy and compliance                        | `supporting` | N/A (no new personal-data processing behavior introduced).                                         | scope review                                          |
+| Content governance                            | `target`     | Guide-update requirement is documented for future admin/app workflow changes.                      | governance rule text + successor hardening in PR #139 |
+| Admin workflow and editability                | `target`     | Guide covers content, commerce, operations, notes, categories, and rollback workflows.             | section coverage in help handbook                     |
+| SEO and crawlability                          | `N/A`        | Admin-only authenticated surface; public crawlability is out of scope for this brief.              | scope rationale                                       |
+| AI discoverability                            | `N/A`        | Admin-only authenticated surface; public AI discoverability is out of scope for this brief.        | scope rationale                                       |
+| Analytics and KPI observability               | `supporting` | N/A (no new analytics/KPI event instrumentation in this brief).                                    | scope review                                          |
+| Commerce and revenue ops                      | `supporting` | Help guidance includes where commerce actions live and how to operate safely.                      | commerce section in help guide                        |
+| Incident response and support operations      | `supporting` | Help includes plain-language troubleshooting paths and escalation guidance for operator incidents. | troubleshooting + escalation sections                 |
+| Finance and reporting operations              | `supporting` | No reconciliation/reporting flow changed; help clarifies finance-impacting admin actions only.     | scope rationale + commerce/ops guidance               |
+| i18n operational readiness                    | `supporting` | No locale-routing/content-localization contract changed; help copy remains language-safe.          | scope rationale                                       |
+| Stack-fit and dependency discipline           | `target`     | No new dependencies introduced; work remains docs/admin-help scope only.                           | package diff + changed-files list                     |
+| Testing and QA automation                     | `target`     | Admin help behavior is validated via e2e and full `verify:pre-pr` / `verify:pre-merge` gates.      | test contract + gate logs                             |
+| Scalability and cost efficiency               | `supporting` | Docs-first operator enablement reduces support overhead without infra cost increase.               | scope review                                          |
+| DevOps and rollback readiness                 | `supporting` | Help documents rollback/recovery behavior without altering deployment/runtime controls.            | operations playbook content                           |
 
 ## Implementation Checkpoint Log
 
