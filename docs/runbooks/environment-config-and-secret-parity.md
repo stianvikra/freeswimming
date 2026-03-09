@@ -102,10 +102,21 @@ Legend:
    - `/admin`,
    - `/api/checkout/session` (basic happy-path request from app),
    - `/api/contact` (allowed origin).
-4. If smoke fails, rollback by restoring previous env values and redeploy.
+4. Record smoke evidence in:
+   - `docs/checklists/admin-access-and-secret-rotation.md`
+   - include `preview` and `production` rows with timestamp + operator.
+5. If smoke fails, rollback by restoring previous env values and redeploy.
 
 ## Rotation Policy
 
 Use checklist:
 
 - `docs/checklists/admin-access-and-secret-rotation.md`
+
+## Brief Closeout Gate
+
+Before moving the env-parity brief to `done`:
+
+1. Manual smoke evidence table has `pass` for both `preview` and `production`.
+2. Latest checkpoint log entry includes merge hash + explicit next step.
+3. Any failed smoke attempt has rollback note and a follow-up verification row.
