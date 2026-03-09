@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-02-21-admin-help-center-and-ops-handbook`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-21`
-- `updated`: `2026-02-21`
+- `updated`: `2026-03-09`
 
 ## Goal
 
@@ -88,6 +88,7 @@ Give admins a 10/10 non-technical Help/Guide experience so they understand how f
 
 - `2026-02-21 | working tree | moved AW-004 brief to in-progress, added Help/Guide admin tab + initial non-technical ops handbook content + admin help e2e coverage | run verify:pre-pr, push + PR`
 - `2026-02-22 | working tree | expanded Help/Guide to include full content-page walkthrough, button glossary, and edit-scope section in plain language; updated admin-help e2e assertions accordingly | run verify:pre-pr, push + PR`
+- `2026-03-09 | 059cd81 (main) | status closeout sync: moved legacy AW-004 brief to done after confirmed merged delivery (#90) and linked later governance hardening successor (#139) | next: keep further Help/Guide evolution in dedicated successor briefs`
 
 ## Platform 10/10 Scorecard Linkage
 
@@ -103,3 +104,9 @@ Give admins a 10/10 non-technical Help/Guide experience so they understand how f
   - before PR update/push: `npm run verify:pre-pr`
   - before merge recommendation: `npm run verify:pre-merge` and required CI green.
 - Manual owner steps only when blocked by credentials, UI-only actions, or sandbox/escalation limits.
+
+## Completion Record
+
+- `PR`: `https://github.com/stianvikra/freeswimming/pull/90`
+- `merge`: `PR #90` -> `main`
+- `follow-up hardening`: `https://github.com/stianvikra/freeswimming/pull/139`

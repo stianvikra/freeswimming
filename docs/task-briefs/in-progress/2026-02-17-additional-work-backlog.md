@@ -18,7 +18,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | -------- | -------------------------------------------------------------------------- | -------- | ------------- |
 | `AW-002` | Email one-time-code UX hardening (magic link first + OTP fallback clarity) | `medium` | `triaged`     |
 | `AW-003` | Sign-in code request reliability + cooldown UX redesign (10/10)            | `high`   | `done`        |
-| `AW-004` | Admin Help/Guide center + non-technical operations handbook                | `high`   | `in-progress` |
+| `AW-004` | Admin Help/Guide center + non-technical operations handbook                | `high`   | `done`        |
 | `AW-005` | Contextual admin notes on lesson/drill/product pages                       | `high`   | `done`        |
 | `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
 | `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `done`        |
@@ -89,8 +89,9 @@ Capture good ideas that should be implemented later without blocking the active 
   - non-technical admin can understand and execute core workflows from guide alone,
   - guide has clear sections (`what`, `why`, `how`, `when`, `troubleshoot`),
   - update responsibility is codified in brief/process docs.
-- planned brief:
-  - `docs/task-briefs/in-progress/2026-02-21-admin-help-center-and-ops-handbook.md`
+- done briefs:
+  - `docs/task-briefs/done/2026-02-21-admin-help-center-and-ops-handbook.md` (merged PR `#90`)
+  - `docs/task-briefs/done/2026-03-06-admin-help-guide-pedagogy-and-governance-10-10.md` (merged PR `#139`)
 
 ## AW-005: Contextual admin notes on lesson/drill/product pages
 
@@ -333,6 +334,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 ## Checkpoint Log
 
 - `2026-03-09 | working tree | backlog status-sync slice: marked AW-007 as done with merged evidence, updated AW-013 active brief path, and refreshed execution order for currently open work | next: run lint:briefs + verify:pre-pr, then open PR`
+- `2026-03-09 | working tree | closeout sync slice: marked AW-004 as done and linked both merged Help/Guide briefs (initial delivery + pedagogy/governance hardening) | next: run verify:pre-pr, open PR, run gate:pre-merge`
 
 ## Automation Execution Contract
 
