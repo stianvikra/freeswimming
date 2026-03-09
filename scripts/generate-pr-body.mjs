@@ -227,6 +227,139 @@ function shortList(items, limit = 8) {
   return [...items.slice(0, limit), `... and ${items.length - limit} more file(s)`];
 }
 
+function classifyChangedFile(filePath) {
+  if (/^docs\//.test(filePath)) return "docs";
+  if (/^scripts\//.test(filePath)) return "scripts";
+  if (/^tests\//.test(filePath)) return "tests";
+  if (/^\.github\//.test(filePath)) return "ci";
+  if (/^app\/api\//.test(filePath)) return "api";
+  if (/^(app|components|lib|middleware|public)\//.test(filePath)) return "runtime";
+  if (
+    /^(package(-lock)?\.json|tsconfig.*\.json|next\.config\.[jt]s|eslint\.config\.[jt]s|postcss\.config\.[jt]s|tailwind\.config\.[jt]s|playwright\.config\.[jt]s|vitest\.config\.[jt]s|\.env\.example|\.gitignore)$/.test(
+      filePath
+    )
+  ) {
+    return "config";
+  }
+  return "other";
+}
+
+function summarizeChangedAreas(changedFiles) {
+  const counts = {
+    runtime: 0,
+    api: 0,
+    docs: 0,
+    scripts: 0,
+    tests: 0,
+    ci: 0,
+    config: 0,
+    other: 0,
+  };
+
+  for (const filePath of changedFiles) {
+    const key = classifyChangedFile(filePath);
+    counts[key] += 1;
+  }
+
+  return counts;
+}
+
+function describeUserVisibleChanges(changedFiles) {
+  if (changedFiles.length === 0) {
+    return "No runtime behavior changes detected in file diff (metadata/body refresh only).";
+  }
+
+  const hasRuntime = changedFiles.some((filePath) => classifyChangedFile(filePath) === "runtime");
+  const hasApi = changedFiles.some((filePath) => classifyChangedFile(filePath) === "api");
+  const hasAdminSurface = changedFiles.some((filePath) =>
+    /^(app\/admin|app\/api\/admin|components\/admin|docs\/runbooks\/|docs\/checklists\/)/.test(filePath)
+  );
+  const docsOpsOnly = changedFiles.every((filePath) => {
+    const group = classifyChangedFile(filePath);
+    return group === "docs" || group === "scripts" || group === "ci" || group === "config" || group === "tests";
+  });
+
+  if (docsOpsOnly && !hasRuntime && !hasApi) {
+    return "No direct end-user/admin runtime behavior change; this PR improves docs/tooling/governance workflow quality.";
+  }
+
+  if (hasAdminSurface && (hasRuntime || hasApi)) {
+    return "Admin-facing behavior/guardrails may change in touched admin routes or APIs.";
+  }
+
+  if (hasApi && !hasRuntime) {
+    return "Server/API behavior changed; UI layout/copy changes are out of scope for this PR.";
+  }
+
+  if (hasRuntime) {
+    return "User/admin runtime behavior may change on touched routes/components.";
+  }
+
+  return "No direct user-visible behavior change expected from the touched file areas.";
+}
+
+function describeTechnicalChanges(changedFiles) {
+  if (changedFiles.length === 0) {
+    return "No file changes detected (PR body refresh only).";
+  }
+
+  const listedFiles = shortList(changedFiles, 5).map((filePath) => `\`${filePath}\``);
+  return `Updated ${changedFiles.length} file(s): ${listedFiles.join(", ")}.`;
+}
+
+function describeInScope(changedFiles, areaCounts) {
+  if (changedFiles.length === 0) {
+    return "PR body refresh/evidence update only.";
+  }
+
+  const scopeBits = [];
+  if (areaCounts.scripts > 0) scopeBits.push(`automation scripts (${areaCounts.scripts})`);
+  if (areaCounts.docs > 0) scopeBits.push(`documentation/runbooks (${areaCounts.docs})`);
+  if (areaCounts.tests > 0) scopeBits.push(`tests (${areaCounts.tests})`);
+  if (areaCounts.ci > 0) scopeBits.push(`CI/workflow config (${areaCounts.ci})`);
+  if (areaCounts.config > 0) scopeBits.push(`project/runtime config files (${areaCounts.config})`);
+  if (areaCounts.api > 0) scopeBits.push(`API handlers (${areaCounts.api})`);
+  if (areaCounts.runtime > 0) scopeBits.push(`runtime UI/routes/components (${areaCounts.runtime})`);
+  if (areaCounts.other > 0) scopeBits.push(`other files (${areaCounts.other})`);
+
+  return `Changed areas: ${scopeBits.join("; ")}.`;
+}
+
+function describeOutOfScope(changedFiles, areaCounts) {
+  if (changedFiles.length === 0) {
+    return "No runtime/data-contract changes.";
+  }
+
+  if (areaCounts.runtime === 0 && areaCounts.api === 0) {
+    return "Application runtime behavior, DB schema, and content payloads remain unchanged.";
+  }
+
+  return "No unrelated modules outside listed file scope; no secret or credential policy changes.";
+}
+
+function describeMainRisk(changedFiles, areaCounts) {
+  if (changedFiles.length === 0) {
+    return "Low risk; body refresh may still overwrite manually edited PR text if used incorrectly.";
+  }
+
+  if (areaCounts.scripts > 0 && areaCounts.runtime === 0 && areaCounts.api === 0) {
+    return "PR automation/lint strictness could block valid PR updates if generated evidence is stale or incomplete.";
+  }
+
+  if (areaCounts.api > 0 || areaCounts.runtime > 0) {
+    return "Behavior regressions on touched runtime/API paths if scope assumptions are wrong.";
+  }
+
+  return "Operational/docs drift if generated scope/evidence text does not match final merged changes.";
+}
+
+function describeRollbackPlan(headShaShort) {
+  if (!headShaShort || headShaShort === "unknown-sha") {
+    return "Revert this PR to restore previous PR-body automation behavior.";
+  }
+  return `Revert \`${headShaShort}\` (\`git revert ${headShaShort}\`) to restore previous behavior.`;
+}
+
 function buildBody({
   baseRef,
   branch,
@@ -238,6 +371,13 @@ function buildBody({
   preMergeMarker,
 }) {
   const generatedAt = new Date().toISOString();
+  const areaCounts = summarizeChangedAreas(changedFiles);
+  const userVisibleChanges = describeUserVisibleChanges(changedFiles);
+  const technicalChanges = describeTechnicalChanges(changedFiles);
+  const inScopeDescription = describeInScope(changedFiles, areaCounts);
+  const outOfScopeDescription = describeOutOfScope(changedFiles, areaCounts);
+  const mainRiskDescription = describeMainRisk(changedFiles, areaCounts);
+  const rollbackPlanDescription = describeRollbackPlan(headShaShort);
   const changedFileLines = shortList(changedFiles).map((filePath) => `  - \`${filePath}\``);
   const verifySummaryLines =
     verifyRun?.summaryLines.length > 0
@@ -259,8 +399,8 @@ function buildBody({
     "",
     `- Auto-generated on ${generatedAt} for branch \`${branch}\` (base ref \`${baseRef}\`).`,
     `- Latest commit: \`${headShaShort}\` - ${commitTitle || "No commit subject found"}.`,
-    `- User-visible changes: describe the concrete user/admin behavior changed in this PR.`,
-    `- Technical changes: describe key files/services/contracts changed.`,
+    `- User-visible changes: ${userVisibleChanges}`,
+    `- Technical changes: ${technicalChanges}`,
     briefLinkLine,
     `- Scorecard target outcomes: ${brief.scorecardSummary}`,
     "",
@@ -269,8 +409,8 @@ function buildBody({
   const scope = [
     "## Scope",
     "",
-    "- In scope: PR governance automation for structured PR body quality.",
-    "- Out of scope: unrelated runtime behavior and content data changes.",
+    `- In scope: ${inScopeDescription}`,
+    `- Out of scope: ${outOfScopeDescription}`,
     `- Changed files (${changedFiles.length}):`,
     ...changedFileLines,
     "",
@@ -279,8 +419,8 @@ function buildBody({
   const risk = [
     "## Risk",
     "",
-    "- Main risk: strict PR-body validation can fail existing low-detail PR drafts.",
-    `- Rollback plan: revert \`${headShaShort}\` if validation blocks expected workflows.`,
+    `- Main risk: ${mainRiskDescription}`,
+    `- Rollback plan: ${rollbackPlanDescription}`,
     "",
   ];
 
