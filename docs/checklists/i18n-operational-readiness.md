@@ -41,9 +41,9 @@ Use this before enabling additional locales to confirm route/content/admin opera
 
 ## Blocker Log (Required)
 
-| ID               | Blocker                                                       | Severity (`P0/P1/P2`) | Status   | Owner      | Target date | Mitigation                                                               | Linked brief/PR                                                                               |
-| ---------------- | ------------------------------------------------------------- | --------------------- | -------- | ---------- | ----------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| OPS-FIN-I18N-004 | Locale-specific content fallback matrix is not finalized yet. | P2                    | resolved | stianvikra | 2026-03-08  | Matrix documented in `docs/decisions/locale-content-fallback-matrix.md`. | `docs/task-briefs/in-progress/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
+| ID               | Blocker                                                       | Severity (`P0/P1/P2`) | Status   | Owner      | Target date | Mitigation                                                               | Linked brief/PR                                                                        |
+| ---------------- | ------------------------------------------------------------- | --------------------- | -------- | ---------- | ----------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| OPS-FIN-I18N-004 | Locale-specific content fallback matrix is not finalized yet. | P2                    | resolved | stianvikra | 2026-03-08  | Matrix documented in `docs/decisions/locale-content-fallback-matrix.md`. | `docs/task-briefs/done/2026-03-04-operations-finance-i18n-readiness-baseline-10-10.md` |
 
 ## Exit Criteria For "Ready To Start Locale Work"
 
