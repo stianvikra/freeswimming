@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-17`
-- `updated`: `2026-02-28`
+- `updated`: `2026-03-09`
 
 ## Purpose
 
@@ -21,7 +21,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-004` | Admin Help/Guide center + non-technical operations handbook                | `high`   | `in-progress` |
 | `AW-005` | Contextual admin notes on lesson/drill/product pages                       | `high`   | `done`        |
 | `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
-| `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `planned`     |
+| `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `done`        |
 | `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `planned`     |
 | `AW-009` | Admin email templates and message governance                               | `high`   | `planned`     |
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `planned`     |
@@ -136,8 +136,8 @@ Capture good ideas that should be implemented later without blocking the active 
 - Acceptance baseline:
   - same action sequence always yields same UI state and guidance,
   - repeat-click path is predictable and validated on desktop/mobile.
-- planned brief:
-  - `docs/task-briefs/planned/2026-02-21-login-flow-ux-hardening-10-10-v2.md`
+- done brief:
+  - `docs/task-briefs/done/2026-02-21-login-flow-ux-hardening-10-10-v2.md` (merged PR `#95`)
 
 ## AW-008: One-click site-lock operations (safe lock on/off workflow)
 
@@ -252,19 +252,19 @@ Capture good ideas that should be implemented later without blocking the active 
   - admin can edit and save existing module/lesson/session/drill/page/product records end-to-end,
   - unauthorized edit attempts fail closed (`401/403`),
   - Help/Guide includes plain-language explanation of edit flow and button behavior.
-- planned brief:
-  - `docs/task-briefs/planned/2026-02-22-admin-full-content-edit-workflow-10-10.md`
+- active brief:
+  - `docs/task-briefs/in-progress/2026-02-22-admin-full-content-edit-workflow-10-10.md`
 
 ## Recommended Execution Order
 
-1. `AW-007` login UX stabilization (highest user-impact, smallest scope).
-2. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
-3. `AW-008` one-click site-lock operations workflow (before public launch cadence).
-4. `AW-012` full admin 10/10 audit with checklist + e2e gates.
-5. `AW-009` admin email templates and governance.
-6. `AW-011` terms/privacy compliance lifecycle.
-7. `AW-010` gated + public performance governance runbook.
-8. `AW-013` full admin content editing UX (modules/lessons/pages/products).
+1. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
+2. `AW-008` one-click site-lock operations workflow (before public launch cadence).
+3. `AW-012` full admin 10/10 audit with checklist + e2e gates.
+4. `AW-009` admin email templates and governance.
+5. `AW-011` terms/privacy compliance lifecycle.
+6. `AW-010` gated + public performance governance runbook.
+7. `AW-013` full admin content editing UX (modules/lessons/pages/products).
+8. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
@@ -288,6 +288,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 - When an item starts implementation, cut a dedicated feature branch and a focused task brief/checkpoint log entry.
   - completed:
     - `AW-003` -> `docs/task-briefs/done/2026-02-18-aw-003-sign-in-cooldown-reliability.md` (merged PR `#42`)
+    - `AW-007` -> `docs/task-briefs/done/2026-02-21-login-flow-ux-hardening-10-10-v2.md` (merged PR `#95`)
 - PR create/review/merge links should be opened in Safari by default:
   - `open -a Safari "<PR_URL>"`
 - Before moving any spawned implementation brief to `done`, run final closeout gate:
@@ -300,6 +301,38 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 - Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
 - This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
 - Closeout must record achieved score (`0-5`) for each target category.
+
+| Category                                      | Mapping      | Target Threshold                                                                             | Evidence                                          |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Product goals and IA                          | `target`     | Queue keeps explicit priority + status + execution order for every backlog item.             | queue table + recommended execution order         |
+| UX flow clarity                               | `supporting` | N/A                                                                                          | N/A                                               |
+| Visual design quality                         | `supporting` | N/A                                                                                          | N/A                                               |
+| Business logic correctness and data integrity | `supporting` | N/A                                                                                          | N/A                                               |
+| Admin editor ergonomics                       | `supporting` | N/A                                                                                          | N/A                                               |
+| Accessibility (a11y)                          | `supporting` | N/A                                                                                          | N/A                                               |
+| Performance (CWV + payloads)                  | `supporting` | N/A                                                                                          | N/A                                               |
+| Data placement and sync boundaries            | `supporting` | N/A                                                                                          | N/A                                               |
+| Caching and invalidation strategy             | `supporting` | N/A                                                                                          | N/A                                               |
+| Reliability and failure handling              | `supporting` | N/A                                                                                          | N/A                                               |
+| Security and authz                            | `supporting` | N/A                                                                                          | N/A                                               |
+| Privacy and compliance                        | `supporting` | N/A                                                                                          | N/A                                               |
+| Content governance                            | `target`     | Every `AW-*` item links to current brief lifecycle state (`planned`/`in-progress`/`done`).   | AW item sections + queue status table             |
+| Admin workflow and editability                | `supporting` | N/A                                                                                          | N/A                                               |
+| SEO and crawlability                          | `supporting` | N/A                                                                                          | N/A                                               |
+| AI discoverability                            | `supporting` | N/A                                                                                          | N/A                                               |
+| Analytics and KPI observability               | `supporting` | N/A                                                                                          | N/A                                               |
+| Commerce and revenue ops                      | `supporting` | N/A                                                                                          | N/A                                               |
+| Incident response and support operations      | `supporting` | N/A                                                                                          | N/A                                               |
+| Finance and reporting operations              | `supporting` | N/A                                                                                          | N/A                                               |
+| i18n operational readiness                    | `supporting` | N/A                                                                                          | N/A                                               |
+| Stack-fit and dependency discipline           | `target`     | Backlog maintenance slices remain docs-only unless explicitly scoped as implementation work. | changed-files diff (`docs/*` only for this slice) |
+| Testing and QA automation                     | `target`     | Changed backlog brief passes `lint:briefs` and `verify:pre-pr` before PR update.             | local gate outputs + PR checks                    |
+| Scalability and cost efficiency               | `supporting` | N/A                                                                                          | N/A                                               |
+| DevOps and rollback readiness                 | `supporting` | N/A                                                                                          | N/A                                               |
+
+## Checkpoint Log
+
+- `2026-03-09 | working tree | backlog status-sync slice: marked AW-007 as done with merged evidence, updated AW-013 active brief path, and refreshed execution order for currently open work | next: run lint:briefs + verify:pre-pr, then open PR`
 
 ## Automation Execution Contract
 
