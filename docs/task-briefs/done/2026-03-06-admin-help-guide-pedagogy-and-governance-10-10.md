@@ -7,7 +7,7 @@
 - `priority`: `P1`
 - `owner`: `stianvikra`
 - `created`: `2026-03-06`
-- `updated`: `2026-03-06`
+- `updated`: `2026-03-09`
 
 ## Goal
 
@@ -21,8 +21,8 @@ Make Admin Help/Guide a 10/10 operator training surface (pedagogical, action-fir
 
 ## Dependencies And Boundaries
 
-- Related active briefs:
-  - `docs/task-briefs/in-progress/2026-02-21-admin-help-center-and-ops-handbook.md`
+- Related briefs:
+  - `docs/task-briefs/done/2026-02-21-admin-help-center-and-ops-handbook.md`
   - `docs/task-briefs/in-progress/2026-02-28-qr-video-redirect-links-and-admin-controls-10-10.md`
   - `docs/task-briefs/in-progress/2026-02-25-content-production-v1-admin-editorial-run.md`
 - Scope is docs/admin-help content, governance controls, and test contract updates.
