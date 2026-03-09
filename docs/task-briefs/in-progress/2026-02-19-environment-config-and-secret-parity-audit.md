@@ -131,6 +131,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-09 | a052609 (main) | PR #163 merged (`docs(ops): deliver env config parity audit baseline`) with required checks green and local verify:pre-merge evidence | next: execute owner manual preview/prod runbook smoke checks (`/auth/sign-in`, `/api/runtime/flags`, `/admin`) and then move brief to done`
 - `2026-03-09 | working tree | started env-config parity audit slice: moved brief to in-progress, added env parity runbook + admin secret-rotation checklist, and aligned .env.example with poolside guide asset override key | next: run verify:pre-pr, open PR in Safari, run gate:pre-merge, then execute manual preview/prod runbook smoke checks before moving brief to done`
 
 ## Automation Execution Contract
