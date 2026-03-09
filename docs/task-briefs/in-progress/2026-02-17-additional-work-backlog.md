@@ -302,6 +302,34 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 - This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
 - Closeout must record achieved score (`0-5`) for each target category.
 
+| Category                                      | Mapping      | Target Threshold                                                                             | Evidence                                          |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Product goals and IA                          | `target`     | Queue keeps explicit priority + status + execution order for every backlog item.             | queue table + recommended execution order         |
+| UX flow clarity                               | `supporting` | N/A                                                                                          | N/A                                               |
+| Visual design quality                         | `supporting` | N/A                                                                                          | N/A                                               |
+| Business logic correctness and data integrity | `supporting` | N/A                                                                                          | N/A                                               |
+| Admin editor ergonomics                       | `supporting` | N/A                                                                                          | N/A                                               |
+| Accessibility (a11y)                          | `supporting` | N/A                                                                                          | N/A                                               |
+| Performance (CWV + payloads)                  | `supporting` | N/A                                                                                          | N/A                                               |
+| Data placement and sync boundaries            | `supporting` | N/A                                                                                          | N/A                                               |
+| Caching and invalidation strategy             | `supporting` | N/A                                                                                          | N/A                                               |
+| Reliability and failure handling              | `supporting` | N/A                                                                                          | N/A                                               |
+| Security and authz                            | `supporting` | N/A                                                                                          | N/A                                               |
+| Privacy and compliance                        | `supporting` | N/A                                                                                          | N/A                                               |
+| Content governance                            | `target`     | Every `AW-*` item links to current brief lifecycle state (`planned`/`in-progress`/`done`).   | AW item sections + queue status table             |
+| Admin workflow and editability                | `supporting` | N/A                                                                                          | N/A                                               |
+| SEO and crawlability                          | `supporting` | N/A                                                                                          | N/A                                               |
+| AI discoverability                            | `supporting` | N/A                                                                                          | N/A                                               |
+| Analytics and KPI observability               | `supporting` | N/A                                                                                          | N/A                                               |
+| Commerce and revenue ops                      | `supporting` | N/A                                                                                          | N/A                                               |
+| Incident response and support operations      | `supporting` | N/A                                                                                          | N/A                                               |
+| Finance and reporting operations              | `supporting` | N/A                                                                                          | N/A                                               |
+| i18n operational readiness                    | `supporting` | N/A                                                                                          | N/A                                               |
+| Stack-fit and dependency discipline           | `target`     | Backlog maintenance slices remain docs-only unless explicitly scoped as implementation work. | changed-files diff (`docs/*` only for this slice) |
+| Testing and QA automation                     | `target`     | Changed backlog brief passes `lint:briefs` and `verify:pre-pr` before PR update.             | local gate outputs + PR checks                    |
+| Scalability and cost efficiency               | `supporting` | N/A                                                                                          | N/A                                               |
+| DevOps and rollback readiness                 | `supporting` | N/A                                                                                          | N/A                                               |
+
 ## Checkpoint Log
 
 - `2026-03-09 | working tree | backlog status-sync slice: marked AW-007 as done with merged evidence, updated AW-013 active brief path, and refreshed execution order for currently open work | next: run lint:briefs + verify:pre-pr, then open PR`
