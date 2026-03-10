@@ -179,10 +179,10 @@ jobs:
           target_git_branch="${{ steps.validate.outputs.target_git_branch }}"
 
           if [ "$TARGET_ENVIRONMENT" = "preview" ]; then
-            # Explicit branch scoping avoids interactive prompts in CI and matches deployed preview ref.
+            # Preview lock is managed as a global preview env value so CLI preview deploys resolve it consistently.
             vercel env rm SITE_LOCK_ENABLED preview "$target_git_branch" --yes --token="$VERCEL_TOKEN" || true
             vercel env rm SITE_LOCK_ENABLED preview --yes --token="$VERCEL_TOKEN" || true
-            printf '%s\n' "$desired" | vercel env add SITE_LOCK_ENABLED preview "$target_git_branch" --token="$VERCEL_TOKEN"
+            printf '%s\n' "$desired" | vercel env add SITE_LOCK_ENABLED preview --token="$VERCEL_TOKEN"
             exit 0
           fi
 
@@ -207,11 +207,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/site-lock-ops
           deploy_output_file="artifacts/site-lock-ops/deploy-output.log"
+          desired="${{ steps.validate.outputs.desired }}"
 
           if [ "$TARGET_ENVIRONMENT" = "preview" ]; then
-            vercel deploy --target=preview --yes --token="$VERCEL_TOKEN" >"$deploy_output_file" 2>&1
+            vercel deploy --target=preview --yes --token="$VERCEL_TOKEN" \
+              --build-env SITE_LOCK_ENABLED="$desired" \
+              --env SITE_LOCK_ENABLED="$desired" >"$deploy_output_file" 2>&1
           else
-            vercel deploy --prod --yes --token="$VERCEL_TOKEN" >"$deploy_output_file" 2>&1
+            vercel deploy --prod --yes --token="$VERCEL_TOKEN" \
+              --build-env SITE_LOCK_ENABLED="$desired" \
+              --env SITE_LOCK_ENABLED="$desired" >"$deploy_output_file" 2>&1
           fi
 
           deploy_url="$(grep -Eo 'https://[^ ]+' "$deploy_output_file" | tail -n 1 || true)"
@@ -235,7 +240,7 @@ jobs:
           deploy_url="${{ steps.deploy.outputs.deploy_url }}"
 
           curl -sS -I --max-time 20 "$deploy_url" > "$home_headers_file"
-          curl -sS -I --max-time 20 "$deploy_url/api/runtime/flags" > "$api_headers_file"
+          curl -sS -I --max-time 20 "$deploy_url/api/progress/course" > "$api_headers_file"
 
           home_status_code="$(awk 'NR==1 {print $2}' "$home_headers_file")"
           home_location_header="$(awk 'tolower($1)=="location:" {print $2}' "$home_headers_file" | tr -d '\r' | tail -n 1)"
@@ -244,7 +249,7 @@ jobs:
 
           if [ "$OPERATION" = "lock_on" ]; then
             if [ "$api_status_code" != "423" ]; then
-              echo "::error::lock_on smoke check failed. Expected /api/runtime/flags to return 423."
+              echo "::error::lock_on smoke check failed. Expected /api/progress/course to return 423."
               cat "$api_headers_file"
               exit 1
             fi
@@ -254,7 +259,7 @@ jobs:
             fi
           else
             if [ "$api_status_code" = "423" ]; then
-              echo "::error::lock_off smoke check failed. /api/runtime/flags still returns 423."
+              echo "::error::lock_off smoke check failed. /api/progress/course still returns 423."
               cat "$api_headers_file"
               exit 1
             fi
@@ -291,7 +296,7 @@ jobs:
           - deployment URL: ${{ steps.deploy.outputs.deploy_url }}
           - smoke home status code: \`${{ steps.smoke.outputs.home_status_code }}\`
           - smoke home location header: \`${{ steps.smoke.outputs.home_location_header }}\`
-          - smoke api status code (`/api/runtime/flags`): \`${{ steps.smoke.outputs.api_status_code }}\`
+          - smoke api status code (`/api/progress/course`): \`${{ steps.smoke.outputs.api_status_code }}\`
           - smoke api location header: \`${{ steps.smoke.outputs.api_location_header }}\`
           - run URL: $run_url
           EOF
