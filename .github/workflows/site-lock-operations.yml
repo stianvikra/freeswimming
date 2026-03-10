@@ -149,12 +149,6 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
-      - name: Pull Vercel project settings
-        shell: bash
-        run: |
-          set -euo pipefail
-          vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
-
       - name: Validate lock prerequisites for lock_on
         if: inputs.action == 'lock_on'
         shell: bash
@@ -198,6 +192,13 @@ jobs:
           fi
 
           printf '%s\n' "$desired" | vercel env add SITE_LOCK_ENABLED "$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
+
+      - name: Pull Vercel project settings (post-update)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Refresh local env snapshot after mutation so deploy uses latest SITE_LOCK_ENABLED value.
+          vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
 
       - name: Deploy updated environment
         id: deploy

@@ -44,11 +44,12 @@ Run safe, auditable lock/unlock operations without manual Vercel env editing.
 3. For `production`: validates GitHub environment has required reviewer protection.
 4. For `lock_on`: checks lock prerequisites in target Vercel environment.
 5. Applies `SITE_LOCK_ENABLED` in target environment (branch-scoped for preview).
-6. Deploys the target environment.
-7. Runs smoke check:
+6. Refreshes pulled Vercel settings so deploy uses latest lock value.
+7. Deploys the target environment.
+8. Runs smoke check:
    - `lock_on`: expects `/api/runtime/flags` to return `423` and home route to indicate gate (`/preview-access` redirect header when present)
    - `lock_off`: expects `/api/runtime/flags` to not return `423` and no `/preview-access` redirect on home route
-8. Uploads operation artifact with summary + smoke headers + deploy output.
+9. Uploads operation artifact with summary + smoke headers + deploy output.
 
 ## Rollback
 
