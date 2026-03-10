@@ -226,6 +226,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - policy pages track real behavior for data collection, auth, and third-party services,
   - policy updates are documented and reviewable,
   - compliance review is part of release flow.
+- Planned follow-up brief:
+  - `docs/task-briefs/planned/2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10.md`
 
 ## AW-012: Full admin 10/10 audit brief with checklist and e2e gates
 
@@ -337,6 +339,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | working tree | created dedicated planned implementation brief for AW-011 terms/privacy compliance lifecycle (`docs/task-briefs/planned/2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10.md`) and linked backlog AW-011 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-010 gated/public performance governance (`docs/task-briefs/planned/2026-03-10-aw-010-pagespeed-lighthouse-governance-gated-environments-10-10.md`) and linked backlog AW-010 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-009 admin email templates governance (`docs/task-briefs/planned/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`) and linked backlog AW-009 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-008 one-click site-lock operations (`docs/task-briefs/planned/2026-03-10-aw-008-one-click-site-lock-operations-10-10.md`) and linked backlog AW-008 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
