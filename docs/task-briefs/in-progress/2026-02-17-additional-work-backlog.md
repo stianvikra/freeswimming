@@ -121,8 +121,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - consistent spacing/type hierarchy/interactions across breakpoints,
   - color/contrast and visual hierarchy stay readable on low/high quality displays,
   - validated through device matrix + visual/e2e checks.
-- owner brief:
-  - `docs/task-briefs/planned/2026-02-18-cross-platform-ux-design-hardening.md`
+- Planned follow-up brief:
+  - `docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`
 
 ## AW-007: Login flow UX/state-machine stabilization
 
@@ -341,6 +341,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | working tree | created dedicated planned implementation brief for AW-006 cross-platform UX hardening (`docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`) and linked backlog AW-006 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-012 full admin 10/10 audit + gates (`docs/task-briefs/planned/2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10.md`) and linked backlog AW-012 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-011 terms/privacy compliance lifecycle (`docs/task-briefs/planned/2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10.md`) and linked backlog AW-011 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-010 gated/public performance governance (`docs/task-briefs/planned/2026-03-10-aw-010-pagespeed-lighthouse-governance-gated-environments-10-10.md`) and linked backlog AW-010 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
