@@ -192,6 +192,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - admin can update template copy safely with preview and rollback,
   - no broken placeholders in sent emails,
   - all template mutations logged and recoverable.
+- Planned follow-up brief:
+  - `docs/task-briefs/planned/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`
 
 ## AW-010: PageSpeed/Lighthouse governance for password-gated environments
 
@@ -333,6 +335,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | working tree | created dedicated planned implementation brief for AW-009 admin email templates governance (`docs/task-briefs/planned/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`) and linked backlog AW-009 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-008 one-click site-lock operations (`docs/task-briefs/planned/2026-03-10-aw-008-one-click-site-lock-operations-10-10.md`) and linked backlog AW-008 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-09 | working tree | backlog status-sync slice: marked AW-007 as done with merged evidence, updated AW-013 active brief path, and refreshed execution order for currently open work | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-09 | working tree | closeout sync slice: marked AW-004 as done and linked both merged Help/Guide briefs (initial delivery + pedagogy/governance hardening) | next: run verify:pre-pr, open PR, run gate:pre-merge`
