@@ -26,6 +26,20 @@ Provide a short, repeatable procedure for rotating sensitive config and confirmi
 5. Contact form/API still accepts allowed origin requests.
 6. Checkout flow still reaches Stripe session creation from app flow.
 
+## Manual Smoke Evidence (Required Before Brief Closeout)
+
+Record one row per environment after smoke checks. Keep values non-sensitive.
+
+| Date (UTC) | Environment  | Operator | `/auth/sign-in` | `/api/runtime/flags` (`ok: true`) | `dashboardVisible=true` (signed-in admin) | `/admin` | `/api/contact` (allowed origin) | `/api/checkout/session` (app flow) | Result  | Notes |
+| ---------- | ------------ | -------- | --------------- | --------------------------------- | ----------------------------------------- | -------- | ------------------------------- | ---------------------------------- | ------- | ----- |
+| TBD        | `preview`    | TBD      | pending         | pending                           | pending                                   | pending  | pending                         | pending                            | pending |       |
+| TBD        | `production` | TBD      | pending         | pending                           | pending                                   | pending  | pending                         | pending                            | pending |       |
+
+Closeout rule:
+
+- Keep brief `in-progress` until both `preview` and `production` rows are `pass`.
+- If a row fails, run rollback first, then append a new verification row after redeploy.
+
 ## Secret Groups (Recommended Order)
 
 1. Contact + rate-limit:
