@@ -346,6 +346,8 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | feat/aw-008-production-approval-enforcement-slice-2 | started AW-008 slice-2 to enforce production required-reviewer gate directly in workflow and operator runbook | next: run lint:briefs + verify:pre-pr, then open PR`
+- `2026-03-10 | main@099ba27 | AW-008 slice-1 merged via PR #178 (one-click site-lock workflow foundation + docs/UI pointers) | next: start slice-2 approval enforcement before AW-008 completion decision`
 - `2026-03-10 | feat/aw-008-site-lock-ops-workflow-slice-1 | moved AW-008 from planned to in-progress and started implementation slice-1 (workflow-dispatch foundation + runbook/UI/help alignment) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | synced AW-003/AW-007 done-evidence in backlog sections (added explicit AW-003 done briefs and corrected AW-007 merged PR reference from #95 to #96) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-002 email OTP fallback UX hardening (`docs/task-briefs/planned/2026-03-10-aw-002-email-one-time-code-ux-hardening-10-10.md`) and linked backlog AW-002 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`

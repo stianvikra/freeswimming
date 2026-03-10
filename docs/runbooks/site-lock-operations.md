@@ -19,7 +19,8 @@ Run safe, auditable lock/unlock operations without manual Vercel env editing.
    - `site-lock-preview`
    - `site-lock-production`
 3. Environment protection:
-   - `site-lock-production` should require manual reviewer approval.
+   - `site-lock-production` must require at least one manual reviewer.
+   - Workflow will fail for `target_environment=production` if no required reviewer is configured.
 4. Vercel target env requirements for `lock_on`:
    - `SITE_LOCK_PASSWORD_HASH` exists
    - `SITE_LOCK_BYPASS_TOKEN` exists
@@ -38,13 +39,14 @@ Run safe, auditable lock/unlock operations without manual Vercel env editing.
 
 1. Validates allowlisted action/environment inputs.
 2. Validates required Vercel secrets.
-3. For `lock_on`: checks lock prerequisites in target Vercel environment.
-4. Applies `SITE_LOCK_ENABLED` in target environment.
-5. Deploys the target environment.
-6. Runs smoke check:
+3. For `production`: validates GitHub environment has required reviewer protection.
+4. For `lock_on`: checks lock prerequisites in target Vercel environment.
+5. Applies `SITE_LOCK_ENABLED` in target environment.
+6. Deploys the target environment.
+7. Runs smoke check:
    - `lock_on`: expects redirect to `/preview-access`
    - `lock_off`: expects no redirect to `/preview-access`
-7. Uploads operation artifact with summary + smoke headers + deploy output.
+8. Uploads operation artifact with summary + smoke headers + deploy output.
 
 ## Rollback
 

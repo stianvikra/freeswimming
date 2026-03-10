@@ -114,5 +114,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-10 | feat/aw-008-production-approval-enforcement-slice-2 | started implementation slice-2: enforce production required-reviewer gate in site-lock workflow and sync operator runbook language | next: run verify:pre-pr, open PR, run gate:pre-merge`
+- `2026-03-10 | main@099ba27 | merged slice-1 foundation via PR #178 (workflow-dispatch + deploy/smoke artifacts + admin docs/UI pointers) | next: enforce production approval guardrail in workflow before marking AW-008 complete`
 - `2026-03-10 | feat/aw-008-site-lock-ops-workflow-slice-1 | started implementation slice-1: added workflow-dispatch foundation (`.github/workflows/site-lock-operations.yml`) with allowlisted inputs, audited summary artifact, deploy + smoke checks, and updated operator docs/UI pointers | next: run verify:pre-pr, open PR, run gate:pre-merge`
 - `2026-03-10 | working tree | created AW-008 planned implementation brief with scorecard-complete thresholds and deterministic ops/rollback contract | next: link this brief in backlog and use it as canonical scope when implementation starts`
