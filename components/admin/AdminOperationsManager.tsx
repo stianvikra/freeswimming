@@ -34,6 +34,11 @@ type AdminRuntimeFlagUpdateResponse =
       error?: string;
     };
 
+const SITE_LOCK_WORKFLOW_URL =
+  "https://github.com/stianvikra/freeswimming/actions/workflows/site-lock-operations.yml";
+const SITE_LOCK_RUNBOOK_URL =
+  "https://github.com/stianvikra/freeswimming/blob/main/docs/runbooks/site-lock-operations.md";
+
 function runtimeFlagLabel(key: string): string {
   return key;
 }
@@ -217,6 +222,14 @@ export default function AdminOperationsManager() {
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <a
+              href={SITE_LOCK_WORKFLOW_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-medium text-indigo-800 transition hover:bg-indigo-100"
+            >
+              Open lock operations workflow
+            </a>
+            <a
               href="/preview-access?next=%2Fadmin"
               className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
             >
@@ -229,6 +242,17 @@ export default function AdminOperationsManager() {
               Sign out this browser
             </a>
           </div>
+          <p className="mt-3 text-xs text-slate-500">
+            Operator runbook:{" "}
+            <a
+              href={SITE_LOCK_RUNBOOK_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-slate-700 underline underline-offset-2"
+            >
+              docs/runbooks/site-lock-operations.md
+            </a>
+          </p>
           <p className="mt-3 text-xs text-slate-500">
             To turn this off: set <code>SITE_LOCK_ENABLED=0</code> in hosting environment settings
             and redeploy.

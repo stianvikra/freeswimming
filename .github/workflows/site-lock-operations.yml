@@ -1,0 +1,251 @@
+name: Site Lock Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Operation to run"
+        required: true
+        type: choice
+        options:
+          - lock_on
+          - lock_off
+      target_environment:
+        description: "Target Vercel environment"
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+      reason:
+        description: "Reason for operation (audit trail)"
+        required: true
+        default: "Manual site-lock operation"
+        type: string
+      confirm:
+        description: "Type APPLY to confirm"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-lock-ops-${{ inputs.target_environment }}
+  cancel-in-progress: false
+
+jobs:
+  operate-site-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ inputs.target_environment == 'production' && 'site-lock-production' || 'site-lock-preview' }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      OPERATION: ${{ inputs.action }}
+      TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+      OPERATION_REASON: ${{ inputs.reason }}
+      OPERATION_CONFIRM: ${{ inputs.confirm }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate operation request
+        id: validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/site-lock-ops
+
+          if [ "$OPERATION_CONFIRM" != "APPLY" ]; then
+            echo "::error::Input 'confirm' must be exactly APPLY."
+            exit 1
+          fi
+
+          case "$OPERATION" in
+            lock_on)
+              desired="1"
+              rollback="lock_off"
+              ;;
+            lock_off)
+              desired="0"
+              rollback="lock_on"
+              ;;
+            *)
+              echo "::error::Unsupported operation: $OPERATION"
+              exit 1
+              ;;
+          esac
+
+          case "$TARGET_ENVIRONMENT" in
+            preview|production) ;;
+            *)
+              echo "::error::Unsupported target environment: $TARGET_ENVIRONMENT"
+              exit 1
+              ;;
+          esac
+
+          echo "desired=$desired" >> "$GITHUB_OUTPUT"
+          echo "rollback=$rollback" >> "$GITHUB_OUTPUT"
+
+      - name: Check required Vercel secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=""
+          for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!key:-}" ]; then
+              if [ -n "$missing" ]; then
+                missing="$missing, "
+              fi
+              missing="${missing}${key}"
+            fi
+          done
+
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required Vercel secrets: $missing"
+            exit 1
+          fi
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel project settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
+
+      - name: Validate lock prerequisites for lock_on
+        if: inputs.action == 'lock_on'
+        shell: bash
+        run: |
+          set -euo pipefail
+          env_list="$(vercel env ls "$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN")"
+
+          missing=""
+          for key in SITE_LOCK_PASSWORD_HASH SITE_LOCK_BYPASS_TOKEN; do
+            if ! printf '%s\n' "$env_list" | grep -q "$key"; then
+              if [ -n "$missing" ]; then
+                missing="$missing, "
+              fi
+              missing="${missing}${key}"
+            fi
+          done
+
+          if [ -n "$missing" ]; then
+            echo "::error::Cannot run lock_on. Missing required site-lock vars in Vercel $TARGET_ENVIRONMENT: $missing"
+            exit 1
+          fi
+
+      - name: Apply SITE_LOCK_ENABLED in Vercel environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          desired="${{ steps.validate.outputs.desired }}"
+
+          env_list="$(vercel env ls "$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN" || true)"
+          if printf '%s\n' "$env_list" | grep -q "SITE_LOCK_ENABLED"; then
+            vercel env rm SITE_LOCK_ENABLED "$TARGET_ENVIRONMENT" --yes --token="$VERCEL_TOKEN"
+          fi
+
+          printf '%s\n' "$desired" | vercel env add SITE_LOCK_ENABLED "$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
+
+      - name: Deploy updated environment
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/site-lock-ops
+          deploy_output_file="artifacts/site-lock-ops/deploy-output.log"
+
+          if [ "$TARGET_ENVIRONMENT" = "preview" ]; then
+            vercel deploy --target=preview --yes --token="$VERCEL_TOKEN" >"$deploy_output_file" 2>&1
+          else
+            vercel deploy --prod --yes --token="$VERCEL_TOKEN" >"$deploy_output_file" 2>&1
+          fi
+
+          deploy_url="$(grep -Eo 'https://[^ ]+' "$deploy_output_file" | tail -n 1 || true)"
+          if [ -z "$deploy_url" ]; then
+            echo "::error::Could not extract deployment URL from Vercel output."
+            cat "$deploy_output_file"
+            exit 1
+          fi
+
+          echo "deploy_url=$deploy_url" >> "$GITHUB_OUTPUT"
+          echo "Deploy URL: $deploy_url"
+
+      - name: Smoke verify lock behavior
+        id: smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/site-lock-ops
+          headers_file="artifacts/site-lock-ops/smoke-headers.txt"
+          deploy_url="${{ steps.deploy.outputs.deploy_url }}"
+
+          curl -sS -I --max-time 20 "$deploy_url" > "$headers_file"
+
+          status_code="$(awk 'NR==1 {print $2}' "$headers_file")"
+          location_header="$(awk 'tolower($1)=="location:" {print $2}' "$headers_file" | tr -d '\r' | tail -n 1)"
+
+          if [ "$OPERATION" = "lock_on" ]; then
+            if [[ "$location_header" != *"/preview-access"* ]]; then
+              echo "::error::lock_on smoke check failed. Expected redirect to /preview-access."
+              cat "$headers_file"
+              exit 1
+            fi
+          else
+            if [[ "$location_header" == *"/preview-access"* ]]; then
+              echo "::error::lock_off smoke check failed. Unexpected redirect to /preview-access."
+              cat "$headers_file"
+              exit 1
+            fi
+          fi
+
+          echo "status_code=$status_code" >> "$GITHUB_OUTPUT"
+          echo "location_header=$location_header" >> "$GITHUB_OUTPUT"
+
+      - name: Write operation summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/site-lock-ops
+          summary_file="artifacts/site-lock-ops/summary.md"
+          run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          cat > "$summary_file" <<EOF
+          # Site lock operation summary
+
+          - actor: \`${{ github.actor }}\`
+          - operation: \`$OPERATION\`
+          - target environment: \`$TARGET_ENVIRONMENT\`
+          - desired SITE_LOCK_ENABLED: \`${{ steps.validate.outputs.desired }}\`
+          - rollback action: \`${{ steps.validate.outputs.rollback }}\`
+          - reason: $OPERATION_REASON
+          - deployment URL: ${{ steps.deploy.outputs.deploy_url }}
+          - smoke status code: \`${{ steps.smoke.outputs.status_code }}\`
+          - smoke location header: \`${{ steps.smoke.outputs.location_header }}\`
+          - run URL: $run_url
+          EOF
+
+          cat "$summary_file" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload site-lock operation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-lock-operation-${{ inputs.target_environment }}-${{ inputs.action }}
+          path: |
+            artifacts/site-lock-ops/summary.md
+            artifacts/site-lock-ops/smoke-headers.txt
+            artifacts/site-lock-ops/deploy-output.log
+          if-no-files-found: ignore
+          retention-days: 14

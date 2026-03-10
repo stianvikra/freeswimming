@@ -16,7 +16,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-08";
+const LAST_UPDATED = "2026-03-10";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -256,6 +256,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
     section: "Operations tab",
     actions: [
       {
+        label: "Open lock operations workflow",
+        meaning:
+          "Opens GitHub Actions dispatch for lock_on/lock_off with audited deploy + smoke verification.",
+      },
+      {
         label: "Open password page",
         meaning: "Opens private-access page for gate behavior testing.",
       },
@@ -417,6 +422,8 @@ const DAILY_PLAYBOOKS: Playbook[] = [
 
 const RUNBOOK_LINKS = [
   "docs/runbooks/qr-redirect-operations.md",
+  "docs/runbooks/site-lock-operations.md",
+  "docs/runbooks/private-access-gate.md",
   "docs/runbooks/post-merge-local-sync.md",
   "docs/runbooks/ci-unblock.md",
 ];
