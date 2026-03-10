@@ -243,6 +243,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - every admin critical flow has clear quality score and test evidence,
   - unresolved gaps are tracked as concrete follow-up slices,
   - audit can be rerun on schedule as release gate.
+- Planned follow-up brief:
+  - `docs/task-briefs/planned/2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10.md`
 
 ## AW-013: Full admin content editing UX (modules/lessons/pages/products)
 
@@ -339,6 +341,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | working tree | created dedicated planned implementation brief for AW-012 full admin 10/10 audit + gates (`docs/task-briefs/planned/2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10.md`) and linked backlog AW-012 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-011 terms/privacy compliance lifecycle (`docs/task-briefs/planned/2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10.md`) and linked backlog AW-011 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-010 gated/public performance governance (`docs/task-briefs/planned/2026-03-10-aw-010-pagespeed-lighthouse-governance-gated-environments-10-10.md`) and linked backlog AW-010 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-009 admin email templates governance (`docs/task-briefs/planned/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`) and linked backlog AW-009 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
