@@ -65,17 +65,20 @@ Capture good ideas that should be implemented later without blocking the active 
   - User can see expected cooldown once, then a generic error (`Could not send sign-in email right now`) on the next request, which feels inconsistent.
 - Goal:
   - Make sign-in request flow resilient and transparent so users understand exactly what happened and what to do next.
-- Scope (later implementation):
+- Delivered scope:
   - classify auth send failures into explicit UX states (`cooldown`, `provider temporary failure`, `email blocked`, `unknown`),
   - preserve code-entry state after resend failures (avoid jarring reset),
   - show actionable next step copy with retry timing,
   - add stronger analytics + operational logs for OTP send/verify failures,
   - improve visual hierarchy and microcopy on `/auth/sign-in` for 10/10 clarity.
-- Acceptance baseline:
+- Acceptance outcome:
   - repeat-request flow is predictable and understandable on first try,
   - cooldown and provider failures are visually distinct,
   - no dead-end state after resend failure,
   - validated on Safari + Chrome desktop and mobile.
+- done briefs:
+  - `docs/task-briefs/done/2026-02-18-aw-003-sign-in-cooldown-reliability.md` (merged PR `#42`)
+  - `docs/task-briefs/done/2026-02-21-login-flow-ux-hardening-10-10-v2.md` (merged PR `#96`, follow-up hardening)
 
 ## AW-004: Admin Help/Guide center + operations handbook (non-technical)
 
@@ -140,7 +143,7 @@ Capture good ideas that should be implemented later without blocking the active 
   - same action sequence always yields same UI state and guidance,
   - repeat-click path is predictable and validated on desktop/mobile.
 - done brief:
-  - `docs/task-briefs/done/2026-02-21-login-flow-ux-hardening-10-10-v2.md` (merged PR `#95`)
+  - `docs/task-briefs/done/2026-02-21-login-flow-ux-hardening-10-10-v2.md` (merged PR `#96`)
 
 ## AW-008: One-click site-lock operations (safe lock on/off workflow)
 
@@ -299,7 +302,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 - When an item starts implementation, cut a dedicated feature branch and a focused task brief/checkpoint log entry.
   - completed:
     - `AW-003` -> `docs/task-briefs/done/2026-02-18-aw-003-sign-in-cooldown-reliability.md` (merged PR `#42`)
-    - `AW-007` -> `docs/task-briefs/done/2026-02-21-login-flow-ux-hardening-10-10-v2.md` (merged PR `#95`)
+    - `AW-007` -> `docs/task-briefs/done/2026-02-21-login-flow-ux-hardening-10-10-v2.md` (merged PR `#96`)
 - PR create/review/merge links should be opened in Safari by default:
   - `open -a Safari "<PR_URL>"`
 - Before moving any spawned implementation brief to `done`, run final closeout gate:
@@ -343,6 +346,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | working tree | synced AW-003/AW-007 done-evidence in backlog sections (added explicit AW-003 done briefs and corrected AW-007 merged PR reference from #95 to #96) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-002 email OTP fallback UX hardening (`docs/task-briefs/planned/2026-03-10-aw-002-email-one-time-code-ux-hardening-10-10.md`) and linked backlog AW-002 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-006 cross-platform UX hardening (`docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`) and linked backlog AW-006 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-012 full admin 10/10 audit + gates (`docs/task-briefs/planned/2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10.md`) and linked backlog AW-012 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
