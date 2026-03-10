@@ -29,6 +29,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: site-lock-ops-${{ inputs.target_environment }}
@@ -111,6 +112,34 @@ jobs:
 
           if [ -n "$missing" ]; then
             echo "::error::Missing required Vercel secrets: $missing"
+            exit 1
+          fi
+
+      - name: Enforce production reviewer gate
+        if: inputs.target_environment == 'production'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          api_url="${{ github.api_url }}/repos/${{ github.repository }}/environments/site-lock-production"
+
+          if ! response="$(curl -fsS \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$api_url")"; then
+            echo "::error::Could not read GitHub environment settings for site-lock-production."
+            echo "::error::Ensure environment exists and this workflow has permission to read protection rules."
+            exit 1
+          fi
+
+          reviewer_count="$(
+            printf '%s' "$response" | node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync(0,"utf8")); const rules=Array.isArray(data.protection_rules)?data.protection_rules:[]; const required=rules.find((rule)=>rule && rule.type==="required_reviewers"); const count=required && Array.isArray(required.reviewers)?required.reviewers.length:0; process.stdout.write(String(count));'
+          )"
+
+          if [ "$reviewer_count" -lt 1 ]; then
+            echo "::error::site-lock-production must require at least one reviewer before production operations can run."
             exit 1
           fi
 
