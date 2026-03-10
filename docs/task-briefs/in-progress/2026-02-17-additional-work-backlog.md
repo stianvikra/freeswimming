@@ -16,7 +16,7 @@ Capture good ideas that should be implemented later without blocking the active 
 
 | ID       | Title                                                                      | Priority | Status        |
 | -------- | -------------------------------------------------------------------------- | -------- | ------------- |
-| `AW-002` | Email one-time-code UX hardening (magic link first + OTP fallback clarity) | `medium` | `triaged`     |
+| `AW-002` | Email one-time-code UX hardening (magic link first + OTP fallback clarity) | `medium` | `planned`     |
 | `AW-003` | Sign-in code request reliability + cooldown UX redesign (10/10)            | `high`   | `done`        |
 | `AW-004` | Admin Help/Guide center + non-technical operations handbook                | `high`   | `done`        |
 | `AW-005` | Contextual admin notes on lesson/drill/product pages                       | `high`   | `done`        |
@@ -56,6 +56,8 @@ Capture good ideas that should be implemented later without blocking the active 
 - Acceptance baseline:
   - Works on mobile + desktop mail clients without relying on blocked clipboard APIs.
   - Clear fallback path when deep-link is unavailable.
+- Planned follow-up brief:
+  - `docs/task-briefs/planned/2026-03-10-aw-002-email-one-time-code-ux-hardening-10-10.md`
 
 ## AW-003: Sign-in code request reliability + cooldown UX redesign
 
@@ -341,6 +343,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | working tree | created dedicated planned implementation brief for AW-002 email OTP fallback UX hardening (`docs/task-briefs/planned/2026-03-10-aw-002-email-one-time-code-ux-hardening-10-10.md`) and linked backlog AW-002 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-006 cross-platform UX hardening (`docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`) and linked backlog AW-006 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-012 full admin 10/10 audit + gates (`docs/task-briefs/planned/2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10.md`) and linked backlog AW-012 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-011 terms/privacy compliance lifecycle (`docs/task-briefs/planned/2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10.md`) and linked backlog AW-011 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
