@@ -22,7 +22,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-005` | Contextual admin notes on lesson/drill/product pages                       | `high`   | `done`        |
 | `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
 | `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `done`        |
-| `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `planned`     |
+| `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `in-progress` |
 | `AW-009` | Admin email templates and message governance                               | `high`   | `planned`     |
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `planned`     |
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
@@ -179,8 +179,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - production lock toggle always requires human approval and leaves audit trail,
   - smoke checks pass for both actions in preview,
   - negative-path tests cover unauthorized/invalid action inputs.
-- Planned follow-up brief:
-  - `docs/task-briefs/planned/2026-03-10-aw-008-one-click-site-lock-operations-10-10.md`
+- Active brief:
+  - `docs/task-briefs/in-progress/2026-03-10-aw-008-one-click-site-lock-operations-10-10.md`
 
 ## AW-009: Admin email templates and message governance
 
@@ -346,6 +346,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | feat/aw-008-site-lock-ops-workflow-slice-1 | moved AW-008 from planned to in-progress and started implementation slice-1 (workflow-dispatch foundation + runbook/UI/help alignment) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | synced AW-003/AW-007 done-evidence in backlog sections (added explicit AW-003 done briefs and corrected AW-007 merged PR reference from #95 to #96) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-002 email OTP fallback UX hardening (`docs/task-briefs/planned/2026-03-10-aw-002-email-one-time-code-ux-hardening-10-10.md`) and linked backlog AW-002 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-006 cross-platform UX hardening (`docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`) and linked backlog AW-006 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
@@ -353,7 +354,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-011 terms/privacy compliance lifecycle (`docs/task-briefs/planned/2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10.md`) and linked backlog AW-011 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-010 gated/public performance governance (`docs/task-briefs/planned/2026-03-10-aw-010-pagespeed-lighthouse-governance-gated-environments-10-10.md`) and linked backlog AW-010 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created dedicated planned implementation brief for AW-009 admin email templates governance (`docs/task-briefs/planned/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`) and linked backlog AW-009 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
-- `2026-03-10 | working tree | created dedicated planned implementation brief for AW-008 one-click site-lock operations (`docs/task-briefs/planned/2026-03-10-aw-008-one-click-site-lock-operations-10-10.md`) and linked backlog AW-008 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
+- `2026-03-10 | working tree | created dedicated planned implementation brief for AW-008 one-click site-lock operations (`docs/task-briefs/in-progress/2026-03-10-aw-008-one-click-site-lock-operations-10-10.md`) and linked backlog AW-008 entry to canonical brief path | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-09 | working tree | backlog status-sync slice: marked AW-007 as done with merged evidence, updated AW-013 active brief path, and refreshed execution order for currently open work | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-09 | working tree | closeout sync slice: marked AW-004 as done and linked both merged Help/Guide briefs (initial delivery + pedagogy/governance hardening) | next: run verify:pre-pr, open PR, run gate:pre-merge`
 - `2026-03-09 | working tree | docs link-parity maintenance: replaced missing planned path for AW-008 follow-up brief with explicit TBD note until the brief is created | next: run verify:pre-pr and open PR`

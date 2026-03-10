@@ -66,6 +66,7 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Use P0 template / Use P1 template / Use P2 template:")
     ).toBeVisible();
+    await expect(page.getByText("Open lock operations workflow:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(
       page.getByText(
@@ -73,5 +74,6 @@ test.describe("admin help center", () => {
       )
     ).toBeVisible();
     await expect(page.getByText("docs/runbooks/qr-redirect-operations.md")).toBeVisible();
+    await expect(page.getByText("docs/runbooks/site-lock-operations.md")).toBeVisible();
   });
 });

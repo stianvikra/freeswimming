@@ -43,6 +43,11 @@ Preview cookie clear URL:
 /preview-access/clear?next=/
 ```
 
+Ops alternative:
+
+- For hosted preview/production, prefer the one-click workflow runbook:
+  - `docs/runbooks/site-lock-operations.md`
+
 ## Disable Lock
 
 1. Set `SITE_LOCK_ENABLED=0`.

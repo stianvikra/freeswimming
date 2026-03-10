@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-008-one-click-site-lock-operations-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
 - `updated`: `2026-03-10`
@@ -14,7 +14,7 @@ Enable safe, auditable, one-click site lock/unlock operations (`preview` and `pr
 
 ## Why This Brief Exists
 
-- AW-008 is currently `planned` in backlog but had no dedicated implementation brief.
+- AW-008 needed a dedicated implementation brief before execution.
 - Current env-controlled lock model is correct for security, but operators need deterministic ergonomics.
 - This brief defines measurable 10/10 thresholds before implementation starts.
 
@@ -114,4 +114,5 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-10 | feat/aw-008-site-lock-ops-workflow-slice-1 | started implementation slice-1: added workflow-dispatch foundation (`.github/workflows/site-lock-operations.yml`) with allowlisted inputs, audited summary artifact, deploy + smoke checks, and updated operator docs/UI pointers | next: run verify:pre-pr, open PR, run gate:pre-merge`
 - `2026-03-10 | working tree | created AW-008 planned implementation brief with scorecard-complete thresholds and deterministic ops/rollback contract | next: link this brief in backlog and use it as canonical scope when implementation starts`
