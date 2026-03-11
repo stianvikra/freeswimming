@@ -261,6 +261,33 @@ test.describe("api security negative paths", () => {
         }),
       })
     );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.get("/api/admin/email-templates")
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/email-templates", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          templateKey: "auth_login_code",
+          locale: "nb-NO",
+          subject: "Login code {{code}}",
+          body: "Use {{code}} to sign in.",
+          requiredPlaceholders: ["code"],
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.patch(`/api/admin/email-templates/${dummyUuid}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          subject: "Unauthorized email template update probe",
+        }),
+      })
+    );
 
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.get("/api/admin/operations/flags")

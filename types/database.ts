@@ -562,6 +562,107 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_email_templates: {
+        Row: {
+          body: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          last_published_at: string | null;
+          last_published_by: string | null;
+          locale: string;
+          optional_placeholders: string[];
+          required_placeholders: string[];
+          status: Database["public"]["Enums"]["admin_email_template_status"];
+          subject: string;
+          template_key: string;
+          updated_at: string;
+          updated_by: string | null;
+          version: number;
+        };
+        Insert: {
+          body?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          last_published_at?: string | null;
+          last_published_by?: string | null;
+          locale?: string;
+          optional_placeholders?: string[];
+          required_placeholders?: string[];
+          status?: Database["public"]["Enums"]["admin_email_template_status"];
+          subject?: string;
+          template_key: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          version?: number;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          last_published_at?: string | null;
+          last_published_by?: string | null;
+          locale?: string;
+          optional_placeholders?: string[];
+          required_placeholders?: string[];
+          status?: Database["public"]["Enums"]["admin_email_template_status"];
+          subject?: string;
+          template_key?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          version?: number;
+        };
+        Relationships: [];
+      };
+      admin_email_template_revisions: {
+        Row: {
+          action: string;
+          changed_by: string | null;
+          changed_by_email: string | null;
+          created_at: string;
+          id: string;
+          locale: string;
+          revision_number: number;
+          snapshot: Json;
+          template_id: string;
+          template_key: string;
+        };
+        Insert: {
+          action: string;
+          changed_by?: string | null;
+          changed_by_email?: string | null;
+          created_at?: string;
+          id?: string;
+          locale: string;
+          revision_number: number;
+          snapshot: Json;
+          template_id: string;
+          template_key: string;
+        };
+        Update: {
+          action?: string;
+          changed_by?: string | null;
+          changed_by_email?: string | null;
+          created_at?: string;
+          id?: string;
+          locale?: string;
+          revision_number?: number;
+          snapshot?: Json;
+          template_id?: string;
+          template_key?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "admin_email_template_revisions_template_id_fkey";
+            columns: ["template_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_email_templates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       products: {
         Row: {
           active: boolean;
@@ -631,6 +732,7 @@ export type Database = {
     };
     Enums: {
       admin_role: "admin" | "editor" | "viewer";
+      admin_email_template_status: "draft" | "review" | "published" | "archived";
       admin_content_status: "draft" | "review" | "published" | "archived";
       admin_content_type:
         | "course_module"

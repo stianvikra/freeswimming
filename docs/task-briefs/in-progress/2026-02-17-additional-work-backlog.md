@@ -345,6 +345,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-11 | feat/aw-009-email-template-data-contract-slice-2 | completed AW-009 slice-2 foundation: added canonical email-template schema + revisions, fail-closed admin API routes, placeholder/status transition validation, and unauthorized negative-path coverage for new endpoints | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-11 | feat/aw-009-email-template-governance-slice-1 | started AW-009 slice-1: set backlog status to in-progress, moved AW-009 brief to in-progress, and added template governance runbook baseline (`docs/runbooks/admin-email-template-governance.md`) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | feat/aw-008-preview-lock-smoke-fix-slice-3@0e1e70e | AW-008 closeout evidence captured: preview workflow run 22928386773 (`lock_on` PASS) + 22928440585 (`lock_off` PASS); updated workflow/runbook smoke contract to protected API route and marked AW-008 done | next: move AW-008 brief to done and continue with next low-risk backlog slice (AW-009 or AW-012)`
 - `2026-03-10 | feat/aw-008-production-approval-enforcement-slice-2 | started AW-008 slice-2 to enforce production required-reviewer gate directly in workflow and operator runbook | next: run lint:briefs + verify:pre-pr, then open PR`
