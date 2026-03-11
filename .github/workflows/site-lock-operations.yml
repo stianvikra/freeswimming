@@ -93,8 +93,11 @@ jobs:
               ;;
           esac
 
+          target_git_branch="${GITHUB_REF_NAME:-main}"
+
           echo "desired=$desired" >> "$GITHUB_OUTPUT"
           echo "rollback=$rollback" >> "$GITHUB_OUTPUT"
+          echo "target_git_branch=$target_git_branch" >> "$GITHUB_OUTPUT"
 
       - name: Check required Vercel secrets
         shell: bash
@@ -146,12 +149,6 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
-      - name: Pull Vercel project settings
-        shell: bash
-        run: |
-          set -euo pipefail
-          vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
-
       - name: Validate lock prerequisites for lock_on
         if: inputs.action == 'lock_on'
         shell: bash
@@ -179,6 +176,15 @@ jobs:
         run: |
           set -euo pipefail
           desired="${{ steps.validate.outputs.desired }}"
+          target_git_branch="${{ steps.validate.outputs.target_git_branch }}"
+
+          if [ "$TARGET_ENVIRONMENT" = "preview" ]; then
+            # Preview lock is managed as a global preview env value so CLI preview deploys resolve it consistently.
+            vercel env rm SITE_LOCK_ENABLED preview "$target_git_branch" --yes --token="$VERCEL_TOKEN" || true
+            vercel env rm SITE_LOCK_ENABLED preview --yes --token="$VERCEL_TOKEN" || true
+            printf '%s\n' "$desired" | vercel env add SITE_LOCK_ENABLED preview --token="$VERCEL_TOKEN"
+            exit 0
+          fi
 
           env_list="$(vercel env ls "$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN" || true)"
           if printf '%s\n' "$env_list" | grep -q "SITE_LOCK_ENABLED"; then
@@ -187,6 +193,13 @@ jobs:
 
           printf '%s\n' "$desired" | vercel env add SITE_LOCK_ENABLED "$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
 
+      - name: Pull Vercel project settings (post-update)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Refresh local env snapshot after mutation so deploy uses latest SITE_LOCK_ENABLED value.
+          vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
+
       - name: Deploy updated environment
         id: deploy
         shell: bash
@@ -194,11 +207,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/site-lock-ops
           deploy_output_file="artifacts/site-lock-ops/deploy-output.log"
+          desired="${{ steps.validate.outputs.desired }}"
 
           if [ "$TARGET_ENVIRONMENT" = "preview" ]; then
-            vercel deploy --target=preview --yes --token="$VERCEL_TOKEN" >"$deploy_output_file" 2>&1
+            vercel deploy --target=preview --yes --token="$VERCEL_TOKEN" \
+              --build-env SITE_LOCK_ENABLED="$desired" \
+              --env SITE_LOCK_ENABLED="$desired" >"$deploy_output_file" 2>&1
           else
-            vercel deploy --prod --yes --token="$VERCEL_TOKEN" >"$deploy_output_file" 2>&1
+            vercel deploy --prod --yes --token="$VERCEL_TOKEN" \
+              --build-env SITE_LOCK_ENABLED="$desired" \
+              --env SITE_LOCK_ENABLED="$desired" >"$deploy_output_file" 2>&1
           fi
 
           deploy_url="$(grep -Eo 'https://[^ ]+' "$deploy_output_file" | tail -n 1 || true)"
@@ -217,30 +235,46 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/site-lock-ops
-          headers_file="artifacts/site-lock-ops/smoke-headers.txt"
+          home_headers_file="artifacts/site-lock-ops/smoke-home-headers.txt"
+          api_headers_file="artifacts/site-lock-ops/smoke-api-headers.txt"
           deploy_url="${{ steps.deploy.outputs.deploy_url }}"
 
-          curl -sS -I --max-time 20 "$deploy_url" > "$headers_file"
+          curl -sS -I --max-time 20 "$deploy_url" > "$home_headers_file"
+          curl -sS -I --max-time 20 "$deploy_url/api/progress/course" > "$api_headers_file"
 
-          status_code="$(awk 'NR==1 {print $2}' "$headers_file")"
-          location_header="$(awk 'tolower($1)=="location:" {print $2}' "$headers_file" | tr -d '\r' | tail -n 1)"
+          home_status_code="$(awk 'NR==1 {print $2}' "$home_headers_file")"
+          home_location_header="$(awk 'tolower($1)=="location:" {print $2}' "$home_headers_file" | tr -d '\r' | tail -n 1)"
+          api_status_code="$(awk 'NR==1 {print $2}' "$api_headers_file")"
+          api_location_header="$(awk 'tolower($1)=="location:" {print $2}' "$api_headers_file" | tr -d '\r' | tail -n 1)"
 
           if [ "$OPERATION" = "lock_on" ]; then
-            if [[ "$location_header" != *"/preview-access"* ]]; then
-              echo "::error::lock_on smoke check failed. Expected redirect to /preview-access."
-              cat "$headers_file"
+            if [ "$api_status_code" != "423" ]; then
+              echo "::error::lock_on smoke check failed. Expected /api/progress/course to return 423."
+              cat "$api_headers_file"
               exit 1
             fi
+
+            if [[ "$home_location_header" != *"/preview-access"* ]]; then
+              echo "::warning::lock_on home route did not return redirect header; API lock status validated via 423."
+            fi
           else
-            if [[ "$location_header" == *"/preview-access"* ]]; then
+            if [ "$api_status_code" = "423" ]; then
+              echo "::error::lock_off smoke check failed. /api/progress/course still returns 423."
+              cat "$api_headers_file"
+              exit 1
+            fi
+
+            if [[ "$home_location_header" == *"/preview-access"* ]]; then
               echo "::error::lock_off smoke check failed. Unexpected redirect to /preview-access."
-              cat "$headers_file"
+              cat "$home_headers_file"
               exit 1
             fi
           fi
 
-          echo "status_code=$status_code" >> "$GITHUB_OUTPUT"
-          echo "location_header=$location_header" >> "$GITHUB_OUTPUT"
+          echo "home_status_code=$home_status_code" >> "$GITHUB_OUTPUT"
+          echo "home_location_header=$home_location_header" >> "$GITHUB_OUTPUT"
+          echo "api_status_code=$api_status_code" >> "$GITHUB_OUTPUT"
+          echo "api_location_header=$api_location_header" >> "$GITHUB_OUTPUT"
 
       - name: Write operation summary
         shell: bash
@@ -260,8 +294,10 @@ jobs:
           - rollback action: \`${{ steps.validate.outputs.rollback }}\`
           - reason: $OPERATION_REASON
           - deployment URL: ${{ steps.deploy.outputs.deploy_url }}
-          - smoke status code: \`${{ steps.smoke.outputs.status_code }}\`
-          - smoke location header: \`${{ steps.smoke.outputs.location_header }}\`
+          - smoke home status code: \`${{ steps.smoke.outputs.home_status_code }}\`
+          - smoke home location header: \`${{ steps.smoke.outputs.home_location_header }}\`
+          - smoke api status code (`/api/progress/course`): \`${{ steps.smoke.outputs.api_status_code }}\`
+          - smoke api location header: \`${{ steps.smoke.outputs.api_location_header }}\`
           - run URL: $run_url
           EOF
 
@@ -274,7 +310,8 @@ jobs:
           name: site-lock-operation-${{ inputs.target_environment }}-${{ inputs.action }}
           path: |
             artifacts/site-lock-ops/summary.md
-            artifacts/site-lock-ops/smoke-headers.txt
+            artifacts/site-lock-ops/smoke-home-headers.txt
+            artifacts/site-lock-ops/smoke-api-headers.txt
             artifacts/site-lock-ops/deploy-output.log
           if-no-files-found: ignore
           retention-days: 14

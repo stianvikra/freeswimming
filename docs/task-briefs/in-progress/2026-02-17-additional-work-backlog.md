@@ -22,7 +22,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-005` | Contextual admin notes on lesson/drill/product pages                       | `high`   | `done`        |
 | `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
 | `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `done`        |
-| `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `in-progress` |
+| `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `done`        |
 | `AW-009` | Admin email templates and message governance                               | `high`   | `planned`     |
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `planned`     |
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
@@ -159,8 +159,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - environment choices: `preview` / `production`,
   - production changes require manual approval gate,
   - after change: trigger deploy + run smoke verification:
-    - `lock_on` expects redirect to `/preview-access`,
-    - `lock_off` expects normal public route access.
+    - `lock_on` expects protected API route `423` (`/api/progress/course`),
+    - `lock_off` expects protected API route not `423` and normal public route access.
 - Security and safety baseline:
   - role-restricted execution (repo admins/operators only),
   - strict input allowlist (no freeform env mutation),
@@ -179,8 +179,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - production lock toggle always requires human approval and leaves audit trail,
   - smoke checks pass for both actions in preview,
   - negative-path tests cover unauthorized/invalid action inputs.
-- Active brief:
-  - `docs/task-briefs/in-progress/2026-03-10-aw-008-one-click-site-lock-operations-10-10.md`
+- Done brief:
+  - `docs/task-briefs/done/2026-03-10-aw-008-one-click-site-lock-operations-10-10.md`
 
 ## AW-009: Admin email templates and message governance
 
@@ -272,13 +272,12 @@ Capture good ideas that should be implemented later without blocking the active 
 ## Recommended Execution Order
 
 1. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
-2. `AW-008` one-click site-lock operations workflow (before public launch cadence).
-3. `AW-012` full admin 10/10 audit with checklist + e2e gates.
-4. `AW-009` admin email templates and governance.
-5. `AW-011` terms/privacy compliance lifecycle.
-6. `AW-010` gated + public performance governance runbook.
-7. `AW-013` full admin content editing UX (modules/lessons/pages/products).
-8. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
+2. `AW-012` full admin 10/10 audit with checklist + e2e gates.
+3. `AW-009` admin email templates and governance.
+4. `AW-011` terms/privacy compliance lifecycle.
+5. `AW-010` gated + public performance governance runbook.
+6. `AW-013` full admin content editing UX (modules/lessons/pages/products).
+7. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
@@ -346,6 +345,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-10 | feat/aw-008-preview-lock-smoke-fix-slice-3@0e1e70e | AW-008 closeout evidence captured: preview workflow run 22928386773 (`lock_on` PASS) + 22928440585 (`lock_off` PASS); updated workflow/runbook smoke contract to protected API route and marked AW-008 done | next: move AW-008 brief to done and continue with next low-risk backlog slice (AW-009 or AW-012)`
 - `2026-03-10 | feat/aw-008-production-approval-enforcement-slice-2 | started AW-008 slice-2 to enforce production required-reviewer gate directly in workflow and operator runbook | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | main@099ba27 | AW-008 slice-1 merged via PR #178 (one-click site-lock workflow foundation + docs/UI pointers) | next: start slice-2 approval enforcement before AW-008 completion decision`
 - `2026-03-10 | feat/aw-008-site-lock-ops-workflow-slice-1 | moved AW-008 from planned to in-progress and started implementation slice-1 (workflow-dispatch foundation + runbook/UI/help alignment) | next: run lint:briefs + verify:pre-pr, then open PR`

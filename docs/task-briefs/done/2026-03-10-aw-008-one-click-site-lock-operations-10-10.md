@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-008-one-click-site-lock-operations-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
 - `updated`: `2026-03-10`
@@ -114,6 +114,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-10 | feat/aw-008-preview-lock-smoke-fix-slice-3@0e1e70e | completed AW-008 closeout validation: preview `lock_on`and`lock_off` both PASS after aligning preview env semantics and protected API smoke target (`/api/progress/course`); workflow runs: 22928386773 (`lock_on` PASS), 22928440585 (`lock_off` PASS) | next: move brief to done and mark AW-008 done in backlog`
 - `2026-03-10 | feat/aw-008-production-approval-enforcement-slice-2 | started implementation slice-2: enforce production required-reviewer gate in site-lock workflow and sync operator runbook language | next: run verify:pre-pr, open PR, run gate:pre-merge`
 - `2026-03-10 | main@099ba27 | merged slice-1 foundation via PR #178 (workflow-dispatch + deploy/smoke artifacts + admin docs/UI pointers) | next: enforce production approval guardrail in workflow before marking AW-008 complete`
 - `2026-03-10 | feat/aw-008-site-lock-ops-workflow-slice-1 | started implementation slice-1: added workflow-dispatch foundation (`.github/workflows/site-lock-operations.yml`) with allowlisted inputs, audited summary artifact, deploy + smoke checks, and updated operator docs/UI pointers | next: run verify:pre-pr, open PR, run gate:pre-merge`

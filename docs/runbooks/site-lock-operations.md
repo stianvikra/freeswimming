@@ -24,6 +24,8 @@ Run safe, auditable lock/unlock operations without manual Vercel env editing.
 4. Vercel target env requirements for `lock_on`:
    - `SITE_LOCK_PASSWORD_HASH` exists
    - `SITE_LOCK_BYPASS_TOKEN` exists
+5. Preview env scope:
+   - Workflow treats preview `SITE_LOCK_ENABLED` as a global preview env value (deterministic for CLI preview deploys).
 
 ## Run An Operation
 
@@ -41,12 +43,13 @@ Run safe, auditable lock/unlock operations without manual Vercel env editing.
 2. Validates required Vercel secrets.
 3. For `production`: validates GitHub environment has required reviewer protection.
 4. For `lock_on`: checks lock prerequisites in target Vercel environment.
-5. Applies `SITE_LOCK_ENABLED` in target environment.
-6. Deploys the target environment.
-7. Runs smoke check:
-   - `lock_on`: expects redirect to `/preview-access`
-   - `lock_off`: expects no redirect to `/preview-access`
-8. Uploads operation artifact with summary + smoke headers + deploy output.
+5. Applies `SITE_LOCK_ENABLED` in target environment (global preview value for `preview`).
+6. Refreshes pulled Vercel settings so deploy uses latest lock value.
+7. Deploys the target environment with explicit lock value in deploy env/build-env.
+8. Runs smoke check:
+   - `lock_on`: expects `/api/progress/course` to return `423` and home route to indicate gate (`/preview-access` redirect header when present)
+   - `lock_off`: expects `/api/progress/course` to not return `423` and no `/preview-access` redirect on home route
+9. Uploads operation artifact with summary + smoke headers + deploy output.
 
 ## Rollback
 
