@@ -105,6 +105,7 @@ test.describe("admin foundation", () => {
     const tabQrLinks = page.getByTestId("admin-tab-qr-links");
     const tabCommerce = page.getByTestId("admin-tab-commerce");
     const tabOperations = page.getByTestId("admin-tab-operations");
+    const tabEmailTemplates = page.getByTestId("admin-tab-email-templates");
     const tabNotes = page.getByTestId("admin-tab-notes");
     const tabCategories = page.getByTestId("admin-tab-categories");
     const tabHelp = page.getByTestId("admin-tab-help");
@@ -143,6 +144,10 @@ test.describe("admin foundation", () => {
     await tabOperations.click();
     await expect(activeSectionLabel).toHaveText("Operations");
     await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
+
+    await tabEmailTemplates.click();
+    await expect(activeSectionLabel).toHaveText("Email templates");
+    await expect(page.getByRole("heading", { name: "Email templates" })).toBeVisible();
 
     await tabNotes.click();
     await expect(activeSectionLabel).toHaveText("Notes");

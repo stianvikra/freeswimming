@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import AdminCommerceManager from "@/components/admin/AdminCommerceManager";
 import AdminContentManager from "@/components/admin/AdminContentManager";
 import AdminCategoriesManager from "@/components/admin/AdminCategoriesManager";
+import AdminEmailTemplatesManager from "@/components/admin/AdminEmailTemplatesManager";
 import AdminHelpCenter from "@/components/admin/AdminHelpCenter";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
@@ -14,6 +15,7 @@ type AdminTab =
   | "qr-links"
   | "commerce"
   | "operations"
+  | "email-templates"
   | "notes"
   | "categories"
   | "help";
@@ -38,6 +40,11 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
     id: "operations",
     label: "Operations",
     subtitle: "Runtime flags and private-access status",
+  },
+  {
+    id: "email-templates",
+    label: "Email templates",
+    subtitle: "Draft, review, publish, and rollback-safe message copy",
   },
   {
     id: "notes",
@@ -77,7 +84,7 @@ export default function AdminWorkspace() {
 
   return (
     <div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8">
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
@@ -126,6 +133,7 @@ export default function AdminWorkspace() {
         {activeTab === "qr-links" ? <AdminQrLinksManager /> : null}
         {activeTab === "commerce" ? <AdminCommerceManager /> : null}
         {activeTab === "operations" ? <AdminOperationsManager /> : null}
+        {activeTab === "email-templates" ? <AdminEmailTemplatesManager /> : null}
         {activeTab === "notes" ? <AdminNotesManager /> : null}
         {activeTab === "categories" ? <AdminCategoriesManager /> : null}
         {activeTab === "help" ? <AdminHelpCenter /> : null}
