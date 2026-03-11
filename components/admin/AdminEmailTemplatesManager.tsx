@@ -747,30 +747,41 @@ export default function AdminEmailTemplatesManager() {
             />
           </label>
 
-          <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-            <p>
+          <div
+            className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600"
+            data-testid="admin-email-template-create-preview"
+          >
+            <p data-testid="admin-email-template-create-preview-detected">
               <span className="font-semibold text-slate-700">Detected placeholders:</span>{" "}
               {createPlaceholderPreview.length > 0 ? createPlaceholderPreview.join(", ") : "none"}
             </p>
             {createPreviewSample.error ? (
-              <p className="text-rose-700">{createPreviewSample.error}</p>
+              <p className="text-rose-700" data-testid="admin-email-template-create-preview-error">
+                {createPreviewSample.error}
+              </p>
             ) : null}
-            <p>
+            <p data-testid="admin-email-template-create-preview-subject">
               <span className="font-semibold text-slate-700">Rendered subject:</span>{" "}
               {createRenderedPreview.subject || "—"}
             </p>
             <p className="font-semibold text-slate-700">Rendered body:</p>
-            <pre className="whitespace-pre-wrap font-mono text-xs text-slate-700">
+            <pre
+              className="whitespace-pre-wrap font-mono text-xs text-slate-700"
+              data-testid="admin-email-template-create-preview-body"
+            >
               {createRenderedPreview.body || "—"}
             </pre>
             {createRenderedPreview.usedFallbackKeys.length > 0 ? (
-              <p>
+              <p data-testid="admin-email-template-create-preview-fallback">
                 <span className="font-semibold text-slate-700">Fallback defaults used:</span>{" "}
                 {createRenderedPreview.usedFallbackKeys.join(", ")}
               </p>
             ) : null}
             {createRenderedPreview.missingKeys.length > 0 ? (
-              <p className="text-amber-700">
+              <p
+                className="text-amber-700"
+                data-testid="admin-email-template-create-preview-missing"
+              >
                 <span className="font-semibold text-amber-800">Missing preview values:</span>{" "}
                 {createRenderedPreview.missingKeys.join(", ")}
               </p>
