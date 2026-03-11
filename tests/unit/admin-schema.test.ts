@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isAdminEmailTemplatesSchemaMissing,
   isAdminCommerceSchemaMissing,
   getAdminSchemaSetupMessage,
   isAdminContentSchemaMissing,
@@ -29,6 +30,14 @@ describe("admin schema helpers", () => {
     expect(isAdminNotesSchemaMissing({ code: "PGRST205" })).toBe(true);
   });
 
+  it("detects missing admin email templates schema", () => {
+    expect(
+      isAdminEmailTemplatesSchemaMissing({
+        message: 'relation "admin_email_templates" does not exist',
+      })
+    ).toBe(true);
+  });
+
   it("detects setup blocked by missing grants or policies", () => {
     expect(
       isAdminContentSchemaMissing({
@@ -54,5 +63,6 @@ describe("admin schema helpers", () => {
     expect(getAdminSchemaSetupMessage("operations")).toContain("Admin operations");
     expect(getAdminSchemaSetupMessage("notes")).toContain("Admin notes");
     expect(getAdminSchemaSetupMessage("commerce")).toContain("Admin commerce");
+    expect(getAdminSchemaSetupMessage("emailTemplates")).toContain("Admin email templates");
   });
 });

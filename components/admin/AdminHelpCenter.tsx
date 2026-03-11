@@ -16,7 +16,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-10";
+const LAST_UPDATED = "2026-03-11";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -24,6 +24,7 @@ const QUICK_ACTIONS = [
   { id: "tabs", label: "Dashboard tabs" },
   { id: "content-page", label: "Content workflow" },
   { id: "qr-links", label: "QR workflow" },
+  { id: "email-templates", label: "Email templates" },
   { id: "buttons", label: "Buttons explained" },
   { id: "quality-matrix", label: "10/10 matrix" },
   { id: "controls", label: "Doc controls" },
@@ -53,6 +54,12 @@ const DASHBOARD_TABS: TabGuide[] = [
     name: "Operations",
     primaryJob: "Control runtime flags and private-access lock behavior.",
     commonRisk: "Flag changes without verification can hide or expose routes unexpectedly.",
+  },
+  {
+    name: "Email templates",
+    primaryJob:
+      "Manage lifecycle-safe email copy with placeholder validation and publish controls.",
+    commonRisk: "Publishing template text with invalid placeholders can break outbound messages.",
   },
   {
     name: "Notes",
@@ -88,7 +95,12 @@ const LEARNING_PATH = [
       "In QR Links: create slug, verify destination, activate, test stable link, then download QR files.",
   },
   {
-    title: "Step 4: Recovery drill (5 min)",
+    title: "Step 4: Email template governance cycle (10 min)",
+    detail:
+      "In Email templates: create draft, validate placeholders, move to review, then publish with rollback-ready history.",
+  },
+  {
+    title: "Step 5: Recovery drill (5 min)",
     detail:
       "Practice one rollback flow: disable broken QR or restore a content revision and confirm public result.",
   },
@@ -154,6 +166,34 @@ const QR_WORKFLOW = [
     title: "Rollback fast if something is wrong",
     detail:
       "Immediate rollback options: Disable status or restore a safe destination URL, then retest stable link.",
+  },
+];
+
+const EMAIL_TEMPLATE_WORKFLOW = [
+  {
+    title: "Start in draft with explicit placeholder declarations",
+    detail:
+      "Write subject/body first, then declare required and optional placeholders so validation can enforce contract safety.",
+  },
+  {
+    title: "Use review as internal quality gate",
+    detail:
+      "Move template to review before publish. This is where copy, locale, and placeholder usage should be peer-checked.",
+  },
+  {
+    title: "Publish only after validation passes",
+    detail:
+      "Published templates increment version and record publisher metadata for recovery and support visibility.",
+  },
+  {
+    title: "Use lifecycle transitions intentionally",
+    detail:
+      "Allowed transitions protect production safety: draft/review/published/archived are not interchangeable shortcuts.",
+  },
+  {
+    title: "Handle conflicts by reload-then-retry",
+    detail:
+      "If another operator updated a template first, reload latest state and re-apply your intended change.",
   },
 ];
 
@@ -249,6 +289,36 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Delete",
         meaning:
           "Permanent remove of QR row, grouped under More actions. Prefer disable when unsure.",
+      },
+    ],
+  },
+  {
+    section: "Email templates tab",
+    actions: [
+      {
+        label: "Create template",
+        meaning:
+          "Creates new template row in draft/review with placeholder validation and unique key+locale contract.",
+      },
+      {
+        label: "Edit / Close editor",
+        meaning:
+          "Opens inline edit form for subject/body/placeholders/status and closes it when done.",
+      },
+      {
+        label: "Move to Review / Move to Published / Move to Archived / Move to Draft",
+        meaning:
+          "Applies lifecycle transitions with optimistic concurrency checks to avoid silent overwrite.",
+      },
+      {
+        label: "Save changes / Reset draft",
+        meaning:
+          "Save sends the current patch with conflict protection. Reset restores editor state from latest loaded row.",
+      },
+      {
+        label: "Refresh",
+        meaning:
+          "Reloads server-canonical template list if another operator changed state or conflict warning appears.",
       },
     ],
   },
@@ -423,6 +493,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
 const RUNBOOK_LINKS = [
   "docs/runbooks/qr-redirect-operations.md",
   "docs/runbooks/site-lock-operations.md",
+  "docs/runbooks/admin-email-template-governance.md",
   "docs/runbooks/private-access-gate.md",
   "docs/runbooks/post-merge-local-sync.md",
   "docs/runbooks/ci-unblock.md",
@@ -540,6 +611,25 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
+      <section id="email-templates" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">How Email Templates work</h3>
+        <p className="mt-2 text-sm text-slate-700">
+          Email Templates is lifecycle-safe message governance for operational copy that should not
+          require code edits for every wording update.
+        </p>
+        <div className="mt-3 space-y-3">
+          {EMAIL_TEMPLATE_WORKFLOW.map((item) => (
+            <article
+              key={item.title}
+              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+            >
+              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section id="buttons" className="rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="text-base font-semibold text-slate-900">Buttons and what they do</h3>
         <p className="mt-2 text-sm text-slate-700">
@@ -576,6 +666,9 @@ export default function AdminHelpCenter() {
               <li>Move/reorder module and lesson structure using safe workflows.</li>
               <li>Create/edit/activate/disable/delete QR registry rows.</li>
               <li>Generate/download QR assets (SVG/PNG) from registry rows.</li>
+              <li>
+                Create/edit/review/publish/archive email templates with placeholder validation.
+              </li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>
             </ul>

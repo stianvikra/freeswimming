@@ -41,6 +41,7 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "How the Content page works" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "How QR Links work" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "How Email Templates work" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Buttons and what they do" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "What can be edited right now" })).toBeVisible();
     await expect(
@@ -68,6 +69,10 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(page.getByText("Open lock operations workflow:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
+    await expect(page.getByText("Create template:")).toBeVisible();
+    await expect(
+      page.getByText("Move to Review / Move to Published / Move to Archived / Move to Draft:")
+    ).toBeVisible();
     await expect(
       page.getByText(
         "Every new/updated brief must declare Help/Guide impact as: required update or explicit N/A with reason."
@@ -75,5 +80,6 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(page.getByText("docs/runbooks/qr-redirect-operations.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/site-lock-operations.md")).toBeVisible();
+    await expect(page.getByText("docs/runbooks/admin-email-template-governance.md")).toBeVisible();
   });
 });

@@ -109,6 +109,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-11 | feat/aw-009-email-template-admin-ui-slice-3 | completed AW-009 slice-3 admin workflow + guide alignment: added Email templates tab in Admin workspace, shipped create/edit/status-transition manager UI over canonical API contract, and updated admin Help/Guide with lifecycle workflow + button glossary + runbook link; added e2e/unit coverage for tab navigation/help content/schema setup messaging | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-11 | feat/aw-009-email-template-data-contract-slice-2 | completed AW-009 slice-2 server-canonical foundation: added admin_email_templates + revision migration, fail-closed admin API routes (GET/POST/PATCH), placeholder/status transition validation, and unauthorized negative-path coverage for new endpoints | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-11 | feat/aw-009-email-template-governance-slice-1 | started AW-009 slice-1: moved brief to in-progress, aligned backlog lifecycle state, and added operator runbook baseline for draft/review/publish/revert governance (`docs/runbooks/admin-email-template-governance.md`) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created AW-009 planned implementation brief with scorecard-complete governance thresholds and deterministic draft/review/publish contract | next: link this brief in backlog and use it as canonical scope when implementation starts`
