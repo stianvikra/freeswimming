@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-009-admin-email-templates-and-governance-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
-- `updated`: `2026-03-10`
+- `updated`: `2026-03-11`
 
 ## Goal
 
@@ -14,7 +14,7 @@ Provide a safe admin workflow for email-template editing, preview, and publish g
 
 ## Why This Brief Exists
 
-- AW-009 is in backlog as `planned` but lacked a dedicated implementation brief.
+- AW-009 started as `planned` in backlog and now moved to active execution.
 - Messaging quality and safety need deterministic contracts before implementation starts.
 - This brief defines measurable 10/10 thresholds for future execution slices.
 
@@ -109,4 +109,5 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-11 | feat/aw-009-email-template-governance-slice-1 | started AW-009 slice-1: moved brief to in-progress, aligned backlog lifecycle state, and added operator runbook baseline for draft/review/publish/revert governance (`docs/runbooks/admin-email-template-governance.md`) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created AW-009 planned implementation brief with scorecard-complete governance thresholds and deterministic draft/review/publish contract | next: link this brief in backlog and use it as canonical scope when implementation starts`
