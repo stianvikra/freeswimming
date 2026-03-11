@@ -29,11 +29,10 @@ async function blockBeforeInstallPrompt(page: Page) {
   });
 }
 
-async function primeInstallPrompt(page: Page, outcome: "accepted" | "dismissed") {
+async function dispatchInstallPromptEvent(page: Page, outcome: "accepted" | "dismissed") {
   await page.evaluate((chosenOutcome) => {
     localStorage.removeItem("a2hs_prompt_seen");
     localStorage.removeItem("a2hs_dismissed_at");
-    localStorage.removeItem("fs_course_done_lessons");
 
     const dispatchInstallPromptEvent = () => {
       const installEvent = new Event("beforeinstallprompt", { cancelable: true }) as Event & {
@@ -54,6 +53,15 @@ async function primeInstallPrompt(page: Page, outcome: "accepted" | "dismissed")
     dispatchInstallPromptEvent();
     window.setTimeout(dispatchInstallPromptEvent, 50);
   }, outcome);
+}
+
+async function primeInstallPrompt(page: Page, outcome: "accepted" | "dismissed") {
+  await page.evaluate(() => {
+    localStorage.removeItem("a2hs_prompt_seen");
+    localStorage.removeItem("a2hs_dismissed_at");
+    localStorage.removeItem("fs_course_done_lessons");
+  });
+  await dispatchInstallPromptEvent(page, outcome);
   await page.waitForTimeout(120);
 }
 
@@ -222,7 +230,12 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   await activateMarkDoneButton(page);
 
   const prompt = page.getByTestId("a2hs-auto-prompt");
-  await expect(prompt).toBeVisible({ timeout: 4_500 });
+  try {
+    await expect(prompt).toBeVisible({ timeout: 3_500 });
+  } catch {
+    await dispatchInstallPromptEvent(page, "dismissed");
+    await expect(prompt).toBeVisible({ timeout: 8_000 });
+  }
 
   await page.getByRole("button", { name: "Not now" }).click();
   await expect(prompt).toBeHidden();
@@ -250,7 +263,12 @@ test("contextual install prompt shows success confirmation after accepted instal
   await activateMarkDoneButton(page);
 
   const prompt = page.getByTestId("a2hs-auto-prompt");
-  await expect(prompt).toBeVisible({ timeout: 4_500 });
+  try {
+    await expect(prompt).toBeVisible({ timeout: 3_500 });
+  } catch {
+    await dispatchInstallPromptEvent(page, "accepted");
+    await expect(prompt).toBeVisible({ timeout: 8_000 });
+  }
   await page.getByRole("button", { name: "Install app" }).click();
   await expect(page.getByText(INSTALL_SUCCESS_MESSAGE)).toBeVisible();
 

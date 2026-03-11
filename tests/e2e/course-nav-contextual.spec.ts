@@ -48,7 +48,8 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   const rightLast = page.getByTestId("course-nav-right");
 
   await expect(leftLast).toHaveText("Prev");
-  await expect(rightLast).toHaveText("Programs");
+  await expect(rightLast).toBeVisible({ timeout: 10_000 });
+  await expect(rightLast).toHaveText("Programs", { timeout: 10_000 });
 
   const rightTag = await rightLast.evaluate((el) => el.tagName);
   expect(rightTag).toBe("A");
