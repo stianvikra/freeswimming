@@ -44,6 +44,8 @@ Run safe, auditable template copy changes without ad-hoc edits in code or provid
    - no unknown placeholders,
    - non-empty subject/body and valid link format.
 3. Render preview with representative sample data.
+   - Provide sample JSON values for key placeholders.
+   - Use fallback defaults only as preview aid, not as production data contract.
 4. Move draft to `review`.
 5. Reviewer approves for publish.
 6. Publisher (admin) publishes reviewed version.

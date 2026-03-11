@@ -5,6 +5,7 @@ import {
   ADMIN_EMAIL_TEMPLATE_STATUS_VALUES,
   canTransitionAdminEmailTemplateStatus,
   extractAdminEmailTemplatePlaceholders,
+  renderAdminEmailTemplatePreview,
   type AdminEmailTemplateRow,
   type AdminEmailTemplateStatus,
 } from "@/lib/admin/email-templates";
@@ -70,6 +71,7 @@ type CreateFormState = {
   body: string;
   requiredPlaceholders: string;
   optionalPlaceholders: string;
+  previewSampleValues: string;
   status: "draft" | "review";
 };
 
@@ -80,6 +82,7 @@ type EditFormState = {
   body: string;
   requiredPlaceholders: string;
   optionalPlaceholders: string;
+  previewSampleValues: string;
   status: AdminEmailTemplateStatus;
 };
 
@@ -90,7 +93,13 @@ const CREATE_FORM_INITIAL: CreateFormState = {
   body: "",
   requiredPlaceholders: "",
   optionalPlaceholders: "",
+  previewSampleValues: "{}",
   status: "draft",
+};
+
+type PreviewSampleParseResult = {
+  values: Record<string, unknown>;
+  error: string | null;
 };
 
 function formatDateTime(value: string | null): string {
@@ -179,6 +188,7 @@ function toEditFormState(item: AdminEmailTemplateRow): EditFormState {
     body: item.body,
     requiredPlaceholders: toListInput(item.required_placeholders),
     optionalPlaceholders: toListInput(item.optional_placeholders),
+    previewSampleValues: "{}",
     status: item.status,
   };
 }
@@ -194,6 +204,26 @@ function sortTemplates(rows: AdminEmailTemplateRow[]): AdminEmailTemplateRow[] {
 
 function normalizeInput(value: string): string {
   return value.trim();
+}
+
+function parsePreviewSampleValues(raw: string): PreviewSampleParseResult {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return { values: {}, error: null };
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { values: {}, error: "Preview sample values must be a JSON object." };
+    }
+    return {
+      values: parsed as Record<string, unknown>,
+      error: null,
+    };
+  } catch {
+    return { values: {}, error: "Preview sample values must be valid JSON." };
+  }
 }
 
 function nextQuickStatusOptions(current: AdminEmailTemplateStatus): AdminEmailTemplateStatus[] {
@@ -278,10 +308,41 @@ export default function AdminEmailTemplatesManager() {
     [editingId, items]
   );
 
+  const createPreviewSample = useMemo(
+    () => parsePreviewSampleValues(createState.previewSampleValues),
+    [createState.previewSampleValues]
+  );
+  const createPlaceholderPreview = useMemo(
+    () => extractAdminEmailTemplatePlaceholders(`${createState.subject}\n${createState.body}`),
+    [createState.subject, createState.body]
+  );
+  const createRenderedPreview = useMemo(
+    () =>
+      renderAdminEmailTemplatePreview({
+        subject: createState.subject,
+        body: createState.body,
+        sampleValues: createPreviewSample.values,
+      }),
+    [createPreviewSample.values, createState.body, createState.subject]
+  );
+
   const placeholderPreview = useMemo(() => {
     if (!editState) return [];
     return extractAdminEmailTemplatePlaceholders(`${editState.subject}\n${editState.body}`);
   }, [editState]);
+
+  const editPreviewSample = useMemo(
+    () => parsePreviewSampleValues(editState?.previewSampleValues ?? "{}"),
+    [editState?.previewSampleValues]
+  );
+  const editRenderedPreview = useMemo(() => {
+    if (!editState) return null;
+    return renderAdminEmailTemplatePreview({
+      subject: editState.subject,
+      body: editState.body,
+      sampleValues: editPreviewSample.values,
+    });
+  }, [editPreviewSample.values, editState]);
 
   function startEdit(item: AdminEmailTemplateRow) {
     if (savingId || quickStatusId) return;
@@ -672,6 +733,49 @@ export default function AdminEmailTemplatesManager() {
               />
             </label>
           </div>
+
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span>Preview sample values (JSON object)</span>
+            <textarea
+              value={createState.previewSampleValues}
+              onChange={(event) =>
+                setCreateState((prev) => ({ ...prev, previewSampleValues: event.target.value }))
+              }
+              rows={4}
+              placeholder='{"code":"654321","user_name":"Stian"}'
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+            />
+          </label>
+
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+            <p>
+              <span className="font-semibold text-slate-700">Detected placeholders:</span>{" "}
+              {createPlaceholderPreview.length > 0 ? createPlaceholderPreview.join(", ") : "none"}
+            </p>
+            {createPreviewSample.error ? (
+              <p className="text-rose-700">{createPreviewSample.error}</p>
+            ) : null}
+            <p>
+              <span className="font-semibold text-slate-700">Rendered subject:</span>{" "}
+              {createRenderedPreview.subject || "—"}
+            </p>
+            <p className="font-semibold text-slate-700">Rendered body:</p>
+            <pre className="whitespace-pre-wrap font-mono text-xs text-slate-700">
+              {createRenderedPreview.body || "—"}
+            </pre>
+            {createRenderedPreview.usedFallbackKeys.length > 0 ? (
+              <p>
+                <span className="font-semibold text-slate-700">Fallback defaults used:</span>{" "}
+                {createRenderedPreview.usedFallbackKeys.join(", ")}
+              </p>
+            ) : null}
+            {createRenderedPreview.missingKeys.length > 0 ? (
+              <p className="text-amber-700">
+                <span className="font-semibold text-amber-800">Missing preview values:</span>{" "}
+                {createRenderedPreview.missingKeys.join(", ")}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         <button
@@ -889,6 +993,53 @@ export default function AdminEmailTemplatesManager() {
                       <span className="font-semibold text-slate-700">Detected placeholders:</span>{" "}
                       {placeholderPreview.length > 0 ? placeholderPreview.join(", ") : "none"}
                     </div>
+
+                    <label className="space-y-1 text-sm font-medium text-slate-700">
+                      <span>Preview sample values (JSON object)</span>
+                      <textarea
+                        value={editState.previewSampleValues}
+                        onChange={(event) =>
+                          setEditState((prev) =>
+                            prev ? { ...prev, previewSampleValues: event.target.value } : prev
+                          )
+                        }
+                        rows={4}
+                        placeholder='{"code":"654321","user_name":"Stian"}'
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      />
+                    </label>
+
+                    {editRenderedPreview ? (
+                      <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                        {editPreviewSample.error ? (
+                          <p className="text-rose-700">{editPreviewSample.error}</p>
+                        ) : null}
+                        <p>
+                          <span className="font-semibold text-slate-700">Rendered subject:</span>{" "}
+                          {editRenderedPreview.subject || "—"}
+                        </p>
+                        <p className="font-semibold text-slate-700">Rendered body:</p>
+                        <pre className="whitespace-pre-wrap font-mono text-xs text-slate-700">
+                          {editRenderedPreview.body || "—"}
+                        </pre>
+                        {editRenderedPreview.usedFallbackKeys.length > 0 ? (
+                          <p>
+                            <span className="font-semibold text-slate-700">
+                              Fallback defaults used:
+                            </span>{" "}
+                            {editRenderedPreview.usedFallbackKeys.join(", ")}
+                          </p>
+                        ) : null}
+                        {editRenderedPreview.missingKeys.length > 0 ? (
+                          <p className="text-amber-700">
+                            <span className="font-semibold text-amber-800">
+                              Missing preview values:
+                            </span>{" "}
+                            {editRenderedPreview.missingKeys.join(", ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     <div className="flex flex-wrap gap-2">
                       <button

@@ -173,7 +173,7 @@ const EMAIL_TEMPLATE_WORKFLOW = [
   {
     title: "Start in draft with explicit placeholder declarations",
     detail:
-      "Write subject/body first, then declare required and optional placeholders so validation can enforce contract safety.",
+      "Write subject/body first, then declare required and optional placeholders so validation + preview rendering can enforce contract safety.",
   },
   {
     title: "Use review as internal quality gate",
@@ -183,7 +183,7 @@ const EMAIL_TEMPLATE_WORKFLOW = [
   {
     title: "Publish only after validation passes",
     detail:
-      "Admin publish/revert actions increment version and record publisher metadata for recovery and support visibility.",
+      "Use preview with sample JSON (fallback defaults fill known tokens), then publish/revert via admin role; publish increments version and records operator metadata.",
   },
   {
     title: "Use lifecycle transitions intentionally",
