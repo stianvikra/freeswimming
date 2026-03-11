@@ -97,7 +97,7 @@ const LEARNING_PATH = [
   {
     title: "Step 4: Email template governance cycle (10 min)",
     detail:
-      "In Email templates: create draft, validate placeholders, move to review, then publish with rollback-ready history.",
+      "In Email templates: create draft, validate placeholders, move to review, then let admin publish with rollback-ready history.",
   },
   {
     title: "Step 5: Recovery drill (5 min)",
@@ -178,12 +178,12 @@ const EMAIL_TEMPLATE_WORKFLOW = [
   {
     title: "Use review as internal quality gate",
     detail:
-      "Move template to review before publish. This is where copy, locale, and placeholder usage should be peer-checked.",
+      "Move template to review before publish. This is where copy, locale, and placeholder usage should be peer-checked by editor/admin.",
   },
   {
     title: "Publish only after validation passes",
     detail:
-      "Published templates increment version and record publisher metadata for recovery and support visibility.",
+      "Admin publish/revert actions increment version and record publisher metadata for recovery and support visibility.",
   },
   {
     title: "Use lifecycle transitions intentionally",
@@ -228,7 +228,8 @@ const BUTTON_GUIDE: ActionGroup[] = [
       },
       {
         label: "Move to draft / Move to review / Publish / Archive",
-        meaning: "Moves item through lifecycle states with explicit intent.",
+        meaning:
+          "Moves item through lifecycle states with explicit intent. Publish/revert transitions require admin role.",
       },
       {
         label: "Delete",
@@ -672,7 +673,8 @@ export default function AdminHelpCenter() {
               <li>Create/edit/activate/disable/delete QR registry rows.</li>
               <li>Generate/download QR assets (SVG/PNG) from registry rows.</li>
               <li>
-                Create/edit/review/publish/archive email templates with placeholder validation.
+                Create/edit/review/archive email templates with placeholder validation (admin role
+                required for publish/revert).
               </li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>

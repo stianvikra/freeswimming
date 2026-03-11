@@ -20,8 +20,8 @@ Run safe, auditable template copy changes without ad-hoc edits in code or provid
 ## Roles
 
 - `editor`: updates draft copy and preview inputs.
-- `reviewer`: validates quality, links, and placeholder integrity.
-- `publisher`: publishes approved drafts and executes rollback when needed.
+- `reviewer`: validates quality, links, and placeholder integrity (editor/admin role).
+- `publisher`: publishes approved drafts and executes rollback when needed (admin role).
 - `support`: confirms active version and rollback path during incidents.
 
 ## Template Contract Baseline
@@ -46,7 +46,7 @@ Run safe, auditable template copy changes without ad-hoc edits in code or provid
 3. Render preview with representative sample data.
 4. Move draft to `review`.
 5. Reviewer approves for publish.
-6. Publish reviewed version.
+6. Publisher (admin) publishes reviewed version.
 7. Verify send path uses the new `published` version.
 
 ## Rollback Workflow
