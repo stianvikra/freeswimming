@@ -43,6 +43,26 @@ type AdminEmailTemplateUpdateResponse =
       details?: string[];
     };
 
+type AdminEmailTemplateRevisionItem = {
+  id: string;
+  revisionNumber: number;
+  action: string;
+  changedByEmail: string | null;
+  createdAt: string;
+  snapshotStatus: string;
+  snapshotVersion: number | null;
+};
+
+type AdminEmailTemplateRevisionsResponse =
+  | {
+      ok: true;
+      items: AdminEmailTemplateRevisionItem[];
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 type CreateFormState = {
   templateKey: string;
   locale: string;
@@ -111,6 +131,20 @@ function toStatusChipClasses(status: AdminEmailTemplateStatus): string {
     default:
       return "border border-slate-200 bg-slate-100 text-slate-700";
   }
+}
+
+function toRevisionActionLabel(action: string): string {
+  if (action === "insert") return "Created";
+  if (action === "update") return "Updated";
+  if (action === "delete") return "Deleted";
+  return action;
+}
+
+function toSnapshotStatusLabel(status: string): string {
+  if (ADMIN_EMAIL_TEMPLATE_STATUS_VALUES.includes(status as AdminEmailTemplateStatus)) {
+    return toStatusLabel(status as AdminEmailTemplateStatus);
+  }
+  return status;
 }
 
 function normalizeListInput(value: string): string[] {
@@ -183,6 +217,14 @@ export default function AdminEmailTemplatesManager() {
   const [editState, setEditState] = useState<EditFormState | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [quickStatusId, setQuickStatusId] = useState<string | null>(null);
+  const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
+  const [historyLoadingId, setHistoryLoadingId] = useState<string | null>(null);
+  const [historyByTemplateId, setHistoryByTemplateId] = useState<
+    Record<string, AdminEmailTemplateRevisionItem[]>
+  >({});
+  const [historyErrorByTemplateId, setHistoryErrorByTemplateId] = useState<
+    Record<string, string | null>
+  >({});
 
   const loadTemplates = useCallback(async () => {
     setLoading(true);
@@ -415,6 +457,50 @@ export default function AdminEmailTemplatesManager() {
     }
   }
 
+  const loadTemplateHistory = useCallback(async (templateId: string) => {
+    setHistoryLoadingId(templateId);
+    setHistoryErrorByTemplateId((prev) => ({ ...prev, [templateId]: null }));
+    try {
+      const response = await fetch(`/api/admin/email-templates/${templateId}/revisions`, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as AdminEmailTemplateRevisionsResponse;
+      if (!response.ok || !payload.ok) {
+        setHistoryErrorByTemplateId((prev) => ({
+          ...prev,
+          [templateId]: payload.ok
+            ? "Could not load template history."
+            : (payload.error ?? "Could not load template history."),
+        }));
+        setHistoryByTemplateId((prev) => ({ ...prev, [templateId]: [] }));
+        return;
+      }
+      setHistoryByTemplateId((prev) => ({ ...prev, [templateId]: payload.items }));
+    } catch {
+      setHistoryErrorByTemplateId((prev) => ({
+        ...prev,
+        [templateId]: "Could not load template history.",
+      }));
+      setHistoryByTemplateId((prev) => ({ ...prev, [templateId]: [] }));
+    } finally {
+      setHistoryLoadingId((current) => (current === templateId ? null : current));
+    }
+  }, []);
+
+  function toggleHistory(templateId: string) {
+    if (openHistoryId === templateId) {
+      setOpenHistoryId(null);
+      return;
+    }
+    setOpenHistoryId(templateId);
+    if (historyByTemplateId[templateId] || historyLoadingId === templateId) {
+      return;
+    }
+    void loadTemplateHistory(templateId);
+  }
+
   return (
     <section
       className="rounded-2xl border border-slate-200 bg-white p-6"
@@ -607,6 +693,10 @@ export default function AdminEmailTemplatesManager() {
         <ul className="mt-5 space-y-3">
           {items.map((item) => {
             const isEditing = editingId === item.id;
+            const isHistoryOpen = openHistoryId === item.id;
+            const isHistoryLoading = historyLoadingId === item.id;
+            const historyError = historyErrorByTemplateId[item.id] ?? null;
+            const historyItems = historyByTemplateId[item.id] ?? [];
             const nextStatusOptions = nextQuickStatusOptions(item.status).filter((nextStatus) =>
               canTransitionAdminEmailTemplateStatus(item.status, nextStatus)
             );
@@ -644,6 +734,14 @@ export default function AdminEmailTemplatesManager() {
                       className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isEditing ? "Close editor" : "Edit"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleHistory(item.id)}
+                      disabled={disableRowActions}
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isHistoryOpen ? "Hide history" : "Show history"}
                     </button>
                   </div>
                 </div>
@@ -810,6 +908,75 @@ export default function AdminEmailTemplatesManager() {
                         Reset draft
                       </button>
                     </div>
+                  </div>
+                ) : null}
+
+                {isHistoryOpen ? (
+                  <div
+                    className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-3"
+                    data-testid="admin-email-template-history-panel"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+                        Revision history (latest 25)
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void loadTemplateHistory(item.id)}
+                        disabled={isHistoryLoading}
+                        className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isHistoryLoading ? "Loading…" : "Refresh history"}
+                      </button>
+                    </div>
+
+                    {isHistoryLoading ? (
+                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                        Loading template history…
+                      </p>
+                    ) : null}
+
+                    {!isHistoryLoading && historyError ? (
+                      <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                        <p className="text-xs text-rose-700">{historyError}</p>
+                        <button
+                          type="button"
+                          onClick={() => void loadTemplateHistory(item.id)}
+                          className="mt-2 inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-white px-2 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {!isHistoryLoading && !historyError && historyItems.length === 0 ? (
+                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                        No revision entries yet.
+                      </p>
+                    ) : null}
+
+                    {!isHistoryLoading && !historyError && historyItems.length > 0 ? (
+                      <ul className="space-y-2">
+                        {historyItems.map((entry) => (
+                          <li
+                            key={entry.id}
+                            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700"
+                          >
+                            <p className="font-semibold text-slate-800">
+                              Rev {entry.revisionNumber} · {toRevisionActionLabel(entry.action)}
+                            </p>
+                            <p className="mt-1 text-slate-600">
+                              {formatDateTime(entry.createdAt)} · by{" "}
+                              {entry.changedByEmail ?? "unknown"}
+                            </p>
+                            <p className="mt-1 text-slate-600">
+                              Snapshot status: {toSnapshotStatusLabel(entry.snapshotStatus)} ·
+                              version {entry.snapshotVersion ?? "unknown"}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </div>
                 ) : null}
               </li>

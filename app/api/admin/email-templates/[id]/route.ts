@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import {
   canTransitionAdminEmailTemplateStatus,
   parseUpdateAdminEmailTemplatePayload,
+  resolveAdminEmailTemplateLifecycleEvents,
   validateAdminEmailTemplatePlaceholders,
 } from "@/lib/admin/email-templates";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { getAdminSchemaSetupMessage, isAdminEmailTemplatesSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -214,6 +216,25 @@ export async function PATCH(request: Request, context: RouteContext) {
         { status: 409 }
       )
     );
+  }
+
+  for (const lifecycleEvent of resolveAdminEmailTemplateLifecycleEvents({
+    previousStatus: existing.status,
+    nextStatus: updateResult.data.status,
+  })) {
+    trackAnalyticsEvent({
+      eventName: lifecycleEvent.eventName,
+      channel: "server",
+      userId: gate.user.id,
+      payload: {
+        templateId: updateResult.data.id,
+        templateKey: updateResult.data.template_key,
+        locale: updateResult.data.locale,
+        previousStatus: lifecycleEvent.previousStatus ?? "none",
+        nextStatus: lifecycleEvent.nextStatus,
+        version: updateResult.data.version,
+      },
+    });
   }
 
   return applySupabaseCookies(

@@ -306,6 +306,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
           "Opens inline edit form for subject/body/placeholders/status and closes it when done.",
       },
       {
+        label: "Show history / Hide history",
+        meaning:
+          "Toggles revision timeline view so operators can inspect actor/time/action before publish or rollback decisions.",
+      },
+      {
         label: "Move to Review / Move to Published / Move to Archived / Move to Draft",
         meaning:
           "Applies lifecycle transitions with optimistic concurrency checks to avoid silent overwrite.",

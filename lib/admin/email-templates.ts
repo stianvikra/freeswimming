@@ -9,6 +9,17 @@ export const ADMIN_EMAIL_TEMPLATE_STATUS_VALUES = [
 
 export type AdminEmailTemplateStatus = (typeof ADMIN_EMAIL_TEMPLATE_STATUS_VALUES)[number];
 
+export type AdminEmailTemplateLifecycleEventName =
+  | "email_template_saved"
+  | "email_template_published"
+  | "email_template_reverted";
+
+export type AdminEmailTemplateLifecycleEvent = {
+  eventName: AdminEmailTemplateLifecycleEventName;
+  previousStatus: AdminEmailTemplateStatus | null;
+  nextStatus: AdminEmailTemplateStatus;
+};
+
 export type CreateAdminEmailTemplatePayload = {
   templateKey?: unknown;
   locale?: unknown;
@@ -242,6 +253,37 @@ export function canTransitionAdminEmailTemplateStatus(
     archived: ["draft", "archived"],
   };
   return allowed[from].includes(to);
+}
+
+export function resolveAdminEmailTemplateLifecycleEvents(input: {
+  previousStatus: AdminEmailTemplateStatus | null;
+  nextStatus: AdminEmailTemplateStatus;
+}): AdminEmailTemplateLifecycleEvent[] {
+  const events: AdminEmailTemplateLifecycleEvent[] = [
+    {
+      eventName: "email_template_saved",
+      previousStatus: input.previousStatus,
+      nextStatus: input.nextStatus,
+    },
+  ];
+
+  if (input.previousStatus !== "published" && input.nextStatus === "published") {
+    events.push({
+      eventName: "email_template_published",
+      previousStatus: input.previousStatus,
+      nextStatus: input.nextStatus,
+    });
+  }
+
+  if (input.previousStatus === "published" && input.nextStatus !== "published") {
+    events.push({
+      eventName: "email_template_reverted",
+      previousStatus: input.previousStatus,
+      nextStatus: input.nextStatus,
+    });
+  }
+
+  return events;
 }
 
 export function parseCreateAdminEmailTemplatePayload(
