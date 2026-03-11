@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-17`
-- `updated`: `2026-03-10`
+- `updated`: `2026-03-11`
 
 ## Purpose
 
@@ -23,7 +23,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
 | `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `done`        |
 | `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `done`        |
-| `AW-009` | Admin email templates and message governance                               | `high`   | `planned`     |
+| `AW-009` | Admin email templates and message governance                               | `high`   | `in-progress` |
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `planned`     |
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
 | `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `planned`     |
@@ -197,8 +197,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - admin can update template copy safely with preview and rollback,
   - no broken placeholders in sent emails,
   - all template mutations logged and recoverable.
-- Planned follow-up brief:
-  - `docs/task-briefs/planned/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`
+- Active brief:
+  - `docs/task-briefs/in-progress/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`
 
 ## AW-010: PageSpeed/Lighthouse governance for password-gated environments
 
@@ -345,6 +345,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-11 | feat/aw-009-email-template-governance-slice-1 | started AW-009 slice-1: set backlog status to in-progress, moved AW-009 brief to in-progress, and added template governance runbook baseline (`docs/runbooks/admin-email-template-governance.md`) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | feat/aw-008-preview-lock-smoke-fix-slice-3@0e1e70e | AW-008 closeout evidence captured: preview workflow run 22928386773 (`lock_on` PASS) + 22928440585 (`lock_off` PASS); updated workflow/runbook smoke contract to protected API route and marked AW-008 done | next: move AW-008 brief to done and continue with next low-risk backlog slice (AW-009 or AW-012)`
 - `2026-03-10 | feat/aw-008-production-approval-enforcement-slice-2 | started AW-008 slice-2 to enforce production required-reviewer gate directly in workflow and operator runbook | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | main@099ba27 | AW-008 slice-1 merged via PR #178 (one-click site-lock workflow foundation + docs/UI pointers) | next: start slice-2 approval enforcement before AW-008 completion decision`
