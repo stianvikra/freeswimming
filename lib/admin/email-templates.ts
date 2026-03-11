@@ -55,6 +55,30 @@ export type PlaceholderValidationResult =
       placeholders: string[];
     };
 
+export const ADMIN_EMAIL_TEMPLATE_PREVIEW_FALLBACK_VALUES: Readonly<Record<string, string>> = {
+  code: "123456",
+  expires_minutes: "10",
+  magic_link: "https://example.com/auth/magic-link",
+  support_email: "support@freeswimming.no",
+  user_name: "Svommer",
+  course_name: "Freestyle Foundations",
+  app_name: "Freeswimming",
+};
+
+export type AdminEmailTemplatePreviewPlaceholderValue = {
+  key: string;
+  value: string;
+  source: "sample" | "fallback" | "missing";
+};
+
+export type AdminEmailTemplatePreviewRenderResult = {
+  subject: string;
+  body: string;
+  placeholderValues: AdminEmailTemplatePreviewPlaceholderValue[];
+  usedFallbackKeys: string[];
+  missingKeys: string[];
+};
+
 type ParsedCreateAdminEmailTemplatePayload = {
   templateKey: string;
   locale: string;
@@ -173,6 +197,100 @@ function parseStatus(value: unknown): AdminEmailTemplateStatus | null {
     return null;
   }
   return status as AdminEmailTemplateStatus;
+}
+
+function normalizePreviewSampleValues(
+  sampleValues: Record<string, unknown> | undefined
+): Record<string, string> {
+  if (!sampleValues) return {};
+
+  const normalized: Record<string, string> = {};
+  for (const [rawKey, value] of Object.entries(sampleValues)) {
+    const key = normalizePlaceholderName(rawKey);
+    if (!key) continue;
+
+    if (typeof value === "string") {
+      normalized[key] = value;
+      continue;
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      normalized[key] = String(value);
+      continue;
+    }
+
+    if (typeof value === "boolean") {
+      normalized[key] = value ? "true" : "false";
+    }
+  }
+
+  return normalized;
+}
+
+export function renderAdminEmailTemplatePreview(input: {
+  subject: string;
+  body: string;
+  sampleValues?: Record<string, unknown>;
+}): AdminEmailTemplatePreviewRenderResult {
+  const normalizedSampleValues = normalizePreviewSampleValues(input.sampleValues);
+  const placeholders = extractAdminEmailTemplatePlaceholders(`${input.subject}\n${input.body}`);
+  const resolvedValues = new Map<string, AdminEmailTemplatePreviewPlaceholderValue>();
+
+  for (const placeholderKey of placeholders) {
+    if (Object.prototype.hasOwnProperty.call(normalizedSampleValues, placeholderKey)) {
+      resolvedValues.set(placeholderKey, {
+        key: placeholderKey,
+        value: normalizedSampleValues[placeholderKey] ?? "",
+        source: "sample",
+      });
+      continue;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        ADMIN_EMAIL_TEMPLATE_PREVIEW_FALLBACK_VALUES,
+        placeholderKey
+      )
+    ) {
+      resolvedValues.set(placeholderKey, {
+        key: placeholderKey,
+        value: ADMIN_EMAIL_TEMPLATE_PREVIEW_FALLBACK_VALUES[placeholderKey] ?? "",
+        source: "fallback",
+      });
+      continue;
+    }
+
+    resolvedValues.set(placeholderKey, {
+      key: placeholderKey,
+      value: `{{${placeholderKey}}}`,
+      source: "missing",
+    });
+  }
+
+  function renderText(text: string): string {
+    return text.replace(/{{\s*([a-z0-9_]+)\s*}}/gi, (fullMatch, rawToken: string) => {
+      const token = normalizePlaceholderName(rawToken);
+      if (!token) return fullMatch;
+      const resolved = resolvedValues.get(token);
+      return resolved ? resolved.value : fullMatch;
+    });
+  }
+
+  const placeholderValues = [...resolvedValues.values()].sort((left, right) =>
+    left.key.localeCompare(right.key)
+  );
+
+  return {
+    subject: renderText(input.subject),
+    body: renderText(input.body),
+    placeholderValues,
+    usedFallbackKeys: placeholderValues
+      .filter((entry) => entry.source === "fallback")
+      .map((entry) => entry.key),
+    missingKeys: placeholderValues
+      .filter((entry) => entry.source === "missing")
+      .map((entry) => entry.key),
+  };
 }
 
 export function extractAdminEmailTemplatePlaceholders(input: string): string[] {

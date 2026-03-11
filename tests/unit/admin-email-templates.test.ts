@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADMIN_EMAIL_TEMPLATE_PREVIEW_FALLBACK_VALUES,
   canTransitionAdminEmailTemplateStatus,
   extractAdminEmailTemplatePlaceholders,
   parseCreateAdminEmailTemplatePayload,
   parseUpdateAdminEmailTemplatePayload,
+  renderAdminEmailTemplatePreview,
   resolveAdminEmailTemplateMutationMinimumRole,
   resolveAdminEmailTemplateLifecycleEvents,
   validateAdminEmailTemplatePlaceholders,
@@ -72,6 +74,37 @@ describe("validateAdminEmailTemplatePlaceholders", () => {
       optionalPlaceholders: ["expires_minutes"],
     });
     expect(validation.ok).toBe(true);
+  });
+});
+
+describe("renderAdminEmailTemplatePreview", () => {
+  it("uses provided sample values before fallback defaults", () => {
+    const preview = renderAdminEmailTemplatePreview({
+      subject: "Kode: {{code}}",
+      body: "Hei {{user_name}}, bruk lenke {{magic_link}}.",
+      sampleValues: {
+        code: "654321",
+        user_name: "Stian",
+      },
+    });
+
+    expect(preview.subject).toBe("Kode: 654321");
+    expect(preview.body).toContain("Hei Stian");
+    expect(preview.body).toContain(ADMIN_EMAIL_TEMPLATE_PREVIEW_FALLBACK_VALUES.magic_link);
+    expect(preview.usedFallbackKeys).toEqual(["magic_link"]);
+    expect(preview.missingKeys).toEqual([]);
+  });
+
+  it("marks placeholders without sample or fallback as missing", () => {
+    const preview = renderAdminEmailTemplatePreview({
+      subject: "Hei {{unknown_token}}",
+      body: "Body {{unknown_token}}",
+      sampleValues: {},
+    });
+
+    expect(preview.subject).toBe("Hei {{unknown_token}}");
+    expect(preview.body).toBe("Body {{unknown_token}}");
+    expect(preview.missingKeys).toEqual(["unknown_token"]);
   });
 });
 
