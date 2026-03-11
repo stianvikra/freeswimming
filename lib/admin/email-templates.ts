@@ -255,6 +255,17 @@ export function canTransitionAdminEmailTemplateStatus(
   return allowed[from].includes(to);
 }
 
+export function resolveAdminEmailTemplateMutationMinimumRole(input: {
+  previousStatus: AdminEmailTemplateStatus;
+  nextStatus: AdminEmailTemplateStatus;
+}): "admin" | "editor" {
+  if (input.previousStatus === "published" || input.nextStatus === "published") {
+    return "admin";
+  }
+
+  return "editor";
+}
+
 export function resolveAdminEmailTemplateLifecycleEvents(input: {
   previousStatus: AdminEmailTemplateStatus | null;
   nextStatus: AdminEmailTemplateStatus;

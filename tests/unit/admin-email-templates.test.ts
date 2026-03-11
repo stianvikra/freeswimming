@@ -4,6 +4,7 @@ import {
   extractAdminEmailTemplatePlaceholders,
   parseCreateAdminEmailTemplatePayload,
   parseUpdateAdminEmailTemplatePayload,
+  resolveAdminEmailTemplateMutationMinimumRole,
   resolveAdminEmailTemplateLifecycleEvents,
   validateAdminEmailTemplatePlaceholders,
 } from "@/lib/admin/email-templates";
@@ -99,6 +100,47 @@ describe("canTransitionAdminEmailTemplateStatus", () => {
   it("allows review -> published and blocks draft -> published", () => {
     expect(canTransitionAdminEmailTemplateStatus("review", "published")).toBe(true);
     expect(canTransitionAdminEmailTemplateStatus("draft", "published")).toBe(false);
+  });
+});
+
+describe("resolveAdminEmailTemplateMutationMinimumRole", () => {
+  it("requires admin when transition touches published state", () => {
+    expect(
+      resolveAdminEmailTemplateMutationMinimumRole({
+        previousStatus: "review",
+        nextStatus: "published",
+      })
+    ).toBe("admin");
+
+    expect(
+      resolveAdminEmailTemplateMutationMinimumRole({
+        previousStatus: "published",
+        nextStatus: "published",
+      })
+    ).toBe("admin");
+
+    expect(
+      resolveAdminEmailTemplateMutationMinimumRole({
+        previousStatus: "published",
+        nextStatus: "review",
+      })
+    ).toBe("admin");
+  });
+
+  it("allows editor role for non-publish transitions", () => {
+    expect(
+      resolveAdminEmailTemplateMutationMinimumRole({
+        previousStatus: "draft",
+        nextStatus: "review",
+      })
+    ).toBe("editor");
+
+    expect(
+      resolveAdminEmailTemplateMutationMinimumRole({
+        previousStatus: "archived",
+        nextStatus: "draft",
+      })
+    ).toBe("editor");
   });
 });
 

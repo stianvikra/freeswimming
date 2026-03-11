@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import {
   canTransitionAdminEmailTemplateStatus,
   parseUpdateAdminEmailTemplatePayload,
+  resolveAdminEmailTemplateMutationMinimumRole,
   resolveAdminEmailTemplateLifecycleEvents,
   validateAdminEmailTemplatePlaceholders,
 } from "@/lib/admin/email-templates";
+import { hasRequiredAdminRole } from "@/lib/admin/access";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { getAdminSchemaSetupMessage, isAdminEmailTemplatesSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
@@ -127,6 +129,14 @@ export async function PATCH(request: Request, context: RouteContext) {
         { status: 400 }
       )
     );
+  }
+
+  const minimumRole = resolveAdminEmailTemplateMutationMinimumRole({
+    previousStatus: existing.status,
+    nextStatus,
+  });
+  if (!hasRequiredAdminRole(gate.role, minimumRole)) {
+    return applySupabaseCookies(noStoreJson({ ok: false, error: "Forbidden." }, { status: 403 }));
   }
 
   const nextSubject = parsed.value.patch.subject ?? existing.subject;
