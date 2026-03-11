@@ -4,6 +4,7 @@ import {
   extractAdminEmailTemplatePlaceholders,
   parseCreateAdminEmailTemplatePayload,
   parseUpdateAdminEmailTemplatePayload,
+  resolveAdminEmailTemplateLifecycleEvents,
   validateAdminEmailTemplatePlaceholders,
 } from "@/lib/admin/email-templates";
 
@@ -98,5 +99,29 @@ describe("canTransitionAdminEmailTemplateStatus", () => {
   it("allows review -> published and blocks draft -> published", () => {
     expect(canTransitionAdminEmailTemplateStatus("review", "published")).toBe(true);
     expect(canTransitionAdminEmailTemplateStatus("draft", "published")).toBe(false);
+  });
+});
+
+describe("resolveAdminEmailTemplateLifecycleEvents", () => {
+  it("emits saved + published when a template is promoted to published", () => {
+    const events = resolveAdminEmailTemplateLifecycleEvents({
+      previousStatus: "review",
+      nextStatus: "published",
+    });
+    expect(events.map((entry) => entry.eventName)).toEqual([
+      "email_template_saved",
+      "email_template_published",
+    ]);
+  });
+
+  it("emits saved + reverted when a published template leaves published state", () => {
+    const events = resolveAdminEmailTemplateLifecycleEvents({
+      previousStatus: "published",
+      nextStatus: "review",
+    });
+    expect(events.map((entry) => entry.eventName)).toEqual([
+      "email_template_saved",
+      "email_template_reverted",
+    ]);
   });
 });

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import {
   parseCreateAdminEmailTemplatePayload,
+  resolveAdminEmailTemplateLifecycleEvents,
   validateAdminEmailTemplatePlaceholders,
 } from "@/lib/admin/email-templates";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { getAdminSchemaSetupMessage, isAdminEmailTemplatesSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -182,6 +184,25 @@ export async function POST(request: Request) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Could not create template right now." }, { status: 500 })
     );
+  }
+
+  for (const lifecycleEvent of resolveAdminEmailTemplateLifecycleEvents({
+    previousStatus: null,
+    nextStatus: insertResult.data.status,
+  })) {
+    trackAnalyticsEvent({
+      eventName: lifecycleEvent.eventName,
+      channel: "server",
+      userId: gate.user.id,
+      payload: {
+        templateId: insertResult.data.id,
+        templateKey: insertResult.data.template_key,
+        locale: insertResult.data.locale,
+        previousStatus: lifecycleEvent.previousStatus ?? "none",
+        nextStatus: lifecycleEvent.nextStatus,
+        version: insertResult.data.version,
+      },
+    });
   }
 
   return applySupabaseCookies(

@@ -70,6 +70,7 @@ test.describe("admin help center", () => {
     await expect(page.getByText("Open lock operations workflow:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(page.getByText("Create template:")).toBeVisible();
+    await expect(page.getByText("Show history / Hide history:")).toBeVisible();
     await expect(
       page.getByText("Move to Review / Move to Published / Move to Archived / Move to Draft:")
     ).toBeVisible();
