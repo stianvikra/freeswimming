@@ -23,7 +23,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-006` | Full cross-platform visual/UX/readability hardening pass                   | `high`   | `planned`     |
 | `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `done`        |
 | `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `done`        |
-| `AW-009` | Admin email templates and message governance                               | `high`   | `in-progress` |
+| `AW-009` | Admin email templates and message governance                               | `high`   | `done`        |
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `planned`     |
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
 | `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `planned`     |
@@ -197,8 +197,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - admin can update template copy safely with preview and rollback,
   - no broken placeholders in sent emails,
   - all template mutations logged and recoverable.
-- Active brief:
-  - `docs/task-briefs/in-progress/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`
+- Done brief:
+  - `docs/task-briefs/done/2026-03-10-aw-009-admin-email-templates-and-governance-10-10.md`
 
 ## AW-010: PageSpeed/Lighthouse governance for password-gated environments
 
@@ -273,11 +273,10 @@ Capture good ideas that should be implemented later without blocking the active 
 
 1. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
 2. `AW-012` full admin 10/10 audit with checklist + e2e gates.
-3. `AW-009` admin email templates and governance.
-4. `AW-011` terms/privacy compliance lifecycle.
-5. `AW-010` gated + public performance governance runbook.
-6. `AW-013` full admin content editing UX (modules/lessons/pages/products).
-7. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
+3. `AW-011` terms/privacy compliance lifecycle.
+4. `AW-010` gated + public performance governance runbook.
+5. `AW-013` full admin content editing UX (modules/lessons/pages/products).
+6. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
@@ -345,6 +344,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-11 | main@c4573e2 | closed out AW-009 as done after merge of slice-7 (PR #187); queue status set to done and brief pointer moved to done path for lifecycle parity | next: continue with next planned low-risk backlog brief (AW-010/AW-011/AW-012)`
 - `2026-03-11 | feat/aw-009-preview-e2e-slice-7 | completed AW-009 slice-7 preview QA hardening: added stable create-preview test ids and Playwright coverage that validates sample override + fallback defaults + missing placeholder signaling in admin email template workflow | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-11 | feat/aw-009-template-preview-rendering-slice-6 | completed AW-009 slice-6 preview rendering: added deterministic placeholder interpolation preview with sample JSON + fallback defaults metadata, surfaced create/edit rendered preview panels for operators, and aligned runbook/help guidance to require preview before publish | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-11 | feat/aw-009-publish-role-gate-slice-5 | completed AW-009 slice-5 guardrail: added explicit role policy + server enforcement so transitions touching published state require admin role; retained fail-closed 403 behavior and aligned Help/Guide + runbook wording with admin-only publish/revert operations | next: run lint:briefs + verify:pre-pr, then open PR`

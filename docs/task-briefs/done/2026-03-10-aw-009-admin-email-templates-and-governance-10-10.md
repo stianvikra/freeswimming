@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-009-admin-email-templates-and-governance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
 - `updated`: `2026-03-11`
@@ -109,6 +109,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-11 | main@c4573e2 | AW-009 closeout completed: merged slices #181-#187 (data contract, admin UI, lifecycle analytics/history, publish-role gate, preview rendering, and preview e2e hardening), then moved this brief from in-progress to done | next: continue backlog with next planned brief (AW-010/AW-011/AW-012) or resume content-production revision batches`
 - `2026-03-11 | feat/aw-009-preview-e2e-slice-7 | completed AW-009 slice-7 preview QA hardening: added stable create-preview test ids in admin email template manager and shipped Playwright coverage for sample override + fallback defaults + missing placeholder signaling in real admin flow (`tests/e2e/admin-email-templates-preview.spec.ts`) | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-11 | feat/aw-009-template-preview-rendering-slice-6 | completed AW-009 slice-6 preview rendering slice: added deterministic template preview interpolation with sample JSON + fallback defaults metadata, wired create/edit preview panels in admin email template manager, and updated help/runbook guidance + unit coverage for preview contract | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-11 | feat/aw-009-publish-role-gate-slice-5 | completed AW-009 slice-5 publish/revert guardrail: added lifecycle-transition role policy requiring admin when transition touches published state, enforced fail-closed 403 in email-template PATCH route, and aligned help/runbook guidance + unit coverage with admin-only publish/revert behavior | next: run lint:briefs + verify:pre-pr, then open PR`
