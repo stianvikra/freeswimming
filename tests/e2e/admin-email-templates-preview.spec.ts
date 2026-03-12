@@ -26,6 +26,17 @@ test.describe("admin email template preview", () => {
       test.skip(true, "Dev bypass account is signed in but not allowlisted/admin.");
     }
 
+    const roleLine = page.getByText(/^Role:/).first();
+    const roleText = (await roleLine.textContent().catch(() => null))?.toLowerCase() ?? "";
+    if (roleText.includes("viewer")) {
+      test.skip(true, "Dev bypass account lacks editor/admin role for template mutations.");
+    }
+
+    const schemaWarning = page.getByText("Admin email templates setup is not ready");
+    if (await schemaWarning.isVisible().catch(() => false)) {
+      test.skip(true, "Email template schema is not ready in this environment.");
+    }
+
     const tabEmailTemplates = page.getByTestId("admin-tab-email-templates");
     if ((await tabEmailTemplates.getAttribute("aria-pressed")) !== "true") {
       await tabEmailTemplates.click();
@@ -77,5 +88,44 @@ test.describe("admin email template preview", () => {
     await expect(fallbackLine).toContainText("expires_minutes");
     await expect(fallbackLine).toContainText("support_email");
     await expect(missingLine).toContainText("custom_token");
+
+    const templateKey = `aw012_publish_fallback_${Date.now()}`;
+    await createForm.getByLabel("Template key").fill(templateKey);
+    await createForm.getByLabel("Locale").fill("nb-NO");
+    await createForm.getByLabel("Status").selectOption("draft");
+    await createForm.getByLabel("Subject").fill("Varsel {{code}} i {{app_name}}");
+    await createForm.getByLabel("Body").fill("Kontakt {{support_email}} hvis lenke feiler.");
+    await createForm.getByLabel("Required placeholders").fill("code");
+    await createForm.getByLabel("Optional placeholders").fill("app_name, support_email");
+    await sampleValuesField.fill("{}");
+
+    await createForm.getByRole("button", { name: "Create template" }).click();
+
+    const createdTemplate = page
+      .getByTestId("admin-email-template-item")
+      .filter({ hasText: `${templateKey} · nb-NO` })
+      .first();
+    await expect(createdTemplate).toContainText("Draft");
+
+    await createdTemplate.getByRole("button", { name: "Move to Review" }).click();
+    await expect(createdTemplate).toContainText("Review");
+
+    await createdTemplate.getByRole("button", { name: "Move to Published" }).click();
+    await expect(createdTemplate).toContainText("Published");
+
+    const editSampleValuesField = createdTemplate.getByLabel("Preview sample values (JSON object)");
+    await editSampleValuesField.fill('{"code":');
+    await expect(
+      createdTemplate.getByText("Preview sample values must be valid JSON.")
+    ).toBeVisible();
+
+    await editSampleValuesField.fill("{}");
+    await expect(
+      createdTemplate.getByText("Preview sample values must be valid JSON.")
+    ).toHaveCount(0);
+
+    const publishedFallbackLine = createdTemplate.getByText("Fallback defaults used:");
+    await expect(publishedFallbackLine).toContainText("app_name");
+    await expect(publishedFallbackLine).toContainText("support_email");
   });
 });
