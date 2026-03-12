@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
 - `updated`: `2026-03-12`
@@ -14,7 +14,7 @@ Ensure Terms and Privacy policies remain accurate, versioned, and operationally 
 
 ## Why This Brief Exists
 
-- AW-011 is now active with dedicated implementation checkpoints.
+- AW-011 was executed in dedicated implementation slices and is now closed with governance gates in place.
 - Policy drift creates legal/compliance risk when product, analytics, auth, or integrations evolve.
 - This brief defines measurable 10/10 thresholds and operational checkpoints.
 
@@ -129,6 +129,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | main@8dae71c | AW-011 slice-2 merged via PR #191: hard policy-impact PR-body enforcement + generated-body verify gate landed; moved AW-011 brief lifecycle to done | next: continue with next in-progress ops brief (AW-010) or planned audit slice (AW-012)`
 - `2026-03-12 | docs/aw-011-policy-enforcement-slice-2 | completed AW-011 slice-2 hard enforcement baseline: added deterministic policy-impact inference + required PR fields/checklist evidence, wired generated-body policy lint into verify:pre-pr, updated PR template/generator, and validated with npm run verify:pre-pr (PASS) | next: open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | completed AW-011 slice-1 docs baseline: added policy lifecycle runbook + policy-impact release checklist, linked release checklist and GDPR runbook, and verified with npm run verify:pre-pr (PASS) | next: open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | started AW-011 slice-1: moved brief to in-progress, set backlog lifecycle to in-progress, and started policy-lifecycle runbook + release compliance checklist baseline | next: run lint:briefs + verify:pre-pr, then open PR`
