@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-010-pagespeed-lighthouse-governance-gated-environments-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
 - `updated`: `2026-03-12`
@@ -14,9 +14,9 @@ Establish deterministic, repeatable performance governance for both password-gat
 
 ## Why This Brief Exists
 
-- AW-010 is now active in backlog with dedicated implementation checkpoints.
+- AW-010 was executed in dedicated implementation slices and is now closed with performance governance gates in place.
 - Performance gates must stay valid even when site lock is enabled for non-public operations windows.
-- This brief defines measurable 10/10 thresholds and in-progress execution checkpoints.
+- This brief defines measurable 10/10 thresholds and execution checkpoints.
 
 ## Scope
 
@@ -126,6 +126,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | main@940e2fa | AW-010 slice-2 merged via PR #193: perf trend evidence + recommendation automation landed, sitemap e2e socket-hang-up flake hardened, and AW-010 brief lifecycle moved to done | next: continue with next planned ops/admin audit slice (AW-012) or active admin workflow track (AW-013)`
 - `2026-03-12 | docs/aw-010-perf-trend-enforcement-slice-2 | completed AW-010 slice-2: added deterministic trend-log utilities + operator trend-status CLI, wired auto trend evidence/recommendation (`tighten/hold/revert`) into perf-budget runs, and shipped unit coverage; npm run verify:pre-pr PASS with trend output (`hold`, runs 1/2, margin 40.9%) | next: open PR in Safari and run gate:pre-merge before merge`
 - `2026-03-12 | docs/aw-010-perf-trend-enforcement-slice-2 | started AW-010 slice-2: adding automatic trend evidence + tighten/hold/revert recommendation enforcement for perf-budget runs, plus operator CLI and unit coverage | next: run lint:briefs + verify:pre-pr, then open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-010-gated-perf-governance-slice-1 | completed slice-1 validation: npm run verify:pre-pr PASS and SITE_LOCK_ENABLED=1 npm run test:perf:budgets PASS (gated-shell profile) after profile-aware perf-budget script/runbook update | next: open PR in Safari and run gate:pre-merge before merge`

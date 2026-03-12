@@ -24,7 +24,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-007` | Login flow UX/state-machine stabilization (success + cooldown continuity)  | `high`   | `done`        |
 | `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `done`        |
 | `AW-009` | Admin email templates and message governance                               | `high`   | `done`        |
-| `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `in-progress` |
+| `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `done`        |
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `done`        |
 | `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `planned`     |
 | `AW-013` | Full admin content editing UX (modules/lessons/pages/products)             | `high`   | `in-progress` |
@@ -214,8 +214,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - baseline reports available for core routes in both states,
   - regressions fail agreed gates,
   - runbook clear for manual and CI usage.
-- Active brief:
-  - `docs/task-briefs/in-progress/2026-03-10-aw-010-pagespeed-lighthouse-governance-gated-environments-10-10.md`
+- Done brief:
+  - `docs/task-briefs/done/2026-03-10-aw-010-pagespeed-lighthouse-governance-gated-environments-10-10.md`
 - Runbook baseline:
   - `docs/runbooks/pagespeed-lighthouse-gated-governance.md`
 
@@ -276,11 +276,10 @@ Capture good ideas that should be implemented later without blocking the active 
 
 ## Recommended Execution Order
 
-1. `AW-010` gated + public performance governance runbook (active in-progress track).
+1. `AW-012` full admin 10/10 audit with checklist + e2e gates.
 2. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
-3. `AW-012` full admin 10/10 audit with checklist + e2e gates.
-4. `AW-013` full admin content editing UX (modules/lessons/pages/products).
-5. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
+3. `AW-013` full admin content editing UX (modules/lessons/pages/products).
+4. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
@@ -348,6 +347,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-12 | main@940e2fa | closed out AW-010 as done after merge of slice-2 (PR #193); queue status set to done and brief pointer moved to done path for lifecycle parity | next: continue with planned AW-012 audit prep slice or active AW-013 admin workflow track`
 - `2026-03-12 | docs/aw-010-perf-trend-enforcement-slice-2 | completed AW-010 slice-2 trend enforcement: added perf trend-log utilities + replay CLI, wired automatic `tighten/hold/revert`recommendation into`npm run test:perf:budgets`, updated runbook contract, and validated with npm run verify:pre-pr PASS | next: open PR in Safari and run gate:pre-merge`
 - `2026-03-12 | main@8dae71c | closed out AW-011 as done after merge of slice-2 (PR #191); queue status set to done and brief pointer moved to done path for lifecycle parity | next: continue active AW-010 in-progress track or start AW-012 audit prep slice`
 - `2026-03-12 | docs/aw-011-policy-enforcement-slice-2 | completed AW-011 slice-2 hard policy-impact enforcement: PR-body validator now requires policy-impact declaration + checklist evidence and blocks scope-mismatch (`Policy impact: no` on policy-triggering diffs); generated PR-body lint is now part of verify:pre-pr with unit coverage | next: open PR and run gate:pre-merge`
