@@ -32,4 +32,20 @@ fi
 
 echo "[admin-short-session] Running desktop short admin session with local defaults."
 
-npx playwright test tests/e2e/admin-content-api-guards.spec.ts tests/e2e/admin-foundation.spec.ts --project=desktop-chromium
+REPORT_DIR="${ADMIN_SHORT_SESSION_REPORT_DIR:-artifacts/test-runs/admin-short-session}"
+REPORT_PATH="${REPORT_DIR}/playwright-report.json"
+mkdir -p "${REPORT_DIR}"
+export PLAYWRIGHT_JSON_OUTPUT_NAME="${REPORT_PATH}"
+
+set +e
+npx playwright test tests/e2e/admin-content-api-guards.spec.ts tests/e2e/admin-foundation.spec.ts --project=desktop-chromium --reporter=line,json
+TEST_EXIT_CODE=$?
+set -e
+
+if [[ -f "${REPORT_PATH}" ]]; then
+  node ./scripts/summarize-admin-short-session.mjs "${REPORT_PATH}" || true
+else
+  echo "[admin-short-session] Warning: JSON report not found at ${REPORT_PATH}; skip summary unavailable."
+fi
+
+exit "${TEST_EXIT_CODE}"
