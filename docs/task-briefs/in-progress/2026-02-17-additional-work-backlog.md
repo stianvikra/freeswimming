@@ -25,7 +25,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-008` | One-click site-lock operations (safe lock on/off workflow)                 | `high`   | `done`        |
 | `AW-009` | Admin email templates and message governance                               | `high`   | `done`        |
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `in-progress` |
-| `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `planned`     |
+| `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `in-progress` |
 | `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `planned`     |
 | `AW-013` | Full admin content editing UX (modules/lessons/pages/products)             | `high`   | `in-progress` |
 | `AW-014` | Workout Builder Garmin-familiar orchestration epic                         | `high`   | `planned`     |
@@ -233,8 +233,11 @@ Capture good ideas that should be implemented later without blocking the active 
   - policy pages track real behavior for data collection, auth, and third-party services,
   - policy updates are documented and reviewable,
   - compliance review is part of release flow.
-- Planned follow-up brief:
-  - `docs/task-briefs/planned/2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10.md`
+- Active brief:
+  - `docs/task-briefs/in-progress/2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10.md`
+- Lifecycle docs baseline:
+  - `docs/runbooks/terms-privacy-compliance-lifecycle.md`
+  - `docs/checklists/policy-impact-release-review.md`
 
 ## AW-012: Full admin 10/10 audit brief with checklist and e2e gates
 
@@ -274,9 +277,9 @@ Capture good ideas that should be implemented later without blocking the active 
 ## Recommended Execution Order
 
 1. `AW-010` gated + public performance governance runbook (active in-progress track).
-2. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
-3. `AW-012` full admin 10/10 audit with checklist + e2e gates.
-4. `AW-011` terms/privacy compliance lifecycle.
+2. `AW-011` terms/privacy compliance lifecycle (active in-progress track).
+3. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
+4. `AW-012` full admin 10/10 audit with checklist + e2e gates.
 5. `AW-013` full admin content editing UX (modules/lessons/pages/products).
 6. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
 
@@ -346,6 +349,8 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | completed AW-011 slice-1 docs baseline: policy lifecycle runbook + policy-impact release checklist added, AW-011 lifecycle moved to in-progress, and npm run verify:pre-pr PASS | next: open PR and run gate:pre-merge`
+- `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | started AW-011 slice-1: moved lifecycle from planned to in-progress, moved canonical brief to in-progress path, and started policy lifecycle + release compliance checklist baseline docs | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-12 | docs/aw-010-gated-perf-governance-slice-1 | validated AW-010 slice-1 baseline after lifecycle/runbook sync: npm run verify:pre-pr PASS and gated-shell perf check PASS (SITE_LOCK_ENABLED=1 npm run test:perf:budgets) | next: open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-010-gated-perf-governance-slice-1 | started AW-010 slice-1: moved AW-010 lifecycle from planned to in-progress, moved canonical AW-010 brief to in-progress path, and added baseline gated/public performance governance runbook for deterministic operator flow | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-11 | main@c4573e2 | closed out AW-009 as done after merge of slice-7 (PR #187); queue status set to done and brief pointer moved to done path for lifecycle parity | next: continue with next planned low-risk backlog brief (AW-010/AW-011/AW-012)`

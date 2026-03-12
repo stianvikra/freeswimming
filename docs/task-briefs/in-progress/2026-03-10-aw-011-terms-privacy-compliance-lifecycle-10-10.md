@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-011-terms-privacy-compliance-lifecycle-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
-- `updated`: `2026-03-10`
+- `updated`: `2026-03-12`
 
 ## Goal
 
@@ -14,9 +14,9 @@ Ensure Terms and Privacy policies remain accurate, versioned, and operationally 
 
 ## Why This Brief Exists
 
-- AW-011 is listed as `planned` but had no dedicated implementation brief.
+- AW-011 is now active with dedicated implementation checkpoints.
 - Policy drift creates legal/compliance risk when product, analytics, auth, or integrations evolve.
-- This brief defines measurable 10/10 thresholds before implementation starts.
+- This brief defines measurable 10/10 thresholds and operational checkpoints.
 
 ## Scope
 
@@ -31,7 +31,7 @@ Ensure Terms and Privacy policies remain accurate, versioned, and operationally 
 
 ## Out Of Scope
 
-- Full legal rewrite in this planning slice.
+- Full legal rewrite in this slice.
 - Re-architecture of auth, analytics, or data model.
 - Country-specific legal expansion beyond current operating scope.
 
@@ -88,6 +88,13 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Policy versioning, publication, and rollback process are deterministic.
 - Compliance evidence is linked to PR/release checkpoints.
 
+## Deliverables (Slice 1)
+
+- `docs/runbooks/terms-privacy-compliance-lifecycle.md`
+- `docs/checklists/policy-impact-release-review.md`
+- `docs/checklists/release-pr-checklist.md` linkage to policy-impact checklist
+- `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md` lifecycle updates for AW-011 (`planned` -> `in-progress`)
+
 ## Validation
 
 - `npm run lint:briefs`
@@ -109,4 +116,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | completed AW-011 slice-1 docs baseline: added policy lifecycle runbook + policy-impact release checklist, linked release checklist and GDPR runbook, and verified with npm run verify:pre-pr (PASS) | next: open PR and run gate:pre-merge`
+- `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | started AW-011 slice-1: moved brief to in-progress, set backlog lifecycle to in-progress, and started policy-lifecycle runbook + release compliance checklist baseline | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created AW-011 planned implementation brief with scorecard-complete compliance lifecycle thresholds and deterministic policy versioning/rollback contract | next: link this brief in backlog and use it as canonical scope when implementation starts`
