@@ -26,7 +26,7 @@ Capture good ideas that should be implemented later without blocking the active 
 | `AW-009` | Admin email templates and message governance                               | `high`   | `done`        |
 | `AW-010` | PageSpeed/Lighthouse governance for password-gated environments            | `high`   | `done`        |
 | `AW-011` | Terms/Privacy compliance lifecycle and policy ops                          | `high`   | `done`        |
-| `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `in-progress` |
+| `AW-012` | Full admin 10/10 audit brief with checklist and e2e gates                  | `high`   | `done`        |
 | `AW-013` | Full admin content editing UX (modules/lessons/pages/products)             | `high`   | `in-progress` |
 | `AW-014` | Workout Builder Garmin-familiar orchestration epic                         | `high`   | `planned`     |
 | `AW-015` | Workout data contract and step engine                                      | `high`   | `planned`     |
@@ -253,8 +253,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - every admin critical flow has clear quality score and test evidence,
   - unresolved gaps are tracked as concrete follow-up slices,
   - audit can be rerun on schedule as release gate.
-- Active brief:
-  - `docs/task-briefs/in-progress/2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10.md`
+- Done brief:
+  - `docs/task-briefs/done/2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10.md`
 - Baseline checklist:
   - `docs/checklists/admin-full-audit-gate-checklist.md`
 - Automated gate:
@@ -280,10 +280,10 @@ Capture good ideas that should be implemented later without blocking the active 
 
 ## Recommended Execution Order
 
-1. `AW-012` full admin 10/10 audit with checklist + e2e gates.
+1. `AW-013` full admin content editing UX (modules/lessons/pages/products).
 2. `AW-006` cross-platform UX/design hardening sweep (ongoing validation track).
-3. `AW-013` full admin content editing UX (modules/lessons/pages/products).
-4. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
+3. `AW-018` program builder calendar + completion tracking (after current admin and ops readiness slices).
+4. `AW-002` email one-time-code UX hardening (after active admin workflow throughput is stable).
 
 ## 10/10 Cross-Cut Categories (Apply When Relevant)
 
@@ -351,6 +351,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-12 | main@88f28a1 | closed out AW-012 as done after merge of slice-7 (PR #201); queue status set to done and brief pointer moved to done path for lifecycle parity | next: continue active AW-013 admin workflow track`
 - `2026-03-12 | docs/aw-012-notes-recovery-runbook-slice-7 | completed AW-012 slice-7 A4 closure: added deterministic stale-note reconciliation runbook, linked it in Help/Guide runbook references, codified A4 cadence rule in audit checklist, and raised A4 to 5/5 in findings log with F004 closed | next: run verify:pre-pr, open PR, then run gate:pre-merge`
 - `2026-03-12 | test/aw-012-email-fallback-publish-regression-slice-6 | completed AW-012 slice-6 F003 closure: added published-state fallback-copy + invalid preview-JSON regression assertions for admin email templates and environment guards for viewer/schema-not-ready contexts; local targeted Playwright run skipped because current dev-bypass role is viewer | next: run verify:pre-pr, open PR, then run gate:pre-merge`
 - `2026-03-12 | docs/aw-012-parity-triage-evidence-slice-5 | completed AW-012 slice-5 F002 closure: added A3 parity triage runbook + checklist cadence requirement, executed real parity smoke (`tests/e2e/admin-content-parity.spec.ts` desktop-chromium PASS), and updated findings log to close F002 with A3 score lifted to 5/5 | next: run verify:pre-pr, open PR, then run gate:pre-merge`
