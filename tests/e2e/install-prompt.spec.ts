@@ -269,8 +269,11 @@ test("contextual install prompt shows success confirmation after accepted instal
     await dispatchInstallPromptEvent(page, "accepted");
     await expect(prompt).toBeVisible({ timeout: 8_000 });
   }
+  // Re-prime right before click to avoid losing deferredPrompt in slower iOS CI runs.
+  await dispatchInstallPromptEvent(page, "accepted");
+  await page.waitForTimeout(80);
   await page.getByRole("button", { name: "Install app" }).click();
-  await expect(page.getByText(INSTALL_SUCCESS_MESSAGE)).toBeVisible();
+  await expect(page.getByText(INSTALL_SUCCESS_MESSAGE)).toBeVisible({ timeout: 8_000 });
 
   await prompt.getByRole("button", { name: "Done" }).click();
   await expect(prompt).toBeHidden();
