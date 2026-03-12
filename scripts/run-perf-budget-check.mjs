@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import process from "node:process";
 import { chromium } from "@playwright/test";
+import {
+  appendTrendLogEntry,
+  buildTrendEntry,
+  loadTrendLogEntries,
+  recommendTrendDecision,
+} from "./perf-budget-trend-utils.mjs";
 
 const ROUTES = ["/", "/plans", "/course", "/my-library"];
 const PERF_BUDGET_PORT = Number(process.env.PERF_BUDGET_PORT ?? 3200);
@@ -28,6 +34,16 @@ const PERF_BUDGET_SAMPLES_PER_ROUTE = Math.max(
   Number(process.env.PERF_BUDGET_SAMPLES_PER_ROUTE ?? 3)
 );
 const SERVER_READY_TIMEOUT_MS = Number(process.env.PERF_BUDGET_SERVER_TIMEOUT_MS ?? 60_000);
+const PERF_BUDGET_TREND_LOG =
+  process.env.PERF_BUDGET_TREND_LOG ?? "artifacts/perf-budgets/trend-log.ndjson";
+const PERF_BUDGET_TREND_WRITE = (process.env.PERF_BUDGET_TREND_WRITE ?? "1") !== "0";
+const PERF_BUDGET_TIGHTEN_MIN_MARGIN_PCT = Number(
+  process.env.PERF_BUDGET_TIGHTEN_MIN_MARGIN_PCT ?? 15
+);
+const PERF_BUDGET_TIGHTEN_MIN_WEEKLY_GREENS = Math.max(
+  1,
+  Number(process.env.PERF_BUDGET_TIGHTEN_MIN_WEEKLY_GREENS ?? 2)
+);
 
 const BUDGETS = {
   lcpMs: Number(process.env.PERF_BUDGET_LCP_MS ?? 2500),
@@ -42,6 +58,30 @@ function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function resolveCommitSha() {
+  const fromEnv = (
+    process.env.PERF_BUDGET_COMMIT_SHA ??
+    process.env.GITHUB_SHA ??
+    process.env.VERCEL_GIT_COMMIT_SHA ??
+    ""
+  ).trim();
+  if (fromEnv) return fromEnv.slice(0, 12);
+
+  const command = spawnSync("git", ["rev-parse", "--short=12", "HEAD"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  if (command.status === 0 && command.stdout.trim()) {
+    return command.stdout.trim();
+  }
+  return "unknown";
+}
+
+function formatTrendMargin(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "n/a";
+  return `${value.toFixed(1)}%`;
 }
 
 async function waitForServerReady(baseUrl, timeoutMs) {
@@ -425,8 +465,12 @@ async function run() {
 
     printSummary(routeRows);
 
+    const pass = failures.length === 0;
+    const commitSha = resolveCommitSha();
     const report = {
       generatedAt: new Date().toISOString(),
+      commitSha,
+      pass,
       profile: PERF_BUDGET_PROFILE,
       siteLockEnabled: PERF_BUDGET_SITE_LOCK_ENABLED,
       bypassTokenHeaderUsed: Boolean(PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN),
@@ -439,7 +483,30 @@ async function run() {
 
     await writeReportIfRequested(report);
 
-    if (failures.length > 0) {
+    if (PERF_BUDGET_TREND_WRITE) {
+      const trendEntry = buildTrendEntry({ report, pass, commitSha });
+      await appendTrendLogEntry(PERF_BUDGET_TREND_LOG, trendEntry);
+      const trendEntries = await loadTrendLogEntries(PERF_BUDGET_TREND_LOG);
+      const recommendation = recommendTrendDecision(trendEntries, {
+        profile: PERF_BUDGET_PROFILE,
+        tightenMinMarginPct: PERF_BUDGET_TIGHTEN_MIN_MARGIN_PCT,
+        tightenMinWeeklyGreenRuns: PERF_BUDGET_TIGHTEN_MIN_WEEKLY_GREENS,
+      });
+
+      console.log(
+        `[perf-budget-trend] Recorded ${PERF_BUDGET_TREND_LOG} (${trendEntry.pass ? "PASS" : "FAIL"} @ ${trendEntry.commitSha}, worst margin ${formatTrendMargin(trendEntry.worstMarginPct)}).`
+      );
+      console.log(
+        `[perf-budget-trend] Recommendation: ${recommendation.decision} (${recommendation.rationale})`
+      );
+      if (recommendation.decision === "tighten") {
+        console.log(
+          "[perf-budget-trend] Action: tighten one stretch target step and record the decision in AW-010 checkpoint/PR summary."
+        );
+      }
+    }
+
+    if (!pass) {
       console.error("[perf-budget] FAIL: budget regressions detected.");
       for (const failure of failures) {
         console.error(

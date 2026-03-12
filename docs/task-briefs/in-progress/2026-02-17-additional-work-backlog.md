@@ -348,6 +348,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-010-perf-trend-enforcement-slice-2 | completed AW-010 slice-2 trend enforcement: added perf trend-log utilities + replay CLI, wired automatic `tighten/hold/revert`recommendation into`npm run test:perf:budgets`, updated runbook contract, and validated with npm run verify:pre-pr PASS | next: open PR in Safari and run gate:pre-merge`
 - `2026-03-12 | main@8dae71c | closed out AW-011 as done after merge of slice-2 (PR #191); queue status set to done and brief pointer moved to done path for lifecycle parity | next: continue active AW-010 in-progress track or start AW-012 audit prep slice`
 - `2026-03-12 | docs/aw-011-policy-enforcement-slice-2 | completed AW-011 slice-2 hard policy-impact enforcement: PR-body validator now requires policy-impact declaration + checklist evidence and blocks scope-mismatch (`Policy impact: no` on policy-triggering diffs); generated PR-body lint is now part of verify:pre-pr with unit coverage | next: open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | completed AW-011 slice-1 docs baseline: policy lifecycle runbook + policy-impact release checklist added, AW-011 lifecycle moved to in-progress, and npm run verify:pre-pr PASS | next: open PR and run gate:pre-merge`
