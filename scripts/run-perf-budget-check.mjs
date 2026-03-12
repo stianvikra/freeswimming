@@ -11,6 +11,17 @@ const PERF_BUDGET_HOST = process.env.PERF_BUDGET_HOST ?? "127.0.0.1";
 const PERF_BUDGET_BASE_URL =
   process.env.PERF_BUDGET_BASE_URL ?? `http://${PERF_BUDGET_HOST}:${PERF_BUDGET_PORT}`;
 const PERF_BUDGET_OUTPUT = process.env.PERF_BUDGET_OUTPUT ?? "";
+const PERF_BUDGET_SITE_LOCK_ENABLED =
+  process.env.PERF_BUDGET_SITE_LOCK_ENABLED ?? process.env.SITE_LOCK_ENABLED ?? "0";
+const PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN =
+  process.env.PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN ?? process.env.PW_SITE_LOCK_BYPASS_TOKEN ?? "";
+const PERF_BUDGET_PROFILE =
+  process.env.PERF_BUDGET_PROFILE ??
+  (PERF_BUDGET_SITE_LOCK_ENABLED === "1"
+    ? PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN
+      ? "gated-bypass"
+      : "gated-shell"
+    : "public");
 const PERF_BUDGET_SETTLE_MS = Number(process.env.PERF_BUDGET_SETTLE_MS ?? 1500);
 const PERF_BUDGET_SAMPLES_PER_ROUTE = Math.max(
   1,
@@ -279,6 +290,9 @@ function buildFailures(route, metrics) {
 }
 
 function printSummary(routeRows) {
+  console.log(
+    `[perf-budget] Profile: ${PERF_BUDGET_PROFILE} (SITE_LOCK_ENABLED=${PERF_BUDGET_SITE_LOCK_ENABLED}, bypass-token=${PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN ? "yes" : "no"})`
+  );
   console.log(`[perf-budget] Route metrics (median of ${PERF_BUDGET_SAMPLES_PER_ROUTE} sample(s)):`);
   for (const row of routeRows) {
     const cells = [
@@ -311,7 +325,7 @@ async function run() {
       env: {
         ...process.env,
         NODE_ENV: "production",
-        SITE_LOCK_ENABLED: "0",
+        SITE_LOCK_ENABLED: PERF_BUDGET_SITE_LOCK_ENABLED,
       },
       stdio: "pipe",
     }
@@ -376,7 +390,15 @@ async function run() {
     await waitForServerReady(PERF_BUDGET_BASE_URL, SERVER_READY_TIMEOUT_MS);
 
     const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({ baseURL: PERF_BUDGET_BASE_URL });
+    const contextOptions = {
+      baseURL: PERF_BUDGET_BASE_URL,
+      extraHTTPHeaders: PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN
+        ? {
+            "x-site-lock-bypass-token": PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN,
+          }
+        : undefined,
+    };
+    const context = await browser.newContext(contextOptions);
     const page = await context.newPage();
     await installPerformanceObservers(page);
 
@@ -405,6 +427,9 @@ async function run() {
 
     const report = {
       generatedAt: new Date().toISOString(),
+      profile: PERF_BUDGET_PROFILE,
+      siteLockEnabled: PERF_BUDGET_SITE_LOCK_ENABLED,
+      bypassTokenHeaderUsed: Boolean(PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN),
       baseUrl: PERF_BUDGET_BASE_URL,
       samplesPerRoute: PERF_BUDGET_SAMPLES_PER_ROUTE,
       budgets: BUDGETS,
