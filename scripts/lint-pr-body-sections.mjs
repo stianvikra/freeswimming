@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 const REQUIRED_HEADINGS = ["Summary", "Scope", "Risk", "Test Evidence", "Checklist"];
 const SUMMARY_PLACEHOLDERS = new Set([
@@ -8,6 +10,8 @@ const SUMMARY_PLACEHOLDERS = new Set([
   "user-visible changes: describe the concrete user/admin behavior changed in this pr.",
   "technical changes: describe key files/services/contracts changed.",
 ]);
+const POLICY_IMPACT_PLACEHOLDERS = new Set(["yes/no", "tbd", "todo", "<fill-in>"]);
+const POLICY_VERSION_PLACEHOLDERS = new Set(["tbd", "todo", "<fill-in>"]);
 const SCOPE_IN_PLACEHOLDERS = new Set([
   "pr governance automation for structured pr body quality.",
   "tbd",
@@ -33,6 +37,46 @@ const RISK_PLACEHOLDERS = new Set([
   "<fill-in>",
 ]);
 const ROLLBACK_PLACEHOLDERS = new Set(["tbd", "todo", "n/a", "na", "<fill-in>"]);
+const POLICY_CHECKLIST_STATUSES = new Set(["PASS", "FAIL", "PENDING", "N/A"]);
+const POLICY_IMPACT_RULES = [
+  {
+    id: "auth",
+    label: "auth/session/account",
+    patterns: [
+      /(^|\/)app\/auth(\/|$)/i,
+      /(^|\/)app\/api\/auth(\/|$)/i,
+      /(^|\/)auth\/sign-in(\/|\.|$)/i,
+      /(^|\/)(session|account)(\/|\.|$)/i,
+      /(^|\/)(dev-login|preview-access)(\/|\.|$)/i,
+    ],
+  },
+  {
+    id: "analytics",
+    label: "analytics/tracking/consent",
+    patterns: [/(^|\/)(analytics|cookie|cookies|consent)(\/|\.|$)/i],
+  },
+  {
+    id: "data-rights",
+    label: "user data rights (export/delete/privacy)",
+    patterns: [
+      /(^|\/)app\/api\/user\/(export|delete)(\/|\.|$)/i,
+      /(^|\/)(privacy|gdpr|data-rights|user-export|user-delete)(\/|\.|$)/i,
+    ],
+  },
+  {
+    id: "processor",
+    label: "third-party processors (Stripe/Supabase/Resend/Vercel)",
+    patterns: [/(stripe|supabase|resend|vercel)/i],
+  },
+];
+
+function run(command) {
+  try {
+    return execSync(command, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {
+    return "";
+  }
+}
 
 function parseEventPayload() {
   const eventPath = process.env.GITHUB_EVENT_PATH;
@@ -156,6 +200,96 @@ function extractVerifyEvidence(content, commandName) {
   return { line: evidenceLine, status: "" };
 }
 
+function parsePolicyImpactDecision(rawValue) {
+  const normalized = normalizeFieldValue(rawValue);
+  if (/^yes\b/.test(normalized)) return "yes";
+  if (/^no\b/.test(normalized)) return "no";
+  return "";
+}
+
+function parsePolicyChecklistStatus(rawValue) {
+  const normalized = normalizeFieldValue(rawValue);
+  if (!normalized) return "";
+  if (/^(n\/a|na)\b/.test(normalized)) return "N/A";
+  if (/^pass\b/.test(normalized)) return "PASS";
+  if (/^fail\b/.test(normalized)) return "FAIL";
+  if (/^pending\b/.test(normalized)) return "PENDING";
+  return "";
+}
+
+function hasNaRationale(rawValue) {
+  const normalized = normalizeFieldValue(rawValue);
+  const match = normalized.match(/^(n\/a|na)\s*[:\-]?\s*(.*)$/);
+  if (!match) return false;
+  return match[2].trim().length >= 6;
+}
+
+function isBareNa(rawValue) {
+  const normalized = normalizeFieldValue(rawValue);
+  return normalized === "n/a" || normalized === "na";
+}
+
+function listChangedFilesForPullRequest(pullRequest) {
+  if (!pullRequest) return [];
+
+  const baseSha = pullRequest.base?.sha ?? "";
+  const headSha = pullRequest.head?.sha ?? "";
+  const baseRef = pullRequest.base?.ref ?? "";
+
+  let diffOutput = "";
+  if (baseSha && headSha) {
+    diffOutput = run(`git diff --name-only ${baseSha}...${headSha}`);
+  }
+  if (!diffOutput && baseRef) {
+    diffOutput =
+      run(`git diff --name-only origin/${baseRef}...HEAD`) ||
+      run(`git diff --name-only ${baseRef}...HEAD`) ||
+      "";
+  }
+
+  if (!diffOutput) return [];
+  return diffOutput
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function policyRuleMatchesFile(rule, filePath) {
+  return rule.patterns.some((pattern) => pattern.test(filePath));
+}
+
+export function inferPolicyImpactFromChangedFiles(changedFiles) {
+  const matches = [];
+  for (const filePath of changedFiles) {
+    const categories = POLICY_IMPACT_RULES.filter((rule) => policyRuleMatchesFile(rule, filePath)).map(
+      (rule) => rule.label
+    );
+    if (categories.length > 0) {
+      matches.push({ filePath, categories });
+    }
+  }
+
+  const categorySet = new Set();
+  for (const match of matches) {
+    for (const category of match.categories) {
+      categorySet.add(category);
+    }
+  }
+
+  return {
+    required: matches.length > 0,
+    categories: [...categorySet],
+    matches,
+  };
+}
+
+function summarizePolicyImpactMatches(matches) {
+  if (matches.length === 0) return "";
+  const compact = matches.slice(0, 3).map((match) => `\`${match.filePath}\` (${match.categories.join(", ")})`);
+  const remainder = matches.length - compact.length;
+  return remainder > 0 ? `${compact.join("; ")}; +${remainder} more` : compact.join("; ");
+}
+
 function lineContainsHeadSha(line, headSha) {
   if (!line || !headSha) return false;
   const shortSha = headSha.slice(0, 7);
@@ -163,10 +297,14 @@ function lineContainsHeadSha(line, headSha) {
   return normalized.includes(headSha.toLowerCase()) || normalized.includes(shortSha.toLowerCase());
 }
 
-function validatePullRequestBody(body, options = {}) {
+export function validatePullRequestBody(body, options = {}) {
   const errors = [];
   const sections = extractSections(body);
   const headSha = options.headSha ?? "";
+  const changedFiles = options.changedFiles ?? [];
+  const inferredPolicyImpact = inferPolicyImpactFromChangedFiles(changedFiles);
+  let policyImpactDecision = "";
+  let policyVersionNote = "";
 
   if (!body || !body.trim()) {
     return ["PR body is empty. Fill the required sections from the template."];
@@ -186,6 +324,8 @@ function validatePullRequestBody(body, options = {}) {
   if (summary) {
     const userVisible = fieldValue(summary, "User-visible changes");
     const technical = fieldValue(summary, "Technical changes");
+    const policyImpactRaw = fieldValue(summary, "Policy impact");
+    policyVersionNote = fieldValue(summary, "Policy version note");
     if (!userVisible) {
       errors.push('Section "## Summary" is missing a filled `User-visible changes` line.');
     } else if (
@@ -201,6 +341,23 @@ function validatePullRequestBody(body, options = {}) {
       /describe key files\/services\/contracts/i.test(technical)
     ) {
       errors.push('Section "## Summary" has placeholder content in `Technical changes`.');
+    }
+
+    if (!policyImpactRaw) {
+      errors.push('Section "## Summary" is missing a filled `Policy impact` line (`yes` or `no` + rationale).');
+    } else if (isPlaceholderValue(policyImpactRaw, POLICY_IMPACT_PLACEHOLDERS)) {
+      errors.push('Section "## Summary" has placeholder content in `Policy impact`.');
+    } else {
+      policyImpactDecision = parsePolicyImpactDecision(policyImpactRaw);
+      if (!policyImpactDecision) {
+        errors.push('Section "## Summary" `Policy impact` must start with `yes` or `no`.');
+      }
+    }
+
+    if (!policyVersionNote) {
+      errors.push('Section "## Summary" is missing a filled `Policy version note` line.');
+    } else if (isPlaceholderValue(policyVersionNote, POLICY_VERSION_PLACEHOLDERS)) {
+      errors.push('Section "## Summary" has placeholder content in `Policy version note`.');
     }
   }
 
@@ -242,6 +399,19 @@ function validatePullRequestBody(body, options = {}) {
 
   const testEvidence = sectionContent(sections, "Test Evidence");
   if (testEvidence) {
+    const policyChecklist = fieldValue(testEvidence, "Policy-impact checklist");
+    const policyChecklistStatus = parsePolicyChecklistStatus(policyChecklist);
+
+    if (!policyChecklist) {
+      errors.push(
+        'Section "## Test Evidence" is missing `Policy-impact checklist` (PASS/FAIL/PENDING/N/A + rationale).'
+      );
+    } else if (!policyChecklistStatus || !POLICY_CHECKLIST_STATUSES.has(policyChecklistStatus)) {
+      errors.push(
+        'Section "## Test Evidence" `Policy-impact checklist` must start with PASS/FAIL/PENDING/N/A.'
+      );
+    }
+
     const prePrEvidence = extractVerifyEvidence(testEvidence, "verify:pre-pr");
     if (!prePrEvidence.status) {
       errors.push(
@@ -291,6 +461,36 @@ function validatePullRequestBody(body, options = {}) {
     if (checkboxIsChecked(testEvidence, "Vercel preview manual QA done") && !hasAnyUrl) {
       errors.push("Checked `Vercel preview manual QA` checkbox requires a preview URL in `## Test Evidence`.");
     }
+
+    if (policyImpactDecision === "yes") {
+      if (policyChecklistStatus === "N/A") {
+        errors.push("`Policy impact: yes` cannot use `Policy-impact checklist: N/A`.");
+      }
+      if (isBareNa(policyVersionNote)) {
+        errors.push("`Policy impact: yes` requires a concrete `Policy version note` or explicit N/A rationale.");
+      }
+      if (!/policy-impact-release-review\.md/i.test(body)) {
+        errors.push(
+          "`Policy impact: yes` requires explicit reference to `docs/checklists/policy-impact-release-review.md` in PR body."
+        );
+      }
+    }
+
+    if (policyImpactDecision === "no") {
+      if (policyChecklistStatus !== "N/A") {
+        errors.push("`Policy impact: no` requires `Policy-impact checklist: N/A (...)`.");
+      } else if (!hasNaRationale(policyChecklist)) {
+        errors.push("`Policy impact: no` requires a short N/A rationale in `Policy-impact checklist`.");
+      }
+    }
+  }
+
+  if (policyImpactDecision === "no" && inferredPolicyImpact.required) {
+    errors.push(
+      `Summary declares \`Policy impact: no\`, but changed file scope matches policy-impact paths: ${summarizePolicyImpactMatches(
+        inferredPolicyImpact.matches
+      )}.`
+    );
   }
 
   if (!/brief link\(s\)/i.test(body) && !/docs\/task-briefs\//i.test(body)) {
@@ -309,8 +509,10 @@ function main() {
     return;
   }
 
+  const changedFiles = listChangedFilesForPullRequest(pullRequest);
   const errors = validatePullRequestBody(pullRequest.body ?? "", {
     headSha: pullRequest.head?.sha ?? "",
+    changedFiles,
   });
   if (errors.length === 0) {
     console.log("[pr-body-lint] PASS");
@@ -324,4 +526,7 @@ function main() {
   process.exit(1);
 }
 
-main();
+const isCliEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isCliEntrypoint) {
+  main();
+}

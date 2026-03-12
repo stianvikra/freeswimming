@@ -1,6 +1,10 @@
 ## Summary
 
 - What changed and why?
+- User-visible changes:
+- Technical changes:
+- Policy impact: yes/no (short rationale)
+- Policy version note: YYYY-MM-DD.rev or N/A (with rationale)
 
 ## Scope
 
@@ -14,6 +18,7 @@
 
 ## Test Evidence
 
+- Policy-impact checklist: PASS/FAIL/PENDING/N/A (use `docs/checklists/policy-impact-release-review.md`)
 - [ ] `npm run lint:briefs`
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`

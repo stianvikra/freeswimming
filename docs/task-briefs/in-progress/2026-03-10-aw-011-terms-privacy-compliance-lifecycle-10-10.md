@@ -95,6 +95,19 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `docs/checklists/release-pr-checklist.md` linkage to policy-impact checklist
 - `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md` lifecycle updates for AW-011 (`planned` -> `in-progress`)
 
+## Deliverables (Slice 2)
+
+- hard PR-body policy-impact enforcement in `scripts/lint-pr-body-sections.mjs`:
+  - required `Policy impact` + `Policy version note` summary fields,
+  - required structured `Policy-impact checklist` evidence in test section,
+  - file-scope inference that blocks false `Policy impact: no` declarations.
+- generated PR-body local lint gate in `scripts/lint-generated-pr-body.mjs` wired into `verify`/`verify:pre-pr`.
+- PR template + generator updates for structured policy-impact metadata:
+  - `.github/pull_request_template.md`
+  - `scripts/generate-pr-body.mjs`
+- regression coverage for new enforcement rules:
+  - `tests/unit/pr-body-lint-policy-impact.test.ts`
+
 ## Validation
 
 - `npm run lint:briefs`
@@ -116,6 +129,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-011-policy-enforcement-slice-2 | completed AW-011 slice-2 hard enforcement baseline: added deterministic policy-impact inference + required PR fields/checklist evidence, wired generated-body policy lint into verify:pre-pr, updated PR template/generator, and validated with npm run verify:pre-pr (PASS) | next: open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | completed AW-011 slice-1 docs baseline: added policy lifecycle runbook + policy-impact release checklist, linked release checklist and GDPR runbook, and verified with npm run verify:pre-pr (PASS) | next: open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | started AW-011 slice-1: moved brief to in-progress, set backlog lifecycle to in-progress, and started policy-lifecycle runbook + release compliance checklist baseline | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created AW-011 planned implementation brief with scorecard-complete compliance lifecycle thresholds and deterministic policy versioning/rollback contract | next: link this brief in backlog and use it as canonical scope when implementation starts`
