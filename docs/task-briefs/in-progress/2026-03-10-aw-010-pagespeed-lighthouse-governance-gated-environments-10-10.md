@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-010-pagespeed-lighthouse-governance-gated-environments-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
-- `updated`: `2026-03-10`
+- `updated`: `2026-03-12`
 
 ## Goal
 
@@ -14,9 +14,9 @@ Establish deterministic, repeatable performance governance for both password-gat
 
 ## Why This Brief Exists
 
-- AW-010 is `planned` in backlog but did not have a dedicated implementation brief.
+- AW-010 is now active in backlog with dedicated implementation checkpoints.
 - Performance gates must stay valid even when site lock is enabled for non-public operations windows.
-- This brief defines measurable 10/10 thresholds before implementation starts.
+- This brief defines measurable 10/10 thresholds and in-progress execution checkpoints.
 
 ## Scope
 
@@ -91,6 +91,12 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Trend reporting supports tighten/hold/revert decisions with explicit rationale.
 - Runbook specifies operator actions for regression and rollback-safe release handling.
 
+## Deliverables (Slice 1)
+
+- `docs/runbooks/pagespeed-lighthouse-gated-governance.md`
+- `scripts/run-perf-budget-check.mjs` profile support for `public`, `gated-shell`, and `gated-bypass` runs
+- `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md` lifecycle updates for AW-010 (`planned` -> `in-progress`)
+
 ## Validation
 
 - `npm run lint:briefs`
@@ -112,4 +118,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-010-gated-perf-governance-slice-1 | completed slice-1 validation: npm run verify:pre-pr PASS and SITE_LOCK_ENABLED=1 npm run test:perf:budgets PASS (gated-shell profile) after profile-aware perf-budget script/runbook update | next: open PR in Safari and run gate:pre-merge before merge`
+- `2026-03-12 | docs/aw-010-gated-perf-governance-slice-1 | started AW-010 slice-1: moved brief to in-progress, set AW-010 backlog lifecycle to in-progress, added gated/public performance governance runbook baseline, and extended perf-budget script to support gated-shell and gated-bypass profiles | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created AW-010 planned implementation brief with scorecard-complete thresholds for gated/public performance governance and deterministic evidence contracts | next: link this brief in backlog and use it as canonical scope when implementation starts`

@@ -58,6 +58,8 @@ Useful commands:
   - force password flow: `PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD`
 - `npm run test:e2e:security` for concentrated API/access-control regressions.
 - `npm run test:perf:budgets` for production-start performance budget gates on `/`, `/plans`, `/course`, `/my-library`.
+- `SITE_LOCK_ENABLED=1 npm run test:perf:budgets` for gated-shell perf profile (lock page path).
+- `SITE_LOCK_ENABLED=1 PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN="$SITE_LOCK_BYPASS_TOKEN" npm run test:perf:budgets` for gated-bypass perf profile.
 - `npm run test:e2e:admin` for authenticated admin flows (foundation/parity/notes).
 - `npm run verify:pre-pr` and `npm run verify:pre-merge` for release gates.
 
