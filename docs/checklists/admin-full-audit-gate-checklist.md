@@ -59,3 +59,4 @@ Use this checklist for AW-012 full-admin quality audit runs.
 - Minimum cadence: rerun on every admin-affecting PR before merge.
 - Full audit cadence: weekly while AW-012 is in progress, then at least monthly.
 - Re-run immediately after authz, workflow state-model, or admin mutation contract changes.
+- For workflow `A3`, include an AW-012 checkpoint entry with branch/SHA + parity command + PASS/FAIL summary (see `docs/runbooks/admin-content-parity-triage.md`).

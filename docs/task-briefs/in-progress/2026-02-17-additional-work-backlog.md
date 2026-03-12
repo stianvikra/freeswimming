@@ -351,6 +351,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-012-parity-triage-evidence-slice-5 | completed AW-012 slice-5 F002 closure: added A3 parity triage runbook + checklist cadence requirement, executed real parity smoke (`tests/e2e/admin-content-parity.spec.ts` desktop-chromium PASS), and updated findings log to close F002 with A3 score lifted to 5/5 | next: run verify:pre-pr, open PR, then run gate:pre-merge`
 - `2026-03-12 | docs/aw-012-malformed-payload-evidence-slice-4 | completed AW-012 slice-4 F001 closure: added deterministic malformed-payload error assertions for admin content create/patch workflows and updated findings log to close F001 with A2 raised to 5/5 | next: run verify:pre-pr, open PR, then run gate:pre-merge`
 - `2026-03-12 | docs/aw-012-admin-audit-findings-enforcement-slice-3 | completed AW-012 slice-3 findings enforcement: added canonical findings log with A1-A7 baseline scores + P0/P1/P2 register and upgraded lint:admin-audit to fail on checklist/findings drift (including workflow id parity) with unit coverage | next: run verify:pre-pr, open PR, then run gate:pre-merge`
 - `2026-03-12 | docs/aw-012-admin-audit-gates-slice-2 | completed AW-012 slice-2 automation: added admin-audit checklist linter + unit tests and wired gate into verify pipeline via npm script lint:admin-audit | next: run verify:pre-pr, open PR, then run gate:pre-merge`
