@@ -79,4 +79,5 @@ Escalate to owner/legal review when:
 ## Linked Product and Contract Docs
 
 - `docs/api-contracts.md` (`/api/user/export`, `/api/user/delete`)
+- `docs/runbooks/terms-privacy-compliance-lifecycle.md`
 - `docs/task-briefs/done/2026-02-15-my-library-commerce-and-progress-sync.md`
