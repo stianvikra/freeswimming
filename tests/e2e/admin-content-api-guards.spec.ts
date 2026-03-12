@@ -152,6 +152,20 @@ test.describe("admin content API guards", () => {
       error: "Invalid JSON.",
     });
 
+    const invalidPatchBody = await page.request.patch(`/api/admin/content/${dummyContentId}`, {
+      headers: {
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({
+        body: ["invalid"],
+      }),
+    });
+    expect(invalidPatchBody.status()).toBe(400);
+    await expect(invalidPatchBody.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Body must be a JSON object.",
+    });
+
     const emptyPatch = await page.request.patch(`/api/admin/content/${dummyContentId}`, {
       headers: {
         "content-type": "application/json",
@@ -197,6 +211,22 @@ test.describe("admin content API guards", () => {
     await expect(invalidJsonCreate.json()).resolves.toMatchObject({
       ok: false,
       error: "Invalid JSON.",
+    });
+
+    const invalidCreateTitle = await page.request.post("/api/admin/content", {
+      headers: {
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({
+        contentType: "course_module",
+        title: "x",
+        status: "draft",
+      }),
+    });
+    expect(invalidCreateTitle.status()).toBe(400);
+    await expect(invalidCreateTitle.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Title must be between 2 and 120 characters.",
     });
 
     const unsupportedCourseStructure = await page.request.post(

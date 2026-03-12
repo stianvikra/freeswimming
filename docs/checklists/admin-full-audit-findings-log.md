@@ -7,9 +7,9 @@ Use this log with `docs/checklists/admin-full-audit-gate-checklist.md` for AW-01
 | Field            | Value                                                |
 | ---------------- | ---------------------------------------------------- |
 | Run date         | `2026-03-12`                                         |
-| Branch           | `main`                                               |
-| Commit SHA       | `a4a06e7`                                            |
-| Run type         | `baseline`                                           |
+| Branch           | `docs/aw-012-malformed-payload-evidence-slice-4`     |
+| Commit SHA       | `91e48d0`                                            |
+| Run type         | `baseline-follow-up`                                 |
 | Reviewer         | `stianvikra`                                         |
 | Checklist source | `docs/checklists/admin-full-audit-gate-checklist.md` |
 
@@ -18,7 +18,7 @@ Use this log with `docs/checklists/admin-full-audit-gate-checklist.md` for AW-01
 | ID   | Workflow                                   | Score (0-5) | Evidence                                                                             | Gap Summary                                                                                    | Status  |
 | ---- | ------------------------------------------ | ----------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------- |
 | `A1` | Admin access gate and redirect correctness | `5`         | `tests/e2e/admin-foundation.spec.ts`, `tests/e2e/admin-content-api-guards.spec.ts`   | No baseline gap.                                                                               | `pass`  |
-| `A2` | Core content workspace mutation safety     | `4`         | `tests/e2e/admin-content-api-guards.spec.ts`                                         | Add one focused malformed-payload UX assertion to keep admin error messaging deterministic.    | `watch` |
+| `A2` | Core content workspace mutation safety     | `5`         | `tests/e2e/admin-content-api-guards.spec.ts`                                         | Malformed payload message contract now asserted for create and patch mutation paths.           | `pass`  |
 | `A3` | DB-canonical content parity visibility     | `4`         | `tests/e2e/admin-content-parity.spec.ts`                                             | Add explicit parity-diff triage runbook snippet tied to weekly AW-012 cadence checkpoint.      | `watch` |
 | `A4` | Notes workflows (global + contextual)      | `4`         | `tests/e2e/admin-notes-workflow.spec.ts`, `tests/e2e/admin-contextual-notes.spec.ts` | Add one short manual recoverability walkthrough note for stale-note reconciliation edge cases. | `watch` |
 | `A5` | Preview mode safety and rendering          | `5`         | `tests/e2e/admin-preview-mode.spec.ts`                                               | No baseline gap.                                                                               | `pass`  |
@@ -27,11 +27,11 @@ Use this log with `docs/checklists/admin-full-audit-gate-checklist.md` for AW-01
 
 ## Findings Register
 
-| Finding ID | Severity (P0/P1/P2) | Workflow ID | Gap Summary                                                                               | Owner        | Target Date  | Evidence To Close                                         | Status |
-| ---------- | ------------------- | ----------- | ----------------------------------------------------------------------------------------- | ------------ | ------------ | --------------------------------------------------------- | ------ |
-| `F001`     | `P1`                | `A2`        | Missing explicit malformed-payload message assertion in admin mutation workflow evidence. | `stianvikra` | `2026-03-19` | PR + updated `tests/e2e/admin-content-api-guards.spec.ts` | `open` |
-| `F002`     | `P2`                | `A3`        | Weekly parity triage flow needs explicit operator note in AW-012 checkpoint log evidence. | `stianvikra` | `2026-03-19` | PR + AW-012 checkpoint with linked parity run evidence    | `open` |
-| `F003`     | `P2`                | `A7`        | Publish fallback copy contract needs one extra regression assertion for resilience.       | `stianvikra` | `2026-03-20` | PR + updated email-template preview regression coverage   | `open` |
+| Finding ID | Severity (P0/P1/P2) | Workflow ID | Gap Summary                                                                               | Owner        | Target Date  | Evidence To Close                                         | Status   |
+| ---------- | ------------------- | ----------- | ----------------------------------------------------------------------------------------- | ------------ | ------------ | --------------------------------------------------------- | -------- |
+| `F001`     | `P1`                | `A2`        | Missing explicit malformed-payload message assertion in admin mutation workflow evidence. | `stianvikra` | `2026-03-12` | `tests/e2e/admin-content-api-guards.spec.ts` + slice-4 PR | `closed` |
+| `F002`     | `P2`                | `A3`        | Weekly parity triage flow needs explicit operator note in AW-012 checkpoint log evidence. | `stianvikra` | `2026-03-19` | PR + AW-012 checkpoint with linked parity run evidence    | `open`   |
+| `F003`     | `P2`                | `A7`        | Publish fallback copy contract needs one extra regression assertion for resilience.       | `stianvikra` | `2026-03-20` | PR + updated email-template preview regression coverage   | `open`   |
 
 ## Release Gate Snapshot
 
