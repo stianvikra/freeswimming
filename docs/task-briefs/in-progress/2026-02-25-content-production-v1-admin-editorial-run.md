@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-25`
-- `updated`: `2026-03-08`
+- `updated`: `2026-03-12`
 
 ## Goal
 
@@ -182,6 +182,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | 3672a19 (main) | post-merge recovery complete after PR #202 and new short-session friction batch logged via \`npm run test:e2e:admin:short\`: 3 passed, 2 skipped; P0 none, P1 none, P2 automation-only (authenticated admin write-path checks still skipped when dev bypass/allowlisted writable admin session is unavailable locally) | next: keep this short-session gate as pre-content baseline and run one authenticated local admin session when credentials are available to convert the remaining P2 skip to executed coverage`
 - `2026-03-08 | working tree | validated new short-session harness (`npm run test:e2e:admin:short`) after loading .env.local and forcing open-mode default (`SITE_LOCK_ENABLED=0`): unauthenticated guard checks run green (3 passed), authenticated admin write-path checks remain skipped (2 skipped) in current local session | next: keep using the short-session command as baseline before revision-1 runs; when dev bypass account is writable+allowlisted in environment, confirm the 2 authenticated checks execute without skip`
 - `2026-03-08 | working tree | delivered P2 automation-friction harness for short revision-1 admin sessions: added npm run test:e2e:admin:short (wrapper sets local defaults for DEV_AUTH_BYPASS_ENABLED/PW_PORT/NEXT_DIST_DIR/SITE_LOCK and auto-wires ADMIN_EMAIL_ALLOWLIST from DEV_AUTH_BYPASS_EMAIL when missing) | next: run npm run test:e2e:admin:short and confirm authenticated write-path checks no longer skip when local dev bypass credentials are present`
 - `2026-03-08 | working tree | short revision-1 admin session executed (desktop Playwright: admin-content-api-guards + admin-foundation); friction batch logged: P0 none, P1 none, P2 automation-only: authenticated write-path checks were skipped in this local session because dev bypass/allowlisted admin was not available (`allowlisted dev account can complete core content workflow` + authenticated malformed-payload guard test skipped) | next: owner continues real content entry and logs next live editorial friction batch; if P0/P1 appears, open targeted fix slice with verify:pre-pr -> PR -> gate:pre-merge`
