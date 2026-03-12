@@ -11,6 +11,7 @@ Use this checklist for AW-012 full-admin quality audit runs.
 ## Required Commands
 
 - `npm run lint:briefs`
+- `npm run lint:admin-audit`
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge` (or `npm run gate:pre-merge`)
 
