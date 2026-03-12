@@ -257,6 +257,8 @@ Capture good ideas that should be implemented later without blocking the active 
   - `docs/task-briefs/in-progress/2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10.md`
 - Baseline checklist:
   - `docs/checklists/admin-full-audit-gate-checklist.md`
+- Automated gate:
+  - `npm run lint:admin-audit` (verify-enforced checklist/evidence integrity)
 
 ## AW-013: Full admin content editing UX (modules/lessons/pages/products)
 
@@ -349,6 +351,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-012-admin-audit-gates-slice-2 | completed AW-012 slice-2 automation: added admin-audit checklist linter + unit tests and wired gate into verify pipeline via npm script lint:admin-audit | next: run verify:pre-pr, open PR, then run gate:pre-merge`
 - `2026-03-12 | docs/aw-012-admin-audit-gates-slice-1 | started AW-012 slice-1: moved AW-012 brief planned -> in-progress, set queue status to in-progress, and added baseline audit-gate checklist (`docs/checklists/admin-full-audit-gate-checklist.md`) with workflow/test matrix + remediation queue template | next: run lint:briefs + verify:pre-pr, open PR, then run gate:pre-merge`
 - `2026-03-12 | main@940e2fa | closed out AW-010 as done after merge of slice-2 (PR #193); queue status set to done and brief pointer moved to done path for lifecycle parity | next: continue with planned AW-012 audit prep slice or active AW-013 admin workflow track`
 - `2026-03-12 | docs/aw-010-perf-trend-enforcement-slice-2 | completed AW-010 slice-2 trend enforcement: added perf trend-log utilities + replay CLI, wired automatic `tighten/hold/revert`recommendation into`npm run test:perf:budgets`, updated runbook contract, and validated with npm run verify:pre-pr PASS | next: open PR in Safari and run gate:pre-merge`

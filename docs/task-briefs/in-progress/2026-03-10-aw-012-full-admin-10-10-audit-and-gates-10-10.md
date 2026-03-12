@@ -33,6 +33,8 @@ Define a deterministic full-admin quality audit with measurable scoring, explici
 - Define rerunnable cadence so audit can be reused as release gate.
 - Deliver baseline audit artifact:
   - `docs/checklists/admin-full-audit-gate-checklist.md`
+- Enforce checklist integrity in automated gates:
+  - `scripts/lint-admin-audit-checklist.mjs` wired into `npm run verify`
 
 ## Out Of Scope
 
@@ -96,6 +98,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Validation
 
 - `npm run lint:briefs`
+- `npm run lint:admin-audit`
 - `npm run verify:pre-pr`
 - before merge: `npm run verify:pre-merge`
 
@@ -114,5 +117,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-012-admin-audit-gates-slice-2 | completed AW-012 slice-2 automation: added admin-audit checklist linter + unit coverage and wired lint:admin-audit into verify gates so workflow/evidence drift fails fast before PR/merge | next: run verify:pre-pr, open PR in Safari, then run gate:pre-merge`
 - `2026-03-12 | docs/aw-012-admin-audit-gates-slice-1 | started AW-012 implementation: moved brief from planned -> in-progress, added baseline full-admin audit gate checklist with workflow-to-test matrix and remediation queue template, and synced backlog AW-012 status/pointers | next: run lint:briefs + verify:pre-pr, open PR in Safari, then run gate:pre-merge`
 - `2026-03-10 | working tree | created AW-012 planned implementation brief with scorecard-complete audit/gate thresholds and deterministic remediation contracts | next: link this brief in backlog and use it as canonical scope when implementation starts`
