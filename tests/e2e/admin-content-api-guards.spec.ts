@@ -11,12 +11,32 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
 }
 
+function skipForUnexpectedDevLoginDestination(destination: URL): void {
+  if (destination.pathname === "/auth/sign-in") {
+    const errorMessage = destination.searchParams.get("error");
+    if (errorMessage && /could not sign in/i.test(errorMessage)) {
+      test.skip(
+        true,
+        "Dev auth bypass is enabled but sign-in failed; check DEV_AUTH_BYPASS_EMAIL/DEV_AUTH_BYPASS_PASSWORD."
+      );
+    }
+    test.skip(true, "Dev auth bypass is not enabled in this environment.");
+  }
+
+  if (destination.pathname === "/preview-access") {
+    test.skip(true, "Site lock is enabled; dev-login did not reach /admin.");
+  }
+
+  test.skip(true, `Dev login redirected to unexpected path (${destination.pathname}).`);
+}
+
 async function loginAsAdminViaDevBypass(page: Page) {
   await page.goto(`/dev/login?next=${encodeURIComponent("/admin")}`);
-  const pathAfterDevLogin = new URL(page.url()).pathname;
+  const destinationAfterDevLogin = new URL(page.url());
+  const pathAfterDevLogin = destinationAfterDevLogin.pathname;
 
   if (pathAfterDevLogin !== "/admin") {
-    test.skip(true, "Dev auth bypass is not enabled in this environment.");
+    skipForUnexpectedDevLoginDestination(destinationAfterDevLogin);
   }
 
   const noAccessHeading = page.getByRole("heading", { name: "You don't have access" });

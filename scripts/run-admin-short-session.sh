@@ -22,6 +22,10 @@ if [[ -z "${DEV_AUTH_BYPASS_EMAIL:-}" || -z "${DEV_AUTH_BYPASS_PASSWORD:-}" ]]; 
   echo "[admin-short-session] DEV_AUTH_BYPASS_EMAIL/DEV_AUTH_BYPASS_PASSWORD missing; authenticated write-path checks may skip."
 fi
 
+if [[ -z "${DEV_AUTH_BYPASS_TOKEN:-}" ]]; then
+  echo "[admin-short-session] DEV_AUTH_BYPASS_TOKEN missing; /api/dev-login checks are unavailable."
+fi
+
 if [[ -z "${ADMIN_EMAIL_ALLOWLIST:-}" ]]; then
   echo "[admin-short-session] ADMIN_EMAIL_ALLOWLIST not set; allowlist-dependent checks may skip."
 fi
