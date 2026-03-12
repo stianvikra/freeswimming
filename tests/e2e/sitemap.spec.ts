@@ -6,7 +6,9 @@ async function getWithSocketHangupRetry(request: APIRequestContext, url: string)
   } catch (error) {
     const message =
       error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-    if (!message.includes("socket hang up")) {
+    const isTransientNetworkError =
+      message.includes("socket hang up") || message.includes("econnreset");
+    if (!isTransientNetworkError) {
       throw error;
     }
 

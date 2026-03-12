@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
 - `updated`: `2026-03-12`
@@ -118,6 +118,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | main@88f28a1 | closed out AW-012 after merge of slice-7 (PR #201): A1-A7 workflow baseline is now 5/5 with F001-F004 closed; moved brief from in-progress -> done for lifecycle parity | next: continue AW-013 active admin workflow track`
 - `2026-03-12 | docs/aw-012-notes-recovery-runbook-slice-7 | completed AW-012 slice-7 A4 closure: added deterministic stale-note reconciliation recovery runbook (`docs/runbooks/admin-notes-recovery.md`), linked it from admin Help/Guide runbook references, codified A4 cadence rule in checklist, and updated findings log to raise A4 to 5/5 with F004 closed | next: run verify:pre-pr, open PR in Safari, then run gate:pre-merge`
 - `2026-03-12 | test/aw-012-email-fallback-publish-regression-slice-6 | completed AW-012 slice-6 F003 closure: extended admin email-template preview regression with published-state fallback-copy assertions and invalid preview-JSON resilience checks (`tests/e2e/admin-email-templates-preview.spec.ts`), plus explicit skip guards when env is viewer-only or schema-not-ready; targeted local run (`PW_PORT=3100 NEXT_DIST_DIR=.next-playwright SITE_LOCK_ENABLED=0 npx playwright test tests/e2e/admin-email-templates-preview.spec.ts --project=desktop-chromium`) => SKIPPED (local dev-bypass role is viewer) | next: run verify:pre-pr, open PR in Safari, then run gate:pre-merge`
 - `2026-03-12 | docs/aw-012-parity-triage-evidence-slice-5 | completed AW-012 slice-5 F002 closure: added deterministic A3 parity triage runbook (`docs/runbooks/admin-content-parity-triage.md`), codified checklist cadence requirement for A3 checkpoint evidence, ran real parity check (`PW_PORT=3100 NEXT_DIST_DIR=.next-playwright SITE_LOCK_ENABLED=0 npx playwright test tests/e2e/admin-content-parity.spec.ts --project=desktop-chromium`) => PASS (1 passed), and updated findings log to close F002 with A3 raised to 5/5 | next: run verify:pre-pr, open PR in Safari, then run gate:pre-merge`
