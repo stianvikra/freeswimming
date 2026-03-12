@@ -97,6 +97,14 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `scripts/run-perf-budget-check.mjs` profile support for `public`, `gated-shell`, and `gated-bypass` runs
 - `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md` lifecycle updates for AW-010 (`planned` -> `in-progress`)
 
+## Deliverables (Slice 2)
+
+- `scripts/perf-budget-trend-utils.mjs` deterministic trend-log + recommendation helpers
+- `scripts/perf-budget-trend-status.mjs` operator CLI for trend recommendation replay
+- `scripts/run-perf-budget-check.mjs` auto-record trend evidence and emit `tighten`/`hold`/`revert` recommendation
+- `tests/unit/perf-budget-trend-utils.test.ts` decision-policy unit coverage
+- `docs/runbooks/pagespeed-lighthouse-gated-governance.md` automation notes and trend command contract
+
 ## Validation
 
 - `npm run lint:briefs`
@@ -118,6 +126,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-010-perf-trend-enforcement-slice-2 | completed AW-010 slice-2: added deterministic trend-log utilities + operator trend-status CLI, wired auto trend evidence/recommendation (`tighten/hold/revert`) into perf-budget runs, and shipped unit coverage; npm run verify:pre-pr PASS with trend output (`hold`, runs 1/2, margin 40.9%) | next: open PR in Safari and run gate:pre-merge before merge`
+- `2026-03-12 | docs/aw-010-perf-trend-enforcement-slice-2 | started AW-010 slice-2: adding automatic trend evidence + tighten/hold/revert recommendation enforcement for perf-budget runs, plus operator CLI and unit coverage | next: run lint:briefs + verify:pre-pr, then open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-010-gated-perf-governance-slice-1 | completed slice-1 validation: npm run verify:pre-pr PASS and SITE_LOCK_ENABLED=1 npm run test:perf:budgets PASS (gated-shell profile) after profile-aware perf-budget script/runbook update | next: open PR in Safari and run gate:pre-merge before merge`
 - `2026-03-12 | docs/aw-010-gated-perf-governance-slice-1 | started AW-010 slice-1: moved brief to in-progress, set AW-010 backlog lifecycle to in-progress, added gated/public performance governance runbook baseline, and extended perf-budget script to support gated-shell and gated-bypass profiles | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-10 | working tree | created AW-010 planned implementation brief with scorecard-complete thresholds for gated/public performance governance and deterministic evidence contracts | next: link this brief in backlog and use it as canonical scope when implementation starts`

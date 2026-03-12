@@ -47,12 +47,24 @@ PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN="$SITE_LOCK_BYPASS_TOKEN" \
 npm run test:perf:budgets
 ```
 
+Show latest trend recommendation from recorded history:
+
+```bash
+npm run test:perf:trend
+```
+
 Optional JSON artifact output:
 
 ```bash
 PERF_BUDGET_OUTPUT="artifacts/perf-budgets/<profile>-$(date -u +%Y%m%dT%H%M%SZ).json" \
 npm run test:perf:budgets
 ```
+
+By default, each perf run appends a trend entry to:
+
+- `artifacts/perf-budgets/trend-log.ndjson`
+
+This includes SHA, profile, pass/fail, and worst budget margin percentage.
 
 ## CI And Merge Contract
 
@@ -74,6 +86,14 @@ Record each decision in the active brief checkpoint log with:
 - profile,
 - decision (`tighten`/`hold`/`revert`),
 - rationale.
+
+Automation note:
+
+- `npm run test:perf:budgets` now prints an automatic recommendation (`tighten`/`hold`/`revert`) based on trend history for the active profile.
+- Recommendation thresholds are configurable:
+  - `PERF_BUDGET_TIGHTEN_MIN_WEEKLY_GREENS` (default `2`)
+  - `PERF_BUDGET_TIGHTEN_MIN_MARGIN_PCT` (default `15`)
+- If recommendation is `tighten`, raise one stretch budget step and record the decision in the AW-010 checkpoint/PR summary.
 
 ## Failure Protocol
 
