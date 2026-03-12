@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-10-aw-012-full-admin-10-10-audit-and-gates-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-10`
-- `updated`: `2026-03-10`
+- `updated`: `2026-03-12`
 
 ## Goal
 
@@ -31,6 +31,8 @@ Define a deterministic full-admin quality audit with measurable scoring, explici
   - regression guard.
 - Define scoring model and pass/fail thresholds with remediation queue structure.
 - Define rerunnable cadence so audit can be reused as release gate.
+- Deliver baseline audit artifact:
+  - `docs/checklists/admin-full-audit-gate-checklist.md`
 
 ## Out Of Scope
 
@@ -112,4 +114,5 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-012-admin-audit-gates-slice-1 | started AW-012 implementation: moved brief from planned -> in-progress, added baseline full-admin audit gate checklist with workflow-to-test matrix and remediation queue template, and synced backlog AW-012 status/pointers | next: run lint:briefs + verify:pre-pr, open PR in Safari, then run gate:pre-merge`
 - `2026-03-10 | working tree | created AW-012 planned implementation brief with scorecard-complete audit/gate thresholds and deterministic remediation contracts | next: link this brief in backlog and use it as canonical scope when implementation starts`
