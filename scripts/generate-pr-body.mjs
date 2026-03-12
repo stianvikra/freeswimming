@@ -11,6 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
+import { inferPolicyImpactFromChangedFiles } from "./lint-pr-body-sections.mjs";
 
 const BRIEF_PATH_PATTERN =
   /^docs\/task-briefs\/(planned|in-progress|done|deferred|blocked)\/\d{4}-\d{2}-\d{2}-.+\.md$/;
@@ -360,6 +361,30 @@ function describeRollbackPlan(headShaShort) {
   return `Revert \`${headShaShort}\` (\`git revert ${headShaShort}\`) to restore previous behavior.`;
 }
 
+function describePolicyImpact(changedFiles) {
+  const inference = inferPolicyImpactFromChangedFiles(changedFiles);
+  if (!inference.required) {
+    return {
+      summaryLine: "no (no auth/analytics/user-data-rights/third-party processor paths detected).",
+      versionNote: "N/A (no policy-impacting scope detected).",
+      checklistLine: "N/A (no policy-impacting scope detected in changed files).",
+    };
+  }
+
+  const triggerPreview = inference.matches
+    .slice(0, 3)
+    .map((match) => `\`${match.filePath}\``)
+    .join(", ");
+  const extraCount = Math.max(0, inference.matches.length - 3);
+  const triggerSummary = extraCount > 0 ? `${triggerPreview} (+${extraCount} more)` : triggerPreview;
+
+  return {
+    summaryLine: `yes (inferred from changed scope: ${triggerSummary}).`,
+    versionNote: "N/A (if policy text/version changes, replace with YYYY-MM-DD.rev and rationale).",
+    checklistLine: "PENDING (run docs/checklists/policy-impact-release-review.md and update to PASS/FAIL).",
+  };
+}
+
 function buildBody({
   baseRef,
   branch,
@@ -378,6 +403,7 @@ function buildBody({
   const outOfScopeDescription = describeOutOfScope(changedFiles, areaCounts);
   const mainRiskDescription = describeMainRisk(changedFiles, areaCounts);
   const rollbackPlanDescription = describeRollbackPlan(headShaShort);
+  const policyImpact = describePolicyImpact(changedFiles);
   const changedFileLines = shortList(changedFiles).map((filePath) => `  - \`${filePath}\``);
   const verifySummaryLines =
     verifyRun?.summaryLines.length > 0
@@ -401,6 +427,8 @@ function buildBody({
     `- Latest commit: \`${headShaShort}\` - ${commitTitle || "No commit subject found"}.`,
     `- User-visible changes: ${userVisibleChanges}`,
     `- Technical changes: ${technicalChanges}`,
+    `- Policy impact: ${policyImpact.summaryLine}`,
+    `- Policy version note: ${policyImpact.versionNote}`,
     briefLinkLine,
     `- Scorecard target outcomes: ${brief.scorecardSummary}`,
     "",
@@ -429,6 +457,8 @@ function buildBody({
     "",
     verifyPrePrLine,
     verifyPreMergeLine,
+    `- Policy-impact checklist: ${policyImpact.checklistLine}`,
+    "- Policy-impact runbook/checklist: `docs/checklists/policy-impact-release-review.md`",
     "- Key verify summary:",
     ...verifySummaryLines,
     "- CI links: use PR Checks tab (`CI / verify`, `CodeQL`, `PR Size`, `Vercel`).",

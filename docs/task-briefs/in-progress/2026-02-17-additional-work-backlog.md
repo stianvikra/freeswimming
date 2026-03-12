@@ -349,6 +349,7 @@ Apply these when backlog items graduate to dedicated implementation briefs:
 
 ## Checkpoint Log
 
+- `2026-03-12 | docs/aw-011-policy-enforcement-slice-2 | completed AW-011 slice-2 hard policy-impact enforcement: PR-body validator now requires policy-impact declaration + checklist evidence and blocks scope-mismatch (`Policy impact: no` on policy-triggering diffs); generated PR-body lint is now part of verify:pre-pr with unit coverage | next: open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | completed AW-011 slice-1 docs baseline: policy lifecycle runbook + policy-impact release checklist added, AW-011 lifecycle moved to in-progress, and npm run verify:pre-pr PASS | next: open PR and run gate:pre-merge`
 - `2026-03-12 | docs/aw-011-policy-lifecycle-slice-1 | started AW-011 slice-1: moved lifecycle from planned to in-progress, moved canonical brief to in-progress path, and started policy lifecycle + release compliance checklist baseline docs | next: run lint:briefs + verify:pre-pr, then open PR`
 - `2026-03-12 | docs/aw-010-gated-perf-governance-slice-1 | validated AW-010 slice-1 baseline after lifecycle/runbook sync: npm run verify:pre-pr PASS and gated-shell perf check PASS (SITE_LOCK_ENABLED=1 npm run test:perf:budgets) | next: open PR and run gate:pre-merge`
