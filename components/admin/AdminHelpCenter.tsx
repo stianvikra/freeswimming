@@ -16,7 +16,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-11";
+const LAST_UPDATED = "2026-03-12";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -499,6 +499,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
 const RUNBOOK_LINKS = [
   "docs/runbooks/qr-redirect-operations.md",
   "docs/runbooks/site-lock-operations.md",
+  "docs/runbooks/admin-notes-recovery.md",
   "docs/runbooks/admin-email-template-governance.md",
   "docs/runbooks/private-access-gate.md",
   "docs/runbooks/post-merge-local-sync.md",

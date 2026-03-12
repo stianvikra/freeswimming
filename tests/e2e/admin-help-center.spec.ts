@@ -81,6 +81,7 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(page.getByText("docs/runbooks/qr-redirect-operations.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/site-lock-operations.md")).toBeVisible();
+    await expect(page.getByText("docs/runbooks/admin-notes-recovery.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-email-template-governance.md")).toBeVisible();
   });
 });
