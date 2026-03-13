@@ -112,6 +112,7 @@ export async function GET() {
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
+      role: gate.role,
       items,
       schemaReady,
       warning,

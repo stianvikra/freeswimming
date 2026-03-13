@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { AdminRole } from "@/lib/admin/access";
 import type {
   AdminContentItemRow,
   AdminContentStatus,
@@ -127,6 +128,7 @@ const MIRROR_METRIC_KEY_BY_CONTENT_TYPE: Partial<Record<AdminContentType, Mirror
 type AdminContentListResponse =
   | {
       ok: true;
+      role: AdminRole;
       items: AdminContentItemRow[];
       schemaReady?: boolean;
       warning?: string | null;
@@ -165,6 +167,19 @@ type AdminContentDeleteResponse =
   | {
       ok: false;
       error?: string;
+    };
+
+type AdminContentCleanupTestRecordsResponse =
+  | {
+      ok: true;
+      deletedCount: number;
+      deletedIds: string[];
+      deletedSlugs: string[];
+    }
+  | {
+      ok: false;
+      error?: string;
+      candidateCount?: number;
     };
 
 type CourseStructureActionResponse =
@@ -657,6 +672,7 @@ export default function AdminContentManager() {
   const [warning, setWarning] = useState<string | null>(null);
   const [schemaReady, setSchemaReady] = useState(true);
   const [mirror, setMirror] = useState<MirrorSnapshot | null>(null);
+  const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -704,6 +720,7 @@ export default function AdminContentManager() {
     null
   );
   const [moduleDeleteSubmitting, setModuleDeleteSubmitting] = useState(false);
+  const [cleanupSubmitting, setCleanupSubmitting] = useState(false);
 
   const moduleOptions = useMemo(
     () =>
@@ -1044,10 +1061,12 @@ export default function AdminContentManager() {
             : (payload.error ?? "Could not load content list.")
         );
         setItems([]);
+        setAdminRole(null);
         setSchemaReady(true);
         setMirror(null);
         return;
       }
+      setAdminRole(payload.role);
       setItems(payload.items);
       setSchemaReady(payload.schemaReady !== false);
       setWarning(payload.warning ?? null);
@@ -1072,6 +1091,7 @@ export default function AdminContentManager() {
     } catch {
       setError("Could not load content list.");
       setItems([]);
+      setAdminRole(null);
       setSchemaReady(true);
       setMirror(null);
       setCategoryOptions([]);
@@ -2023,6 +2043,53 @@ export default function AdminContentManager() {
     }
   }
 
+  async function handleCleanupQaTestRecords() {
+    if (cleanupSubmitting) return;
+    const ignoredRecordCount = mirror?.summary.ignoredRecordCount ?? 0;
+    if (ignoredRecordCount === 0) return;
+
+    const confirmed = window.confirm(
+      `Delete ${ignoredRecordCount} ignored QA/test content record(s)? This only removes explicit e2e-admin-content-* rows.`
+    );
+    if (!confirmed) return;
+
+    setActionError(null);
+    setActionNotice(null);
+    setCleanupSubmitting(true);
+
+    try {
+      const response = await fetch("/api/admin/content/test-records", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      const payload = (await response.json()) as AdminContentCleanupTestRecordsResponse;
+      if (!response.ok || !payload.ok) {
+        setActionError(
+          payload.ok
+            ? "Could not clean up QA/test records."
+            : (payload.error ?? "Could not clean up QA/test records.")
+        );
+        return;
+      }
+
+      await loadItems();
+      if (payload.deletedCount === 0) {
+        setActionNotice("No QA/test content records needed cleanup.");
+        return;
+      }
+
+      setActionNotice(
+        `Deleted ${payload.deletedCount} QA/test content record${
+          payload.deletedCount === 1 ? "" : "s"
+        }.`
+      );
+    } catch {
+      setActionError("Could not clean up QA/test records.");
+    } finally {
+      setCleanupSubmitting(false);
+    }
+  }
+
   return (
     <div className="space-y-6" data-testid="admin-content-manager">
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -2241,24 +2308,45 @@ export default function AdminContentManager() {
         {isAllContentView && schemaReady && mirror ? (
           <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-slate-900">Platform mirror snapshot</h3>
-              <p className="text-xs text-slate-500">
-                {mirror.summary.mismatchCount === 0
-                  ? "All aligned"
-                  : `${mirror.summary.mismatchCount} mismatch${
-                      mirror.summary.mismatchCount === 1 ? "" : "es"
-                    }`}
-                {mirror.summary.coverageMismatchCount > 0
-                  ? ` · ${mirror.summary.coverageMismatchCount} identity drift${
-                      mirror.summary.coverageMismatchCount === 1 ? "" : "s"
-                    }`
-                  : ""}
-                {mirror.summary.ignoredRecordCount > 0
-                  ? ` · ${mirror.summary.ignoredRecordCount} ignored QA/test record${
-                      mirror.summary.ignoredRecordCount === 1 ? "" : "s"
-                    }`
-                  : ""}
-              </p>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Platform mirror snapshot</h3>
+                <p className="text-xs text-slate-500">
+                  {mirror.summary.mismatchCount === 0
+                    ? "All aligned"
+                    : `${mirror.summary.mismatchCount} mismatch${
+                        mirror.summary.mismatchCount === 1 ? "" : "es"
+                      }`}
+                  {mirror.summary.coverageMismatchCount > 0
+                    ? ` · ${mirror.summary.coverageMismatchCount} identity drift${
+                        mirror.summary.coverageMismatchCount === 1 ? "" : "s"
+                      }`
+                    : ""}
+                  {mirror.summary.ignoredRecordCount > 0
+                    ? ` · ${mirror.summary.ignoredRecordCount} ignored QA/test record${
+                        mirror.summary.ignoredRecordCount === 1 ? "" : "s"
+                      }`
+                    : ""}
+                </p>
+              </div>
+              {mirror.summary.ignoredRecordCount > 0 ? (
+                adminRole === "admin" ? (
+                  <button
+                    type="button"
+                    onClick={handleCleanupQaTestRecords}
+                    disabled={cleanupSubmitting}
+                    data-testid="admin-mirror-cleanup-test-records"
+                    className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {cleanupSubmitting
+                      ? "Cleaning QA/test records..."
+                      : "Delete ignored QA/test records"}
+                  </button>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Sign in as admin to delete ignored QA/test records.
+                  </p>
+                )
+              ) : null}
             </div>
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {mirror.metrics.map((metric) => (

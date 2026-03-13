@@ -1,6 +1,7 @@
 import { COURSE_MODULES } from "@/app/course/courseData";
 import type { AdminContentItemRow } from "@/lib/admin/content";
 import { buildPlatformContentSeedItems } from "@/lib/admin/content-import";
+import { isAdminContentQaTestSlug } from "@/lib/admin/content-test-records";
 import { getCatalogProductsWithAvailability } from "@/lib/commerce/catalog";
 import { GUIDE_0_TO_1000M_SESSIONS } from "@/lib/guides/guide-0-1000m";
 import { GUIDE_POOLSIDE_DRILLS } from "@/lib/guides/guide-poolside";
@@ -37,8 +38,6 @@ export type AdminContentMirrorSnapshot = {
   };
 };
 
-const ADMIN_CONTENT_MIRROR_IGNORED_SLUG_PREFIXES = ["e2e-admin-content-"] as const;
-
 function countCourseLessons(): number {
   return COURSE_MODULES.reduce((total, module) => total + module.lessons.length, 0);
 }
@@ -58,11 +57,6 @@ function uniqueSorted(values: string[]): string[] {
   return [...new Set(values.map(normalizeComparableValue).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b)
   );
-}
-
-function isIgnoredAdminContentMirrorSlug(slug: string): boolean {
-  const normalized = normalizeComparableValue(slug);
-  return ADMIN_CONTENT_MIRROR_IGNORED_SLUG_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
 function buildCoverage(
@@ -147,7 +141,7 @@ export function buildAdminContentMirrorSnapshot(
   });
 
   const comparableItems = items.filter((item) => {
-    if (!isIgnoredAdminContentMirrorSlug(item.slug)) {
+    if (!isAdminContentQaTestSlug(item.slug)) {
       return true;
     }
     ignoredByType.set(item.content_type, [
