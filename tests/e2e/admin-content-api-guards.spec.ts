@@ -164,7 +164,7 @@ test.describe("admin content API guards", () => {
       headers: {
         "content-type": "application/json",
       },
-      data: "{",
+      data: Buffer.from("{"),
     });
     expect(invalidJsonPatch.status()).toBe(400);
     await expect(invalidJsonPatch.json()).resolves.toMatchObject({
@@ -225,7 +225,7 @@ test.describe("admin content API guards", () => {
       headers: {
         "content-type": "application/json",
       },
-      data: "{",
+      data: Buffer.from("{"),
     });
     expect(invalidJsonCreate.status()).toBe(400);
     await expect(invalidJsonCreate.json()).resolves.toMatchObject({
@@ -267,7 +267,7 @@ test.describe("admin content API guards", () => {
         headers: {
           "content-type": "application/json",
         },
-        data: "{",
+        data: Buffer.from("{"),
       }
     );
     expect(invalidJsonCourseStructure.status()).toBe(400);
@@ -308,7 +308,7 @@ test.describe("admin content API guards", () => {
       headers: {
         "content-type": "application/json",
       },
-      data: "{",
+      data: Buffer.from("{"),
     });
     expect(invalidJsonQrCreate.status()).toBe(400);
     await expect(invalidJsonQrCreate.json()).resolves.toMatchObject({
@@ -362,7 +362,7 @@ test.describe("admin content API guards", () => {
       headers: {
         "content-type": "application/json",
       },
-      data: "{",
+      data: Buffer.from("{"),
     });
     expect(invalidJsonQrPatch.status()).toBe(400);
     await expect(invalidJsonQrPatch.json()).resolves.toMatchObject({

@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-25`
-- `updated`: `2026-03-12`
+- `updated`: `2026-03-13`
 
 ## Goal
 
@@ -182,6 +182,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-13 | working tree | corrected shared dev-bypass role from viewer to editor and hardened short-session tests for shared editor environments (raw invalid-JSON probes, deterministic content filters, seed-independent lesson assertions, and role-aware revision/delete expectations); latest evidence: npm run test:e2e:admin:short => total=5, passed=5, skipped=0, failed=0 | friction batch: P0 none, P1 none, P2 executed-coverage blocker closed (authenticated mutation paths now execute end-to-end under editor role; admin-only restore/delete remain explicitly role-gated) | next: run npm run verify:pre-pr, open PR, merge, then resume real revision-1 content production and log the next live friction batch`
+- `2026-03-13 | main@0df4077 | post-merge recovery complete after PR #205; reran npm run test:e2e:admin:short on main to convert remaining authenticated skips to executed coverage, but result remains total=5, passed=3, skipped=2, failed=0 with skip reason='Current admin session is read-only (viewer) in this environment.' (2x) | friction batch: P0 none, P1 none, P2 env-role configuration blocker remains (short-session harness and summary are working; writable editor/admin session is not yet available locally) | next: correct local writable admin role/allowlist configuration, then rerun npm run test:e2e:admin:short and expect the 2 authenticated mutation checks to execute`
 - `2026-03-12 | working tree | delivered P2 short-session friction-summary automation: npm run test:e2e:admin:short now emits deterministic pass/skip/fail totals plus grouped skip reasons from Playwright JSON output; latest short session evidence: total=5, passed=3, skipped=2, failed=0, skip reason='Current admin session is read-only (viewer) in this environment.' (2x); local verify:pre-pr PASS on this slice | friction batch: P0 none, P1 none, P2 env-role gating remains (needs writable allowlisted admin session for authenticated mutation checks) | next: open PR, run gate:pre-merge, merge; then rerun short session with writable admin to convert skip-only coverage to executed coverage`
 - `2026-03-12 | working tree | delivered P2 short-session diagnostics hardening for revision-1 prep: improved dev-login skip classification in short-session suites (`admin-foundation`+`admin-content-api-guards`) so output now distinguishes bypass-disabled vs sign-in-failed vs site-lock redirect, and short-session wrapper now warns when `DEV_AUTH_BYPASS_TOKEN` is missing | next: open PR, run gate:pre-merge, merge; then use clearer diagnostics to unblock one authenticated writable-admin run and convert remaining skip-only P2 coverage`
 - `2026-03-12 | 3672a19 (main) | post-merge recovery complete after PR #202 and new short-session friction batch logged via \`npm run test:e2e:admin:short\`: 3 passed, 2 skipped; P0 none, P1 none, P2 automation-only (authenticated admin write-path checks still skipped when dev bypass/allowlisted writable admin session is unavailable locally) | next: keep this short-session gate as pre-content baseline and run one authenticated local admin session when credentials are available to convert the remaining P2 skip to executed coverage`

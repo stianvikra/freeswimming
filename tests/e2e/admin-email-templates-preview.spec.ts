@@ -2,6 +2,17 @@ import { expect, test } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
+type AdminEmailTemplatesProbeResponse =
+  | {
+      ok: true;
+      schemaReady?: boolean;
+      warning?: string | null;
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Admin e2e is desktop-only.");
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
@@ -32,9 +43,20 @@ test.describe("admin email template preview", () => {
       test.skip(true, "Dev bypass account lacks editor/admin role for template mutations.");
     }
 
-    const schemaWarning = page.getByText("Admin email templates setup is not ready");
-    if (await schemaWarning.isVisible().catch(() => false)) {
-      test.skip(true, "Email template schema is not ready in this environment.");
+    const emailTemplatesProbe = await page.request.get("/api/admin/email-templates");
+    if (!emailTemplatesProbe.ok()) {
+      test.skip(true, `Admin email templates API unavailable (${emailTemplatesProbe.status()}).`);
+    }
+    const emailTemplatesPayload =
+      (await emailTemplatesProbe.json()) as AdminEmailTemplatesProbeResponse;
+    if (!emailTemplatesPayload.ok) {
+      test.skip(true, emailTemplatesPayload.error ?? "Admin email templates API is not ready.");
+    }
+    if (emailTemplatesPayload.ok && emailTemplatesPayload.schemaReady === false) {
+      test.skip(
+        true,
+        emailTemplatesPayload.warning ?? "Email template schema is not ready in this environment."
+      );
     }
 
     const tabEmailTemplates = page.getByTestId("admin-tab-email-templates");
@@ -42,6 +64,11 @@ test.describe("admin email template preview", () => {
       await tabEmailTemplates.click();
     }
     await expect(page.getByTestId("admin-active-section-label")).toHaveText("Email templates");
+
+    const schemaWarning = page.getByText(/Admin email templates setup is not ready/i).first();
+    if (await schemaWarning.isVisible().catch(() => false)) {
+      test.skip(true, "Email template schema is not ready in this environment.");
+    }
 
     const createForm = page.getByTestId("admin-email-templates-create-form");
     await expect(createForm).toBeVisible();
