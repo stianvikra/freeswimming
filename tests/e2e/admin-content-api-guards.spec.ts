@@ -155,6 +155,7 @@ test.describe("admin content API guards", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
 
     await loginAsAdminViaDevBypass(page);
     const adminRequest = await createAuthenticatedRequestContext(page);

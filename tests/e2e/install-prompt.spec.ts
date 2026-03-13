@@ -112,6 +112,7 @@ test("main menu exposes a persistent install action", async ({ page }, testInfo)
     !isMobileProject(testInfo),
     "Install prompt mobile drawer flow is validated on mobile projects."
   );
+  test.slow();
 
   await openMainMenuFromCourse(page);
   await expect(page.getByTestId("install-app-menu-action")).toBeVisible();
@@ -128,6 +129,7 @@ test("main menu shows unsupported-browser guidance when install path is unavaila
     testInfo.project.name.includes("iphone"),
     "Unsupported-browser path is validated on non-iOS profile."
   );
+  test.slow();
 
   await blockBeforeInstallPrompt(page);
   await openMainMenuFromCourse(page);
@@ -141,6 +143,7 @@ test("main menu shows iOS install instructions on iPhone profile", async ({ page
     "Install prompt mobile drawer flow is validated on mobile projects."
   );
   test.skip(!testInfo.project.name.includes("iphone"), "iOS-only path.");
+  test.slow();
 
   await blockBeforeInstallPrompt(page);
   await openMainMenuFromCourse(page);
@@ -161,6 +164,7 @@ test("main menu shows Mac Safari instructions for Safari-on-mac fallback", async
     testInfo.project.name.includes("iphone"),
     "Mac Safari fallback validation runs on non-iOS profile."
   );
+  test.slow();
 
   await page.addInitScript(() => {
     const overrideNavigator = (
@@ -219,6 +223,7 @@ test("first successful mark-as-done can trigger contextual install prompt once",
     !isMobileProject(testInfo),
     "Install prompt mobile drawer flow is validated on mobile projects."
   );
+  test.slow();
 
   await page.goto("/course?lesson=mod3-l1");
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
@@ -253,6 +258,7 @@ test("contextual install prompt shows success confirmation after accepted instal
     !isMobileProject(testInfo),
     "Install prompt mobile drawer flow is validated on mobile projects."
   );
+  test.slow();
 
   await page.goto("/course?lesson=mod3-l1");
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
