@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-19`
-- `updated`: `2026-03-09`
+- `updated`: `2026-03-13`
 
 ## Goal
 
@@ -87,10 +87,13 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `docs/runbooks/environment-config-and-secret-parity.md`
 - `docs/checklists/admin-access-and-secret-rotation.md`
 - `.env.example` update for missing optional guide asset override key.
+- `scripts/lint-env-parity-bundle.mjs`
+- `tests/unit/env-parity-bundle-lint.test.ts`
 
 ## Validation
 
 - `npm run lint:briefs`
+- `npm run lint:env-parity`
 - `npm run lint`
 - `npm run typecheck`
 - `npm run verify:pre-pr`
@@ -131,6 +134,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-13 | working tree | verify:pre-pr PASS for env-parity closeout-gate automation slice (`81 passed`, `201 skipped`, `0 failed`): env bundle linter now enforces required runbook/checklist structure during verify, and move-to-done is blocked until real preview+production PASS evidence replaces template rows | next: commit, open PR, run gate:pre-merge, then keep brief in-progress until owner records real preview+production smoke evidence`
+- `2026-03-13 | working tree | started env-parity closeout-gate automation slice: added env bundle linter + unit test, wired verify to require env-parity structure, and blocked task-brief move-to-done when preview/production smoke evidence still contains TBD/pending placeholders or lacks full PASS rows | next: run verify:pre-pr, open PR, run gate:pre-merge, then keep brief in-progress until owner records real preview+production smoke evidence`
 - `2026-03-09 | working tree | started manual-smoke evidence hygiene slice: added deterministic preview/production smoke evidence template + closeout rule in admin rotation checklist/runbook so brief move-to-done is proof-based | next: run verify:pre-pr, open PR, run gate:pre-merge, then execute owner preview/prod smoke rows and move brief to done`
 - `2026-03-09 | a052609 (main) | PR #163 merged (`docs(ops): deliver env config parity audit baseline`) with required checks green and local verify:pre-merge evidence | next: execute owner manual preview/prod runbook smoke checks (`/auth/sign-in`, `/api/runtime/flags`, `/admin`) and then move brief to done`
 - `2026-03-09 | working tree | started env-config parity audit slice: moved brief to in-progress, added env parity runbook + admin secret-rotation checklist, and aligned .env.example with poolside guide asset override key | next: run verify:pre-pr, open PR in Safari, run gate:pre-merge, then execute manual preview/prod runbook smoke checks before moving brief to done`
