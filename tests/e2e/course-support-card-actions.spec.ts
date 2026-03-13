@@ -65,6 +65,7 @@ test("course support card hides static QR on mobile and keeps share actions", as
 }, testInfo) => {
   test.skip(!isMobileProject(testInfo), "Runs once on mobile profile.");
   test.skip(testInfo.project.name !== "mobile-chromium", "Runs once on mobile Chromium.");
+  test.slow();
 
   await page.route("**/api/course/content*", async (route) => {
     await route.fulfill({

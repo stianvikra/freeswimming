@@ -2,6 +2,21 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
+const DETERMINISTIC_NEW_CONTENT_SIGNAL = {
+  signature: "v1:e2e-my-library-notice-signal",
+  lessonCount: 1,
+  lessonTokens: ["lesson-token-mod1-l1"],
+  firstLessonId: "mod1-l1",
+  lessons: [
+    {
+      lessonId: "mod1-l1",
+      lessonTitle: "Welcome to the course",
+      moduleId: "mod1",
+      moduleTitle: "Introduction to the Course",
+      lessonToken: "lesson-token-mod1-l1",
+    },
+  ],
+};
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Library notice e2e is desktop-only.");
@@ -84,6 +99,16 @@ test.describe("my library new content notice", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    await page.route("**/api/my-library/new-content-signal", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          signal: DETERMINISTIC_NEW_CONTENT_SIGNAL,
+        }),
+      });
+    });
     await loginToMyLibraryViaDevBypass(page);
 
     await page.evaluate(() => {

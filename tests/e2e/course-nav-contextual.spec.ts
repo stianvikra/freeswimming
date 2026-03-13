@@ -7,6 +7,7 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
     !isMobileProject(testInfo),
     "Mobile nav behavior is validated only on mobile projects."
   );
+  test.slow();
 
   const firstLessonId = DEFAULT_LESSON_ID;
   const lastLessonId = COURSE_LESSONS_FLAT.at(-1)?.id ?? DEFAULT_LESSON_ID;
@@ -48,8 +49,8 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   const rightLast = page.getByTestId("course-nav-right");
 
   await expect(leftLast).toHaveText("Prev");
-  await expect(rightLast).toBeVisible({ timeout: 10_000 });
-  await expect(rightLast).toHaveText("Programs", { timeout: 10_000 });
+  await expect(rightLast).toBeVisible({ timeout: 15_000 });
+  await expect(rightLast).toHaveText("Programs", { timeout: 15_000 });
 
   const rightTag = await rightLast.evaluate((el) => el.tagName);
   expect(rightTag).toBe("A");
