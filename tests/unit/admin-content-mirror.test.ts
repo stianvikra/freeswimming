@@ -94,4 +94,40 @@ describe("buildAdminContentMirrorSnapshot", () => {
     expect(snapshot.summary.mismatchCount).toBeGreaterThan(0);
     expect(snapshot.metrics.some((entry) => entry.status === "missing")).toBe(true);
   });
+
+  it("ignores explicit e2e content records from parity counts while reporting them separately", () => {
+    const adminRows = toAdminContentRows();
+    adminRows.push({
+      id: "ignored-e2e-module",
+      content_type: "course_module",
+      slug: "e2e-admin-content-1773389222117-653",
+      title: "E2E Admin Content 1773389222117-653",
+      summary: "Created by Playwright admin e2e.",
+      category: "General",
+      body: {},
+      sort_order: 0,
+      status: "draft",
+      parent_id: null,
+      published_at: null,
+      created_at: TIMESTAMP,
+      updated_at: TIMESTAMP,
+      created_by: null,
+      updated_by: null,
+    });
+
+    const snapshot = buildAdminContentMirrorSnapshot(adminRows, toProductRows());
+    const moduleMetric = snapshot.metrics.find((entry) => entry.key === "course_module");
+
+    expect(moduleMetric).toBeDefined();
+    expect(moduleMetric?.adminCount).toBe(moduleMetric?.platformCount);
+    expect(moduleMetric?.delta).toBe(0);
+    expect(moduleMetric?.status).toBe("matched");
+    expect(moduleMetric?.coverage.extraCount).toBe(0);
+    expect(moduleMetric?.coverage.ignoredCount).toBe(1);
+    expect(moduleMetric?.coverage.ignoredSamples).toEqual(["e2e-admin-content-1773389222117-653"]);
+    expect(snapshot.summary.mismatchCount).toBe(0);
+    expect(snapshot.summary.coverageMismatchCount).toBe(0);
+    expect(snapshot.summary.ignoredRecordCount).toBe(1);
+    expect(snapshot.summary.ignoredMetricCount).toBe(1);
+  });
 });

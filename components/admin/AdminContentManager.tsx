@@ -6,6 +6,10 @@ import type {
   AdminContentStatus,
   AdminContentType,
 } from "@/lib/admin/content";
+import type {
+  AdminContentMirrorMetric as MirrorMetric,
+  AdminContentMirrorSnapshot as MirrorSnapshot,
+} from "@/lib/admin/content-mirror";
 import {
   ALL_CONTENT_SCOPE_STORAGE_KEY,
   CONTENT_PRIMARY_VIEW_STORAGE_KEY,
@@ -111,31 +115,6 @@ const EDITABLE_CONTENT_TYPES: ReadonlySet<AdminContentType> = new Set([
   "page",
   "product",
 ]);
-
-type MirrorMetric = {
-  key: "course_module" | "course_lesson" | "guide_session" | "guide_drill" | "programs";
-  label: string;
-  platformCount: number;
-  adminCount: number;
-  delta: number;
-  status: "matched" | "missing" | "extra" | "drift";
-  coverage: {
-    missingCount: number;
-    extraCount: number;
-    missingSamples: string[];
-    extraSamples: string[];
-  };
-};
-
-type MirrorSnapshot = {
-  checkedAt: string;
-  metrics: MirrorMetric[];
-  summary: {
-    matchedCount: number;
-    mismatchCount: number;
-    coverageMismatchCount: number;
-  };
-};
 
 const MIRROR_METRIC_KEY_BY_CONTENT_TYPE: Partial<Record<AdminContentType, MirrorMetric["key"]>> = {
   course_module: "course_module",
@@ -2274,6 +2253,11 @@ export default function AdminContentManager() {
                       mirror.summary.coverageMismatchCount === 1 ? "" : "s"
                     }`
                   : ""}
+                {mirror.summary.ignoredRecordCount > 0
+                  ? ` · ${mirror.summary.ignoredRecordCount} ignored QA/test record${
+                      mirror.summary.ignoredRecordCount === 1 ? "" : "s"
+                    }`
+                  : ""}
               </p>
             </div>
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -2315,6 +2299,14 @@ export default function AdminContentManager() {
                           : ""}
                       </p>
                     ) : null}
+                    {metric.coverage.ignoredCount > 0 ? (
+                      <p className="mt-1">
+                        Ignored QA/test IDs: {metric.coverage.ignoredCount}
+                        {metric.coverage.ignoredSamples.length > 0
+                          ? ` (${metric.coverage.ignoredSamples.join(", ")})`
+                          : ""}
+                      </p>
+                    ) : null}
                     <p className="mt-2 text-[11px] font-medium opacity-80">
                       {activeMirrorMetricKey === metric.key
                         ? "Active scope"
@@ -2325,8 +2317,8 @@ export default function AdminContentManager() {
               ))}
             </ul>
             <p className="mt-3 text-xs text-slate-500">
-              Snapshot checks current platform modules/lessons/guides/products against admin
-              records.
+              Snapshot checks current platform modules/lessons/guides/products against admin records
+              and excludes explicit QA/test slugs such as `e2e-admin-content-*` from parity counts.
             </p>
           </article>
         ) : null}

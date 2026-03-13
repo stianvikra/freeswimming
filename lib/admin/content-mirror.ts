@@ -18,8 +18,10 @@ export type AdminContentMirrorMetric = {
   coverage: {
     missingCount: number;
     extraCount: number;
+    ignoredCount: number;
     missingSamples: string[];
     extraSamples: string[];
+    ignoredSamples: string[];
   };
 };
 
@@ -30,8 +32,12 @@ export type AdminContentMirrorSnapshot = {
     matchedCount: number;
     mismatchCount: number;
     coverageMismatchCount: number;
+    ignoredRecordCount: number;
+    ignoredMetricCount: number;
   };
 };
+
+const ADMIN_CONTENT_MIRROR_IGNORED_SLUG_PREFIXES = ["e2e-admin-content-"] as const;
 
 function countCourseLessons(): number {
   return COURSE_MODULES.reduce((total, module) => total + module.lessons.length, 0);
@@ -54,17 +60,26 @@ function uniqueSorted(values: string[]): string[] {
   );
 }
 
+function isIgnoredAdminContentMirrorSlug(slug: string): boolean {
+  const normalized = normalizeComparableValue(slug);
+  return ADMIN_CONTENT_MIRROR_IGNORED_SLUG_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
+
 function buildCoverage(
   expectedValues: string[],
-  adminValues: string[]
+  adminValues: string[],
+  ignoredValues: string[] = []
 ): {
   missingCount: number;
   extraCount: number;
+  ignoredCount: number;
   missingSamples: string[];
   extraSamples: string[];
+  ignoredSamples: string[];
 } {
   const expectedSet = new Set(uniqueSorted(expectedValues));
   const adminSet = new Set(uniqueSorted(adminValues));
+  const ignoredSet = uniqueSorted(ignoredValues);
 
   const missingValues = [...expectedSet].filter((value) => !adminSet.has(value));
   const extraValues = [...adminSet].filter((value) => !expectedSet.has(value));
@@ -72,8 +87,10 @@ function buildCoverage(
   return {
     missingCount: missingValues.length,
     extraCount: extraValues.length,
+    ignoredCount: ignoredSet.length,
     missingSamples: missingValues.slice(0, 3),
     extraSamples: extraValues.slice(0, 3),
+    ignoredSamples: ignoredSet.slice(0, 3),
   };
 }
 
@@ -120,6 +137,7 @@ export function buildAdminContentMirrorSnapshot(
   const { items: seedItems } = buildPlatformContentSeedItems();
   const expectedByType = new Map<AdminContentItemRow["content_type"], string[]>();
   const adminByType = new Map<AdminContentItemRow["content_type"], string[]>();
+  const ignoredByType = new Map<AdminContentItemRow["content_type"], string[]>();
 
   seedItems.forEach((item) => {
     expectedByType.set(item.contentType, [
@@ -127,7 +145,19 @@ export function buildAdminContentMirrorSnapshot(
       item.slug,
     ]);
   });
-  items.forEach((item) => {
+
+  const comparableItems = items.filter((item) => {
+    if (!isIgnoredAdminContentMirrorSlug(item.slug)) {
+      return true;
+    }
+    ignoredByType.set(item.content_type, [
+      ...(ignoredByType.get(item.content_type) ?? []),
+      item.slug,
+    ]);
+    return false;
+  });
+
+  comparableItems.forEach((item) => {
     adminByType.set(item.content_type, [...(adminByType.get(item.content_type) ?? []), item.slug]);
   });
 
@@ -143,38 +173,45 @@ export function buildAdminContentMirrorSnapshot(
       "course_module",
       "Course modules",
       COURSE_MODULES.length,
-      countAdminContentByType(items, "course_module"),
+      countAdminContentByType(comparableItems, "course_module"),
       buildCoverage(
         expectedByType.get("course_module") ?? [],
-        adminByType.get("course_module") ?? []
+        adminByType.get("course_module") ?? [],
+        ignoredByType.get("course_module") ?? []
       )
     ),
     buildMetric(
       "course_lesson",
       "Course lessons",
       countCourseLessons(),
-      countAdminContentByType(items, "course_lesson"),
+      countAdminContentByType(comparableItems, "course_lesson"),
       buildCoverage(
         expectedByType.get("course_lesson") ?? [],
-        adminByType.get("course_lesson") ?? []
+        adminByType.get("course_lesson") ?? [],
+        ignoredByType.get("course_lesson") ?? []
       )
     ),
     buildMetric(
       "guide_session",
       "0-1000 sessions",
       GUIDE_0_TO_1000M_SESSIONS.length,
-      countAdminContentByType(items, "guide_session"),
+      countAdminContentByType(comparableItems, "guide_session"),
       buildCoverage(
         expectedByType.get("guide_session") ?? [],
-        adminByType.get("guide_session") ?? []
+        adminByType.get("guide_session") ?? [],
+        ignoredByType.get("guide_session") ?? []
       )
     ),
     buildMetric(
       "guide_drill",
       "Poolside drills",
       GUIDE_POOLSIDE_DRILLS.length,
-      countAdminContentByType(items, "guide_drill"),
-      buildCoverage(expectedByType.get("guide_drill") ?? [], adminByType.get("guide_drill") ?? [])
+      countAdminContentByType(comparableItems, "guide_drill"),
+      buildCoverage(
+        expectedByType.get("guide_drill") ?? [],
+        adminByType.get("guide_drill") ?? [],
+        ignoredByType.get("guide_drill") ?? []
+      )
     ),
     buildMetric(
       "programs",
@@ -189,6 +226,11 @@ export function buildAdminContentMirrorSnapshot(
   const coverageMismatchCount = metrics.filter(
     (metric) => metric.coverage.missingCount > 0 || metric.coverage.extraCount > 0
   ).length;
+  const ignoredRecordCount = metrics.reduce(
+    (total, metric) => total + metric.coverage.ignoredCount,
+    0
+  );
+  const ignoredMetricCount = metrics.filter((metric) => metric.coverage.ignoredCount > 0).length;
 
   return {
     checkedAt: new Date().toISOString(),
@@ -197,6 +239,8 @@ export function buildAdminContentMirrorSnapshot(
       matchedCount: metrics.length - mismatchCount,
       mismatchCount,
       coverageMismatchCount,
+      ignoredRecordCount,
+      ignoredMetricCount,
     },
   };
 }
