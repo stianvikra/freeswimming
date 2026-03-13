@@ -110,7 +110,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Platform mirror snapshot",
     detail:
-      "Shows if admin data aligns with platform data by group (modules, lessons, sessions, drills, products). Explicit QA/test slugs such as e2e-admin-content-* are excluded from parity counts and listed separately. Click a card to focus content list.",
+      "Shows if admin data aligns with platform data by group (modules, lessons, sessions, drills, products). Explicit QA/test slugs such as e2e-admin-content-* are excluded from parity counts and listed separately, and admins can purge them from the catalog. Click a card to focus content list.",
   },
   {
     title: "Course workspace (modules -> lessons)",
