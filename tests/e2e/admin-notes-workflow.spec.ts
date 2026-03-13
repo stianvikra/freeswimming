@@ -62,12 +62,12 @@ test.describe("admin notes workflow", () => {
     const body = "Initial note body from Playwright.";
     const updatedBody = "Updated note body from Playwright.";
 
+    await page.getByRole("button", { name: "Use P1 template" }).click();
     const createForm = page.getByTestId("admin-notes-create-form");
-    await createForm.getByRole("button", { name: "Use P1 template" }).click();
     await expect(createForm.getByLabel("Category")).toHaveValue("Incident P1");
     await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Category").fill("Operations");
-    await createForm.getByLabel("Date").fill("2026-02-20");
+    await createForm.locator('input[type="date"]').fill("2026-02-20");
     await createForm.getByLabel("Text").fill(body);
     await createForm.getByTestId("admin-note-create-context-type").selectOption("course_lesson");
     const modulePicker = createForm.getByTestId("admin-note-create-context-lesson-module");

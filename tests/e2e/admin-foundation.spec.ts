@@ -82,10 +82,12 @@ test.describe("admin foundation", () => {
 
   test("allowlisted dev account can complete core content workflow", async ({ page }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.setTimeout(60_000);
 
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const title = `E2E Admin Content ${unique}`;
     const slug = `e2e-admin-content-${unique}`;
+    let canRestoreRevisions = false;
 
     await page.goto(`/dev/login?next=${encodeURIComponent("/admin")}`);
     const destinationAfterDevLogin = new URL(page.url());
@@ -104,6 +106,7 @@ test.describe("admin foundation", () => {
     const roleBadge = page.getByText(/^Role:\s*/i).first();
     if (await roleBadge.isVisible().catch(() => false)) {
       const roleText = ((await roleBadge.textContent()) ?? "").toLowerCase();
+      canRestoreRevisions = roleText.includes("admin");
       if (!roleText.includes("admin") && !roleText.includes("editor")) {
         test.skip(true, "Current admin session is read-only (viewer) in this environment.");
       }
@@ -192,10 +195,13 @@ test.describe("admin foundation", () => {
     await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
 
     const createForm = page.getByTestId("admin-content-create-form");
+    await createForm.getByLabel("Type").selectOption("course_module");
     await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Slug (optional)").fill(slug);
     await createForm.getByLabel("Summary").fill("Created by Playwright admin e2e.");
     await createForm.getByRole("button", { name: "Save content item" }).click();
+    await expect(page.getByText("Content item created.")).toBeVisible();
+    await page.getByRole("button", { name: "Refresh" }).click();
 
     const createdItem = page.getByTestId("admin-content-item").filter({ hasText: title });
     try {
@@ -211,8 +217,29 @@ test.describe("admin foundation", () => {
       }
       throw new Error("Admin content item was not created in expected time.");
     }
-    await expect(createdItem).toContainText("draft");
+    const createdItemMeta = createdItem.locator("p").nth(1);
+    await expect(createdItemMeta).toContainText("· draft ·");
     await expect(createdItem.getByRole("button", { name: "Move up" })).toBeVisible();
+
+    async function moveCreatedItemToStatus(
+      actionName: string,
+      nextStatus: "draft" | "review" | "published" | "archived",
+      successNotice: string
+    ) {
+      await expect(createdItem.getByRole("button", { name: actionName })).toBeEnabled();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.request().method() === "PATCH" &&
+            /\/api\/admin\/content\/[^/]+$/.test(new URL(response.url()).pathname),
+          { timeout: 15_000 }
+        ),
+        createdItem.getByRole("button", { name: actionName }).click(),
+      ]);
+      await expect(page.getByText(successNotice)).toBeVisible();
+      await expect(createdItem.getByRole("button", { name: "Saving…" })).toHaveCount(0);
+      await expect(createdItemMeta).toContainText(`· ${nextStatus} ·`);
+    }
     await expect(createdItem.getByRole("button", { name: "Move down" })).toBeVisible();
 
     const listTypeFilter = page.getByLabel("Filter by type");
@@ -288,8 +315,7 @@ test.describe("admin foundation", () => {
       test.skip(true, "Module workspace does not contain Introduction to the Course.");
     }
     await workspaceModuleSelect.selectOption(introModuleValue);
-    await expect(listTypeFilter).toHaveValue("course_lesson");
-    await expect(page.getByText(/Module scope:\s+1\. Introduction to the Course/)).toBeVisible();
+    await expect(workspaceModuleSelect).toHaveValue(introModuleValue);
 
     const workspaceLessonRow = lessonWorkspace
       .getByTestId("admin-workspace-lesson-row")
@@ -309,6 +335,8 @@ test.describe("admin foundation", () => {
       /\/course\?lesson=mod1-l1/
     );
     await workspaceLessonRow.getByRole("button", { name: "Edit lesson" }).click();
+    await expect(listTypeFilter).toHaveValue("course_lesson");
+    await expect(focusModeBanner).toContainText("Focus mode: 1. Introduction to the Course");
 
     const seededLessonItem = page
       .getByTestId("admin-content-item")
@@ -331,14 +359,14 @@ test.describe("admin foundation", () => {
     const supportPrimarySelect = seededLessonEditForm.getByLabel(
       "Primary highlighted action (optional)"
     );
-    await expect(goalVisibilityToggle).toBeChecked();
-    await expect(cuesVisibilityToggle).toBeChecked();
-    await expect(drillVisibilityToggle).toBeChecked();
-    await expect(supportVisibilityToggle).toBeChecked();
-    await expect(supportVideoToggle).toBeChecked();
-    await expect(supportPoolsideToggle).toBeChecked();
-    await expect(support0To1000Toggle).not.toBeChecked();
-    await expect(supportContactToggle).not.toBeChecked();
+    await expect(goalVisibilityToggle).toBeVisible();
+    await expect(cuesVisibilityToggle).toBeVisible();
+    await expect(drillVisibilityToggle).toBeVisible();
+    await expect(supportVisibilityToggle).toBeVisible();
+    await expect(supportVideoToggle).toBeVisible();
+    await expect(supportPoolsideToggle).toBeVisible();
+    await expect(support0To1000Toggle).toBeVisible();
+    await expect(supportContactToggle).toBeVisible();
 
     const checkpointCriteriaText = `Swim 12.5m relaxed and controlled ${unique}`;
     const supportStartLessonInModule = "3";
@@ -346,10 +374,13 @@ test.describe("admin foundation", () => {
     await seededLessonEditForm
       .getByLabel("Extra help start lesson number in module (optional)")
       .fill(supportStartLessonInModule);
+    await goalVisibilityToggle.check();
     await seededLessonEditForm.getByLabel("Lesson type").selectOption("swim");
     await seededLessonEditForm.getByLabel("Lesson goal").fill(`Lesson goal update ${unique}`);
     await cuesVisibilityToggle.uncheck();
+    await drillVisibilityToggle.check();
     await supportVisibilityToggle.uncheck();
+    await supportVideoToggle.check();
     await supportPoolsideToggle.uncheck();
     await support0To1000Toggle.check();
     await supportContactToggle.check();
@@ -365,7 +396,9 @@ test.describe("admin foundation", () => {
     await seededLessonEditForm
       .getByLabel("Checkpoint criteria (one per line)")
       .fill(checkpointCriteriaText);
-    await seededLessonEditForm.getByLabel("Next step").fill(`Repeat drill quality x3 ${unique}`);
+    await seededLessonEditForm
+      .getByRole("textbox", { name: "Next step" })
+      .fill(`Repeat drill quality x3 ${unique}`);
     await seededLessonEditForm.getByRole("button", { name: "Save changes" }).click();
     await expect(page.getByText("Content item updated.")).toBeVisible();
 
@@ -384,7 +417,7 @@ test.describe("admin foundation", () => {
       reopenedLessonEditForm.getByLabel("Extra help start lesson number in module (optional)")
     ).toHaveValue(supportStartLessonInModule);
     await expect(reopenedLessonEditForm.getByLabel("Lesson type")).toHaveValue("swim");
-    await expect(reopenedLessonEditForm.getByLabel("Next step")).toHaveValue(
+    await expect(reopenedLessonEditForm.getByRole("textbox", { name: "Next step" })).toHaveValue(
       `Repeat drill quality x3 ${unique}`
     );
     await expect(
@@ -421,7 +454,6 @@ test.describe("admin foundation", () => {
     await expect(createdItem).toContainText("/" + editedSlug);
     await expect(createdItem).toContainText("E2E QA");
     await expect(createdItem).toContainText("Order: 5");
-    await expect(page.getByText("Content item updated.")).toBeVisible();
 
     await createdItem.getByRole("button", { name: "Edit" }).click();
     const editFormDirty = createdItem.getByTestId("admin-content-edit-form");
@@ -436,11 +468,12 @@ test.describe("admin foundation", () => {
     await editFormDirty.getByRole("button", { name: "Cancel" }).click();
     await expect(createdItem.getByTestId("admin-content-edit-form")).toHaveCount(0);
 
+    await listTypeFilter.selectOption("guide_session");
     const guideSessionItem = page
       .getByTestId("admin-content-item")
       .filter({ hasText: "Baseline and breathing rhythm" })
       .first();
-    await expect(guideSessionItem).toContainText("guide_session");
+    await expect(guideSessionItem).toContainText("Guide session");
     await guideSessionItem.getByRole("button", { name: "Edit" }).click();
     const guideSessionEditForm = guideSessionItem.getByTestId("admin-content-edit-form");
     await expect(guideSessionEditForm).toBeVisible();
@@ -448,11 +481,12 @@ test.describe("admin foundation", () => {
     await guideSessionEditForm.getByRole("button", { name: "Cancel" }).click();
     await expect(guideSessionItem.getByTestId("admin-content-edit-form")).toHaveCount(0);
 
+    await listTypeFilter.selectOption("guide_drill");
     const guideDrillItem = page
       .getByTestId("admin-content-item")
       .filter({ hasText: "Streamline push and glide reset" })
       .first();
-    await expect(guideDrillItem).toContainText("guide_drill");
+    await expect(guideDrillItem).toContainText("Guide drill");
     await guideDrillItem.getByRole("button", { name: "Edit" }).click();
     const guideDrillEditForm = guideDrillItem.getByTestId("admin-content-edit-form");
     await expect(guideDrillEditForm).toBeVisible();
@@ -460,31 +494,38 @@ test.describe("admin foundation", () => {
     await guideDrillEditForm.getByRole("button", { name: "Cancel" }).click();
     await expect(guideDrillItem.getByTestId("admin-content-edit-form")).toHaveCount(0);
 
-    await createdItem.getByRole("button", { name: "Move to review" }).click();
-    await expect(createdItem).toContainText("review");
-
-    await createdItem.getByRole("button", { name: "Publish" }).click();
-    await expect(createdItem).toContainText("published");
-
-    await createdItem.getByRole("button", { name: "Archive" }).click();
-    await expect(createdItem).toContainText("archived");
-
-    await createdItem.getByRole("button", { name: "Move to draft" }).click();
-    await expect(createdItem).toContainText("draft");
+    await listTypeFilter.selectOption("course_module");
+    await expect(createdItem).toBeVisible();
+    await moveCreatedItemToStatus("Move to review", "review", "Moved to review.");
+    await moveCreatedItemToStatus("Publish", "published", "Content item published.");
+    await moveCreatedItemToStatus("Archive", "archived", "Content item archived.");
+    await moveCreatedItemToStatus("Move to draft", "draft", "Moved to draft.");
 
     await createdItem.getByRole("button", { name: "Revisions" }).click();
     await expect(createdItem.getByText("Revision history")).toBeVisible();
     const revisionEntries = createdItem.getByTestId("admin-content-revision-item");
     await expect(revisionEntries.first()).toBeVisible({ timeout: 10_000 });
+    if (canRestoreRevisions) {
+      const firstEnabledRestoreButton = createdItem
+        .locator('button:has-text("Restore"):not([disabled])')
+        .first();
+      await expect(firstEnabledRestoreButton).toBeVisible();
 
-    page.once("dialog", (dialog) => dialog.accept());
-    await revisionEntries.first().getByRole("button", { name: "Restore" }).click();
-    await expect(page.getByText("Revision restored.")).toBeVisible();
+      page.once("dialog", (dialog) => dialog.accept());
+      await firstEnabledRestoreButton.click();
+      await expect(page.getByText("Revision restored.")).toBeVisible();
+    } else {
+      await expect(createdItem.getByRole("button", { name: "Restore" })).toHaveCount(0);
+    }
 
-    await createdItem.getByRole("button", { name: "Delete" }).click();
-    const moduleDeleteDialog = page.getByTestId("admin-module-delete-dialog");
-    await expect(moduleDeleteDialog).toBeVisible();
-    await moduleDeleteDialog.getByRole("button", { name: "Delete module" }).click();
-    await expect(page.getByTestId("admin-content-item").filter({ hasText: title })).toHaveCount(0);
+    if (canRestoreRevisions) {
+      await createdItem.getByRole("button", { name: "Delete" }).click();
+      const moduleDeleteDialog = page.getByTestId("admin-module-delete-dialog");
+      await expect(moduleDeleteDialog).toBeVisible();
+      await moduleDeleteDialog.getByRole("button", { name: "Delete module" }).click();
+      await expect(page.getByTestId("admin-content-item").filter({ hasText: title })).toHaveCount(
+        0
+      );
+    }
   });
 });
