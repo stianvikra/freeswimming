@@ -38,6 +38,7 @@ Record one row per environment after smoke checks. Keep values non-sensitive.
 Closeout rule:
 
 - Keep brief `in-progress` until both `preview` and `production` rows are `pass`.
+- Template TBD rows must be replaced or removed before brief closeout.
 - If a row fails, run rollback first, then append a new verification row after redeploy.
 
 ## Secret Groups (Recommended Order)

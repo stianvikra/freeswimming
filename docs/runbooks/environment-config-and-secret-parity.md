@@ -118,5 +118,6 @@ Use checklist:
 Before moving the env-parity brief to `done`:
 
 1. Manual smoke evidence table has `pass` for both `preview` and `production`.
-2. Latest checkpoint log entry includes merge hash + explicit next step.
-3. Any failed smoke attempt has rollback note and a follow-up verification row.
+2. Template `TBD`/`pending` rows are removed or replaced with real evidence rows.
+3. Latest checkpoint log entry includes merge hash + explicit next step.
+4. Any failed smoke attempt has rollback note and a follow-up verification row.

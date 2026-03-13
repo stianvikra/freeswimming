@@ -9,6 +9,7 @@ fi
 name="$1"
 target="$2"
 base="docs/task-briefs"
+env_parity_brief="2026-02-19-environment-config-and-secret-parity-audit.md"
 
 case "${target}" in
 planned | in-progress | done | blocked) ;;
@@ -36,6 +37,11 @@ if [[ -z "${source_path}" ]]; then
 fi
 
 dest_path="${base}/${target}/${name}"
+
+if [[ "${target}" == "done" && "${name}" == "${env_parity_brief}" ]]; then
+  node ./scripts/lint-env-parity-bundle.mjs --require-closeout
+fi
+
 mkdir -p "$(dirname "${dest_path}")"
 mv "${source_path}" "${dest_path}"
 echo "Moved: ${source_path} -> ${dest_path}"
