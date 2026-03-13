@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const unauthenticatedDeniedStatuses = new Set([401, 403, 423]);
@@ -38,6 +38,127 @@ type AdminContentProbeResponse =
       ok: false;
       error?: string;
     };
+
+type AdminSessionInfo = {
+  isAdmin: boolean;
+  isEditor: boolean;
+};
+
+async function openAllowlistedAdmin(page: Page): Promise<AdminSessionInfo> {
+  await page.goto(`/dev/login?next=${encodeURIComponent("/admin")}`);
+  const destinationAfterDevLogin = new URL(page.url());
+  const pathAfterDevLogin = destinationAfterDevLogin.pathname;
+
+  if (pathAfterDevLogin !== "/admin") {
+    skipForUnexpectedDevLoginDestination(destinationAfterDevLogin);
+  }
+
+  const noAccessHeading = page.getByRole("heading", { name: "You don't have access" });
+  if (await noAccessHeading.isVisible().catch(() => false)) {
+    test.skip(true, "Dev bypass account is signed in but not allowlisted/admin.");
+  }
+
+  await expect(page.getByRole("heading", { name: "Admin console" })).toBeVisible();
+  const roleBadge = page.getByText(/^Role:\s*/i).first();
+  let roleText = "";
+  if (await roleBadge.isVisible().catch(() => false)) {
+    roleText = ((await roleBadge.textContent()) ?? "").toLowerCase();
+    if (!roleText.includes("admin") && !roleText.includes("editor")) {
+      test.skip(true, "Current admin session is read-only (viewer) in this environment.");
+    }
+  }
+
+  return {
+    isAdmin: roleText.includes("admin"),
+    isEditor: roleText.includes("editor"),
+  };
+}
+
+async function assertAdminContentReady(page: Page) {
+  const contentProbeResponse = await page.request.get("/api/admin/content");
+  if (!contentProbeResponse.ok()) {
+    test.skip(true, `Admin content API unavailable (${contentProbeResponse.status()}).`);
+  }
+  const contentProbePayload = (await contentProbeResponse.json()) as AdminContentProbeResponse;
+  if (!contentProbePayload.ok) {
+    test.skip(true, contentProbePayload.error ?? "Admin content API is not ready.");
+  }
+  if (contentProbePayload.ok && contentProbePayload.schemaReady === false) {
+    test.skip(true, contentProbePayload.warning ?? "Admin content schema is not ready.");
+  }
+}
+
+async function exerciseFoundationNavigation(page: Page) {
+  const tabContent = page.getByTestId("admin-tab-content");
+  const tabQrLinks = page.getByTestId("admin-tab-qr-links");
+  const tabCommerce = page.getByTestId("admin-tab-commerce");
+  const tabOperations = page.getByTestId("admin-tab-operations");
+  const tabEmailTemplates = page.getByTestId("admin-tab-email-templates");
+  const tabNotes = page.getByTestId("admin-tab-notes");
+  const tabCategories = page.getByTestId("admin-tab-categories");
+  const tabHelp = page.getByTestId("admin-tab-help");
+  const activeSectionLabel = page.getByTestId("admin-active-section-label");
+
+  await expect(tabContent).toHaveAttribute("aria-pressed", "true");
+
+  await tabQrLinks.click();
+  await expect(activeSectionLabel).toHaveText("QR Links");
+  await expect(page.getByRole("heading", { name: "QR registry" })).toBeVisible();
+  await page.goto(
+    "/admin?tab=qr-links&qrSlug=mod3-l1&qrDestinationPath=%2Fcourse%3Flesson%3Dmod3-l1&qrContentLabel=Kick%20Basics%20Support%20Not%20Speed&qrPlacementKey=course.lesson.share"
+  );
+  await expect(activeSectionLabel).toHaveText("QR Links");
+  const qrCreateToggle = page.getByTestId("admin-qr-link-create-toggle");
+  await expect(qrCreateToggle).toHaveAttribute("aria-expanded", "true");
+  const qrCreateForm = page.getByTestId("admin-qr-link-create-form");
+  if (!(await qrCreateForm.isVisible().catch(() => false))) {
+    await qrCreateToggle.click();
+  }
+  await expect(qrCreateForm.getByLabel("Slug")).toHaveValue("mod3-l1");
+  await expect(qrCreateForm.getByLabel("Destination URL (https)")).toHaveValue(
+    /\/course\?lesson=mod3-l1$/
+  );
+  await expect(qrCreateForm.getByLabel("Content label (optional)")).toHaveValue(
+    "Kick Basics Support Not Speed"
+  );
+  await expect(qrCreateForm.getByLabel("Placement key (optional)")).toHaveValue(
+    "course.lesson.share"
+  );
+
+  await tabCommerce.click();
+  await expect(activeSectionLabel).toHaveText("Commerce");
+  await expect(page.getByRole("heading", { name: "Commerce" })).toBeVisible();
+
+  await tabOperations.click();
+  await expect(activeSectionLabel).toHaveText("Operations");
+  await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
+
+  await tabEmailTemplates.click();
+  await expect(activeSectionLabel).toHaveText("Email templates");
+  await expect(page.getByRole("heading", { name: "Email templates" })).toBeVisible();
+
+  await tabNotes.click();
+  await expect(activeSectionLabel).toHaveText("Notes");
+  await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
+
+  await tabCategories.click();
+  await expect(activeSectionLabel).toHaveText("Categories");
+  await expect(page.getByRole("heading", { name: "Categories" })).toBeVisible();
+
+  await tabHelp.click();
+  await expect(activeSectionLabel).toHaveText("Help/Guide");
+  await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
+
+  await tabContent.click();
+  await expect(activeSectionLabel).toHaveText("Content");
+  await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
+  const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
+  const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
+  await expect(courseWorkspaceTab).toBeVisible();
+  await expect(allContentTab).toBeVisible();
+  await allContentTab.click();
+  await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
+}
 
 test.describe("admin foundation", () => {
   test("redirects unauthenticated users to access gate with next path", async ({
@@ -80,116 +201,36 @@ test.describe("admin foundation", () => {
     }
   });
 
-  test("allowlisted dev account can complete core content workflow", async ({ page }, testInfo) => {
+  test("allowlisted dev account can browse core admin surfaces", async ({ page }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+    await openAllowlistedAdmin(page);
+    await assertAdminContentReady(page);
+    await exerciseFoundationNavigation(page);
+  });
+
+  test("allowlisted admin can complete mutable content lifecycle", async ({ page }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.setTimeout(60_000);
+
+    const session = await openAllowlistedAdmin(page);
+    if (!session.isAdmin) {
+      test.skip(
+        true,
+        "Mutable admin content lifecycle coverage requires admin so cleanup does not leave shared drift."
+      );
+    }
+
+    await assertAdminContentReady(page);
 
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const title = `E2E Admin Content ${unique}`;
     const slug = `e2e-admin-content-${unique}`;
-    let canRestoreRevisions = false;
 
-    await page.goto(`/dev/login?next=${encodeURIComponent("/admin")}`);
-    const destinationAfterDevLogin = new URL(page.url());
-    const pathAfterDevLogin = destinationAfterDevLogin.pathname;
-
-    if (pathAfterDevLogin !== "/admin") {
-      skipForUnexpectedDevLoginDestination(destinationAfterDevLogin);
-    }
-
-    const noAccessHeading = page.getByRole("heading", { name: "You don't have access" });
-    if (await noAccessHeading.isVisible().catch(() => false)) {
-      test.skip(true, "Dev bypass account is signed in but not allowlisted/admin.");
-    }
-
-    await expect(page.getByRole("heading", { name: "Admin console" })).toBeVisible();
-    const roleBadge = page.getByText(/^Role:\s*/i).first();
-    if (await roleBadge.isVisible().catch(() => false)) {
-      const roleText = ((await roleBadge.textContent()) ?? "").toLowerCase();
-      canRestoreRevisions = roleText.includes("admin");
-      if (!roleText.includes("admin") && !roleText.includes("editor")) {
-        test.skip(true, "Current admin session is read-only (viewer) in this environment.");
-      }
-    }
-
-    const contentProbeResponse = await page.request.get("/api/admin/content");
-    if (!contentProbeResponse.ok()) {
-      test.skip(true, `Admin content API unavailable (${contentProbeResponse.status()}).`);
-    }
-    const contentProbePayload = (await contentProbeResponse.json()) as AdminContentProbeResponse;
-    if (!contentProbePayload.ok) {
-      test.skip(true, contentProbePayload.error ?? "Admin content API is not ready.");
-    }
-    if (contentProbePayload.ok && contentProbePayload.schemaReady === false) {
-      test.skip(true, contentProbePayload.warning ?? "Admin content schema is not ready.");
-    }
-
-    const tabContent = page.getByTestId("admin-tab-content");
-    const tabQrLinks = page.getByTestId("admin-tab-qr-links");
-    const tabCommerce = page.getByTestId("admin-tab-commerce");
-    const tabOperations = page.getByTestId("admin-tab-operations");
-    const tabEmailTemplates = page.getByTestId("admin-tab-email-templates");
-    const tabNotes = page.getByTestId("admin-tab-notes");
-    const tabCategories = page.getByTestId("admin-tab-categories");
-    const tabHelp = page.getByTestId("admin-tab-help");
     const activeSectionLabel = page.getByTestId("admin-active-section-label");
-
-    await expect(tabContent).toHaveAttribute("aria-pressed", "true");
-
-    await tabQrLinks.click();
-    await expect(activeSectionLabel).toHaveText("QR Links");
-    await expect(page.getByRole("heading", { name: "QR registry" })).toBeVisible();
-    await page.goto(
-      "/admin?tab=qr-links&qrSlug=mod3-l1&qrDestinationPath=%2Fcourse%3Flesson%3Dmod3-l1&qrContentLabel=Kick%20Basics%20Support%20Not%20Speed&qrPlacementKey=course.lesson.share"
-    );
-    await expect(activeSectionLabel).toHaveText("QR Links");
-    const qrCreateToggle = page.getByTestId("admin-qr-link-create-toggle");
-    await expect(qrCreateToggle).toHaveAttribute("aria-expanded", "true");
-    const qrCreateForm = page.getByTestId("admin-qr-link-create-form");
-    if (!(await qrCreateForm.isVisible().catch(() => false))) {
-      await qrCreateToggle.click();
-    }
-    await expect(qrCreateForm.getByLabel("Slug")).toHaveValue("mod3-l1");
-    await expect(qrCreateForm.getByLabel("Destination URL (https)")).toHaveValue(
-      /\/course\?lesson=mod3-l1$/
-    );
-    await expect(qrCreateForm.getByLabel("Content label (optional)")).toHaveValue(
-      "Kick Basics Support Not Speed"
-    );
-    await expect(qrCreateForm.getByLabel("Placement key (optional)")).toHaveValue(
-      "course.lesson.share"
-    );
-
-    await tabCommerce.click();
-    await expect(activeSectionLabel).toHaveText("Commerce");
-    await expect(page.getByRole("heading", { name: "Commerce" })).toBeVisible();
-
-    await tabOperations.click();
-    await expect(activeSectionLabel).toHaveText("Operations");
-    await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
-
-    await tabEmailTemplates.click();
-    await expect(activeSectionLabel).toHaveText("Email templates");
-    await expect(page.getByRole("heading", { name: "Email templates" })).toBeVisible();
-
-    await tabNotes.click();
-    await expect(activeSectionLabel).toHaveText("Notes");
-    await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
-
-    await tabCategories.click();
-    await expect(activeSectionLabel).toHaveText("Categories");
-    await expect(page.getByRole("heading", { name: "Categories" })).toBeVisible();
-
-    await tabHelp.click();
-    await expect(activeSectionLabel).toHaveText("Help/Guide");
-    await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
-
-    await tabContent.click();
     await expect(activeSectionLabel).toHaveText("Content");
-    await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
     const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
+    await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
     const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
-    await expect(courseWorkspaceTab).toBeVisible();
     await expect(allContentTab).toBeVisible();
     await allContentTab.click();
     await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
@@ -505,27 +546,19 @@ test.describe("admin foundation", () => {
     await expect(createdItem.getByText("Revision history")).toBeVisible();
     const revisionEntries = createdItem.getByTestId("admin-content-revision-item");
     await expect(revisionEntries.first()).toBeVisible({ timeout: 10_000 });
-    if (canRestoreRevisions) {
-      const firstEnabledRestoreButton = createdItem
-        .locator('button:has-text("Restore"):not([disabled])')
-        .first();
-      await expect(firstEnabledRestoreButton).toBeVisible();
+    const firstEnabledRestoreButton = createdItem
+      .locator('button:has-text("Restore"):not([disabled])')
+      .first();
+    await expect(firstEnabledRestoreButton).toBeVisible();
 
-      page.once("dialog", (dialog) => dialog.accept());
-      await firstEnabledRestoreButton.click();
-      await expect(page.getByText("Revision restored.")).toBeVisible();
-    } else {
-      await expect(createdItem.getByRole("button", { name: "Restore" })).toHaveCount(0);
-    }
+    page.once("dialog", (dialog) => dialog.accept());
+    await firstEnabledRestoreButton.click();
+    await expect(page.getByText("Revision restored.")).toBeVisible();
 
-    if (canRestoreRevisions) {
-      await createdItem.getByRole("button", { name: "Delete" }).click();
-      const moduleDeleteDialog = page.getByTestId("admin-module-delete-dialog");
-      await expect(moduleDeleteDialog).toBeVisible();
-      await moduleDeleteDialog.getByRole("button", { name: "Delete module" }).click();
-      await expect(page.getByTestId("admin-content-item").filter({ hasText: title })).toHaveCount(
-        0
-      );
-    }
+    await createdItem.getByRole("button", { name: "Delete" }).click();
+    const moduleDeleteDialog = page.getByTestId("admin-module-delete-dialog");
+    await expect(moduleDeleteDialog).toBeVisible();
+    await moduleDeleteDialog.getByRole("button", { name: "Delete module" }).click();
+    await expect(page.getByTestId("admin-content-item").filter({ hasText: title })).toHaveCount(0);
   });
 });
