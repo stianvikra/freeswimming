@@ -11,6 +11,11 @@ test("main menu exposes install action on desktop and tablet layouts", async ({
   test.slow();
 
   await page.goto("/contact", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  // The desktop/tablet menu can miss the first interaction while the page is still settling
+  // after a fresh compile; wait that transient overlay out before probing the drawer.
+  await expect(page.getByText("Compiling", { exact: true }))
+    .toHaveCount(0, { timeout: 15_000 })
+    .catch(() => {});
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {
@@ -44,6 +49,7 @@ test("main menu exposes install action on desktop and tablet layouts", async ({
   let menuOpened = false;
   for (const openAttempt of openAttempts) {
     await page.keyboard.press("Escape").catch(() => {});
+    await menuToggle.scrollIntoViewIfNeeded();
     await openAttempt();
     await expect(drawer)
       .toBeVisible({ timeout: 4000 })

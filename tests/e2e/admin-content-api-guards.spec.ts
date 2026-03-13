@@ -1,5 +1,5 @@
-import type { Page } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
+import { expect, request as playwrightRequest, test } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const unauthenticatedDeniedStatuses = new Set([401, 403, 423]);
@@ -52,6 +52,13 @@ async function loginAsAdminViaDevBypass(page: Page) {
       test.skip(true, "Current admin session is read-only (viewer) in this environment.");
     }
   }
+}
+
+async function createAuthenticatedRequestContext(page: Page): Promise<APIRequestContext> {
+  return playwrightRequest.newContext({
+    baseURL: new URL(page.url()).origin,
+    storageState: await page.context().storageState(),
+  });
 }
 
 test.describe("admin content API guards", () => {
@@ -150,238 +157,243 @@ test.describe("admin content API guards", () => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
     await loginAsAdminViaDevBypass(page);
+    const adminRequest = await createAuthenticatedRequestContext(page);
 
-    const unsupportedPatch = await page.request.patch(`/api/admin/content/${dummyContentId}`, {
-      headers: {
-        "content-type": "text/plain",
-      },
-      data: "invalid",
-    });
-    expect(unsupportedPatch.status()).toBe(415);
-
-    const invalidJsonPatch = await page.request.fetch(`/api/admin/content/${dummyContentId}`, {
-      method: "PATCH",
-      headers: {
-        "content-type": "application/json",
-      },
-      data: Buffer.from("{"),
-    });
-    expect(invalidJsonPatch.status()).toBe(400);
-    await expect(invalidJsonPatch.json()).resolves.toMatchObject({
-      ok: false,
-      error: "Invalid JSON.",
-    });
-
-    const invalidPatchBody = await page.request.patch(`/api/admin/content/${dummyContentId}`, {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({
-        body: ["invalid"],
-      }),
-    });
-    expect(invalidPatchBody.status()).toBe(400);
-    await expect(invalidPatchBody.json()).resolves.toMatchObject({
-      ok: false,
-      error: "Body must be a JSON object.",
-    });
-
-    const emptyPatch = await page.request.patch(`/api/admin/content/${dummyContentId}`, {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({}),
-    });
-    expect(emptyPatch.status()).toBe(400);
-    await expect(emptyPatch.json()).resolves.toMatchObject({
-      ok: false,
-      error: "No updatable fields were provided.",
-    });
-
-    const selfParentPatch = await page.request.patch(`/api/admin/content/${dummyContentId}`, {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({
-        parentId: dummyContentId,
-      }),
-    });
-    expect(selfParentPatch.status()).toBe(400);
-    await expect(selfParentPatch.json()).resolves.toMatchObject({
-      ok: false,
-      error: "parentId cannot reference the same content item.",
-    });
-
-    const unsupportedCreate = await page.request.post("/api/admin/content", {
-      headers: {
-        "content-type": "text/plain",
-      },
-      data: "invalid",
-    });
-    expect(unsupportedCreate.status()).toBe(415);
-
-    const invalidJsonCreate = await page.request.fetch("/api/admin/content", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      data: Buffer.from("{"),
-    });
-    expect(invalidJsonCreate.status()).toBe(400);
-    await expect(invalidJsonCreate.json()).resolves.toMatchObject({
-      ok: false,
-      error: "Invalid JSON.",
-    });
-
-    const invalidCreateTitle = await page.request.post("/api/admin/content", {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({
-        contentType: "course_module",
-        title: "x",
-        status: "draft",
-      }),
-    });
-    expect(invalidCreateTitle.status()).toBe(400);
-    await expect(invalidCreateTitle.json()).resolves.toMatchObject({
-      ok: false,
-      error: "Title must be between 2 and 120 characters.",
-    });
-
-    const unsupportedCourseStructure = await page.request.post(
-      "/api/admin/content/course-structure",
-      {
+    try {
+      const unsupportedPatch = await adminRequest.patch(`/api/admin/content/${dummyContentId}`, {
         headers: {
           "content-type": "text/plain",
         },
         data: "invalid",
-      }
-    );
-    expect(unsupportedCourseStructure.status()).toBe(415);
+      });
+      expect(unsupportedPatch.status()).toBe(415);
 
-    const invalidJsonCourseStructure = await page.request.fetch(
-      "/api/admin/content/course-structure",
-      {
+      const invalidJsonPatch = await adminRequest.fetch(`/api/admin/content/${dummyContentId}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+        },
+        data: Buffer.from("{"),
+      });
+      expect(invalidJsonPatch.status()).toBe(400);
+      await expect(invalidJsonPatch.json()).resolves.toMatchObject({
+        ok: false,
+        error: "Invalid JSON.",
+      });
+
+      const invalidPatchBody = await adminRequest.patch(`/api/admin/content/${dummyContentId}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          body: ["invalid"],
+        }),
+      });
+      expect(invalidPatchBody.status()).toBe(400);
+      await expect(invalidPatchBody.json()).resolves.toMatchObject({
+        ok: false,
+        error: "Body must be a JSON object.",
+      });
+
+      const emptyPatch = await adminRequest.patch(`/api/admin/content/${dummyContentId}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({}),
+      });
+      expect(emptyPatch.status()).toBe(400);
+      await expect(emptyPatch.json()).resolves.toMatchObject({
+        ok: false,
+        error: "No updatable fields were provided.",
+      });
+
+      const selfParentPatch = await adminRequest.patch(`/api/admin/content/${dummyContentId}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          parentId: dummyContentId,
+        }),
+      });
+      expect(selfParentPatch.status()).toBe(400);
+      await expect(selfParentPatch.json()).resolves.toMatchObject({
+        ok: false,
+        error: "parentId cannot reference the same content item.",
+      });
+
+      const unsupportedCreate = await adminRequest.post("/api/admin/content", {
+        headers: {
+          "content-type": "text/plain",
+        },
+        data: "invalid",
+      });
+      expect(unsupportedCreate.status()).toBe(415);
+
+      const invalidJsonCreate = await adminRequest.fetch("/api/admin/content", {
         method: "POST",
         headers: {
           "content-type": "application/json",
         },
         data: Buffer.from("{"),
-      }
-    );
-    expect(invalidJsonCourseStructure.status()).toBe(400);
-    await expect(invalidJsonCourseStructure.json()).resolves.toMatchObject({
-      ok: false,
-      error: "Invalid JSON.",
-    });
+      });
+      expect(invalidJsonCreate.status()).toBe(400);
+      await expect(invalidJsonCreate.json()).resolves.toMatchObject({
+        ok: false,
+        error: "Invalid JSON.",
+      });
 
-    const invalidCourseStructurePayload = await page.request.post(
-      "/api/admin/content/course-structure",
-      {
+      const invalidCreateTitle = await adminRequest.post("/api/admin/content", {
         headers: {
           "content-type": "application/json",
         },
         data: JSON.stringify({
-          action: "move_module",
-          moduleId: "not-a-uuid",
-          direction: "up",
+          contentType: "course_module",
+          title: "x",
+          status: "draft",
         }),
-      }
-    );
-    expect(invalidCourseStructurePayload.status()).toBe(400);
-    await expect(invalidCourseStructurePayload.json()).resolves.toMatchObject({
-      ok: false,
-      error: "Invalid module id.",
-    });
+      });
+      expect(invalidCreateTitle.status()).toBe(400);
+      await expect(invalidCreateTitle.json()).resolves.toMatchObject({
+        ok: false,
+        error: "Title must be between 2 and 120 characters.",
+      });
 
-    const unsupportedQrCreate = await page.request.post("/api/admin/qr-links", {
-      headers: {
-        "content-type": "text/plain",
-      },
-      data: "invalid",
-    });
-    expect(unsupportedQrCreate.status()).toBe(415);
+      const unsupportedCourseStructure = await adminRequest.post(
+        "/api/admin/content/course-structure",
+        {
+          headers: {
+            "content-type": "text/plain",
+          },
+          data: "invalid",
+        }
+      );
+      expect(unsupportedCourseStructure.status()).toBe(415);
 
-    const invalidJsonQrCreate = await page.request.fetch("/api/admin/qr-links", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      data: Buffer.from("{"),
-    });
-    expect(invalidJsonQrCreate.status()).toBe(400);
-    await expect(invalidJsonQrCreate.json()).resolves.toMatchObject({
-      ok: false,
-      error: "Invalid JSON.",
-    });
+      const invalidJsonCourseStructure = await adminRequest.fetch(
+        "/api/admin/content/course-structure",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          data: Buffer.from("{"),
+        }
+      );
+      expect(invalidJsonCourseStructure.status()).toBe(400);
+      await expect(invalidJsonCourseStructure.json()).resolves.toMatchObject({
+        ok: false,
+        error: "Invalid JSON.",
+      });
 
-    const unsafeQrCreate = await page.request.post("/api/admin/qr-links", {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({
-        slug: `guard-unsafe-${Date.now().toString(36)}`,
-        destinationUrl: "https://evil.example/phish",
-        status: "active",
-      }),
-    });
-    expect(unsafeQrCreate.status()).toBe(400);
-    await expect(unsafeQrCreate.json()).resolves.toMatchObject({
-      ok: false,
-      error: "destinationUrl host is not allowlisted.",
-    });
+      const invalidCourseStructurePayload = await adminRequest.post(
+        "/api/admin/content/course-structure",
+        {
+          headers: {
+            "content-type": "application/json",
+          },
+          data: JSON.stringify({
+            action: "move_module",
+            moduleId: "not-a-uuid",
+            direction: "up",
+          }),
+        }
+      );
+      expect(invalidCourseStructurePayload.status()).toBe(400);
+      await expect(invalidCourseStructurePayload.json()).resolves.toMatchObject({
+        ok: false,
+        error: "Invalid module id.",
+      });
 
-    const createdQrResponse = await page.request.post("/api/admin/qr-links", {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({
-        slug: `guard-safe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-        destinationUrl: "https://freeswimming.org/course",
-        status: "active",
-      }),
-    });
-    expect(createdQrResponse.status()).toBe(200);
-    const createdQrPayload = (await createdQrResponse.json()) as {
-      item?: { id?: string };
-    };
-    const createdQrId = createdQrPayload.item?.id;
-    expect(createdQrId).toBeTruthy();
+      const unsupportedQrCreate = await adminRequest.post("/api/admin/qr-links", {
+        headers: {
+          "content-type": "text/plain",
+        },
+        data: "invalid",
+      });
+      expect(unsupportedQrCreate.status()).toBe(415);
 
-    const unsupportedQrPatch = await page.request.patch(`/api/admin/qr-links/${createdQrId}`, {
-      headers: {
-        "content-type": "text/plain",
-      },
-      data: "invalid",
-    });
-    expect(unsupportedQrPatch.status()).toBe(415);
+      const invalidJsonQrCreate = await adminRequest.fetch("/api/admin/qr-links", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        data: Buffer.from("{"),
+      });
+      expect(invalidJsonQrCreate.status()).toBe(400);
+      await expect(invalidJsonQrCreate.json()).resolves.toMatchObject({
+        ok: false,
+        error: "Invalid JSON.",
+      });
 
-    const invalidJsonQrPatch = await page.request.fetch(`/api/admin/qr-links/${createdQrId}`, {
-      method: "PATCH",
-      headers: {
-        "content-type": "application/json",
-      },
-      data: Buffer.from("{"),
-    });
-    expect(invalidJsonQrPatch.status()).toBe(400);
-    await expect(invalidJsonQrPatch.json()).resolves.toMatchObject({
-      ok: false,
-      error: "Invalid JSON.",
-    });
+      const unsafeQrCreate = await adminRequest.post("/api/admin/qr-links", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          slug: `guard-unsafe-${Date.now().toString(36)}`,
+          destinationUrl: "https://evil.example/phish",
+          status: "active",
+        }),
+      });
+      expect(unsafeQrCreate.status()).toBe(400);
+      await expect(unsafeQrCreate.json()).resolves.toMatchObject({
+        ok: false,
+        error: "destinationUrl host is not allowlisted.",
+      });
 
-    const unsafeQrPatch = await page.request.patch(`/api/admin/qr-links/${createdQrId}`, {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({
-        destinationUrl: "https://evil.example/redirect",
-      }),
-    });
-    expect(unsafeQrPatch.status()).toBe(400);
-    await expect(unsafeQrPatch.json()).resolves.toMatchObject({
-      ok: false,
-      error: "destinationUrl host is not allowlisted.",
-    });
+      const createdQrResponse = await adminRequest.post("/api/admin/qr-links", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          slug: `guard-safe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+          destinationUrl: "https://freeswimming.org/course",
+          status: "active",
+        }),
+      });
+      expect(createdQrResponse.status()).toBe(200);
+      const createdQrPayload = (await createdQrResponse.json()) as {
+        item?: { id?: string };
+      };
+      const createdQrId = createdQrPayload.item?.id;
+      expect(createdQrId).toBeTruthy();
+
+      const unsupportedQrPatch = await adminRequest.patch(`/api/admin/qr-links/${createdQrId}`, {
+        headers: {
+          "content-type": "text/plain",
+        },
+        data: "invalid",
+      });
+      expect(unsupportedQrPatch.status()).toBe(415);
+
+      const invalidJsonQrPatch = await adminRequest.fetch(`/api/admin/qr-links/${createdQrId}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+        },
+        data: Buffer.from("{"),
+      });
+      expect(invalidJsonQrPatch.status()).toBe(400);
+      await expect(invalidJsonQrPatch.json()).resolves.toMatchObject({
+        ok: false,
+        error: "Invalid JSON.",
+      });
+
+      const unsafeQrPatch = await adminRequest.patch(`/api/admin/qr-links/${createdQrId}`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          destinationUrl: "https://evil.example/redirect",
+        }),
+      });
+      expect(unsafeQrPatch.status()).toBe(400);
+      await expect(unsafeQrPatch.json()).resolves.toMatchObject({
+        ok: false,
+        error: "destinationUrl host is not allowlisted.",
+      });
+    } finally {
+      await adminRequest.dispose();
+    }
   });
 });
