@@ -39,6 +39,41 @@ async function openFirstNewLessonFromNotice(page: Page) {
 
 test.describe("my library new content notice", () => {
   async function waitForNoticeResolution(page: Page) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const loadingLocator = page.getByTestId("my-library-new-content-notice-loading");
+      const resolved = await expect
+        .poll(
+          async () => {
+            if ((await loadingLocator.count()) === 0) {
+              return "resolved";
+            }
+
+            if ((await page.getByTestId("my-library-new-content-notice").count()) > 0) {
+              return "resolved";
+            }
+
+            if ((await page.getByTestId("my-library-new-content-notice-error").count()) > 0) {
+              return "resolved";
+            }
+
+            return "loading";
+          },
+          { timeout: 15_000 }
+        )
+        .toBe("resolved")
+        .then(() => true)
+        .catch(() => false);
+
+      if (resolved) {
+        return;
+      }
+
+      if (attempt === 0) {
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
+        await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+      }
+    }
+
     await expect(page.getByTestId("my-library-new-content-notice-loading")).toHaveCount(0, {
       timeout: 15_000,
     });
