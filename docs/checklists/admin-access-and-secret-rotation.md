@@ -30,10 +30,10 @@ Provide a short, repeatable procedure for rotating sensitive config and confirmi
 
 Record one row per environment after smoke checks. Keep values non-sensitive.
 
-| Date (UTC) | Environment  | Operator | `/auth/sign-in` | `/api/runtime/flags` (`ok: true`) | `dashboardVisible=true` (signed-in admin) | `/admin` | `/api/contact` (allowed origin) | `/api/checkout/session` (app flow) | Result  | Notes |
-| ---------- | ------------ | -------- | --------------- | --------------------------------- | ----------------------------------------- | -------- | ------------------------------- | ---------------------------------- | ------- | ----- |
-| TBD        | `preview`    | TBD      | pending         | pending                           | pending                                   | pending  | pending                         | pending                            | pending |       |
-| TBD        | `production` | TBD      | pending         | pending                           | pending                                   | pending  | pending                         | pending                            | pending |       |
+| Date (UTC)       | Environment  | Operator   | `/auth/sign-in` | `/api/runtime/flags` (`ok: true`) | `dashboardVisible=true` (signed-in admin) | `/admin` | `/api/contact` (allowed origin) | `/api/checkout/session` (app flow) | Result | Notes                                       |
+| ---------------- | ------------ | ---------- | --------------- | --------------------------------- | ----------------------------------------- | -------- | ------------------------------- | ---------------------------------- | ------ | ------------------------------------------- |
+| 2026-03-13 11:02 | `preview`    | stianvikra | pass            | pass                              | pass                                      | pass     | pass                            | pass                               | pass   | manual smoke via PR #207 preview deployment |
+| 2026-03-13 11:11 | `production` | stianvikra | pass            | pass                              | pass                                      | pass     | pass                            | pass                               | pass   | manual smoke via production deployment      |
 
 Closeout rule:
 
