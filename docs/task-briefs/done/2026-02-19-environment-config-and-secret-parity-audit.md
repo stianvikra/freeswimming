@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-19-environment-config-and-secret-parity-audit`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-19`
 - `updated`: `2026-03-13`
@@ -132,8 +132,43 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 2. `git log --oneline -n 10`
 3. reopen this brief and continue from latest checkpoint.
 
+## Completion Record
+
+- PR / merge info:
+  - PR #163 merged to `main` as `a052609` on `2026-03-09` (baseline env-parity runbook/checklist delivery).
+  - PR #207 merged to `main` as `31b2e76` on `2026-03-13` (closeout evidence gate automation).
+- Delivered summary:
+  - added env parity runbook + admin access/secret rotation checklist,
+  - aligned `.env.example` with optional guide asset override key,
+  - added env-parity bundle linting + unit coverage,
+  - blocked move-to-`done` until preview/production smoke evidence is real,
+  - recorded manual preview + production smoke evidence rows as `pass`.
+- Test evidence:
+  - local `npm run verify:pre-pr`: PASS,
+  - local `npm run gate:pre-merge`: PASS,
+  - PR #207 preview manual smoke: `/auth/sign-in`, `/api/runtime/flags`, `dashboardVisible=true`, `/admin`, `/api/contact`, `/api/checkout/session` all PASS,
+  - production manual smoke: `/auth/sign-in` (via active valid session), `/api/runtime/flags`, `dashboardVisible=true`, `/admin`, `/api/contact`, `/api/checkout/session` all PASS.
+- DevOps / workflow changes:
+  - verify pipeline now includes `npm run lint:env-parity`,
+  - env-parity brief cannot move to `done` while checklist still contains template `TBD` / `pending` evidence rows.
+- Secrets used (names only):
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_WEBHOOK_SECRET`
+  - `RESEND_API_KEY`
+  - `CONTACT_ALLOWED_ORIGINS`
+  - `ADMIN_EMAIL_ALLOWLIST`
+- Continuity notes:
+  - canonical evidence lives in `docs/checklists/admin-access-and-secret-rotation.md`,
+  - closeout gate is enforced by `scripts/lint-env-parity-bundle.mjs`,
+  - next follow-up should address separate admin mirror drift from leftover `e2e-admin-content-*` test records.
+
 ## Checkpoint Log
 
+- `2026-03-13 | working tree | moved env-parity brief to done after recorded preview + production PASS smoke evidence and reran npm run verify:pre-pr successfully (81 passed, 201 skipped, 0 failed) on the closeout diff | next: commit, open PR, run npm run gate:pre-merge, then start a separate cleanup slice for admin mirror drift from leftover e2e-admin-content-* records`
+- `2026-03-13 | main@31b2e76 | owner completed manual preview + production smoke checks and checklist evidence now records PASS for both environments; env-parity closeout gate is satisfied and brief is ready to move to done | next: move brief to done, then start dedicated cleanup slice for admin mirror drift caused by leftover e2e-created module records`
 - `2026-03-13 | working tree | verify:pre-pr PASS for env-parity closeout-gate automation slice (`81 passed`, `201 skipped`, `0 failed`): env bundle linter now enforces required runbook/checklist structure during verify, and move-to-done is blocked until real preview+production PASS evidence replaces template rows | next: commit, open PR, run gate:pre-merge, then keep brief in-progress until owner records real preview+production smoke evidence`
 - `2026-03-13 | working tree | started env-parity closeout-gate automation slice: added env bundle linter + unit test, wired verify to require env-parity structure, and blocked task-brief move-to-done when preview/production smoke evidence still contains TBD/pending placeholders or lacks full PASS rows | next: run verify:pre-pr, open PR, run gate:pre-merge, then keep brief in-progress until owner records real preview+production smoke evidence`
 - `2026-03-09 | working tree | started manual-smoke evidence hygiene slice: added deterministic preview/production smoke evidence template + closeout rule in admin rotation checklist/runbook so brief move-to-done is proof-based | next: run verify:pre-pr, open PR, run gate:pre-merge, then execute owner preview/prod smoke rows and move brief to done`
