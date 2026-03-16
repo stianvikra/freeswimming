@@ -2,6 +2,7 @@ export type CourseStructureModuleRow = {
   id: string;
   sortOrder: number;
   createdAt: string;
+  updatedAt: string;
   title: string;
 };
 
@@ -10,6 +11,7 @@ export type CourseStructureLessonRow = {
   parentId: string | null;
   sortOrder: number;
   createdAt: string;
+  updatedAt: string;
   title: string;
 };
 
@@ -34,10 +36,12 @@ function normalizeIso(value: string): number {
 }
 
 export function compareCourseStructureRows(
-  left: Pick<CourseStructureModuleRow, "sortOrder" | "createdAt" | "title" | "id">,
-  right: Pick<CourseStructureModuleRow, "sortOrder" | "createdAt" | "title" | "id">
+  left: Pick<CourseStructureModuleRow, "sortOrder" | "createdAt" | "updatedAt" | "title" | "id">,
+  right: Pick<CourseStructureModuleRow, "sortOrder" | "createdAt" | "updatedAt" | "title" | "id">
 ): number {
   if (left.sortOrder !== right.sortOrder) return left.sortOrder - right.sortOrder;
+  const updatedDelta = normalizeIso(right.updatedAt) - normalizeIso(left.updatedAt);
+  if (updatedDelta !== 0) return updatedDelta;
   const timeDelta = normalizeIso(left.createdAt) - normalizeIso(right.createdAt);
   if (timeDelta !== 0) return timeDelta;
   const titleDelta = left.title.localeCompare(right.title);

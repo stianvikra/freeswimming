@@ -13,18 +13,21 @@ const MODULES: CourseStructureModuleRow[] = [
     id: "module-a",
     sortOrder: 0,
     createdAt: "2026-03-01T10:00:00.000Z",
+    updatedAt: "2026-03-01T10:00:00.000Z",
     title: "Module A",
   },
   {
     id: "module-b",
     sortOrder: 1,
     createdAt: "2026-03-01T10:05:00.000Z",
+    updatedAt: "2026-03-01T10:05:00.000Z",
     title: "Module B",
   },
   {
     id: "module-c",
     sortOrder: 2,
     createdAt: "2026-03-01T10:10:00.000Z",
+    updatedAt: "2026-03-01T10:10:00.000Z",
     title: "Module C",
   },
 ];
@@ -35,6 +38,7 @@ const LESSONS: CourseStructureLessonRow[] = [
     parentId: "module-a",
     sortOrder: 0,
     createdAt: "2026-03-01T10:00:00.000Z",
+    updatedAt: "2026-03-01T10:00:00.000Z",
     title: "Lesson A1",
   },
   {
@@ -42,6 +46,7 @@ const LESSONS: CourseStructureLessonRow[] = [
     parentId: "module-a",
     sortOrder: 1,
     createdAt: "2026-03-01T10:01:00.000Z",
+    updatedAt: "2026-03-01T10:01:00.000Z",
     title: "Lesson A2",
   },
   {
@@ -49,6 +54,7 @@ const LESSONS: CourseStructureLessonRow[] = [
     parentId: "module-b",
     sortOrder: 0,
     createdAt: "2026-03-01T10:02:00.000Z",
+    updatedAt: "2026-03-01T10:02:00.000Z",
     title: "Lesson B1",
   },
 ];
@@ -69,6 +75,7 @@ describe("course structure helpers", () => {
         parentId: null,
         sortOrder: 7,
         createdAt: "2026-03-01T10:03:00.000Z",
+        updatedAt: "2026-03-01T10:03:00.000Z",
         title: "Lesson Unlinked",
       },
     ];
@@ -76,15 +83,15 @@ describe("course structure helpers", () => {
     const result = computeNormalizedCourseStructureSortOrderUpdates(modules, lessons);
     expect(result.moduleUpdates).toEqual(
       expect.arrayContaining([
-        { id: "module-a", sortOrder: 1 },
+        { id: "module-a", sortOrder: 2 },
         { id: "module-b", sortOrder: 0 },
-        { id: "module-c", sortOrder: 2 },
+        { id: "module-c", sortOrder: 1 },
       ])
     );
     expect(result.lessonUpdates).toEqual(
       expect.arrayContaining([
-        { id: "lesson-a1", sortOrder: 0 },
-        { id: "lesson-a2", sortOrder: 1 },
+        { id: "lesson-a2", sortOrder: 0 },
+        { id: "lesson-a1", sortOrder: 1 },
         { id: "lesson-b1", sortOrder: 0 },
         { id: "lesson-unlinked", sortOrder: 0 },
       ])
@@ -117,5 +124,23 @@ describe("course structure helpers", () => {
     expect(getAdjacentLessonId(LESSONS, "lesson-a2", "up")).toBe("lesson-a1");
     expect(getAdjacentLessonId(LESSONS, "lesson-a1", "up")).toBeNull();
     expect(getAdjacentLessonId(LESSONS, "lesson-a2", "down")).toBeNull();
+  });
+
+  it("prefers the most recently edited module when resolving duplicate occupied slots", () => {
+    const modules: CourseStructureModuleRow[] = [
+      { ...MODULES[0] },
+      { ...MODULES[1] },
+      {
+        ...MODULES[2],
+        sortOrder: 1,
+        updatedAt: "2026-03-16T20:00:00.000Z",
+      },
+    ];
+
+    const result = computeNormalizedCourseStructureSortOrderUpdates(modules, []);
+
+    expect(result.moduleUpdates).toEqual(
+      expect.arrayContaining([{ id: "module-b", sortOrder: 2 }])
+    );
   });
 });
