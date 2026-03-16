@@ -66,9 +66,9 @@ async function primeInstallPrompt(page: Page, outcome: "accepted" | "dismissed")
 }
 
 async function satisfyDoneGateIfPresent(page: Page) {
-  const markDoneButton = page.getByRole("button", { name: /^(Mark as done|Done)$/ }).first();
-  await expect(markDoneButton).toBeVisible({ timeout: 15_000 });
-  if (await markDoneButton.isEnabled({ timeout: 5_000 })) return;
+  const markDoneButton = page.getByTestId("course-mark-done-button");
+  await expect(markDoneButton).toBeVisible();
+  if (await markDoneButton.isEnabled()) return;
 
   const checklist = page.getByTestId("course-done-gate-checklist");
   await expect(checklist).toBeVisible();
@@ -85,8 +85,8 @@ async function satisfyDoneGateIfPresent(page: Page) {
 }
 
 async function activateMarkDoneButton(page: Page) {
-  const markDoneButton = page.getByRole("button", { name: /^(Mark as done|Done)$/ }).first();
-  await expect(markDoneButton).toBeVisible({ timeout: 15_000 });
+  const markDoneButton = page.getByTestId("course-mark-done-button");
+  await expect(markDoneButton).toBeVisible();
   await expect(markDoneButton).toBeEnabled();
 
   try {
