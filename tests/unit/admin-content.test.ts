@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseCreateAdminContentPayload,
   parseUpdateAdminContentPayload,
+  preserveImmutableCourseRuntimeIds,
 } from "@/lib/admin/content";
 
 describe("parseCreateAdminContentPayload", () => {
@@ -184,5 +185,60 @@ describe("parseUpdateAdminContentPayload", () => {
     );
 
     expect(parsed.ok).toBe(false);
+  });
+});
+
+describe("preserveImmutableCourseRuntimeIds", () => {
+  it("preserves existing lesson runtime ids when body patches omit them", () => {
+    const result = preserveImmutableCourseRuntimeIds({
+      contentType: "course_lesson",
+      existingBody: {
+        moduleId: "intro-course",
+        lessonId: "intro-course--welcome-course-structure",
+        goal: "Old goal",
+      },
+      nextBody: {
+        goal: "New goal",
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.body).toMatchObject({
+      moduleId: "intro-course",
+      lessonId: "intro-course--welcome-course-structure",
+      goal: "New goal",
+    });
+  });
+
+  it("rejects lesson runtime id rewrites in normal content editing", () => {
+    const result = preserveImmutableCourseRuntimeIds({
+      contentType: "course_lesson",
+      existingBody: {
+        moduleId: "intro-course",
+        lessonId: "intro-course--welcome-course-structure",
+      },
+      nextBody: {
+        moduleId: "intro-course",
+        lessonId: "renamed-lesson-id",
+      },
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects module runtime id rewrites in normal content editing", () => {
+    const result = preserveImmutableCourseRuntimeIds({
+      contentType: "course_module",
+      existingBody: {
+        moduleId: "intro-course",
+      },
+      nextBody: {
+        moduleId: "start-here",
+      },
+    });
+
+    expect(result.ok).toBe(false);
   });
 });

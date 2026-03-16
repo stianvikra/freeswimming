@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { isUuid, parseUpdateAdminContentPayload } from "@/lib/admin/content";
+import {
+  isUuid,
+  parseUpdateAdminContentPayload,
+  preserveImmutableCourseRuntimeIds,
+} from "@/lib/admin/content";
 import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -124,7 +128,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const existingResult = await supabase
     .from("admin_content_items")
-    .select("id, published_at")
+    .select("id, content_type, body, published_at")
     .eq("id", itemId)
     .maybeSingle();
 
@@ -153,6 +157,21 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  const sanitizedBody =
+    parsed.value.body !== undefined
+      ? preserveImmutableCourseRuntimeIds({
+          contentType: existingResult.data.content_type,
+          existingBody: existingResult.data.body,
+          nextBody: parsed.value.body,
+        })
+      : null;
+
+  if (sanitizedBody && !sanitizedBody.ok) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: sanitizedBody.error }, { status: 400 })
+    );
+  }
+
   const updatePayload: Database["public"]["Tables"]["admin_content_items"]["Update"] = {
     updated_by: gate.user.id,
   };
@@ -173,7 +192,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     updatePayload.category = parsed.value.category;
   }
   if (parsed.value.body !== undefined) {
-    updatePayload.body = parsed.value
+    updatePayload.body = sanitizedBody!
       .body as Database["public"]["Tables"]["admin_content_items"]["Update"]["body"];
   }
   if (parsed.value.sortOrder !== undefined) {

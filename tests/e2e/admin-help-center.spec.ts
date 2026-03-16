@@ -58,6 +58,15 @@ test.describe("admin help center", () => {
     ).toBeVisible();
 
     await expect(page.getByText("Course Workspace / All Content tabs:")).toBeVisible();
+    await expect(page.getByText("Course identity: slug vs runtime ID")).toBeVisible();
+    await expect(
+      page.getByText("Slug is the human-readable content key and can be renamed carefully.")
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Rename in place only for the same learning object; do not repurpose old lessons."
+      )
+    ).toBeVisible();
     await expect(page.getByText("New link / Hide new link:")).toBeVisible();
     await expect(page.getByText("Required / Advanced (optional):")).toBeVisible();
     await expect(page.getByText("Create first QR link / Use example values:")).toBeVisible();
