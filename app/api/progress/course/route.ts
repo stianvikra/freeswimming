@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
+import { COURSE_MODULES } from "@/app/course/courseData";
+import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
 import {
   MAX_COURSE_PROGRESS_ROWS,
   normalizeCourseProgressRows,
+  type CourseProgressLessonIdResolver,
   type CourseProgressRow,
 } from "@/lib/course/progress";
+import {
+  buildCanonicalCourseLessonIdMap,
+  canonicalizeCourseLessonRuntimeId,
+} from "@/lib/course/runtime-identity";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -44,8 +51,25 @@ async function getSignedInUserId() {
   return { supabase, userId: user?.id ?? null };
 }
 
-function normalizeRowsForResponse(rows: unknown): CourseProgressRow[] {
-  return normalizeCourseProgressRows(rows, { maxRows: MAX_COURSE_PROGRESS_ROWS });
+async function getCourseProgressLessonIdResolver(): Promise<CourseProgressLessonIdResolver> {
+  const modules = await loadCourseModulesByStatus({
+    statuses: ["published"],
+    fallback: COURSE_MODULES,
+    autoSeedWhenEmpty: false,
+  });
+  const canonicalLessonIdByAlias = buildCanonicalCourseLessonIdMap(modules);
+
+  return (lessonId) => canonicalizeCourseLessonRuntimeId(lessonId, canonicalLessonIdByAlias);
+}
+
+function normalizeRowsForResponse(
+  rows: unknown,
+  resolveLessonId?: CourseProgressLessonIdResolver
+): CourseProgressRow[] {
+  return normalizeCourseProgressRows(rows, {
+    maxRows: MAX_COURSE_PROGRESS_ROWS,
+    resolveLessonId,
+  });
 }
 
 export async function GET() {
@@ -53,6 +77,8 @@ export async function GET() {
   if (!userId) {
     return jsonNoStore({ ok: false, error: "Unauthorized." }, 401);
   }
+
+  const resolveLessonId = await getCourseProgressLessonIdResolver();
 
   let data: unknown = null;
   let error: unknown = null;
@@ -84,7 +110,7 @@ export async function GET() {
 
   return jsonNoStore({
     ok: true,
-    rows: normalizeRowsForResponse(data ?? []),
+    rows: normalizeRowsForResponse(data ?? [], resolveLessonId),
   });
 }
 
@@ -120,7 +146,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const normalizedRows = normalizeRowsForResponse(body.rows);
+  const resolveLessonId = await getCourseProgressLessonIdResolver();
+  const normalizedRows = normalizeRowsForResponse(body.rows, resolveLessonId);
   if (normalizedRows.length === 0) {
     return jsonNoStore({ ok: true, upserted: 0 });
   }

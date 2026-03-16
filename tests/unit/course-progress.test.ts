@@ -10,12 +10,23 @@ import {
   resolveCourseDirtyLessonIdsAfterHydrate,
 } from "@/lib/course/progress";
 
+const canonicalizeLessonId = (lessonId: string) =>
+  lessonId === "mod1-l1" ? "intro-course--welcome-course-structure" : lessonId;
+
 describe("course progress helpers", () => {
   it("normalizes local done lesson ids", () => {
     expect(normalizeDoneLessonIds([" mod1-l1 ", "", null, "mod1-l1", "mod1-l2"])).toEqual([
       "mod1-l1",
       "mod1-l2",
     ]);
+  });
+
+  it("canonicalizes legacy lesson ids when a resolver is provided", () => {
+    expect(
+      normalizeDoneLessonIds(["mod1-l1", " intro-course--welcome-course-structure "], {
+        resolveLessonId: canonicalizeLessonId,
+      })
+    ).toEqual(["intro-course--welcome-course-structure"]);
   });
 
   it("normalizes local video progress map", () => {
@@ -30,6 +41,38 @@ describe("course progress helpers", () => {
       "mod1-l1": 14,
       "mod1-l3": 9,
     });
+  });
+
+  it("merges alias + canonical rows onto one canonical lesson id", () => {
+    const rows = normalizeCourseProgressRows(
+      [
+        {
+          lessonId: "mod1-l1",
+          done: true,
+          videoSeconds: 8,
+          updatedAt: "2026-02-16T10:00:00.000Z",
+        },
+        {
+          lessonId: "intro-course--welcome-course-structure",
+          done: false,
+          videoSeconds: 22,
+          updatedAt: "2026-02-16T10:05:00.000Z",
+        },
+      ],
+      {
+        resolveLessonId: canonicalizeLessonId,
+      }
+    );
+
+    expect(rows).toEqual([
+      {
+        lessonId: "intro-course--welcome-course-structure",
+        done: true,
+        doneConfirmedAt: null,
+        videoSeconds: 22,
+        updatedAt: "2026-02-16T10:05:00.000Z",
+      },
+    ]);
   });
 
   it("merges duplicate rows by lesson id using done=OR and max video seconds", () => {
@@ -180,6 +223,33 @@ describe("course progress helpers", () => {
       },
       videoProgressByLessonId: {
         "mod1-l1": 42,
+      },
+    });
+  });
+
+  it("builds canonical local state when legacy lesson ids are still stored", () => {
+    const local = buildLocalCourseProgressFromRows(
+      [
+        {
+          lessonId: "mod1-l1",
+          done: true,
+          doneConfirmedAt: "2026-02-16T10:05:00.000Z",
+          videoSeconds: 42,
+          updatedAt: "2026-02-16T10:00:00.000Z",
+        },
+      ],
+      {
+        resolveLessonId: canonicalizeLessonId,
+      }
+    );
+
+    expect(local).toEqual({
+      doneLessonIds: ["intro-course--welcome-course-structure"],
+      doneConfirmationByLessonId: {
+        "intro-course--welcome-course-structure": "2026-02-16T10:05:00.000Z",
+      },
+      videoProgressByLessonId: {
+        "intro-course--welcome-course-structure": 42,
       },
     });
   });

@@ -47,6 +47,10 @@ import {
   parseCoursePreviewMode,
   type CoursePreviewMode,
 } from "@/lib/course/preview";
+import {
+  buildCanonicalCourseLessonIdMap,
+  canonicalizeCourseLessonRuntimeId,
+} from "@/lib/course/runtime-identity";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 import {
@@ -267,12 +271,32 @@ function CoursePageClient() {
     () => courseModules.flatMap((module) => module.lessons),
     [courseModules]
   );
+  const canonicalLessonIdByAlias = useMemo(
+    () => buildCanonicalCourseLessonIdMap(courseModules),
+    [courseModules]
+  );
+  const resolveCanonicalLessonId = useCallback(
+    (lessonId: string) => canonicalizeCourseLessonRuntimeId(lessonId, canonicalLessonIdByAlias),
+    [canonicalLessonIdByAlias]
+  );
+  const canonicalLessonParam = useMemo(
+    () => (lessonParam ? resolveCanonicalLessonId(lessonParam) : null),
+    [lessonParam, resolveCanonicalLessonId]
+  );
+  const requestedLessonId = canonicalLessonParam ?? lessonParam;
   const defaultLessonId = courseLessonsFlat[0]?.id ?? DEFAULT_LESSON_ID;
+  const hasResolvedRequestedLesson = useMemo(
+    () =>
+      requestedLessonId
+        ? courseLessonsFlat.some((lesson) => lesson.id === requestedLessonId)
+        : false,
+    [courseLessonsFlat, requestedLessonId]
+  );
   const activeLesson = useMemo<CourseLesson>(() => {
     const firstLesson = courseLessonsFlat[0] ?? FALLBACK_LESSON;
-    if (!lessonParam) return firstLesson;
-    return courseLessonsFlat.find((lesson) => lesson.id === lessonParam) ?? firstLesson;
-  }, [courseLessonsFlat, lessonParam]);
+    if (!requestedLessonId) return firstLesson;
+    return courseLessonsFlat.find((lesson) => lesson.id === requestedLessonId) ?? firstLesson;
+  }, [courseLessonsFlat, requestedLessonId]);
 
   const { prevId, nextId } = useMemo(() => {
     const index = courseLessonsFlat.findIndex((lesson) => lesson.id === activeLesson.id);
@@ -435,11 +459,18 @@ function CoursePageClient() {
       doneConfirmationByLessonId: Record<string, string>;
       videoProgressByLessonId: Record<string, number>;
     }) => {
-      const normalizedDoneLessonIds = normalizeDoneLessonIds(next.doneLessonIds);
+      const normalizedDoneLessonIds = normalizeDoneLessonIds(next.doneLessonIds, {
+        resolveLessonId: resolveCanonicalLessonId,
+      });
       const normalizedDoneConfirmationByLessonId = normalizeDoneConfirmationRecord(
-        next.doneConfirmationByLessonId
+        next.doneConfirmationByLessonId,
+        {
+          resolveLessonId: resolveCanonicalLessonId,
+        }
       );
-      const normalizedVideoProgress = normalizeVideoProgressRecord(next.videoProgressByLessonId);
+      const normalizedVideoProgress = normalizeVideoProgressRecord(next.videoProgressByLessonId, {
+        resolveLessonId: resolveCanonicalLessonId,
+      });
 
       for (const lessonId of normalizedDoneLessonIds) {
         knownProgressLessonIdsRef.current.add(lessonId);
@@ -476,22 +507,27 @@ function CoursePageClient() {
       previewStorageKeys.doneConfirmations,
       previewStorageKeys.doneLessons,
       previewStorageKeys.videoProgress,
+      resolveCanonicalLessonId,
     ]
   );
 
-  const buildSyncRows = useCallback((updatedAt?: string): CourseProgressRow[] => {
-    return buildCourseProgressRowsFromLocal(
-      {
-        doneLessonIds: doneLessonIdsRef.current,
-        doneConfirmationByLessonId: doneConfirmationByLessonIdRef.current,
-        videoProgressByLessonId: playbackProgressRef.current,
-      },
-      {
-        knownLessonIds: knownProgressLessonIdsRef.current,
-        updatedAt,
-      }
-    );
-  }, []);
+  const buildSyncRows = useCallback(
+    (updatedAt?: string): CourseProgressRow[] => {
+      return buildCourseProgressRowsFromLocal(
+        {
+          doneLessonIds: doneLessonIdsRef.current,
+          doneConfirmationByLessonId: doneConfirmationByLessonIdRef.current,
+          videoProgressByLessonId: playbackProgressRef.current,
+        },
+        {
+          knownLessonIds: knownProgressLessonIdsRef.current,
+          updatedAt,
+          resolveLessonId: resolveCanonicalLessonId,
+        }
+      );
+    },
+    [resolveCanonicalLessonId]
+  );
 
   const persistCourseProgressRows = useCallback(
     async (rows: CourseProgressRow[]) => {
@@ -564,23 +600,36 @@ function CoursePageClient() {
   );
 
   useEffect(() => {
+    if (requestedLessonId && !hasResolvedRequestedLesson) return;
+
     try {
       localStorage.setItem(previewStorageKeys.lastLesson, activeLesson.id);
     } catch {}
-  }, [activeLesson.id, previewStorageKeys.lastLesson]);
+  }, [
+    activeLesson.id,
+    hasResolvedRequestedLesson,
+    previewStorageKeys.lastLesson,
+    requestedLessonId,
+  ]);
+
+  useEffect(() => {
+    if (!lessonParam || !canonicalLessonParam || lessonParam === canonicalLessonParam) return;
+
+    router.replace(`${pathname}?lesson=${encodeURIComponent(canonicalLessonParam)}`);
+  }, [canonicalLessonParam, lessonParam, pathname, router]);
 
   useEffect(() => {
     if (lessonParam) return;
 
     try {
       const last = localStorage.getItem(previewStorageKeys.lastLesson);
-      const next = last || defaultLessonId;
+      const next = (last ? resolveCanonicalLessonId(last) : null) ?? defaultLessonId;
       router.replace(`${pathname}?lesson=${encodeURIComponent(next)}`);
     } catch {
       router.replace(`${pathname}?lesson=${encodeURIComponent(defaultLessonId)}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultLessonId, pathname, previewStorageKeys.lastLesson, router]);
+  }, [defaultLessonId, pathname, previewStorageKeys.lastLesson, resolveCanonicalLessonId, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -701,7 +750,9 @@ function CoursePageClient() {
       const raw = localStorage.getItem(previewStorageKeys.doneLessons);
       if (raw) {
         const parsed = JSON.parse(raw);
-        const normalizedDoneLessonIds = normalizeDoneLessonIds(parsed);
+        const normalizedDoneLessonIds = normalizeDoneLessonIds(parsed, {
+          resolveLessonId: resolveCanonicalLessonId,
+        });
         for (const lessonId of normalizedDoneLessonIds) {
           knownProgressLessonIdsRef.current.add(lessonId);
         }
@@ -710,20 +761,22 @@ function CoursePageClient() {
       }
     } catch {}
     setDoneLessonIdsLoaded(true);
-  }, [previewStorageKeys.doneLessons]);
+  }, [previewStorageKeys.doneLessons, resolveCanonicalLessonId]);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(previewStorageKeys.doneConfirmations);
       if (raw) {
         const parsed = JSON.parse(raw);
-        const normalizedDoneConfirmationByLessonId = normalizeDoneConfirmationRecord(parsed);
+        const normalizedDoneConfirmationByLessonId = normalizeDoneConfirmationRecord(parsed, {
+          resolveLessonId: resolveCanonicalLessonId,
+        });
         doneConfirmationByLessonIdRef.current = normalizedDoneConfirmationByLessonId;
         setDoneConfirmationByLessonId(normalizedDoneConfirmationByLessonId);
       }
     } catch {}
     setDoneConfirmationLoaded(true);
-  }, [previewStorageKeys.doneConfirmations]);
+  }, [previewStorageKeys.doneConfirmations, resolveCanonicalLessonId]);
 
   useEffect(() => {
     if (!doneLessonIdsLoaded) return;
@@ -755,7 +808,9 @@ function CoursePageClient() {
       const raw = localStorage.getItem(previewStorageKeys.videoProgress);
       if (raw) {
         const parsed = JSON.parse(raw);
-        const normalized = normalizeVideoProgressRecord(parsed);
+        const normalized = normalizeVideoProgressRecord(parsed, {
+          resolveLessonId: resolveCanonicalLessonId,
+        });
         for (const lessonId of Object.keys(normalized)) {
           knownProgressLessonIdsRef.current.add(lessonId);
         }
@@ -763,7 +818,7 @@ function CoursePageClient() {
       }
     } catch {}
     setPlaybackProgressLoaded(true);
-  }, [previewStorageKeys.videoProgress]);
+  }, [previewStorageKeys.videoProgress, resolveCanonicalLessonId]);
 
   useEffect(() => {
     let mounted = true;
@@ -836,7 +891,9 @@ function CoursePageClient() {
         const payload = (await response.json()) as { rows?: unknown };
         if (cancelled) return;
 
-        const remoteRows = normalizeCourseProgressRows(payload.rows ?? []);
+        const remoteRows = normalizeCourseProgressRows(payload.rows ?? [], {
+          resolveLessonId: resolveCanonicalLessonId,
+        });
         for (const row of remoteRows) {
           knownProgressLessonIdsRef.current.add(row.lessonId);
         }
@@ -851,7 +908,11 @@ function CoursePageClient() {
           courseProgressMutationRef.current !== hydrateStartedAtMutation;
 
         if (!hasLocalMutationDuringHydrate) {
-          applyLocalCourseProgress(buildLocalCourseProgressFromRows(mergedRows));
+          applyLocalCourseProgress(
+            buildLocalCourseProgressFromRows(mergedRows, {
+              resolveLessonId: resolveCanonicalLessonId,
+            })
+          );
         }
 
         if (cancelled) return;
@@ -891,6 +952,7 @@ function CoursePageClient() {
     buildSyncRows,
     courseProgressSyncEnabled,
     localCourseProgressLoaded,
+    resolveCanonicalLessonId,
     signedInUserId,
     syncCourseProgressNow,
   ]);
@@ -1022,7 +1084,9 @@ function CoursePageClient() {
 
   const goToLesson = useCallback(
     (lessonId: string, options?: { scrollToPlayer?: boolean }) => {
-      if (lessonId === activeLesson.id) {
+      const nextLessonId = resolveCanonicalLessonId(lessonId) ?? lessonId;
+
+      if (nextLessonId === activeLesson.id) {
         setDrawerOpen(false);
         setCloseDrawerOnLessonChange(false);
         return;
@@ -1032,7 +1096,7 @@ function CoursePageClient() {
         setCloseDrawerOnLessonChange(true);
       }
 
-      router.push(`${pathname}?lesson=${encodeURIComponent(lessonId)}`, { scroll: false });
+      router.push(`${pathname}?lesson=${encodeURIComponent(nextLessonId)}`, { scroll: false });
       const shouldScrollToPlayer = options?.scrollToPlayer ?? true;
       if (!drawerOpen && shouldScrollToPlayer) {
         const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
@@ -1040,7 +1104,7 @@ function CoursePageClient() {
         playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
       }
     },
-    [activeLesson.id, drawerOpen, pathname, router]
+    [activeLesson.id, drawerOpen, pathname, resolveCanonicalLessonId, router]
   );
 
   function toggleDrawer(view: DrawerView) {
@@ -2292,7 +2356,9 @@ function CoursePageClient() {
                   <PressLink
                     tier="nav"
                     href={
-                      lessonParam ? `/course?lesson=${encodeURIComponent(lessonParam)}` : "/course"
+                      requestedLessonId
+                        ? `/course?lesson=${encodeURIComponent(requestedLessonId)}`
+                        : "/course"
                     }
                     className="inline-flex min-h-[36px] items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
                   >

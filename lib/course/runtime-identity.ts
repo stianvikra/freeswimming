@@ -1,9 +1,21 @@
 import type { CourseModule } from "@/app/course/courseData";
 
-function normalizeRuntimeId(value: unknown): string | null {
+export function normalizeRuntimeId(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeRuntimeIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  const unique = new Set<string>();
+  for (const entry of value) {
+    const normalized = normalizeRuntimeId(entry);
+    if (normalized) unique.add(normalized);
+  }
+
+  return Array.from(unique);
 }
 
 function getBodyRuntimeId(body: unknown, key: "moduleId" | "lessonId"): string | null {
@@ -12,6 +24,22 @@ function getBodyRuntimeId(body: unknown, key: "moduleId" | "lessonId"): string |
   }
 
   return normalizeRuntimeId((body as Record<string, unknown>)[key]);
+}
+
+function getBodyRuntimeIds(body: unknown, key: "legacyModuleIds" | "legacyLessonIds"): string[] {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return [];
+  }
+
+  return normalizeRuntimeIdList((body as Record<string, unknown>)[key]);
+}
+
+function filterCanonicalRuntimeIdAliases(
+  aliases: string[],
+  canonicalRuntimeId: string | null
+): string[] {
+  if (!canonicalRuntimeId) return aliases;
+  return aliases.filter((alias) => alias !== canonicalRuntimeId);
 }
 
 export function inferCourseModuleRuntimeIdFromSlug(slug: string): string | null {
@@ -49,6 +77,20 @@ export function resolveCourseLessonRuntimeId(body: unknown, slug: string): strin
   return getBodyRuntimeId(body, "lessonId") ?? inferCourseLessonRuntimeIdFromSlug(slug);
 }
 
+export function resolveCourseModuleRuntimeAliases(body: unknown, slug: string): string[] {
+  return filterCanonicalRuntimeIdAliases(
+    getBodyRuntimeIds(body, "legacyModuleIds"),
+    resolveCourseModuleRuntimeId(body, slug)
+  );
+}
+
+export function resolveCourseLessonRuntimeAliases(body: unknown, slug: string): string[] {
+  return filterCanonicalRuntimeIdAliases(
+    getBodyRuntimeIds(body, "legacyLessonIds"),
+    resolveCourseLessonRuntimeId(body, slug)
+  );
+}
+
 export function resolveCourseLessonModuleRuntimeId(params: {
   body: unknown;
   lessonId: string | null;
@@ -75,8 +117,45 @@ export function buildCourseLessonModuleIdMap(modules: CourseModule[]): Map<strin
       const lessonId = normalizeRuntimeId(lesson.id);
       if (!lessonId || lessonToModuleId.has(lessonId)) continue;
       lessonToModuleId.set(lessonId, moduleId);
+
+      for (const legacyLessonId of normalizeRuntimeIdList(lesson.legacyIds)) {
+        if (lessonToModuleId.has(legacyLessonId)) continue;
+        lessonToModuleId.set(legacyLessonId, moduleId);
+      }
     }
   }
 
   return lessonToModuleId;
+}
+
+export function buildCanonicalCourseLessonIdMap(modules: CourseModule[]): Map<string, string> {
+  const canonicalLessonIdByAlias = new Map<string, string>();
+
+  for (const courseModule of modules) {
+    for (const lesson of courseModule.lessons) {
+      const lessonId = normalizeRuntimeId(lesson.id);
+      if (!lessonId) continue;
+
+      if (!canonicalLessonIdByAlias.has(lessonId)) {
+        canonicalLessonIdByAlias.set(lessonId, lessonId);
+      }
+
+      for (const legacyLessonId of normalizeRuntimeIdList(lesson.legacyIds)) {
+        if (canonicalLessonIdByAlias.has(legacyLessonId)) continue;
+        canonicalLessonIdByAlias.set(legacyLessonId, lessonId);
+      }
+    }
+  }
+
+  return canonicalLessonIdByAlias;
+}
+
+export function canonicalizeCourseLessonRuntimeId(
+  lessonId: string,
+  canonicalLessonIdByAlias: ReadonlyMap<string, string>
+): string | null {
+  const normalizedLessonId = normalizeRuntimeId(lessonId);
+  if (!normalizedLessonId) return null;
+
+  return canonicalLessonIdByAlias.get(normalizedLessonId) ?? normalizedLessonId;
 }

@@ -171,6 +171,7 @@ describe("toPublishedCourseModules", () => {
           sort_order: 0,
           body: {
             moduleId: "intro-course",
+            legacyModuleIds: ["mod1"],
             subtitle: "Start here",
           },
         },
@@ -186,6 +187,7 @@ describe("toPublishedCourseModules", () => {
           body: {
             moduleId: "intro-course",
             lessonId: "intro-course--welcome-course-structure",
+            legacyLessonIds: ["mod1-l1"],
             goal: "Understand the flow",
           },
         },
@@ -194,8 +196,10 @@ describe("toPublishedCourseModules", () => {
 
     expect(modules).toHaveLength(1);
     expect(modules[0]?.id).toBe("intro-course");
+    expect(modules[0]?.legacyIds).toEqual(["mod1"]);
     expect(modules[0]?.lessons).toHaveLength(1);
     expect(modules[0]?.lessons[0]?.id).toBe("intro-course--welcome-course-structure");
+    expect(modules[0]?.lessons[0]?.legacyIds).toEqual(["mod1-l1"]);
   });
 
   it("uses deterministic defaults when published body omits fields", () => {
