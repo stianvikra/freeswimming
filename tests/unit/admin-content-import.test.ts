@@ -10,7 +10,7 @@ describe("buildPlatformContentSeedItems", () => {
     const { items, summary } = buildPlatformContentSeedItems();
 
     expect(summary).toEqual({
-      manifestVersion: 1,
+      manifestVersion: 2,
       totalItems:
         COURSE_MODULES.length +
         lessonCount +
@@ -52,7 +52,7 @@ describe("buildPlatformContentSeedItems", () => {
     for (const session of sessions) {
       expect(session.body.guideSlug).toBe(GUIDE_0_TO_1000M_SLUG);
       expect(session.body._meta).toMatchObject({
-        manifestVersion: 1,
+        manifestVersion: 2,
         sourceCollection: "guide_session",
       });
     }
@@ -60,7 +60,7 @@ describe("buildPlatformContentSeedItems", () => {
     for (const drill of drills) {
       expect(drill.body.guideSlug).toBe(GUIDE_POOLSIDE_SLUG);
       expect(drill.body._meta).toMatchObject({
-        manifestVersion: 1,
+        manifestVersion: 2,
         sourceCollection: "guide_drill",
       });
     }
@@ -77,13 +77,36 @@ describe("buildPlatformContentSeedItems", () => {
       const bMeta = (b?.body._meta ?? {}) as { manifestVersion?: number; sourceChecksum?: string };
       expect(a?.slug).toBe(b?.slug);
       expect(a?.body._meta).toMatchObject({
-        manifestVersion: 1,
+        manifestVersion: 2,
       });
       expect(b?.body._meta).toMatchObject({
-        manifestVersion: 1,
+        manifestVersion: 2,
       });
       expect(String(aMeta.sourceChecksum)).toMatch(/^[0-9a-f]{64}$/);
       expect(aMeta.sourceChecksum).toBe(bMeta.sourceChecksum);
     }
+  });
+
+  it("ships canonical course runtime ids, semantic slugs, and legacy aliases", () => {
+    const { items } = buildPlatformContentSeedItems();
+    const moduleItem = items.find((item) => item.contentType === "course_module");
+    const lesson = items.find((item) => item.contentType === "course_lesson");
+
+    expect(moduleItem).toMatchObject({
+      slug: "course-module-introduction-to-the-course",
+      body: expect.objectContaining({
+        moduleId: "intro-course",
+        legacyModuleIds: ["mod1"],
+      }),
+    });
+    expect(lesson).toMatchObject({
+      slug: "course-lesson-introduction-to-the-course-welcome-course-structure",
+      parentSlug: "course-module-introduction-to-the-course",
+      body: expect.objectContaining({
+        moduleId: "intro-course",
+        lessonId: "intro-course--welcome-course-structure",
+        legacyLessonIds: ["mod1-l1"],
+      }),
+    });
   });
 });

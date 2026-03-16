@@ -1,4 +1,13 @@
 import type { CourseModule } from "@/app/course/courseData";
+import {
+  resolveCanonicalCourseLessonRuntimeId,
+  resolveCanonicalCourseModuleRuntimeId,
+  resolveCanonicalCourseLessonRuntimeIdBySlug,
+  resolveCanonicalCourseModuleRuntimeIdBySlug,
+  resolveCanonicalCourseModuleRuntimeIdForLessonLookup,
+  resolveCourseLessonLegacyRuntimeIds,
+  resolveCourseModuleLegacyRuntimeIds,
+} from "@/lib/course/runtime-id-manifest";
 
 export function normalizeRuntimeId(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -42,12 +51,27 @@ function filterCanonicalRuntimeIdAliases(
   return aliases.filter((alias) => alias !== canonicalRuntimeId);
 }
 
+function mergeRuntimeIdAliases(...values: string[][]): string[] {
+  const unique = new Set<string>();
+  for (const entries of values) {
+    for (const entry of entries) {
+      const normalized = normalizeRuntimeId(entry);
+      if (normalized) unique.add(normalized);
+    }
+  }
+  return Array.from(unique);
+}
+
 export function inferCourseModuleRuntimeIdFromSlug(slug: string): string | null {
+  const canonicalRuntimeId = resolveCanonicalCourseModuleRuntimeIdBySlug(slug);
+  if (canonicalRuntimeId) return canonicalRuntimeId;
   const match = slug.match(/^course-module-(.+)$/i);
   return normalizeRuntimeId(match?.[1] ?? slug);
 }
 
 export function inferCourseLessonRuntimeIdFromSlug(slug: string): string | null {
+  const canonicalRuntimeId = resolveCanonicalCourseLessonRuntimeIdBySlug(slug);
+  if (canonicalRuntimeId) return canonicalRuntimeId;
   const match = slug.match(/^course-lesson-(.+)$/i);
   return normalizeRuntimeId(match?.[1] ?? slug);
 }
@@ -55,6 +79,9 @@ export function inferCourseLessonRuntimeIdFromSlug(slug: string): string | null 
 export function inferCourseModuleRuntimeIdFromLessonRuntimeId(lessonId: string): string | null {
   const normalized = normalizeRuntimeId(lessonId);
   if (!normalized) return null;
+
+  const canonicalModuleId = resolveCanonicalCourseModuleRuntimeIdForLessonLookup(normalized);
+  if (canonicalModuleId) return canonicalModuleId;
 
   const semanticSeparatorIndex = normalized.indexOf("--");
   if (semanticSeparatorIndex > 0) {
@@ -70,24 +97,40 @@ export function inferCourseModuleRuntimeIdFromLessonRuntimeId(lessonId: string):
 }
 
 export function resolveCourseModuleRuntimeId(body: unknown, slug: string): string | null {
-  return getBodyRuntimeId(body, "moduleId") ?? inferCourseModuleRuntimeIdFromSlug(slug);
+  const runtimeId = getBodyRuntimeId(body, "moduleId") ?? inferCourseModuleRuntimeIdFromSlug(slug);
+  return resolveCanonicalCourseModuleRuntimeId(runtimeId) ?? runtimeId;
 }
 
 export function resolveCourseLessonRuntimeId(body: unknown, slug: string): string | null {
-  return getBodyRuntimeId(body, "lessonId") ?? inferCourseLessonRuntimeIdFromSlug(slug);
+  const runtimeId = getBodyRuntimeId(body, "lessonId") ?? inferCourseLessonRuntimeIdFromSlug(slug);
+  return resolveCanonicalCourseLessonRuntimeId(runtimeId) ?? runtimeId;
 }
 
 export function resolveCourseModuleRuntimeAliases(body: unknown, slug: string): string[] {
+  const rawRuntimeId =
+    getBodyRuntimeId(body, "moduleId") ?? inferCourseModuleRuntimeIdFromSlug(slug);
+  const canonicalRuntimeId = resolveCourseModuleRuntimeId(body, slug);
   return filterCanonicalRuntimeIdAliases(
-    getBodyRuntimeIds(body, "legacyModuleIds"),
-    resolveCourseModuleRuntimeId(body, slug)
+    mergeRuntimeIdAliases(
+      getBodyRuntimeIds(body, "legacyModuleIds"),
+      resolveCourseModuleLegacyRuntimeIds(rawRuntimeId),
+      rawRuntimeId ? [rawRuntimeId] : []
+    ),
+    canonicalRuntimeId
   );
 }
 
 export function resolveCourseLessonRuntimeAliases(body: unknown, slug: string): string[] {
+  const rawRuntimeId =
+    getBodyRuntimeId(body, "lessonId") ?? inferCourseLessonRuntimeIdFromSlug(slug);
+  const canonicalRuntimeId = resolveCourseLessonRuntimeId(body, slug);
   return filterCanonicalRuntimeIdAliases(
-    getBodyRuntimeIds(body, "legacyLessonIds"),
-    resolveCourseLessonRuntimeId(body, slug)
+    mergeRuntimeIdAliases(
+      getBodyRuntimeIds(body, "legacyLessonIds"),
+      resolveCourseLessonLegacyRuntimeIds(rawRuntimeId),
+      rawRuntimeId ? [rawRuntimeId] : []
+    ),
+    canonicalRuntimeId
   );
 }
 

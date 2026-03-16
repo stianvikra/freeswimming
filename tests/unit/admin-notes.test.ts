@@ -25,7 +25,7 @@ describe("parseCreateAdminNotePayload", () => {
     expect(parsed.value.category).toBe("Commerce");
     expect(parsed.value.noteDate).toBe("2026-02-20");
     expect(parsed.value.contextType).toBe("course_lesson");
-    expect(parsed.value.contextRef).toBe("mod3-l1");
+    expect(parsed.value.contextRef).toBe("kick-drills--kick-basics-support-not-speed");
   });
 
   it("rejects short titles", () => {
@@ -71,6 +71,19 @@ describe("parseUpdateAdminNotePayload", () => {
 
     expect(parsed.value.contextType).toBe("guide_drill");
     expect(parsed.value.contextRef).toBe("d03");
+  });
+
+  it("canonicalizes course context updates to stable runtime ids", () => {
+    const parsed = parseUpdateAdminNotePayload({
+      contextType: "course_module",
+      contextRef: "mod3",
+    });
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    expect(parsed.value.contextType).toBe("course_module");
+    expect(parsed.value.contextRef).toBe("kick-drills");
   });
 
   it("rejects partial context on update", () => {

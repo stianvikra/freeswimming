@@ -1,5 +1,12 @@
 // app/course/courseData.ts
 
+import {
+  resolveCanonicalCourseLessonRuntimeId,
+  resolveCanonicalCourseModuleRuntimeId,
+  resolveCourseLessonLegacyRuntimeIds,
+  resolveCourseModuleLegacyRuntimeIds,
+} from "@/lib/course/runtime-id-manifest";
+
 export type CourseSupportActionId = "videoAnalysis" | "poolsideGuide" | "guide0To1000" | "contact";
 
 export type CourseSupportCard = {
@@ -94,6 +101,53 @@ function withAutoLessons(module: CourseModule, totalTarget: number): CourseModul
   }
 
   return { ...module, lessons: next };
+}
+
+function mergeLegacyRuntimeIds(
+  existingIds: string[] | undefined,
+  extraIds: string[],
+  canonicalId: string
+): string[] | undefined {
+  const unique = new Set<string>();
+
+  for (const value of [...(existingIds ?? []), ...extraIds]) {
+    const normalized = typeof value === "string" ? value.trim() : "";
+    if (!normalized || normalized === canonicalId) continue;
+    unique.add(normalized);
+  }
+
+  return unique.size > 0 ? Array.from(unique) : undefined;
+}
+
+function toCanonicalCourseModules(modules: CourseModule[]): CourseModule[] {
+  return modules.map((module) => {
+    const canonicalModuleId = resolveCanonicalCourseModuleRuntimeId(module.id) ?? module.id;
+    const moduleLegacyIds = mergeLegacyRuntimeIds(
+      module.legacyIds,
+      [module.id, ...resolveCourseModuleLegacyRuntimeIds(module.id)],
+      canonicalModuleId
+    );
+
+    return {
+      ...module,
+      id: canonicalModuleId,
+      legacyIds: moduleLegacyIds,
+      lessons: module.lessons.map((lesson) => {
+        const canonicalLessonId = resolveCanonicalCourseLessonRuntimeId(lesson.id) ?? lesson.id;
+        const lessonLegacyIds = mergeLegacyRuntimeIds(
+          lesson.legacyIds,
+          [lesson.id, ...resolveCourseLessonLegacyRuntimeIds(lesson.id)],
+          canonicalLessonId
+        );
+
+        return {
+          ...lesson,
+          id: canonicalLessonId,
+          legacyIds: lessonLegacyIds,
+        };
+      }),
+    };
+  });
 }
 
 const COURSE_MODULES_BASE: CourseModule[] = [
@@ -702,11 +756,14 @@ if (
 }
 
 // ✅ Final exported modules (auto-filled only in dev)
-export const COURSE_MODULES: CourseModule[] = COURSE_MODULES_BASE.map((m) =>
-  m.id === "m1" ? withAutoLessons(m, AUTOGEN_COUNT_M1) : m
+const COURSE_MODULES_CANONICAL_BASE = toCanonicalCourseModules(COURSE_MODULES_BASE);
+
+export const COURSE_MODULES: CourseModule[] = COURSE_MODULES_CANONICAL_BASE.map((module, index) =>
+  index === 0 ? withAutoLessons(module, AUTOGEN_COUNT_M1) : module
 );
 
-export const DEFAULT_LESSON_ID = COURSE_MODULES[0]?.lessons[0]?.id ?? "m1-l1";
+export const DEFAULT_LESSON_ID =
+  COURSE_MODULES[0]?.lessons[0]?.id ?? "intro-course--welcome-course-structure";
 
 /** Helper: flatten lessons for quick lookup / next-prev */
 export const COURSE_LESSONS_FLAT: CourseLesson[] = COURSE_MODULES.flatMap((m) => m.lessons);

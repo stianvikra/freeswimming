@@ -67,11 +67,18 @@ describe("buildAdminNoteContextCatalog", () => {
       ],
     });
 
-    expect(catalog.modules).toEqual([{ ref: "mod3", label: "M3 · Module 3" }]);
+    expect(catalog.modules).toEqual([{ ref: "kick-drills", label: "M3 · Module 3" }]);
     expect(catalog.lessons).toEqual([
-      { ref: "mod3-l1", label: "M3 · L1 · Lesson 1", moduleRef: "mod3" },
+      {
+        ref: "kick-drills--kick-basics-support-not-speed",
+        label: "M3 · L1 · Lesson 1",
+        moduleRef: "kick-drills",
+      },
     ]);
-    expect(catalog.lessonModuleByRef["mod3-l1"]).toBe("mod3");
+    expect(catalog.lessonModuleByRef["kick-drills--kick-basics-support-not-speed"]).toBe(
+      "kick-drills"
+    );
+    expect(catalog.lessonModuleByRef["mod3-l1"]).toBe("kick-drills");
     expect(catalog.sessions).toEqual([{ ref: "s03", label: "S3 · Session 3" }]);
     expect(catalog.drills).toEqual([{ ref: "d02", label: "D2 · Drill 2" }]);
     expect(catalog.products).toEqual([

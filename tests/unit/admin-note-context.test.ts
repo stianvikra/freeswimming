@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  canonicalizeAdminNoteContext,
   deriveCourseModuleRefFromLessonRef,
   formatAdminNoteContextLabel,
   isAdminNoteContextType,
   parseAdminNoteContextInput,
+  resolveAdminNoteContextLookupRefs,
 } from "@/lib/admin/note-context";
 
 describe("isAdminNoteContextType", () => {
@@ -72,7 +74,7 @@ describe("formatAdminNoteContextLabel", () => {
 
 describe("deriveCourseModuleRefFromLessonRef", () => {
   it("extracts module ref from lesson ref", () => {
-    expect(deriveCourseModuleRefFromLessonRef("mod3-l1")).toBe("mod3");
+    expect(deriveCourseModuleRefFromLessonRef("mod3-l1")).toBe("kick-drills");
   });
 
   it("supports semantic lesson refs", () => {
@@ -82,10 +84,35 @@ describe("deriveCourseModuleRefFromLessonRef", () => {
   });
 
   it("normalizes whitespace and casing before extracting", () => {
-    expect(deriveCourseModuleRefFromLessonRef(" MOD10-L12 ")).toBe("mod10");
+    expect(deriveCourseModuleRefFromLessonRef(" MOD10-L2 ")).toBe("open-water");
   });
 
   it("returns normalized original when lesson suffix is missing", () => {
-    expect(deriveCourseModuleRefFromLessonRef("mod7")).toBe("mod7");
+    expect(deriveCourseModuleRefFromLessonRef("mod7")).toBe("freestyle-build");
+  });
+});
+
+describe("canonicalizeAdminNoteContext", () => {
+  it("stores course refs under canonical runtime ids", () => {
+    expect(
+      canonicalizeAdminNoteContext({
+        contextType: "course_lesson",
+        contextRef: "mod3-l1",
+      })
+    ).toEqual({
+      contextType: "course_lesson",
+      contextRef: "kick-drills--kick-basics-support-not-speed",
+    });
+  });
+});
+
+describe("resolveAdminNoteContextLookupRefs", () => {
+  it("includes canonical and legacy lesson refs during compatibility window", () => {
+    expect(
+      resolveAdminNoteContextLookupRefs({
+        contextType: "course_lesson",
+        contextRef: "kick-drills--kick-basics-support-not-speed",
+      })
+    ).toEqual(["kick-drills--kick-basics-support-not-speed", "mod3-l1"]);
   });
 });

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { repairCourseRuntimeIdentityRows } from "@/lib/admin/course-runtime-id-repair";
 import { buildPlatformContentSeedItems } from "@/lib/admin/content-import";
 import {
   getAdminSchemaSetupMessage,
@@ -105,6 +106,7 @@ function withStablePublishedAt(
 export type PlatformContentImportResult = {
   imported: ReturnType<typeof buildPlatformContentSeedItems>["summary"];
   changes: {
+    courseRuntimeRowsRepaired: number;
     parentRowsUpdated: number;
     childRowsUpdated: number;
     unchangedRows: number;
@@ -145,6 +147,18 @@ export async function applyPlatformContentSeed({
   actorUserId = null,
   syncProducts = true,
 }: ApplyPlatformContentSeedOptions): Promise<ApplyPlatformContentSeedResponse> {
+  const repairResult = await repairCourseRuntimeIdentityRows({
+    supabase,
+    actorUserId,
+  });
+  if (!repairResult.ok) {
+    return {
+      ok: false,
+      code: "IMPORT_FAILED",
+      error: repairResult.error,
+    };
+  }
+
   const seed = buildPlatformContentSeedItems();
   const publishedAt = new Date().toISOString();
   const parentItems = seed.items.filter((item) => !item.parentSlug);
@@ -360,6 +374,7 @@ export async function applyPlatformContentSeed({
     result: {
       imported: seed.summary,
       changes: {
+        courseRuntimeRowsRepaired: repairResult.repairedRows,
         parentRowsUpdated: parentRowsToUpsert.length,
         childRowsUpdated: childRowsToUpsert.length,
         unchangedRows:
@@ -380,6 +395,7 @@ export type EnsurePlatformContentSeededResult =
   | {
       ok: true;
       seeded: boolean;
+      repairedCourseRuntimeRows?: number;
     }
   | {
       ok: false;
@@ -409,7 +425,23 @@ export async function ensurePlatformContentSeeded({
   }
 
   if ((probeResult.data ?? []).length > 0) {
-    return { ok: true, seeded: false };
+    const repairResult = await repairCourseRuntimeIdentityRows({
+      supabase,
+      actorUserId,
+    });
+    if (!repairResult.ok) {
+      return {
+        ok: false,
+        schemaReady: true,
+        error: repairResult.error,
+      };
+    }
+
+    return {
+      ok: true,
+      seeded: false,
+      repairedCourseRuntimeRows: repairResult.repairedRows,
+    };
   }
 
   const applyResult = await applyPlatformContentSeed({
@@ -425,5 +457,5 @@ export async function ensurePlatformContentSeeded({
     };
   }
 
-  return { ok: true, seeded: true };
+  return { ok: true, seeded: true, repairedCourseRuntimeRows: 0 };
 }

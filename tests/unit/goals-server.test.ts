@@ -103,6 +103,6 @@ describe("loadGoalProgressContext", () => {
       "user-1"
     );
 
-    expect(context.completedModuleLessonCounts.get("mod4")).toBe(1);
+    expect(context.completedModuleLessonCounts.get("body-position")).toBe(1);
   });
 });

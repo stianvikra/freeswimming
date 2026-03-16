@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { COURSE_MODULES } from "@/app/course/courseData";
 import type { AdminContentStatus, AdminContentType } from "@/lib/admin/content";
 import {
+  resolveCanonicalCourseLessonSlug,
+  resolveCanonicalCourseModuleSlug,
+} from "@/lib/course/runtime-id-manifest";
+import {
   GUIDE_0_TO_1000M_SESSIONS,
   GUIDE_0_TO_1000M_SLUG,
   type Guide0To1000Session,
@@ -34,18 +38,18 @@ export type PlatformContentSeedSummary = {
 };
 
 const IMPORT_STATUS: AdminContentStatus = "published";
-export const PLATFORM_CONTENT_MANIFEST_VERSION = 1;
+export const PLATFORM_CONTENT_MANIFEST_VERSION = 2;
 
 function capSummary(value: string): string {
   return value.trim().slice(0, 500);
 }
 
 function moduleSlug(moduleId: string): string {
-  return `course-module-${moduleId.toLowerCase()}`;
+  return resolveCanonicalCourseModuleSlug(moduleId) ?? `course-module-${moduleId.toLowerCase()}`;
 }
 
 function lessonSlug(lessonId: string): string {
-  return `course-lesson-${lessonId.toLowerCase()}`;
+  return resolveCanonicalCourseLessonSlug(lessonId) ?? `course-lesson-${lessonId.toLowerCase()}`;
 }
 
 function sessionSlug(sessionId: string): string {
@@ -113,6 +117,7 @@ function toModuleSeedItems(): PlatformContentSeedItem[] {
     body: withManifestMeta(
       {
         moduleId: module.id,
+        legacyModuleIds: module.legacyIds ?? [],
         subtitle: module.subtitle ?? "",
         moduleIndex: index + 1,
         lessonCount: module.lessons.length,
@@ -143,9 +148,11 @@ function toLessonSeedItems(): PlatformContentSeedItem[] {
         body: withManifestMeta(
           {
             moduleId: module.id,
+            legacyModuleIds: module.legacyIds ?? [],
             moduleTitle: module.title,
             moduleIndex: moduleIndex + 1,
             lessonId: lesson.id,
+            legacyLessonIds: lesson.legacyIds ?? [],
             youtubeId: lesson.youtubeId,
             estMinutes: lesson.estMinutes ?? null,
             lessonType: lesson.lessonType ?? null,

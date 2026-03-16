@@ -32,6 +32,10 @@ describe("course runtime identity helpers", () => {
   it("keeps slug fallback working for legacy rows", () => {
     expect(inferCourseModuleRuntimeIdFromSlug("course-module-mod3")).toBe("mod3");
     expect(inferCourseLessonRuntimeIdFromSlug("course-lesson-mod3-l1")).toBe("mod3-l1");
+    expect(inferCourseModuleRuntimeIdFromSlug("course-module-kick-drills")).toBe("kick-drills");
+    expect(
+      inferCourseLessonRuntimeIdFromSlug("course-lesson-kick-drills-kick-basics-support-not-speed")
+    ).toBe("kick-drills--kick-basics-support-not-speed");
   });
 
   it("reads legacy alias arrays without duplicating canonical runtime ids", () => {
@@ -56,7 +60,7 @@ describe("course runtime identity helpers", () => {
   });
 
   it("derives module runtime ids from both legacy and semantic lesson ids for compatibility", () => {
-    expect(inferCourseModuleRuntimeIdFromLessonRuntimeId("mod3-l1")).toBe("mod3");
+    expect(inferCourseModuleRuntimeIdFromLessonRuntimeId("mod3-l1")).toBe("kick-drills");
     expect(
       inferCourseModuleRuntimeIdFromLessonRuntimeId("intro-course--welcome-course-structure")
     ).toBe("intro-course");
