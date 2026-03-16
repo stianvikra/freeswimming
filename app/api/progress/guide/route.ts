@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   MAX_GUIDE_PROGRESS_ROWS,
-  normalizeGuideProgressRows,
+  normalizeGuideProgressRowsWithStats,
   type GuideProgressRow,
 } from "@/lib/course/guide-progress";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
@@ -33,7 +33,7 @@ async function getSignedInUserId() {
 }
 
 function normalizeRowsForResponse(rows: unknown): GuideProgressRow[] {
-  return normalizeGuideProgressRows(rows, { maxRows: MAX_GUIDE_PROGRESS_ROWS });
+  return normalizeGuideProgressRowsWithStats(rows, { maxRows: MAX_GUIDE_PROGRESS_ROWS }).rows;
 }
 
 export async function GET() {
@@ -91,9 +91,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const normalizedRows = normalizeRowsForResponse(body.rows);
+  const normalization = normalizeGuideProgressRowsWithStats(body.rows, {
+    maxRows: MAX_GUIDE_PROGRESS_ROWS,
+  });
+  const normalizedRows = normalization.rows;
   if (normalizedRows.length === 0) {
+    if (normalization.stats.unresolvedKnownGuideRows > 0) {
+      console.warn("[GuideProgressApi] Dropped unresolved guide progress rows", {
+        unresolvedKnownGuideRows: normalization.stats.unresolvedKnownGuideRows,
+      });
+    }
     return jsonNoStore({ ok: true, upserted: 0 });
+  }
+
+  if (
+    normalization.stats.canonicalizedSectionIds > 0 ||
+    normalization.stats.unresolvedKnownGuideRows > 0
+  ) {
+    console.warn("[GuideProgressApi] Canonicalized guide progress identifiers", {
+      canonicalizedSectionIds: normalization.stats.canonicalizedSectionIds,
+      unresolvedKnownGuideRows: normalization.stats.unresolvedKnownGuideRows,
+    });
   }
 
   const { error } = await supabase.from("guide_progress").upsert(

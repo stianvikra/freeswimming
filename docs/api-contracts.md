@@ -272,7 +272,7 @@
   "rows": [
     {
       "guideSlug": "0-1000m",
-      "sectionId": "s01",
+      "sectionId": "S01",
       "completed": true,
       "notes": "Felt better rhythm today",
       "updatedAt": "2026-02-17T10:00:00.000Z"
@@ -291,7 +291,7 @@
   "rows": [
     {
       "guideSlug": "0-1000m",
-      "sectionId": "s01",
+      "sectionId": "S01",
       "completed": true,
       "notes": "Felt better rhythm today",
       "updatedAt": "2026-02-17T10:00:00.000Z"
@@ -308,6 +308,11 @@
   "upserted": 1
 }
 ```
+
+Known live guides canonicalize section IDs before merge/upsert:
+
+- `0-1000m` uses `S01`, `S02`, ...
+- `poolside` uses `D01`, `D02`, ...
 
 Failure:
 

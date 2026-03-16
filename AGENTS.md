@@ -63,6 +63,11 @@ This file defines how coding agents should collaborate in this repository.
   - what is local-only,
   - what is server-canonical,
   - sync/conflict/invalidation behavior.
+- For persisted domain entities that have names, slugs, route params, or operator-visible identifiers, briefs must also define an explicit identity contract:
+  - canonical stable ID vs human-readable slug/title,
+  - whether each identifier is immutable, write-once, or intentionally renameable,
+  - `rename` vs `repurpose` policy (when to edit in place vs create a new row/entity),
+  - compatibility/alias/redirect behavior if legacy identifiers may still be read anywhere.
 - For performance-sensitive work, always set route-level speed targets (CWV/payload) for changed core routes.
 - For admin/user workflow changes, briefs must include explicit Help/Guide impact:
   - required Help/Guide update in same PR, or

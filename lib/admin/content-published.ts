@@ -1,5 +1,9 @@
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
+import {
+  resolveGuideDrillRuntimeId,
+  resolveGuideSessionRuntimeId,
+} from "@/lib/guides/runtime-identity";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { GUIDE_0_TO_1000M_SESSIONS, type Guide0To1000Session } from "@/lib/guides/guide-0-1000m";
 import { GUIDE_POOLSIDE_DRILLS, type PoolsideDrill } from "@/lib/guides/guide-poolside";
@@ -33,21 +37,29 @@ function getStringArray(value: unknown): string[] {
   return value.map((entry) => getString(entry)).filter((entry): entry is string => Boolean(entry));
 }
 
-function inferGuideSessionId(row: PublishedContentProjection): string {
-  const slugMatch = row.slug.match(/session-([a-z0-9-]+)$/i);
-  const candidate = slugMatch?.[1] ?? row.slug;
-  return candidate.toUpperCase();
-}
-
 function inferGuideSessionWeekNumber(id: string): number {
   const sessionNumber = Number.parseInt(id.replace(/[^0-9]/g, ""), 10);
   if (!Number.isFinite(sessionNumber) || sessionNumber <= 0) return 1;
   return Math.ceil(sessionNumber / 2);
 }
 
-function toGuide0To1000Session(row: PublishedContentProjection): Guide0To1000Session {
+function toGuide0To1000Session(row: PublishedContentProjection): Guide0To1000Session | null {
   const body = isRecord(row.body) ? row.body : {};
-  const id = getString(body.sessionId) ?? inferGuideSessionId(row);
+  const runtimeResolution = resolveGuideSessionRuntimeId(body, row.slug);
+  if (runtimeResolution.source === "legacy_slug") {
+    console.warn("[PublishedContent] Legacy guide-session slug fallback used", {
+      slug: row.slug,
+    });
+  } else if (!runtimeResolution.runtimeId) {
+    console.warn("[PublishedContent] Unresolved guide-session runtime identity", {
+      slug: row.slug,
+    });
+  }
+
+  const id = runtimeResolution.runtimeId;
+  if (!id) {
+    return null;
+  }
   const weekNumber = getNumber(body.weekNumber) ?? inferGuideSessionWeekNumber(id);
 
   return {
@@ -59,9 +71,23 @@ function toGuide0To1000Session(row: PublishedContentProjection): Guide0To1000Ses
   };
 }
 
-function toPoolsideDrill(row: PublishedContentProjection): PoolsideDrill {
+function toPoolsideDrill(row: PublishedContentProjection): PoolsideDrill | null {
   const body = isRecord(row.body) ? row.body : {};
-  const id = (getString(body.drillId) ?? row.slug).toUpperCase();
+  const runtimeResolution = resolveGuideDrillRuntimeId(body, row.slug);
+  if (runtimeResolution.source === "legacy_slug") {
+    console.warn("[PublishedContent] Legacy guide-drill slug fallback used", {
+      slug: row.slug,
+    });
+  } else if (!runtimeResolution.runtimeId) {
+    console.warn("[PublishedContent] Unresolved guide-drill runtime identity", {
+      slug: row.slug,
+    });
+  }
+
+  const id = runtimeResolution.runtimeId;
+  if (!id) {
+    return null;
+  }
 
   return {
     id,
@@ -149,12 +175,17 @@ export function toPublishedGuide0To1000Sessions(
   if (rows.length === 0) return fallback;
 
   const seen = new Set<string>();
-  const normalized = rows.map(toGuide0To1000Session).filter((session) => {
-    const key = session.id.toUpperCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  const normalized = rows
+    .flatMap((row) => {
+      const session = toGuide0To1000Session(row);
+      return session ? [session] : [];
+    })
+    .filter((session) => {
+      const key = session.id.toUpperCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
   return normalized.length > 0 ? normalized : fallback;
 }
@@ -166,12 +197,17 @@ export function toPublishedPoolsideDrills(
   if (rows.length === 0) return fallback;
 
   const seen = new Set<string>();
-  const normalized = rows.map(toPoolsideDrill).filter((drill) => {
-    const key = drill.id.toUpperCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  const normalized = rows
+    .flatMap((row) => {
+      const drill = toPoolsideDrill(row);
+      return drill ? [drill] : [];
+    })
+    .filter((drill) => {
+      const key = drill.id.toUpperCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
   return normalized.length > 0 ? normalized : fallback;
 }

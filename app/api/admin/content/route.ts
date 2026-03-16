@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { buildAdminContentMirrorSnapshot } from "@/lib/admin/content-mirror";
 import { parseCreateAdminContentPayload } from "@/lib/admin/content";
 import { resolveNextCourseStructureSortOrder } from "@/lib/admin/course-structure-sync";
+import {
+  applyGuideRuntimeIdDefaults,
+  canonicalizeGuideDrillRuntimeId,
+  canonicalizeGuideSessionRuntimeId,
+  resolveNextGuideRuntimeId,
+  type GuideRuntimeContentType,
+} from "@/lib/guides/runtime-identity";
 import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -20,6 +28,21 @@ function noStoreJson(
       "Cache-Control": "no-store",
     },
   });
+}
+
+type GuideIdentityRow = Pick<
+  Database["public"]["Tables"]["admin_content_items"]["Row"],
+  "slug" | "body" | "sort_order"
+>;
+
+async function loadGuideIdentityRows(params: {
+  supabase: SupabaseClient<Database>;
+  contentType: GuideRuntimeContentType;
+}) {
+  return params.supabase
+    .from("admin_content_items")
+    .select("slug, body, sort_order")
+    .eq("content_type", params.contentType);
 }
 
 export async function GET() {
@@ -231,6 +254,96 @@ export async function POST(request: Request) {
     createSortOrder = nextSortOrder.sortOrder;
   }
 
+  let createBody = parsed.value.body;
+  if (parsed.value.contentType === "guide_session" || parsed.value.contentType === "guide_drill") {
+    const guideRowsResult = await loadGuideIdentityRows({
+      supabase,
+      contentType: parsed.value.contentType,
+    });
+
+    if (guideRowsResult.error) {
+      if (isAdminContentSchemaMissing(guideRowsResult.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: getAdminSchemaSetupMessage("content"),
+              code: "ADMIN_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
+
+      console.error(
+        "[AdminContent] Could not resolve guide identity defaults",
+        guideRowsResult.error
+      );
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not resolve guide identity defaults right now." },
+          { status: 500 }
+        )
+      );
+    }
+
+    const guideRows = (guideRowsResult.data ?? []) as GuideIdentityRow[];
+    if (!hasExplicitSortOrder) {
+      createSortOrder =
+        guideRows.reduce((maxOrder, row) => Math.max(maxOrder, row.sort_order), -1) + 1;
+    }
+
+    const explicitRuntimeId =
+      parsed.value.contentType === "guide_session"
+        ? canonicalizeGuideSessionRuntimeId(parsed.value.body.sessionId)
+        : canonicalizeGuideDrillRuntimeId(parsed.value.body.drillId);
+
+    const inputHasRuntimeId = Object.prototype.hasOwnProperty.call(
+      parsed.value.body,
+      parsed.value.contentType === "guide_session" ? "sessionId" : "drillId"
+    );
+
+    if (inputHasRuntimeId && !explicitRuntimeId) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error:
+              parsed.value.contentType === "guide_session"
+                ? "Guide session runtime ID must look like S01."
+                : "Guide drill runtime ID must look like D01.",
+          },
+          { status: 400 }
+        )
+      );
+    }
+
+    const nextGuideRuntimeId = explicitRuntimeId
+      ? {
+          runtimeId: explicitRuntimeId,
+          legacySlugFallbackCount: 0,
+          unresolvedCount: 0,
+        }
+      : resolveNextGuideRuntimeId({
+          contentType: parsed.value.contentType,
+          rows: guideRows,
+        });
+
+    if (nextGuideRuntimeId.legacySlugFallbackCount > 0 || nextGuideRuntimeId.unresolvedCount > 0) {
+      console.warn("[AdminContent] Guide identity defaults relied on legacy rows", {
+        contentType: parsed.value.contentType,
+        legacySlugFallbackCount: nextGuideRuntimeId.legacySlugFallbackCount,
+        unresolvedCount: nextGuideRuntimeId.unresolvedCount,
+      });
+    }
+
+    createBody = applyGuideRuntimeIdDefaults({
+      contentType: parsed.value.contentType,
+      body: parsed.value.body,
+      runtimeId: nextGuideRuntimeId.runtimeId,
+    });
+  }
+
   const insertResult = await supabase
     .from("admin_content_items")
     .insert({
@@ -240,8 +353,7 @@ export async function POST(request: Request) {
       title: parsed.value.title,
       summary: parsed.value.summary,
       category: parsed.value.category,
-      body: parsed.value
-        .body as Database["public"]["Tables"]["admin_content_items"]["Insert"]["body"],
+      body: createBody as Database["public"]["Tables"]["admin_content_items"]["Insert"]["body"],
       sort_order: createSortOrder,
       status: parsed.value.status,
       published_at: parsed.value.status === "published" ? new Date().toISOString() : null,

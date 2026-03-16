@@ -6,6 +6,10 @@ import {
   resolveCourseLessonRuntimeLookupIds,
   resolveCourseModuleRuntimeLookupIds,
 } from "@/lib/course/runtime-id-manifest";
+import {
+  resolveGuideDrillRuntimeId,
+  resolveGuideSessionRuntimeId,
+} from "@/lib/guides/runtime-identity";
 
 export const ADMIN_NOTE_CONTEXT_TYPE_VALUES = [
   "course_module",
@@ -80,6 +84,26 @@ export function canonicalizeAdminNoteContext(
     };
   }
 
+  if (context.contextType === "guide_session") {
+    return {
+      ...context,
+      contextRef: normalizeContextRef(
+        resolveGuideSessionRuntimeId({ sessionId: context.contextRef }, context.contextRef)
+          .runtimeId ?? context.contextRef
+      ),
+    };
+  }
+
+  if (context.contextType === "guide_drill") {
+    return {
+      ...context,
+      contextRef: normalizeContextRef(
+        resolveGuideDrillRuntimeId({ drillId: context.contextRef }, context.contextRef).runtimeId ??
+          context.contextRef
+      ),
+    };
+  }
+
   return context;
 }
 
@@ -97,6 +121,24 @@ export function resolveAdminNoteContextLookupRefs(params: {
     return resolveCourseLessonRuntimeLookupIds(params.contextRef).map((value) =>
       normalizeContextRef(value)
     );
+  }
+
+  if (params.contextType === "guide_session") {
+    const canonicalRef = normalizeContextRef(
+      resolveGuideSessionRuntimeId({ sessionId: params.contextRef }, params.contextRef).runtimeId ??
+        params.contextRef
+    );
+    const originalRef = normalizeContextRef(params.contextRef);
+    return canonicalRef === originalRef ? [canonicalRef] : [canonicalRef, originalRef];
+  }
+
+  if (params.contextType === "guide_drill") {
+    const canonicalRef = normalizeContextRef(
+      resolveGuideDrillRuntimeId({ drillId: params.contextRef }, params.contextRef).runtimeId ??
+        params.contextRef
+    );
+    const originalRef = normalizeContextRef(params.contextRef);
+    return canonicalRef === originalRef ? [canonicalRef] : [canonicalRef, originalRef];
   }
 
   return [normalizeContextRef(params.contextRef)];

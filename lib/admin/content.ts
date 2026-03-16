@@ -1,3 +1,7 @@
+import {
+  canonicalizeGuideDrillRuntimeId,
+  canonicalizeGuideSessionRuntimeId,
+} from "@/lib/guides/runtime-identity";
 import type { Database } from "@/types/database";
 
 export const ADMIN_CONTENT_TYPE_VALUES = [
@@ -205,6 +209,21 @@ function getBodyRuntimeId(body: unknown, key: "moduleId" | "lessonId"): string |
   return value.length > 0 ? value : null;
 }
 
+function getGuideBodyRuntimeId(body: unknown, key: "sessionId" | "drillId"): string | null {
+  if (!isPlainObject(body)) return null;
+
+  const value = body[key];
+  return key === "sessionId"
+    ? canonicalizeGuideSessionRuntimeId(value)
+    : canonicalizeGuideDrillRuntimeId(value);
+}
+
+function getGuideBodySlug(body: unknown): string | null {
+  if (!isPlainObject(body)) return null;
+  const value = normalizeString(body.guideSlug);
+  return value.length > 0 ? value.toLowerCase() : null;
+}
+
 function preserveImmutableRuntimeIdField(params: {
   nextBody: Record<string, unknown>;
   existingBody: unknown;
@@ -240,7 +259,7 @@ function preserveImmutableRuntimeIdField(params: {
   return { ok: true };
 }
 
-export function preserveImmutableCourseRuntimeIds(params: {
+export function preserveImmutableContentRuntimeIds(params: {
   contentType: AdminContentType;
   existingBody: unknown;
   nextBody: Record<string, unknown>;
@@ -274,6 +293,80 @@ export function preserveImmutableCourseRuntimeIds(params: {
     });
     if (!lessonIdResult.ok) return lessonIdResult;
 
+    return { ok: true, body: nextBody };
+  }
+
+  if (params.contentType === "guide_session") {
+    const existingGuideSlug = getGuideBodySlug(params.existingBody);
+    const existingSessionId = getGuideBodyRuntimeId(params.existingBody, "sessionId");
+    const incomingHasSessionId = hasOwn(nextBody, "sessionId");
+    const incomingSessionId = incomingHasSessionId
+      ? canonicalizeGuideSessionRuntimeId(nextBody.sessionId)
+      : null;
+
+    if (!existingSessionId) {
+      if (incomingHasSessionId && incomingSessionId) {
+        return {
+          ok: false,
+          error: "Guide session runtime ID is immutable in normal content editing.",
+        };
+      }
+
+      if (incomingHasSessionId) {
+        delete nextBody.sessionId;
+      }
+
+      return { ok: true, body: nextBody };
+    }
+
+    if (incomingHasSessionId && incomingSessionId !== existingSessionId) {
+      return {
+        ok: false,
+        error: "Guide session runtime ID is immutable in normal content editing.",
+      };
+    }
+
+    if (existingGuideSlug) {
+      nextBody.guideSlug = existingGuideSlug;
+    }
+    nextBody.sessionId = existingSessionId;
+    return { ok: true, body: nextBody };
+  }
+
+  if (params.contentType === "guide_drill") {
+    const existingGuideSlug = getGuideBodySlug(params.existingBody);
+    const existingDrillId = getGuideBodyRuntimeId(params.existingBody, "drillId");
+    const incomingHasDrillId = hasOwn(nextBody, "drillId");
+    const incomingDrillId = incomingHasDrillId
+      ? canonicalizeGuideDrillRuntimeId(nextBody.drillId)
+      : null;
+
+    if (!existingDrillId) {
+      if (incomingHasDrillId && incomingDrillId) {
+        return {
+          ok: false,
+          error: "Guide drill runtime ID is immutable in normal content editing.",
+        };
+      }
+
+      if (incomingHasDrillId) {
+        delete nextBody.drillId;
+      }
+
+      return { ok: true, body: nextBody };
+    }
+
+    if (incomingHasDrillId && incomingDrillId !== existingDrillId) {
+      return {
+        ok: false,
+        error: "Guide drill runtime ID is immutable in normal content editing.",
+      };
+    }
+
+    if (existingGuideSlug) {
+      nextBody.guideSlug = existingGuideSlug;
+    }
+    nextBody.drillId = existingDrillId;
     return { ok: true, body: nextBody };
   }
 

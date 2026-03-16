@@ -48,14 +48,14 @@ describe("buildAdminNoteContextCatalog", () => {
       content_type: "guide_session",
       slug: "guide-0-1000m-session-s03",
       title: "Session 3",
-      body: {},
+      body: { sessionId: "S03" },
       sort_order: 2,
     });
     const drillRow = row({
       content_type: "guide_drill",
       slug: "guide-poolside-drill-d02",
       title: "Drill 2",
-      body: {},
+      body: { drillId: "D02" },
       sort_order: 1,
     });
 
@@ -157,5 +157,22 @@ describe("buildAdminNoteContextCatalog", () => {
     expect(catalog.lessonModuleByRef["intro-course--welcome-course-structure"]).toBe(
       "intro-course"
     );
+  });
+
+  it("keeps legacy guide slug fallback compatibility for note context options", () => {
+    const catalog = buildAdminNoteContextCatalog({
+      contentItems: [
+        row({
+          content_type: "guide_session",
+          slug: "guide-0-1000m-session-s04",
+          title: "Session 4",
+          body: {},
+          sort_order: 3,
+        }),
+      ],
+      products: [],
+    });
+
+    expect(catalog.sessions).toEqual([{ ref: "s04", label: "S4 · Session 4" }]);
   });
 });
