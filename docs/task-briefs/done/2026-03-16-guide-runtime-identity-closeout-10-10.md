@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-16-guide-runtime-identity-closeout-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-16`
 - `updated`: `2026-03-16`
@@ -113,7 +113,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Validation
 
-- `npm run lint:briefs -- docs/task-briefs/in-progress/2026-03-16-guide-runtime-identity-closeout-10-10.md`
+- `npm run lint:briefs -- docs/task-briefs/done/2026-03-16-guide-runtime-identity-closeout-10-10.md`
 - `npm run lint`
 - `npm run typecheck`
 - targeted unit tests for guide runtime-ID resolution, progress canonicalization, and admin immutability
@@ -163,3 +163,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-16 | in-progress | opened dedicated guide closeout brief after course runtime-ID work merged and remaining live gap was isolated to guide_session/guide_drill slug fallback + guide-progress canonicalization; explicit scope decision: keep products and future workout/program entities out of this slice | next: implement explicit guide runtime-ID create/patch guards and replace guide slug fallback as primary identity source`
 - `2026-03-16 | in-progress | implemented guide runtime-ID closeout on admin create/patch, published guide mapping, note-context catalog, note-context canonicalization, guide-progress canonicalization, and Help/Guide copy; targeted vitest, targeted eslint, npm run typecheck, npm run test:e2e:admin:short (5 passed, 1 skipped), and targeted admin-help-center Playwright all passed | next: commit slice and rerun npm run verify:pre-pr on branch HEAD so generated PR-body lint uses the actual branch diff instead of the fallback previous-commit diff`
 - `2026-03-16 | in-progress | hardened install-prompt e2e done-gate helper to use the stable course mark-done test id/checklist contract after a verify-only timeout in unrelated Playwright coverage; reran targeted failing case (1 passed) and full npm run verify:pre-pr passed with lint/typecheck/unit/build/perf/e2e green (81 passed, 207 skipped) | next: commit branch head, push, and open PR; perf trend recommended tighten, decision: hold for this non-perf guide identity closeout slice`
+- `2026-03-16 | done | PR #222 merged to main as 515d911 after GitHub required checks passed, local npm run verify:pre-pr passed on b727661, and local npm run verify:pre-merge passed on rerun after two isolated desktop-Chromium flakes cleared; brief lifecycle closed from in-progress to done | next: resume real admin/content production work and log only the next real friction batch`
