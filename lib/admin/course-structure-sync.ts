@@ -11,7 +11,7 @@ type SupabaseRouteClient = SupabaseClient<Database>;
 
 type AdminContentCourseRow = Pick<
   Database["public"]["Tables"]["admin_content_items"]["Row"],
-  "id" | "content_type" | "parent_id" | "sort_order" | "created_at" | "title"
+  "id" | "content_type" | "parent_id" | "sort_order" | "created_at" | "updated_at" | "title"
 >;
 
 type CourseStructureSyncError = {
@@ -68,6 +68,7 @@ function splitCourseRows(rows: AdminContentCourseRow[]) {
         id: row.id,
         sortOrder: row.sort_order,
         createdAt: row.created_at,
+        updatedAt: row.updated_at,
         title: row.title,
       });
       continue;
@@ -79,6 +80,7 @@ function splitCourseRows(rows: AdminContentCourseRow[]) {
         parentId: row.parent_id,
         sortOrder: row.sort_order,
         createdAt: row.created_at,
+        updatedAt: row.updated_at,
         title: row.title,
       });
     }
@@ -93,7 +95,7 @@ function splitCourseRows(rows: AdminContentCourseRow[]) {
 async function readCourseRows(supabase: SupabaseRouteClient): Promise<CourseStructureReadResult> {
   const result = await supabase
     .from("admin_content_items")
-    .select("id, content_type, parent_id, sort_order, created_at, title")
+    .select("id, content_type, parent_id, sort_order, created_at, updated_at, title")
     .in("content_type", ["course_module", "course_lesson"]);
 
   if (result.error) {

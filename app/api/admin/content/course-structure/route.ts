@@ -17,7 +17,14 @@ import type { Database } from "@/types/database";
 
 type AdminContentRow = Pick<
   Database["public"]["Tables"]["admin_content_items"]["Row"],
-  "id" | "content_type" | "parent_id" | "sort_order" | "created_at" | "title" | "status"
+  | "id"
+  | "content_type"
+  | "parent_id"
+  | "sort_order"
+  | "created_at"
+  | "updated_at"
+  | "title"
+  | "status"
 >;
 type SupabaseRouteClient = Awaited<ReturnType<typeof createRouteHandlerSupabaseClient>>["supabase"];
 
@@ -198,7 +205,7 @@ function parseActionPayload(payload: Record<string, unknown>):
 async function readCourseRows(supabase: SupabaseRouteClient) {
   const result = await supabase
     .from("admin_content_items")
-    .select("id, content_type, parent_id, sort_order, created_at, title, status")
+    .select("id, content_type, parent_id, sort_order, created_at, updated_at, title, status")
     .in("content_type", ["course_module", "course_lesson"]);
 
   if (result.error) {
@@ -226,6 +233,7 @@ function splitCourseRows(rows: AdminContentRow[]) {
         id: row.id,
         sortOrder: row.sort_order,
         createdAt: row.created_at,
+        updatedAt: row.updated_at,
         title: row.title,
       });
       continue;
@@ -236,6 +244,7 @@ function splitCourseRows(rows: AdminContentRow[]) {
         parentId: row.parent_id,
         sortOrder: row.sort_order,
         createdAt: row.created_at,
+        updatedAt: row.updated_at,
         title: row.title,
       });
     }

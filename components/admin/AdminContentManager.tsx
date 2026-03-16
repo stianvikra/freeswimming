@@ -790,6 +790,7 @@ export default function AdminContentManager() {
           id: item.id,
           sortOrder: item.sort_order,
           createdAt: item.created_at,
+          updatedAt: item.updated_at,
           title: item.title,
         })),
     [items]
@@ -804,6 +805,7 @@ export default function AdminContentManager() {
           parentId: item.parent_id,
           sortOrder: item.sort_order,
           createdAt: item.created_at,
+          updatedAt: item.updated_at,
           title: item.title,
         })),
     [items]
