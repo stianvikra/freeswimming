@@ -8,7 +8,9 @@ import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import {
   resolveCourseLessonModuleRuntimeId,
+  resolveCourseLessonRuntimeAliases,
   resolveCourseLessonRuntimeId,
+  resolveCourseModuleRuntimeAliases,
   resolveCourseModuleRuntimeId,
 } from "@/lib/course/runtime-identity";
 import type { CourseContentReadStatus } from "@/lib/course/preview";
@@ -176,12 +178,14 @@ export function toPublishedCourseModules(
     const body = isRecord(row.body) ? row.body : {};
     const moduleId = resolveCourseModuleRuntimeId(body, row.slug);
     if (!moduleId) return null;
+    const legacyIds = resolveCourseModuleRuntimeAliases(body, row.slug);
     const subtitle = getString(body.subtitle) ?? undefined;
     return {
       row,
       moduleId,
       module: {
         id: moduleId,
+        legacyIds: legacyIds.length > 0 ? legacyIds : undefined,
         title: row.title,
         subtitle,
         lessons: [] as CourseLesson[],
@@ -206,6 +210,7 @@ export function toPublishedCourseModules(
     const lessonId = resolveCourseLessonRuntimeId(body, row.slug);
     if (!lessonId) continue;
     if (seenLessonIds.has(lessonId)) continue;
+    const legacyIds = resolveCourseLessonRuntimeAliases(body, row.slug);
 
     const moduleId = resolveCourseLessonModuleRuntimeId({
       body,
@@ -229,6 +234,7 @@ export function toPublishedCourseModules(
 
     const lesson: CourseLesson = {
       id: lessonId,
+      legacyIds: legacyIds.length > 0 ? legacyIds : undefined,
       title: row.title,
       youtubeId: getString(body.youtubeId) ?? "Xh6OblO06LY",
       estMinutes: getNumber(body.estMinutes),

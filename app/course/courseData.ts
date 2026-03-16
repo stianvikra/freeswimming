@@ -9,6 +9,7 @@ export type CourseSupportCard = {
 
 export type CourseLesson = {
   id: string; // used in URL: /course?lesson=<id>
+  legacyIds?: string[];
   title: string;
   youtubeId: string; // ONLY the video id, not full URL
   estMinutes?: number;
@@ -42,6 +43,7 @@ export type CourseLesson = {
 
 export type CourseModule = {
   id: string;
+  legacyIds?: string[];
   title: string;
   subtitle?: string;
   lessons: CourseLesson[];

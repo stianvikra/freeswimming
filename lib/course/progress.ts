@@ -16,17 +16,36 @@ export type LocalCourseProgress = {
   videoProgressByLessonId: Record<string, number>;
 };
 
+export type CourseProgressLessonIdResolver = (lessonId: string) => string | null;
+
 type NormalizeRowsOptions = {
   fallbackUpdatedAt?: string;
   maxRows?: number;
+  resolveLessonId?: CourseProgressLessonIdResolver;
 };
 
-function normalizeLessonId(value: unknown): string | null {
+function normalizeLessonIdBase(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const lessonId = value.trim();
   if (!lessonId) return null;
   if (lessonId.length > MAX_LESSON_ID_LENGTH) return null;
   return lessonId;
+}
+
+function normalizeLessonId(
+  value: unknown,
+  options?: {
+    resolveLessonId?: CourseProgressLessonIdResolver;
+  }
+): string | null {
+  const lessonId = normalizeLessonIdBase(value);
+  if (!lessonId) return null;
+
+  if (!options?.resolveLessonId) {
+    return lessonId;
+  }
+
+  return normalizeLessonIdBase(options.resolveLessonId(lessonId));
 }
 
 function normalizeVideoSeconds(value: unknown): number {
@@ -116,7 +135,9 @@ export function normalizeCourseProgressRows(
     if (!candidate || typeof candidate !== "object") continue;
 
     const row = candidate as ProgressLike;
-    const lessonId = normalizeLessonId(row.lessonId ?? row.lesson_id);
+    const lessonId = normalizeLessonId(row.lessonId ?? row.lesson_id, {
+      resolveLessonId: options?.resolveLessonId,
+    });
     if (!lessonId) continue;
 
     const normalizedRow: CourseProgressRow = {
@@ -144,26 +165,40 @@ export function normalizeCourseProgressRows(
   return Array.from(merged.values()).sort((a, b) => a.lessonId.localeCompare(b.lessonId));
 }
 
-export function normalizeDoneLessonIds(input: unknown): string[] {
+export function normalizeDoneLessonIds(
+  input: unknown,
+  options?: {
+    resolveLessonId?: CourseProgressLessonIdResolver;
+  }
+): string[] {
   if (!Array.isArray(input)) return [];
 
   const unique = new Set<string>();
   for (const item of input) {
-    const lessonId = normalizeLessonId(item);
+    const lessonId = normalizeLessonId(item, {
+      resolveLessonId: options?.resolveLessonId,
+    });
     if (lessonId) unique.add(lessonId);
   }
 
   return Array.from(unique).sort((a, b) => a.localeCompare(b));
 }
 
-export function normalizeVideoProgressRecord(input: unknown): Record<string, number> {
+export function normalizeVideoProgressRecord(
+  input: unknown,
+  options?: {
+    resolveLessonId?: CourseProgressLessonIdResolver;
+  }
+): Record<string, number> {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return {};
   }
 
   const normalized: Record<string, number> = {};
   for (const [rawLessonId, rawValue] of Object.entries(input)) {
-    const lessonId = normalizeLessonId(rawLessonId);
+    const lessonId = normalizeLessonId(rawLessonId, {
+      resolveLessonId: options?.resolveLessonId,
+    });
     if (!lessonId) continue;
 
     const seconds = normalizeVideoSeconds(rawValue);
@@ -175,14 +210,21 @@ export function normalizeVideoProgressRecord(input: unknown): Record<string, num
   return normalized;
 }
 
-export function normalizeDoneConfirmationRecord(input: unknown): Record<string, string> {
+export function normalizeDoneConfirmationRecord(
+  input: unknown,
+  options?: {
+    resolveLessonId?: CourseProgressLessonIdResolver;
+  }
+): Record<string, string> {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return {};
   }
 
   const normalized: Record<string, string> = {};
   for (const [rawLessonId, rawValue] of Object.entries(input)) {
-    const lessonId = normalizeLessonId(rawLessonId);
+    const lessonId = normalizeLessonId(rawLessonId, {
+      resolveLessonId: options?.resolveLessonId,
+    });
     if (!lessonId) continue;
     const confirmedAt = normalizeDoneConfirmedAt(rawValue);
     if (!confirmedAt) continue;
@@ -192,12 +234,19 @@ export function normalizeDoneConfirmationRecord(input: unknown): Record<string, 
   return normalized;
 }
 
-function normalizeKnownLessonIds(knownLessonIds: Iterable<string> | undefined): Set<string> {
+function normalizeKnownLessonIds(
+  knownLessonIds: Iterable<string> | undefined,
+  options?: {
+    resolveLessonId?: CourseProgressLessonIdResolver;
+  }
+): Set<string> {
   const normalized = new Set<string>();
   if (!knownLessonIds) return normalized;
 
   for (const lessonIdRaw of knownLessonIds) {
-    const lessonId = normalizeLessonId(lessonIdRaw);
+    const lessonId = normalizeLessonId(lessonIdRaw, {
+      resolveLessonId: options?.resolveLessonId,
+    });
     if (!lessonId) continue;
     normalized.add(lessonId);
   }
@@ -210,16 +259,26 @@ export function buildCourseProgressRowsFromLocal(
   options?: {
     knownLessonIds?: Iterable<string>;
     updatedAt?: string;
+    resolveLessonId?: CourseProgressLessonIdResolver;
   }
 ): CourseProgressRow[] {
   const fallbackUpdatedAt = normalizeUpdatedAt(options?.updatedAt, new Date().toISOString());
-  const doneLessonIds = normalizeDoneLessonIds(local.doneLessonIds);
+  const doneLessonIds = normalizeDoneLessonIds(local.doneLessonIds, {
+    resolveLessonId: options?.resolveLessonId,
+  });
   const doneConfirmationByLessonId = normalizeDoneConfirmationRecord(
-    local.doneConfirmationByLessonId
+    local.doneConfirmationByLessonId,
+    {
+      resolveLessonId: options?.resolveLessonId,
+    }
   );
   const doneSet = new Set(doneLessonIds);
-  const videoProgress = normalizeVideoProgressRecord(local.videoProgressByLessonId);
-  const knownLessonIds = normalizeKnownLessonIds(options?.knownLessonIds);
+  const videoProgress = normalizeVideoProgressRecord(local.videoProgressByLessonId, {
+    resolveLessonId: options?.resolveLessonId,
+  });
+  const knownLessonIds = normalizeKnownLessonIds(options?.knownLessonIds, {
+    resolveLessonId: options?.resolveLessonId,
+  });
 
   for (const lessonId of doneSet) {
     knownLessonIds.add(lessonId);
@@ -247,8 +306,15 @@ export function buildCourseProgressRowsFromLocal(
   return rows.sort((a, b) => a.lessonId.localeCompare(b.lessonId));
 }
 
-export function buildLocalCourseProgressFromRows(rows: unknown): LocalCourseProgress {
-  const normalizedRows = normalizeCourseProgressRows(rows);
+export function buildLocalCourseProgressFromRows(
+  rows: unknown,
+  options?: {
+    resolveLessonId?: CourseProgressLessonIdResolver;
+  }
+): LocalCourseProgress {
+  const normalizedRows = normalizeCourseProgressRows(rows, {
+    resolveLessonId: options?.resolveLessonId,
+  });
 
   const doneLessonIds: string[] = [];
   const doneConfirmationByLessonId: Record<string, string> = {};
