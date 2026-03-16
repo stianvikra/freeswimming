@@ -1,3 +1,5 @@
+import { inferCourseModuleRuntimeIdFromLessonRuntimeId } from "@/lib/course/runtime-identity";
+
 export const ADMIN_NOTE_CONTEXT_TYPE_VALUES = [
   "course_module",
   "course_lesson",
@@ -40,8 +42,9 @@ function normalizeContextRef(value: string): string {
 export function deriveCourseModuleRefFromLessonRef(lessonRef: string): string {
   const normalized = normalizeContextRef(lessonRef);
   if (!normalized) return "";
-  const [moduleRef] = normalized.split("-l");
-  return normalizeContextRef(moduleRef ?? "");
+  return normalizeContextRef(
+    inferCourseModuleRuntimeIdFromLessonRuntimeId(normalized) ?? normalized
+  );
 }
 
 export function parseAdminNoteContextInput(input: {

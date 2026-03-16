@@ -109,4 +109,46 @@ describe("buildAdminNoteContextCatalog", () => {
       })
     ).toBe("Course Lesson: mod9-l9");
   });
+
+  it("keeps semantic module and lesson refs grouped without relying on legacy suffixes", () => {
+    const catalog = buildAdminNoteContextCatalog({
+      contentItems: [
+        row({
+          id: "module-semantic",
+          content_type: "course_module",
+          slug: "course-module-introduction-to-the-course",
+          title: "Introduction to the Course",
+          body: { moduleId: "intro-course" },
+          sort_order: 0,
+        }),
+        row({
+          id: "lesson-semantic",
+          content_type: "course_lesson",
+          parent_id: null,
+          slug: "course-lesson-welcome-course-structure",
+          title: "Welcome & Course Structure",
+          body: {
+            moduleId: "intro-course",
+            lessonId: "intro-course--welcome-course-structure",
+          },
+          sort_order: 0,
+        }),
+      ],
+      products: [],
+    });
+
+    expect(catalog.modules).toEqual([
+      { ref: "intro-course", label: "M1 · Introduction to the Course" },
+    ]);
+    expect(catalog.lessons).toEqual([
+      {
+        ref: "intro-course--welcome-course-structure",
+        label: "M1 · L1 · Welcome & Course Structure",
+        moduleRef: "intro-course",
+      },
+    ]);
+    expect(catalog.lessonModuleByRef["intro-course--welcome-course-structure"]).toBe(
+      "intro-course"
+    );
+  });
 });

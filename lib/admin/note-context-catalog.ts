@@ -1,6 +1,11 @@
 import type { AdminContentItemRow } from "@/lib/admin/content";
 import { ADMIN_PAGE_CONTEXT_OPTIONS } from "@/lib/admin/page-note-context";
 import { type AdminNoteContextType, formatAdminNoteContextLabel } from "@/lib/admin/note-context";
+import {
+  inferCourseModuleRuntimeIdFromLessonRuntimeId,
+  resolveCourseLessonRuntimeId,
+  resolveCourseModuleRuntimeId,
+} from "@/lib/course/runtime-identity";
 
 type AdminProductSummary = {
   slug: string;
@@ -103,21 +108,10 @@ function getBodyString(body: AdminContentItemRow["body"], key: string): string {
   return value.trim();
 }
 
-function inferModuleRefFromSlug(slug: string): string {
-  const match = slug.match(/^course-module-(.+)$/i);
-  return normalizeRef(match?.[1] ?? slug);
-}
-
-function inferLessonRefFromSlug(slug: string): string {
-  const match = slug.match(/^course-lesson-(.+)$/i);
-  return normalizeRef(match?.[1] ?? slug);
-}
-
 function inferModuleRefFromLessonRef(lessonRef: string): string {
   const normalized = normalizeRef(lessonRef);
   if (!normalized) return "";
-  const [moduleRef] = normalized.split("-l");
-  return normalizeRef(moduleRef ?? "");
+  return normalizeRef(inferCourseModuleRuntimeIdFromLessonRuntimeId(normalized) ?? normalized);
 }
 
 function inferGuideSessionRefFromSlug(slug: string): string {
@@ -175,9 +169,7 @@ export function buildAdminNoteContextCatalog(params: {
 
   for (const item of params.contentItems) {
     if (item.content_type !== "course_module") continue;
-    const moduleRef = normalizeRef(
-      getBodyString(item.body, "moduleId") || inferModuleRefFromSlug(item.slug)
-    );
+    const moduleRef = normalizeRef(resolveCourseModuleRuntimeId(item.body, item.slug) ?? "");
     const moduleOrdinal =
       toOrdinalFromSortOrder(item.sort_order) ?? inferModuleOrdinalFromRef(moduleRef);
     if (moduleOrdinal) {
@@ -190,9 +182,7 @@ export function buildAdminNoteContextCatalog(params: {
 
   for (const item of params.contentItems) {
     if (item.content_type === "course_lesson") {
-      const lessonRef = normalizeRef(
-        getBodyString(item.body, "lessonId") || inferLessonRefFromSlug(item.slug)
-      );
+      const lessonRef = normalizeRef(resolveCourseLessonRuntimeId(item.body, item.slug) ?? "");
       const lessonLabel = item.title.trim() || lessonRef;
 
       const moduleRefFromParent = item.parent_id ? (moduleByRowId.get(item.parent_id) ?? "") : "";

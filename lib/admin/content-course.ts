@@ -6,6 +6,11 @@ import {
 } from "@/app/course/courseData";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
+import {
+  resolveCourseLessonModuleRuntimeId,
+  resolveCourseLessonRuntimeId,
+  resolveCourseModuleRuntimeId,
+} from "@/lib/course/runtime-identity";
 import type { CourseContentReadStatus } from "@/lib/course/preview";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database, Json } from "@/types/database";
@@ -61,25 +66,6 @@ function normalizePositiveInteger(value: unknown): number | undefined {
 
 function getBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
-}
-
-function inferModuleId(slug: string): string {
-  const match = slug.match(/course-module-(.+)$/i);
-  if (match?.[1]) return match[1];
-  return slug;
-}
-
-function inferLessonId(slug: string): string {
-  const match = slug.match(/course-lesson-(.+)$/i);
-  if (match?.[1]) return match[1];
-  return slug;
-}
-
-function inferModuleIdFromLessonId(lessonId: string): string | null {
-  const normalized = lessonId.trim();
-  if (!normalized) return null;
-  const [moduleId] = normalized.split("-l");
-  return moduleId?.trim().length ? moduleId.trim() : null;
 }
 
 function normalizeLessonType(value: unknown): CourseLesson["lessonType"] | undefined {
@@ -188,7 +174,8 @@ export function toPublishedCourseModules(
 
   const modules = moduleRows.map((row) => {
     const body = isRecord(row.body) ? row.body : {};
-    const moduleId = getString(body.moduleId) ?? inferModuleId(row.slug);
+    const moduleId = resolveCourseModuleRuntimeId(body, row.slug);
+    if (!moduleId) return null;
     const subtitle = getString(body.subtitle) ?? undefined;
     return {
       row,
@@ -202,18 +189,30 @@ export function toPublishedCourseModules(
     };
   });
 
-  const moduleById = new Map(modules.map((entry) => [entry.moduleId, entry.module]));
-  const moduleIdByRowId = new Map(modules.map((entry) => [entry.row.id, entry.moduleId]));
+  const normalizedModuleEntries = modules.filter(
+    (entry): entry is NonNullable<(typeof modules)[number]> => Boolean(entry)
+  );
+
+  const moduleById = new Map(
+    normalizedModuleEntries.map((entry) => [entry.moduleId, entry.module])
+  );
+  const moduleIdByRowId = new Map(
+    normalizedModuleEntries.map((entry) => [entry.row.id, entry.moduleId])
+  );
   const seenLessonIds = new Set<string>();
 
   for (const row of lessonRows) {
     const body = isRecord(row.body) ? row.body : {};
-    const lessonId = getString(body.lessonId) ?? inferLessonId(row.slug);
+    const lessonId = resolveCourseLessonRuntimeId(body, row.slug);
+    if (!lessonId) continue;
     if (seenLessonIds.has(lessonId)) continue;
 
-    const moduleIdFromParent = row.parent_id ? moduleIdByRowId.get(row.parent_id) : undefined;
-    const moduleId =
-      moduleIdFromParent ?? getString(body.moduleId) ?? inferModuleIdFromLessonId(lessonId) ?? null;
+    const moduleId = resolveCourseLessonModuleRuntimeId({
+      body,
+      lessonId,
+      parentId: row.parent_id,
+      moduleIdByRowId,
+    });
     if (!moduleId) continue;
 
     const targetModule = moduleById.get(moduleId);
@@ -253,7 +252,7 @@ export function toPublishedCourseModules(
     seenLessonIds.add(lessonId);
   }
 
-  const normalizedModules = modules
+  const normalizedModules = normalizedModuleEntries
     .map((entry) => entry.module)
     .filter((courseModule) => courseModule.lessons.length > 0);
 
