@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { MAX_GUIDE_PROGRESS_ROWS, normalizeGuideProgressRows } from "@/lib/course/guide-progress";
+import {
+  MAX_GUIDE_PROGRESS_ROWS,
+  normalizeGuideProgressRows,
+  normalizeGuideProgressRowsWithStats,
+} from "@/lib/course/guide-progress";
 
 describe("normalizeGuideProgressRows", () => {
   it("normalizes snake_case/camelCase fields and sorts stable by guide+section", () => {
@@ -23,14 +27,14 @@ describe("normalizeGuideProgressRows", () => {
     expect(rows).toEqual([
       {
         guideSlug: "0-1000m",
-        sectionId: "s01",
+        sectionId: "S01",
         completed: false,
         notes: "focus on breathing",
         updatedAt: "2026-02-17T09:00:00.000Z",
       },
       {
         guideSlug: "0-1000m",
-        sectionId: "s02",
+        sectionId: "S02",
         completed: true,
         notes: "keep elbow high",
         updatedAt: "2026-02-17T10:00:00.000Z",
@@ -42,14 +46,14 @@ describe("normalizeGuideProgressRows", () => {
     const rows = normalizeGuideProgressRows([
       {
         guideSlug: "poolside",
-        sectionId: "drill-1",
+        sectionId: "d01",
         completed: false,
         notes: "old",
         updatedAt: "2026-02-17T08:00:00.000Z",
       },
       {
         guideSlug: "poolside",
-        sectionId: "drill-1",
+        sectionId: "guide-poolside-drill-d01",
         completed: true,
         notes: "new",
         updatedAt: "2026-02-17T11:00:00.000Z",
@@ -59,7 +63,7 @@ describe("normalizeGuideProgressRows", () => {
     expect(rows).toEqual([
       {
         guideSlug: "poolside",
-        sectionId: "drill-1",
+        sectionId: "D01",
         completed: true,
         notes: "new",
         updatedAt: "2026-02-17T11:00:00.000Z",
@@ -100,6 +104,32 @@ describe("normalizeGuideProgressRows", () => {
   it("returns empty list for non-array input", () => {
     expect(normalizeGuideProgressRows(null)).toEqual([]);
     expect(normalizeGuideProgressRows({ rows: [] })).toEqual([]);
+  });
+
+  it("returns canonicalization stats for known guide fallback rows", () => {
+    const normalized = normalizeGuideProgressRowsWithStats([
+      {
+        guideSlug: "0-1000m",
+        sectionId: "guide-0-1000m-session-s04",
+        completed: true,
+      },
+      {
+        guideSlug: "poolside",
+        sectionId: "bad-drill-ref",
+        completed: true,
+      },
+    ]);
+
+    expect(normalized.rows).toEqual([
+      expect.objectContaining({
+        guideSlug: "0-1000m",
+        sectionId: "S04",
+      }),
+    ]);
+    expect(normalized.stats).toEqual({
+      canonicalizedSectionIds: 1,
+      unresolvedKnownGuideRows: 1,
+    });
   });
 
   it("caps parsing to MAX_GUIDE_PROGRESS_ROWS when requested", () => {

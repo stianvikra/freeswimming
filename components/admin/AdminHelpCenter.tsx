@@ -123,6 +123,11 @@ const CONTENT_PAGE_FLOW = [
       "Slug is the human-readable content key and can be renamed carefully. Module/lesson runtime IDs stay locked after creation. Rename in place only when it is still the same learning object; if the objective or topic changes materially, create a new module/lesson instead of repurposing the old one.",
   },
   {
+    title: "Guide identity: slug vs runtime ID",
+    detail:
+      "Guide session/drill slugs are readable labels, not the canonical runtime identity. Session/drill runtime IDs are created once, stay locked after creation, and should never be repurposed for materially different guide content.",
+  },
+  {
     title: "All content list",
     detail:
       "Use this for cross-type audits and bulk filtering. Keep a single scope active when editing to reduce mistakes.",

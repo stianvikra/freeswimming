@@ -61,6 +61,21 @@ describe("toPublishedGuide0To1000Sessions", () => {
     });
     expect(sessions[1]?.id).toBe("S02");
   });
+
+  it("keeps legacy slug fallback compatibility for guide sessions without explicit body ids", () => {
+    const sessions = toPublishedGuide0To1000Sessions([
+      {
+        id: "legacy-row",
+        slug: "guide-0-1000m-session-s03",
+        title: "Legacy session row",
+        summary: "Fallback summary",
+        sort_order: 2,
+        body: {},
+      },
+    ]);
+
+    expect(sessions[0]?.id).toBe("S03");
+  });
 });
 
 describe("toPublishedPoolsideDrills", () => {
@@ -91,5 +106,20 @@ describe("toPublishedPoolsideDrills", () => {
     expect(drills[0]?.keyFocus).toEqual(["Mapped summary"]);
     expect(drills[0]?.visualAssetPath).toBe("/guides/poolside/drill-01.svg");
     expect(drills[0]?.visualAlt).toBe("Mapped drill title");
+  });
+
+  it("keeps legacy slug fallback compatibility for guide drills without explicit body ids", () => {
+    const drills = toPublishedPoolsideDrills([
+      {
+        id: "legacy-drill-row",
+        slug: "guide-poolside-drill-d12",
+        title: "Legacy drill row",
+        summary: "Fallback summary",
+        sort_order: 11,
+        body: {},
+      },
+    ]);
+
+    expect(drills[0]?.id).toBe("D12");
   });
 });

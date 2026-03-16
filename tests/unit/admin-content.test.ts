@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseCreateAdminContentPayload,
   parseUpdateAdminContentPayload,
-  preserveImmutableCourseRuntimeIds,
+  preserveImmutableContentRuntimeIds,
 } from "@/lib/admin/content";
 
 describe("parseCreateAdminContentPayload", () => {
@@ -188,9 +188,9 @@ describe("parseUpdateAdminContentPayload", () => {
   });
 });
 
-describe("preserveImmutableCourseRuntimeIds", () => {
+describe("preserveImmutableContentRuntimeIds", () => {
   it("preserves existing lesson runtime ids when body patches omit them", () => {
-    const result = preserveImmutableCourseRuntimeIds({
+    const result = preserveImmutableContentRuntimeIds({
       contentType: "course_lesson",
       existingBody: {
         moduleId: "intro-course",
@@ -213,7 +213,7 @@ describe("preserveImmutableCourseRuntimeIds", () => {
   });
 
   it("rejects lesson runtime id rewrites in normal content editing", () => {
-    const result = preserveImmutableCourseRuntimeIds({
+    const result = preserveImmutableContentRuntimeIds({
       contentType: "course_lesson",
       existingBody: {
         moduleId: "intro-course",
@@ -229,13 +229,50 @@ describe("preserveImmutableCourseRuntimeIds", () => {
   });
 
   it("rejects module runtime id rewrites in normal content editing", () => {
-    const result = preserveImmutableCourseRuntimeIds({
+    const result = preserveImmutableContentRuntimeIds({
       contentType: "course_module",
       existingBody: {
         moduleId: "intro-course",
       },
       nextBody: {
         moduleId: "start-here",
+      },
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("preserves existing guide session runtime ids when body patches omit them", () => {
+    const result = preserveImmutableContentRuntimeIds({
+      contentType: "guide_session",
+      existingBody: {
+        guideSlug: "0-1000m",
+        sessionId: "S07",
+      },
+      nextBody: {
+        focus: "Steady aerobic work",
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.body).toMatchObject({
+      guideSlug: "0-1000m",
+      sessionId: "S07",
+      focus: "Steady aerobic work",
+    });
+  });
+
+  it("rejects guide drill runtime id rewrites in normal content editing", () => {
+    const result = preserveImmutableContentRuntimeIds({
+      contentType: "guide_drill",
+      existingBody: {
+        guideSlug: "poolside",
+        drillId: "D04",
+      },
+      nextBody: {
+        drillId: "D09",
       },
     });
 

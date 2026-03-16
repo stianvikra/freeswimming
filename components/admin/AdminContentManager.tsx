@@ -28,6 +28,10 @@ import {
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import { buildCoursePreviewHref, resolveCoursePreviewModeFromStatus } from "@/lib/course/preview";
 import { resolveCourseLessonRuntimeId } from "@/lib/course/runtime-identity";
+import {
+  resolveGuideDrillRuntimeId,
+  resolveGuideSessionRuntimeId,
+} from "@/lib/guides/runtime-identity";
 import { buildAdminQrPrefillHref } from "@/lib/qr-links/admin-prefill";
 
 const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = [
@@ -1841,14 +1845,14 @@ export default function AdminContentManager() {
 
     if (item.content_type === "guide_session") {
       const weekNumber = parseBodyNumber(item.body, "weekNumber");
-      const sessionId = parseBodyString(item.body, "sessionId");
+      const sessionId = resolveGuideSessionRuntimeId(item.body, item.slug).runtimeId;
       if (weekNumber) return `Week ${weekNumber}${sessionId ? ` · ${sessionId}` : ""}`;
       if (sessionId) return sessionId;
       return `Session ${item.sort_order + 1}`;
     }
 
     if (item.content_type === "guide_drill") {
-      const drillId = parseBodyString(item.body, "drillId");
+      const drillId = resolveGuideDrillRuntimeId(item.body, item.slug).runtimeId;
       if (drillId) return drillId;
       return `Drill ${item.sort_order + 1}`;
     }

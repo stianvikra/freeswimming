@@ -104,6 +104,18 @@ describe("canonicalizeAdminNoteContext", () => {
       contextRef: "kick-drills--kick-basics-support-not-speed",
     });
   });
+
+  it("stores guide refs under canonical runtime ids", () => {
+    expect(
+      canonicalizeAdminNoteContext({
+        contextType: "guide_session",
+        contextRef: "guide-0-1000m-session-s03",
+      })
+    ).toEqual({
+      contextType: "guide_session",
+      contextRef: "s03",
+    });
+  });
 });
 
 describe("resolveAdminNoteContextLookupRefs", () => {
@@ -114,5 +126,14 @@ describe("resolveAdminNoteContextLookupRefs", () => {
         contextRef: "kick-drills--kick-basics-support-not-speed",
       })
     ).toEqual(["kick-drills--kick-basics-support-not-speed", "mod3-l1"]);
+  });
+
+  it("includes canonical and legacy guide refs during compatibility window", () => {
+    expect(
+      resolveAdminNoteContextLookupRefs({
+        contextType: "guide_drill",
+        contextRef: "guide-poolside-drill-d05",
+      })
+    ).toEqual(["d05", "guide-poolside-drill-d05"]);
   });
 });

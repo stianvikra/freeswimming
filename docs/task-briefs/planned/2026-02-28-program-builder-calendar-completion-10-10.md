@@ -52,6 +52,25 @@ Enable users to convert workouts into clear weekly programs with deterministic c
 - Invalidation:
   - any assignment/completion mutation invalidates weekly summary, adherence metrics, and day cells for affected week.
 
+## Identity And Rename Contract
+
+- Canonical stable IDs:
+  - `program`, `program_week`, `program_assignment`/`plan_session`, and `completed_session` records must use immutable canonical IDs that do not depend on week/day position or workout title.
+- Human-readable identifiers:
+  - workout/program names and optional slugs are editorial/operator-facing only,
+  - calendar placement labels such as week/day are presentation, not identity.
+- Mutability rules:
+  - rescheduling, reordering, and completion toggles must not mint or rewrite canonical IDs for the same underlying assignment/completion record,
+  - title/label edits must not change completion linkage.
+- Rename vs repurpose:
+  - rename a workout/program in place only when it is still the same underlying object,
+  - if a scheduled item is materially repurposed into a different workout intent, create a new entity/assignment so historical completion remains semantically correct.
+- Compatibility contract:
+  - deep links, analytics, exports, and review views must resolve canonical IDs even if human-readable labels later change,
+  - no completion or adherence logic may infer identity from week/day ordinal text alone.
+- Observability and repair:
+  - duplicate/orphan assignment or completion references must be detected deterministically and surfaced in repair guidance/logging.
+
 ## Platform 10/10 Scorecard Mapping
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
@@ -90,6 +109,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Completion status is reliable and audit-friendly.
 - Program metrics align with canonical workout data.
 - Data-boundary and conflict rules are implemented exactly as specified in this brief.
+- Calendar and completion identity stays stable across reorder, rename, and reschedule operations.
 
 ## Validation
 
@@ -101,3 +121,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-09 | working tree | upgraded planned brief to canonical 10/10 scorecard mapping with explicit state-boundary contract and measurable target thresholds | next: use this brief as source when implementation branch starts`
+- `2026-03-16 | working tree | added explicit identity-and-rename contract so future program-builder implementation cannot couple canonical IDs to week/day order, editable labels, or reschedule flows | next: carry the same contract into implementation slices before schema/UI work starts`

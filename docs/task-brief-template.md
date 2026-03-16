@@ -103,6 +103,26 @@ For stateful work, define explicit boundaries:
 
 If not applicable, write `N/A` with rationale.
 
+## Identity And Rename Contract (Required When Entities Are Persisted Or Linkable)
+
+For persisted entities that appear in URLs, progress, notes, analytics, imports/exports, or operator workflows, define:
+
+- Canonical stable ID:
+  - internal identifier used as source-of-truth across storage, sync, and integrations.
+- Human-readable identifiers:
+  - slug/title/label role, and whether each is editable or routing-critical.
+- Mutability rules:
+  - which identifiers are immutable, write-once, or renameable.
+- Rename vs repurpose policy:
+  - when an entity may be renamed in place,
+  - when a materially different object must be created as a new row/entity instead.
+- Compatibility contract:
+  - alias, redirect, migration, or read-through behavior for legacy identifiers.
+- Observability and repair:
+  - how unresolved/legacy identifier reads are detected, logged, and repaired.
+
+If not applicable, write `N/A` with rationale.
+
 ## Scope
 
 Which files/features are in scope?
@@ -187,6 +207,8 @@ For each brief, explicitly state scope or `N/A` for these categories so quality 
 
 - Content governance and source-of-truth
   - canonical model, required fields, owner assignment, revision/rollback policy.
+- Identity and rename safety
+  - canonical stable ID vs slug/title, mutability rules, rename-vs-repurpose policy, and legacy alias/redirect behavior.
 - Taxonomy and category management
   - category model, naming rules, sorting, archive/active lifecycle.
 - Workflow and publishing safety

@@ -62,6 +62,12 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Slug is the human-readable content key and can be renamed carefully.")
     ).toBeVisible();
+    await expect(page.getByText("Guide identity: slug vs runtime ID")).toBeVisible();
+    await expect(
+      page.getByText(
+        "Guide session/drill slugs are readable labels, not the canonical runtime identity."
+      )
+    ).toBeVisible();
     await expect(
       page.getByText(
         "Rename in place only for the same learning object; do not repurpose old lessons."

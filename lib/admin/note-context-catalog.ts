@@ -8,6 +8,10 @@ import {
   resolveCourseModuleRuntimeId,
   resolveCourseModuleRuntimeAliases,
 } from "@/lib/course/runtime-identity";
+import {
+  resolveGuideDrillRuntimeId,
+  resolveGuideSessionRuntimeId,
+} from "@/lib/guides/runtime-identity";
 
 type AdminProductSummary = {
   slug: string;
@@ -116,16 +120,6 @@ function inferModuleRefFromLessonRef(lessonRef: string): string {
   return normalizeRef(inferCourseModuleRuntimeIdFromLessonRuntimeId(normalized) ?? normalized);
 }
 
-function inferGuideSessionRefFromSlug(slug: string): string {
-  const match = slug.match(/-session-(.+)$/i);
-  return normalizeRef(match?.[1] ?? slug);
-}
-
-function inferGuideDrillRefFromSlug(slug: string): string {
-  const match = slug.match(/-drill-(.+)$/i);
-  return normalizeRef(match?.[1] ?? slug);
-}
-
 function upsertOption(map: Map<string, AdminNoteContextOption>, ref: string, label: string): void {
   const normalizedRef = normalizeRef(ref);
   if (!normalizedRef) return;
@@ -224,9 +218,19 @@ export function buildAdminNoteContextCatalog(params: {
     }
 
     if (item.content_type === "guide_session") {
-      const sessionRef = normalizeRef(
-        getBodyString(item.body, "sessionId") || inferGuideSessionRefFromSlug(item.slug)
-      );
+      const sessionResolution = resolveGuideSessionRuntimeId(item.body, item.slug);
+      if (sessionResolution.source === "legacy_slug") {
+        console.warn("[AdminNotes] Legacy guide-session slug fallback used", {
+          slug: item.slug,
+        });
+      } else if (!sessionResolution.runtimeId) {
+        console.warn("[AdminNotes] Unresolved guide-session runtime identity", {
+          slug: item.slug,
+        });
+        continue;
+      }
+
+      const sessionRef = normalizeRef(sessionResolution.runtimeId);
       const sessionOrdinal =
         toOrdinalFromSortOrder(item.sort_order) ?? inferSessionOrdinalFromRef(sessionRef);
       if (sessionOrdinal) {
@@ -241,9 +245,19 @@ export function buildAdminNoteContextCatalog(params: {
     }
 
     if (item.content_type === "guide_drill") {
-      const drillRef = normalizeRef(
-        getBodyString(item.body, "drillId") || inferGuideDrillRefFromSlug(item.slug)
-      );
+      const drillResolution = resolveGuideDrillRuntimeId(item.body, item.slug);
+      if (drillResolution.source === "legacy_slug") {
+        console.warn("[AdminNotes] Legacy guide-drill slug fallback used", {
+          slug: item.slug,
+        });
+      } else if (!drillResolution.runtimeId) {
+        console.warn("[AdminNotes] Unresolved guide-drill runtime identity", {
+          slug: item.slug,
+        });
+        continue;
+      }
+
+      const drillRef = normalizeRef(drillResolution.runtimeId);
       const drillOrdinal =
         toOrdinalFromSortOrder(item.sort_order) ?? inferDrillOrdinalFromRef(drillRef);
       if (drillOrdinal) {

@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-02-28`
+- `updated`: `2026-03-16`
 
 ## Goal
 
@@ -45,17 +45,33 @@ This epic is split into dedicated briefs for delivery quality and rollback safet
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Class        | Target threshold                                                                       | Evidence                       |
-| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------- | ------------------------------ |
-| UX flow clarity                               | `target`     | Create runnable workout in <= 2 minutes median.                                        | E2E + timed manual QA          |
-| Visual design quality                         | `target`     | Garmin-familiar interaction with FreeSwimming brand consistency across mobile/desktop. | Design QA matrix               |
-| Business logic correctness and data integrity | `target`     | Deterministic step math/progression rules and schema validation on all writes.         | Unit + integration tests       |
-| Admin workflow and editability                | `target`     | Admin can manage drill/template data without code edits.                               | Admin E2E                      |
-| Security and authz                            | `target`     | All write paths role-gated and fail closed.                                            | Negative-path API tests        |
-| Performance (CWV + payloads)                  | `target`     | No material regressions on `/course`, builder routes, and admin workflows.             | verify + budget checks         |
-| Analytics and KPI observability               | `target`     | Funnel and completion metrics emitted deterministically.                               | event tests + dashboard checks |
-| Testing and QA automation                     | `target`     | Each slice ships with unit + targeted e2e coverage.                                    | CI                             |
-| Commerce and revenue ops                      | `supporting` | Upsell/support actions configurable and trackable.                                     | QA + analytics review          |
+| Category                                      | Mapping      | Target Threshold                                                                                                  | Evidence                              |
+| --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Product goals and IA                          | `target`     | Epic-level IA keeps builder, planner, AI, export, and admin governance aligned to one coherent workout model.     | epic architecture + child briefs      |
+| UX flow clarity                               | `target`     | Create runnable workout in <= 2 minutes median across the completed epic flow.                                    | e2e + timed manual QA                 |
+| Visual design quality                         | `target`     | Garmin-familiar interaction with FreeSwimming brand consistency across mobile/desktop.                            | design QA matrix                      |
+| Business logic correctness and data integrity | `target`     | Deterministic step math, stable entity identity, and validated write paths across all slices.                     | unit + integration tests              |
+| Admin editor ergonomics                       | `supporting` | Supporting only: high-frequency admin ergonomics are owned by drill/template/admin child slices.                  | child-brief scope rationale           |
+| Accessibility (a11y)                          | `supporting` | Supporting only: accessibility is enforced per child UI slice and must not be skipped in epic completion.         | child-brief requirements              |
+| Performance (CWV + payloads)                  | `target`     | No material regressions on `/course`, builder routes, and admin workflows across merged slices.                   | verify + budget checks                |
+| Data placement and sync boundaries            | `target`     | All child slices use one explicit local-vs-server ownership model for workout/program state.                      | epic contract + child brief review    |
+| Caching and invalidation strategy             | `supporting` | Supporting only: deterministic invalidation is required in child slices that ship stateful reads/writes.          | child-brief requirements              |
+| Reliability and failure handling              | `target`     | Builder/planner/AI/export flows provide retry/recovery paths and avoid ambiguous partial state.                   | child-slice e2e + failure coverage    |
+| Security and authz                            | `target`     | All write paths are role-gated/authenticated where needed and fail closed.                                        | negative-path API tests               |
+| Privacy and compliance                        | `supporting` | Supporting only: no child slice may leak sensitive prompt, progress, or telemetry payloads.                       | child-brief requirements              |
+| Content governance                            | `target`     | Canonical workout/drill/template/program ownership and rename-safe identity rules are defined before buildout.    | linked identity contracts             |
+| Admin workflow and editability                | `target`     | Admin can manage drill/template data without code edits and with safe lifecycle/governance.                       | admin e2e                             |
+| SEO and crawlability                          | `supporting` | Supporting only: public metadata/crawlability is enforced only on slices that add public workout pages.           | scope rationale + child briefs        |
+| AI discoverability                            | `supporting` | Supporting only: AI discoverability depends on later public surfaces, not the epic orchestration itself.          | scope rationale                       |
+| Analytics and KPI observability               | `target`     | Funnel and completion metrics emit deterministically with stable taxonomy across slices.                          | event tests + dashboard checks        |
+| Commerce and revenue ops                      | `supporting` | Supporting only: upsell/support actions must remain configurable and trackable without breaking entitlement flow. | QA + analytics review                 |
+| Incident response and support operations      | `supporting` | Supporting only: support/runbook expectations must exist for critical builder/planner/AI failures.                | child-brief runbook requirements      |
+| Finance and reporting operations              | `supporting` | Supporting only: no direct finance reconciliation change unless a child slice touches commerce flows.             | scope rationale                       |
+| i18n operational readiness                    | `supporting` | Supporting only: child slices must avoid hard-coding models/copy that block later localization.                   | child-brief requirements              |
+| Stack-fit and dependency discipline           | `target`     | Epic delivery uses stack-native patterns first and avoids unnecessary dependency growth across slices.            | package diff + architecture review    |
+| Testing and QA automation                     | `target`     | Each slice ships with unit + targeted e2e coverage and green required gates.                                      | CI                                    |
+| Scalability and cost efficiency               | `supporting` | Supporting only: child slices must avoid runaway save, generation, export, or analytics cost patterns.            | architecture review + child briefs    |
+| DevOps and rollback readiness                 | `target`     | Each slice documents migration/rollback path so epic rollout remains reversible.                                  | child release notes + rollback checks |
 
 ## Data Placement And Sync Contract (Required)
 
@@ -67,6 +83,21 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - explicit save/autosave with server acknowledgement,
   - deterministic refresh after mutation,
   - conflict handling: server wins + explicit re-edit flow.
+
+## Identity And Rename Contract (Epic-Level Guardrail)
+
+- Every child brief that introduces persisted or linkable entities must define:
+  - canonical stable ID vs human-readable slug/title/label,
+  - immutable/write-once vs renameable fields,
+  - `rename` vs `repurpose` operator policy,
+  - legacy alias/redirect/read-through behavior where old identifiers may still be read.
+- Workout/program-builder entities must not use display order, week/day position, or editable labels as canonical identity.
+- Reordering a workout/program/calendar item must change ordering fields only, not canonical IDs.
+- AI/import/export flows may generate or transform content, but must not silently rewrite canonical IDs for existing persisted entities.
+
+## Acceptance Criteria
+
+- All implementation slice briefs that persist workout/program entities include an explicit identity-and-rename contract before implementation starts.
 
 ## Milestones
 

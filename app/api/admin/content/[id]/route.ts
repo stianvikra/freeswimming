@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   isUuid,
   parseUpdateAdminContentPayload,
-  preserveImmutableCourseRuntimeIds,
+  preserveImmutableContentRuntimeIds,
 } from "@/lib/admin/content";
 import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
@@ -159,7 +159,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const sanitizedBody =
     parsed.value.body !== undefined
-      ? preserveImmutableCourseRuntimeIds({
+      ? preserveImmutableContentRuntimeIds({
           contentType: existingResult.data.content_type,
           existingBody: existingResult.data.body,
           nextBody: parsed.value.body,

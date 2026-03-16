@@ -1,3 +1,5 @@
+import { canonicalizeGuideProgressSectionId } from "@/lib/guides/runtime-identity";
+
 export const MAX_GUIDE_PROGRESS_ROWS = 600;
 const MAX_GUIDE_SLUG_LENGTH = 120;
 const MAX_GUIDE_SECTION_ID_LENGTH = 160;
@@ -14,6 +16,11 @@ export type GuideProgressRow = {
 type NormalizeRowsOptions = {
   fallbackUpdatedAt?: string;
   maxRows?: number;
+};
+
+export type GuideProgressNormalizationStats = {
+  canonicalizedSectionIds: number;
+  unresolvedKnownGuideRows: number;
 };
 
 type GuideProgressLike = {
@@ -65,29 +72,64 @@ function mergeGuideRow(existing: GuideProgressRow, incoming: GuideProgressRow): 
   return incoming;
 }
 
-export function normalizeGuideProgressRows(
+export function normalizeGuideProgressRowsWithStats(
   input: unknown,
   options?: NormalizeRowsOptions
-): GuideProgressRow[] {
-  if (!Array.isArray(input)) return [];
+): {
+  rows: GuideProgressRow[];
+  stats: GuideProgressNormalizationStats;
+} {
+  if (!Array.isArray(input)) {
+    return {
+      rows: [],
+      stats: {
+        canonicalizedSectionIds: 0,
+        unresolvedKnownGuideRows: 0,
+      },
+    };
+  }
 
   const fallback = normalizeUpdatedAt(options?.fallbackUpdatedAt, new Date().toISOString());
   const maxRows = Math.max(0, options?.maxRows ?? input.length);
   const merged = new Map<string, GuideProgressRow>();
+  const stats: GuideProgressNormalizationStats = {
+    canonicalizedSectionIds: 0,
+    unresolvedKnownGuideRows: 0,
+  };
 
   for (let i = 0; i < input.length && i < maxRows; i += 1) {
     const candidate = input[i];
     if (!candidate || typeof candidate !== "object") continue;
 
     const row = candidate as GuideProgressLike;
-    const guideSlug = normalizeIdentifier(row.guideSlug ?? row.guide_slug, MAX_GUIDE_SLUG_LENGTH);
-    if (!guideSlug) continue;
+    const rawGuideSlug = normalizeIdentifier(
+      row.guideSlug ?? row.guide_slug,
+      MAX_GUIDE_SLUG_LENGTH
+    );
+    if (!rawGuideSlug) continue;
+    const guideSlug = rawGuideSlug.toLowerCase();
 
-    const sectionId = normalizeIdentifier(
+    const rawSectionId = normalizeIdentifier(
       row.sectionId ?? row.section_id,
       MAX_GUIDE_SECTION_ID_LENGTH
     );
-    if (!sectionId) continue;
+    if (!rawSectionId) continue;
+
+    const sectionResolution = canonicalizeGuideProgressSectionId({
+      guideSlug,
+      sectionId: rawSectionId,
+    });
+    const sectionId = sectionResolution.runtimeId;
+    if (!sectionId) {
+      if (sectionResolution.source === "unresolved") {
+        stats.unresolvedKnownGuideRows += 1;
+      }
+      continue;
+    }
+
+    if (sectionId !== rawSectionId && sectionResolution.source !== "unknown_guide") {
+      stats.canonicalizedSectionIds += 1;
+    }
 
     const normalizedRow: GuideProgressRow = {
       guideSlug,
@@ -107,9 +149,19 @@ export function normalizeGuideProgressRows(
     merged.set(compositeId, mergeGuideRow(existing, normalizedRow));
   }
 
-  return Array.from(merged.values()).sort((a, b) => {
-    const guideCmp = a.guideSlug.localeCompare(b.guideSlug);
-    if (guideCmp !== 0) return guideCmp;
-    return a.sectionId.localeCompare(b.sectionId);
-  });
+  return {
+    rows: Array.from(merged.values()).sort((a, b) => {
+      const guideCmp = a.guideSlug.localeCompare(b.guideSlug);
+      if (guideCmp !== 0) return guideCmp;
+      return a.sectionId.localeCompare(b.sectionId);
+    }),
+    stats,
+  };
+}
+
+export function normalizeGuideProgressRows(
+  input: unknown,
+  options?: NormalizeRowsOptions
+): GuideProgressRow[] {
+  return normalizeGuideProgressRowsWithStats(input, options).rows;
 }
