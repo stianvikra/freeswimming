@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeCourseStructureSortOrders } from "@/lib/admin/course-structure-sync";
 import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { isAdminContentQaTestRecord } from "@/lib/admin/content-test-records";
@@ -35,7 +36,7 @@ export async function POST() {
 
   const candidateResult = await supabase
     .from("admin_content_items")
-    .select("id, slug")
+    .select("id, slug, content_type")
     .ilike("slug", "e2e-admin-content-%");
 
   if (candidateResult.error) {
@@ -68,6 +69,8 @@ export async function POST() {
         deletedCount: 0,
         deletedIds: [],
         deletedSlugs: [],
+        normalizedCourseStructure: true,
+        warning: null,
       })
     );
   }
@@ -90,7 +93,7 @@ export async function POST() {
     .from("admin_content_items")
     .delete()
     .in("id", candidateIds)
-    .select("id, slug");
+    .select("id, slug, content_type");
 
   if (deleteResult.error) {
     if (isAdminContentSchemaMissing(deleteResult.error)) {
@@ -115,12 +118,52 @@ export async function POST() {
   }
 
   const deletedRows = deleteResult.data ?? [];
+  let normalizedCourseStructure = true;
+  let warning: string | null = null;
+  let integrity:
+    | {
+        unlinkedLessonCount: number;
+        duplicateModuleSortOrderCount: number;
+        duplicateLessonSortGroupCount: number;
+        duplicateLessonSortEntryCount: number;
+      }
+    | undefined;
+
+  const deletedCourseRows = deletedRows.filter(
+    (item) => item.content_type === "course_module" || item.content_type === "course_lesson"
+  );
+
+  if (deletedCourseRows.length > 0) {
+    const normalizeResult = await normalizeCourseStructureSortOrders({
+      supabase,
+      actorUserId: gate.user.id,
+    });
+
+    if (!normalizeResult.ok) {
+      normalizedCourseStructure = false;
+      if (isAdminContentSchemaMissing(normalizeResult.error)) {
+        warning = getAdminSchemaSetupMessage("content");
+      } else {
+        console.error(
+          "[AdminContent] Deleted QA/test content rows but could not normalize course structure",
+          normalizeResult.error
+        );
+        warning = "QA/test records were deleted, but course order normalization failed.";
+      }
+    } else {
+      integrity = normalizeResult.integrity;
+    }
+  }
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
       deletedCount: deletedRows.length,
       deletedIds: deletedRows.map((item) => item.id),
       deletedSlugs: deletedRows.map((item) => item.slug),
+      normalizedCourseStructure,
+      warning,
+      integrity,
     })
   );
 }

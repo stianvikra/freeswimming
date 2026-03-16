@@ -175,6 +175,8 @@ type AdminContentCleanupTestRecordsResponse =
       deletedCount: number;
       deletedIds: string[];
       deletedSlugs: string[];
+      normalizedCourseStructure?: boolean;
+      warning?: string | null;
     }
   | {
       ok: false;
@@ -2078,10 +2080,20 @@ export default function AdminContentManager() {
         return;
       }
 
+      const deletedCountLabel = `Deleted ${payload.deletedCount} QA/test content record${
+        payload.deletedCount === 1 ? "" : "s"
+      }.`;
+      if (payload.normalizedCourseStructure === false) {
+        setActionNotice(
+          payload.warning
+            ? `${deletedCountLabel} ${payload.warning}`
+            : `${deletedCountLabel} Course order normalization needs retry.`
+        );
+        return;
+      }
+
       setActionNotice(
-        `Deleted ${payload.deletedCount} QA/test content record${
-          payload.deletedCount === 1 ? "" : "s"
-        }.`
+        payload.warning ? `${deletedCountLabel} ${payload.warning}` : deletedCountLabel
       );
     } catch {
       setActionError("Could not clean up QA/test records.");
