@@ -1,4 +1,11 @@
 import { inferCourseModuleRuntimeIdFromLessonRuntimeId } from "@/lib/course/runtime-identity";
+import {
+  resolveCanonicalCourseLessonRuntimeId,
+  resolveCanonicalCourseModuleRuntimeId,
+  resolveCanonicalCourseModuleRuntimeIdFromLesson,
+  resolveCourseLessonRuntimeLookupIds,
+  resolveCourseModuleRuntimeLookupIds,
+} from "@/lib/course/runtime-id-manifest";
 
 export const ADMIN_NOTE_CONTEXT_TYPE_VALUES = [
   "course_module",
@@ -42,9 +49,57 @@ function normalizeContextRef(value: string): string {
 export function deriveCourseModuleRefFromLessonRef(lessonRef: string): string {
   const normalized = normalizeContextRef(lessonRef);
   if (!normalized) return "";
+  const canonicalLessonRef = resolveCanonicalCourseLessonRuntimeId(normalized) ?? normalized;
   return normalizeContextRef(
-    inferCourseModuleRuntimeIdFromLessonRuntimeId(normalized) ?? normalized
+    resolveCanonicalCourseModuleRuntimeIdFromLesson(canonicalLessonRef) ??
+      inferCourseModuleRuntimeIdFromLessonRuntimeId(canonicalLessonRef) ??
+      canonicalLessonRef
   );
+}
+
+export function canonicalizeAdminNoteContext(
+  context: AdminNoteContext | null
+): AdminNoteContext | null {
+  if (!context) return null;
+
+  if (context.contextType === "course_module") {
+    return {
+      ...context,
+      contextRef: normalizeContextRef(
+        resolveCanonicalCourseModuleRuntimeId(context.contextRef) ?? context.contextRef
+      ),
+    };
+  }
+
+  if (context.contextType === "course_lesson") {
+    return {
+      ...context,
+      contextRef: normalizeContextRef(
+        resolveCanonicalCourseLessonRuntimeId(context.contextRef) ?? context.contextRef
+      ),
+    };
+  }
+
+  return context;
+}
+
+export function resolveAdminNoteContextLookupRefs(params: {
+  contextType: AdminNoteContextType;
+  contextRef: string;
+}): string[] {
+  if (params.contextType === "course_module") {
+    return resolveCourseModuleRuntimeLookupIds(params.contextRef).map((value) =>
+      normalizeContextRef(value)
+    );
+  }
+
+  if (params.contextType === "course_lesson") {
+    return resolveCourseLessonRuntimeLookupIds(params.contextRef).map((value) =>
+      normalizeContextRef(value)
+    );
+  }
+
+  return [normalizeContextRef(params.contextRef)];
 }
 
 export function parseAdminNoteContextInput(input: {

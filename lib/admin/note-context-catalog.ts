@@ -4,7 +4,9 @@ import { type AdminNoteContextType, formatAdminNoteContextLabel } from "@/lib/ad
 import {
   inferCourseModuleRuntimeIdFromLessonRuntimeId,
   resolveCourseLessonRuntimeId,
+  resolveCourseLessonRuntimeAliases,
   resolveCourseModuleRuntimeId,
+  resolveCourseModuleRuntimeAliases,
 } from "@/lib/course/runtime-identity";
 
 type AdminProductSummary = {
@@ -151,9 +153,11 @@ export function buildAdminNoteContextCatalog(params: {
   products: AdminProductSummary[];
 }): AdminNoteContextCatalog {
   const modulesByRef = new Map<string, AdminNoteContextOption>();
+  const moduleAliasRefsByCanonicalRef = new Map<string, string[]>();
   const moduleOrdinalByRef = new Map<string, number>();
   const moduleByRowId = new Map<string, string>();
   const lessonsByRef = new Map<string, AdminNoteLessonContextOption>();
+  const lessonAliasRefsByCanonicalRef = new Map<string, string[]>();
   const lessonOrdinalByRef = new Map<string, number>();
   const lessonModuleOrdinalByRef = new Map<string, number>();
   const sessionsByRef = new Map<string, AdminNoteContextOption>();
@@ -172,8 +176,12 @@ export function buildAdminNoteContextCatalog(params: {
     const moduleRef = normalizeRef(resolveCourseModuleRuntimeId(item.body, item.slug) ?? "");
     const moduleOrdinal =
       toOrdinalFromSortOrder(item.sort_order) ?? inferModuleOrdinalFromRef(moduleRef);
+    const moduleAliases = resolveCourseModuleRuntimeAliases(item.body, item.slug).map(normalizeRef);
     if (moduleOrdinal) {
       moduleOrdinalByRef.set(moduleRef, moduleOrdinal);
+    }
+    if (moduleAliases.length > 0) {
+      moduleAliasRefsByCanonicalRef.set(moduleRef, moduleAliases);
     }
     const moduleLabel = formatModuleLabel(item.title.trim() || moduleRef, moduleOrdinal);
     upsertOption(modulesByRef, moduleRef, moduleLabel);
@@ -184,6 +192,9 @@ export function buildAdminNoteContextCatalog(params: {
     if (item.content_type === "course_lesson") {
       const lessonRef = normalizeRef(resolveCourseLessonRuntimeId(item.body, item.slug) ?? "");
       const lessonLabel = item.title.trim() || lessonRef;
+      const lessonAliases = resolveCourseLessonRuntimeAliases(item.body, item.slug).map(
+        normalizeRef
+      );
 
       const moduleRefFromParent = item.parent_id ? (moduleByRowId.get(item.parent_id) ?? "") : "";
       const moduleRefFromBody = normalizeRef(getBodyString(item.body, "moduleId"));
@@ -205,6 +216,9 @@ export function buildAdminNoteContextCatalog(params: {
         label: formatLessonLabel(lessonLabel, moduleOrdinal, lessonOrdinal),
         moduleRef: normalizeRef(moduleRef),
       });
+      if (lessonAliases.length > 0) {
+        lessonAliasRefsByCanonicalRef.set(lessonRef, lessonAliases);
+      }
 
       continue;
     }
@@ -314,10 +328,17 @@ export function buildAdminNoteContextCatalog(params: {
 
   modules.forEach((option) => {
     labelsByContextKey[contextKey("course_module", option.ref)] = option.label;
+    for (const aliasRef of moduleAliasRefsByCanonicalRef.get(option.ref) ?? []) {
+      labelsByContextKey[contextKey("course_module", aliasRef)] = option.label;
+    }
   });
   lessons.forEach((option) => {
     labelsByContextKey[contextKey("course_lesson", option.ref)] = option.label;
     lessonModuleByRef[option.ref] = option.moduleRef;
+    for (const aliasRef of lessonAliasRefsByCanonicalRef.get(option.ref) ?? []) {
+      labelsByContextKey[contextKey("course_lesson", aliasRef)] = option.label;
+      lessonModuleByRef[aliasRef] = option.moduleRef;
+    }
   });
   sessions.forEach((option) => {
     labelsByContextKey[contextKey("guide_session", option.ref)] = option.label;

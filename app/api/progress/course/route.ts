@@ -72,6 +72,117 @@ function normalizeRowsForResponse(
   });
 }
 
+function findLegacyLessonIds(
+  rows: unknown,
+  resolveLessonId: CourseProgressLessonIdResolver
+): string[] {
+  if (!Array.isArray(rows)) return [];
+
+  const legacyLessonIds = new Set<string>();
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const rawLessonId =
+      "lesson_id" in row && typeof row.lesson_id === "string"
+        ? row.lesson_id.trim()
+        : "lessonId" in row && typeof row.lessonId === "string"
+          ? row.lessonId.trim()
+          : "";
+    if (!rawLessonId) continue;
+    const canonicalLessonId = resolveLessonId(rawLessonId)?.trim() ?? rawLessonId;
+    if (canonicalLessonId !== rawLessonId) {
+      legacyLessonIds.add(rawLessonId);
+    }
+  }
+
+  return Array.from(legacyLessonIds);
+}
+
+async function repairLegacyProgressRows(params: {
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+  userId: string;
+  rows: unknown;
+  resolveLessonId: CourseProgressLessonIdResolver;
+}): Promise<void> {
+  const legacyLessonIds = findLegacyLessonIds(params.rows, params.resolveLessonId);
+  if (legacyLessonIds.length === 0) return;
+
+  const normalizedRows = normalizeRowsForResponse(params.rows, params.resolveLessonId);
+  if (normalizedRows.length === 0) return;
+
+  const upsertResult = await params.supabase.from("course_progress").upsert(
+    normalizedRows.map((row) => ({
+      user_id: params.userId,
+      lesson_id: row.lessonId,
+      done: row.done,
+      done_confirmed_at: row.doneConfirmedAt,
+      video_seconds: row.videoSeconds,
+      updated_at: row.updatedAt,
+    })),
+    {
+      onConflict: "user_id,lesson_id",
+    }
+  );
+
+  if (upsertResult.error && isMissingDoneConfirmationColumnError(upsertResult.error)) {
+    const fallbackUpsert = await params.supabase.from("course_progress").upsert(
+      normalizedRows.map((row) => ({
+        user_id: params.userId,
+        lesson_id: row.lessonId,
+        done: row.done,
+        video_seconds: row.videoSeconds,
+        updated_at: row.updatedAt,
+      })),
+      {
+        onConflict: "user_id,lesson_id",
+      }
+    );
+    if (fallbackUpsert.error) {
+      console.error(
+        "[CourseProgressApi] Could not repair legacy progress rows",
+        fallbackUpsert.error
+      );
+      return;
+    }
+  } else if (upsertResult.error) {
+    console.error("[CourseProgressApi] Could not repair legacy progress rows", upsertResult.error);
+    return;
+  }
+
+  const deleteResult = await params.supabase
+    .from("course_progress")
+    .delete()
+    .eq("user_id", params.userId)
+    .in("lesson_id", legacyLessonIds);
+
+  if (deleteResult.error) {
+    console.error(
+      "[CourseProgressApi] Could not delete legacy lesson ids after repair",
+      deleteResult.error
+    );
+  }
+}
+
+async function deleteLegacyProgressRows(params: {
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+  userId: string;
+  legacyLessonIds: string[];
+}): Promise<void> {
+  if (params.legacyLessonIds.length === 0) return;
+
+  const deleteResult = await params.supabase
+    .from("course_progress")
+    .delete()
+    .eq("user_id", params.userId)
+    .in("lesson_id", params.legacyLessonIds);
+
+  if (deleteResult.error) {
+    console.error(
+      "[CourseProgressApi] Could not delete legacy lesson ids after repair",
+      deleteResult.error
+    );
+  }
+}
+
 export async function GET() {
   const { supabase, userId } = await getSignedInUserId();
   if (!userId) {
@@ -107,6 +218,13 @@ export async function GET() {
     console.error("[CourseProgressApi] Could not load progress", error);
     return jsonNoStore({ ok: false, error: "Could not load course progress." }, 500);
   }
+
+  await repairLegacyProgressRows({
+    supabase,
+    userId,
+    rows: data ?? [],
+    resolveLessonId,
+  });
 
   return jsonNoStore({
     ok: true,
@@ -192,6 +310,12 @@ export async function POST(request: Request) {
     });
     return jsonNoStore({ ok: false, error: "Could not save course progress." }, 500);
   }
+
+  await deleteLegacyProgressRows({
+    supabase,
+    userId,
+    legacyLessonIds: findLegacyLessonIds(body.rows, resolveLessonId),
+  });
 
   trackAnalyticsEvent({
     eventName: "progress_synced",

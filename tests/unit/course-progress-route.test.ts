@@ -36,13 +36,22 @@ function buildAuthenticatedSupabaseClient(userId: string | null) {
 }
 
 function buildGetSupabase(rows: unknown) {
+  const deleteIn = vi.fn().mockResolvedValue({ error: null });
+  const deleteEq = vi.fn().mockReturnValue({ in: deleteIn });
+  const deleteFn = vi.fn().mockReturnValue({ eq: deleteEq });
+  const upsert = vi.fn().mockResolvedValue({ error: null });
   const order = vi.fn().mockResolvedValue({
     data: rows,
     error: null,
   });
   const eq = vi.fn().mockReturnValue({ order });
   const select = vi.fn().mockReturnValue({ eq });
-  const from = vi.fn().mockReturnValue({ select });
+  const from = vi.fn((table: string) => {
+    if (table === "course_progress") {
+      return { select, upsert, delete: deleteFn };
+    }
+    return { select };
+  });
 
   return {
     ...buildAuthenticatedSupabaseClient("user-1"),
@@ -50,19 +59,29 @@ function buildGetSupabase(rows: unknown) {
     select,
     eq,
     order,
+    upsert,
+    deleteFn,
+    deleteEq,
+    deleteIn,
   };
 }
 
 function buildPostSupabase() {
+  const deleteIn = vi.fn().mockResolvedValue({ error: null });
+  const deleteEq = vi.fn().mockReturnValue({ in: deleteIn });
+  const deleteFn = vi.fn().mockReturnValue({ eq: deleteEq });
   const upsert = vi.fn().mockResolvedValue({
     error: null,
   });
-  const from = vi.fn().mockReturnValue({ upsert });
+  const from = vi.fn().mockReturnValue({ upsert, delete: deleteFn });
 
   return {
     ...buildAuthenticatedSupabaseClient("user-1"),
     from,
     upsert,
+    deleteFn,
+    deleteEq,
+    deleteIn,
   };
 }
 
@@ -139,6 +158,23 @@ describe("/api/progress/course route", () => {
       fallback: expect.any(Array),
       autoSeedWhenEmpty: false,
     });
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      [
+        {
+          user_id: "user-1",
+          lesson_id: "intro-course--welcome-course-structure",
+          done: true,
+          done_confirmed_at: null,
+          video_seconds: 22,
+          updated_at: "2026-03-16T10:05:00.000Z",
+        },
+      ],
+      {
+        onConflict: "user_id,lesson_id",
+      }
+    );
+    expect(supabase.deleteFn).toHaveBeenCalled();
+    expect(supabase.deleteIn).toHaveBeenCalledWith("lesson_id", ["mod1-l1"]);
   });
 
   it("writes canonical lesson ids on POST even when the client sends a legacy lesson id", async () => {
@@ -194,5 +230,7 @@ describe("/api/progress/course route", () => {
         }),
       })
     );
+    expect(supabase.deleteFn).toHaveBeenCalled();
+    expect(supabase.deleteIn).toHaveBeenCalledWith("lesson_id", ["mod1-l1"]);
   });
 });

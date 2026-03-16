@@ -1,4 +1,11 @@
 import { NextResponse } from "next/server";
+import { COURSE_MODULES } from "@/app/course/courseData";
+import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
+import { normalizeCourseProgressRows } from "@/lib/course/progress";
+import {
+  buildCanonicalCourseLessonIdMap,
+  canonicalizeCourseLessonRuntimeId,
+} from "@/lib/course/runtime-identity";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { buildUserExportPayload } from "@/lib/user/export";
 
@@ -26,6 +33,14 @@ export async function GET() {
 
   const userId = user.id;
   const generatedAt = new Date().toISOString();
+  const courseModules = await loadCourseModulesByStatus({
+    statuses: ["published"],
+    fallback: COURSE_MODULES,
+    autoSeedWhenEmpty: false,
+  });
+  const canonicalLessonIdByAlias = buildCanonicalCourseLessonIdMap(courseModules);
+  const resolveLessonId = (lessonId: string) =>
+    canonicalizeCourseLessonRuntimeId(lessonId, canonicalLessonIdByAlias);
 
   const [
     profileResult,
@@ -97,7 +112,14 @@ export async function GET() {
       userEmail: user.email ?? null,
       profile: profileResult.data ?? null,
       entitlements: entitlementsResult.data ?? [],
-      courseProgress: courseProgressResult.data ?? [],
+      courseProgress: normalizeCourseProgressRows(courseProgressResult.data ?? [], {
+        resolveLessonId,
+      }).map((row) => ({
+        lesson_id: row.lessonId,
+        done: row.done,
+        video_seconds: row.videoSeconds,
+        updated_at: row.updatedAt,
+      })),
       guideProgress: guideProgressResult.data ?? [],
       guideSessionProgress: guideSessionProgressResult.data ?? [],
       goals: goalsResult.data ?? [],

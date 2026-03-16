@@ -155,9 +155,9 @@ describe("toPublishedCourseModules", () => {
     );
 
     expect(modules).toHaveLength(1);
-    expect(modules[0]?.id).toBe("mod4");
+    expect(modules[0]?.id).toBe("body-position");
     expect(modules[0]?.lessons).toHaveLength(1);
-    expect(modules[0]?.lessons[0]?.id).toBe("mod4-l1");
+    expect(modules[0]?.lessons[0]?.id).toBe("body-position--body-position-skill");
   });
 
   it("supports semantic runtime ids when lesson linkage comes from explicit body data", () => {
@@ -232,7 +232,7 @@ describe("toPublishedCourseModules", () => {
     );
 
     const mappedLesson = modules[0]?.lessons[0];
-    expect(mappedLesson?.id).toBe("mod3-l1");
+    expect(mappedLesson?.id).toBe("kick-drills--kick-basics-support-not-speed");
     expect(mappedLesson?.title).toBe("Kick Basics mapped");
     expect(mappedLesson?.youtubeId).toBe("Xh6OblO06LY");
     expect(mappedLesson?.cues).toEqual(["Swim relaxed and controlled."]);

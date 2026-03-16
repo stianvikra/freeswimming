@@ -46,6 +46,7 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
 
   const lessonId = "mod1-l1";
+  const canonicalLessonId = "intro-course--welcome-course-structure";
   const nextPath = `/course?lesson=${encodeURIComponent(lessonId)}`;
   await page.goto(`/dev/login?next=${encodeURIComponent(nextPath)}`);
 
@@ -84,7 +85,7 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
         if (!response) return "transient";
         if (response.status() !== 200) return `status:${response.status()}`;
         const payload = (await response.json()) as CourseProgressPayload;
-        const row = payload.rows?.find((entry) => entry.lessonId === lessonId);
+        const row = payload.rows?.find((entry) => entry.lessonId === canonicalLessonId);
         return row?.done ? "true" : "false";
       },
       { timeout: 20_000 }
@@ -101,7 +102,7 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
         if (!response) return "transient";
         if (response.status() !== 200) return `status:${response.status()}`;
         const payload = (await response.json()) as CourseProgressPayload;
-        const row = payload.rows?.find((entry) => entry.lessonId === lessonId);
+        const row = payload.rows?.find((entry) => entry.lessonId === canonicalLessonId);
         return row?.done ? "true" : "false";
       },
       { timeout: 20_000 }

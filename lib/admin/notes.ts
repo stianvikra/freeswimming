@@ -1,5 +1,9 @@
 import type { Database } from "@/types/database";
-import { parseAdminNoteContextInput, type AdminNoteContext } from "@/lib/admin/note-context";
+import {
+  canonicalizeAdminNoteContext,
+  parseAdminNoteContextInput,
+  type AdminNoteContext,
+} from "@/lib/admin/note-context";
 
 export type AdminNoteRow = Database["public"]["Tables"]["admin_notes"]["Row"];
 
@@ -136,6 +140,7 @@ export function parseCreateAdminNotePayload(
   if (!context.ok) {
     return { ok: false, error: context.error };
   }
+  const canonicalContext = canonicalizeAdminNoteContext(context.value);
 
   return {
     ok: true,
@@ -145,8 +150,8 @@ export function parseCreateAdminNotePayload(
       category,
       noteDate,
       isDone,
-      contextType: context.value?.contextType ?? null,
-      contextRef: context.value?.contextRef ?? null,
+      contextType: canonicalContext?.contextType ?? null,
+      contextRef: canonicalContext?.contextRef ?? null,
     },
   };
 }
@@ -210,8 +215,9 @@ export function parseUpdateAdminNotePayload(
     if (!context.ok) {
       return { ok: false, error: context.error };
     }
-    value.contextType = context.value?.contextType ?? null;
-    value.contextRef = context.value?.contextRef ?? null;
+    const canonicalContext = canonicalizeAdminNoteContext(context.value);
+    value.contextType = canonicalContext?.contextType ?? null;
+    value.contextRef = canonicalContext?.contextRef ?? null;
     changed += 1;
   }
 

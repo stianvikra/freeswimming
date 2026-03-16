@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   deriveCourseModuleRefFromLessonRef,
   parseAdminNoteContextInput,
+  resolveAdminNoteContextLookupRefs,
 } from "@/lib/admin/note-context";
 import { parseCreateAdminNotePayload, type AdminNoteRow } from "@/lib/admin/notes";
 import { getAdminSchemaSetupMessage, isAdminNotesSchemaMissing } from "@/lib/admin/schema";
@@ -101,12 +102,20 @@ export async function GET(request: Request) {
   ) {
     const lessonRef = contextFilter.value.contextRef;
     const moduleRef = deriveCourseModuleRefFromLessonRef(lessonRef);
+    const lessonLookupRefs = resolveAdminNoteContextLookupRefs({
+      contextType: "course_lesson",
+      contextRef: lessonRef,
+    });
+    const moduleLookupRefs = resolveAdminNoteContextLookupRefs({
+      contextType: "course_module",
+      contextRef: moduleRef,
+    });
 
     const lessonResult = await supabase
       .from("admin_notes")
       .select(selectedFields())
       .eq("context_type", "course_lesson")
-      .eq("context_ref", lessonRef)
+      .in("context_ref", lessonLookupRefs)
       .order("note_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(120);
@@ -137,12 +146,12 @@ export async function GET(request: Request) {
 
     const lessonRows = (lessonResult.data ?? []) as unknown as AdminNoteRow[];
     let moduleRows: AdminNoteRow[] = [];
-    if (moduleRef) {
+    if (moduleLookupRefs.length > 0) {
       const moduleResult = await supabase
         .from("admin_notes")
         .select(selectedFields())
         .eq("context_type", "course_module")
-        .eq("context_ref", moduleRef)
+        .in("context_ref", moduleLookupRefs)
         .order("note_date", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(120);
@@ -192,9 +201,13 @@ export async function GET(request: Request) {
   let query = supabase.from("admin_notes").select(selectedFields());
 
   if (contextFilter.value) {
+    const lookupRefs = resolveAdminNoteContextLookupRefs({
+      contextType: contextFilter.value.contextType,
+      contextRef: contextFilter.value.contextRef,
+    });
     query = query
       .eq("context_type", contextFilter.value.contextType)
-      .eq("context_ref", contextFilter.value.contextRef)
+      .in("context_ref", lookupRefs)
       .order("note_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(120);
