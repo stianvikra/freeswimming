@@ -523,7 +523,6 @@ function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
       : "";
 
   return {
-    lessonId: value.lessonId.trim(),
     lessonType: value.lessonType,
     drillLabel: value.drillLabel.trim(),
     supportStartAtLessonInModule: (() => {
@@ -561,7 +560,6 @@ function buildLessonBodyPayload(
   const nextBody: Record<string, unknown> = isRecord(existingBody) ? { ...existingBody } : {};
   const normalized = normalizeLessonBodyForCompare(value);
 
-  nextBody.lessonId = normalized.lessonId;
   if (normalized.lessonType) {
     nextBody.lessonType = normalized.lessonType;
   } else {
@@ -1612,9 +1610,6 @@ export default function AdminContentManager() {
       }
 
       const normalizedBody = normalizeLessonBodyForCompare(form.lessonBody);
-      if (normalizedBody.lessonId.length < 2 || normalizedBody.lessonId.length > 120) {
-        return "Lesson id must be between 2 and 120 characters.";
-      }
       if (normalizedBody.goal.length < 5 || normalizedBody.goal.length > 500) {
         return "Lesson goal must be between 5 and 500 characters.";
       }
@@ -1840,8 +1835,8 @@ export default function AdminContentManager() {
       const runtimeLessonId =
         resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim();
       return parentLabel
-        ? `Parent: ${parentLabel} · Lesson id: ${runtimeLessonId}`
-        : `Parent module not linked · Lesson id: ${runtimeLessonId}`;
+        ? `Parent: ${parentLabel} · Runtime ID: ${runtimeLessonId}`
+        : `Parent module not linked · Runtime ID: ${runtimeLessonId}`;
     }
 
     if (item.content_type === "guide_session") {
@@ -2854,6 +2849,13 @@ export default function AdminContentManager() {
                                 }
                                 className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
                               />
+                              {item.content_type === "course_module" ||
+                              item.content_type === "course_lesson" ? (
+                                <p className="text-[11px] font-normal text-slate-500">
+                                  Slug is the human-readable content key. It can be renamed
+                                  carefully; internal runtime IDs stay locked after creation.
+                                </p>
+                              ) : null}
                             </label>
 
                             <label className="space-y-1 text-xs font-medium text-slate-700">
@@ -2931,27 +2933,19 @@ export default function AdminContentManager() {
                                 </p>
 
                                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                  <label className="space-y-1 text-xs font-medium text-slate-700">
-                                    <span>Lesson id (for open lesson link)</span>
-                                    <input
-                                      type="text"
-                                      value={editFormState.lessonBody.lessonId}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  lessonId: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                                    />
-                                  </label>
+                                  <div className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                    <span>Lesson runtime ID</span>
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900">
+                                      <code>{editFormState.lessonBody.lessonId}</code>
+                                    </div>
+                                    <p className="text-[11px] font-normal text-slate-500">
+                                      Internal ID used by open lesson links, progress, notes, and
+                                      previews. It is locked after creation. Rename in place only
+                                      when this is still the same learning object; if the lesson is
+                                      materially different, create a new lesson instead of
+                                      repurposing this one.
+                                    </p>
+                                  </div>
 
                                   <label className="space-y-1 text-xs font-medium text-slate-700">
                                     <span>Lesson type</span>
@@ -3947,6 +3941,13 @@ export default function AdminContentManager() {
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
                   placeholder="module-1-foundations"
                 />
+                {formState.contentType === "course_module" ||
+                formState.contentType === "course_lesson" ? (
+                  <p className="text-xs font-normal text-slate-500">
+                    Slug is the human-readable key and can be renamed later. Internal runtime IDs
+                    are assigned separately and stay fixed after creation.
+                  </p>
+                ) : null}
               </label>
 
               <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">

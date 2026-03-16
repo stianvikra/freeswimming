@@ -199,6 +199,87 @@ function hasOwn(payload: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(payload, key);
 }
 
+function getBodyRuntimeId(body: unknown, key: "moduleId" | "lessonId"): string | null {
+  if (!isPlainObject(body)) return null;
+  const value = normalizeString(body[key]);
+  return value.length > 0 ? value : null;
+}
+
+function preserveImmutableRuntimeIdField(params: {
+  nextBody: Record<string, unknown>;
+  existingBody: unknown;
+  key: "moduleId" | "lessonId";
+  label: string;
+}): { ok: true } | { ok: false; error: string } {
+  const existingValue = getBodyRuntimeId(params.existingBody, params.key);
+  const incomingHasKey = hasOwn(params.nextBody, params.key);
+  const incomingValue = incomingHasKey ? normalizeString(params.nextBody[params.key]) : null;
+
+  if (!existingValue) {
+    if (incomingHasKey && incomingValue) {
+      return {
+        ok: false,
+        error: `${params.label} is immutable in normal content editing.`,
+      };
+    }
+
+    if (incomingHasKey) {
+      delete params.nextBody[params.key];
+    }
+    return { ok: true };
+  }
+
+  if (incomingHasKey && incomingValue !== existingValue) {
+    return {
+      ok: false,
+      error: `${params.label} is immutable in normal content editing.`,
+    };
+  }
+
+  params.nextBody[params.key] = existingValue;
+  return { ok: true };
+}
+
+export function preserveImmutableCourseRuntimeIds(params: {
+  contentType: AdminContentType;
+  existingBody: unknown;
+  nextBody: Record<string, unknown>;
+}): { ok: true; body: Record<string, unknown> } | { ok: false; error: string } {
+  const nextBody = { ...params.nextBody };
+
+  if (params.contentType === "course_module") {
+    const result = preserveImmutableRuntimeIdField({
+      nextBody,
+      existingBody: params.existingBody,
+      key: "moduleId",
+      label: "Course module runtime ID",
+    });
+    return result.ok ? { ok: true, body: nextBody } : result;
+  }
+
+  if (params.contentType === "course_lesson") {
+    const moduleIdResult = preserveImmutableRuntimeIdField({
+      nextBody,
+      existingBody: params.existingBody,
+      key: "moduleId",
+      label: "Course lesson module runtime ID",
+    });
+    if (!moduleIdResult.ok) return moduleIdResult;
+
+    const lessonIdResult = preserveImmutableRuntimeIdField({
+      nextBody,
+      existingBody: params.existingBody,
+      key: "lessonId",
+      label: "Course lesson runtime ID",
+    });
+    if (!lessonIdResult.ok) return lessonIdResult;
+
+    return { ok: true, body: nextBody };
+  }
+
+  return { ok: true, body: nextBody };
+}
+
 export function parseUpdateAdminContentPayload(
   payload: UpdateAdminContentPayload,
   options?: {

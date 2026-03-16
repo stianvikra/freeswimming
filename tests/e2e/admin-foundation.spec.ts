@@ -527,9 +527,13 @@ test.describe("admin foundation", () => {
       const fixtureLessonEditForm = fixtureLessonItem.getByTestId("admin-content-edit-form");
       await expect(fixtureLessonEditForm).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Lesson body editor")).toBeVisible();
+      await expect(fixtureLessonEditForm.getByText("Lesson runtime ID")).toBeVisible();
+      await expect(fixtureLessonEditForm.getByText(lessonFixtureRuntimeId)).toBeVisible();
       await expect(
-        fixtureLessonEditForm.getByLabel("Lesson id (for open lesson link)")
-      ).toHaveValue(lessonFixtureRuntimeId);
+        fixtureLessonEditForm.getByText(
+          "Internal ID used by open lesson links, progress, notes, and previews."
+        )
+      ).toBeVisible();
       const goalVisibilityToggle = fixtureLessonEditForm.getByLabel("Show goal section");
       const cuesVisibilityToggle = fixtureLessonEditForm.getByLabel("Show cues section");
       const drillVisibilityToggle = fixtureLessonEditForm.getByLabel("Show drill section");

@@ -16,7 +16,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-12";
+const LAST_UPDATED = "2026-03-16";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -116,6 +116,11 @@ const CONTENT_PAGE_FLOW = [
     title: "Course workspace (modules -> lessons)",
     detail:
       "Use this first for day-to-day course production. It keeps module context and linked lessons together.",
+  },
+  {
+    title: "Course identity: slug vs runtime ID",
+    detail:
+      "Slug is the human-readable content key and can be renamed carefully. Module/lesson runtime IDs stay locked after creation. Rename in place only when it is still the same learning object; if the objective or topic changes materially, create a new module/lesson instead of repurposing the old one.",
   },
   {
     title: "All content list",
@@ -686,6 +691,9 @@ export default function AdminHelpCenter() {
             <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-900">
               <li>Use draft/review before publish for non-trivial changes.</li>
               <li>Prefer disable over delete when operational risk is uncertain.</li>
+              <li>
+                Rename in place only for the same learning object; do not repurpose old lessons.
+              </li>
               <li>Run required verify gates before PR update/merge.</li>
               <li>Update Help/Guide + runbook in same PR when workflow changes.</li>
             </ul>
