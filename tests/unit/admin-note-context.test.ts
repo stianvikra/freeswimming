@@ -75,6 +75,12 @@ describe("deriveCourseModuleRefFromLessonRef", () => {
     expect(deriveCourseModuleRefFromLessonRef("mod3-l1")).toBe("mod3");
   });
 
+  it("supports semantic lesson refs", () => {
+    expect(deriveCourseModuleRefFromLessonRef("intro-course--welcome-course-structure")).toBe(
+      "intro-course"
+    );
+  });
+
   it("normalizes whitespace and casing before extracting", () => {
     expect(deriveCourseModuleRefFromLessonRef(" MOD10-L12 ")).toBe("mod10");
   });

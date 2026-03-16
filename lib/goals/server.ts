@@ -1,4 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { COURSE_MODULES } from "@/app/course/courseData";
+import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
+import {
+  buildCourseLessonModuleIdMap,
+  inferCourseModuleRuntimeIdFromLessonRuntimeId,
+} from "@/lib/course/runtime-identity";
 import type { Database } from "@/types/database";
 import {
   GOAL_ACTIVE_STATUS_VALUES,
@@ -60,12 +66,6 @@ type LegacyGoalRow = {
   created_at: string;
   updated_at: string;
 };
-
-function extractModuleId(lessonId: string): string | null {
-  const match = /^([a-z0-9]+)-/i.exec(lessonId);
-  if (!match) return null;
-  return match[1].toLowerCase();
-}
 
 function toSafeStatus(status: string | null | undefined): GoalRow["status"] {
   if (status === "active") return "active";
@@ -140,8 +140,20 @@ export async function loadGoalProgressContext(
   if (courseResult.error) {
     console.error("[Goals] Failed loading module progress context", courseResult.error);
   } else {
+    const courseModules =
+      courseResult.data && courseResult.data.length > 0
+        ? await loadCourseModulesByStatus({
+            statuses: ["published"],
+            fallback: COURSE_MODULES,
+            autoSeedWhenEmpty: false,
+          })
+        : [];
+    const lessonToModuleId = buildCourseLessonModuleIdMap(courseModules);
+
     for (const row of courseResult.data ?? []) {
-      const moduleId = extractModuleId(row.lesson_id);
+      const moduleId =
+        lessonToModuleId.get(row.lesson_id) ??
+        inferCourseModuleRuntimeIdFromLessonRuntimeId(row.lesson_id);
       if (!moduleId) continue;
       const existing = context.completedModuleLessonCounts.get(moduleId) ?? 0;
       context.completedModuleLessonCounts.set(moduleId, existing + 1);

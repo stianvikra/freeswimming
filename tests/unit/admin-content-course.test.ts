@@ -160,6 +160,44 @@ describe("toPublishedCourseModules", () => {
     expect(modules[0]?.lessons[0]?.id).toBe("mod4-l1");
   });
 
+  it("supports semantic runtime ids when lesson linkage comes from explicit body data", () => {
+    const modules = toPublishedCourseModules(
+      [
+        {
+          id: "module-row-semantic",
+          slug: "course-module-introduction-to-the-course",
+          title: "Introduction to the Course",
+          summary: "Module summary",
+          sort_order: 0,
+          body: {
+            moduleId: "intro-course",
+            subtitle: "Start here",
+          },
+        },
+      ],
+      [
+        {
+          id: "lesson-row-semantic",
+          parent_id: null,
+          slug: "course-lesson-welcome-course-structure",
+          title: "Welcome & Course Structure",
+          summary: "Welcome summary",
+          sort_order: 0,
+          body: {
+            moduleId: "intro-course",
+            lessonId: "intro-course--welcome-course-structure",
+            goal: "Understand the flow",
+          },
+        },
+      ]
+    );
+
+    expect(modules).toHaveLength(1);
+    expect(modules[0]?.id).toBe("intro-course");
+    expect(modules[0]?.lessons).toHaveLength(1);
+    expect(modules[0]?.lessons[0]?.id).toBe("intro-course--welcome-course-structure");
+  });
+
   it("uses deterministic defaults when published body omits fields", () => {
     const modules = toPublishedCourseModules(
       [

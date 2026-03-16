@@ -27,6 +27,7 @@ import {
 } from "@/lib/admin/course-structure";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import { buildCoursePreviewHref, resolveCoursePreviewModeFromStatus } from "@/lib/course/preview";
+import { resolveCourseLessonRuntimeId } from "@/lib/course/runtime-identity";
 import { buildAdminQrPrefillHref } from "@/lib/qr-links/admin-prefill";
 
 const CONTENT_TYPE_OPTIONS: Array<{ value: AdminContentType; label: string }> = [
@@ -398,12 +399,6 @@ function joinLines(value: string[]): string {
   return value.join("\n");
 }
 
-function inferLessonIdFromSlug(slug: string): string {
-  const match = slug.match(/course-lesson-(.+)$/i);
-  if (match?.[1]) return match[1].trim();
-  return slug.trim();
-}
-
 function createStatusCountByState(): StatusCountByState {
   return {
     draft: 0,
@@ -466,7 +461,7 @@ function resolveSupportPrimaryAction(value: string | null): SupportPrimaryAction
 }
 
 function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
-  const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+  const lessonId = resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim();
   const drillBody = isRecord(item.body) && isRecord(item.body.drill) ? item.body.drill : null;
   const displayBody = isRecord(item.body) && isRecord(item.body.display) ? item.body.display : null;
   const supportCardBody =
@@ -621,12 +616,12 @@ function buildLessonBodyPayload(
 }
 
 function lessonOpenHref(item: AdminContentItemRow): string {
-  const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+  const lessonId = resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim();
   return `/course?lesson=${encodeURIComponent(lessonId)}`;
 }
 
 function lessonPreviewHref(item: AdminContentItemRow): string {
-  const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+  const lessonId = resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim();
   return buildCoursePreviewHref({
     lessonId,
     mode: resolveCoursePreviewModeFromStatus(item.status),
@@ -645,7 +640,7 @@ function modulePreviewHref(item: AdminContentItemRow, lessonId: string): string 
 }
 
 function lessonQrPrefillHref(item: AdminContentItemRow): string {
-  const lessonId = parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+  const lessonId = resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim();
   return buildAdminQrPrefillHref({
     slugHint: lessonId,
     destinationPath: lessonOpenHref(item),
@@ -762,8 +757,7 @@ export default function AdminContentManager() {
           sortOrder: item.sort_order,
           parentId: item.parent_id,
           moduleLabel: item.parent_id ? (moduleLabelById.get(item.parent_id) ?? null) : null,
-          runtimeLessonId:
-            parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug),
+          runtimeLessonId: resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim(),
         })),
     [items, moduleLabelById]
   );
@@ -1844,7 +1838,7 @@ export default function AdminContentManager() {
     if (item.content_type === "course_lesson") {
       const parentLabel = item.parent_id ? moduleLabelById.get(item.parent_id) : null;
       const runtimeLessonId =
-        parseBodyString(item.body, "lessonId") ?? inferLessonIdFromSlug(item.slug);
+        resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim();
       return parentLabel
         ? `Parent: ${parentLabel} · Lesson id: ${runtimeLessonId}`
         : `Parent module not linked · Lesson id: ${runtimeLessonId}`;
