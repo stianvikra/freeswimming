@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { buildAdminContentMirrorSnapshot } from "@/lib/admin/content-mirror";
 import { parseCreateAdminContentPayload } from "@/lib/admin/content";
+import { resolveNextCourseStructureSortOrder } from "@/lib/admin/course-structure-sync";
 import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -155,6 +156,11 @@ export async function POST(request: Request) {
     return applySupabaseCookies(noStoreJson({ ok: false, error: parsed.error }, { status: 400 }));
   }
 
+  const hasExplicitSortOrder = Object.prototype.hasOwnProperty.call(
+    (payload ?? {}) as Record<string, unknown>,
+    "sortOrder"
+  );
+
   if (parsed.value.parentId) {
     const parentResult = await supabase
       .from("admin_content_items")
@@ -188,6 +194,43 @@ export async function POST(request: Request) {
     }
   }
 
+  let createSortOrder = parsed.value.sortOrder;
+  if (
+    !hasExplicitSortOrder &&
+    (parsed.value.contentType === "course_module" || parsed.value.contentType === "course_lesson")
+  ) {
+    const nextSortOrder = await resolveNextCourseStructureSortOrder({
+      supabase,
+      contentType: parsed.value.contentType,
+      parentId: parsed.value.parentId,
+    });
+
+    if (!nextSortOrder.ok) {
+      if (isAdminContentSchemaMissing(nextSortOrder.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: getAdminSchemaSetupMessage("content"),
+              code: "ADMIN_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
+
+      console.error("[AdminContent] Could not resolve next course sort order", nextSortOrder.error);
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not resolve content order right now." },
+          { status: 500 }
+        )
+      );
+    }
+
+    createSortOrder = nextSortOrder.sortOrder;
+  }
+
   const insertResult = await supabase
     .from("admin_content_items")
     .insert({
@@ -199,7 +242,7 @@ export async function POST(request: Request) {
       category: parsed.value.category,
       body: parsed.value
         .body as Database["public"]["Tables"]["admin_content_items"]["Insert"]["body"],
-      sort_order: parsed.value.sortOrder,
+      sort_order: createSortOrder,
       status: parsed.value.status,
       published_at: parsed.value.status === "published" ? new Date().toISOString() : null,
       created_by: gate.user.id,
