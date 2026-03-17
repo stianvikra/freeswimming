@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-17`
-- `updated`: `2026-03-12`
+- `updated`: `2026-03-17`
 
 ## Purpose
 
@@ -277,6 +277,12 @@ Capture good ideas that should be implemented later without blocking the active 
   - Help/Guide includes plain-language explanation of edit flow and button behavior.
 - active brief:
   - `docs/task-briefs/in-progress/2026-02-22-admin-full-content-edit-workflow-10-10.md`
+- current planned friction-driven follow-up:
+  - `docs/task-briefs/planned/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
+- explicitly separate later follow-ups from the same editorial TODO batch:
+  - dashboard/library active-state polish,
+  - iPhone spacing/header rhythm polish,
+  - my-library `new` vs `updated` content semantics.
 
 ## Recommended Execution Order
 
