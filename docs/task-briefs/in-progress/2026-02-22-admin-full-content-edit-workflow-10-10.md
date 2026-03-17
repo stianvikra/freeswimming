@@ -230,6 +230,20 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-17`: AW-013 child slice merged to `main` (PR #226, commit \`1531588\`).
+  - Done child-slice brief:
+    - `docs/task-briefs/done/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
+  - Delivered in this slice:
+    - course lesson create from module context with deterministic parent/runtime defaults,
+    - inline contextual admin notes inside edit flow,
+    - inline contextual QR status/create/manage for lesson/page/product edit surfaces,
+    - Help/Guide + QR runbook alignment for the new workflow.
+  - Validation:
+    - local `npm run verify:pre-pr` PASS,
+    - GitHub required checks PASS,
+    - local `npm run verify:pre-merge` PASS.
+  - Next:
+    - resume real content-production entry and only open a new child slice if fresh editorial friction proves it.
 - `2026-03-17`: Child slice moved from planned to in-progress and implementation started.
   - Active child-slice brief:
     - `docs/task-briefs/in-progress/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
