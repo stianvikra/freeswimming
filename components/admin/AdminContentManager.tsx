@@ -31,7 +31,10 @@ import {
   type CourseStructureLessonRow,
   type CourseStructureModuleRow,
 } from "@/lib/admin/course-structure";
-import { buildCourseWorkspaceLessonsByModuleId } from "@/lib/admin/course-workspace";
+import {
+  buildCourseWorkspaceLessonPreview,
+  buildCourseWorkspaceLessonsByModuleId,
+} from "@/lib/admin/course-workspace";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import { buildCoursePreviewHref, resolveCoursePreviewModeFromStatus } from "@/lib/course/preview";
 import { resolveCourseLessonRuntimeId } from "@/lib/course/runtime-identity";
@@ -95,6 +98,8 @@ const STATUS_CHIP_CLASS_BY_VALUE: Record<AdminContentStatus, string> = {
   published: "border-emerald-300 bg-emerald-100 text-emerald-800",
   archived: "border-slate-300 bg-slate-200 text-slate-700",
 };
+
+const COURSE_WORKSPACE_OVERVIEW_PREVIEW_LIMIT = 3;
 
 type ListSortOption =
   | "default"
@@ -977,6 +982,9 @@ export default function AdminContentManager() {
     return moduleLabelById.get(workspaceModuleId) ?? "Selected module";
   }, [courseLessonWorkspaceItems.length, moduleLabelById, unlinkedLessonCount, workspaceModuleId]);
 
+  const isFocusedCourseWorkspace =
+    workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID || moduleIdSet.has(workspaceModuleId);
+
   const filteredItems = useMemo(() => {
     const normalizedQuery = listQuery.trim().toLowerCase();
     return items.filter((item) => {
@@ -1590,7 +1598,7 @@ export default function AdminContentManager() {
   }
 
   function handleWorkspaceFocusModule(moduleId: string) {
-    handleWorkspaceScopeChange(moduleId);
+    focusCourseWorkspaceScope(moduleId);
   }
 
   function scrollToCourseWorkspace() {
@@ -1602,10 +1610,23 @@ export default function AdminContentManager() {
     });
   }
 
+  function scrollToCourseWorkspaceFocusPanel() {
+    if (typeof document === "undefined") return;
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('[data-testid="admin-course-workspace-focus-panel"]')
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   function focusCourseWorkspaceScope(nextWorkspaceModuleId: string) {
     handleWorkspaceScopeChange(nextWorkspaceModuleId);
     setContentPrimaryView("course_workspace");
-    scrollToCourseWorkspace();
+    if (nextWorkspaceModuleId === WORKSPACE_ALL_MODULES_ID) {
+      scrollToCourseWorkspace();
+      return;
+    }
+    scrollToCourseWorkspaceFocusPanel();
   }
 
   function focusModuleEdit(moduleItem: AdminContentItemRow) {
@@ -2581,17 +2602,21 @@ export default function AdminContentManager() {
             data-testid="admin-course-lesson-workspace"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Course workspace: modules -&gt; lessons
-              </h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900">Course workspace overview</h3>
+                <span className="inline-flex h-6 items-center rounded-full border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-600">
+                  {isFocusedCourseWorkspace ? "Focus mode active" : "Overview mode"}
+                </span>
+              </div>
               <p className="text-xs text-slate-500">
                 {courseLessonWorkspaceItems.length} lesson
                 {courseLessonWorkspaceItems.length === 1 ? "" : "s"} ready for edit
               </p>
             </div>
             <p className="mt-2 text-xs text-slate-600">
-              Status board + module-scoped lesson actions in one place. Use this first, then open
-              full list only when needed.
+              {isFocusedCourseWorkspace
+                ? "Overview stays compact while the selected module becomes the primary lesson workspace below."
+                : "Scan modules here first, then open one module when you are ready to edit or reorder its lessons."}
             </p>
 
             <div
@@ -2631,6 +2656,10 @@ export default function AdminContentManager() {
                   const moduleLessonCounts =
                     lessonStatusCountsByModuleId.get(moduleItem.id) ?? createStatusCountByState();
                   const moduleLessons = workspaceLessonsByModuleId.get(moduleItem.id) ?? [];
+                  const moduleLessonPreview = buildCourseWorkspaceLessonPreview(
+                    moduleLessons,
+                    isFocusedCourseWorkspace ? 0 : COURSE_WORKSPACE_OVERVIEW_PREVIEW_LIMIT
+                  );
                   const moduleLessonCount = Object.values(moduleLessonCounts).reduce(
                     (sum, value) => sum + value,
                     0
@@ -2716,62 +2745,56 @@ export default function AdminContentManager() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            Lessons in this module
-                          </p>
-                          {moduleLessonCount > 0 ? (
-                            <span className="text-[11px] text-slate-500">
-                              Ordered for editorial review
-                            </span>
-                          ) : null}
+                      {isFocusedCourseWorkspace ? (
+                        <p className="mt-3 text-[11px] text-slate-500">
+                          {moduleScopeActive
+                            ? "Detailed lesson order and actions are shown below in Module workspace."
+                            : "Overview stays compact while one module is focused below."}
+                        </p>
+                      ) : (
+                        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                              Lesson preview
+                            </p>
+                            {moduleLessonCount > 0 ? (
+                              <span className="text-[11px] text-slate-500">
+                                Select module scope for full lesson workspace
+                              </span>
+                            ) : null}
+                          </div>
+                          {moduleLessons.length === 0 ? (
+                            <p className="mt-2 text-xs text-slate-500">
+                              No lessons linked to this module yet.
+                            </p>
+                          ) : (
+                            <div
+                              data-testid={`admin-course-module-lesson-preview-${moduleItem.id}`}
+                            >
+                              <ol className="mt-2 space-y-1">
+                                {moduleLessonPreview.visibleLessons.map((lesson, lessonIndex) => (
+                                  <li
+                                    key={lesson.id}
+                                    data-testid="admin-course-module-lesson-preview-row"
+                                    className="rounded-md border border-slate-200 bg-white px-2 py-2"
+                                  >
+                                    <p className="text-xs font-medium text-slate-900">
+                                      {lessonIndex + 1}. {lesson.title}
+                                    </p>
+                                  </li>
+                                ))}
+                              </ol>
+                              {moduleLessonPreview.hiddenCount > 0 ? (
+                                <p className="mt-2 text-[11px] text-slate-500">
+                                  {moduleLessonPreview.hiddenCount} more lesson
+                                  {moduleLessonPreview.hiddenCount === 1 ? "" : "s"} in module
+                                  workspace.
+                                </p>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
-                        {moduleLessons.length === 0 ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            No lessons linked to this module yet.
-                          </p>
-                        ) : (
-                          <ol
-                            className="mt-2 space-y-1"
-                            data-testid={`admin-course-module-lesson-list-${moduleItem.id}`}
-                          >
-                            {moduleLessons.map((lesson, lessonIndex) => (
-                              <li
-                                key={lesson.id}
-                                data-testid="admin-course-module-lesson-row"
-                                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-2 py-2"
-                              >
-                                <div className="min-w-[220px]">
-                                  <p className="text-xs font-medium text-slate-900">
-                                    {lessonIndex + 1}. {lesson.title}
-                                  </p>
-                                  <p className="mt-1 text-[11px] text-slate-500">
-                                    /{lesson.slug} · id: {lesson.runtimeLessonId}
-                                  </p>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span
-                                    className={[
-                                      "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold",
-                                      statusChipClass(lesson.status),
-                                    ].join(" ")}
-                                  >
-                                    {statusLabel(lesson.status)}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleWorkspaceEditLesson(lesson.id)}
-                                    className="inline-flex h-7 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-medium text-blue-800 transition hover:bg-blue-100"
-                                  >
-                                    Edit lesson
-                                  </button>
-                                </div>
-                              </li>
-                            ))}
-                          </ol>
-                        )}
-                      </div>
+                      )}
                     </li>
                   );
                 })}
@@ -2797,311 +2820,335 @@ export default function AdminContentManager() {
               </div>
             ) : null}
 
-            <div className="mt-3 flex flex-wrap items-end gap-2">
-              <label className="space-y-1 text-xs font-medium text-slate-700">
-                <span>Module workspace</span>
-                <select
-                  value={workspaceModuleId}
-                  onChange={(event) => handleWorkspaceScopeChange(event.target.value)}
-                  className="h-9 min-w-[240px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                >
-                  <option value={WORKSPACE_ALL_MODULES_ID}>
-                    All modules ({courseLessonWorkspaceItems.length})
-                  </option>
-                  {moduleOptions.map((option) => {
-                    const moduleLessonCount = courseLessonWorkspaceItems.filter(
-                      (item) => item.parentId === option.id
-                    ).length;
-                    return (
-                      <option key={option.id} value={option.id}>
-                        {option.label} ({moduleLessonCount})
-                      </option>
-                    );
-                  })}
-                  {unlinkedLessonCount > 0 ? (
-                    <option value={WORKSPACE_UNLINKED_MODULE_ID}>
-                      Unlinked lessons ({unlinkedLessonCount})
+            <div
+              className="mt-3 rounded-xl border border-slate-200 bg-white p-3"
+              data-testid="admin-course-workspace-focus-panel"
+            >
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <span>Module workspace</span>
+                  <select
+                    value={workspaceModuleId}
+                    onChange={(event) => focusCourseWorkspaceScope(event.target.value)}
+                    className="h-9 min-w-[240px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    <option value={WORKSPACE_ALL_MODULES_ID}>
+                      All modules ({courseLessonWorkspaceItems.length})
                     </option>
-                  ) : null}
-                </select>
-              </label>
-              {moduleIdSet.has(workspaceModuleId) ? (
-                <button
-                  type="button"
-                  onClick={() => openWorkspaceLessonCreate(workspaceModuleId)}
-                  className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
-                >
-                  Add lesson in this module
-                </button>
-              ) : null}
-            </div>
-
-            {workspaceLessonCreateOpen ? (
-              <form
-                className="mt-3 grid gap-3 rounded-xl border border-emerald-200 bg-white p-3 sm:grid-cols-2"
-                onSubmit={handleWorkspaceLessonCreate}
-                data-testid="admin-workspace-lesson-create-form"
-              >
-                <div className="sm:col-span-2">
-                  <h4 className="text-sm font-semibold text-slate-900">Create lesson in context</h4>
-                  <p className="mt-1 text-xs text-slate-600">
-                    Start in the intended module now. You can still override the parent module
-                    before save if you intentionally want another module.
-                  </p>
-                </div>
-
-                <label className="space-y-1 text-xs font-medium text-slate-700">
-                  <span>Parent module</span>
-                  <select
-                    value={workspaceLessonCreateState.parentId}
-                    onChange={(event) =>
-                      setWorkspaceLessonCreateState((previous) => ({
-                        ...previous,
-                        parentId: event.target.value,
-                      }))
-                    }
-                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  >
-                    <option value="">Select module</option>
-                    {moduleOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
+                    {moduleOptions.map((option) => {
+                      const moduleLessonCount = courseLessonWorkspaceItems.filter(
+                        (item) => item.parentId === option.id
+                      ).length;
+                      return (
+                        <option key={option.id} value={option.id}>
+                          {option.label} ({moduleLessonCount})
+                        </option>
+                      );
+                    })}
+                    {unlinkedLessonCount > 0 ? (
+                      <option value={WORKSPACE_UNLINKED_MODULE_ID}>
+                        Unlinked lessons ({unlinkedLessonCount})
                       </option>
-                    ))}
+                    ) : null}
                   </select>
                 </label>
-
-                <label className="space-y-1 text-xs font-medium text-slate-700">
-                  <span>Status</span>
-                  <select
-                    value={workspaceLessonCreateState.status}
-                    onChange={(event) =>
-                      setWorkspaceLessonCreateState((previous) => ({
-                        ...previous,
-                        status: event.target.value as AdminContentStatus,
-                      }))
-                    }
-                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  >
-                    {STATUS_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
-                  <span>Title</span>
-                  <input
-                    type="text"
-                    required
-                    value={workspaceLessonCreateState.title}
-                    onChange={(event) =>
-                      setWorkspaceLessonCreateState((previous) => ({
-                        ...previous,
-                        title: event.target.value,
-                      }))
-                    }
-                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                    placeholder="First breaths"
-                  />
-                </label>
-
-                <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
-                  <span>Slug (optional)</span>
-                  <input
-                    type="text"
-                    value={workspaceLessonCreateState.slug}
-                    onChange={(event) =>
-                      setWorkspaceLessonCreateState((previous) => ({
-                        ...previous,
-                        slug: event.target.value,
-                      }))
-                    }
-                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                    placeholder="first-breaths"
-                  />
-                  <p className="text-[11px] font-normal text-slate-500">
-                    Slug stays human-readable. Runtime lesson ID is assigned automatically and
-                    locked after creation.
-                  </p>
-                </label>
-
-                <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
-                  <span>Summary</span>
-                  <textarea
-                    rows={3}
-                    value={workspaceLessonCreateState.summary}
-                    onChange={(event) =>
-                      setWorkspaceLessonCreateState((previous) => ({
-                        ...previous,
-                        summary: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-                    placeholder="What this lesson helps the swimmer do."
-                  />
-                </label>
-
-                {workspaceLessonCreateError ? (
-                  <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 sm:col-span-2">
-                    {workspaceLessonCreateError}
-                  </p>
-                ) : null}
-
-                <div className="flex flex-wrap gap-2 sm:col-span-2">
-                  <button
-                    type="submit"
-                    disabled={workspaceLessonCreateSubmitting}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {workspaceLessonCreateSubmitting ? "Creating…" : "Create lesson"}
-                  </button>
+                {moduleIdSet.has(workspaceModuleId) ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setWorkspaceLessonCreateOpen(false);
-                      setWorkspaceLessonCreateError(null);
-                    }}
-                    disabled={workspaceLessonCreateSubmitting}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => openWorkspaceLessonCreate(workspaceModuleId)}
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
                   >
-                    Cancel
+                    Add lesson in this module
                   </button>
-                </div>
-              </form>
-            ) : null}
+                ) : null}
+              </div>
 
-            {workspaceLessons.length === 0 ? (
-              <p className="mt-3 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-xs text-slate-600">
-                No lessons in this module yet.
+              <p className="mt-2 text-xs text-slate-600">
+                {workspaceModuleId === WORKSPACE_ALL_MODULES_ID
+                  ? "Select one module to open the full ordered lesson workspace. Use All Content only when you need cross-module audit work."
+                  : workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID
+                    ? "Focused exception view: repair lessons that are not attached to a valid module."
+                    : "Focused module workspace: use this as the primary place to reorder, move, preview, and edit lessons in one module."}
               </p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {workspaceLessons.map((lesson, index) => {
-                  const moveBounds = lessonMoveBoundsById.get(lesson.id);
-                  const selectedTargetModuleId = lessonMoveTargetById[lesson.id] ?? "";
-                  const canMoveToTargetModule =
-                    selectedTargetModuleId.length > 0 &&
-                    selectedTargetModuleId !== (lesson.parentId ?? "");
-                  const workspaceActionBusy = Boolean(
-                    courseStructureBusy ||
-                    moduleDeleteSubmitting ||
-                    updatingId ||
-                    deletingId ||
-                    restoringRevisionId ||
-                    savingEditId
-                  );
 
-                  return (
-                    <li
-                      key={lesson.id}
-                      data-testid="admin-workspace-lesson-row"
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+              {workspaceLessonCreateOpen ? (
+                <form
+                  className="mt-3 grid gap-3 rounded-xl border border-emerald-200 bg-slate-50 p-3 sm:grid-cols-2"
+                  onSubmit={handleWorkspaceLessonCreate}
+                  data-testid="admin-workspace-lesson-create-form"
+                >
+                  <div className="sm:col-span-2">
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Create lesson in context
+                    </h4>
+                    <p className="mt-1 text-xs text-slate-600">
+                      Start in the intended module now. You can still override the parent module
+                      before save if you intentionally want another module.
+                    </p>
+                  </div>
+
+                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                    <span>Parent module</span>
+                    <select
+                      value={workspaceLessonCreateState.parentId}
+                      onChange={(event) =>
+                        setWorkspaceLessonCreateState((previous) => ({
+                          ...previous,
+                          parentId: event.target.value,
+                        }))
+                      }
+                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
                     >
-                      <div className="min-w-[220px]">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-slate-900">
-                            Lesson {index + 1}: {lesson.title}
+                      <option value="">Select module</option>
+                      {moduleOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                    <span>Status</span>
+                    <select
+                      value={workspaceLessonCreateState.status}
+                      onChange={(event) =>
+                        setWorkspaceLessonCreateState((previous) => ({
+                          ...previous,
+                          status: event.target.value as AdminContentStatus,
+                        }))
+                      }
+                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    >
+                      {STATUS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                    <span>Title</span>
+                    <input
+                      type="text"
+                      required
+                      value={workspaceLessonCreateState.title}
+                      onChange={(event) =>
+                        setWorkspaceLessonCreateState((previous) => ({
+                          ...previous,
+                          title: event.target.value,
+                        }))
+                      }
+                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      placeholder="First breaths"
+                    />
+                  </label>
+
+                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                    <span>Slug (optional)</span>
+                    <input
+                      type="text"
+                      value={workspaceLessonCreateState.slug}
+                      onChange={(event) =>
+                        setWorkspaceLessonCreateState((previous) => ({
+                          ...previous,
+                          slug: event.target.value,
+                        }))
+                      }
+                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      placeholder="first-breaths"
+                    />
+                    <p className="text-[11px] font-normal text-slate-500">
+                      Slug stays human-readable. Runtime lesson ID is assigned automatically and
+                      locked after creation.
+                    </p>
+                  </label>
+
+                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                    <span>Summary</span>
+                    <textarea
+                      rows={3}
+                      value={workspaceLessonCreateState.summary}
+                      onChange={(event) =>
+                        setWorkspaceLessonCreateState((previous) => ({
+                          ...previous,
+                          summary: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      placeholder="What this lesson helps the swimmer do."
+                    />
+                  </label>
+
+                  {workspaceLessonCreateError ? (
+                    <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 sm:col-span-2">
+                      {workspaceLessonCreateError}
+                    </p>
+                  ) : null}
+
+                  <div className="flex flex-wrap gap-2 sm:col-span-2">
+                    <button
+                      type="submit"
+                      disabled={workspaceLessonCreateSubmitting}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {workspaceLessonCreateSubmitting ? "Creating…" : "Create lesson"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWorkspaceLessonCreateOpen(false);
+                        setWorkspaceLessonCreateError(null);
+                      }}
+                      disabled={workspaceLessonCreateSubmitting}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+
+              {workspaceModuleId === WORKSPACE_ALL_MODULES_ID ? (
+                <p
+                  className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600"
+                  data-testid="admin-course-workspace-overview-guidance"
+                >
+                  Choose a module above or from the selector to open one detailed lesson workspace.
+                  Overview mode keeps module context visible without repeating every lesson action
+                  twice on the page.
+                </p>
+              ) : workspaceLessons.length === 0 ? (
+                <p className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  No lessons in this module yet.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {workspaceLessons.map((lesson, index) => {
+                    const moveBounds = lessonMoveBoundsById.get(lesson.id);
+                    const selectedTargetModuleId = lessonMoveTargetById[lesson.id] ?? "";
+                    const canMoveToTargetModule =
+                      selectedTargetModuleId.length > 0 &&
+                      selectedTargetModuleId !== (lesson.parentId ?? "");
+                    const workspaceActionBusy = Boolean(
+                      courseStructureBusy ||
+                      moduleDeleteSubmitting ||
+                      updatingId ||
+                      deletingId ||
+                      restoringRevisionId ||
+                      savingEditId
+                    );
+
+                    return (
+                      <li
+                        key={lesson.id}
+                        data-testid="admin-workspace-lesson-row"
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                      >
+                        <div className="min-w-[220px]">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-900">
+                              Lesson {index + 1}: {lesson.title}
+                            </p>
+                            <span
+                              className={[
+                                "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold",
+                                statusChipClass(lesson.status),
+                              ].join(" ")}
+                            >
+                              {statusLabel(lesson.status)}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {lesson.moduleLabel ?? "Unlinked module"} · /{lesson.slug} · id:{" "}
+                            {lesson.runtimeLessonId}
                           </p>
-                          <span
-                            className={[
-                              "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold",
-                              statusChipClass(lesson.status),
-                            ].join(" ")}
-                          >
-                            {statusLabel(lesson.status)}
-                          </span>
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {lesson.moduleLabel ?? "Unlinked module"} · /{lesson.slug} · id:{" "}
-                          {lesson.runtimeLessonId}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => void handleMoveLesson(lesson.id, "up")}
-                          disabled={workspaceActionBusy || !moveBounds?.canMoveUp}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Move up
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleMoveLesson(lesson.id, "down")}
-                          disabled={workspaceActionBusy || !moveBounds?.canMoveDown}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Move down
-                        </button>
-                        <label className="sr-only" htmlFor={`workspace-move-target-${lesson.id}`}>
-                          Move lesson to module
-                        </label>
-                        <select
-                          id={`workspace-move-target-${lesson.id}`}
-                          value={selectedTargetModuleId}
-                          onChange={(event) =>
-                            setLessonMoveTargetById((previous) => ({
-                              ...previous,
-                              [lesson.id]: event.target.value,
-                            }))
-                          }
-                          disabled={workspaceActionBusy || moduleOptions.length === 0}
-                          className="h-8 min-w-[170px] rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-900"
-                        >
-                          <option value="">Select module</option>
-                          {moduleOptions.map((option) => (
-                            <option key={option.id} value={option.id}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void handleMoveLessonToModule(lesson.id, selectedTargetModuleId)
-                          }
-                          disabled={workspaceActionBusy || !canMoveToTargetModule}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-medium text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Move to module
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleWorkspaceEditLesson(lesson.id)}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
-                        >
-                          Edit lesson
-                        </button>
-                        <a
-                          href={buildCoursePreviewHref({
-                            lessonId: lesson.runtimeLessonId,
-                            mode: resolveCoursePreviewModeFromStatus(lesson.status),
-                            previewType: "lesson",
-                            previewRef: lesson.slug,
-                          })}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
-                        >
-                          Open preview
-                        </a>
-                        <a
-                          href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Open lesson
-                        </a>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleMoveLesson(lesson.id, "up")}
+                            disabled={workspaceActionBusy || !moveBounds?.canMoveUp}
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Move up
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleMoveLesson(lesson.id, "down")}
+                            disabled={workspaceActionBusy || !moveBounds?.canMoveDown}
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Move down
+                          </button>
+                          <label className="sr-only" htmlFor={`workspace-move-target-${lesson.id}`}>
+                            Move lesson to module
+                          </label>
+                          <select
+                            id={`workspace-move-target-${lesson.id}`}
+                            value={selectedTargetModuleId}
+                            onChange={(event) =>
+                              setLessonMoveTargetById((previous) => ({
+                                ...previous,
+                                [lesson.id]: event.target.value,
+                              }))
+                            }
+                            disabled={workspaceActionBusy || moduleOptions.length === 0}
+                            className="h-8 min-w-[170px] rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-900"
+                          >
+                            <option value="">Select module</option>
+                            {moduleOptions.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleMoveLessonToModule(lesson.id, selectedTargetModuleId)
+                            }
+                            disabled={workspaceActionBusy || !canMoveToTargetModule}
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-medium text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Move to module
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleWorkspaceEditLesson(lesson.id)}
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+                          >
+                            Edit lesson
+                          </button>
+                          <a
+                            href={buildCoursePreviewHref({
+                              lessonId: lesson.runtimeLessonId,
+                              mode: resolveCoursePreviewModeFromStatus(lesson.status),
+                              previewType: "lesson",
+                              previewRef: lesson.slug,
+                            })}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                          >
+                            Open preview
+                          </a>
+                          <a
+                            href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Open lesson
+                          </a>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </article>
         ) : null}
 

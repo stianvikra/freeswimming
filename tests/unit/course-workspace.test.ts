@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildCourseWorkspaceLessonsByModuleId } from "@/lib/admin/course-workspace";
+import {
+  buildCourseWorkspaceLessonPreview,
+  buildCourseWorkspaceLessonsByModuleId,
+} from "@/lib/admin/course-workspace";
 
 describe("course workspace hierarchy helpers", () => {
   it("groups linked lessons under known modules and keeps empty modules explicit", () => {
@@ -33,5 +36,29 @@ describe("course workspace hierarchy helpers", () => {
       "Beta",
       "Later",
     ]);
+  });
+
+  it("builds a capped lesson preview without losing hidden-count information", () => {
+    const preview = buildCourseWorkspaceLessonPreview(
+      [{ title: "Lesson 1" }, { title: "Lesson 2" }, { title: "Lesson 3" }, { title: "Lesson 4" }],
+      3
+    );
+
+    expect(preview.visibleLessons.map((lesson) => lesson.title)).toEqual([
+      "Lesson 1",
+      "Lesson 2",
+      "Lesson 3",
+    ]);
+    expect(preview.hiddenCount).toBe(1);
+  });
+
+  it("allows focus mode to hide preview rows while keeping hidden-count information", () => {
+    const preview = buildCourseWorkspaceLessonPreview(
+      [{ title: "Lesson 1" }, { title: "Lesson 2" }],
+      0
+    );
+
+    expect(preview.visibleLessons).toEqual([]);
+    expect(preview.hiddenCount).toBe(2);
   });
 });

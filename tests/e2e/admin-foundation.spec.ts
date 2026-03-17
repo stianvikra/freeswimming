@@ -475,6 +475,7 @@ test.describe("admin foundation", () => {
       const lessonWorkspace = page.getByTestId("admin-course-lesson-workspace");
       await expect(lessonWorkspace).toBeVisible();
       await expect(page.getByTestId("admin-course-status-overview")).toBeVisible();
+      await expect(page.getByTestId("admin-course-workspace-overview-guidance")).toBeVisible();
       const workspaceModuleSelect = lessonWorkspace.getByLabel("Module workspace");
       await expect(workspaceModuleSelect).toBeVisible();
       const fixtureModuleValue = await workspaceModuleSelect.evaluate((node, moduleId) => {
@@ -492,6 +493,13 @@ test.describe("admin foundation", () => {
         const option = [...selectElement.options].find((entry) => entry.value === moduleId);
         return option?.textContent?.trim() ?? "";
       }, lessonFixtureModule.id);
+      const overviewModuleRow = lessonWorkspace
+        .getByTestId("admin-course-module-status-row")
+        .filter({ hasText: lessonFixtureModule.title })
+        .first();
+      await expect(
+        overviewModuleRow.getByTestId("admin-course-module-lesson-preview-row")
+      ).toContainText(lessonFixtureTitle);
       await workspaceModuleSelect.selectOption(fixtureModuleValue);
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
       const scopedModuleRow = lessonWorkspace
@@ -499,9 +507,10 @@ test.describe("admin foundation", () => {
         .filter({ hasText: lessonFixtureModule.title })
         .first();
       await expect(scopedModuleRow).toContainText("Active module scope");
-      await expect(scopedModuleRow.getByTestId("admin-course-module-lesson-row")).toContainText(
-        lessonFixtureTitle
-      );
+      await expect(
+        scopedModuleRow.getByTestId("admin-course-module-lesson-preview-row")
+      ).toHaveCount(0);
+      await expect(page.getByTestId("admin-course-workspace-overview-guidance")).toHaveCount(0);
 
       const workspaceLessonTitle = `Workspace lesson ${unique}`;
       const workspaceLessonSlug = `${slug}-workspace-lesson`;

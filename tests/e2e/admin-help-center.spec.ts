@@ -59,13 +59,14 @@ test.describe("admin help center", () => {
 
     await expect(page.getByText("Course Workspace / All Content tabs:")).toBeVisible();
     await expect(
-      page.getByText("Module cards now show linked lesson titles in order")
+      page.getByText("Overview mode shows all modules with compact lesson previews.")
     ).toBeVisible();
+    await expect(page.getByText("Open module scope / Show all modules:")).toBeVisible();
     await expect(page.getByText("Course identity: slug vs runtime ID")).toBeVisible();
     await expect(
       page.getByText("Slug is the human-readable content key and can be renamed carefully.")
     ).toBeVisible();
-    await expect(page.getByText("Add lesson")).toBeVisible();
+    await expect(page.getByText("Use `Show all modules` to return to overview.")).toBeVisible();
     await expect(page.getByText("Guide identity: slug vs runtime ID")).toBeVisible();
     await expect(
       page.getByText(
