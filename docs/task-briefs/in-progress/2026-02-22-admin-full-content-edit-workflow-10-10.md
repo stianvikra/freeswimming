@@ -240,6 +240,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - Next:
     - decide whether to execute the hierarchy slice immediately from live editorial friction or keep it queued until the next repeated module-sorting/content-production session.
 - `2026-03-17`: Hierarchy child slice moved to in-progress and implementation started from live editorial friction.
+- `2026-03-17`: Post-merge follow-up friction confirmed during live content review: Course Workspace overview and Module Workspace still compete visually because both show heavy lesson detail at once; opened child brief `docs/task-briefs/in-progress/2026-03-17-admin-course-workspace-focus-mode-and-scroll-reduction-10-10.md` to reduce duplicate lesson surfaces and make selected-module focus the clear primary editing mode.
   - Active child-slice brief:
     - `docs/task-briefs/done/2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10.md`
   - Implementation focus:

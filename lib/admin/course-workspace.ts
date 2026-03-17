@@ -8,6 +8,11 @@ type CourseWorkspaceLessonRef = {
   title: string;
 };
 
+type CourseWorkspaceLessonPreview<TLesson> = {
+  visibleLessons: TLesson[];
+  hiddenCount: number;
+};
+
 export function buildCourseWorkspaceLessonsByModuleId<
   TModule extends CourseWorkspaceModuleRef,
   TLesson extends CourseWorkspaceLessonRef,
@@ -30,4 +35,17 @@ export function buildCourseWorkspaceLessonsByModuleId<
   }
 
   return byModuleId;
+}
+
+export function buildCourseWorkspaceLessonPreview<TLesson>(
+  lessons: readonly TLesson[],
+  maxVisible: number
+): CourseWorkspaceLessonPreview<TLesson> {
+  const safeLimit = Number.isFinite(maxVisible) ? Math.max(0, Math.floor(maxVisible)) : 0;
+  const visibleLessons = lessons.slice(0, safeLimit);
+
+  return {
+    visibleLessons,
+    hiddenCount: Math.max(0, lessons.length - visibleLessons.length),
+  };
 }

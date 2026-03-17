@@ -83,12 +83,6 @@ test.describe("admin preview mode", () => {
       .first();
     await expect(moduleWorkspaceRow).toBeVisible();
     await expect(
-      moduleWorkspaceRow
-        .getByTestId("admin-course-module-lesson-row")
-        .filter({ hasText: "Welcome & Course Structure" })
-        .first()
-    ).toBeVisible();
-    await expect(
       moduleWorkspaceRow.getByRole("link", { name: "Open module preview" })
     ).toHaveAttribute("href", /preview=1&previewMode=published&previewType=module/);
 

@@ -115,7 +115,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Course workspace (modules -> lessons)",
     detail:
-      "Use this first for day-to-day course production. Module cards now show linked lesson titles in order, keep module context visible, and `Add lesson` starts a new lesson in the current module by default instead of creating it loose and repairing parent linkage later.",
+      "Use this first for day-to-day course production. Overview mode shows all modules with compact lesson previews. `Open module scope` switches to focus mode, where the selected module becomes the one primary lesson workspace below. Use `Show all modules` to return to overview.",
   },
   {
     title: "Course identity: slug vs runtime ID",
@@ -220,6 +220,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Course Workspace / All Content tabs",
         meaning:
           "Course Workspace is the default production flow. All Content is for audits and cross-type filtering.",
+      },
+      {
+        label: "Open module scope / Show all modules",
+        meaning:
+          "Switch between compact course overview and one focused module workspace. Focus mode keeps one detailed lesson list active instead of repeating every lesson surface twice.",
       },
       {
         label: "Mirror snapshot cards",
