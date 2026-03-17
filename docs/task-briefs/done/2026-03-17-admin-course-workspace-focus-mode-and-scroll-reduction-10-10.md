@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-17-admin-course-workspace-focus-mode-and-scroll-reduction-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-17`
 - `updated`: `2026-03-17`
@@ -218,3 +218,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-03-17 | kickoff | opened follow-up slice after live editorial review confirmed that current Course Workspace still duplicates lesson detail between overview and module focus; new scope is to make overview compact and focus mode primary without changing schema or content contracts | next: implement focused compaction in admin UI, update Help/Guide, add targeted regression coverage, then run verify gates`
 - `2026-03-17 | working tree | implemented overview-vs-focus compaction in Course Workspace: overview now shows compact module lesson previews, focused module scope collapses duplicate lesson detail above, and the lower Module Workspace becomes the single primary detailed lesson surface; targeted Vitest PASS, targeted admin Playwright PASS (`5 passed`, `2 skipped`), targeted eslint PASS, typecheck PASS, and full \`npm run verify:pre-pr\` PASS on dirty tree (`95` unit files / `415` tests, Playwright `80 passed`, `208 skipped`) | perf trend recommendation: tighten; decision for this non-perf UX slice: hold and keep perf budgets unchanged here | next: commit, push, open PR, then watch required checks and run \`npm run verify:pre-merge\` before merge`
+- `2026-03-17 | 31fb0b5 (main) | merged via PR #231 | overview-vs-focus Course Workspace compaction is now on main: overview stays compact, focused module editing is the one primary detailed lesson surface, Help/Guide explains the mode split, and local \`npm run verify:pre-pr\`, GitHub required checks, and local \`npm run verify:pre-merge\` all passed before merge | perf trend recommendation: tighten; decision recorded as hold for this non-perf UX slice | next: return to real content production and log only the next actual friction batch`

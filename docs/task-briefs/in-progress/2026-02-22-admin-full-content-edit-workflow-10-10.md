@@ -240,7 +240,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
   - Next:
     - decide whether to execute the hierarchy slice immediately from live editorial friction or keep it queued until the next repeated module-sorting/content-production session.
 - `2026-03-17`: Hierarchy child slice moved to in-progress and implementation started from live editorial friction.
-- `2026-03-17`: Post-merge follow-up friction confirmed during live content review: Course Workspace overview and Module Workspace still compete visually because both show heavy lesson detail at once; opened child brief `docs/task-briefs/in-progress/2026-03-17-admin-course-workspace-focus-mode-and-scroll-reduction-10-10.md` to reduce duplicate lesson surfaces and make selected-module focus the clear primary editing mode.
+- `2026-03-17`: Post-merge follow-up friction confirmed during live content review: Course Workspace overview and Module Workspace still compete visually because both show heavy lesson detail at once; opened child brief `docs/task-briefs/done/2026-03-17-admin-course-workspace-focus-mode-and-scroll-reduction-10-10.md` to reduce duplicate lesson surfaces and make selected-module focus the clear primary editing mode.
   - Active child-slice brief:
     - `docs/task-briefs/done/2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10.md`
   - Implementation focus:
@@ -258,6 +258,15 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
     - `docs/task-briefs/done/2026-03-17-pr-create-safari-gh-path-hardening-10-10.md`
   - Delivered scope:
     - Course Workspace now shows explicit module -> lesson hierarchy with stronger context continuity in edit flow.
+- `2026-03-17`: Focus-mode follow-up child slice merged to `main` in PR #231 (commit `31fb0b5`).
+  - Done child-slice brief:
+    - `docs/task-briefs/done/2026-03-17-admin-course-workspace-focus-mode-and-scroll-reduction-10-10.md`
+  - Delivered scope:
+    - Course Workspace now separates overview mode from focused module editing more clearly,
+    - active module scope no longer competes with a second fully expanded lesson surface,
+    - Help/Guide and regression coverage were updated in the same PR.
+  - Next:
+    - return to live content-production flow and log only the next real editorial friction batch.
     - Safari PR tooling now resolves Homebrew gh reliably and falls back with explicit diagnostics instead of silent compare-page drift.
   - Validation:
     - local `npm run verify:pre-pr` pass,
