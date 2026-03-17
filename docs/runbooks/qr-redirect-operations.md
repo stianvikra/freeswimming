@@ -7,16 +7,18 @@ Operate QR redirect links safely in admin, including create/update/rollback and 
 ## Scope
 
 - Admin QR registry: `/admin?tab=qr-links`
+- Contextual edit panels on lesson/page/product edit surfaces in `/admin?tab=content`
 - Redirect runtime route: `/go/v/[slug]`
 - Fallback route: `/go/unavailable`
 
 ## Safe Change Flow (Create/Update)
 
-1. Open `/admin?tab=qr-links`.
+1. Start from the current lesson/page/product edit surface when you are doing contextual editorial work, or open `/admin?tab=qr-links` for list-first registry work.
 2. Create or edit the QR link with a unique slug.
 3. Use only allowlisted HTTPS destinations.
-4. Save and verify link row shows expected `slug`, `status`, `placement`, and `content`.
-5. Open `/go/v/<slug>` in browser to confirm redirect lands correctly.
+4. Prefer the stable internal Freeswimming route as default destination (for lessons: `/course?lesson=<canonicalLessonId>`). Use external video or other allowlisted HTTPS destinations only as an advanced override.
+5. Save and verify link row shows expected `slug`, `status`, `placement`, and `content`.
+6. Open `/go/v/<slug>` in browser to confirm redirect lands correctly.
 
 ## Rollback Flow
 

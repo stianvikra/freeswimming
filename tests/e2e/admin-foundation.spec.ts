@@ -495,6 +495,42 @@ test.describe("admin foundation", () => {
       await workspaceModuleSelect.selectOption(fixtureModuleValue);
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
 
+      const workspaceLessonTitle = `Workspace lesson ${unique}`;
+      const workspaceLessonSlug = `${slug}-workspace-lesson`;
+      await lessonWorkspace.getByRole("button", { name: "Add lesson in this module" }).click();
+      const workspaceCreateForm = lessonWorkspace.getByTestId("admin-workspace-lesson-create-form");
+      await expect(workspaceCreateForm).toBeVisible();
+      await expect(workspaceCreateForm.getByLabel("Parent module")).toHaveValue(fixtureModuleValue);
+      await workspaceCreateForm.getByLabel("Title").fill(workspaceLessonTitle);
+      await workspaceCreateForm.getByLabel("Slug (optional)").fill(workspaceLessonSlug);
+      await workspaceCreateForm
+        .getByLabel("Summary")
+        .fill("Created from module-scoped workspace context.");
+      await workspaceCreateForm.getByRole("button", { name: "Create lesson" }).click();
+      await expect(
+        page.getByText("Lesson created in selected module. Opening editor.")
+      ).toBeVisible();
+      await expect(listTypeFilter).toHaveValue("course_lesson");
+      const workspaceCreatedItem = page
+        .getByTestId("admin-content-item")
+        .filter({ hasText: workspaceLessonTitle })
+        .first();
+      const workspaceCreatedEditForm = workspaceCreatedItem.getByTestId("admin-content-edit-form");
+      await expect(workspaceCreatedEditForm).toBeVisible();
+      await expect(workspaceCreatedEditForm.getByText("Parent module")).toBeVisible();
+      await expect(workspaceCreatedEditForm.getByTestId("admin-context-notes-panel")).toBeVisible();
+      const qrPanel = workspaceCreatedEditForm.getByTestId("admin-context-qr-panel");
+      await expect(qrPanel).toBeVisible();
+      const qrCreateForm = qrPanel.getByTestId("admin-context-qr-create-form");
+      await expect(qrCreateForm.getByLabel("Slug")).toHaveValue(/--workspace-lesson(?:-2)?$/);
+      await expect(qrCreateForm.getByLabel("Destination URL (https)")).toHaveValue(
+        /\/course\?lesson=/
+      );
+
+      await courseWorkspaceTab.click();
+      await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
+      await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
+
       const workspaceLessonRow = lessonWorkspace
         .getByTestId("admin-workspace-lesson-row")
         .filter({ hasText: lessonFixtureTitle })

@@ -230,9 +230,18 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-17`: Child slice moved from planned to in-progress and implementation started.
+  - Active child-slice brief:
+    - `docs/task-briefs/in-progress/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
+  - Current implementation focus:
+    - course lesson create from module context,
+    - inline contextual notes inside edit flow,
+    - inline contextual QR create/manage for lesson/page/product edit surfaces.
+  - Next:
+    - finish targeted coverage + gates, then PR and merge back into this parent track.
 - `2026-03-17`: Planned next friction-driven AW-013 follow-up captured from real editorial session.
   - New planned child-slice brief:
-    - `docs/task-briefs/planned/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
+    - `docs/task-briefs/in-progress/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
   - Why this is a child slice instead of a new unrelated brief:
     - it extends the existing admin edit workflow rather than replacing it,
     - it reuses existing foundations already in code:
