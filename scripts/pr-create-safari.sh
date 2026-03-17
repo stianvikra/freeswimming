@@ -11,6 +11,9 @@ set -euo pipefail
 #   bash scripts/pr-create-safari.sh --refresh-body [branch]
 #   bash scripts/pr-create-safari.sh --print [branch]
 
+# shellcheck source=/dev/null
+source "$(dirname "$0")/lib/resolve-gh-cli.sh"
+
 base_branch="main"
 print_only=0
 branch=""
@@ -84,6 +87,9 @@ existing_pr_url=""
 created_pr_url=""
 generated_body_file=""
 generated_title=""
+gh_bin=""
+gh_fallback_reason=""
+gh_resolution_message=""
 
 generated_title="$(git log -1 --pretty=%s 2>/dev/null || true)"
 generated_body_file="$(generate_body_file)"
@@ -95,13 +101,15 @@ cleanup_generated_file() {
 }
 trap cleanup_generated_file EXIT
 
-if command -v gh >/dev/null 2>&1; then
-  if gh auth status >/dev/null 2>&1; then
-    existing_pr_url="$(gh pr list --head "$branch" --state open --json url -q '.[0].url' 2>/dev/null || true)"
+gh_bin="$(resolve_gh_bin 2>/dev/null || true)"
+
+if [ -n "$gh_bin" ]; then
+  if gh_cli_is_authenticated "$gh_bin"; then
+    existing_pr_url="$("$gh_bin" pr list --head "$branch" --state open --json url -q '.[0].url' 2>/dev/null || true)"
     if [ -z "$existing_pr_url" ]; then
       if [ -n "$generated_body_file" ] && [ -n "$generated_title" ]; then
         created_pr_url="$(
-          gh pr create \
+          "$gh_bin" pr create \
             --base "$base_branch" \
             --head "$branch" \
             --title "$generated_title" \
@@ -109,17 +117,35 @@ if command -v gh >/dev/null 2>&1; then
             2>/dev/null || true
         )"
       else
-        created_pr_url="$(gh pr create --base "$base_branch" --head "$branch" --fill 2>/dev/null || true)"
+        created_pr_url="$("$gh_bin" pr create --base "$base_branch" --head "$branch" --fill 2>/dev/null || true)"
+      fi
+      if [ -n "$created_pr_url" ]; then
+        gh_resolution_message="Created PR via GitHub CLI (${gh_bin})."
       fi
     elif [ "$refresh_body" -eq 1 ] && [ -n "$generated_body_file" ] && [ -n "$generated_title" ]; then
-      gh pr edit "$existing_pr_url" --title "$generated_title" --body-file "$generated_body_file" >/dev/null 2>&1 || true
+      "$gh_bin" pr edit "$existing_pr_url" --title "$generated_title" --body-file "$generated_body_file" >/dev/null 2>&1 || true
+      gh_resolution_message="Using existing PR via GitHub CLI (${gh_bin}) and refreshed PR metadata."
+    else
+      gh_resolution_message="Using existing PR via GitHub CLI (${gh_bin})."
     fi
+  else
+    gh_fallback_reason="GitHub CLI found at ${gh_bin} but auth is unavailable."
   fi
+else
+  gh_fallback_reason="GitHub CLI not found on PATH or common Homebrew locations."
 fi
 
 pr_url="${created_pr_url:-$existing_pr_url}"
 if [ -z "$pr_url" ]; then
+  if [ -z "$gh_fallback_reason" ] && [ -n "$gh_bin" ]; then
+    gh_fallback_reason="GitHub CLI at ${gh_bin} did not return a PR URL."
+  fi
+  if [ "$print_only" -ne 1 ] && [ -n "$gh_fallback_reason" ]; then
+    echo "[pr-create-safari] ${gh_fallback_reason} Falling back to Safari PR URL."
+  fi
   pr_url="$(get_fallback_url)"
+elif [ "$print_only" -ne 1 ] && [ -n "$gh_resolution_message" ]; then
+  echo "[pr-create-safari] ${gh_resolution_message}"
 fi
 
 open_in_safari "$pr_url"

@@ -31,6 +31,7 @@ import {
   type CourseStructureLessonRow,
   type CourseStructureModuleRow,
 } from "@/lib/admin/course-structure";
+import { buildCourseWorkspaceLessonsByModuleId } from "@/lib/admin/course-workspace";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import { buildCoursePreviewHref, resolveCoursePreviewModeFromStatus } from "@/lib/course/preview";
 import { resolveCourseLessonRuntimeId } from "@/lib/course/runtime-identity";
@@ -932,6 +933,12 @@ export default function AdminContentManager() {
     return byModuleId;
   }, [courseLessonWorkspaceItems, courseModuleWorkspaceItems]);
 
+  const workspaceLessonsByModuleId = useMemo(
+    () =>
+      buildCourseWorkspaceLessonsByModuleId(courseModuleWorkspaceItems, courseLessonWorkspaceItems),
+    [courseLessonWorkspaceItems, courseModuleWorkspaceItems]
+  );
+
   const hasNonCourseItems = useMemo(
     () => items.some((item) => !COURSE_CONTENT_TYPES.has(item.content_type)),
     [items]
@@ -959,6 +966,16 @@ export default function AdminContentManager() {
     }
     return courseLessonWorkspaceItems.filter((item) => item.parentId === workspaceModuleId);
   }, [courseLessonWorkspaceItems, moduleIdSet, workspaceModuleId]);
+
+  const workspaceScopeLabel = useMemo(() => {
+    if (workspaceModuleId === WORKSPACE_ALL_MODULES_ID) {
+      return `All modules (${courseLessonWorkspaceItems.length} lessons)`;
+    }
+    if (workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID) {
+      return `Unlinked lessons (${unlinkedLessonCount})`;
+    }
+    return moduleLabelById.get(workspaceModuleId) ?? "Selected module";
+  }, [courseLessonWorkspaceItems.length, moduleLabelById, unlinkedLessonCount, workspaceModuleId]);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = listQuery.trim().toLowerCase();
@@ -1574,6 +1591,21 @@ export default function AdminContentManager() {
 
   function handleWorkspaceFocusModule(moduleId: string) {
     handleWorkspaceScopeChange(moduleId);
+  }
+
+  function scrollToCourseWorkspace() {
+    if (typeof document === "undefined") return;
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('[data-testid="admin-course-lesson-workspace"]')
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function focusCourseWorkspaceScope(nextWorkspaceModuleId: string) {
+    handleWorkspaceScopeChange(nextWorkspaceModuleId);
+    setContentPrimaryView("course_workspace");
+    scrollToCourseWorkspace();
   }
 
   function focusModuleEdit(moduleItem: AdminContentItemRow) {
@@ -2598,10 +2630,12 @@ export default function AdminContentManager() {
                 {courseModuleWorkspaceItems.map((moduleItem) => {
                   const moduleLessonCounts =
                     lessonStatusCountsByModuleId.get(moduleItem.id) ?? createStatusCountByState();
+                  const moduleLessons = workspaceLessonsByModuleId.get(moduleItem.id) ?? [];
                   const moduleLessonCount = Object.values(moduleLessonCounts).reduce(
                     (sum, value) => sum + value,
                     0
                   );
+                  const moduleScopeActive = workspaceModuleId === moduleItem.id;
                   const modulePreviewLessonId = firstRuntimeLessonIdByModuleId.get(moduleItem.id);
                   const modulePreviewUrl = modulePreviewLessonId
                     ? buildCoursePreviewHref({
@@ -2615,7 +2649,12 @@ export default function AdminContentManager() {
                   return (
                     <li
                       key={moduleItem.id}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+                      className={[
+                        "rounded-lg border px-3 py-2",
+                        moduleScopeActive
+                          ? "border-blue-300 bg-blue-50/40"
+                          : "border-slate-200 bg-white",
+                      ].join(" ")}
                       data-testid="admin-course-module-status-row"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2631,6 +2670,11 @@ export default function AdminContentManager() {
                           {statusLabel(moduleItem.status)}
                         </span>
                       </div>
+                      {moduleScopeActive ? (
+                        <p className="mt-1 text-[11px] font-semibold text-blue-800">
+                          Active module scope
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-xs text-slate-600">
                         {moduleLessonCount} linked lesson{moduleLessonCount === 1 ? "" : "s"} ·{" "}
                         {statusCountSummary(moduleLessonCounts)}
@@ -2672,10 +2716,85 @@ export default function AdminContentManager() {
                           </span>
                         )}
                       </div>
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            Lessons in this module
+                          </p>
+                          {moduleLessonCount > 0 ? (
+                            <span className="text-[11px] text-slate-500">
+                              Ordered for editorial review
+                            </span>
+                          ) : null}
+                        </div>
+                        {moduleLessons.length === 0 ? (
+                          <p className="mt-2 text-xs text-slate-500">
+                            No lessons linked to this module yet.
+                          </p>
+                        ) : (
+                          <ol
+                            className="mt-2 space-y-1"
+                            data-testid={`admin-course-module-lesson-list-${moduleItem.id}`}
+                          >
+                            {moduleLessons.map((lesson, lessonIndex) => (
+                              <li
+                                key={lesson.id}
+                                data-testid="admin-course-module-lesson-row"
+                                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-2 py-2"
+                              >
+                                <div className="min-w-[220px]">
+                                  <p className="text-xs font-medium text-slate-900">
+                                    {lessonIndex + 1}. {lesson.title}
+                                  </p>
+                                  <p className="mt-1 text-[11px] text-slate-500">
+                                    /{lesson.slug} · id: {lesson.runtimeLessonId}
+                                  </p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={[
+                                      "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold",
+                                      statusChipClass(lesson.status),
+                                    ].join(" ")}
+                                  >
+                                    {statusLabel(lesson.status)}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleWorkspaceEditLesson(lesson.id)}
+                                    className="inline-flex h-7 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-medium text-blue-800 transition hover:bg-blue-100"
+                                  >
+                                    Edit lesson
+                                  </button>
+                                </div>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                      </div>
                     </li>
                   );
                 })}
               </ul>
+            ) : null}
+
+            {workspaceModuleId !== WORKSPACE_ALL_MODULES_ID ? (
+              <div
+                className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2"
+                data-testid="admin-course-workspace-current-scope"
+              >
+                <div>
+                  <p className="text-xs font-semibold text-blue-900">Current workspace scope</p>
+                  <p className="text-xs text-blue-800">{workspaceScopeLabel}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => focusCourseWorkspaceScope(WORKSPACE_ALL_MODULES_ID)}
+                  className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+                >
+                  Show all modules
+                </button>
+              </div>
             ) : null}
 
             <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -3081,6 +3200,20 @@ export default function AdminContentManager() {
                 ? resolveAdminContentEditNotesContext(item)
                 : null;
               const editQrContext = isEditingRow ? resolveAdminContentEditQrContext(item) : null;
+              const courseWorkspaceScopeId =
+                item.content_type === "course_module"
+                  ? item.id
+                  : item.content_type === "course_lesson"
+                    ? item.parent_id && moduleIdSet.has(item.parent_id)
+                      ? item.parent_id
+                      : WORKSPACE_UNLINKED_MODULE_ID
+                    : null;
+              const courseWorkspaceScopeLabel =
+                courseWorkspaceScopeId === WORKSPACE_UNLINKED_MODULE_ID
+                  ? "unlinked lessons"
+                  : courseWorkspaceScopeId
+                    ? (moduleLabelById.get(courseWorkspaceScopeId) ?? "selected module")
+                    : null;
               const moduleMoveBounds =
                 item.content_type === "course_module"
                   ? moduleMoveBoundsById.get(item.id)
@@ -3110,6 +3243,28 @@ export default function AdminContentManager() {
                           className="mt-3 rounded-lg border border-blue-200 bg-white p-3"
                           data-testid="admin-content-edit-form"
                         >
+                          {courseWorkspaceScopeId && courseWorkspaceScopeLabel ? (
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                              <div>
+                                <p className="text-xs font-semibold text-slate-700">
+                                  Course workspace context
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  Return to {courseWorkspaceScopeLabel} to continue module-scoped
+                                  editing.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => focusCourseWorkspaceScope(courseWorkspaceScopeId)}
+                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                              >
+                                {courseWorkspaceScopeId === WORKSPACE_UNLINKED_MODULE_ID
+                                  ? "Back to unlinked lessons"
+                                  : "Back to module workspace"}
+                              </button>
+                            </div>
+                          ) : null}
                           <div className="grid gap-3 sm:grid-cols-2">
                             <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
                               <span>Title</span>

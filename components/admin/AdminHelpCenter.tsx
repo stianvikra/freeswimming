@@ -115,7 +115,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Course workspace (modules -> lessons)",
     detail:
-      "Use this first for day-to-day course production. It keeps module context and linked lessons together, and `Add lesson` now starts a new lesson in the current module by default instead of creating it loose and repairing parent linkage later.",
+      "Use this first for day-to-day course production. Module cards now show linked lesson titles in order, keep module context visible, and `Add lesson` starts a new lesson in the current module by default instead of creating it loose and repairing parent linkage later.",
   },
   {
     title: "Course identity: slug vs runtime ID",

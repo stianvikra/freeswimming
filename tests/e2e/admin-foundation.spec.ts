@@ -494,6 +494,14 @@ test.describe("admin foundation", () => {
       }, lessonFixtureModule.id);
       await workspaceModuleSelect.selectOption(fixtureModuleValue);
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
+      const scopedModuleRow = lessonWorkspace
+        .getByTestId("admin-course-module-status-row")
+        .filter({ hasText: lessonFixtureModule.title })
+        .first();
+      await expect(scopedModuleRow).toContainText("Active module scope");
+      await expect(scopedModuleRow.getByTestId("admin-course-module-lesson-row")).toContainText(
+        lessonFixtureTitle
+      );
 
       const workspaceLessonTitle = `Workspace lesson ${unique}`;
       const workspaceLessonSlug = `${slug}-workspace-lesson`;
@@ -530,6 +538,9 @@ test.describe("admin foundation", () => {
       await courseWorkspaceTab.click();
       await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
+      await expect(page.getByTestId("admin-course-workspace-current-scope")).toContainText(
+        fixtureModuleLabel
+      );
 
       const workspaceLessonRow = lessonWorkspace
         .getByTestId("admin-workspace-lesson-row")
@@ -561,6 +572,21 @@ test.describe("admin foundation", () => {
         .filter({ hasText: lessonFixtureTitle })
         .first();
       const fixtureLessonEditForm = fixtureLessonItem.getByTestId("admin-content-edit-form");
+      await expect(fixtureLessonEditForm).toBeVisible();
+      await expect(fixtureLessonEditForm).toContainText("Course workspace context");
+      await expect(
+        fixtureLessonEditForm.getByRole("button", { name: "Back to module workspace" })
+      ).toBeVisible();
+      await fixtureLessonEditForm.getByRole("button", { name: "Back to module workspace" }).click();
+      await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
+      await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
+      await expect(page.getByTestId("admin-course-workspace-current-scope")).toContainText(
+        fixtureModuleLabel
+      );
+
+      await workspaceLessonRow.getByRole("button", { name: "Edit lesson" }).click();
+      await expect(listTypeFilter).toHaveValue("course_lesson");
+      await expect(focusModeBanner).toContainText(`Focus mode: ${fixtureModuleLabel}`);
       await expect(fixtureLessonEditForm).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Lesson body editor")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Lesson runtime ID")).toBeVisible();

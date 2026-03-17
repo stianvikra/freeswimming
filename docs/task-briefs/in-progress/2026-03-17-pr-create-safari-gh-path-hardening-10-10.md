@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-17-pr-create-safari-gh-path-hardening-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-17`
 - `updated`: `2026-03-17`
@@ -191,3 +191,13 @@ Critical target categories for `10/10` claim in this brief:
   - Mitigation: preserve fallback contract and add explicit tests for the fallback branch.
 - Risk: shell logic becomes too opaque.
   - Mitigation: keep helper logic small, commented, and testable.
+
+## Session Continuity And Recovery
+
+1. `git status -sb`
+2. `git log --oneline -n 10`
+3. reopen this brief and continue from the latest checkpoint.
+
+## Checkpoint Log
+
+- `2026-03-17 | kickoff | moved brief from planned to in-progress on branch feat/admin-workspace-hierarchy-and-safari-pr-hardening; implementation started for Homebrew gh discovery, explicit success/fallback diagnostics, and deterministic --print regression coverage | next: finish script-level validation, run `npm run verify:pre-pr`, then open/update PR`

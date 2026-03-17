@@ -58,6 +58,9 @@ test.describe("admin help center", () => {
     ).toBeVisible();
 
     await expect(page.getByText("Course Workspace / All Content tabs:")).toBeVisible();
+    await expect(
+      page.getByText("Module cards now show linked lesson titles in order")
+    ).toBeVisible();
     await expect(page.getByText("Course identity: slug vs runtime ID")).toBeVisible();
     await expect(
       page.getByText("Slug is the human-readable content key and can be renamed carefully.")

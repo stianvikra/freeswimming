@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-17`
 - `updated`: `2026-03-17`
@@ -217,3 +217,13 @@ Critical target categories for `10/10` claim in this brief:
   - Mitigation: derive child lists only from canonical refreshed rows and add regression coverage.
 - Risk: lesson edit flow loses module context.
   - Mitigation: make module return path and current module context explicit in edit mode.
+
+## Session Continuity And Recovery
+
+1. `git status -sb`
+2. `git log --oneline -n 10`
+3. reopen this brief and continue from the latest checkpoint.
+
+## Checkpoint Log
+
+- `2026-03-17 | kickoff | moved brief from planned to in-progress on branch feat/admin-workspace-hierarchy-and-safari-pr-hardening; implementation started for explicit module -> lesson visibility, return-to-module context, Help/Guide alignment, and unit/e2e regression coverage | next: finish targeted tests, run `npm run verify:pre-pr`, then open/update PR`
