@@ -232,16 +232,16 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-17`: Planned next child slice captured for course-workspace hierarchy clarity.
   - New planned child-slice brief:
-    - `docs/task-briefs/in-progress/2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10.md`
+    - `docs/task-briefs/done/2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10.md`
   - Why this is still part of this parent:
     - current Course Workspace already supports module scope, contextual lesson create, and safe structural actions, but it still does not show module -> lesson relationships explicitly enough for true 10/10 editorial speed.
   - Out-of-parent note:
-    - Safari PR flow hardening is tracked separately as repo-tooling in `docs/task-briefs/in-progress/2026-03-17-pr-create-safari-gh-path-hardening-10-10.md`, not as admin-product scope.
+    - Safari PR flow hardening is tracked separately as repo-tooling in `docs/task-briefs/done/2026-03-17-pr-create-safari-gh-path-hardening-10-10.md`, not as admin-product scope.
   - Next:
     - decide whether to execute the hierarchy slice immediately from live editorial friction or keep it queued until the next repeated module-sorting/content-production session.
 - `2026-03-17`: Hierarchy child slice moved to in-progress and implementation started from live editorial friction.
   - Active child-slice brief:
-    - `docs/task-briefs/in-progress/2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10.md`
+    - `docs/task-briefs/done/2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10.md`
   - Implementation focus:
     - explicit module cards with ordered child-lesson visibility,
     - return-to-module context from lesson edit mode,
@@ -250,6 +250,20 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
     - Safari PR hardening is being implemented in parallel only as repo-tooling support, not as parent product scope.
   - Next:
     - finish targeted coverage and gates, then open/update implementation PR.
+- `2026-03-17`: Hierarchy child slice and parallel Safari tooling hardening both merged to \`main\` in PR #229 (commit \`1b99034\`).
+  - Done child-slice brief:
+    - `docs/task-briefs/done/2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10.md`
+  - Parallel done tooling brief:
+    - `docs/task-briefs/done/2026-03-17-pr-create-safari-gh-path-hardening-10-10.md`
+  - Delivered scope:
+    - Course Workspace now shows explicit module -> lesson hierarchy with stronger context continuity in edit flow.
+    - Safari PR tooling now resolves Homebrew gh reliably and falls back with explicit diagnostics instead of silent compare-page drift.
+  - Validation:
+    - local `npm run verify:pre-pr` pass,
+    - local `npm run verify:pre-merge` pass,
+    - required GitHub checks green on PR #229 before merge.
+  - Next:
+    - resume real content-production/admin-editing work and log only the next actual friction batch.
 - `2026-03-17`: AW-013 child slice merged to `main` (PR #226, commit \`1531588\`).
   - Done child-slice brief:
     - `docs/task-briefs/done/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
