@@ -8,6 +8,9 @@ set -euo pipefail
 #   bash scripts/open-pr-safari.sh <https://github.com/.../pull/...>
 #   bash scripts/open-pr-safari.sh --print [branch|url]
 
+# shellcheck source=/dev/null
+source "$(dirname "$0")/lib/resolve-gh-cli.sh"
+
 print_only=0
 if [ "${1:-}" = "--print" ]; then
   print_only=1
@@ -53,6 +56,9 @@ get_repo_owner_and_name() {
 
 pr_url=""
 branch=""
+gh_bin=""
+gh_fallback_reason=""
+gh_resolution_message=""
 
 if [ -n "$target" ] && is_url "$target"; then
   pr_url="$target"
@@ -63,26 +69,42 @@ else
     branch="$(git branch --show-current)"
   fi
 
-  if command -v gh >/dev/null 2>&1; then
+  gh_bin="$(resolve_gh_bin 2>/dev/null || true)"
+
+  if [ -n "$gh_bin" ] && gh_cli_is_authenticated "$gh_bin"; then
     if [ -z "$target" ]; then
-      pr_url="$(gh pr view --json url -q .url 2>/dev/null || true)"
+      pr_url="$("$gh_bin" pr view --json url -q .url 2>/dev/null || true)"
     fi
 
     if [ -z "$pr_url" ]; then
-      pr_url="$(gh pr list --head "$branch" --state open --json url -q '.[0].url' 2>/dev/null || true)"
+      pr_url="$("$gh_bin" pr list --head "$branch" --state open --json url -q '.[0].url' 2>/dev/null || true)"
     fi
+    if [ -n "$pr_url" ]; then
+      gh_resolution_message="Resolved PR URL via GitHub CLI (${gh_bin})."
+    fi
+  elif [ -n "$gh_bin" ]; then
+    gh_fallback_reason="GitHub CLI found at ${gh_bin} but auth is unavailable."
+  else
+    gh_fallback_reason="GitHub CLI not found on PATH or common Homebrew locations."
   fi
 
   if [ -z "$pr_url" ]; then
     repo_path="$(get_repo_owner_and_name)"
     branch_encoded="${branch//\//%2F}"
     pr_url="https://github.com/${repo_path}/pull/new/${branch_encoded}"
+    if [ "$print_only" -ne 1 ] && [ -n "$gh_fallback_reason" ]; then
+      echo "[open-pr-safari] ${gh_fallback_reason} Falling back to compare/new PR URL."
+    fi
   fi
 fi
 
 if [ "$print_only" -eq 1 ]; then
   echo "$pr_url"
   exit 0
+fi
+
+if [ -n "$gh_resolution_message" ]; then
+  echo "[open-pr-safari] ${gh_resolution_message}"
 fi
 
 osascript \
