@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-22`
-- `updated`: `2026-02-27`
+- `updated`: `2026-03-17`
 
 ## Goal
 
@@ -229,6 +229,24 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. reopen this brief and continue from current implementation slice.
 
 ## Checkpoint Log
+
+- `2026-03-17`: Planned next friction-driven AW-013 follow-up captured from real editorial session.
+  - New planned child-slice brief:
+    - `docs/task-briefs/planned/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
+  - Why this is a child slice instead of a new unrelated brief:
+    - it extends the existing admin edit workflow rather than replacing it,
+    - it reuses existing foundations already in code:
+      - course workspace/module context,
+      - contextual admin notes,
+      - QR registry + lesson-row QR prefill.
+  - Friction covered:
+    - create new lesson in correct module from current context,
+    - show admin notes inside edit workflow,
+    - show/create/manage QR links from edit surfaces with stable `/go/v/[slug]` contract.
+  - Explicitly held outside that slice:
+    - dashboard/library active-state polish,
+    - iPhone spacing polish,
+    - my-library "new vs updated content" semantics.
 
 - `2026-02-27`: Slice 14 started on branch `feat/admin-content-edit-phase14-support-actions-aw013`.
   - Expanded lesson body editor support-card controls:
