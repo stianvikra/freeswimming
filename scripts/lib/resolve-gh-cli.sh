@@ -13,9 +13,11 @@ resolve_gh_bin() {
     return 0
   fi
 
-  if command -v gh >/dev/null 2>&1; then
-    command -v gh
-    return 0
+  if [ "${GH_SKIP_PATH_LOOKUP:-0}" != "1" ]; then
+    if command -v gh >/dev/null 2>&1; then
+      command -v gh
+      return 0
+    fi
   fi
 
   local candidate=""

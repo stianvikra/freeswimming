@@ -68,6 +68,7 @@ describe("resolve-gh-cli helper", () => {
     const resolved = runShell("source ./scripts/lib/resolve-gh-cli.sh; resolve_gh_bin", {
       PATH: "/usr/bin:/bin",
       GH_FALLBACK_PATHS: fakeGh,
+      GH_SKIP_PATH_LOOKUP: "1",
     });
 
     expect(resolved).toBe(fakeGh);
@@ -79,6 +80,7 @@ describe("resolve-gh-cli helper", () => {
         PATH: "/usr/bin:/bin",
         GH_FALLBACK_PATHS: "/definitely/missing/gh",
         GH_BIN: "",
+        GH_SKIP_PATH_LOOKUP: "1",
       })
     ).toThrow();
   });
@@ -115,6 +117,7 @@ describe("resolve-gh-cli helper", () => {
       PATH: "/usr/bin:/bin",
       GH_FALLBACK_PATHS: "/definitely/missing/gh",
       GH_BIN: "",
+      GH_SKIP_PATH_LOOKUP: "1",
     });
 
     expect(result).toBe(
@@ -145,6 +148,7 @@ describe("resolve-gh-cli helper", () => {
     const result = runShell("bash ./scripts/pr-create-safari.sh --print feature/test-branch", {
       PATH: "/usr/bin:/bin",
       GH_FALLBACK_PATHS: fakeGh,
+      GH_SKIP_PATH_LOOKUP: "1",
     });
 
     expect(result).toBe("https://github.com/stianvikra/freeswimming/pull/999");

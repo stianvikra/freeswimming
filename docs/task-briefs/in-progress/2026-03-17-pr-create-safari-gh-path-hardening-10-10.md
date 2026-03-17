@@ -201,3 +201,4 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-03-17 | kickoff | moved brief from planned to in-progress on branch feat/admin-workspace-hierarchy-and-safari-pr-hardening; implementation started for Homebrew gh discovery, explicit success/fallback diagnostics, and deterministic --print regression coverage | next: finish script-level validation, run `npm run verify:pre-pr`, then open/update PR`
+- `2026-03-17 | checkpoint | fixed PR #229 CI by making gh-resolution tests independent of runner PATH (`GH_SKIP_PATH_LOOKUP=1`for deterministic missing-gh scenarios); local`npm run verify:pre-pr` passed after the fix | next: commit and push the CI hardening, then let fresh GitHub verify rerun on the updated SHA`

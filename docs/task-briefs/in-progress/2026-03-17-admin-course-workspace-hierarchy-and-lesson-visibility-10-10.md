@@ -227,3 +227,4 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-03-17 | kickoff | moved brief from planned to in-progress on branch feat/admin-workspace-hierarchy-and-safari-pr-hardening; implementation started for explicit module -> lesson visibility, return-to-module context, Help/Guide alignment, and unit/e2e regression coverage | next: finish targeted tests, run `npm run verify:pre-pr`, then open/update PR`
+- `2026-03-17 | checkpoint | rebased feature branch onto main, confirmed #229 is the surviving PR, and hardened done-gate Playwright waits after one confirmed install/course-progress flake; local `npm run verify:pre-pr` passed on updated branch state | next: commit the CI hardening, push PR update, then rerun/monitor required GitHub checks`

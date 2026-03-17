@@ -35,10 +35,16 @@ async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
   for (let i = 0; i < count; i += 1) {
     const checkbox = checkboxes.nth(i);
     if (await checkbox.isChecked()) continue;
+    await expect(checkbox).toBeEnabled();
     await checkbox.check();
+    await expect(checkbox).toBeChecked();
   }
 
-  await expect(markDoneButton).toBeEnabled();
+  await expect
+    .poll(async () => markDoneButton.isEnabled(), {
+      timeout: 5_000,
+    })
+    .toBe(true);
 }
 
 test("signed-in mark-as-done syncs to account progress API", async ({ page }, testInfo) => {

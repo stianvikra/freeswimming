@@ -78,10 +78,16 @@ async function satisfyDoneGateIfPresent(page: Page) {
   for (let i = 0; i < count; i += 1) {
     const checkbox = checkboxes.nth(i);
     if (await checkbox.isChecked()) continue;
+    await expect(checkbox).toBeEnabled();
     await checkbox.check();
+    await expect(checkbox).toBeChecked();
   }
 
-  await expect(markDoneButton).toBeEnabled();
+  await expect
+    .poll(async () => markDoneButton.isEnabled(), {
+      timeout: 5_000,
+    })
+    .toBe(true);
 }
 
 async function activateMarkDoneButton(page: Page) {
