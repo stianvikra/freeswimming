@@ -36,10 +36,11 @@ function buildGetSupabase({
   error: null | { code?: string; message?: string };
 }) {
   const limit = vi.fn().mockResolvedValue({ data, error });
-  const order = vi.fn().mockReturnValue({ limit });
+  const eq = vi.fn().mockReturnValue({ limit });
+  const order = vi.fn().mockReturnValue({ limit, eq });
   const select = vi.fn().mockReturnValue({ order });
   const from = vi.fn().mockReturnValue({ select });
-  return { from, select, order, limit };
+  return { from, select, order, eq, limit };
 }
 
 function buildPostSupabase({
@@ -83,7 +84,7 @@ describe("/api/admin/qr-links route", () => {
       applySupabaseCookies: applyResponseCookiesIdentity,
     });
 
-    const response = await GET();
+    const response = await GET(new Request("https://freeswimming.org/api/admin/qr-links"));
     const payload = (await response.json()) as { ok?: boolean; error?: string };
 
     expect(response.status).toBe(403);
@@ -111,7 +112,7 @@ describe("/api/admin/qr-links route", () => {
       applySupabaseCookies: applyResponseCookiesIdentity,
     });
 
-    const response = await GET();
+    const response = await GET(new Request("https://freeswimming.org/api/admin/qr-links"));
     const payload = (await response.json()) as {
       ok?: boolean;
       items?: Array<{ slug?: string }>;
@@ -122,6 +123,53 @@ describe("/api/admin/qr-links route", () => {
     expect(payload.ok).toBe(true);
     expect(payload.schemaReady).toBe(true);
     expect(payload.items?.[0]?.slug).toBe("intro-video");
+  });
+
+  it("filters qr links by content item id when requested", async () => {
+    const supabase = buildGetSupabase({
+      data: [],
+      error: null,
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase,
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const contentItemId = "123e4567-e89b-42d3-a456-426614174000";
+    const response = await GET(
+      new Request(`https://freeswimming.org/api/admin/qr-links?contentItemId=${contentItemId}`)
+    );
+    const payload = (await response.json()) as { ok?: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(supabase.eq).toHaveBeenCalledWith("content_item_id", contentItemId);
+    expect(supabase.limit).toHaveBeenCalledWith(50);
+  });
+
+  it("rejects invalid qr content item filters", async () => {
+    const supabase = buildGetSupabase({
+      data: [],
+      error: null,
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase,
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await GET(
+      new Request("https://freeswimming.org/api/admin/qr-links?contentItemId=not-a-uuid")
+    );
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
+
+    expect(response.status).toBe(400);
+    expect(payload).toMatchObject({
+      ok: false,
+      error: "contentItemId must be a valid UUID.",
+    });
+    expect(supabase.eq).not.toHaveBeenCalled();
   });
 
   it("rejects create with disallowed destination host", async () => {

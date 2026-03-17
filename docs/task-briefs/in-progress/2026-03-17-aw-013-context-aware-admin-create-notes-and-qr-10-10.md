@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-17`
 - `updated`: `2026-03-17`
@@ -238,10 +238,7 @@ Critical target categories for `10/10` claim in this brief:
 3. Contextual QR status/create/manage surfaced inside edit workflows.
 4. Help/Guide + runbook alignment and negative-path hardening.
 
-## Questions To Confirm Before Implementation
+## Checkpoint Log
 
-One product decision is still worth explicit confirmation before coding:
-
-- Should lesson QR default to the internal learner lesson route (`/course?lesson=<lessonId>`) with external video as an advanced override?
-
-This brief assumes `yes`, because it is the safest and most coherent default with the current QR architecture.
+- `2026-03-17 | c4b5253 | integrated implementation + local pre-PR gate green | AW-013 implementation committed on branch \`feat/aw-013-context-aware-admin-create-notes-qr\`: context-aware lesson create now starts from the selected module with locked runtime-ID defaults, edit surfaces now expose contextual admin notes inline, and lesson/page/product edit flows now include contextual QR status/create/manage backed by filtered admin QR reads; targeted unit/e2e checks and full \`npm run verify:pre-pr\` passed (\`93\` unit files / \`403\` tests, Playwright \`81 passed\` / \`207 skipped\`) | perf trend recommendation: \`tighten\`; decision for this non-perf slice: \`hold\` and carry the tighten decision into the next perf-focused checkpoint/PR summary | next: push branch, open PR, and monitor required CI before running \`npm run verify:pre-merge\``
+- `2026-03-17 | in-progress | implementation started on branch \`feat/aw-013-context-aware-admin-create-notes-qr\`; verified overlap with existing briefs/code before editing, then shipped the first integrated pass: course create route now assigns locked course runtime IDs at create-time and requires a real parent module for new lessons, course workspace gained contextual lesson create, edit surfaces gained inline contextual notes, and lesson/page/product edit surfaces gained contextual QR create/manage panels backed by filtered QR API reads; Help/Guide and QR runbook updated to describe the new workflow | next: add targeted edit-context unit coverage + admin e2e assertions, run full \`verify:pre-pr\`, then open PR`

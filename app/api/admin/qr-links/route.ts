@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isUuid } from "@/lib/admin/content";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { parseCreateQrRedirectLinkPayload, type QrRedirectLinkRow } from "@/lib/qr-links/admin";
@@ -71,7 +72,7 @@ function readDestinationHost(destinationUrl: string): string {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
   const gate = await requireAdminRoleFromSupabase(supabase, {
     allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
@@ -84,11 +85,24 @@ export async function GET() {
     );
   }
 
-  const result = await supabase
+  const { searchParams } = new URL(request.url);
+  const contentItemId = searchParams.get("contentItemId")?.trim() ?? "";
+  if (contentItemId && !isUuid(contentItemId)) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "contentItemId must be a valid UUID." }, { status: 400 })
+    );
+  }
+
+  let query = supabase
     .from("qr_redirect_links")
     .select(selectedFields())
-    .order("updated_at", { ascending: false })
-    .limit(500);
+    .order("updated_at", { ascending: false });
+
+  if (contentItemId) {
+    query = query.eq("content_item_id", contentItemId);
+  }
+
+  const result = await query.limit(contentItemId ? 50 : 500);
 
   if (result.error) {
     if (isQrRedirectSchemaMissing(result.error)) {

@@ -16,7 +16,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-16";
+const LAST_UPDATED = "2026-03-17";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -115,7 +115,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Course workspace (modules -> lessons)",
     detail:
-      "Use this first for day-to-day course production. It keeps module context and linked lessons together.",
+      "Use this first for day-to-day course production. It keeps module context and linked lessons together, and `Add lesson` now starts a new lesson in the current module by default instead of creating it loose and repairing parent linkage later.",
   },
   {
     title: "Course identity: slug vs runtime ID",
@@ -135,7 +135,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Create content item form",
     detail:
-      "Create new draft records safely before review/publish. Required fields should be set before status upgrades.",
+      "Create new draft records safely before review/publish. Course lessons must now be linked to a parent module at creation so runtime context is locked from the start; use the course workspace button when you are already inside the right module.",
   },
   {
     title: "Status workflow",
@@ -149,6 +149,11 @@ const QR_WORKFLOW = [
     title: "Start with list-first overview",
     detail:
       "Use filters and search first to avoid duplicates. Open `New link` only when you need to create or patch a row.",
+  },
+  {
+    title: "Use edit-surface QR for in-context work",
+    detail:
+      "Lesson/page/product edit screens now show linked QR rows plus a compact create/manage panel. Use this for context-aware editorial work, then open the full registry when you need broader search, asset generation, or cross-content auditing.",
   },
   {
     title: "Create from required fields first",

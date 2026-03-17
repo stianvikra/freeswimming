@@ -3,6 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { buildAdminContentMirrorSnapshot } from "@/lib/admin/content-mirror";
 import { parseCreateAdminContentPayload } from "@/lib/admin/content";
+import {
+  applyCourseLessonRuntimeIdDefaults,
+  applyCourseModuleRuntimeIdDefaults,
+  readCourseParentModuleRuntimeId,
+  toCourseRuntimeBody,
+  type CourseIdentityRow,
+} from "@/lib/admin/course-runtime-defaults";
 import { resolveNextCourseStructureSortOrder } from "@/lib/admin/course-structure-sync";
 import {
   applyGuideRuntimeIdDefaults,
@@ -34,6 +41,10 @@ type GuideIdentityRow = Pick<
   Database["public"]["Tables"]["admin_content_items"]["Row"],
   "slug" | "body" | "sort_order"
 >;
+type CourseIdentityParentRow = Pick<
+  Database["public"]["Tables"]["admin_content_items"]["Row"],
+  "id" | "content_type" | "slug" | "body" | "parent_id"
+>;
 
 async function loadGuideIdentityRows(params: {
   supabase: SupabaseClient<Database>;
@@ -43,6 +54,13 @@ async function loadGuideIdentityRows(params: {
     .from("admin_content_items")
     .select("slug, body, sort_order")
     .eq("content_type", params.contentType);
+}
+
+async function loadCourseIdentityRows(params: { supabase: SupabaseClient<Database> }) {
+  return params.supabase
+    .from("admin_content_items")
+    .select("id, content_type, slug, body, parent_id")
+    .in("content_type", ["course_module", "course_lesson"]);
 }
 
 export async function GET() {
@@ -184,10 +202,12 @@ export async function POST(request: Request) {
     "sortOrder"
   );
 
+  let parentRow: CourseIdentityParentRow | null = null;
+
   if (parsed.value.parentId) {
     const parentResult = await supabase
       .from("admin_content_items")
-      .select("id")
+      .select("id, content_type, slug, body, parent_id")
       .eq("id", parsed.value.parentId)
       .maybeSingle();
 
@@ -215,6 +235,36 @@ export async function POST(request: Request) {
         noStoreJson({ ok: false, error: "Parent content item not found." }, { status: 400 })
       );
     }
+
+    parentRow = parentResult.data;
+  }
+
+  if (parsed.value.contentType === "course_module" && parsed.value.parentId) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Course modules cannot be linked under a parent content item." },
+        { status: 400 }
+      )
+    );
+  }
+
+  if (parsed.value.contentType === "course_lesson" && parsed.value.parentId && !parentRow) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Course lesson parent module not found." }, { status: 400 })
+    );
+  }
+
+  if (
+    parsed.value.contentType === "course_lesson" &&
+    parentRow &&
+    parentRow.content_type !== "course_module"
+  ) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Course lessons must be linked to a course module parent." },
+        { status: 400 }
+      )
+    );
   }
 
   let createSortOrder = parsed.value.sortOrder;
@@ -255,6 +305,87 @@ export async function POST(request: Request) {
   }
 
   let createBody = parsed.value.body;
+  if (
+    parsed.value.contentType === "course_module" ||
+    parsed.value.contentType === "course_lesson"
+  ) {
+    const courseRowsResult = await loadCourseIdentityRows({ supabase });
+
+    if (courseRowsResult.error) {
+      if (isAdminContentSchemaMissing(courseRowsResult.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: getAdminSchemaSetupMessage("content"),
+              code: "ADMIN_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
+
+      console.error(
+        "[AdminContent] Could not resolve course runtime identity defaults",
+        courseRowsResult.error
+      );
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not resolve course identity defaults right now." },
+          { status: 500 }
+        )
+      );
+    }
+
+    const courseRows = (courseRowsResult.data ?? []) as CourseIdentityRow[];
+    const normalizedBody = toCourseRuntimeBody(parsed.value.body);
+
+    if (parsed.value.contentType === "course_module") {
+      const runtimeDefaults = applyCourseModuleRuntimeIdDefaults({
+        body: normalizedBody,
+        slug: parsed.value.slug,
+        rows: courseRows,
+      });
+
+      if (!runtimeDefaults.ok) {
+        return applySupabaseCookies(
+          noStoreJson({ ok: false, error: runtimeDefaults.error }, { status: 400 })
+        );
+      }
+
+      createBody = runtimeDefaults.body;
+    } else {
+      const parentModuleRuntimeId = readCourseParentModuleRuntimeId(parentRow);
+      if (!parentModuleRuntimeId) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error:
+                "Course lessons must be created with a valid parent module so module context is locked from the start.",
+            },
+            { status: 400 }
+          )
+        );
+      }
+
+      const runtimeDefaults = applyCourseLessonRuntimeIdDefaults({
+        body: normalizedBody,
+        slug: parsed.value.slug,
+        moduleRuntimeId: parentModuleRuntimeId,
+        rows: courseRows,
+      });
+
+      if (!runtimeDefaults.ok) {
+        return applySupabaseCookies(
+          noStoreJson({ ok: false, error: runtimeDefaults.error }, { status: 400 })
+        );
+      }
+
+      createBody = runtimeDefaults.body;
+    }
+  }
+
   if (parsed.value.contentType === "guide_session" || parsed.value.contentType === "guide_drill") {
     const guideRowsResult = await loadGuideIdentityRows({
       supabase,

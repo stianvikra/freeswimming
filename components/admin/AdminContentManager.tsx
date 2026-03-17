@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
+import AdminContextQrPanel from "@/components/admin/AdminContextQrPanel";
 import type { AdminRole } from "@/lib/admin/access";
 import type {
   AdminContentItemRow,
@@ -11,6 +13,10 @@ import type {
   AdminContentMirrorMetric as MirrorMetric,
   AdminContentMirrorSnapshot as MirrorSnapshot,
 } from "@/lib/admin/content-mirror";
+import {
+  resolveAdminContentEditNotesContext,
+  resolveAdminContentEditQrContext,
+} from "@/lib/admin/content-edit-context";
 import {
   ALL_CONTENT_SCOPE_STORAGE_KEY,
   CONTENT_PRIMARY_VIEW_STORAGE_KEY,
@@ -255,6 +261,7 @@ type FormState = {
   summary: string;
   category: string;
   status: AdminContentStatus;
+  parentId: string;
 };
 
 type EditFormState = {
@@ -314,6 +321,14 @@ type CourseModuleWorkspaceItem = {
   slug: string;
   status: AdminContentStatus;
   sortOrder: number;
+};
+
+type WorkspaceLessonCreateState = {
+  title: string;
+  slug: string;
+  summary: string;
+  status: AdminContentStatus;
+  parentId: string;
 };
 
 type StatusCountByState = Record<AdminContentStatus, number>;
@@ -381,6 +396,15 @@ const INITIAL_FORM: FormState = {
   summary: "",
   category: "General",
   status: "draft",
+  parentId: "",
+};
+
+const INITIAL_WORKSPACE_LESSON_CREATE_FORM: WorkspaceLessonCreateState = {
+  title: "",
+  slug: "",
+  summary: "",
+  status: "draft",
+  parentId: "",
 };
 
 function normalizeCategoryInput(value: string): string {
@@ -712,6 +736,11 @@ export default function AdminContentManager() {
   });
   const [showCourseRowsInContentList, setShowCourseRowsInContentList] = useState(false);
   const [workspaceModuleId, setWorkspaceModuleId] = useState(WORKSPACE_ALL_MODULES_ID);
+  const [workspaceLessonCreateOpen, setWorkspaceLessonCreateOpen] = useState(false);
+  const [workspaceLessonCreateState, setWorkspaceLessonCreateState] =
+    useState<WorkspaceLessonCreateState>(INITIAL_WORKSPACE_LESSON_CREATE_FORM);
+  const [workspaceLessonCreateSubmitting, setWorkspaceLessonCreateSubmitting] = useState(false);
+  const [workspaceLessonCreateError, setWorkspaceLessonCreateError] = useState<string | null>(null);
   const [courseStructureBusy, setCourseStructureBusy] = useState(false);
   const [courseStructureMessage, setCourseStructureMessage] = useState<string | null>(null);
   const [lessonMoveTargetById, setLessonMoveTargetById] = useState<Record<string, string>>({});
@@ -1335,6 +1364,21 @@ export default function AdminContentManager() {
   }, [courseLessonWorkspaceItems, moduleIdSet, moduleOptions]);
 
   useEffect(() => {
+    if (!workspaceLessonCreateOpen) return;
+    if (
+      workspaceLessonCreateState.parentId &&
+      moduleIdSet.has(workspaceLessonCreateState.parentId)
+    ) {
+      return;
+    }
+
+    setWorkspaceLessonCreateState((previous) => ({
+      ...previous,
+      parentId: moduleOptions[0]?.id ?? "",
+    }));
+  }, [moduleIdSet, moduleOptions, workspaceLessonCreateOpen, workspaceLessonCreateState.parentId]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(ALL_CONTENT_SCOPE_STORAGE_KEY, listTypeFilter);
   }, [listTypeFilter]);
@@ -1532,34 +1576,34 @@ export default function AdminContentManager() {
     handleWorkspaceScopeChange(moduleId);
   }
 
-  function handleWorkspaceEditModule(itemId: string) {
-    const moduleItem = items.find(
-      (item) => item.id === itemId && item.content_type === "course_module"
-    );
-    if (!moduleItem) return;
+  function focusModuleEdit(moduleItem: AdminContentItemRow) {
     handleStartEdit(moduleItem);
     setContentPrimaryView("all_content");
-    setWorkspaceModuleId(itemId);
+    setWorkspaceModuleId(moduleItem.id);
     setShowCourseRowsInContentList(true);
     setListTypeFilter("course_module");
     setListStatusFilter("all");
     setListQuery("");
     setListSort("default");
     setListModuleFilter("");
-    const moduleLabel = moduleLabelById.get(itemId) ?? moduleItem.title;
+    const moduleLabel = moduleLabelById.get(moduleItem.id) ?? moduleItem.title;
     setListFocusState({
       source: "workspace",
       label: `Focus mode: ${moduleLabel}`,
       detail: "Editing one module inside the course workspace.",
     });
-    scrollToContentRow(itemId);
+    scrollToContentRow(moduleItem.id);
   }
 
-  function handleWorkspaceEditLesson(itemId: string) {
-    const lessonItem = items.find(
-      (item) => item.id === itemId && item.content_type === "course_lesson"
+  function handleWorkspaceEditModule(itemId: string) {
+    const moduleItem = items.find(
+      (item) => item.id === itemId && item.content_type === "course_module"
     );
-    if (!lessonItem) return;
+    if (!moduleItem) return;
+    focusModuleEdit(moduleItem);
+  }
+
+  function focusLessonEdit(lessonItem: AdminContentItemRow) {
     handleStartEdit(lessonItem);
     setContentPrimaryView("all_content");
     const moduleScope =
@@ -1578,7 +1622,94 @@ export default function AdminContentManager() {
       label: `Focus mode: ${moduleLabel}`,
       detail: "Editing one lesson inside a module-scoped workspace.",
     });
-    scrollToContentRow(itemId);
+    scrollToContentRow(lessonItem.id);
+  }
+
+  function handleWorkspaceEditLesson(itemId: string) {
+    const lessonItem = items.find(
+      (item) => item.id === itemId && item.content_type === "course_lesson"
+    );
+    if (!lessonItem) return;
+    focusLessonEdit(lessonItem);
+  }
+
+  function openWorkspaceLessonCreate(moduleId: string) {
+    setWorkspaceModuleId(moduleId);
+    setWorkspaceLessonCreateState({
+      ...INITIAL_WORKSPACE_LESSON_CREATE_FORM,
+      parentId: moduleId,
+    });
+    setWorkspaceLessonCreateError(null);
+    setWorkspaceLessonCreateOpen(true);
+  }
+
+  async function createContentItem(params: {
+    contentType: AdminContentType;
+    title: string;
+    slug: string;
+    summary: string;
+    category: string;
+    status: AdminContentStatus;
+    parentId?: string;
+  }): Promise<AdminContentCreateResponse> {
+    const response = await fetch("/api/admin/content", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        contentType: params.contentType,
+        title: params.title,
+        slug: params.slug,
+        summary: params.summary,
+        category: params.category,
+        status: params.status,
+        ...(params.parentId ? { parentId: params.parentId } : {}),
+      }),
+    });
+
+    return (await response.json()) as AdminContentCreateResponse;
+  }
+
+  async function handleWorkspaceLessonCreate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (workspaceLessonCreateSubmitting) return;
+
+    setWorkspaceLessonCreateSubmitting(true);
+    setWorkspaceLessonCreateError(null);
+    setActionError(null);
+    setActionNotice(null);
+
+    try {
+      const payload = await createContentItem({
+        contentType: "course_lesson",
+        title: workspaceLessonCreateState.title,
+        slug: workspaceLessonCreateState.slug,
+        summary: workspaceLessonCreateState.summary,
+        category: "Course lessons",
+        status: workspaceLessonCreateState.status,
+        parentId: workspaceLessonCreateState.parentId,
+      });
+
+      if (!payload.ok) {
+        setWorkspaceLessonCreateError(payload.error ?? "Could not create lesson.");
+        return;
+      }
+
+      setItems((previous) => [payload.item, ...previous]);
+      setWorkspaceLessonCreateOpen(false);
+      setWorkspaceLessonCreateState({
+        ...INITIAL_WORKSPACE_LESSON_CREATE_FORM,
+        parentId: workspaceLessonCreateState.parentId,
+      });
+      setActionNotice("Lesson created in selected module. Opening editor.");
+      focusLessonEdit(payload.item);
+    } catch {
+      setWorkspaceLessonCreateError("Could not create lesson.");
+    } finally {
+      setWorkspaceLessonCreateSubmitting(false);
+    }
   }
 
   function validateEditForm(item: AdminContentItemRow, form: EditFormState): string | null {
@@ -1764,29 +1895,23 @@ export default function AdminContentManager() {
     setActionNotice(null);
 
     try {
-      const response = await fetch("/api/admin/content", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          contentType: formState.contentType,
-          title: formState.title,
-          slug: formState.slug,
-          summary: formState.summary,
-          category: formState.category,
-          status: formState.status,
-        }),
+      if (formState.contentType === "course_lesson" && !formState.parentId.trim()) {
+        setActionError("Course lessons must be created with a parent module.");
+        return;
+      }
+
+      const payload = await createContentItem({
+        contentType: formState.contentType,
+        title: formState.title,
+        slug: formState.slug,
+        summary: formState.summary,
+        category: formState.category,
+        status: formState.status,
+        parentId: formState.contentType === "course_lesson" ? formState.parentId : undefined,
       });
 
-      const payload = (await response.json()) as AdminContentCreateResponse;
-      if (!response.ok || !payload.ok) {
-        setActionError(
-          payload.ok
-            ? "Could not create content item."
-            : (payload.error ?? "Could not create content item.")
-        );
+      if (!payload.ok) {
+        setActionError(payload.error ?? "Could not create content item.");
         return;
       }
 
@@ -2525,6 +2650,13 @@ export default function AdminContentManager() {
                         >
                           Edit module
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => openWorkspaceLessonCreate(moduleItem.id)}
+                          className="inline-flex h-7 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100"
+                        >
+                          Add lesson
+                        </button>
                         {modulePreviewUrl ? (
                           <a
                             href={modulePreviewUrl}
@@ -2574,7 +2706,153 @@ export default function AdminContentManager() {
                   ) : null}
                 </select>
               </label>
+              {moduleIdSet.has(workspaceModuleId) ? (
+                <button
+                  type="button"
+                  onClick={() => openWorkspaceLessonCreate(workspaceModuleId)}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                >
+                  Add lesson in this module
+                </button>
+              ) : null}
             </div>
+
+            {workspaceLessonCreateOpen ? (
+              <form
+                className="mt-3 grid gap-3 rounded-xl border border-emerald-200 bg-white p-3 sm:grid-cols-2"
+                onSubmit={handleWorkspaceLessonCreate}
+                data-testid="admin-workspace-lesson-create-form"
+              >
+                <div className="sm:col-span-2">
+                  <h4 className="text-sm font-semibold text-slate-900">Create lesson in context</h4>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Start in the intended module now. You can still override the parent module
+                    before save if you intentionally want another module.
+                  </p>
+                </div>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <span>Parent module</span>
+                  <select
+                    value={workspaceLessonCreateState.parentId}
+                    onChange={(event) =>
+                      setWorkspaceLessonCreateState((previous) => ({
+                        ...previous,
+                        parentId: event.target.value,
+                      }))
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    <option value="">Select module</option>
+                    {moduleOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <span>Status</span>
+                  <select
+                    value={workspaceLessonCreateState.status}
+                    onChange={(event) =>
+                      setWorkspaceLessonCreateState((previous) => ({
+                        ...previous,
+                        status: event.target.value as AdminContentStatus,
+                      }))
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <span>Title</span>
+                  <input
+                    type="text"
+                    required
+                    value={workspaceLessonCreateState.title}
+                    onChange={(event) =>
+                      setWorkspaceLessonCreateState((previous) => ({
+                        ...previous,
+                        title: event.target.value,
+                      }))
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    placeholder="First breaths"
+                  />
+                </label>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <span>Slug (optional)</span>
+                  <input
+                    type="text"
+                    value={workspaceLessonCreateState.slug}
+                    onChange={(event) =>
+                      setWorkspaceLessonCreateState((previous) => ({
+                        ...previous,
+                        slug: event.target.value,
+                      }))
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    placeholder="first-breaths"
+                  />
+                  <p className="text-[11px] font-normal text-slate-500">
+                    Slug stays human-readable. Runtime lesson ID is assigned automatically and
+                    locked after creation.
+                  </p>
+                </label>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <span>Summary</span>
+                  <textarea
+                    rows={3}
+                    value={workspaceLessonCreateState.summary}
+                    onChange={(event) =>
+                      setWorkspaceLessonCreateState((previous) => ({
+                        ...previous,
+                        summary: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                    placeholder="What this lesson helps the swimmer do."
+                  />
+                </label>
+
+                {workspaceLessonCreateError ? (
+                  <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 sm:col-span-2">
+                    {workspaceLessonCreateError}
+                  </p>
+                ) : null}
+
+                <div className="flex flex-wrap gap-2 sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={workspaceLessonCreateSubmitting}
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {workspaceLessonCreateSubmitting ? "Creating…" : "Create lesson"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWorkspaceLessonCreateOpen(false);
+                      setWorkspaceLessonCreateError(null);
+                    }}
+                    disabled={workspaceLessonCreateSubmitting}
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : null}
 
             {workspaceLessons.length === 0 ? (
               <p className="mt-3 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-xs text-slate-600">
@@ -2799,6 +3077,10 @@ export default function AdminContentManager() {
               );
               const rowTypeLabel = CONTENT_TYPE_LABEL[item.content_type];
               const rowHint = rowContextHint(item);
+              const editNotesContext = isEditingRow
+                ? resolveAdminContentEditNotesContext(item)
+                : null;
+              const editQrContext = isEditingRow ? resolveAdminContentEditQrContext(item) : null;
               const moduleMoveBounds =
                 item.content_type === "course_module"
                   ? moduleMoveBoundsById.get(item.id)
@@ -3486,6 +3768,31 @@ export default function AdminContentManager() {
                             ) : null}
                           </div>
 
+                          {editNotesContext ? (
+                            <AdminContextNotesPanel
+                              contextType={editNotesContext.contextType}
+                              contextRef={editNotesContext.contextRef}
+                              contextLabel={editNotesContext.contextLabel}
+                              includeModuleContextForCourseLesson={
+                                editNotesContext.includeModuleContextForCourseLesson
+                              }
+                              collapsedByDefault={false}
+                              className="mt-3"
+                            />
+                          ) : null}
+
+                          {editQrContext ? (
+                            <AdminContextQrPanel
+                              contentItemId={editQrContext.contentItemId}
+                              contentLabel={editQrContext.contentLabel}
+                              slugHint={editQrContext.slugHint}
+                              destinationPath={editQrContext.destinationPath}
+                              placementKey={editQrContext.placementKey}
+                              destinationHelpText={editQrContext.destinationHelpText}
+                              className="mt-3"
+                            />
+                          ) : null}
+
                           {isEditDirty ? (
                             <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                               You have unsaved changes.
@@ -3915,6 +4222,33 @@ export default function AdminContentManager() {
                   ))}
                 </select>
               </label>
+
+              {formState.contentType === "course_lesson" ? (
+                <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                  <span>Parent module</span>
+                  <select
+                    value={formState.parentId}
+                    onChange={(e) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        parentId: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    <option value="">Select module</option>
+                    {moduleOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs font-normal text-slate-500">
+                    Lessons are now created with locked module context from the start. If you want a
+                    different module, choose it here before saving.
+                  </p>
+                </label>
+              ) : null}
 
               <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
                 <span>Title</span>

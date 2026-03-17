@@ -62,6 +62,7 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Slug is the human-readable content key and can be renamed carefully.")
     ).toBeVisible();
+    await expect(page.getByText("Add lesson")).toBeVisible();
     await expect(page.getByText("Guide identity: slug vs runtime ID")).toBeVisible();
     await expect(
       page.getByText(
@@ -74,6 +75,7 @@ test.describe("admin help center", () => {
       )
     ).toBeVisible();
     await expect(page.getByText("New link / Hide new link:")).toBeVisible();
+    await expect(page.getByText("Use edit-surface QR for in-context work")).toBeVisible();
     await expect(page.getByText("Required / Advanced (optional):")).toBeVisible();
     await expect(page.getByText("Create first QR link / Use example values:")).toBeVisible();
     await expect(page.getByText("Show QR:")).toBeVisible();
