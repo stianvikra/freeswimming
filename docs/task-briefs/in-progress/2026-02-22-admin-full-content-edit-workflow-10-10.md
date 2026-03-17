@@ -230,6 +230,15 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-03-17`: Planned next child slice captured for course-workspace hierarchy clarity.
+  - New planned child-slice brief:
+    - `docs/task-briefs/planned/2026-03-17-admin-course-workspace-hierarchy-and-lesson-visibility-10-10.md`
+  - Why this is still part of this parent:
+    - current Course Workspace already supports module scope, contextual lesson create, and safe structural actions, but it still does not show module -> lesson relationships explicitly enough for true 10/10 editorial speed.
+  - Out-of-parent note:
+    - Safari PR flow hardening is tracked separately as repo-tooling in `docs/task-briefs/planned/2026-03-17-pr-create-safari-gh-path-hardening-10-10.md`, not as admin-product scope.
+  - Next:
+    - decide whether to execute the hierarchy slice immediately from live editorial friction or keep it queued until the next repeated module-sorting/content-production session.
 - `2026-03-17`: AW-013 child slice merged to `main` (PR #226, commit \`1531588\`).
   - Done child-slice brief:
     - `docs/task-briefs/done/2026-03-17-aw-013-context-aware-admin-create-notes-and-qr-10-10.md`
