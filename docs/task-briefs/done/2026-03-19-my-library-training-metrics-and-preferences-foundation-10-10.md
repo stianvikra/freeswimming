@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-19-my-library-training-metrics-and-preferences-foundation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-19`
 - `updated`: `2026-03-19`
@@ -276,3 +276,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-03-19`: Child brief created and moved to `in-progress` for private training metrics and preferences foundation. `Personal records` stay deferred to a later child slice.
 - `2026-03-19 | feat/my-library-training-metrics-preferences-foundation | implemented training metrics + preferences foundation: added private CSS metric + training preferences schema/API/UI/export support, updated My Library summary/profile surfaces, added validation/authz/export/draft-recovery coverage, and ran targeted typecheck/unit/e2e plus full \`npm run verify:pre-pr\` PASS. Perf trend recommended \`tighten\` after another weekly green run; decision for this non-perf slice is \`hold\` and carry the ratchet decision in the next perf-focused workstream.`
+- `2026-03-19 | 4101d21 (main) | child slice 2 shipped via PR #239 with private CSS metric + structured training preferences on My Library/profile, export support, and green local/CI gates | next: take Personal records as the next child slice and keep generator-prefill work deferred`
