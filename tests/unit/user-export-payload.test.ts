@@ -66,6 +66,37 @@ describe("buildUserExportPayload", () => {
           updated_at: "2026-02-15T08:00:00.000Z",
         },
       ],
+      trainingFocuses: [
+        {
+          id: "focus-1",
+          goal_id: "goal-1",
+          title: "Longer exhale in the water",
+          details: "Relax before rotating to breathe.",
+          status: "active",
+          context_type: null,
+          context_ref: null,
+          completed_at: null,
+          archived_at: null,
+          created_at: "2026-03-19T08:00:00.000Z",
+          updated_at: "2026-03-19T08:00:00.000Z",
+        },
+      ],
+      trainingNotes: [
+        {
+          id: "note-1",
+          goal_id: "goal-1",
+          focus_id: "focus-1",
+          note_type: "question",
+          status: "answered",
+          body: "Am I lifting my head before breathing?",
+          answer: "Yes, keep one goggle in the water.",
+          context_type: null,
+          context_ref: null,
+          resolved_at: "2026-03-19T08:05:00.000Z",
+          created_at: "2026-03-19T08:00:00.000Z",
+          updated_at: "2026-03-19T08:05:00.000Z",
+        },
+      ],
       downloadLinks: [
         {
           id: "dl-1",
@@ -79,7 +110,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-02-17",
+      schemaVersion: "2026-03-19",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -143,6 +174,37 @@ describe("buildUserExportPayload", () => {
           updatedAt: "2026-02-15T08:00:00.000Z",
         },
       ],
+      trainingFocuses: [
+        {
+          id: "focus-1",
+          goalId: "goal-1",
+          title: "Longer exhale in the water",
+          details: "Relax before rotating to breathe.",
+          status: "active",
+          contextType: null,
+          contextRef: null,
+          completedAt: null,
+          archivedAt: null,
+          createdAt: "2026-03-19T08:00:00.000Z",
+          updatedAt: "2026-03-19T08:00:00.000Z",
+        },
+      ],
+      trainingNotes: [
+        {
+          id: "note-1",
+          goalId: "goal-1",
+          focusId: "focus-1",
+          noteType: "question",
+          status: "answered",
+          body: "Am I lifting my head before breathing?",
+          answer: "Yes, keep one goggle in the water.",
+          contextType: null,
+          contextRef: null,
+          resolvedAt: "2026-03-19T08:05:00.000Z",
+          createdAt: "2026-03-19T08:00:00.000Z",
+          updatedAt: "2026-03-19T08:05:00.000Z",
+        },
+      ],
       downloadLinks: [
         {
           id: "dl-1",
@@ -166,11 +228,15 @@ describe("buildUserExportPayload", () => {
       guideProgress: [],
       guideSessionProgress: [],
       goals: [],
+      trainingFocuses: [],
+      trainingNotes: [],
       downloadLinks: [],
     });
 
     expect(payload.profile).toBeNull();
     expect(payload.entitlements).toEqual([]);
+    expect(payload.trainingFocuses).toEqual([]);
+    expect(payload.trainingNotes).toEqual([]);
     expect(payload.downloadLinks).toEqual([]);
   });
 });

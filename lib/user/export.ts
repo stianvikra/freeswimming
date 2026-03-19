@@ -46,6 +46,37 @@ type GoalRow = Pick<
   | "updated_at"
 >;
 
+type TrainingFocusRow = Pick<
+  Database["public"]["Tables"]["training_focuses"]["Row"],
+  | "id"
+  | "goal_id"
+  | "title"
+  | "details"
+  | "status"
+  | "context_type"
+  | "context_ref"
+  | "completed_at"
+  | "archived_at"
+  | "created_at"
+  | "updated_at"
+>;
+
+type TrainingNoteRow = Pick<
+  Database["public"]["Tables"]["training_notes"]["Row"],
+  | "id"
+  | "goal_id"
+  | "focus_id"
+  | "note_type"
+  | "status"
+  | "body"
+  | "answer"
+  | "context_type"
+  | "context_ref"
+  | "resolved_at"
+  | "created_at"
+  | "updated_at"
+>;
+
 type DownloadLinkRow = Pick<
   Database["public"]["Tables"]["download_links"]["Row"],
   "id" | "entitlement_id" | "expires_at" | "used_at" | "created_at"
@@ -60,6 +91,8 @@ export type BuildUserExportPayloadInput = {
   guideProgress: GuideProgressRow[];
   guideSessionProgress: GuideSessionProgressRow[];
   goals: GoalRow[];
+  trainingFocuses: TrainingFocusRow[];
+  trainingNotes: TrainingNoteRow[];
   downloadLinks: DownloadLinkRow[];
   generatedAt?: string;
 };
@@ -69,7 +102,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-02-17",
+    schemaVersion: "2026-03-19",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -122,6 +155,33 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       targetDate: row.target_date,
       status: row.status,
       celebratedAt: row.celebrated_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    trainingFocuses: input.trainingFocuses.map((row) => ({
+      id: row.id,
+      goalId: row.goal_id,
+      title: row.title,
+      details: row.details,
+      status: row.status,
+      contextType: row.context_type,
+      contextRef: row.context_ref,
+      completedAt: row.completed_at,
+      archivedAt: row.archived_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    trainingNotes: input.trainingNotes.map((row) => ({
+      id: row.id,
+      goalId: row.goal_id,
+      focusId: row.focus_id,
+      noteType: row.note_type,
+      status: row.status,
+      body: row.body,
+      answer: row.answer,
+      contextType: row.context_type,
+      contextRef: row.context_ref,
+      resolvedAt: row.resolved_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     })),
