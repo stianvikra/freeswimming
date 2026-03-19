@@ -67,6 +67,7 @@ const AdminContextNotesPanel = dynamic(() => import("@/components/admin/AdminCon
 });
 
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
+const COMMON_MISTAKES_STORAGE_KEY_PREFIX = "fs_course_common_mistakes_expanded:";
 const SWIPE_NUX_STORAGE_KEY = "fs_course_swipe_nux_seen";
 const SWIPE_ZONE_INSET_PX = 12;
 const SWIPE_SIDE_ZONE_RATIO = 0.31;
@@ -313,7 +314,7 @@ function CoursePageClient() {
   const [drawerView, setDrawerView] = useState<DrawerView>("course");
   const [closeDrawerOnLessonChange, setCloseDrawerOnLessonChange] = useState(false);
   const [overviewExpanded, setOverviewExpanded] = useState(false);
-  const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(false);
+  const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(true);
   const [doneLessonIds, setDoneLessonIds] = useState<string[]>([]);
   const [doneLessonIdsLoaded, setDoneLessonIdsLoaded] = useState(false);
   const [doneConfirmationByLessonId, setDoneConfirmationByLessonId] = useState<
@@ -747,6 +748,17 @@ function CoursePageClient() {
 
   useEffect(() => {
     try {
+      const saved = localStorage.getItem(`${COMMON_MISTAKES_STORAGE_KEY_PREFIX}${activeLesson.id}`);
+      if (saved === "0") {
+        setCommonMistakesExpanded(false);
+        return;
+      }
+    } catch {}
+    setCommonMistakesExpanded(true);
+  }, [activeLesson.id]);
+
+  useEffect(() => {
+    try {
       const raw = localStorage.getItem(previewStorageKeys.doneLessons);
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -1127,7 +1139,16 @@ function CoursePageClient() {
   }
 
   function toggleCommonMistakes() {
-    setCommonMistakesExpanded((prev) => !prev);
+    setCommonMistakesExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(
+          `${COMMON_MISTAKES_STORAGE_KEY_PREFIX}${activeLesson.id}`,
+          next ? "1" : "0"
+        );
+      } catch {}
+      return next;
+    });
   }
 
   const clearInstallPromptTimer = useCallback(() => {

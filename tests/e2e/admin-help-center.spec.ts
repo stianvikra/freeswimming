@@ -61,7 +61,18 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Overview mode shows all modules with compact lesson previews.")
     ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Lesson edits stay open after save so small follow-up fixes can be made without reopening the same row."
+      )
+    ).toBeVisible();
     await expect(page.getByText("Open module scope / Show all modules:")).toBeVisible();
+    await expect(page.getByText("Learner common mistakes visibility")).toBeVisible();
+    await expect(
+      page.getByText(
+        "When a lesson has authored `Common mistakes` and the section is enabled, learners see it by default."
+      )
+    ).toBeVisible();
     await expect(page.getByText("Course identity: slug vs runtime ID")).toBeVisible();
     await expect(
       page.getByText("Slug is the human-readable content key and can be renamed carefully.")
@@ -95,6 +106,7 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Move to Review / Move to Published / Move to Archived / Move to Draft:")
     ).toBeVisible();
+    await expect(page.getByText("Save changes / Cancel:")).toBeVisible();
     await expect(
       page.getByText(
         "Every new/updated brief must declare Help/Guide impact as: required update or explicit N/A with reason."
