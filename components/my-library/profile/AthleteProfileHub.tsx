@@ -114,8 +114,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   }, [initialSnapshot.loadError, initialSnapshot.profile, storageKey]);
 
   useEffect(() => {
+    if (serializeDraft(draft) === serializeDraft(savedDraft)) {
+      clearStorageValue(storageKey);
+      return;
+    }
+
     setStorageValue(storageKey, draft);
-  }, [draft, storageKey]);
+  }, [draft, savedDraft, storageKey]);
 
   async function parseError(response: Response, fallback: string) {
     const payload = (await response.json().catch(() => null)) as ApiError | null;

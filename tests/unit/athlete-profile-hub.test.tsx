@@ -87,8 +87,6 @@ describe("AthleteProfileHub", () => {
     });
 
     expect(screen.getAllByText("Poolside Stian").length).toBeGreaterThan(0);
-    expect(localStorage.getItem("my-library-athlete-profile-draft:user-1")).toContain(
-      "Poolside Stian"
-    );
+    expect(localStorage.getItem("my-library-athlete-profile-draft:user-1")).toBeNull();
   });
 });
