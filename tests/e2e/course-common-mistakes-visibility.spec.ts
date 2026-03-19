@@ -24,14 +24,30 @@ test("common mistakes stays visible by default and remembers per-lesson collapse
   await expect(page.getByText("Trying to learn everything at once")).toBeVisible();
 
   await firstLessonToggle.click();
-  await expect(firstLessonToggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByText("Expand to review common errors for this lesson.")).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.entries(window.localStorage)
+          .filter(([key]) => key.startsWith("fs_course_common_mistakes_expanded:"))
+          .map(([, value]) => value)
+      )
+    )
+    .toEqual(["0"]);
 
   await page.reload();
 
-  const reloadedFirstLessonToggle = page.getByRole("button", { name: /Common mistakes/i }).first();
-  await expect(reloadedFirstLessonToggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByText("Expand to review common errors for this lesson.")).toBeVisible();
+  await expect(page.getByText("Trying to learn everything at once")).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.entries(window.localStorage)
+          .filter(([key]) => key.startsWith("fs_course_common_mistakes_expanded:"))
+          .map(([, value]) => value)
+      )
+    )
+    .toEqual(["0"]);
 
   await page.goto("/course?lesson=mod1-l2");
 
@@ -41,7 +57,6 @@ test("common mistakes stays visible by default and remembers per-lesson collapse
 
   await page.goto("/course?lesson=mod1-l1");
 
-  const revisitedFirstLessonToggle = page.getByRole("button", { name: /Common mistakes/i }).first();
-  await expect(revisitedFirstLessonToggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByText("Expand to review common errors for this lesson.")).toBeVisible();
+  await expect(page.getByText("Trying to learn everything at once")).toHaveCount(0);
 });
