@@ -16,6 +16,7 @@ import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides"
 import { buildLibrarySections } from "@/lib/commerce/library";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
+import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,8 @@ export default async function MyLibraryPage() {
     console.error("[MyLibrary] Could not load active goal count", activeGoalCountError);
   }
 
+  const trainingContextSnapshot = await loadTrainingContextSnapshot(supabase, user.id);
+
   const claimQuery = new URLSearchParams({ next: "/my-library" });
   if (user.email) {
     claimQuery.set("email", user.email);
@@ -144,6 +147,26 @@ export default async function MyLibraryPage() {
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
                   Open goals hub
+                </Link>
+              </div>
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Focus & Notes</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {!trainingContextSnapshot.schemaReady
+                      ? "This training context is still syncing in this environment."
+                      : trainingContextSnapshot.activeFocus
+                        ? `Active focus: ${trainingContextSnapshot.activeFocus.title}. ${trainingContextSnapshot.unresolvedObservationCount} open observation${trainingContextSnapshot.unresolvedObservationCount === 1 ? "" : "s"} and ${trainingContextSnapshot.unansweredQuestionCount} unanswered question${trainingContextSnapshot.unansweredQuestionCount === 1 ? "" : "s"}.`
+                        : "Set one active focus and capture observations or questions between swim sessions."}
+                  </p>
+                </div>
+                <Link
+                  href="/my-library/training"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  Open focus & notes
                 </Link>
               </div>
             </section>

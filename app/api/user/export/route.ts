@@ -7,6 +7,7 @@ import {
   canonicalizeCourseLessonRuntimeId,
 } from "@/lib/course/runtime-identity";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { isTrainingContextSchemaMissing } from "@/lib/training-context/schema";
 import { buildUserExportPayload } from "@/lib/user/export";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +50,8 @@ export async function GET() {
     guideProgressResult,
     guideSessionProgressResult,
     goalsResult,
+    trainingFocusesResult,
+    trainingNotesResult,
     downloadLinksResult,
   ] = await Promise.all([
     supabase
@@ -86,10 +89,33 @@ export async function GET() {
       .eq("user_id", userId)
       .order("created_at", { ascending: false }),
     supabase
+      .from("training_focuses")
+      .select(
+        "id, goal_id, title, details, status, context_type, context_ref, completed_at, archived_at, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("training_notes")
+      .select(
+        "id, goal_id, focus_id, note_type, status, body, answer, context_type, context_ref, resolved_at, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    supabase
       .from("download_links")
       .select("id, entitlement_id, expires_at, used_at, created_at")
       .order("created_at", { ascending: false }),
   ]);
+
+  const normalizedTrainingFocuses =
+    trainingFocusesResult.error && isTrainingContextSchemaMissing(trainingFocusesResult.error)
+      ? []
+      : (trainingFocusesResult.data ?? []);
+  const normalizedTrainingNotes =
+    trainingNotesResult.error && isTrainingContextSchemaMissing(trainingNotesResult.error)
+      ? []
+      : (trainingNotesResult.data ?? []);
 
   const failedQuery =
     profileResult.error ??
@@ -98,6 +124,12 @@ export async function GET() {
     guideProgressResult.error ??
     guideSessionProgressResult.error ??
     goalsResult.error ??
+    (trainingFocusesResult.error && !isTrainingContextSchemaMissing(trainingFocusesResult.error)
+      ? trainingFocusesResult.error
+      : null) ??
+    (trainingNotesResult.error && !isTrainingContextSchemaMissing(trainingNotesResult.error)
+      ? trainingNotesResult.error
+      : null) ??
     downloadLinksResult.error;
 
   if (failedQuery) {
@@ -123,6 +155,8 @@ export async function GET() {
       guideProgress: guideProgressResult.data ?? [],
       guideSessionProgress: guideSessionProgressResult.data ?? [],
       goals: goalsResult.data ?? [],
+      trainingFocuses: normalizedTrainingFocuses,
+      trainingNotes: normalizedTrainingNotes,
       downloadLinks: downloadLinksResult.data ?? [],
       generatedAt,
     }),

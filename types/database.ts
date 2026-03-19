@@ -174,6 +174,159 @@ export type Database = {
         };
         Relationships: [];
       };
+      training_focuses: {
+        Row: {
+          archived_at: string | null;
+          completed_at: string | null;
+          context_ref: string | null;
+          context_type:
+            | "course_lesson"
+            | "course_module"
+            | "guide_drill"
+            | "guide_session"
+            | "workout_session"
+            | "program"
+            | null;
+          created_at: string;
+          details: string | null;
+          goal_id: string | null;
+          id: string;
+          status: "active" | "completed" | "archived";
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          archived_at?: string | null;
+          completed_at?: string | null;
+          context_ref?: string | null;
+          context_type?:
+            | "course_lesson"
+            | "course_module"
+            | "guide_drill"
+            | "guide_session"
+            | "workout_session"
+            | "program"
+            | null;
+          created_at?: string;
+          details?: string | null;
+          goal_id?: string | null;
+          id?: string;
+          status?: "active" | "completed" | "archived";
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          completed_at?: string | null;
+          context_ref?: string | null;
+          context_type?:
+            | "course_lesson"
+            | "course_module"
+            | "guide_drill"
+            | "guide_session"
+            | "workout_session"
+            | "program"
+            | null;
+          created_at?: string;
+          details?: string | null;
+          goal_id?: string | null;
+          id?: string;
+          status?: "active" | "completed" | "archived";
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      training_notes: {
+        Row: {
+          answer: string | null;
+          body: string;
+          context_ref: string | null;
+          context_type:
+            | "course_lesson"
+            | "course_module"
+            | "guide_drill"
+            | "guide_session"
+            | "workout_session"
+            | "program"
+            | null;
+          created_at: string;
+          focus_id: string | null;
+          goal_id: string | null;
+          id: string;
+          note_type: "observation" | "question";
+          resolved_at: string | null;
+          status:
+            | "open"
+            | "actioned"
+            | "no_action_needed"
+            | "unanswered"
+            | "answered"
+            | "no_answer_needed";
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          answer?: string | null;
+          body: string;
+          context_ref?: string | null;
+          context_type?:
+            | "course_lesson"
+            | "course_module"
+            | "guide_drill"
+            | "guide_session"
+            | "workout_session"
+            | "program"
+            | null;
+          created_at?: string;
+          focus_id?: string | null;
+          goal_id?: string | null;
+          id?: string;
+          note_type: "observation" | "question";
+          resolved_at?: string | null;
+          status:
+            | "open"
+            | "actioned"
+            | "no_action_needed"
+            | "unanswered"
+            | "answered"
+            | "no_answer_needed";
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          answer?: string | null;
+          body?: string;
+          context_ref?: string | null;
+          context_type?:
+            | "course_lesson"
+            | "course_module"
+            | "guide_drill"
+            | "guide_session"
+            | "workout_session"
+            | "program"
+            | null;
+          created_at?: string;
+          focus_id?: string | null;
+          goal_id?: string | null;
+          id?: string;
+          note_type?: "observation" | "question";
+          resolved_at?: string | null;
+          status?:
+            | "open"
+            | "actioned"
+            | "no_action_needed"
+            | "unanswered"
+            | "answered"
+            | "no_answer_needed";
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       guide_progress: {
         Row: {
           completed: boolean;
