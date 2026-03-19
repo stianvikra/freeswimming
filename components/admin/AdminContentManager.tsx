@@ -1884,7 +1884,6 @@ export default function AdminContentManager() {
 
     if (Object.keys(updatePayload).length === 0) {
       setActionNotice("No changes to save.");
-      closeEditMode(true);
       return;
     }
 
@@ -1932,7 +1931,11 @@ export default function AdminContentManager() {
         setActionNotice("Content item updated.");
       }
 
-      closeEditMode(true);
+      const nextEditState = toEditFormState(payload.item);
+      setEditingItemId(payload.item.id);
+      setEditFormState(nextEditState);
+      setEditBaselineState(nextEditState);
+      setEditError(null);
     } catch {
       setEditError("Could not save content changes.");
     } finally {

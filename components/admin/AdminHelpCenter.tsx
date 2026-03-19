@@ -115,7 +115,12 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Course workspace (modules -> lessons)",
     detail:
-      "Use this first for day-to-day course production. Overview mode shows all modules with compact lesson previews. `Open module scope` switches to focus mode, where the selected module becomes the one primary lesson workspace below. Use `Show all modules` to return to overview.",
+      "Use this first for day-to-day course production. Overview mode shows all modules with compact lesson previews. `Open module scope` switches to focus mode, where the selected module becomes the one primary lesson workspace below. Use `Show all modules` to return to overview. Lesson edits stay open after save so small follow-up fixes can be made without reopening the same row.",
+  },
+  {
+    title: "Learner common mistakes visibility",
+    detail:
+      "When a lesson has authored `Common mistakes` and the section is enabled, learners see it by default. They can still hide it, and the hide/show choice is remembered locally per lesson in that browser.",
   },
   {
     title: "Course identity: slug vs runtime ID",
@@ -232,7 +237,13 @@ const BUTTON_GUIDE: ActionGroup[] = [
       },
       {
         label: "Edit lesson",
-        meaning: "Opens lesson row edit with body fields and section visibility controls.",
+        meaning:
+          "Opens lesson row edit with body fields and section visibility controls. Save keeps the same lesson editor open so small follow-up fixes can be made immediately.",
+      },
+      {
+        label: "Save changes / Cancel",
+        meaning:
+          "Save refreshes the open editor from the saved server row without closing it. Cancel exits the editor; if you changed something, confirm before leaving.",
       },
       {
         label: "Open preview",

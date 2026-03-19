@@ -663,39 +663,42 @@ test.describe("admin foundation", () => {
       await fixtureLessonEditForm.getByRole("button", { name: "Save changes" }).click();
       await expect(page.getByText("Content item updated.")).toBeVisible();
 
-      await fixtureLessonItem.getByRole("button", { name: "Edit" }).click();
-      const reopenedLessonEditForm = fixtureLessonItem.getByTestId("admin-content-edit-form");
-      await expect(reopenedLessonEditForm.getByLabel("Lesson goal")).toHaveValue(
+      const savedLessonEditForm = fixtureLessonItem.getByTestId("admin-content-edit-form");
+      await expect(savedLessonEditForm).toBeVisible();
+      await expect(savedLessonEditForm.getByLabel("Lesson goal")).toHaveValue(
         `Lesson goal update ${unique}`
       );
-      await expect(reopenedLessonEditForm.getByLabel("Drill title")).toHaveValue(
+      await expect(savedLessonEditForm.getByLabel("Drill title")).toHaveValue(
         "Relaxed 12.5m checkpoint"
       );
-      await expect(reopenedLessonEditForm.getByLabel("Section badge label (optional)")).toHaveValue(
+      await expect(savedLessonEditForm.getByLabel("Section badge label (optional)")).toHaveValue(
         `Focus ${unique}`
       );
       await expect(
-        reopenedLessonEditForm.getByLabel("Extra help start lesson number in module (optional)")
+        savedLessonEditForm.getByLabel("Extra help start lesson number in module (optional)")
       ).toHaveValue(supportStartLessonInModule);
-      await expect(reopenedLessonEditForm.getByLabel("Lesson type")).toHaveValue("swim");
-      await expect(reopenedLessonEditForm.getByRole("textbox", { name: "Next step" })).toHaveValue(
+      await expect(savedLessonEditForm.getByLabel("Lesson type")).toHaveValue("swim");
+      await expect(savedLessonEditForm.getByRole("textbox", { name: "Next step" })).toHaveValue(
         `Repeat drill quality x3 ${unique}`
       );
       await expect(
-        reopenedLessonEditForm.getByLabel("Checkpoint criteria (one per line)")
+        savedLessonEditForm.getByLabel("Checkpoint criteria (one per line)")
       ).toHaveValue(checkpointCriteriaText);
-      await expect(reopenedLessonEditForm.getByLabel("Show goal section")).toBeChecked();
-      await expect(reopenedLessonEditForm.getByLabel("Show drill section")).toBeChecked();
-      await expect(reopenedLessonEditForm.getByLabel("Show cues section")).not.toBeChecked();
-      await expect(reopenedLessonEditForm.getByLabel("Show extra help card")).not.toBeChecked();
-      await expect(reopenedLessonEditForm.getByLabel("Show Video Analysis")).toBeChecked();
-      await expect(reopenedLessonEditForm.getByLabel("Show Poolside guide")).not.toBeChecked();
-      await expect(reopenedLessonEditForm.getByLabel("Show 0-1000 guide")).toBeChecked();
-      await expect(reopenedLessonEditForm.getByLabel("Show Contact")).toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show goal section")).toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show drill section")).toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show cues section")).not.toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show extra help card")).not.toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show Video Analysis")).toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show Poolside guide")).not.toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show 0-1000 guide")).toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show Contact")).toBeChecked();
       await expect(
-        reopenedLessonEditForm.getByLabel("Primary highlighted action (optional)")
+        savedLessonEditForm.getByLabel("Primary highlighted action (optional)")
       ).toHaveValue("contact");
-      await reopenedLessonEditForm.getByRole("button", { name: "Cancel" }).click();
+      await savedLessonEditForm.getByRole("button", { name: "Save changes" }).click();
+      await expect(page.getByText("No changes to save.")).toBeVisible();
+      await expect(savedLessonEditForm).toBeVisible();
+      await savedLessonEditForm.getByRole("button", { name: "Cancel" }).click();
       await focusModeBanner.getByRole("button", { name: "Clear focus" }).click();
       await expect(listTypeFilter).toHaveValue("course_module");
       await expect(createdItem).toBeVisible();
