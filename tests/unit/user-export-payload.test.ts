@@ -43,6 +43,19 @@ describe("buildUserExportPayload", () => {
         created_at: "2026-03-19T08:12:00.000Z",
         updated_at: "2026-03-19T08:13:00.000Z",
       },
+      personalRecords: [
+        {
+          id: "record-1",
+          distance_m: 100,
+          stroke: "freestyle",
+          course: "pool_25m",
+          time_centiseconds: 6234,
+          recorded_on: "2026-03-19",
+          source_note: "Club night",
+          created_at: "2026-03-19T08:14:00.000Z",
+          updated_at: "2026-03-19T08:15:00.000Z",
+        },
+      ],
       entitlements: [
         {
           id: "ent-1",
@@ -140,7 +153,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-03-19-athlete-profile-training-setup",
+      schemaVersion: "2026-03-19-athlete-profile-training-setup-personal-records",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -181,6 +194,19 @@ describe("buildUserExportPayload", () => {
         createdAt: "2026-03-19T08:12:00.000Z",
         updatedAt: "2026-03-19T08:13:00.000Z",
       },
+      personalRecords: [
+        {
+          id: "record-1",
+          distanceM: 100,
+          stroke: "freestyle",
+          course: "pool_25m",
+          timeCentiseconds: 6234,
+          recordedOn: "2026-03-19",
+          sourceNote: "Club night",
+          createdAt: "2026-03-19T08:14:00.000Z",
+          updatedAt: "2026-03-19T08:15:00.000Z",
+        },
+      ],
       entitlements: [
         {
           id: "ent-1",
@@ -286,6 +312,7 @@ describe("buildUserExportPayload", () => {
       athleteProfile: null,
       trainingMetrics: [],
       trainingPreferences: null,
+      personalRecords: [],
       entitlements: [],
       courseProgress: [],
       guideProgress: [],
@@ -298,6 +325,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload.profile).toBeNull();
     expect(payload.athleteProfile).toBeNull();
+    expect(payload.personalRecords).toEqual([]);
     expect(payload.entitlements).toEqual([]);
     expect(payload.trainingFocuses).toEqual([]);
     expect(payload.trainingNotes).toEqual([]);

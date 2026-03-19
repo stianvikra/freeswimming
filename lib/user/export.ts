@@ -46,6 +46,19 @@ type TrainingPreferencesRow = Pick<
   | "updated_at"
 >;
 
+type PersonalRecordRow = Pick<
+  Database["public"]["Tables"]["personal_records"]["Row"],
+  | "id"
+  | "distance_m"
+  | "stroke"
+  | "course"
+  | "time_centiseconds"
+  | "recorded_on"
+  | "source_note"
+  | "created_at"
+  | "updated_at"
+>;
+
 type CourseProgressRow = Pick<
   Database["public"]["Tables"]["course_progress"]["Row"],
   "lesson_id" | "done" | "video_seconds" | "updated_at"
@@ -117,6 +130,7 @@ export type BuildUserExportPayloadInput = {
   athleteProfile: AthleteProfileRow | null;
   trainingMetrics: TrainingMetricRow[];
   trainingPreferences: TrainingPreferencesRow | null;
+  personalRecords: PersonalRecordRow[];
   entitlements: EntitlementRow[];
   courseProgress: CourseProgressRow[];
   guideProgress: GuideProgressRow[];
@@ -133,7 +147,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-03-19-athlete-profile-training-setup",
+    schemaVersion: "2026-03-19-athlete-profile-training-setup-personal-records",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -178,6 +192,17 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
           updatedAt: input.trainingPreferences.updated_at,
         }
       : null,
+    personalRecords: input.personalRecords.map((row) => ({
+      id: row.id,
+      distanceM: row.distance_m,
+      stroke: row.stroke,
+      course: row.course,
+      timeCentiseconds: row.time_centiseconds,
+      recordedOn: row.recorded_on,
+      sourceNote: row.source_note,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
     entitlements: input.entitlements.map((row) => ({
       id: row.id,
       productId: row.product_id,

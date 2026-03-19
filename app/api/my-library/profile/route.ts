@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildAthleteProfileUpsert, type AthleteAgeBand } from "@/lib/athlete-profile/mvp";
-import {
-  ATHLETE_PROFILE_SELECT,
-  buildAthleteProfileView,
-  loadAthleteProfileSnapshot,
-} from "@/lib/athlete-profile/server";
+import { ATHLETE_PROFILE_SELECT, loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { isAthleteProfileSchemaMissing } from "@/lib/athlete-profile/schema";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
@@ -121,11 +117,7 @@ export async function PUT(request: Request) {
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
-      snapshot: {
-        schemaReady: true,
-        loadError: null,
-        profile: buildAthleteProfileView(result.data),
-      },
+      snapshot: await loadAthleteProfileSnapshot(supabase, user.id),
     })
   );
 }

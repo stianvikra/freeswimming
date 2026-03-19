@@ -140,14 +140,15 @@ export default async function MyLibraryPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">
-                    Athlete profile & training setup
+                    Athlete profile, training setup & records
                   </h2>
                   <p className="mt-2 text-sm text-slate-600">
                     {!athleteProfileSnapshot.profileSchemaReady
                       ? "This athlete profile foundation is still syncing in this environment."
                       : athleteProfileSnapshot.profile ||
                           athleteProfileSnapshot.cssMetric ||
-                          athleteProfileSnapshot.preferences
+                          athleteProfileSnapshot.preferences ||
+                          athleteProfileSnapshot.personalRecords.length > 0
                         ? [
                             athleteProfileSnapshot.profile?.primaryName ?? "Private swimmer",
                             athleteProfileSnapshot.profile?.ageBandLabel ?? null,
@@ -158,10 +159,13 @@ export default async function MyLibraryPage() {
                             athleteProfileSnapshot.preferences?.preferredWeeklySessionCount
                               ? `${athleteProfileSnapshot.preferences.preferredWeeklySessionCount} sessions/week`
                               : null,
+                            athleteProfileSnapshot.personalRecords.length > 0
+                              ? `${athleteProfileSnapshot.personalRecords.length} record${athleteProfileSnapshot.personalRecords.length === 1 ? "" : "s"}`
+                              : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")
-                        : "Add your private swimmer profile, current CSS, and practical preferences now so later generator work has a real foundation."}
+                        : "Add your private swimmer profile, current CSS, practical preferences, and personal records now so later generator work has a real foundation."}
                   </p>
                 </div>
                 <Link

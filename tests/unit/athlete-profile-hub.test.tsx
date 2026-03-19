@@ -12,12 +12,15 @@ function buildSnapshot(profile?: AthleteProfileSnapshot["profile"]): AthleteProf
     profileSchemaReady: true,
     metricsSchemaReady: true,
     preferencesSchemaReady: true,
+    personalRecordsSchemaReady: true,
     loadError: null,
     metricsLoadError: null,
     preferencesLoadError: null,
+    personalRecordsLoadError: null,
     profile: profile ?? null,
     cssMetric: null,
     preferences: null,
+    personalRecords: [],
   };
 }
 
@@ -43,12 +46,29 @@ describe("AthleteProfileHub", () => {
         ageBand: "",
       })
     );
+    localStorage.setItem(
+      "my-library-athlete-profile-records-draft:user-1",
+      JSON.stringify({
+        editingRecordId: null,
+        distanceM: "200",
+        stroke: "freestyle",
+        course: "pool_25m",
+        time: "2:24.18",
+        recordedOn: "",
+        sourceNote: "",
+      })
+    );
 
     render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
 
     expect(screen.getByTestId("athlete-profile-display-name")).toHaveValue("Pool draft");
+    expect(screen.getByTestId("athlete-record-distance-m")).toHaveValue(200);
+    expect(screen.getByTestId("athlete-record-time")).toHaveValue("2:24.18");
     expect(
       screen.getByText("Unsaved athlete-profile edits were restored on this device.")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Unsaved personal-record edits were restored on this device.")
     ).toBeInTheDocument();
   });
 
@@ -93,7 +113,7 @@ describe("AthleteProfileHub", () => {
     });
 
     expect(screen.getAllByText("Poolside Stian").length).toBeGreaterThan(0);
-    expect(localStorage.getItem("my-library-athlete-profile-draft:user-1")).toBeNull();
+    expect(localStorage.getItem("my-library-athlete-profile-profile-draft:user-1")).toBeNull();
   });
 
   it("saves CSS and preferences updates", async () => {
@@ -204,5 +224,85 @@ describe("AthleteProfileHub", () => {
 
     expect(screen.getByText("1:58/100m")).toBeInTheDocument();
     expect(screen.getAllByText("25m pool").length).toBeGreaterThan(0);
+  });
+
+  it("saves and deletes personal records", async () => {
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true)
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              ok: true,
+              recordId: "record-1",
+              snapshot: {
+                ...buildSnapshot(),
+                personalRecords: [
+                  {
+                    id: "record-1",
+                    distanceM: 100,
+                    stroke: "freestyle",
+                    strokeLabel: "Freestyle",
+                    course: "pool_25m",
+                    courseLabel: "25m pool",
+                    eventLabel: "100m Freestyle · 25m pool",
+                    timeCentiseconds: 6234,
+                    timeLabel: "1:02.34",
+                    recordedOn: "2026-03-19",
+                    sourceNote: "Club night",
+                    createdAt: "2026-03-19T18:00:00.000Z",
+                    updatedAt: "2026-03-19T18:05:00.000Z",
+                  },
+                ],
+              },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          )
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              ok: true,
+              snapshot: buildSnapshot(),
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          )
+        )
+    );
+
+    render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
+
+    fireEvent.change(screen.getByTestId("athlete-record-distance-m"), {
+      target: { value: "100" },
+    });
+    fireEvent.change(screen.getByTestId("athlete-record-stroke"), {
+      target: { value: "freestyle" },
+    });
+    fireEvent.change(screen.getByTestId("athlete-record-course"), {
+      target: { value: "pool_25m" },
+    });
+    fireEvent.change(screen.getByTestId("athlete-record-time"), {
+      target: { value: "1:02.34" },
+    });
+    fireEvent.click(screen.getByTestId("athlete-record-save"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Personal record saved.")).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByText("100m Freestyle · 25m pool").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByTestId("athlete-record-delete-record-1"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Personal record deleted.")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("100m Freestyle · 25m pool")).not.toBeInTheDocument();
   });
 });

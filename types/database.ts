@@ -909,6 +909,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      personal_records: {
+        Row: {
+          course: string;
+          created_at: string;
+          distance_m: number;
+          id: string;
+          recorded_on: string | null;
+          source_note: string | null;
+          stroke: string;
+          time_centiseconds: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          course: string;
+          created_at?: string;
+          distance_m: number;
+          id?: string;
+          recorded_on?: string | null;
+          source_note?: string | null;
+          stroke: string;
+          time_centiseconds: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          course?: string;
+          created_at?: string;
+          distance_m?: number;
+          id?: string;
+          recorded_on?: string | null;
+          source_note?: string | null;
+          stroke?: string;
+          time_centiseconds?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       training_metrics: {
         Row: {
           created_at: string;

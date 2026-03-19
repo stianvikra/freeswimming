@@ -240,6 +240,8 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-19`: Parent brief created to lock the broader profile/metrics/preferences direction before implementation.
 - `2026-03-19 | e830b21 (main) | child slice 1 shipped via PR #237 for private athlete-profile foundation; profile hub, canonical row, local draft recovery, and export compatibility are now on main | next: take training metrics + preferences as the next child slice and continue to defer personal records`
 - `2026-03-19 | 4101d21 (main) | child slice 2 shipped via PR #239 in docs/task-briefs/done/2026-03-19-my-library-training-metrics-and-preferences-foundation-10-10.md with canonical CSS, structured training preferences, My Library/profile UX, export support, and green local/CI gates | next: take Personal records as the next child slice and continue to defer generator-prefill automation`
+- `2026-03-19 | feat/my-library-personal-records-foundation | child slice 3 started in docs/task-briefs/in-progress/2026-03-19-my-library-personal-records-foundation-10-10.md with scope locked to private personal-record CRUD, canonical event identity, canonical time storage, export support, and My Library/profile UX; generator-prefill work remains deferred | next: implement schema, server/API contracts, profile hub UI, and tests`
+- `2026-03-19 | feat/my-library-personal-records-foundation | child slice 3 implemented locally with private personal-record CRUD, deterministic event identity, canonical centisecond storage, My Library/profile UX, export inclusion, and green local verify:pre-pr gate; generator-prefill automation remains deferred | next: commit, push, open PR, and require verify:pre-merge before merge`
 
 ## Acceptance Criteria
 
@@ -298,8 +300,3 @@ Critical target categories for `10/10` claim in this brief:
 - Avoid storing stale or privacy-heavy fields without clear product value.
 - Keep generator/program logic out of phase 1 while still making later integration straightforward.
 - Do not use mutable labels or human-readable text as canonical identity for metrics, records, or preferences.
-
-## Checkpoint Log
-
-- `2026-03-19 | working tree | created parent brief for athlete profile, training metrics, and preferences as the adjacent user-data foundation to Goals/Focus/Notes, with generator-ready boundaries and explicit later child slices | next: lint brief and use it as the source brief when the first implementation slice starts`
-- `2026-03-19 | e830b21 (main) | first child slice shipped via PR #237 as athlete-profile foundation with private My Library profile hub, canonical Supabase row, export support, and green local/CI gates; parent direction stays planned because training metrics, personal records, and preferences remain future child slices | next: open the next child brief when we are ready to ship metrics/records or preferences separately`

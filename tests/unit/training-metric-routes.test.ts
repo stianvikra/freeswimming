@@ -33,12 +33,15 @@ describe("training metric routes", () => {
       profileSchemaReady: true,
       metricsSchemaReady: true,
       preferencesSchemaReady: true,
+      personalRecordsSchemaReady: true,
       loadError: null,
       metricsLoadError: null,
       preferencesLoadError: null,
+      personalRecordsLoadError: null,
       profile: null,
       cssMetric: null,
       preferences: null,
+      personalRecords: [],
     });
   });
 
