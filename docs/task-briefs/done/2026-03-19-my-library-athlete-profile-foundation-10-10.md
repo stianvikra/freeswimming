@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-19-my-library-athlete-profile-foundation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-19`
 - `updated`: `2026-03-19`
@@ -247,3 +247,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-19`: Child brief created and moved to `in-progress` for the narrow athlete-profile foundation slice. Metrics, PRs, and preferences remain deferred to later child briefs.
 - `2026-03-19 | in-progress | athlete-profile foundation implemented across canonical Supabase row, private My Library profile hub, local draft recovery, My Library summary card, export payload support, and analytics event names; targeted unit/typecheck/eslint checks and full verify:pre-pr passed green (81 passed, 219 skipped) after hardening the My Library athlete-profile e2e entry path | next: commit slice state, push branch, and open PR in Safari`
 - `2026-03-19 | in-progress | post-PR CI follow-up fixed athlete-profile draft persistence semantics so saved state clears local draft storage deterministically instead of rehydrating it after save; targeted hub unit rerun passed and full verify:pre-pr rerun passed green again (81 passed, 219 skipped) on the updated branch head | next: push follow-up commit to PR #237 and wait for refreshed CI`
+- `2026-03-19 | e830b21 (main) | merged via PR #237 after local \`npm run verify:pre-pr\`, local \`npm run verify:pre-merge\`, and green required GitHub checks; athlete-profile foundation is now shipped on main with private My Library entry point, canonical profile API, export support, and follow-up draft-clear fix | next: use this shipped foundation as the starting point for later child slices on training metrics, personal records, and preferences`
