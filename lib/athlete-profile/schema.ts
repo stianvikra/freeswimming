@@ -5,17 +5,7 @@ type PostgrestLikeError = {
   hint?: string | null;
 };
 
-const ATHLETE_PROFILE_MARKERS = [
-  "athlete_profiles",
-  "display_name",
-  "first_name",
-  "last_name",
-  "age_band",
-];
-
-export function isAthleteProfileSchemaMissing(
-  error: PostgrestLikeError | null | undefined
-): boolean {
+function isSchemaMissing(error: PostgrestLikeError | null | undefined, markers: string[]): boolean {
   if (!error) return false;
 
   if (error.code === "42P01" || error.code === "42703" || error.code === "PGRST204") {
@@ -23,5 +13,41 @@ export function isAthleteProfileSchemaMissing(
   }
 
   const blob = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`.toLowerCase();
-  return ATHLETE_PROFILE_MARKERS.some((marker) => blob.includes(marker));
+  return markers.some((marker) => blob.includes(marker));
+}
+
+export function isAthleteProfileSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  return isSchemaMissing(error, [
+    "athlete_profiles",
+    "display_name",
+    "first_name",
+    "last_name",
+    "age_band",
+  ]);
+}
+
+export function isTrainingMetricSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  return isSchemaMissing(error, [
+    "training_metrics",
+    "metric_key",
+    "value_seconds",
+    "recorded_on",
+    "source_note",
+  ]);
+}
+
+export function isTrainingPreferencesSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  return isSchemaMissing(error, [
+    "training_preferences",
+    "pool_length_m",
+    "available_days",
+    "preferred_weekly_session_count",
+    "preferred_session_minutes",
+  ]);
 }

@@ -21,16 +21,16 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 }
 
 test.describe("my library athlete profile", () => {
-  test("opens athlete profile from My Library and preserves draft after reload", async ({
+  test("opens training setup from My Library and preserves drafts after reload", async ({
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
     await loginToMyLibraryViaDevBypass(page);
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open athlete profile" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open training setup" })).toBeVisible();
 
-    const openProfileLink = page.getByRole("link", { name: "Open athlete profile" });
+    const openProfileLink = page.getByRole("link", { name: "Open training setup" });
     await expect(openProfileLink).toHaveAttribute("href", "/my-library/profile");
     await openProfileLink.click();
     const navigatedAfterClick = await page
@@ -45,7 +45,7 @@ test.describe("my library athlete profile", () => {
     }
     await expect(
       page.getByRole("heading", {
-        name: "Athlete profile",
+        name: "Athlete profile & training setup",
         level: 1,
       })
     ).toBeVisible();
@@ -56,16 +56,26 @@ test.describe("my library athlete profile", () => {
     }
 
     await displayNameInput.fill("Pool draft");
+    await page.getByTestId("athlete-profile-css-pace").fill("1:58");
+    await page.getByTestId("athlete-preferences-day-monday").check();
+    await page.getByTestId("athlete-preferences-session-minutes").selectOption("60");
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await expect(
       page.getByRole("heading", {
-        name: "Athlete profile",
+        name: "Athlete profile & training setup",
         level: 1,
       })
     ).toBeVisible();
     await expect(page.getByTestId("athlete-profile-display-name")).toHaveValue("Pool draft");
+    await expect(page.getByTestId("athlete-profile-css-pace")).toHaveValue("1:58");
+    await expect(page.getByTestId("athlete-preferences-day-monday")).toBeChecked();
+    await expect(page.getByTestId("athlete-preferences-session-minutes")).toHaveValue("60");
     await expect(
       page.getByText("Unsaved athlete-profile edits were restored on this device.")
+    ).toBeVisible();
+    await expect(page.getByText("Unsaved CSS edits were restored on this device.")).toBeVisible();
+    await expect(
+      page.getByText("Unsaved training preferences edits were restored on this device.")
     ).toBeVisible();
   });
 });

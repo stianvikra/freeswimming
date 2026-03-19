@@ -909,6 +909,75 @@ export type Database = {
         };
         Relationships: [];
       };
+      training_metrics: {
+        Row: {
+          created_at: string;
+          id: string;
+          metric_key: string;
+          recorded_on: string | null;
+          source_note: string | null;
+          unit: string;
+          updated_at: string;
+          user_id: string;
+          value_seconds: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          metric_key: string;
+          recorded_on?: string | null;
+          source_note?: string | null;
+          unit: string;
+          updated_at?: string;
+          user_id: string;
+          value_seconds: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          metric_key?: string;
+          recorded_on?: string | null;
+          source_note?: string | null;
+          unit?: string;
+          updated_at?: string;
+          user_id?: string;
+          value_seconds?: number;
+        };
+        Relationships: [];
+      };
+      training_preferences: {
+        Row: {
+          available_days: string[] | null;
+          created_at: string;
+          id: string;
+          pool_length_m: number | null;
+          preferred_session_minutes: number | null;
+          preferred_weekly_session_count: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          available_days?: string[] | null;
+          created_at?: string;
+          id?: string;
+          pool_length_m?: number | null;
+          preferred_session_minutes?: number | null;
+          preferred_weekly_session_count?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          available_days?: string[] | null;
+          created_at?: string;
+          id?: string;
+          pool_length_m?: number | null;
+          preferred_session_minutes?: number | null;
+          preferred_weekly_session_count?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;

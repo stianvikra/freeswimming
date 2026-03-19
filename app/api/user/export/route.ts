@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { COURSE_MODULES } from "@/app/course/courseData";
-import { isAthleteProfileSchemaMissing } from "@/lib/athlete-profile/schema";
+import {
+  isAthleteProfileSchemaMissing,
+  isTrainingMetricSchemaMissing,
+  isTrainingPreferencesSchemaMissing,
+} from "@/lib/athlete-profile/schema";
 import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
 import { normalizeCourseProgressRows } from "@/lib/course/progress";
 import {
@@ -47,6 +51,8 @@ export async function GET() {
   const [
     profileResult,
     athleteProfileResult,
+    trainingMetricsResult,
+    trainingPreferencesResult,
     entitlementsResult,
     courseProgressResult,
     guideProgressResult,
@@ -64,6 +70,20 @@ export async function GET() {
     supabase
       .from("athlete_profiles")
       .select("id, display_name, first_name, last_name, age_band, created_at, updated_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("training_metrics")
+      .select(
+        "id, metric_key, unit, value_seconds, recorded_on, source_note, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("training_preferences")
+      .select(
+        "id, pool_length_m, available_days, preferred_weekly_session_count, preferred_session_minutes, created_at, updated_at"
+      )
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -119,6 +139,15 @@ export async function GET() {
     athleteProfileResult.error && isAthleteProfileSchemaMissing(athleteProfileResult.error)
       ? null
       : (athleteProfileResult.data ?? null);
+  const normalizedTrainingMetrics =
+    trainingMetricsResult.error && isTrainingMetricSchemaMissing(trainingMetricsResult.error)
+      ? []
+      : (trainingMetricsResult.data ?? []);
+  const normalizedTrainingPreferences =
+    trainingPreferencesResult.error &&
+    isTrainingPreferencesSchemaMissing(trainingPreferencesResult.error)
+      ? null
+      : (trainingPreferencesResult.data ?? null);
   const normalizedTrainingFocuses =
     trainingFocusesResult.error && isTrainingContextSchemaMissing(trainingFocusesResult.error)
       ? []
@@ -132,6 +161,13 @@ export async function GET() {
     profileResult.error ??
     (athleteProfileResult.error && !isAthleteProfileSchemaMissing(athleteProfileResult.error)
       ? athleteProfileResult.error
+      : null) ??
+    (trainingMetricsResult.error && !isTrainingMetricSchemaMissing(trainingMetricsResult.error)
+      ? trainingMetricsResult.error
+      : null) ??
+    (trainingPreferencesResult.error &&
+    !isTrainingPreferencesSchemaMissing(trainingPreferencesResult.error)
+      ? trainingPreferencesResult.error
       : null) ??
     entitlementsResult.error ??
     courseProgressResult.error ??
@@ -158,6 +194,8 @@ export async function GET() {
       userEmail: user.email ?? null,
       profile: profileResult.data ?? null,
       athleteProfile: normalizedAthleteProfile,
+      trainingMetrics: normalizedTrainingMetrics,
+      trainingPreferences: normalizedTrainingPreferences,
       entitlements: entitlementsResult.data ?? [],
       courseProgress: normalizeCourseProgressRows(courseProgressResult.data ?? [], {
         resolveLessonId,
