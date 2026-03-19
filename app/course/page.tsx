@@ -1643,10 +1643,6 @@ function CoursePageClient() {
   }, [doneLessonsCount, isGuest, previewEnabled]);
 
   useEffect(() => {
-    setCommonMistakesExpanded(false);
-  }, [activeLesson.id]);
-
-  useEffect(() => {
     setDoneGateFeedback(null);
   }, [activeLesson.id]);
 
