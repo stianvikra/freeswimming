@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-19-my-library-goals-focus-notes-training-context-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-19`
 - `updated`: `2026-03-19`
@@ -363,3 +363,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-19 | planning | created phase-1 user training-context brief after product review confirmed that Goals, Focus, and Notes are separate user choices: Goals = longer-term destination, Focus = current training priority, Notes = observations/questions from real swim practice; phase-1 should be relationship-ready for later generator/session/program prefills without building those automations yet | next: decide whether to start with schema + My Library IA foundations first or combine first usable mobile capture with minimal model rollout`
 - `2026-03-19 | in-progress | implementation started on branch feat/my-library-focus-notes-foundation; chosen first slice is schema + first usable My Library Focus/Notes capture flow so dogfooding can start early while preserving Goals as a separate hub | next: add server-canonical tables/types/helpers and a minimal My Library surface for Focus + Notes`
 - `2026-03-19 | in-progress | phase-1 foundation now includes server-canonical Focus/Notes tables, authenticated My Library routes, phone-first capture UI with inline Goals/Focus/Notes mental-model guidance, export coverage, and targeted analytics; targeted unit tests, typecheck, lint, build, perf budgets, and full npm run verify:pre-pr passed locally | next: stage files cleanly, rerun brief lint with the brief tracked, then package PR handoff for the first usable dogfooding slice`
+- `2026-03-19 | done | feature slice merged to main as 5f015bc after local npm run lint:briefs, npm run verify:pre-pr, npm run verify:pre-merge, and green required GitHub checks on PR #233; perf trend recommendation remained tighten and the decision for this non-perf slice was hold | next: follow-on child slices can build richer context-linking and generator-prefill flows on top of this foundation`
