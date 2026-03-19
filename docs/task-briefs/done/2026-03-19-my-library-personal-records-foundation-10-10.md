@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-19-my-library-personal-records-foundation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-19`
 - `updated`: `2026-03-19`
@@ -276,3 +276,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-03-19`: Child brief created and moved to `in-progress` for private personal-records foundation. Generator-prefill work stays deferred to a later child slice.
 - `2026-03-19 | feat/my-library-personal-records-foundation | implemented private personal-record CRUD, canonical event identity/time storage, My Library/profile UX, export support, and automated coverage; local targeted tests, targeted e2e, and npm run verify:pre-pr are green | next: commit, push, open PR, and run npm run verify:pre-merge before merge; perf recommendation: hold for this non-perf slice despite tighten suggestion`
+- `2026-03-19 | 82712dc (main) | child slice shipped via PR #241 with private personal-record CRUD, deterministic event identity, canonical centisecond storage, My Library/profile UX, export inclusion, and green local gates including npm run verify:pre-merge | next: keep generator-prefill automation deferred and use the parent brief to choose the next child slice`
