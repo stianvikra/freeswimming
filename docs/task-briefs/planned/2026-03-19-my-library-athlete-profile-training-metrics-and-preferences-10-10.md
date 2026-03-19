@@ -296,3 +296,4 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-03-19 | working tree | created parent brief for athlete profile, training metrics, and preferences as the adjacent user-data foundation to Goals/Focus/Notes, with generator-ready boundaries and explicit later child slices | next: lint brief and use it as the source brief when the first implementation slice starts`
+- `2026-03-19 | e830b21 (main) | first child slice shipped via PR #237 as athlete-profile foundation with private My Library profile hub, canonical Supabase row, export support, and green local/CI gates; parent direction stays planned because training metrics, personal records, and preferences remain future child slices | next: open the next child brief when we are ready to ship metrics/records or preferences separately`
