@@ -13,6 +13,15 @@ describe("buildUserExportPayload", () => {
         created_at: "2026-02-01T08:00:00.000Z",
         updated_at: "2026-02-10T08:00:00.000Z",
       },
+      athleteProfile: {
+        id: "athlete-profile-1",
+        display_name: "Poolside Stian",
+        first_name: "Stian",
+        last_name: "Vikra",
+        age_band: "35_44",
+        created_at: "2026-03-19T08:00:00.000Z",
+        updated_at: "2026-03-19T08:05:00.000Z",
+      },
       entitlements: [
         {
           id: "ent-1",
@@ -110,7 +119,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-03-19",
+      schemaVersion: "2026-03-19-athlete-profile",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -120,6 +129,15 @@ describe("buildUserExportPayload", () => {
         email: "swimmer@example.com",
         createdAt: "2026-02-01T08:00:00.000Z",
         updatedAt: "2026-02-10T08:00:00.000Z",
+      },
+      athleteProfile: {
+        id: "athlete-profile-1",
+        displayName: "Poolside Stian",
+        firstName: "Stian",
+        lastName: "Vikra",
+        ageBand: "35_44",
+        createdAt: "2026-03-19T08:00:00.000Z",
+        updatedAt: "2026-03-19T08:05:00.000Z",
       },
       entitlements: [
         {
@@ -223,6 +241,7 @@ describe("buildUserExportPayload", () => {
       userEmail: null,
       generatedAt: "2026-02-17T12:00:00.000Z",
       profile: null,
+      athleteProfile: null,
       entitlements: [],
       courseProgress: [],
       guideProgress: [],
@@ -234,6 +253,7 @@ describe("buildUserExportPayload", () => {
     });
 
     expect(payload.profile).toBeNull();
+    expect(payload.athleteProfile).toBeNull();
     expect(payload.entitlements).toEqual([]);
     expect(payload.trainingFocuses).toEqual([]);
     expect(payload.trainingNotes).toEqual([]);

@@ -127,7 +127,7 @@
   "ok": true,
   "export": {
     "generatedAt": "2026-02-17T14:00:00.000Z",
-    "schemaVersion": "2026-02-17",
+    "schemaVersion": "2026-03-19-athlete-profile",
     "user": {
       "id": "user-id",
       "email": "swimmer@example.com"
@@ -137,6 +137,15 @@
       "email": "swimmer@example.com",
       "createdAt": "2026-02-10T10:00:00.000Z",
       "updatedAt": "2026-02-17T10:00:00.000Z"
+    },
+    "athleteProfile": {
+      "id": "athlete-profile-id",
+      "displayName": "Stian",
+      "firstName": "Stian",
+      "lastName": "Vikra",
+      "ageBand": "35_44",
+      "createdAt": "2026-03-19T10:00:00.000Z",
+      "updatedAt": "2026-03-19T10:05:00.000Z"
     },
     "entitlements": [],
     "courseProgress": [],

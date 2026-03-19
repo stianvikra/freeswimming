@@ -849,6 +849,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      athlete_profiles: {
+        Row: {
+          age_band:
+            | "under_18"
+            | "18_24"
+            | "25_34"
+            | "35_44"
+            | "45_54"
+            | "55_64"
+            | "65_plus"
+            | "prefer_not_to_say"
+            | null;
+          created_at: string;
+          display_name: string | null;
+          first_name: string | null;
+          id: string;
+          last_name: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          age_band?:
+            | "under_18"
+            | "18_24"
+            | "25_34"
+            | "35_44"
+            | "45_54"
+            | "55_64"
+            | "65_plus"
+            | "prefer_not_to_say"
+            | null;
+          created_at?: string;
+          display_name?: string | null;
+          first_name?: string | null;
+          id?: string;
+          last_name?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          age_band?:
+            | "under_18"
+            | "18_24"
+            | "25_34"
+            | "35_44"
+            | "45_54"
+            | "55_64"
+            | "65_plus"
+            | "prefer_not_to_say"
+            | null;
+          created_at?: string;
+          display_name?: string | null;
+          first_name?: string | null;
+          id?: string;
+          last_name?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;

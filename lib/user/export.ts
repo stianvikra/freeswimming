@@ -18,6 +18,11 @@ type EntitlementRow = Pick<
   | "updated_at"
 >;
 
+type AthleteProfileRow = Pick<
+  Database["public"]["Tables"]["athlete_profiles"]["Row"],
+  "id" | "display_name" | "first_name" | "last_name" | "age_band" | "created_at" | "updated_at"
+>;
+
 type CourseProgressRow = Pick<
   Database["public"]["Tables"]["course_progress"]["Row"],
   "lesson_id" | "done" | "video_seconds" | "updated_at"
@@ -86,6 +91,7 @@ export type BuildUserExportPayloadInput = {
   userId: string;
   userEmail: string | null;
   profile: ProfileRow | null;
+  athleteProfile: AthleteProfileRow | null;
   entitlements: EntitlementRow[];
   courseProgress: CourseProgressRow[];
   guideProgress: GuideProgressRow[];
@@ -102,7 +108,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-03-19",
+    schemaVersion: "2026-03-19-athlete-profile",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -113,6 +119,17 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
           email: input.profile.email,
           createdAt: input.profile.created_at,
           updatedAt: input.profile.updated_at,
+        }
+      : null,
+    athleteProfile: input.athleteProfile
+      ? {
+          id: input.athleteProfile.id,
+          displayName: input.athleteProfile.display_name,
+          firstName: input.athleteProfile.first_name,
+          lastName: input.athleteProfile.last_name,
+          ageBand: input.athleteProfile.age_band,
+          createdAt: input.athleteProfile.created_at,
+          updatedAt: input.athleteProfile.updated_at,
         }
       : null,
     entitlements: input.entitlements.map((row) => ({

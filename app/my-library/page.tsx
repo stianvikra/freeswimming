@@ -15,6 +15,7 @@ import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/cata
 import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
 import { buildLibrarySections } from "@/lib/commerce/library";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 
@@ -82,7 +83,10 @@ export default async function MyLibraryPage() {
     console.error("[MyLibrary] Could not load active goal count", activeGoalCountError);
   }
 
-  const trainingContextSnapshot = await loadTrainingContextSnapshot(supabase, user.id);
+  const [trainingContextSnapshot, athleteProfileSnapshot] = await Promise.all([
+    loadTrainingContextSnapshot(supabase, user.id),
+    loadAthleteProfileSnapshot(supabase, user.id),
+  ]);
 
   const claimQuery = new URLSearchParams({ next: "/my-library" });
   if (user.email) {
@@ -132,6 +136,26 @@ export default async function MyLibraryPage() {
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
             <MyLibraryNewContentNotice userId={user.id} />
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Athlete profile</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {!athleteProfileSnapshot.schemaReady
+                      ? "This athlete profile foundation is still syncing in this environment."
+                      : athleteProfileSnapshot.profile
+                        ? `${athleteProfileSnapshot.profile.primaryName ?? "Private swimmer"} is saved${athleteProfileSnapshot.profile.ageBandLabel ? ` · ${athleteProfileSnapshot.profile.ageBandLabel}` : ""}. Metrics, records, and broader preferences can build on this later.`
+                        : "Add your private swimmer profile now so later metrics, records, and preferences have a clear foundation."}
+                  </p>
+                </div>
+                <Link
+                  href="/my-library/profile"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  Open athlete profile
+                </Link>
+              </div>
+            </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
