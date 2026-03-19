@@ -29,9 +29,11 @@ export default async function MyLibraryProfilePage() {
             hasProfile: Boolean(initialSnapshot.profile),
             hasCssMetric: Boolean(initialSnapshot.cssMetric),
             hasPreferences: Boolean(initialSnapshot.preferences),
+            personalRecordCount: initialSnapshot.personalRecords.length,
             profileSchemaReady: initialSnapshot.profileSchemaReady,
             metricsSchemaReady: initialSnapshot.metricsSchemaReady,
             preferencesSchemaReady: initialSnapshot.preferencesSchemaReady,
+            personalRecordsSchemaReady: initialSnapshot.personalRecordsSchemaReady,
           }}
         />
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
@@ -41,11 +43,12 @@ export default async function MyLibraryProfilePage() {
                 My Library
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">
-                Athlete profile & training setup
+                Athlete profile, training setup & records
               </h1>
               <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
-                Keep a private swimmer profile, trusted CSS, and practical training preferences
-                together in one place without mixing them into Goals, Focus, or Notes.
+                Keep a private swimmer profile, trusted CSS, practical training preferences, and
+                current personal records together in one place without mixing them into Goals,
+                Focus, or Notes.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -66,7 +69,7 @@ export default async function MyLibraryProfilePage() {
 
           <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
             <h2 className="text-base font-semibold text-slate-900">How this fits</h2>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div className="mt-3 grid gap-3 lg:grid-cols-4">
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                   Athlete profile
@@ -81,6 +84,14 @@ export default async function MyLibraryProfilePage() {
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
                   Trusted CSS and practical defaults that later help shape session generation.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                  Personal records
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  Private current bests for explicit swim events, ready for later generator use.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">

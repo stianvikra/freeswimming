@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { COURSE_MODULES } from "@/app/course/courseData";
 import {
   isAthleteProfileSchemaMissing,
+  isPersonalRecordsSchemaMissing,
   isTrainingMetricSchemaMissing,
   isTrainingPreferencesSchemaMissing,
 } from "@/lib/athlete-profile/schema";
@@ -53,6 +54,7 @@ export async function GET() {
     athleteProfileResult,
     trainingMetricsResult,
     trainingPreferencesResult,
+    personalRecordsResult,
     entitlementsResult,
     courseProgressResult,
     guideProgressResult,
@@ -86,6 +88,13 @@ export async function GET() {
       )
       .eq("user_id", userId)
       .maybeSingle(),
+    supabase
+      .from("personal_records")
+      .select(
+        "id, distance_m, stroke, course, time_centiseconds, recorded_on, source_note, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("distance_m", { ascending: true }),
     supabase
       .from("entitlements")
       .select(
@@ -148,6 +157,10 @@ export async function GET() {
     isTrainingPreferencesSchemaMissing(trainingPreferencesResult.error)
       ? null
       : (trainingPreferencesResult.data ?? null);
+  const normalizedPersonalRecords =
+    personalRecordsResult.error && isPersonalRecordsSchemaMissing(personalRecordsResult.error)
+      ? []
+      : (personalRecordsResult.data ?? []);
   const normalizedTrainingFocuses =
     trainingFocusesResult.error && isTrainingContextSchemaMissing(trainingFocusesResult.error)
       ? []
@@ -168,6 +181,9 @@ export async function GET() {
     (trainingPreferencesResult.error &&
     !isTrainingPreferencesSchemaMissing(trainingPreferencesResult.error)
       ? trainingPreferencesResult.error
+      : null) ??
+    (personalRecordsResult.error && !isPersonalRecordsSchemaMissing(personalRecordsResult.error)
+      ? personalRecordsResult.error
       : null) ??
     entitlementsResult.error ??
     courseProgressResult.error ??
@@ -196,6 +212,7 @@ export async function GET() {
       athleteProfile: normalizedAthleteProfile,
       trainingMetrics: normalizedTrainingMetrics,
       trainingPreferences: normalizedTrainingPreferences,
+      personalRecords: normalizedPersonalRecords,
       entitlements: entitlementsResult.data ?? [],
       courseProgress: normalizeCourseProgressRows(courseProgressResult.data ?? [], {
         resolveLessonId,

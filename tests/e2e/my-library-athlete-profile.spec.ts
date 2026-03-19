@@ -45,7 +45,7 @@ test.describe("my library athlete profile", () => {
     }
     await expect(
       page.getByRole("heading", {
-        name: "Athlete profile & training setup",
+        name: "Athlete profile, training setup & records",
         level: 1,
       })
     ).toBeVisible();
@@ -54,15 +54,23 @@ test.describe("my library athlete profile", () => {
     if ((await displayNameInput.count()) === 0) {
       test.skip(true, "Athlete profile schema is not available in this environment.");
     }
+    const personalRecordDistanceInput = page.getByTestId("athlete-record-distance-m");
+    const hasPersonalRecordControls = (await personalRecordDistanceInput.count()) > 0;
 
     await displayNameInput.fill("Pool draft");
     await page.getByTestId("athlete-profile-css-pace").fill("1:58");
     await page.getByTestId("athlete-preferences-day-monday").check();
     await page.getByTestId("athlete-preferences-session-minutes").selectOption("60");
+    if (hasPersonalRecordControls) {
+      await personalRecordDistanceInput.fill("200");
+      await page.getByTestId("athlete-record-stroke").selectOption("freestyle");
+      await page.getByTestId("athlete-record-course").selectOption("pool_25m");
+      await page.getByTestId("athlete-record-time").fill("2:24.18");
+    }
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await expect(
       page.getByRole("heading", {
-        name: "Athlete profile & training setup",
+        name: "Athlete profile, training setup & records",
         level: 1,
       })
     ).toBeVisible();
@@ -77,5 +85,53 @@ test.describe("my library athlete profile", () => {
     await expect(
       page.getByText("Unsaved training preferences edits were restored on this device.")
     ).toBeVisible();
+    if (hasPersonalRecordControls) {
+      await expect(page.getByTestId("athlete-record-distance-m")).toHaveValue("200");
+      await expect(page.getByTestId("athlete-record-time")).toHaveValue("2:24.18");
+      await expect(
+        page.getByText("Unsaved personal-record edits were restored on this device.")
+      ).toBeVisible();
+    }
+  });
+
+  test("creates and deletes a personal record", async ({ page }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await loginToMyLibraryViaDevBypass(page);
+    await page.goto("/my-library/profile", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await expect(
+      page.getByRole("heading", {
+        name: "Athlete profile, training setup & records",
+        level: 1,
+      })
+    ).toBeVisible();
+
+    const distanceInput = page.getByTestId("athlete-record-distance-m");
+    if ((await distanceInput.count()) === 0) {
+      test.skip(true, "Personal records schema is not available in this environment.");
+    }
+
+    const distance = String(700 + (Date.now() % 200));
+    const eventLabel = `${distance}m Freestyle · 25m pool`;
+
+    await distanceInput.fill(distance);
+    await page.getByTestId("athlete-record-stroke").selectOption("freestyle");
+    await page.getByTestId("athlete-record-course").selectOption("pool_25m");
+    await page.getByTestId("athlete-record-time").fill("9:59.99");
+    await page.getByTestId("athlete-record-save").click();
+
+    await expect(page.getByText("Personal record saved.")).toBeVisible();
+    await expect(page.getByText(eventLabel)).toBeVisible();
+
+    page.once("dialog", async (dialog) => {
+      await dialog.accept();
+    });
+    await page
+      .locator("article")
+      .filter({ hasText: eventLabel })
+      .getByRole("button", { name: "Delete" })
+      .click();
+
+    await expect(page.getByText("Personal record deleted.")).toBeVisible();
   });
 });

@@ -1,12 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createRouteHandlerSupabaseClientMock } = vi.hoisted(() => ({
+const { createRouteHandlerSupabaseClientMock, loadAthleteProfileSnapshotMock } = vi.hoisted(() => ({
   createRouteHandlerSupabaseClientMock: vi.fn(),
+  loadAthleteProfileSnapshotMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
 }));
+
+vi.mock("@/lib/athlete-profile/server", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/athlete-profile/server")>(
+    "@/lib/athlete-profile/server"
+  );
+
+  return {
+    ...actual,
+    loadAthleteProfileSnapshot: loadAthleteProfileSnapshotMock,
+  };
+});
 
 import {
   GET as getAthleteProfile,
@@ -35,6 +47,20 @@ function buildRouteClient(userId: string | null) {
 describe("athlete profile routes", () => {
   beforeEach(() => {
     createRouteHandlerSupabaseClientMock.mockReset();
+    loadAthleteProfileSnapshotMock.mockResolvedValue({
+      profileSchemaReady: true,
+      metricsSchemaReady: true,
+      preferencesSchemaReady: true,
+      personalRecordsSchemaReady: true,
+      loadError: null,
+      metricsLoadError: null,
+      preferencesLoadError: null,
+      personalRecordsLoadError: null,
+      profile: null,
+      cssMetric: null,
+      preferences: null,
+      personalRecords: [],
+    });
   });
 
   afterEach(() => {

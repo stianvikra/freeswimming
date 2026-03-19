@@ -18,7 +18,18 @@ import {
   type TrainingWeekday,
 } from "@/lib/athlete-profile/training-setup";
 import {
+  buildPersonalRecordEventLabel,
+  comparePersonalRecordRows,
+  formatPersonalRecordTime,
+  getPersonalRecordCourseLabel,
+  getPersonalRecordStrokeLabel,
+  type PersonalRecordCourse,
+  type PersonalRecordRow,
+  type PersonalRecordStroke,
+} from "@/lib/athlete-profile/personal-records";
+import {
   isAthleteProfileSchemaMissing,
+  isPersonalRecordsSchemaMissing,
   isTrainingMetricSchemaMissing,
   isTrainingPreferencesSchemaMissing,
 } from "@/lib/athlete-profile/schema";
@@ -60,6 +71,19 @@ export const TRAINING_PREFERENCES_SELECT = `
   updated_at
 `;
 
+export const PERSONAL_RECORD_SELECT = `
+  id,
+  user_id,
+  distance_m,
+  stroke,
+  course,
+  time_centiseconds,
+  recorded_on,
+  source_note,
+  created_at,
+  updated_at
+`;
+
 export type AthleteProfileView = {
   id: string;
   displayName: string | null;
@@ -97,16 +121,35 @@ export type TrainingPreferencesView = {
   updatedAt: string;
 };
 
+export type PersonalRecordView = {
+  id: string;
+  distanceM: number;
+  stroke: PersonalRecordStroke;
+  strokeLabel: string;
+  course: PersonalRecordCourse;
+  courseLabel: string;
+  eventLabel: string;
+  timeCentiseconds: number;
+  timeLabel: string;
+  recordedOn: string | null;
+  sourceNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type AthleteProfileSnapshot = {
   profileSchemaReady: boolean;
   metricsSchemaReady: boolean;
   preferencesSchemaReady: boolean;
+  personalRecordsSchemaReady: boolean;
   loadError: string | null;
   metricsLoadError: string | null;
   preferencesLoadError: string | null;
+  personalRecordsLoadError: string | null;
   profile: AthleteProfileView | null;
   cssMetric: TrainingMetricView | null;
   preferences: TrainingPreferencesView | null;
+  personalRecords: PersonalRecordView[];
 };
 
 export function buildAthleteProfileView(row: AthleteProfileRow): AthleteProfileView {
@@ -162,32 +205,60 @@ export function buildTrainingPreferencesView(row: TrainingPreferencesRow): Train
   };
 }
 
+export function buildPersonalRecordView(row: PersonalRecordRow): PersonalRecordView {
+  const stroke = row.stroke as PersonalRecordStroke;
+  const course = row.course as PersonalRecordCourse;
+
+  return {
+    id: row.id,
+    distanceM: row.distance_m,
+    stroke,
+    strokeLabel: getPersonalRecordStrokeLabel(stroke) ?? row.stroke,
+    course,
+    courseLabel: getPersonalRecordCourseLabel(course) ?? row.course,
+    eventLabel: buildPersonalRecordEventLabel({
+      distanceM: row.distance_m,
+      stroke,
+      course,
+    }),
+    timeCentiseconds: row.time_centiseconds,
+    timeLabel: formatPersonalRecordTime(row.time_centiseconds) ?? "0.00",
+    recordedOn: row.recorded_on,
+    sourceNote: row.source_note,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export async function loadAthleteProfileSnapshot(
   supabase: TypedSupabaseClient,
   userId: string
 ): Promise<AthleteProfileSnapshot> {
-  const [profileResult, cssMetricResult, preferencesResult] = await Promise.all([
-    supabase
-      .from("athlete_profiles")
-      .select(ATHLETE_PROFILE_SELECT)
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase
-      .from("training_metrics")
-      .select(TRAINING_METRIC_SELECT)
-      .eq("user_id", userId)
-      .eq("metric_key", "css")
-      .maybeSingle(),
-    supabase
-      .from("training_preferences")
-      .select(TRAINING_PREFERENCES_SELECT)
-      .eq("user_id", userId)
-      .maybeSingle(),
-  ]);
+  const [profileResult, cssMetricResult, preferencesResult, personalRecordsResult] =
+    await Promise.all([
+      supabase
+        .from("athlete_profiles")
+        .select(ATHLETE_PROFILE_SELECT)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("training_metrics")
+        .select(TRAINING_METRIC_SELECT)
+        .eq("user_id", userId)
+        .eq("metric_key", "css")
+        .maybeSingle(),
+      supabase
+        .from("training_preferences")
+        .select(TRAINING_PREFERENCES_SELECT)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase.from("personal_records").select(PERSONAL_RECORD_SELECT).eq("user_id", userId),
+    ]);
 
   const profileSchemaReady = !isAthleteProfileSchemaMissing(profileResult.error);
   const metricsSchemaReady = !isTrainingMetricSchemaMissing(cssMetricResult.error);
   const preferencesSchemaReady = !isTrainingPreferencesSchemaMissing(preferencesResult.error);
+  const personalRecordsSchemaReady = !isPersonalRecordsSchemaMissing(personalRecordsResult.error);
 
   const loadError =
     profileResult.error && profileSchemaReady ? "Could not load athlete profile right now." : null;
@@ -198,6 +269,10 @@ export async function loadAthleteProfileSnapshot(
   const preferencesLoadError =
     preferencesResult.error && preferencesSchemaReady
       ? "Could not load training preferences right now."
+      : null;
+  const personalRecordsLoadError =
+    personalRecordsResult.error && personalRecordsSchemaReady
+      ? "Could not load personal records right now."
       : null;
 
   if (loadError) {
@@ -218,17 +293,32 @@ export async function loadAthleteProfileSnapshot(
     );
   }
 
+  if (personalRecordsLoadError) {
+    console.error(
+      "[AthleteProfile] Failed loading personal records snapshot",
+      personalRecordsResult.error
+    );
+  }
+
   return {
     profileSchemaReady,
     metricsSchemaReady,
     preferencesSchemaReady,
+    personalRecordsSchemaReady,
     loadError,
     metricsLoadError,
     preferencesLoadError,
+    personalRecordsLoadError,
     profile: profileResult.data ? buildAthleteProfileView(profileResult.data) : null,
     cssMetric: cssMetricResult.data ? buildTrainingMetricView(cssMetricResult.data) : null,
     preferences: preferencesResult.data
       ? buildTrainingPreferencesView(preferencesResult.data)
       : null,
+    personalRecords:
+      personalRecordsResult.data && personalRecordsSchemaReady
+        ? [...personalRecordsResult.data]
+            .sort(comparePersonalRecordRows)
+            .map((row) => buildPersonalRecordView(row))
+        : [],
   };
 }

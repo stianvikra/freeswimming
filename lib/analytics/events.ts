@@ -16,6 +16,8 @@ export const ANALYTICS_EVENT_NAMES = [
   "athlete_profile_saved",
   "training_metric_saved",
   "training_preferences_saved",
+  "personal_record_saved",
+  "personal_record_deleted",
   "training_context_viewed",
   "training_context_refreshed",
   "training_focus_created",

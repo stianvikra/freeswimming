@@ -51,3 +51,17 @@ export function isTrainingPreferencesSchemaMissing(
     "preferred_session_minutes",
   ]);
 }
+
+export function isPersonalRecordsSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  return isSchemaMissing(error, [
+    "personal_records",
+    "distance_m",
+    "stroke",
+    "course",
+    "time_centiseconds",
+    "recorded_on",
+    "source_note",
+  ]);
+}

@@ -8,6 +8,12 @@ import {
   type AthleteAgeBand,
 } from "@/lib/athlete-profile/mvp";
 import {
+  PERSONAL_RECORD_COURSE_OPTIONS,
+  PERSONAL_RECORD_STROKE_OPTIONS,
+  type PersonalRecordCourse,
+  type PersonalRecordStroke,
+} from "@/lib/athlete-profile/personal-records";
+import {
   formatCssSecondsPer100m,
   TRAINING_POOL_LENGTH_OPTIONS,
   TRAINING_SESSION_DURATION_OPTIONS,
@@ -18,6 +24,7 @@ import {
 import type {
   AthleteProfileSnapshot,
   AthleteProfileView,
+  PersonalRecordView,
   TrainingMetricView,
   TrainingPreferencesView,
 } from "@/lib/athlete-profile/server";
@@ -31,6 +38,7 @@ type Props = {
 type ApiError = {
   ok?: boolean;
   error?: string;
+  recordId?: string;
   snapshot?: AthleteProfileSnapshot;
 };
 
@@ -52,6 +60,16 @@ type TrainingPreferencesDraft = {
   availableDays: TrainingWeekday[];
   preferredWeeklySessionCount: string;
   preferredSessionMinutes: "" | "30" | "45" | "60" | "75" | "90";
+};
+
+type PersonalRecordDraft = {
+  editingRecordId: string | null;
+  distanceM: string;
+  stroke: PersonalRecordStroke | "";
+  course: PersonalRecordCourse | "";
+  time: string;
+  recordedOn: string;
+  sourceNote: string;
 };
 
 function buildProfileDraft(profile: AthleteProfileView | null): AthleteProfileDraft {
@@ -88,7 +106,19 @@ function buildPreferencesDraft(
   };
 }
 
-function getStorageKey(userId: string, scope: "profile" | "css" | "preferences") {
+function buildPersonalRecordDraft(record: PersonalRecordView | null): PersonalRecordDraft {
+  return {
+    editingRecordId: record?.id ?? null,
+    distanceM: record?.distanceM ? String(record.distanceM) : "",
+    stroke: record?.stroke ?? "",
+    course: record?.course ?? "",
+    time: record?.timeLabel ?? "",
+    recordedOn: record?.recordedOn ?? "",
+    sourceNote: record?.sourceNote ?? "",
+  };
+}
+
+function getStorageKey(userId: string, scope: "profile" | "css" | "preferences" | "records") {
   return `my-library-athlete-profile-${scope}-draft:${userId}`;
 }
 
@@ -125,6 +155,11 @@ function buildAvailableDaysSummary(days: string[]): string {
   return days.join(", ");
 }
 
+function findRecordById(records: PersonalRecordView[], recordId: string | null) {
+  if (!recordId) return null;
+  return records.find((record) => record.id === recordId) ?? null;
+}
+
 export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [profileDraft, setProfileDraft] = useState(() =>
@@ -134,6 +169,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const [preferencesDraft, setPreferencesDraft] = useState(() =>
     buildPreferencesDraft(initialSnapshot.preferences)
   );
+  const [recordDraft, setRecordDraft] = useState(() => buildPersonalRecordDraft(null));
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
   const [isOnline, setIsOnline] = useState(true);
@@ -141,13 +177,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const [pendingProfileSave, setPendingProfileSave] = useState(false);
   const [pendingCssSave, setPendingCssSave] = useState(false);
   const [pendingPreferencesSave, setPendingPreferencesSave] = useState(false);
+  const [pendingRecordSave, setPendingRecordSave] = useState(false);
+  const [pendingRecordDeleteId, setPendingRecordDeleteId] = useState<string | null>(null);
   const [profileDraftRecovered, setProfileDraftRecovered] = useState(false);
   const [cssDraftRecovered, setCssDraftRecovered] = useState(false);
   const [preferencesDraftRecovered, setPreferencesDraftRecovered] = useState(false);
+  const [recordDraftRecovered, setRecordDraftRecovered] = useState(false);
 
   const profileStorageKey = useMemo(() => getStorageKey(userId, "profile"), [userId]);
   const cssStorageKey = useMemo(() => getStorageKey(userId, "css"), [userId]);
   const preferencesStorageKey = useMemo(() => getStorageKey(userId, "preferences"), [userId]);
+  const recordStorageKey = useMemo(() => getStorageKey(userId, "records"), [userId]);
 
   const savedProfileDraft = useMemo(() => buildProfileDraft(snapshot.profile), [snapshot.profile]);
   const savedCssDraft = useMemo(
@@ -157,6 +197,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const savedPreferencesDraft = useMemo(
     () => buildPreferencesDraft(snapshot.preferences),
     [snapshot.preferences]
+  );
+  const savedRecordDraft = useMemo(
+    () =>
+      buildPersonalRecordDraft(
+        findRecordById(snapshot.personalRecords, recordDraft.editingRecordId)
+      ),
+    [recordDraft.editingRecordId, snapshot.personalRecords]
   );
 
   const hasUnsavedProfileChanges = useMemo(
@@ -171,6 +218,10 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     () => serializeDraft(preferencesDraft) !== serializeDraft(savedPreferencesDraft),
     [preferencesDraft, savedPreferencesDraft]
   );
+  const hasUnsavedRecordChanges = useMemo(
+    () => serializeDraft(recordDraft) !== serializeDraft(savedRecordDraft),
+    [recordDraft, savedRecordDraft]
+  );
 
   useEffect(() => {
     setIsOnline(readNavigatorOnlineState());
@@ -178,14 +229,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     const nextProfileFallback = buildProfileDraft(initialSnapshot.profile);
     const nextCssFallback = buildCssMetricDraft(initialSnapshot.cssMetric);
     const nextPreferencesFallback = buildPreferencesDraft(initialSnapshot.preferences);
+    const nextRecordFallback = buildPersonalRecordDraft(null);
 
     const storedProfileDraft = getStorageValue(profileStorageKey, nextProfileFallback);
     const storedCssDraft = getStorageValue(cssStorageKey, nextCssFallback);
     const storedPreferencesDraft = getStorageValue(preferencesStorageKey, nextPreferencesFallback);
+    const storedRecordDraft = getStorageValue(recordStorageKey, nextRecordFallback);
 
     setProfileDraft(storedProfileDraft);
     setCssDraft(storedCssDraft);
     setPreferencesDraft(storedPreferencesDraft);
+    setRecordDraft(storedRecordDraft);
 
     setProfileDraftRecovered(
       serializeDraft(storedProfileDraft) !== serializeDraft(nextProfileFallback)
@@ -193,6 +247,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setCssDraftRecovered(serializeDraft(storedCssDraft) !== serializeDraft(nextCssFallback));
     setPreferencesDraftRecovered(
       serializeDraft(storedPreferencesDraft) !== serializeDraft(nextPreferencesFallback)
+    );
+    setRecordDraftRecovered(
+      serializeDraft(storedRecordDraft) !== serializeDraft(nextRecordFallback)
     );
     setActionError("");
 
@@ -214,10 +271,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   }, [
     cssStorageKey,
     initialSnapshot.cssMetric,
+    initialSnapshot.personalRecords,
     initialSnapshot.preferences,
     initialSnapshot.profile,
     preferencesStorageKey,
     profileStorageKey,
+    recordStorageKey,
   ]);
 
   useEffect(() => {
@@ -246,6 +305,15 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
     setStorageValue(preferencesStorageKey, preferencesDraft);
   }, [preferencesDraft, preferencesStorageKey, savedPreferencesDraft]);
+
+  useEffect(() => {
+    if (serializeDraft(recordDraft) === serializeDraft(savedRecordDraft)) {
+      clearStorageValue(recordStorageKey);
+      return;
+    }
+
+    setStorageValue(recordStorageKey, recordDraft);
+  }, [recordDraft, recordStorageKey, savedRecordDraft]);
 
   async function parseError(response: Response, fallback: string) {
     const payload = (await response.json().catch(() => null)) as ApiError | null;
@@ -288,10 +356,19 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         setPreferencesDraft(buildPreferencesDraft(payload.snapshot.preferences));
       }
 
+      if (!hasUnsavedRecordChanges) {
+        setRecordDraft(
+          buildPersonalRecordDraft(
+            findRecordById(payload.snapshot.personalRecords, recordDraft.editingRecordId)
+          )
+        );
+      }
+
       void sendClientAnalyticsEvent("athlete_profile_refreshed", {
         hasProfile: Boolean(payload.snapshot.profile),
         hasCssMetric: Boolean(payload.snapshot.cssMetric),
         hasPreferences: Boolean(payload.snapshot.preferences),
+        personalRecordCount: payload.snapshot.personalRecords.length,
       });
     } catch {
       setActionError("Could not refresh training setup right now.");
@@ -471,6 +548,129 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     }
   }
 
+  async function savePersonalRecord(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!snapshot.personalRecordsSchemaReady) {
+      setActionError("Personal records are still syncing in this environment.");
+      return;
+    }
+
+    if (!isOnline) {
+      setActionError("You are offline. Reconnect before saving personal records.");
+      return;
+    }
+
+    setPendingRecordSave(true);
+    setActionError("");
+    setActionSuccess("");
+
+    const isEditing = Boolean(recordDraft.editingRecordId);
+    const requestUrl = recordDraft.editingRecordId
+      ? `/api/my-library/profile/records/${recordDraft.editingRecordId}`
+      : "/api/my-library/profile/records";
+    const requestMethod = recordDraft.editingRecordId ? "PUT" : "POST";
+
+    try {
+      const response = await fetch(requestUrl, {
+        method: requestMethod,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(recordDraft),
+      });
+
+      if (!response.ok) {
+        setActionError(await parseError(response, "Could not save personal record right now."));
+        return;
+      }
+
+      const payload = (await response.json().catch(() => null)) as ApiError | null;
+      if (!payload?.ok || !payload.snapshot) {
+        setActionError("Could not save personal record right now.");
+        return;
+      }
+
+      const nextDraft = buildPersonalRecordDraft(
+        findRecordById(payload.snapshot.personalRecords, payload.recordId ?? null)
+      );
+
+      setSnapshot(payload.snapshot);
+      setRecordDraft(nextDraft);
+      clearStorageValue(recordStorageKey);
+      setRecordDraftRecovered(false);
+      setActionSuccess(isEditing ? "Personal record updated." : "Personal record saved.");
+
+      const savedRecord = findRecordById(
+        payload.snapshot.personalRecords,
+        payload.recordId ?? null
+      );
+      void sendClientAnalyticsEvent("personal_record_saved", {
+        eventLabel: savedRecord?.eventLabel ?? null,
+        hasRecordedOn: Boolean(savedRecord?.recordedOn),
+      });
+    } catch {
+      setActionError("Could not save personal record right now.");
+    } finally {
+      setPendingRecordSave(false);
+    }
+  }
+
+  async function deletePersonalRecord(record: PersonalRecordView) {
+    if (!snapshot.personalRecordsSchemaReady) {
+      setActionError("Personal records are still syncing in this environment.");
+      return;
+    }
+
+    if (!isOnline) {
+      setActionError("You are offline. Reconnect before deleting personal records.");
+      return;
+    }
+
+    if (!window.confirm(`Delete ${record.eventLabel}?`)) {
+      return;
+    }
+
+    setPendingRecordDeleteId(record.id);
+    setActionError("");
+    setActionSuccess("");
+
+    try {
+      const response = await fetch(`/api/my-library/profile/records/${record.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        setActionError(await parseError(response, "Could not delete personal record right now."));
+        return;
+      }
+
+      const payload = (await response.json().catch(() => null)) as ApiError | null;
+      if (!payload?.ok || !payload.snapshot) {
+        setActionError("Could not delete personal record right now.");
+        return;
+      }
+
+      setSnapshot(payload.snapshot);
+
+      if (recordDraft.editingRecordId === record.id) {
+        setRecordDraft(buildPersonalRecordDraft(null));
+        clearStorageValue(recordStorageKey);
+        setRecordDraftRecovered(false);
+      }
+
+      setActionSuccess("Personal record deleted.");
+
+      void sendClientAnalyticsEvent("personal_record_deleted", {
+        eventLabel: record.eventLabel,
+      });
+    } catch {
+      setActionError("Could not delete personal record right now.");
+    } finally {
+      setPendingRecordDeleteId(null);
+    }
+  }
+
   function resetProfileDraftToSaved() {
     setProfileDraft(savedProfileDraft);
     clearStorageValue(profileStorageKey);
@@ -495,6 +695,33 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setActionSuccess("Draft reset to saved training preferences.");
   }
 
+  function resetRecordDraftToSaved() {
+    setRecordDraft(savedRecordDraft);
+    clearStorageValue(recordStorageKey);
+    setRecordDraftRecovered(false);
+    setActionError("");
+    setActionSuccess(
+      recordDraft.editingRecordId
+        ? "Draft reset to saved personal record."
+        : "Draft reset to a new personal record."
+    );
+  }
+
+  function startEditingRecord(record: PersonalRecordView) {
+    setRecordDraft(buildPersonalRecordDraft(record));
+    setRecordDraftRecovered(false);
+    setActionError("");
+    setActionSuccess(`Editing ${record.eventLabel}.`);
+  }
+
+  function startNewRecord() {
+    setRecordDraft(buildPersonalRecordDraft(null));
+    clearStorageValue(recordStorageKey);
+    setRecordDraftRecovered(false);
+    setActionError("");
+    setActionSuccess("Ready to add a new personal record.");
+  }
+
   function toggleAvailableDay(day: TrainingWeekday) {
     setPreferencesDraft((current) => {
       const hasDay = current.availableDays.includes(day);
@@ -514,13 +741,14 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     firstName: profileDraft.firstName.trim() || null,
     lastName: profileDraft.lastName.trim() || null,
   });
+  const currentEditedRecord = findRecordById(snapshot.personalRecords, recordDraft.editingRecordId);
 
   return (
     <div className="space-y-6">
       {!isOnline ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
-          You are offline. Unsaved profile, CSS, and preferences changes stay on this device until
-          you reconnect and save.
+          You are offline. Unsaved profile, CSS, preferences, and personal-record changes stay on
+          this device until you reconnect and save.
         </div>
       ) : null}
 
@@ -539,6 +767,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       {preferencesDraftRecovered ? (
         <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
           Unsaved training preferences edits were restored on this device.
+        </div>
+      ) : null}
+
+      {recordDraftRecovered ? (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+          Unsaved personal-record edits were restored on this device.
         </div>
       ) : null}
 
@@ -571,7 +805,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         </button>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-2xl border border-slate-200 bg-white p-5">
           <h2 className="text-lg font-semibold text-slate-900">Current athlete profile</h2>
           {!snapshot.profileSchemaReady ? (
@@ -701,6 +935,48 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             </div>
           )}
         </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <h2 className="text-lg font-semibold text-slate-900">Current personal records</h2>
+          {!snapshot.personalRecordsSchemaReady ? (
+            <p className="mt-3 text-sm text-amber-800">
+              Personal records are still syncing in this environment.
+            </p>
+          ) : snapshot.personalRecordsLoadError ? (
+            <p className="mt-3 text-sm text-rose-700">{snapshot.personalRecordsLoadError}</p>
+          ) : snapshot.personalRecords.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-600">
+              No personal records are saved yet. Add explicit swim events and times you want to
+              reuse later.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-slate-600">
+                {snapshot.personalRecords.length} current record
+                {snapshot.personalRecords.length === 1 ? "" : "s"} saved privately.
+              </p>
+              {snapshot.personalRecords.slice(0, 3).map((record) => (
+                <div
+                  key={record.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-base font-semibold text-slate-900">{record.eventLabel}</p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {record.timeLabel}
+                        {record.recordedOn ? ` · ${record.recordedOn}` : ""}
+                      </p>
+                    </div>
+                    <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+                      {record.courseLabel}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -708,6 +984,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         <ul className="mt-3 space-y-2 text-sm text-slate-700">
           <li>Profile stays about the swimmer. CSS stays about current test pace.</li>
           <li>Preferences stay about practical planning defaults, not goals or notes.</li>
+          <li>Personal records stay about event-specific bests, not your current CSS test pace.</li>
           <li>Later generator slices can reuse this context without redesigning the model.</li>
         </ul>
       </section>
@@ -889,6 +1166,241 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
           </button>
         </div>
       </form>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Personal records</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Save one private current best per event so later generator work can reuse trusted
+              event context without guessing.
+            </p>
+          </div>
+          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+            One current record per event
+          </div>
+        </div>
+
+        {!snapshot.personalRecordsSchemaReady ? (
+          <p className="mt-5 text-sm text-amber-800">
+            Personal records are still syncing in this environment.
+          </p>
+        ) : snapshot.personalRecordsLoadError ? (
+          <p className="mt-5 text-sm text-rose-700">{snapshot.personalRecordsLoadError}</p>
+        ) : (
+          <div className="mt-5 space-y-4">
+            {snapshot.personalRecords.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
+                No personal records saved yet. Start with the events you use most in training.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {snapshot.personalRecords.map((record) => (
+                  <article
+                    key={record.id}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-semibold text-slate-900">
+                          {record.eventLabel}
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {record.timeLabel}
+                          {record.recordedOn ? ` · ${record.recordedOn}` : ""}
+                        </p>
+                        {record.sourceNote ? (
+                          <p className="mt-2 text-sm text-slate-600">{record.sourceNote}</p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          data-testid={`athlete-record-edit-${record.id}`}
+                          onClick={() => startEditingRecord(record)}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`athlete-record-delete-${record.id}`}
+                          onClick={() => void deletePersonalRecord(record)}
+                          disabled={pendingRecordDeleteId === record.id}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-rose-300"
+                        >
+                          {pendingRecordDeleteId === record.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            <form
+              onSubmit={savePersonalRecord}
+              className="rounded-2xl border border-slate-200 bg-white p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-900">
+                    {currentEditedRecord ? "Edit personal record" : "Add personal record"}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Use explicit event identity and swimmer-friendly time input: `59.87`, `1:02.34`,
+                    or `1:01:02.34`.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {currentEditedRecord ? (
+                    <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                      Editing {currentEditedRecord.eventLabel}
+                    </div>
+                  ) : null}
+                  {currentEditedRecord ? (
+                    <button
+                      type="button"
+                      onClick={startNewRecord}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Start new
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Distance (m)</span>
+                  <input
+                    data-testid="athlete-record-distance-m"
+                    type="number"
+                    min={25}
+                    max={100000}
+                    value={recordDraft.distanceM}
+                    onChange={(event) =>
+                      setRecordDraft((current) => ({ ...current, distanceM: event.target.value }))
+                    }
+                    placeholder="100"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Stroke</span>
+                  <select
+                    data-testid="athlete-record-stroke"
+                    value={recordDraft.stroke}
+                    onChange={(event) =>
+                      setRecordDraft((current) => ({
+                        ...current,
+                        stroke: event.target.value as PersonalRecordStroke | "",
+                      }))
+                    }
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">Choose stroke</option>
+                    {PERSONAL_RECORD_STROKE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Course</span>
+                  <select
+                    data-testid="athlete-record-course"
+                    value={recordDraft.course}
+                    onChange={(event) =>
+                      setRecordDraft((current) => ({
+                        ...current,
+                        course: event.target.value as PersonalRecordCourse | "",
+                      }))
+                    }
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">Choose course</option>
+                    {PERSONAL_RECORD_COURSE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Time</span>
+                  <input
+                    data-testid="athlete-record-time"
+                    type="text"
+                    inputMode="decimal"
+                    value={recordDraft.time}
+                    onChange={(event) =>
+                      setRecordDraft((current) => ({ ...current, time: event.target.value }))
+                    }
+                    placeholder="1:02.34"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm font-medium text-slate-700">
+                  <span>Recorded on</span>
+                  <input
+                    data-testid="athlete-record-recorded-on"
+                    type="date"
+                    value={recordDraft.recordedOn}
+                    onChange={(event) =>
+                      setRecordDraft((current) => ({ ...current, recordedOn: event.target.value }))
+                    }
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-3">
+                  <span>Source note</span>
+                  <textarea
+                    data-testid="athlete-record-source-note"
+                    value={recordDraft.sourceNote}
+                    onChange={(event) =>
+                      setRecordDraft((current) => ({ ...current, sourceNote: event.target.value }))
+                    }
+                    placeholder="Optional note about meet, set, or source"
+                    rows={3}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <button
+                  data-testid="athlete-record-save"
+                  type="submit"
+                  disabled={pendingRecordSave || !isOnline}
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  {pendingRecordSave
+                    ? "Saving..."
+                    : currentEditedRecord
+                      ? "Update personal record"
+                      : "Save personal record"}
+                </button>
+                <button
+                  data-testid="athlete-record-reset"
+                  type="button"
+                  onClick={resetRecordDraftToSaved}
+                  disabled={!hasUnsavedRecordChanges}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                >
+                  Reset draft
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </section>
 
       <form onSubmit={savePreferences} className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
