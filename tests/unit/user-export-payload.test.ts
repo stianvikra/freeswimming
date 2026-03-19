@@ -22,6 +22,27 @@ describe("buildUserExportPayload", () => {
         created_at: "2026-03-19T08:00:00.000Z",
         updated_at: "2026-03-19T08:05:00.000Z",
       },
+      trainingMetrics: [
+        {
+          id: "metric-1",
+          metric_key: "css",
+          unit: "seconds_per_100m",
+          value_seconds: 118,
+          recorded_on: "2026-03-19",
+          source_note: "400 + 200 test",
+          created_at: "2026-03-19T08:10:00.000Z",
+          updated_at: "2026-03-19T08:11:00.000Z",
+        },
+      ],
+      trainingPreferences: {
+        id: "pref-1",
+        pool_length_m: 25,
+        available_days: ["monday", "wednesday"],
+        preferred_weekly_session_count: 5,
+        preferred_session_minutes: 60,
+        created_at: "2026-03-19T08:12:00.000Z",
+        updated_at: "2026-03-19T08:13:00.000Z",
+      },
       entitlements: [
         {
           id: "ent-1",
@@ -119,7 +140,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-03-19-athlete-profile",
+      schemaVersion: "2026-03-19-athlete-profile-training-setup",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -138,6 +159,27 @@ describe("buildUserExportPayload", () => {
         ageBand: "35_44",
         createdAt: "2026-03-19T08:00:00.000Z",
         updatedAt: "2026-03-19T08:05:00.000Z",
+      },
+      trainingMetrics: [
+        {
+          id: "metric-1",
+          metricKey: "css",
+          unit: "seconds_per_100m",
+          valueSeconds: 118,
+          recordedOn: "2026-03-19",
+          sourceNote: "400 + 200 test",
+          createdAt: "2026-03-19T08:10:00.000Z",
+          updatedAt: "2026-03-19T08:11:00.000Z",
+        },
+      ],
+      trainingPreferences: {
+        id: "pref-1",
+        poolLengthM: 25,
+        availableDays: ["monday", "wednesday"],
+        preferredWeeklySessionCount: 5,
+        preferredSessionMinutes: 60,
+        createdAt: "2026-03-19T08:12:00.000Z",
+        updatedAt: "2026-03-19T08:13:00.000Z",
       },
       entitlements: [
         {
@@ -242,6 +284,8 @@ describe("buildUserExportPayload", () => {
       generatedAt: "2026-02-17T12:00:00.000Z",
       profile: null,
       athleteProfile: null,
+      trainingMetrics: [],
+      trainingPreferences: null,
       entitlements: [],
       courseProgress: [],
       guideProgress: [],

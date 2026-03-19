@@ -139,20 +139,36 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Athlete profile</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    Athlete profile & training setup
+                  </h2>
                   <p className="mt-2 text-sm text-slate-600">
-                    {!athleteProfileSnapshot.schemaReady
+                    {!athleteProfileSnapshot.profileSchemaReady
                       ? "This athlete profile foundation is still syncing in this environment."
-                      : athleteProfileSnapshot.profile
-                        ? `${athleteProfileSnapshot.profile.primaryName ?? "Private swimmer"} is saved${athleteProfileSnapshot.profile.ageBandLabel ? ` · ${athleteProfileSnapshot.profile.ageBandLabel}` : ""}. Metrics, records, and broader preferences can build on this later.`
-                        : "Add your private swimmer profile now so later metrics, records, and preferences have a clear foundation."}
+                      : athleteProfileSnapshot.profile ||
+                          athleteProfileSnapshot.cssMetric ||
+                          athleteProfileSnapshot.preferences
+                        ? [
+                            athleteProfileSnapshot.profile?.primaryName ?? "Private swimmer",
+                            athleteProfileSnapshot.profile?.ageBandLabel ?? null,
+                            athleteProfileSnapshot.cssMetric
+                              ? `CSS ${athleteProfileSnapshot.cssMetric.paceLabel}/100m`
+                              : null,
+                            athleteProfileSnapshot.preferences?.poolLengthLabel ?? null,
+                            athleteProfileSnapshot.preferences?.preferredWeeklySessionCount
+                              ? `${athleteProfileSnapshot.preferences.preferredWeeklySessionCount} sessions/week`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Add your private swimmer profile, current CSS, and practical preferences now so later generator work has a real foundation."}
                   </p>
                 </div>
                 <Link
                   href="/my-library/profile"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Open athlete profile
+                  Open training setup
                 </Link>
               </div>
             </section>

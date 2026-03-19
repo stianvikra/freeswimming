@@ -235,6 +235,12 @@ Critical target categories for `10/10` claim in this brief:
 4. `Generator prefill from athlete profile + metrics + preferences`
    - read-only consumption of canonical user context in generator flows.
 
+## Checkpoint Log
+
+- `2026-03-19`: Parent brief created to lock the broader profile/metrics/preferences direction before implementation.
+- `2026-03-19 | e830b21 (main) | child slice 1 shipped via PR #237 for private athlete-profile foundation; profile hub, canonical row, local draft recovery, and export compatibility are now on main | next: take training metrics + preferences as the next child slice and continue to defer personal records`
+- `2026-03-19 | in-progress | child slice 2 started in docs/task-briefs/in-progress/2026-03-19-my-library-training-metrics-and-preferences-foundation-10-10.md with scope locked to CSS + practical preferences only; personal records remain deferred to a later child | next: implement canonical metrics/preferences schema, private My Library UX, export support, and tests`
+
 ## Acceptance Criteria
 
 1. `Athlete profile`, `Training metrics`, `Personal records`, and `Preferences` are clearly separate concepts in My Library.

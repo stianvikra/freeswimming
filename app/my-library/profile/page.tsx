@@ -27,7 +27,11 @@ export default async function MyLibraryProfilePage() {
           eventName="athlete_profile_viewed"
           payload={{
             hasProfile: Boolean(initialSnapshot.profile),
-            schemaReady: initialSnapshot.schemaReady,
+            hasCssMetric: Boolean(initialSnapshot.cssMetric),
+            hasPreferences: Boolean(initialSnapshot.preferences),
+            profileSchemaReady: initialSnapshot.profileSchemaReady,
+            metricsSchemaReady: initialSnapshot.metricsSchemaReady,
+            preferencesSchemaReady: initialSnapshot.preferencesSchemaReady,
           }}
         />
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
@@ -36,10 +40,12 @@ export default async function MyLibraryProfilePage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Athlete profile</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">
+                Athlete profile & training setup
+              </h1>
               <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
-                Keep a private swimmer profile that stays separate from Goals, Focus, and Notes.
-                Training metrics, personal records, and broader preferences can build on this later.
+                Keep a private swimmer profile, trusted CSS, and practical training preferences
+                together in one place without mixing them into Goals, Focus, or Notes.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -70,17 +76,19 @@ export default async function MyLibraryProfilePage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                  Goals
+                <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">
+                  Metrics & preferences
                 </p>
-                <p className="mt-2 text-sm text-slate-700">Where you want to go over time.</p>
+                <p className="mt-2 text-sm text-slate-700">
+                  Trusted CSS and practical defaults that later help shape session generation.
+                </p>
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                  Focus & Notes
+                  Goals, Focus & Notes
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  What you are working on now and what you notice in the pool.
+                  Direction, current work, and reflections still stay separate from training setup.
                 </p>
               </div>
             </div>

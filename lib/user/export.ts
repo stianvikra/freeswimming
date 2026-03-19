@@ -23,6 +23,29 @@ type AthleteProfileRow = Pick<
   "id" | "display_name" | "first_name" | "last_name" | "age_band" | "created_at" | "updated_at"
 >;
 
+type TrainingMetricRow = Pick<
+  Database["public"]["Tables"]["training_metrics"]["Row"],
+  | "id"
+  | "metric_key"
+  | "unit"
+  | "value_seconds"
+  | "recorded_on"
+  | "source_note"
+  | "created_at"
+  | "updated_at"
+>;
+
+type TrainingPreferencesRow = Pick<
+  Database["public"]["Tables"]["training_preferences"]["Row"],
+  | "id"
+  | "pool_length_m"
+  | "available_days"
+  | "preferred_weekly_session_count"
+  | "preferred_session_minutes"
+  | "created_at"
+  | "updated_at"
+>;
+
 type CourseProgressRow = Pick<
   Database["public"]["Tables"]["course_progress"]["Row"],
   "lesson_id" | "done" | "video_seconds" | "updated_at"
@@ -92,6 +115,8 @@ export type BuildUserExportPayloadInput = {
   userEmail: string | null;
   profile: ProfileRow | null;
   athleteProfile: AthleteProfileRow | null;
+  trainingMetrics: TrainingMetricRow[];
+  trainingPreferences: TrainingPreferencesRow | null;
   entitlements: EntitlementRow[];
   courseProgress: CourseProgressRow[];
   guideProgress: GuideProgressRow[];
@@ -108,7 +133,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-03-19-athlete-profile",
+    schemaVersion: "2026-03-19-athlete-profile-training-setup",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -130,6 +155,27 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
           ageBand: input.athleteProfile.age_band,
           createdAt: input.athleteProfile.created_at,
           updatedAt: input.athleteProfile.updated_at,
+        }
+      : null,
+    trainingMetrics: input.trainingMetrics.map((row) => ({
+      id: row.id,
+      metricKey: row.metric_key,
+      unit: row.unit,
+      valueSeconds: row.value_seconds,
+      recordedOn: row.recorded_on,
+      sourceNote: row.source_note,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    trainingPreferences: input.trainingPreferences
+      ? {
+          id: input.trainingPreferences.id,
+          poolLengthM: input.trainingPreferences.pool_length_m,
+          availableDays: input.trainingPreferences.available_days,
+          preferredWeeklySessionCount: input.trainingPreferences.preferred_weekly_session_count,
+          preferredSessionMinutes: input.trainingPreferences.preferred_session_minutes,
+          createdAt: input.trainingPreferences.created_at,
+          updatedAt: input.trainingPreferences.updated_at,
         }
       : null,
     entitlements: input.entitlements.map((row) => ({
