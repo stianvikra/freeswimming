@@ -228,10 +228,10 @@ Critical target categories for `10/10` claim in this brief:
 
 1. `Athlete profile foundation`
    - private profile hub, create/edit/save flow, privacy-safe field model.
-2. `Training metrics and personal records`
-   - CSS, PR CRUD, unit validation, date/source metadata.
-3. `Training preferences and availability`
-   - available days, pool length, session duration, weekly frequency, constraints.
+2. `Training metrics and preferences foundation`
+   - CSS, pool length, available days, weekly session count, session duration band, validation, and export support.
+3. `Personal records foundation`
+   - PR CRUD, distance/stroke/course/time/date/source metadata, and generator-ready serialization.
 4. `Generator prefill from athlete profile + metrics + preferences`
    - read-only consumption of canonical user context in generator flows.
 
@@ -239,7 +239,7 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-03-19`: Parent brief created to lock the broader profile/metrics/preferences direction before implementation.
 - `2026-03-19 | e830b21 (main) | child slice 1 shipped via PR #237 for private athlete-profile foundation; profile hub, canonical row, local draft recovery, and export compatibility are now on main | next: take training metrics + preferences as the next child slice and continue to defer personal records`
-- `2026-03-19 | in-progress | child slice 2 started in docs/task-briefs/in-progress/2026-03-19-my-library-training-metrics-and-preferences-foundation-10-10.md with scope locked to CSS + practical preferences only; personal records remain deferred to a later child | next: implement canonical metrics/preferences schema, private My Library UX, export support, and tests`
+- `2026-03-19 | 4101d21 (main) | child slice 2 shipped via PR #239 in docs/task-briefs/done/2026-03-19-my-library-training-metrics-and-preferences-foundation-10-10.md with canonical CSS, structured training preferences, My Library/profile UX, export support, and green local/CI gates | next: take Personal records as the next child slice and continue to defer generator-prefill automation`
 
 ## Acceptance Criteria
 
