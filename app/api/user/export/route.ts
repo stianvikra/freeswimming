@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { COURSE_MODULES } from "@/app/course/courseData";
+import { isAthleteProfileSchemaMissing } from "@/lib/athlete-profile/schema";
 import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
 import { normalizeCourseProgressRows } from "@/lib/course/progress";
 import {
@@ -45,6 +46,7 @@ export async function GET() {
 
   const [
     profileResult,
+    athleteProfileResult,
     entitlementsResult,
     courseProgressResult,
     guideProgressResult,
@@ -58,6 +60,11 @@ export async function GET() {
       .from("profiles")
       .select("id, email, created_at, updated_at")
       .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("athlete_profiles")
+      .select("id, display_name, first_name, last_name, age_band, created_at, updated_at")
+      .eq("user_id", userId)
       .maybeSingle(),
     supabase
       .from("entitlements")
@@ -108,6 +115,10 @@ export async function GET() {
       .order("created_at", { ascending: false }),
   ]);
 
+  const normalizedAthleteProfile =
+    athleteProfileResult.error && isAthleteProfileSchemaMissing(athleteProfileResult.error)
+      ? null
+      : (athleteProfileResult.data ?? null);
   const normalizedTrainingFocuses =
     trainingFocusesResult.error && isTrainingContextSchemaMissing(trainingFocusesResult.error)
       ? []
@@ -119,6 +130,9 @@ export async function GET() {
 
   const failedQuery =
     profileResult.error ??
+    (athleteProfileResult.error && !isAthleteProfileSchemaMissing(athleteProfileResult.error)
+      ? athleteProfileResult.error
+      : null) ??
     entitlementsResult.error ??
     courseProgressResult.error ??
     guideProgressResult.error ??
@@ -143,6 +157,7 @@ export async function GET() {
       userId,
       userEmail: user.email ?? null,
       profile: profileResult.data ?? null,
+      athleteProfile: normalizedAthleteProfile,
       entitlements: entitlementsResult.data ?? [],
       courseProgress: normalizeCourseProgressRows(courseProgressResult.data ?? [], {
         resolveLessonId,
