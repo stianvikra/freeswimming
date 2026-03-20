@@ -3,6 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SessionGeneratorPanel from "@/components/my-library/generator/SessionGeneratorPanel";
 import type { GeneratorIntakeHandoffPayload } from "@/lib/generator-intake/shared";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
+import type {
+  WorkoutEditorRecord,
+  WorkoutLibrarySnapshot,
+  WorkoutSummary,
+} from "@/lib/workouts/shared";
 
 vi.mock("@/lib/analytics/client", () => ({
   sendClientAnalyticsEvent: vi.fn(),
@@ -183,6 +188,48 @@ function buildDraft(): SessionDraft {
   };
 }
 
+function buildWorkoutSummary(overrides?: Partial<WorkoutSummary>): WorkoutSummary {
+  return {
+    id: "workout-1",
+    title: "Threshold / CSS 25m Pool draft",
+    environment: "pool",
+    poolLengthM: 25,
+    sessionType: "threshold_css",
+    effort: "moderate",
+    totalDistanceM: 2200,
+    estimatedDurationMin: 45,
+    updatedAt: "2026-03-20T12:20:00.000Z",
+    acceptedAt: "2026-03-20T12:18:00.000Z",
+    sourceKind: "ai_session_v1",
+    status: "accepted",
+    ...overrides,
+  };
+}
+
+function buildWorkoutRecord(overrides?: Partial<WorkoutEditorRecord>): WorkoutEditorRecord {
+  return {
+    id: "workout-1",
+    createdAt: "2026-03-20T12:18:00.000Z",
+    updatedAt: "2026-03-20T12:20:00.000Z",
+    acceptedAt: "2026-03-20T12:18:00.000Z",
+    sourceKind: "ai_session_v1",
+    status: "accepted",
+    draft: buildDraft(),
+    ...overrides,
+  };
+}
+
+function buildWorkoutLibrary(overrides?: Partial<WorkoutLibrarySnapshot>): WorkoutLibrarySnapshot {
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedWorkout: null,
+    selectedWorkoutMissing: false,
+    recentWorkouts: [],
+    ...overrides,
+  };
+}
+
 describe("SessionGeneratorPanel", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -214,6 +261,7 @@ describe("SessionGeneratorPanel", () => {
           constraintText: "",
         }}
         handoffPrepared
+        workoutLibrary={buildWorkoutLibrary()}
       />
     );
 
@@ -250,6 +298,7 @@ describe("SessionGeneratorPanel", () => {
           constraintText: "Keep the first half controlled.",
         }}
         handoffPrepared
+        workoutLibrary={buildWorkoutLibrary()}
       />
     );
 
@@ -280,5 +329,133 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByTestId("session-generator-draft-preview").textContent ?? "").toContain(
       "My edited threshold draft"
     );
+  });
+
+  it("accepts a generated draft into the canonical workout layer", async () => {
+    const savedDraft = {
+      ...buildDraft(),
+      title: "Accepted threshold workout",
+    };
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () =>
+          ({
+            ok: true,
+            handoff: buildPayload(),
+            draft: buildDraft(),
+          }) satisfies {
+            ok: true;
+            handoff: GeneratorIntakeHandoffPayload;
+            draft: SessionDraft;
+          },
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () =>
+          ({
+            ok: true,
+            workout: buildWorkoutRecord({
+              draft: savedDraft,
+            }),
+            summary: buildWorkoutSummary({
+              title: "Accepted threshold workout",
+            }),
+          }) satisfies {
+            ok: true;
+            workout: WorkoutEditorRecord;
+            summary: WorkoutSummary;
+          },
+      } as Response);
+
+    render(
+      <SessionGeneratorPanel
+        payload={buildPayload()}
+        selection={{
+          profile: true,
+          css: true,
+          preferences: true,
+          personal_records: false,
+          goals: true,
+          focus: true,
+        }}
+        overrides={{
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "",
+          constraintText: "Keep the first half controlled.",
+        }}
+        handoffPrepared
+        workoutLibrary={buildWorkoutLibrary()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("session-generator-generate"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-draft-title")).toHaveValue(
+        "Threshold / CSS 25m Pool draft"
+      );
+    });
+
+    fireEvent.change(screen.getByTestId("session-draft-title"), {
+      target: { value: "Accepted threshold workout" },
+    });
+    fireEvent.click(screen.getByTestId("session-generator-save"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Workout accepted and saved as a canonical session.")).toBeVisible();
+    });
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/my-library/workouts",
+      expect.objectContaining({
+        method: "POST",
+      })
+    );
+    expect(screen.getByText("Accepted workout loaded.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
+    expect(screen.getByText("Accepted threshold workout")).toBeVisible();
+  });
+
+  it("loads a previously accepted workout into the same editor", async () => {
+    render(
+      <SessionGeneratorPanel
+        payload={buildPayload()}
+        selection={{
+          profile: true,
+          css: true,
+          preferences: true,
+          personal_records: false,
+          goals: true,
+          focus: true,
+        }}
+        overrides={{
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "",
+          constraintText: "Keep the first half controlled.",
+        }}
+        handoffPrepared={false}
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            draft: {
+              ...buildDraft(),
+              title: "Previously accepted workout",
+            },
+          }),
+          recentWorkouts: [buildWorkoutSummary({ title: "Previously accepted workout" })],
+        })}
+      />
+    );
+
+    expect(screen.getByText("Accepted workout loaded.")).toBeVisible();
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Previously accepted workout");
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
+    expect(screen.queryByTestId("session-generator-prepare-needed")).not.toBeInTheDocument();
   });
 });

@@ -123,6 +123,40 @@ type DownloadLinkRow = Pick<
   "id" | "entitlement_id" | "expires_at" | "used_at" | "created_at"
 >;
 
+type WorkoutRow = Pick<
+  Database["public"]["Tables"]["workouts"]["Row"],
+  | "id"
+  | "source_kind"
+  | "status"
+  | "generator_kind"
+  | "source_fingerprint"
+  | "title"
+  | "title_suggestions"
+  | "description"
+  | "environment"
+  | "pool_length_m"
+  | "session_type"
+  | "effort"
+  | "size_mode"
+  | "target_distance_m"
+  | "target_time_min"
+  | "total_distance_m"
+  | "estimated_duration_min"
+  | "base_pace_seconds_per_100"
+  | "used_css_pace_label"
+  | "allowed_strokes"
+  | "equipment_allowlist"
+  | "focus_text"
+  | "goal_title"
+  | "constraint_text"
+  | "warnings"
+  | "steps"
+  | "generated_at"
+  | "accepted_at"
+  | "created_at"
+  | "updated_at"
+>;
+
 export type BuildUserExportPayloadInput = {
   userId: string;
   userEmail: string | null;
@@ -139,6 +173,7 @@ export type BuildUserExportPayloadInput = {
   trainingFocuses: TrainingFocusRow[];
   trainingNotes: TrainingNoteRow[];
   downloadLinks: DownloadLinkRow[];
+  workouts: WorkoutRow[];
   generatedAt?: string;
 };
 
@@ -147,7 +182,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-03-19-athlete-profile-training-setup-personal-records",
+    schemaVersion: "2026-03-20-workout-generator-accept",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -279,6 +314,38 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       expiresAt: row.expires_at,
       usedAt: row.used_at,
       createdAt: row.created_at,
+    })),
+    workouts: input.workouts.map((row) => ({
+      id: row.id,
+      sourceKind: row.source_kind,
+      status: row.status,
+      generatorKind: row.generator_kind,
+      sourceFingerprint: row.source_fingerprint,
+      title: row.title,
+      titleSuggestions: row.title_suggestions,
+      description: row.description,
+      environment: row.environment,
+      poolLengthM: row.pool_length_m,
+      sessionType: row.session_type,
+      effort: row.effort,
+      sizeMode: row.size_mode,
+      targetDistanceM: row.target_distance_m,
+      targetTimeMin: row.target_time_min,
+      totalDistanceM: row.total_distance_m,
+      estimatedDurationMin: row.estimated_duration_min,
+      basePaceSecondsPer100m: row.base_pace_seconds_per_100,
+      usedCssPaceLabel: row.used_css_pace_label,
+      allowedStrokes: row.allowed_strokes,
+      equipmentAllowlist: row.equipment_allowlist,
+      focusText: row.focus_text,
+      goalTitle: row.goal_title,
+      constraintText: row.constraint_text,
+      warnings: row.warnings,
+      steps: row.steps,
+      generatedAt: row.generated_at,
+      acceptedAt: row.accepted_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     })),
   };
 }
