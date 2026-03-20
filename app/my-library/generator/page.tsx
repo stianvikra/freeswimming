@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import GeneratorIntakeHub from "@/components/my-library/generator/GeneratorIntakeHub";
+import type { GeneratorIntakeBlockSummary } from "@/lib/generator-intake/shared";
 import { loadGeneratorIntakeSnapshot } from "@/lib/generator-intake/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -19,9 +20,9 @@ export default async function MyLibraryGeneratorPage() {
   }
 
   const initialSnapshot = await loadGeneratorIntakeSnapshot(supabase, user.id);
-  const availableBlockCount = Object.values(initialSnapshot.blocks).filter(
-    (block) => block.available
-  ).length;
+  const availableBlockCount = Object.values(
+    initialSnapshot.blocks as Record<string, GeneratorIntakeBlockSummary>
+  ).filter((block) => block.available).length;
 
   return (
     <SiteChrome>

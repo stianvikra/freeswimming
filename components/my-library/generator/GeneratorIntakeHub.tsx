@@ -15,7 +15,7 @@ import {
   type GeneratorIntakeOverrides,
   type GeneratorIntakeSelection,
   type GeneratorIntakeSnapshot,
-} from "@/lib/generator-intake/server";
+} from "@/lib/generator-intake/shared";
 import { TRAINING_SESSION_DURATION_OPTIONS } from "@/lib/athlete-profile/training-setup";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
