@@ -19,10 +19,12 @@ import {
 } from "@/lib/generator-intake/shared";
 import { TRAINING_SESSION_DURATION_OPTIONS } from "@/lib/athlete-profile/training-setup";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
+import type { WorkoutLibrarySnapshot } from "@/lib/workouts/shared";
 
 type Props = {
   initialSnapshot: GeneratorIntakeSnapshot;
   userId: string;
+  workoutLibrary: WorkoutLibrarySnapshot;
 };
 
 type ApiPayload = {
@@ -106,7 +108,7 @@ function toBlockLabel(key: GeneratorIntakeBlockKey) {
   return key.replaceAll("_", " ");
 }
 
-export default function GeneratorIntakeHub({ initialSnapshot, userId }: Props) {
+export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLibrary }: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [selection, setSelection] = useState<GeneratorIntakeSelection>(() =>
     getDefaultGeneratorIntakeSelection(initialSnapshot)
@@ -636,6 +638,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId }: Props) {
         selection={selection}
         overrides={overrides}
         handoffPrepared={isPreparedCurrent}
+        workoutLibrary={workoutLibrary}
       />
     </div>
   );

@@ -220,8 +220,8 @@ export default async function MyLibraryPage() {
                   <h2 className="text-lg font-semibold text-slate-900">Generator intake</h2>
                   <p className="mt-2 text-sm text-slate-600">
                     Review which saved My Library signals should prefill session generation, then
-                    generate and edit one local draft workout without editing your saved profile,
-                    records, goals, or focus.
+                    generate, accept, and reopen one canonical workout without editing your saved
+                    profile, records, goals, or focus.
                   </p>
                 </div>
                 <Link

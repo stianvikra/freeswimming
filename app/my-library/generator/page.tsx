@@ -6,10 +6,26 @@ import GeneratorIntakeHub from "@/components/my-library/generator/GeneratorIntak
 import type { GeneratorIntakeBlockSummary } from "@/lib/generator-intake/shared";
 import { loadGeneratorIntakeSnapshot } from "@/lib/generator-intake/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function MyLibraryGeneratorPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+type Props = {
+  searchParams: SearchParams;
+};
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function getOptionalWorkoutId(value: string | string[] | undefined) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return UUID_PATTERN.test(trimmed) ? trimmed : null;
+}
+
+export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
+  const params = await searchParams;
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -20,6 +36,11 @@ export default async function MyLibraryGeneratorPage() {
   }
 
   const initialSnapshot = await loadGeneratorIntakeSnapshot(supabase, user.id);
+  const workoutLibrary = await loadWorkoutLibrarySnapshot(
+    supabase,
+    user.id,
+    getOptionalWorkoutId(params.workout)
+  );
   const availableBlockCount = Object.values(
     initialSnapshot.blocks as Record<string, GeneratorIntakeBlockSummary>
   ).filter((block) => block.available).length;
@@ -86,18 +107,22 @@ export default async function MyLibraryGeneratorPage() {
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                  Session draft review
+                  Canonical workout save
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  This page can now generate one local draft session for review and editing. Save,
-                  accept, and builder handoff still come later.
+                  This page can now accept one reviewed session into a canonical workout and reopen
+                  it here for later editing, even before the separate manual builder route lands.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="mt-8">
-            <GeneratorIntakeHub initialSnapshot={initialSnapshot} userId={user.id} />
+            <GeneratorIntakeHub
+              initialSnapshot={initialSnapshot}
+              userId={user.id}
+              workoutLibrary={workoutLibrary}
+            />
           </div>
         </div>
       </section>

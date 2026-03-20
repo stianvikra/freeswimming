@@ -15,6 +15,7 @@ import {
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isTrainingContextSchemaMissing } from "@/lib/training-context/schema";
 import { buildUserExportPayload } from "@/lib/user/export";
+import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -63,6 +64,7 @@ export async function GET() {
     trainingFocusesResult,
     trainingNotesResult,
     downloadLinksResult,
+    workoutsResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -142,6 +144,13 @@ export async function GET() {
       .from("download_links")
       .select("id, entitlement_id, expires_at, used_at, created_at")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("workouts")
+      .select(
+        "id, source_kind, status, generator_kind, source_fingerprint, title, title_suggestions, description, environment, pool_length_m, session_type, effort, size_mode, target_distance_m, target_time_min, total_distance_m, estimated_duration_min, base_pace_seconds_per_100, used_css_pace_label, allowed_strokes, equipment_allowlist, focus_text, goal_title, constraint_text, warnings, steps, generated_at, accepted_at, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false }),
   ]);
 
   const normalizedAthleteProfile =
@@ -169,6 +178,10 @@ export async function GET() {
     trainingNotesResult.error && isTrainingContextSchemaMissing(trainingNotesResult.error)
       ? []
       : (trainingNotesResult.data ?? []);
+  const normalizedWorkouts =
+    workoutsResult.error && isWorkoutSchemaMissing(workoutsResult.error)
+      ? []
+      : (workoutsResult.data ?? []);
 
   const failedQuery =
     profileResult.error ??
@@ -196,7 +209,10 @@ export async function GET() {
     (trainingNotesResult.error && !isTrainingContextSchemaMissing(trainingNotesResult.error)
       ? trainingNotesResult.error
       : null) ??
-    downloadLinksResult.error;
+    downloadLinksResult.error ??
+    (workoutsResult.error && !isWorkoutSchemaMissing(workoutsResult.error)
+      ? workoutsResult.error
+      : null);
 
   if (failedQuery) {
     console.error("[UserExportApi] Could not build user export", failedQuery);
@@ -228,6 +244,7 @@ export async function GET() {
       trainingFocuses: normalizedTrainingFocuses,
       trainingNotes: normalizedTrainingNotes,
       downloadLinks: downloadLinksResult.data ?? [],
+      workouts: normalizedWorkouts,
       generatedAt,
     }),
   });

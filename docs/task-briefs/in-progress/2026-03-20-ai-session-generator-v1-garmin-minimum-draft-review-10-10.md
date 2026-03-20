@@ -110,8 +110,10 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Authenticated AI session-generation entrypoint for `planning_horizon = session`.
 - Current runtime implementation slice under this brief:
   - generate one local session draft from prepared intake context on `/my-library/generator`,
-  - support full local draft review/editing on that same page,
-  - keep canonical save/accept and shared workout-builder handoff explicitly deferred until the workout entity layer exists in code.
+  - support full review/editing of that draft on the same page,
+  - accept one reviewed draft into a first canonical owner-scoped workout entity,
+  - reopen and update accepted workouts through the same editable model on `/my-library/generator`,
+  - keep the dedicated manual workout-builder route and richer poolside execution flow deferred until the broader workout-entity and builder track lands.
 - Input contract for one generated session:
   - intake handoff payload,
   - selected session type,
@@ -140,11 +142,12 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
   - keep draft separate from accepted canonical workout state until review/accept,
   - show editable title suggestion(s),
   - preserve generation metadata needed for later review and analytics,
-  - hand accepted draft into the same workout editor used for manual workouts.
+  - hand accepted draft into the same canonical workout payload shape later manual-builder work will reuse.
 - Review/edit handoff:
   - swimmer can edit the full generated session before accepting it,
   - title, metadata, steps, targets, strokes, notes, and equipment stay editable,
-  - no AI-only hidden fields should be required to keep the workout valid.
+  - no AI-only hidden fields should be required to keep the workout valid,
+  - accepted workouts can be reopened and updated without regenerating from scratch.
 
 ## Out Of Scope
 
@@ -152,7 +155,7 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Competition-date generation and taper/peak orchestration.
 - Automatic calendar scheduling.
 - Automatic send to Garmin.
-- Canonical save/accept into a shared persisted workout entity in the current runtime slice.
+- Full manual workout-builder route and poolside execution UX.
 - Completed-history ingestion or retrospective AI analysis.
 - Public sharing or SEO surfaces.
 
@@ -172,7 +175,8 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
   - generation output is provisional until explicit accept/save succeeds,
   - regeneration must not silently overwrite a previously accepted workout,
   - draft review edits must survive transient generate/save failures where practical,
-  - accepted AI sessions must re-enter later reads as normal canonical workouts, not AI-special cases.
+  - accepted AI sessions must re-enter later reads as normal canonical workouts, not AI-special cases,
+  - accepted workouts reopened for editing must patch the same canonical entity rather than creating silent duplicates.
 - Invalidation:
   - accept/delete/regenerate invalidates workout-detail, builder, and export reads for the affected draft/workout.
 
@@ -254,4 +258,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | working tree | moved this brief to in-progress and narrowed the first runtime implementation to a truthful draft-review slice on /my-library/generator: authenticated session-draft generation API, deterministic Garmin-familiar draft output, and full local draft editing while canonical save/accept stays deferred until shared workout entities land | next: implement route, UI, tests, and run local verify gates before PR handoff`
 - `2026-03-20 | working tree | implemented the first runtime slice on /my-library/generator with server-validated session drafting, program-deferred messaging, full local draft editing, route/runbook updates, and new unit + e2e coverage; targeted unit suites and desktop generator e2e passed | next: package for PR after local gate review and note that canonical save/accept into the shared workout builder is still deferred`
 - `2026-03-20 | working tree | local npm run verify:pre-pr reached full Playwright and failed only on the known unrelated desktop athlete-profile flake (`tests/e2e/my-library-athlete-profile.spec.ts`); targeted rerun of that exact spec passed immediately afterward, while the new generator flow also passed in the full matrix and in targeted reruns | next: cite the athlete-profile flake in PR validation notes and keep this slice focused on generator delivery unless that legacy flake needs its own follow-up`
+- `2026-03-20 | working tree | continued the slice into first canonical workout acceptance by adding the owner-scoped workouts table contract, save/open/update APIs, same-page reopen flow on /my-library/generator, export/runbook updates, and focused unit coverage for routes/server/panel behavior | next: rerun desktop generator e2e against live Supabase-backed workouts persistence and then run repo gates`
+- `2026-03-20 | supabase | applied only 20260320191500_workouts_foundation_and_ai_session_accept.sql to the linked project and recorded that version in migration history without pushing the older unrelated 20260311100000 admin-email-template migration; linked DB now answers on public.workouts | next: finish verify:pre-pr and verify:pre-merge before PR handoff`
 - `2026-03-20 | working tree | perf trend during the implementation gate again recommended tighten after consecutive weekly green runs; decision for this generator slice is hold because no new public-route budget target was deliberately tightened in this PR and the active workstream is primarily workflow/contract delivery | next: revisit one stretch-target ratchet in the next perf-owning PR summary or brief update`
+- `2026-03-20 | working tree | continuing the same brief with the next narrow runtime slice: first canonical workout persistence for accepted AI session drafts, plus reopen/update on /my-library/generator, while still deferring the separate manual builder route, calendar/program flows, and history reconciliation | next: ship workouts schema + owner-scoped APIs + generator-page save/open/update UX, then rerun local gates`

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import GeneratorIntakeHub from "@/components/my-library/generator/GeneratorIntakeHub";
 import type { GeneratorIntakeSnapshot } from "@/lib/generator-intake/server";
+import type { WorkoutLibrarySnapshot } from "@/lib/workouts/shared";
 
 vi.mock("@/lib/analytics/client", () => ({
   sendClientAnalyticsEvent: vi.fn(),
@@ -186,6 +187,16 @@ function buildSnapshot(): GeneratorIntakeSnapshot {
   };
 }
 
+function buildWorkoutLibrary(): WorkoutLibrarySnapshot {
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedWorkout: null,
+    selectedWorkoutMissing: false,
+    recentWorkouts: [],
+  };
+}
+
 describe("GeneratorIntakeHub", () => {
   afterEach(() => {
     cleanup();
@@ -194,7 +205,13 @@ describe("GeneratorIntakeHub", () => {
   });
 
   it("explains the boundary between saved data and one-run overrides", () => {
-    render(<GeneratorIntakeHub initialSnapshot={buildSnapshot()} userId="user-1" />);
+    render(
+      <GeneratorIntakeHub
+        initialSnapshot={buildSnapshot()}
+        userId="user-1"
+        workoutLibrary={buildWorkoutLibrary()}
+      />
+    );
 
     expect(screen.getByRole("heading", { name: "Saved My Library context" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "One-run overrides" })).toBeInTheDocument();
@@ -204,7 +221,13 @@ describe("GeneratorIntakeHub", () => {
   });
 
   it("updates the handoff preview when blocks are excluded and overrides change", () => {
-    render(<GeneratorIntakeHub initialSnapshot={buildSnapshot()} userId="user-1" />);
+    render(
+      <GeneratorIntakeHub
+        initialSnapshot={buildSnapshot()}
+        userId="user-1"
+        workoutLibrary={buildWorkoutLibrary()}
+      />
+    );
 
     fireEvent.click(screen.getByTestId("generator-intake-target-program"));
     fireEvent.change(screen.getByTestId("generator-intake-session-count"), {

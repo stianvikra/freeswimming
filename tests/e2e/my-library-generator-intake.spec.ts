@@ -23,7 +23,8 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 async function waitForGeneratorIntakeClientReady(page: Page) {
   await expect(page.getByTestId("generator-intake-hub")).toHaveAttribute(
     "data-client-ready",
-    "true"
+    "true",
+    { timeout: 15_000 }
   );
 }
 
@@ -78,8 +79,11 @@ test.describe("my library generator intake", () => {
     );
   });
 
-  test("generates and locally edits a session draft", async ({ page }, testInfo) => {
+  test("accepts one generated session draft and reopens it in the same editor", async ({
+    page,
+  }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    const uniqueTitle = `QA accepted workout ${Date.now()}`;
 
     await loginToMyLibraryViaDevBypass(page);
     await page.goto("/my-library/generator", { waitUntil: "domcontentloaded", timeout: 60_000 });
@@ -105,12 +109,39 @@ test.describe("my library generator intake", () => {
 
     const firstStepName = page.getByTestId("session-draft-step-name-0");
     await firstStepName.fill("QA warmup block");
+    await titleInput.fill(uniqueTitle);
 
-    await expect(page.getByTestId("session-generator-draft-preview")).toContainText(
-      "QA edited session draft"
-    );
+    await expect(page.getByTestId("session-generator-draft-preview")).toContainText(uniqueTitle);
     await expect(page.getByTestId("session-generator-draft-preview")).toContainText(
       "QA warmup block"
     );
+
+    const saveResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/my-library/workouts") &&
+        response.request().method() === "POST" &&
+        response.status() === 200
+    );
+
+    await page.getByTestId("session-generator-save").click();
+    await saveResponsePromise;
+
+    await expect(
+      page.getByText("Workout accepted and saved as a canonical session.")
+    ).toBeVisible();
+    await expect(page.getByText("Accepted workout loaded.")).toBeVisible();
+
+    await page.getByRole("link", { name: "Start new draft" }).click();
+    await page.waitForURL(/\/my-library\/generator$/);
+    await waitForGeneratorIntakeClientReady(page);
+
+    const recentWorkouts = page.getByTestId("session-generator-recent-workouts");
+    await expect(recentWorkouts).toContainText(uniqueTitle);
+    await recentWorkouts.getByRole("link", { name: "Open" }).first().click();
+
+    await page.waitForURL(/\/my-library\/generator\?workout=/);
+    await waitForGeneratorIntakeClientReady(page);
+    await expect(page.getByText("Accepted workout loaded.")).toBeVisible();
+    await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
   });
 });

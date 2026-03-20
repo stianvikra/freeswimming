@@ -149,11 +149,51 @@ describe("buildUserExportPayload", () => {
           created_at: "2026-02-15T09:00:00.000Z",
         },
       ],
+      workouts: [
+        {
+          id: "workout-1",
+          source_kind: "ai_session_v1",
+          status: "accepted",
+          generator_kind: "rule_engine_v1",
+          source_fingerprint: "f0f0f0f0",
+          title: "Threshold session",
+          title_suggestions: ["Threshold session"],
+          description: "Steady threshold session.",
+          environment: "pool",
+          pool_length_m: 25,
+          session_type: "threshold_css",
+          effort: "moderate",
+          size_mode: "distance",
+          target_distance_m: 2200,
+          target_time_min: null,
+          total_distance_m: 2200,
+          estimated_duration_min: 46,
+          base_pace_seconds_per_100: 128,
+          used_css_pace_label: "1:58",
+          allowed_strokes: ["freestyle"],
+          equipment_allowlist: ["pull_buoy"],
+          focus_text: "Breathing timing",
+          goal_title: "Swim 1500m",
+          constraint_text: "Keep the first half smooth.",
+          warnings: [],
+          steps: [
+            {
+              id: "step-1",
+              category: "warmup",
+              name: "Warmup swim",
+            },
+          ],
+          generated_at: "2026-03-20T08:30:00.000Z",
+          accepted_at: "2026-03-20T08:35:00.000Z",
+          created_at: "2026-03-20T08:35:00.000Z",
+          updated_at: "2026-03-20T08:40:00.000Z",
+        },
+      ],
     });
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-03-19-athlete-profile-training-setup-personal-records",
+      schemaVersion: "2026-03-20-workout-generator-accept",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -300,6 +340,46 @@ describe("buildUserExportPayload", () => {
           createdAt: "2026-02-15T09:00:00.000Z",
         },
       ],
+      workouts: [
+        {
+          id: "workout-1",
+          sourceKind: "ai_session_v1",
+          status: "accepted",
+          generatorKind: "rule_engine_v1",
+          sourceFingerprint: "f0f0f0f0",
+          title: "Threshold session",
+          titleSuggestions: ["Threshold session"],
+          description: "Steady threshold session.",
+          environment: "pool",
+          poolLengthM: 25,
+          sessionType: "threshold_css",
+          effort: "moderate",
+          sizeMode: "distance",
+          targetDistanceM: 2200,
+          targetTimeMin: null,
+          totalDistanceM: 2200,
+          estimatedDurationMin: 46,
+          basePaceSecondsPer100m: 128,
+          usedCssPaceLabel: "1:58",
+          allowedStrokes: ["freestyle"],
+          equipmentAllowlist: ["pull_buoy"],
+          focusText: "Breathing timing",
+          goalTitle: "Swim 1500m",
+          constraintText: "Keep the first half smooth.",
+          warnings: [],
+          steps: [
+            {
+              id: "step-1",
+              category: "warmup",
+              name: "Warmup swim",
+            },
+          ],
+          generatedAt: "2026-03-20T08:30:00.000Z",
+          acceptedAt: "2026-03-20T08:35:00.000Z",
+          createdAt: "2026-03-20T08:35:00.000Z",
+          updatedAt: "2026-03-20T08:40:00.000Z",
+        },
+      ],
     });
   });
 
@@ -321,6 +401,7 @@ describe("buildUserExportPayload", () => {
       trainingFocuses: [],
       trainingNotes: [],
       downloadLinks: [],
+      workouts: [],
     });
 
     expect(payload.profile).toBeNull();
@@ -330,5 +411,6 @@ describe("buildUserExportPayload", () => {
     expect(payload.trainingFocuses).toEqual([]);
     expect(payload.trainingNotes).toEqual([]);
     expect(payload.downloadLinks).toEqual([]);
+    expect(payload.workouts).toEqual([]);
   });
 });

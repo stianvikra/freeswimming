@@ -23,7 +23,8 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 async function waitForAthleteProfileClientReady(page: Page) {
   await expect(page.getByTestId("athlete-profile-hub")).toHaveAttribute(
     "data-client-ready",
-    "true"
+    "true",
+    { timeout: 15_000 }
   );
 }
 

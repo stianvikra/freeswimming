@@ -52,10 +52,12 @@ Additional `My Library` sub-route checks:
 - `/my-library/generator`
   - confirm `/api/my-library/generator-intake` returns owner-scoped `200` or fail-closed `401`,
   - confirm `/api/my-library/generator/session-draft` returns owner-scoped `200` for session target, `401` for unauthenticated reads, and explicit `422` when program target is chosen in this slice,
+  - confirm `/api/my-library/workouts` and `/api/my-library/workouts/[workoutId]` return owner-scoped `200`, fail-closed `401`, and `404` for missing canonical workout ids,
   - confirm stale/missing block copy names the affected source area (`profile`, `goals`, `focus`),
   - confirm refresh does not mutate saved My Library records,
   - confirm notes remain excluded from default intake prefill in v1,
-  - confirm generated drafts stay local/editable and no save/accept CTA claims canonical persistence yet.
+  - confirm generated drafts stay local until explicit accept/save,
+  - confirm accepted workouts reopen in the same generator editor without mutating another user's data.
 
 ## i18n Triage Overlay (When Locale Work Starts)
 
