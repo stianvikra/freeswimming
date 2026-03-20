@@ -6,11 +6,11 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-19`
+- `updated`: `2026-03-20`
 
 ## Goal
 
-Ship a Garmin-familiar manual workout/session builder and poolside execution experience that is fast, clear, and reliable on mobile.
+Ship a Garmin-familiar manual session builder and poolside execution experience that is fast, clear, reliable on mobile, and aligned to the canonical Garmin-ready workout contract.
 
 ## Scope
 
@@ -21,8 +21,20 @@ Ship a Garmin-familiar manual workout/session builder and poolside execution exp
   - add repeat block,
   - reorder/remove,
   - section totals.
+- Garmin-familiar structured step authoring:
+  - duration + target pairing,
+  - repeat/interval block editing,
+  - rest editing,
+  - compatibility hints where a step shape cannot map cleanly downstream.
 - Step editor:
-  - duration type, distance, stroke, drill type, equipment, intensity target, notes.
+  - duration type,
+  - distance,
+  - stroke,
+  - drill type,
+  - equipment,
+  - intensity target,
+  - threshold-based swim zone target when threshold context exists,
+  - notes.
 - Poolside mode:
   - one primary action per screen (`Next`/`Done`),
   - large tap targets,
@@ -36,6 +48,7 @@ Ship a Garmin-familiar manual workout/session builder and poolside execution exp
 - Goal-based automatic session creation.
 - Weekly program/calendar authoring beyond the single-workout builder flow.
 - Garmin API push.
+- Canonical training history review, cancellation flows, and retrospective evaluation after completion.
 
 ## Data Placement And Sync Contract (Required)
 
@@ -102,6 +115,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - Users can create, reorder, repeat, and save workouts without confusion.
 - Users can manually author their own workouts without being routed through AI generation.
+- Users can author Garmin-familiar target/duration/repeat structures without learning a hidden export model later.
+- Threshold-based swim zone targets, when shown, use the shared published method rather than a separate builder-only zone system.
 - Poolside mode supports clean execution with minimal cognitive load.
 - Save/cancel/dirty-state behavior is deterministic.
 - Builder is Garmin-familiar in structure without brand cloning.
@@ -117,3 +132,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-19 | planning | clarified that this brief owns manual workout/session building and poolside execution only; AI generation and weekly program authoring remain separate briefs | next: request owner detail later on exact manual-builder ergonomics, save model, and Garmin-export handoff expectations before implementation starts`
+- `2026-03-20 | planning | tightened this brief into the explicit manual session builder track, added Garmin-familiar target/duration/repeat authoring requirements, and aligned swim-intensity editing to the shared threshold-based zone method | next: request owner detail later on exact builder editing ergonomics and how much compatibility guidance should be visible before export/send exists`

@@ -6,27 +6,51 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-16`
+- `updated`: `2026-03-20`
 
 ## Goal
 
-Define a canonical, Garmin-compatible workout schema and deterministic step engine so all builder, AI, poolside, and export flows use the same trusted data contract.
+Define a canonical, Garmin-compatible workout schema and deterministic step engine so manual builders, AI generators, poolside execution, export, and later Garmin delivery all use the same trusted data contract.
+
+## Garmin And Swim-Zone Alignment
+
+- Canonical steps must map cleanly to Garmin-familiar structured workout concepts:
+  - duration,
+  - target,
+  - rest,
+  - repeat/interval grouping.
+- Swim intensity targeting must support threshold-based swim zones derived from supported threshold tests, not ad hoc zone naming invented per feature.
+- The contract should normalize threshold inputs from either:
+  - `1000m test`,
+  - `CSS 400m + 200m`.
+- Product wording should describe these as `threshold-based swim zones`, not as universal or official swim-zone truth.
 
 ## Scope
 
 - Define canonical entities:
-  - `drill`, `workout_template`, `workout`, `plan`, `plan_session`, `completed_session`.
+  - `drill`, `workout_template`, `workout`, `plan`, `plan_session`, `training_history_entry`.
 - Define canonical `steps` JSON schema:
   - step types (`warmup`, `drill`, `main`, `cooldown`, `rest`, `repeat_block`),
-  - distance/duration target,
+  - duration and distance target,
+  - target mode (`open`, `threshold_zone`, `pace_range`, `rpe`, `rest`),
   - stroke/equipment,
   - rest,
   - optional notes.
+- Define Garmin-compatible structured-step semantics:
+  - single step,
+  - repeat/interval block,
+  - target + duration pairing,
+  - deterministic totals.
+- Define threshold-based swim-zone support:
+  - normalized `threshold_sec_per_100`,
+  - supported threshold source metadata,
+  - deterministic zone-band projection rules for workout targeting and export mapping.
 - Add invariant rules:
   - max step count,
   - repeat nesting constraints,
   - progression guardrails,
-  - totals consistency.
+  - totals consistency,
+  - Garmin-ready mapping constraints for unsupported target/duration combinations.
 - Add server-side validation (Zod + DB constraints) and deterministic normalization.
 
 ## Out Of Scope
@@ -34,11 +58,13 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
 - Visual builder UI.
 - AI generation prompts.
 - OAuth integrations.
+- Garmin Training API partner auth/send workflow.
+- Garmin Activity API completion reconciliation and history review UX.
 
 ## Data Placement And Sync Contract (Required)
 
 - Server-canonical:
-  - canonical drill/template/workout/plan/session/completion entities,
+  - canonical drill/template/workout/plan/session/history entities,
   - normalized `steps` payload,
   - schema version metadata and validation outcome.
 - Local-only:
@@ -54,7 +80,7 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
 ## Identity And Rename Contract
 
 - Canonical stable IDs:
-  - every persisted `drill`, `workout_template`, `workout`, `plan`, `plan_session`, and `completed_session` row gets an immutable canonical ID that is independent of display title, slug, week/day position, and sort order.
+  - every persisted `drill`, `workout_template`, `workout`, `plan`, `plan_session`, and `training_history_entry` row gets an immutable canonical ID that is independent of display title, slug, week/day position, and sort order.
 - Human-readable identifiers:
   - titles/slugs/labels are operator-facing and may be renameable where product UX needs it,
   - human-readable fields must never be the sole canonical key for progress, notes, exports, analytics, or plan references.
@@ -108,8 +134,11 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Canonical schema documented and implemented in TS + DB.
 - Step payloads are validated and normalized before persistence.
 - Totals (`meters`, step count, interval count) are deterministic.
+- Canonical step model can express Garmin-familiar single steps, repeats, and interval sets without ambiguous translation.
+- Threshold-based swim-zone targets are normalized from supported threshold sources into deterministic pace/zone references.
 - Invalid combinations return actionable validation errors.
 - Canonical identity rules are documented for all persisted entities before implementation starts.
+- Product language and schema avoid claiming universal "official swim zones" when the contract is a published threshold-based method.
 - Brief is scorecard-complete and lintable before implementation starts.
 
 ## Validation
@@ -118,4 +147,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `npm run typecheck`
 - `npm run test:unit`
 - targeted integration tests for API writes and negative paths
+- targeted contract tests for Garmin-ready target/duration/repeat normalization and threshold-zone derivation
 - `npm run verify:pre-pr`
+
+## Checkpoint Log
+
+- `2026-03-20 | planning | aligned the canonical workout contract to Garmin-style duration/target/repeat semantics and threshold-based swim-zone normalization from 1000m or CSS sources so manual builder, AI generator, export, and later Garmin delivery share the same language | next: keep downstream builder/generator/export briefs pinned to this contract and avoid parallel zone systems`

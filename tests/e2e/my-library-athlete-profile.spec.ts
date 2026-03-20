@@ -128,11 +128,24 @@ test.describe("my library athlete profile", () => {
     await page.getByTestId("athlete-record-stroke").selectOption("freestyle");
     await page.getByTestId("athlete-record-course").selectOption("pool_25m");
     await page.getByTestId("athlete-record-time").fill("9:59.99");
+    const createRecordResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        response.url().includes("/api/my-library/profile/records") &&
+        response.ok()
+    );
     await page.getByTestId("athlete-record-save").click();
 
+    await createRecordResponse;
     await expect(page.getByText("Personal record saved.")).toBeVisible();
     await expect(page.getByRole("heading", { name: eventLabel })).toBeVisible();
 
+    const deleteRecordResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === "DELETE" &&
+        response.url().includes("/api/my-library/profile/records/") &&
+        response.ok()
+    );
     page.once("dialog", async (dialog) => {
       await dialog.accept();
     });
@@ -142,6 +155,7 @@ test.describe("my library athlete profile", () => {
       .getByRole("button", { name: "Delete" })
       .click();
 
-    await expect(page.getByText("Personal record deleted.")).toBeVisible();
+    await deleteRecordResponse;
+    await expect(page.locator("article").filter({ hasText: eventLabel })).toHaveCount(0);
   });
 });

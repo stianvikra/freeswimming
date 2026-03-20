@@ -6,11 +6,11 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-19`
+- `updated`: `2026-03-20`
 
 ## Goal
 
-Build export adapters so workouts are usable immediately (PDF/poolside) and technically ready for Garmin Training API mapping later.
+Build export adapters so canonical workouts/programs are usable immediately (PDF/poolside) and technically ready for Garmin Training API publish mapping later.
 
 ## Dependencies And Boundaries
 
@@ -29,14 +29,15 @@ Build export adapters so workouts are usable immediately (PDF/poolside) and tech
 ## Scope
 
 - Export adapter layer:
-  - canonical workout -> `garmin-ready` intermediate format,
-  - canonical workout -> printable PDF model.
+  - canonical workout/program -> `garmin-ready` intermediate format,
+  - canonical workout/program -> printable PDF model.
 - PDF export UX:
   - clear, professional layout,
   - poolside legibility,
   - QR-ready if needed later.
 - Validation:
-  - enforce Garmin-compatible bounds in adapter.
+  - enforce Garmin-compatible bounds in adapter,
+  - enforce threshold-based swim-zone target mapping or explicit rejection when unsupported.
 
 ## Out Of Scope
 
@@ -44,6 +45,7 @@ Build export adapters so workouts are usable immediately (PDF/poolside) and tech
 - AI generation of workout/session/program drafts.
 - Live Garmin push.
 - OAuth token handling.
+- Garmin Activity API completion/history ingestion.
 
 ## Data Placement And Sync Contract (Required)
 
@@ -109,7 +111,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Acceptance Criteria
 
 - PDF export renders consistently and readable on phone print view.
-- Garmin-ready adapter produces valid mapped payload for future API submission.
+- Garmin-ready adapter produces valid mapped workout/program payloads for future Training API submission.
+- Threshold-based swim-zone targets either map deterministically into export output or fail with actionable errors.
 - Adapter rejects unsupported step combos with actionable errors.
 - Adapter/output identity stays derived from canonical workout IDs, not mutable labels.
 - Export works from canonical workouts regardless of whether the source draft was created manually or originated from an accepted AI-generated draft.
@@ -124,3 +127,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-19 | planning | clarified that export is downstream of canonical workouts from either manual builder or accepted AI-generated drafts, while live Garmin push remains a separate later slice | next: keep export adapter rules aligned with the canonical workout contract and future Garmin partner mapping`
+- `2026-03-20 | planning | expanded export scope to cover Garmin-ready workout/program mapping and threshold-based zone target handling, while keeping live send and activity-history ingestion outside this adapter brief | next: align later export adapters with the exact Training API publish model once partner docs and supported step matrix are finalized`

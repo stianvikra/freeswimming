@@ -6,11 +6,11 @@
 - `status`: `blocked`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-16`
+- `updated`: `2026-03-20`
 
 ## Goal
 
-Integrate one-click "Send to Garmin" using Garmin Training API once partner access and operational prerequisites are approved.
+Integrate one-click `Send to Garmin` for workouts/programs using Garmin Training API once partner access and operational prerequisites are approved.
 
 ## Why Blocked
 
@@ -18,7 +18,7 @@ This work requires external prerequisites not guaranteed by code alone:
 
 - Garmin partner/application approval.
 - API credentials and environment configuration.
-- Confirmed scope/limits for swim workout upload.
+- Confirmed scope/limits for swim workout and training-plan upload.
 - Legal/policy confirmation for data usage and terms.
 
 ## Unblock Criteria
@@ -27,15 +27,22 @@ All of the following must be true:
 
 1. Garmin partner status approved.
 2. Production and preview credentials provisioned securely.
-3. Supported workout step-mapping matrix signed off.
+3. Supported workout/program step-mapping matrix signed off.
 4. Rollback/runbook approved by owner.
 
 ## Planned Scope After Unblock
 
 - OAuth connect/disconnect flow with encrypted token storage.
-- Send workout endpoint with queue/retry handling.
+- Send workout and training-plan endpoints with queue/retry handling.
 - Sync status model (`queued`, `sent`, `failed`, `needs-attention`).
 - Deterministic failure UX and admin/audit visibility.
+- Explicit guarantee that send status does not mark sessions complete or move them into training history.
+
+## Explicit Non-Scope While Blocked
+
+- Garmin Activity API completed-session ingestion.
+- Training-history reconciliation for `completed` vs `cancelled`.
+- Retrospective AI evaluation of completed sessions.
 
 ## Data Placement And Sync Contract (Post-Unblock)
 
@@ -108,3 +115,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `npm run verify:pre-pr`
 - integration tests with Garmin adapter stubs
 - staged end-to-end send test in preview env
+
+## Checkpoint Log
+
+- `2026-03-20 | planning | tightened this blocked brief around Garmin Training API send-to-calendar/device delivery for workouts and programs, and explicitly separated later completed-session/history ingestion into a different history track that can depend on Garmin Activity API | next: keep this brief blocked until partner approval, auth setup, and mapping matrix signoff are concrete`
