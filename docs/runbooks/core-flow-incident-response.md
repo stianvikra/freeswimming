@@ -45,6 +45,10 @@ Provide a deterministic first-response flow for production incidents on core rou
 
 Additional `My Library` sub-route checks:
 
+- `/my-library/goals` -> `/my-library/training`
+  - confirm `Use as focus` and `Add note` links include a canonical `goalId` query param,
+  - confirm opening the linked training route preselects the intended goal without mutating the goal row,
+  - confirm existing local focus/note draft text is preserved when goal-prefill is applied.
 - `/my-library/generator`
   - confirm `/api/my-library/generator-intake` returns owner-scoped `200` or fail-closed `401`,
   - confirm stale/missing block copy names the affected source area (`profile`, `goals`, `focus`),
