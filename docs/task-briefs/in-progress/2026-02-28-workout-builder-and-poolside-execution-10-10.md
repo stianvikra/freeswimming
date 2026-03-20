@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-02-28-workout-builder-and-poolside-execution-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
 - `updated`: `2026-03-20`
@@ -13,6 +13,12 @@
 Ship a Garmin-familiar manual session builder and poolside execution experience that is fast, clear, reliable on mobile, and aligned to the canonical Garmin-ready workout contract.
 
 ## Scope
+
+- Current runtime implementation slice under this brief:
+  - introduce a dedicated authenticated canonical workout editor route for already-saved workouts,
+  - reuse the same editable workout model the AI session generator now writes into,
+  - link accepted AI workouts into that dedicated route from Generator Intake and My Library,
+  - keep manual blank-workout creation and poolside execution deferred until the dedicated builder surface is stable.
 
 - Manual workout/session authoring for user-built training sessions.
 - Editing surface for accepted single-session AI drafts after they become canonical workouts, without moving generation logic into this brief.
@@ -148,3 +154,5 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | tightened this brief into the explicit manual session builder track, added Garmin-familiar target/duration/repeat authoring requirements, and aligned swim-intensity editing to the shared threshold-based zone method | next: request owner detail later on exact builder editing ergonomics and how much compatibility guidance should be visible before export/send exists`
 - `2026-03-20 | planning | clarified that accepted AI-generated single-session drafts should hand off into this same editor after canonical save, while horizon selection and competition intent remain upstream generator concerns | next: keep later implementation focused on canonical workout editing and avoid mixing generation controls into the manual builder UI`
 - `2026-03-20 | planning | added explicit workout-level metadata editing expectations for environment, pool length, session intent, effort preset, and normalized distance/time totals so AI-authored drafts and manual workouts can truly share the same editor instead of only the same step cards | next: keep future builder implementation centered on one canonical workout form that can edit both metadata and steps`
+- `2026-03-20 | working tree | moved this brief to in-progress and narrowed the first runtime slice to a dedicated canonical workout editor route for already-accepted workouts, while manual blank-workout creation and poolside execution remain deferred | next: extract the shared workout editor out of Generator Intake, wire `/my-library/workouts/[workoutId]`, and point accepted workout links there`
+- `2026-03-20 | working tree | extracted the shared workout editor, added the dedicated `/my-library/workouts/[workoutId]` route plus My Library entrypoint, and covered generator -> builder handoff with unit + e2e validation | next: commit this slice on its own branch and rerun full repo gates from branch HEAD so PR-body/brief automation evaluates the current diff instead of falling back to the previous merge commit`

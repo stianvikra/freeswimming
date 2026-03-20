@@ -26,6 +26,11 @@ function getOptionalWorkoutId(value: string | string[] | undefined) {
 
 export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
   const params = await searchParams;
+  const selectedWorkoutId = getOptionalWorkoutId(params.workout);
+  if (selectedWorkoutId) {
+    redirect(`/my-library/workouts/${selectedWorkoutId}`);
+  }
+
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -36,11 +41,7 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
   }
 
   const initialSnapshot = await loadGeneratorIntakeSnapshot(supabase, user.id);
-  const workoutLibrary = await loadWorkoutLibrarySnapshot(
-    supabase,
-    user.id,
-    getOptionalWorkoutId(params.workout)
-  );
+  const workoutLibrary = await loadWorkoutLibrarySnapshot(supabase, user.id, null);
   const availableBlockCount = Object.values(
     initialSnapshot.blocks as Record<string, GeneratorIntakeBlockSummary>
   ).filter((block) => block.available).length;
@@ -110,8 +111,8 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
                   Canonical workout save
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  This page can now accept one reviewed session into a canonical workout and reopen
-                  it here for later editing, even before the separate manual builder route lands.
+                  This page can now accept one reviewed session into a canonical workout and hand it
+                  off into the dedicated workout builder route for later editing.
                 </p>
               </div>
             </div>
