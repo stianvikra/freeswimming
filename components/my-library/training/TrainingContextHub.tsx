@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import {
   getTrainingNoteStatusLabel,
@@ -10,8 +10,14 @@ import {
 import type { TrainingContextSnapshot, TrainingNoteView } from "@/lib/training-context/server";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
+export type TrainingGoalPrefill = {
+  goalId: string;
+  intent: "focus" | "note";
+};
+
 type Props = {
   initialSnapshot: TrainingContextSnapshot;
+  initialGoalPrefill?: TrainingGoalPrefill | null;
 };
 
 type ApiError = {
@@ -101,15 +107,18 @@ function createNoteEditState(note: TrainingNoteView): NoteEditState {
   };
 }
 
-export default function TrainingContextHub({ initialSnapshot }: Props) {
+export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill }: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [isOnline, setIsOnline] = useState(true);
+  const [clientReady, setClientReady] = useState(false);
   const [focusDraft, setFocusDraft] = useState<FocusDraft>(getDefaultFocusDraft);
   const [noteDraft, setNoteDraft] = useState<NoteDraft>(getDefaultNoteDraft);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteEditState, setNoteEditState] = useState<NoteEditState | null>(null);
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+  const [contextMessage, setContextMessage] = useState("");
+  const [selectedGoalId, setSelectedGoalId] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingFocusCreate, setPendingFocusCreate] = useState(false);
   const [pendingFocusActionId, setPendingFocusActionId] = useState<string | null>(null);
@@ -118,8 +127,50 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
 
   useEffect(() => {
     setIsOnline(readNavigatorOnlineState());
-    setFocusDraft(getStorageValue(FOCUS_DRAFT_STORAGE_KEY, getDefaultFocusDraft()));
-    setNoteDraft(getStorageValue(NOTE_DRAFT_STORAGE_KEY, getDefaultNoteDraft()));
+    const restoredFocusDraft = getStorageValue(FOCUS_DRAFT_STORAGE_KEY, getDefaultFocusDraft());
+    const restoredNoteDraft = getStorageValue(NOTE_DRAFT_STORAGE_KEY, getDefaultNoteDraft());
+    const nextFocusDraft = { ...restoredFocusDraft };
+    const nextNoteDraft = { ...restoredNoteDraft };
+
+    let nextSelectedGoalId = "";
+    let nextContextMessage = "";
+
+    if (initialGoalPrefill?.goalId) {
+      const prefilledGoal = initialSnapshot.goalOptions.find(
+        (goal) => goal.id === initialGoalPrefill.goalId
+      );
+
+      if (prefilledGoal) {
+        const hadExistingLocalDraft =
+          restoredFocusDraft.title.trim().length > 0 ||
+          restoredFocusDraft.details.trim().length > 0 ||
+          restoredFocusDraft.goalId.trim().length > 0 ||
+          restoredNoteDraft.body.trim().length > 0 ||
+          restoredNoteDraft.goalId.trim().length > 0 ||
+          restoredNoteDraft.focusId.trim().length > 0;
+
+        nextSelectedGoalId = prefilledGoal.id;
+        if (!nextFocusDraft.goalId) {
+          nextFocusDraft.goalId = prefilledGoal.id;
+        }
+        if (!nextNoteDraft.goalId) {
+          nextNoteDraft.goalId = prefilledGoal.id;
+        }
+
+        nextContextMessage = hadExistingLocalDraft
+          ? `${prefilledGoal.title} was selected from Goals. Existing draft text stayed in place.`
+          : `${prefilledGoal.title} was selected from Goals. Choose whether to turn it into a focus or a note below.`;
+      } else {
+        nextContextMessage =
+          "The goal selected from Goals is no longer available. Pick another goal below.";
+      }
+    }
+
+    setFocusDraft(nextFocusDraft);
+    setNoteDraft(nextNoteDraft);
+    setSelectedGoalId(nextSelectedGoalId);
+    setContextMessage(nextContextMessage);
+    setClientReady(true);
 
     function onOnline() {
       setIsOnline(true);
@@ -135,7 +186,7 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-  }, []);
+  }, [initialGoalPrefill?.goalId, initialSnapshot.goalOptions]);
 
   useEffect(() => {
     setStorageValue(FOCUS_DRAFT_STORAGE_KEY, focusDraft);
@@ -145,9 +196,45 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
     setStorageValue(NOTE_DRAFT_STORAGE_KEY, noteDraft);
   }, [noteDraft]);
 
+  const goalOptionById = useMemo(
+    () => new Map(snapshot.goalOptions.map((goal) => [goal.id, goal] as const)),
+    [snapshot.goalOptions]
+  );
+
+  const selectedGoal = selectedGoalId ? (goalOptionById.get(selectedGoalId) ?? null) : null;
+
   async function parseError(response: Response, fallback: string) {
     const payload = (await response.json().catch(() => null)) as ApiError | null;
     return payload?.error || fallback;
+  }
+
+  function applyGoalContext(goalId: string, intent: "focus" | "note") {
+    const goal = goalOptionById.get(goalId);
+    if (!goal) {
+      setContextMessage("That goal is no longer available. Pick another goal below.");
+      return;
+    }
+
+    setSelectedGoalId(goal.id);
+    setActionError("");
+    setActionSuccess("");
+
+    if (intent === "focus") {
+      setFocusDraft((prev) => ({ ...prev, goalId: goal.id }));
+      setContextMessage(`${goal.title} is selected for your next active focus.`);
+      return;
+    }
+
+    setNoteDraft((prev) => ({ ...prev, goalId: goal.id }));
+    setContextMessage(`${goal.title} is selected for your next note.`);
+  }
+
+  function clearGoalContext() {
+    const currentGoalId = selectedGoalId;
+    setSelectedGoalId("");
+    setContextMessage("Goal context cleared. You can still link a goal manually from either form.");
+    setFocusDraft((prev) => (prev.goalId === currentGoalId ? { ...prev, goalId: "" } : prev));
+    setNoteDraft((prev) => (prev.goalId === currentGoalId ? { ...prev, goalId: "" } : prev));
   }
 
   async function refreshSnapshot() {
@@ -392,7 +479,11 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
   ];
 
   return (
-    <div className="space-y-8">
+    <div
+      className="space-y-8"
+      data-testid="training-context-hub"
+      data-client-ready={clientReady ? "true" : "false"}
+    >
       {!snapshot.schemaReady ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
           <h2 className="text-lg font-semibold text-slate-900">Focus & Notes are syncing</h2>
@@ -430,6 +521,12 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
         </section>
       ) : null}
 
+      {contextMessage ? (
+        <section className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
+          <p className="text-sm font-medium text-blue-800">{contextMessage}</p>
+        </section>
+      ) : null}
+
       {actionError ? (
         <section className="rounded-2xl border border-red-200 bg-red-50/80 p-4">
           <p className="text-sm font-medium text-red-700">{actionError}</p>
@@ -439,6 +536,91 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
       {actionSuccess ? (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
           <p className="text-sm font-medium text-emerald-700">{actionSuccess}</p>
+        </section>
+      ) : null}
+
+      {snapshot.goalOptions.length > 0 ? (
+        <section className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Turn a goal into today&apos;s work
+              </h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Goals stay long-term. Use one here to prefill the next active focus or note without
+                re-selecting it everywhere.
+              </p>
+            </div>
+            {selectedGoal ? (
+              <button
+                type="button"
+                onClick={clearGoalContext}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Clear selection
+              </button>
+            ) : null}
+          </div>
+
+          {selectedGoal ? (
+            <div
+              className="mt-4 rounded-2xl border border-blue-200 bg-white/90 p-4"
+              data-testid="training-context-selected-goal"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                Selected goal
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900">{selectedGoal.title}</h3>
+                <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                  {selectedGoal.statusLabel}
+                </span>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {snapshot.goalOptions.map((goal) => {
+              const isSelected = selectedGoalId === goal.id;
+
+              return (
+                <article
+                  key={goal.id}
+                  data-testid={`training-goal-context-card-${goal.id}`}
+                  className={`rounded-2xl border p-4 ${
+                    isSelected
+                      ? "border-blue-300 bg-white shadow-[0_8px_24px_rgba(37,99,235,0.08)]"
+                      : "border-white/80 bg-white/85"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-semibold text-slate-900">{goal.title}</h3>
+                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                      {goal.statusLabel}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      data-testid={`training-goal-context-use-focus-${goal.id}`}
+                      onClick={() => applyGoalContext(goal.id, "focus")}
+                      className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                    >
+                      Use for focus
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`training-goal-context-use-note-${goal.id}`}
+                      onClick={() => applyGoalContext(goal.id, "note")}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Use for note
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </section>
       ) : null}
 
@@ -509,6 +691,14 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
             className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
           >
             <h3 className="text-base font-semibold text-slate-900">Set a new active focus</h3>
+            {focusDraft.goalId ? (
+              <p className="mt-2 text-sm text-slate-600">
+                This focus will support:{" "}
+                <span className="font-medium text-slate-900">
+                  {goalOptionById.get(focusDraft.goalId)?.title ?? "Selected goal"}
+                </span>
+              </p>
+            ) : null}
             <div className="mt-4 space-y-4">
               <label className="block">
                 <span className="text-sm font-medium text-slate-700">Focus title</span>
@@ -534,6 +724,7 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
               <label className="block">
                 <span className="text-sm font-medium text-slate-700">Optional linked goal</span>
                 <select
+                  data-testid="training-focus-goal-select"
                   value={focusDraft.goalId}
                   onChange={(e) => setFocusDraft((prev) => ({ ...prev, goalId: e.target.value }))}
                   className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
@@ -632,6 +823,14 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
           className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
         >
           <h3 className="text-base font-semibold text-slate-900">Add a note</h3>
+          {noteDraft.goalId ? (
+            <p className="mt-2 text-sm text-slate-600">
+              This note is linked to:{" "}
+              <span className="font-medium text-slate-900">
+                {goalOptionById.get(noteDraft.goalId)?.title ?? "Selected goal"}
+              </span>
+            </p>
+          ) : null}
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Type</span>
@@ -653,6 +852,7 @@ export default function TrainingContextHub({ initialSnapshot }: Props) {
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Optional linked goal</span>
               <select
+                data-testid="training-note-goal-select"
                 value={noteDraft.goalId}
                 onChange={(e) => setNoteDraft((prev) => ({ ...prev, goalId: e.target.value }))}
                 className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"

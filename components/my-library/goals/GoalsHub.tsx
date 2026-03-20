@@ -91,6 +91,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
   const [goals, setGoals] = useState<GoalView[]>(initialGoals);
   const [actionError, setActionError] = useState("");
   const [isOnline, setIsOnline] = useState(true);
+  const [clientReady, setClientReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [pendingGoalId, setPendingGoalId] = useState<string | null>(null);
@@ -108,6 +109,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
 
   useEffect(() => {
     setIsOnline(readNavigatorOnlineState());
+    setClientReady(true);
 
     function onOnline() {
       setIsOnline(true);
@@ -408,7 +410,31 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
   }
 
   return (
-    <div className="space-y-8">
+    <div
+      className="space-y-8"
+      data-testid="goals-hub"
+      data-client-ready={clientReady ? "true" : "false"}
+    >
+      <section className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Turn goals into next-session work
+            </h2>
+            <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
+              Goals stay long-term. Use Focus & Notes to turn one goal into the next training
+              priority or a poolside observation without re-entering the same context.
+            </p>
+          </div>
+          <Link
+            href="/my-library/training"
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+          >
+            Open focus & notes
+          </Link>
+        </div>
+      </section>
+
       <div className="grid gap-3 sm:grid-cols-3">
         <article className="rounded-2xl border border-blue-200 bg-blue-50/50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Active</p>
@@ -655,7 +681,11 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
         ) : (
           <div className="space-y-3">
             {goals.map((goal) => (
-              <article key={goal.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+              <article
+                key={goal.id}
+                data-testid={`goal-card-${goal.id}`}
+                className="rounded-2xl border border-slate-200 bg-white p-4"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -714,10 +744,29 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                 ) : null}
 
                 <div className="mt-4 flex flex-wrap items-end gap-2">
+                  {goal.status !== "archived" ? (
+                    <>
+                      <Link
+                        href={`/my-library/training?goalId=${encodeURIComponent(goal.id)}&intent=focus`}
+                        data-testid={`goal-use-focus-${goal.id}`}
+                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                      >
+                        Use as focus
+                      </Link>
+                      <Link
+                        href={`/my-library/training?goalId=${encodeURIComponent(goal.id)}&intent=note`}
+                        data-testid={`goal-use-note-${goal.id}`}
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      >
+                        Add note
+                      </Link>
+                    </>
+                  ) : null}
+
                   {goal.primaryAction.kind === "link" ? (
                     <Link
                       href={goal.primaryAction.href}
-                      className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                     >
                       {goal.primaryAction.label}
                     </Link>
@@ -746,7 +795,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                           void logGoalResult(goal);
                         }}
                         disabled={pendingGoalId === goal.id}
-                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-9 items-center justify-center rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-800 active:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {pendingGoalId === goal.id ? "Saving…" : goal.primaryAction.label}
                       </button>

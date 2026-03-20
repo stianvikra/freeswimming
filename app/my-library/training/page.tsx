@@ -2,13 +2,42 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
-import TrainingContextHub from "@/components/my-library/training/TrainingContextHub";
+import TrainingContextHub, {
+  type TrainingGoalPrefill,
+} from "@/components/my-library/training/TrainingContextHub";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function MyLibraryTrainingPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+type Props = {
+  searchParams: SearchParams;
+};
+
+function getOptionalQueryString(value: string | string[] | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function getGoalPrefill(
+  params: Record<string, string | string[] | undefined>
+): TrainingGoalPrefill | null {
+  const goalId = getOptionalQueryString(params.goalId);
+  if (!goalId) return null;
+
+  const intent = getOptionalQueryString(params.intent);
+  if (intent === "focus" || intent === "note") {
+    return { goalId, intent };
+  }
+
+  return { goalId, intent: "focus" };
+}
+
+export default async function MyLibraryTrainingPage({ searchParams }: Props) {
+  const params = await searchParams;
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -19,6 +48,7 @@ export default async function MyLibraryTrainingPage() {
   }
 
   const initialSnapshot = await loadTrainingContextSnapshot(supabase, user.id);
+  const initialGoalPrefill = getGoalPrefill(params);
 
   return (
     <SiteChrome>
@@ -39,7 +69,8 @@ export default async function MyLibraryTrainingPage() {
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Focus & Notes</h1>
               <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
                 Keep one active swim focus, capture what you notice in the pool, and come back with
-                answers or clear next actions after the session.
+                answers or clear next actions after the session. Saved goals can prefill the next
+                step here without becoming the same thing as your focus or notes.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -83,7 +114,10 @@ export default async function MyLibraryTrainingPage() {
           </div>
 
           <div className="mt-8">
-            <TrainingContextHub initialSnapshot={initialSnapshot} />
+            <TrainingContextHub
+              initialSnapshot={initialSnapshot}
+              initialGoalPrefill={initialGoalPrefill}
+            />
           </div>
         </div>
       </section>
