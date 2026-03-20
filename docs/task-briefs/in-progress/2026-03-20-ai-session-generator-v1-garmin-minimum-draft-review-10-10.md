@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-20-ai-session-generator-v1-garmin-minimum-draft-review-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-20`
 - `updated`: `2026-03-20`
@@ -108,6 +108,10 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 ## Scope
 
 - Authenticated AI session-generation entrypoint for `planning_horizon = session`.
+- Current runtime implementation slice under this brief:
+  - generate one local session draft from prepared intake context on `/my-library/generator`,
+  - support full local draft review/editing on that same page,
+  - keep canonical save/accept and shared workout-builder handoff explicitly deferred until the workout entity layer exists in code.
 - Input contract for one generated session:
   - intake handoff payload,
   - selected session type,
@@ -148,6 +152,7 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Competition-date generation and taper/peak orchestration.
 - Automatic calendar scheduling.
 - Automatic send to Garmin.
+- Canonical save/accept into a shared persisted workout entity in the current runtime slice.
 - Completed-history ingestion or retrospective AI analysis.
 - Public sharing or SEO surfaces.
 
@@ -246,3 +251,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | set v1 assumptions to support pool and open water, supported pool lengths, distance or estimated-time sizing, explicit session types, simple effort presets, drills/kick preferences, stroke selection, and optional minimal equipment constraints | next: validate these assumptions with owner feedback later and only then start implementation work`
 - `2026-03-20 | planning | kept threshold zones in the canonical model while deferring direct raw zone-picking as the primary generator UX, so v1 can stay simple for swimmers without breaking later advanced editing/export | next: use this brief to decide whether the first implementation slice should start with session-only generation UI or with the underlying generation/save contract`
 - `2026-03-20 | checkpoint | perf trend during verify recommended tighten after consecutive weekly green runs; decision for this docs-only planning slice is hold because no route-performance implementation changed | next: revisit tightening in the next performance-owning implementation or PR summary that changes route budgets directly`
+- `2026-03-20 | working tree | moved this brief to in-progress and narrowed the first runtime implementation to a truthful draft-review slice on /my-library/generator: authenticated session-draft generation API, deterministic Garmin-familiar draft output, and full local draft editing while canonical save/accept stays deferred until shared workout entities land | next: implement route, UI, tests, and run local verify gates before PR handoff`
+- `2026-03-20 | working tree | implemented the first runtime slice on /my-library/generator with server-validated session drafting, program-deferred messaging, full local draft editing, route/runbook updates, and new unit + e2e coverage; targeted unit suites and desktop generator e2e passed | next: package for PR after local gate review and note that canonical save/accept into the shared workout builder is still deferred`
+- `2026-03-20 | working tree | local npm run verify:pre-pr reached full Playwright and failed only on the known unrelated desktop athlete-profile flake (`tests/e2e/my-library-athlete-profile.spec.ts`); targeted rerun of that exact spec passed immediately afterward, while the new generator flow also passed in the full matrix and in targeted reruns | next: cite the athlete-profile flake in PR validation notes and keep this slice focused on generator delivery unless that legacy flake needs its own follow-up`
+- `2026-03-20 | working tree | perf trend during the implementation gate again recommended tighten after consecutive weekly green runs; decision for this generator slice is hold because no new public-route budget target was deliberately tightened in this PR and the active workstream is primarily workflow/contract delivery | next: revisit one stretch-target ratchet in the next perf-owning PR summary or brief update`

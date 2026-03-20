@@ -51,9 +51,11 @@ Additional `My Library` sub-route checks:
   - confirm existing local focus/note draft text is preserved when goal-prefill is applied.
 - `/my-library/generator`
   - confirm `/api/my-library/generator-intake` returns owner-scoped `200` or fail-closed `401`,
+  - confirm `/api/my-library/generator/session-draft` returns owner-scoped `200` for session target, `401` for unauthenticated reads, and explicit `422` when program target is chosen in this slice,
   - confirm stale/missing block copy names the affected source area (`profile`, `goals`, `focus`),
   - confirm refresh does not mutate saved My Library records,
-  - confirm notes remain excluded from default intake prefill in v1.
+  - confirm notes remain excluded from default intake prefill in v1,
+  - confirm generated drafts stay local/editable and no save/accept CTA claims canonical persistence yet.
 
 ## i18n Triage Overlay (When Locale Work Starts)
 

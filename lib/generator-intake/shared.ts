@@ -249,8 +249,8 @@ export function buildGeneratorIntakeSnapshot(input: {
 
 export function buildGeneratorHandoffPayload(
   snapshot: GeneratorIntakeSnapshot,
-  selection: GeneratorIntakeSelection,
-  overrides: GeneratorIntakeOverrides,
+  selection: Partial<GeneratorIntakeSelection> | null | undefined,
+  overrides: Partial<GeneratorIntakeOverrides> | null | undefined,
   options?: {
     createdAt?: string;
   }
