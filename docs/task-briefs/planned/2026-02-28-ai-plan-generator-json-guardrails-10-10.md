@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-19`
+- `updated`: `2026-03-20`
 
 ## Goal
 
@@ -15,7 +15,7 @@ Generate AI-authored swim session/program drafts that help users reach goals whi
 ## Dependencies And Boundaries
 
 - Upstream bridge slice for user-reviewed generator input:
-  - `docs/task-briefs/planned/2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10.md`
+  - `docs/task-briefs/done/2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10.md`
 - Upstream canonical workout/entity contract:
   - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
 - This brief should consume a deterministic generator-intake handoff payload rather than querying raw My Library source entities ad hoc.

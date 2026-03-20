@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10`
-- `status`: `in_progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-19`
 - `updated`: `2026-03-20`
@@ -40,7 +40,7 @@ Users can start a later AI session/program generator from a private intake step 
   - `docs/task-briefs/done/2026-03-19-my-library-personal-records-foundation-10-10.md`
   - `docs/task-briefs/done/2026-03-19-my-library-goals-focus-notes-training-context-10-10.md`
 - Parent direction still governing the profile side of this work:
-  - `docs/task-briefs/planned/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md`
+  - `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md`
 - Nearby implementation surfaces and server contracts this slice should reuse rather than replace:
   - `app/my-library/page.tsx`
   - `app/my-library/profile/page.tsx`
@@ -329,3 +329,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-20 | validation checkpoint | shipped /my-library/generator + /api/my-library/generator-intake with aggregated snapshot loading, local draft restore, stale-source review, deterministic handoff preview, analytics, My Library entrypoint, inline help copy, and runbook update in docs/runbooks/core-flow-incident-response.md; targeted unit/e2e and full npm run verify:pre-pr are green | next: commit, open PR, and decide whether to tighten one stretch perf target after the latest second consecutive green perf-budget run`
 - `2026-03-20 | ci hardening | split generator-intake shared contracts from server-only loading so webpack production build no longer pulls node-only crypto into the client graph; also hardened the mobile install-prompt done-gate helper with a force-check fallback after label click misses | next: rerun verify:pre-pr, push PR refresh, and recheck required CI`
 - `2026-03-20 | perf target decision | hold the next stretch-target tightening step for this slice because it introduces a new authenticated no-store generator-intake route and we want one more green baseline cycle before reducing route-level budget headroom | next: revisit tighten/hold at the next generator-adjacent perf checkpoint`
+- `2026-03-20 | eda1d03 (main) | child slice shipped via PR #244 with authenticated /my-library/generator intake, deterministic handoff payload assembly, local-only include/exclude and override controls, My Library entrypoint, analytics, and green local + CI gates including npm run verify:pre-merge | next: use this bridge as the fixed upstream contract for the first AI session/program generator slice`

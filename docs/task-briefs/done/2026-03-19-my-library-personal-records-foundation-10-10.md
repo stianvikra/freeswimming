@@ -14,7 +14,7 @@ Users can maintain private, generator-ready personal swim records inside My Libr
 
 ## Why This Brief Exists
 
-- The parent brief `docs/task-briefs/planned/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md` defines the broader profile/metrics/preferences direction.
+- The parent brief `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md` defines the broader profile/metrics/preferences direction.
 - Child slice 1 already shipped private athlete profile foundation on `main`.
 - Child slice 2 already shipped private CSS + structured training preferences on `main`.
 - The next highest-value move is now:
@@ -27,7 +27,7 @@ Users can maintain private, generator-ready personal swim records inside My Libr
 ## Dependencies And Boundaries
 
 - Parent direction:
-  - `docs/task-briefs/planned/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md`
+  - `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md`
 - Already-shipped adjacent child slices:
   - `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-foundation-10-10.md`
   - `docs/task-briefs/done/2026-03-19-my-library-training-metrics-and-preferences-foundation-10-10.md`

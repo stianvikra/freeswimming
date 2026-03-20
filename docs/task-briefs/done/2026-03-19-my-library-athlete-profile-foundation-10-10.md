@@ -14,7 +14,7 @@ Users can maintain a private athlete profile inside My Library with clear separa
 
 ## Why This Brief Exists
 
-- The parent brief `docs/task-briefs/planned/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md` defines the broader direction.
+- The parent brief `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md` defines the broader direction.
 - The correct first move is narrower:
   - ship a private athlete-profile foundation now,
   - keep it separate from account/auth profile rows,
@@ -26,7 +26,7 @@ Users can maintain a private athlete profile inside My Library with clear separa
 ## Dependencies And Boundaries
 
 - Parent direction:
-  - `docs/task-briefs/planned/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md`
+  - `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md`
 - Existing nearby private user-owned training surfaces that must stay separate but compatible:
   - `docs/task-briefs/done/2026-03-19-my-library-goals-focus-notes-training-context-10-10.md`
   - `app/my-library/page.tsx`
