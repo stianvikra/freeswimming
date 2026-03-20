@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10`
-- `status`: `planned`
+- `status`: `in_progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-19`
-- `updated`: `2026-03-19`
+- `updated`: `2026-03-20`
 
 ## Goal
 
@@ -325,3 +325,5 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-03-19 | planning | created bridge brief to connect shipped My Library foundations with later generator work via a private intake/prefill step; full builder, AI generation, and program flows remain intentionally deferred | next: decide whether to implement this intake as its own route or as the first step of the first generator surface`
+- `2026-03-20 | implementation started | moved brief to in-progress and locked route direction to its own private /my-library/generator surface with a deterministic handoff preview, explicit include/exclude controls, local-only overrides, and notes kept out of v1 prefill | next: ship snapshot loader, intake hub UI, auth-protected route, and targeted tests`
+- `2026-03-20 | validation checkpoint | shipped /my-library/generator + /api/my-library/generator-intake with aggregated snapshot loading, local draft restore, stale-source review, deterministic handoff preview, analytics, My Library entrypoint, inline help copy, and runbook update in docs/runbooks/core-flow-incident-response.md; targeted unit/e2e and full npm run verify:pre-pr are green | next: commit, open PR, and decide whether to tighten one stretch perf target after the latest second consecutive green perf-budget run`
