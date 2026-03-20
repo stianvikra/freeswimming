@@ -34,7 +34,7 @@ test.describe("my library generator intake", () => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
     await loginToMyLibraryViaDevBypass(page);
-    const openGeneratorLink = page.getByRole("link", { name: "Open generator intake" });
+    const openGeneratorLink = page.getByRole("link", { name: "Open generator" });
     await expect(openGeneratorLink).toBeVisible();
     await expect(openGeneratorLink).toHaveAttribute("href", "/my-library/generator");
     await openGeneratorLink.click();
@@ -75,6 +75,42 @@ test.describe("my library generator intake", () => {
     );
     await expect(page.getByTestId("generator-intake-handoff-preview")).toContainText(
       '"notesIncluded": false'
+    );
+  });
+
+  test("generates and locally edits a session draft", async ({ page }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await loginToMyLibraryViaDevBypass(page);
+    await page.goto("/my-library/generator", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await expect(page).toHaveURL(/\/my-library\/generator$/);
+    await waitForGeneratorIntakeClientReady(page);
+
+    await page.getByTestId("generator-intake-target-session").check();
+    await page.getByTestId("generator-intake-prepare").click();
+
+    const generateResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/my-library/generator/session-draft") &&
+        response.request().method() === "POST" &&
+        response.status() === 200
+    );
+
+    await page.getByTestId("session-generator-generate").click();
+    await generateResponsePromise;
+
+    const titleInput = page.getByTestId("session-draft-title");
+    await expect(titleInput).toBeVisible();
+    await titleInput.fill("QA edited session draft");
+
+    const firstStepName = page.getByTestId("session-draft-step-name-0");
+    await firstStepName.fill("QA warmup block");
+
+    await expect(page.getByTestId("session-generator-draft-preview")).toContainText(
+      "QA edited session draft"
+    );
+    await expect(page.getByTestId("session-generator-draft-preview")).toContainText(
+      "QA warmup block"
     );
   });
 });

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import SessionGeneratorPanel from "@/components/my-library/generator/SessionGeneratorPanel";
 import {
   GENERATOR_INTAKE_BLOCK_KEYS,
   buildGeneratorHandoffPayload,
@@ -123,7 +124,9 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId }: Props) {
   const [lastPreparedSignature, setLastPreparedSignature] = useState<string | null>(null);
 
   const storageKey = getStorageKey(userId);
-  const payload = buildGeneratorHandoffPayload(snapshot, selection, overrides);
+  const payload = buildGeneratorHandoffPayload(snapshot, selection, overrides, {
+    createdAt: snapshot.loadedAt,
+  });
   const payloadPreview = JSON.stringify(payload, null, 2);
   const payloadSignature = JSON.stringify(payload);
   const isPreparedCurrent = lastPreparedSignature === payloadSignature;
@@ -627,6 +630,13 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId }: Props) {
           </pre>
         </div>
       </section>
+
+      <SessionGeneratorPanel
+        payload={payload}
+        selection={selection}
+        overrides={overrides}
+        handoffPrepared={isPreparedCurrent}
+      />
     </div>
   );
 }

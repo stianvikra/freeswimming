@@ -44,9 +44,8 @@ export default async function MyLibraryGeneratorPage() {
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Generator intake</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Review which saved My Library signals should prefill later AI session or program
-                generation, then apply one-run overrides without editing your stored profile,
-                records, goals, or focus.
+                Review which saved My Library signals should prefill session generation, then apply
+                one-run overrides without editing your stored profile, records, goals, or focus.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -87,11 +86,11 @@ export default async function MyLibraryGeneratorPage() {
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                  Later generator work
+                  Session draft review
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  This page prepares a deterministic handoff payload. It does not generate or save
-                  sessions yet.
+                  This page can now generate one local draft session for review and editing. Save,
+                  accept, and builder handoff still come later.
                 </p>
               </div>
             </div>

@@ -28,6 +28,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "generator_intake_refreshed",
   "generator_intake_block_toggled",
   "generator_intake_handoff_prepared",
+  "session_draft_generated",
   "item_preview_opened",
   "item_download_started",
   "resume_clicked",
