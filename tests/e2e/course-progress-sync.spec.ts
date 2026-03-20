@@ -30,13 +30,14 @@ async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
   const checklist = page.getByTestId("course-done-gate-checklist");
   await expect(checklist).toBeVisible();
 
-  const checkboxes = checklist.getByRole("checkbox");
-  const count = await checkboxes.count();
+  const items = checklist.locator("label");
+  const count = await items.count();
   for (let i = 0; i < count; i += 1) {
-    const checkbox = checkboxes.nth(i);
+    const item = items.nth(i);
+    const checkbox = item.getByRole("checkbox");
     if (await checkbox.isChecked()) continue;
     await expect(checkbox).toBeEnabled();
-    await checkbox.check();
+    await item.click();
     await expect(checkbox).toBeChecked();
   }
 

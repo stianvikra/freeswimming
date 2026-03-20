@@ -6,14 +6,15 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-16`
+- `updated`: `2026-03-19`
 
 ## Goal
 
-Ship a Garmin-familiar builder and poolside execution experience that is fast, clear, and reliable on mobile.
+Ship a Garmin-familiar manual workout/session builder and poolside execution experience that is fast, clear, and reliable on mobile.
 
 ## Scope
 
+- Manual workout/session authoring for user-built training sessions.
 - Builder UI patterns:
   - step cards,
   - add step,
@@ -31,7 +32,9 @@ Ship a Garmin-familiar builder and poolside execution experience that is fast, c
 
 ## Out Of Scope
 
-- AI plan generation internals.
+- AI session/program generation.
+- Goal-based automatic session creation.
+- Weekly program/calendar authoring beyond the single-workout builder flow.
 - Garmin API push.
 
 ## Data Placement And Sync Contract (Required)
@@ -98,6 +101,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Acceptance Criteria
 
 - Users can create, reorder, repeat, and save workouts without confusion.
+- Users can manually author their own workouts without being routed through AI generation.
 - Poolside mode supports clean execution with minimal cognitive load.
 - Save/cancel/dirty-state behavior is deterministic.
 - Builder is Garmin-familiar in structure without brand cloning.
@@ -109,3 +113,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - unit tests for builder state transitions
 - e2e on mobile/tablet/desktop for full build->execute path
 - `npm run verify:pre-pr`
+
+## Checkpoint Log
+
+- `2026-03-19 | planning | clarified that this brief owns manual workout/session building and poolside execution only; AI generation and weekly program authoring remain separate briefs | next: request owner detail later on exact manual-builder ergonomics, save model, and Garmin-export handoff expectations before implementation starts`

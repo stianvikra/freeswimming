@@ -6,17 +6,19 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-09`
+- `updated`: `2026-03-19`
 
 ## Goal
 
-Enable users to convert workouts into clear weekly programs with deterministic completion tracking and review.
+Enable users to manually turn workouts into clear weekly programs with deterministic completion tracking and review.
 
 ## Why This Brief Exists
 
 - Planned workout features need a scorecard-complete execution brief before implementation starts.
 - Calendar scheduling and completion logging are stateful flows and require explicit data-boundary decisions up front.
 - This brief sets measurable 10/10 thresholds so later slices can ship with predictable quality gates.
+- This brief is the manual program-building track.
+- AI-generated session/program creation belongs to a separate generator brief and must not be conflated with this manual planner flow.
 
 ## Scope
 
@@ -35,6 +37,8 @@ Enable users to convert workouts into clear weekly programs with deterministic c
 
 ## Out Of Scope
 
+- AI-generated program creation.
+- Goal-based automatic planning.
 - External activity imports.
 - Garmin partner sync.
 
@@ -105,11 +109,12 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Acceptance Criteria
 
-- Users can build and edit weekly programs quickly.
+- Users can manually build and edit their own weekly programs quickly.
 - Completion status is reliable and audit-friendly.
 - Program metrics align with canonical workout data.
 - Data-boundary and conflict rules are implemented exactly as specified in this brief.
 - Calendar and completion identity stays stable across reorder, rename, and reschedule operations.
+- The manual planner flow remains distinct from later AI-generated program creation.
 
 ## Validation
 
@@ -122,3 +127,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-09 | working tree | upgraded planned brief to canonical 10/10 scorecard mapping with explicit state-boundary contract and measurable target thresholds | next: use this brief as source when implementation branch starts`
 - `2026-03-16 | working tree | added explicit identity-and-rename contract so future program-builder implementation cannot couple canonical IDs to week/day order, editable labels, or reschedule flows | next: carry the same contract into implementation slices before schema/UI work starts`
+- `2026-03-19 | planning | clarified product direction that this brief owns manual program building from user-authored workouts, while AI goal-based session/program generation stays in a separate generator brief | next: request owner detail later on how AI-generated plans should hand off into editable builder/program flows`

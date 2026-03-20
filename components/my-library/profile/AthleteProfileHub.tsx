@@ -172,6 +172,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const [recordDraft, setRecordDraft] = useState(() => buildPersonalRecordDraft(null));
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+  const [isClientReady, setIsClientReady] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingProfileSave, setPendingProfileSave] = useState(false);
@@ -252,6 +253,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       serializeDraft(storedRecordDraft) !== serializeDraft(nextRecordFallback)
     );
     setActionError("");
+    setIsClientReady(true);
 
     function onOnline() {
       setIsOnline(true);
@@ -744,7 +746,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const currentEditedRecord = findRecordById(snapshot.personalRecords, recordDraft.editingRecordId);
 
   return (
-    <div className="space-y-6">
+    <div
+      data-testid="athlete-profile-hub"
+      data-client-ready={isClientReady ? "true" : "false"}
+      className="space-y-6"
+    >
       {!isOnline ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
           You are offline. Unsaved profile, CSS, preferences, and personal-record changes stay on

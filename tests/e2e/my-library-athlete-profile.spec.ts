@@ -20,6 +20,13 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
   await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
 }
 
+async function waitForAthleteProfileClientReady(page: Page) {
+  await expect(page.getByTestId("athlete-profile-hub")).toHaveAttribute(
+    "data-client-ready",
+    "true"
+  );
+}
+
 test.describe("my library athlete profile", () => {
   test("opens training setup from My Library and preserves drafts after reload", async ({
     page,
@@ -49,6 +56,7 @@ test.describe("my library athlete profile", () => {
         level: 1,
       })
     ).toBeVisible();
+    await waitForAthleteProfileClientReady(page);
 
     const displayNameInput = page.getByTestId("athlete-profile-display-name");
     if ((await displayNameInput.count()) === 0) {
@@ -74,6 +82,7 @@ test.describe("my library athlete profile", () => {
         level: 1,
       })
     ).toBeVisible();
+    await waitForAthleteProfileClientReady(page);
     await expect(page.getByTestId("athlete-profile-display-name")).toHaveValue("Pool draft");
     await expect(page.getByTestId("athlete-profile-css-pace")).toHaveValue("1:58");
     await expect(page.getByTestId("athlete-preferences-day-monday")).toBeChecked();
@@ -105,6 +114,7 @@ test.describe("my library athlete profile", () => {
         level: 1,
       })
     ).toBeVisible();
+    await waitForAthleteProfileClientReady(page);
 
     const distanceInput = page.getByTestId("athlete-record-distance-m");
     if ((await distanceInput.count()) === 0) {
@@ -121,7 +131,7 @@ test.describe("my library athlete profile", () => {
     await page.getByTestId("athlete-record-save").click();
 
     await expect(page.getByText("Personal record saved.")).toBeVisible();
-    await expect(page.getByText(eventLabel)).toBeVisible();
+    await expect(page.getByRole("heading", { name: eventLabel })).toBeVisible();
 
     page.once("dialog", async (dialog) => {
       await dialog.accept();

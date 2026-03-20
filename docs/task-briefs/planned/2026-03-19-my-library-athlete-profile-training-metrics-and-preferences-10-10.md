@@ -232,8 +232,8 @@ Critical target categories for `10/10` claim in this brief:
    - CSS, pool length, available days, weekly session count, session duration band, validation, and export support.
 3. `Personal records foundation`
    - PR CRUD, distance/stroke/course/time/date/source metadata, and generator-ready serialization.
-4. `Generator prefill from athlete profile + metrics + preferences`
-   - read-only consumption of canonical user context in generator flows.
+4. `Generator intake and prefill foundation`
+   - read-only generator-intake consumption of canonical user context, with explicit include/exclude and one-run override behavior before later generator flows.
 
 ## Checkpoint Log
 
@@ -243,6 +243,7 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-19 | feat/my-library-personal-records-foundation | child slice 3 started in docs/task-briefs/in-progress/2026-03-19-my-library-personal-records-foundation-10-10.md with scope locked to private personal-record CRUD, canonical event identity, canonical time storage, export support, and My Library/profile UX; generator-prefill work remains deferred | next: implement schema, server/API contracts, profile hub UI, and tests`
 - `2026-03-19 | feat/my-library-personal-records-foundation | child slice 3 implemented locally with private personal-record CRUD, deterministic event identity, canonical centisecond storage, My Library/profile UX, export inclusion, and green local verify:pre-pr gate; generator-prefill automation remains deferred | next: commit, push, open PR, and require verify:pre-merge before merge`
 - `2026-03-19 | 82712dc (main) | child slice 3 shipped via PR #241 in docs/task-briefs/done/2026-03-19-my-library-personal-records-foundation-10-10.md with private personal-record CRUD, canonical event identity/time storage, My Library/profile UX, export support, and green local gates including npm run verify:pre-merge | next: keep generator-prefill as the next natural child slice when we want these foundations to feed session generation`
+- `2026-03-19 | planning | created follow-on bridge brief in docs/task-briefs/planned/2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10.md so shipped profile/training-context foundations can become a user-reviewed generator input contract before AI/builder implementation; full generation and builder output remain deferred | next: choose whether this intake starts as its own route or the first step of the first generator UI`
 
 ## Acceptance Criteria
 
