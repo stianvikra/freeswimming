@@ -18,6 +18,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
+import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
 
@@ -83,10 +84,12 @@ export default async function MyLibraryPage() {
     console.error("[MyLibrary] Could not load active goal count", activeGoalCountError);
   }
 
-  const [trainingContextSnapshot, athleteProfileSnapshot] = await Promise.all([
-    loadTrainingContextSnapshot(supabase, user.id),
-    loadAthleteProfileSnapshot(supabase, user.id),
-  ]);
+  const [trainingContextSnapshot, athleteProfileSnapshot, workoutLibrarySnapshot] =
+    await Promise.all([
+      loadTrainingContextSnapshot(supabase, user.id),
+      loadAthleteProfileSnapshot(supabase, user.id),
+      loadWorkoutLibrarySnapshot(supabase, user.id, null),
+    ]);
 
   const claimQuery = new URLSearchParams({ next: "/my-library" });
   if (user.email) {
@@ -229,6 +232,42 @@ export default async function MyLibraryPage() {
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
                   Open generator
+                </Link>
+              </div>
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Workout builder</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {!workoutLibrarySnapshot.schemaReady
+                      ? "This canonical workout layer is still syncing in this environment."
+                      : workoutLibrarySnapshot.recentWorkouts[0]
+                        ? [
+                            workoutLibrarySnapshot.recentWorkouts[0].title,
+                            workoutLibrarySnapshot.recentWorkouts[0].totalDistanceM
+                              ? `${workoutLibrarySnapshot.recentWorkouts[0].totalDistanceM}m`
+                              : null,
+                            workoutLibrarySnapshot.recentWorkouts[0].estimatedDurationMin
+                              ? `~${workoutLibrarySnapshot.recentWorkouts[0].estimatedDurationMin} min`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Accepted AI-generated workouts will appear here for later canonical editing once you save your first session draft."}
+                  </p>
+                </div>
+                <Link
+                  href={
+                    workoutLibrarySnapshot.recentWorkouts[0]
+                      ? `/my-library/workouts/${workoutLibrarySnapshot.recentWorkouts[0].id}`
+                      : "/my-library/generator"
+                  }
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  {workoutLibrarySnapshot.recentWorkouts[0]
+                    ? "Open workout builder"
+                    : "Create first workout"}
                 </Link>
               </div>
             </section>

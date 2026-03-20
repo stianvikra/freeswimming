@@ -28,6 +28,14 @@ async function waitForGeneratorIntakeClientReady(page: Page) {
   );
 }
 
+async function waitForWorkoutBuilderClientReady(page: Page) {
+  await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(
+    "data-client-ready",
+    "true",
+    { timeout: 15_000 }
+  );
+}
+
 test.describe("my library generator intake", () => {
   test("opens generator intake and prepares a deterministic handoff", async ({
     page,
@@ -79,7 +87,7 @@ test.describe("my library generator intake", () => {
     );
   });
 
-  test("accepts one generated session draft and reopens it in the same editor", async ({
+  test("accepts one generated session draft and reopens it in the workout builder route", async ({
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
@@ -139,9 +147,28 @@ test.describe("my library generator intake", () => {
     await expect(recentWorkouts).toContainText(uniqueTitle);
     await recentWorkouts.getByRole("link", { name: "Open" }).first().click();
 
-    await page.waitForURL(/\/my-library\/generator\?workout=/);
-    await waitForGeneratorIntakeClientReady(page);
-    await expect(page.getByText("Accepted workout loaded.")).toBeVisible();
+    await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/);
+    await waitForWorkoutBuilderClientReady(page);
+    await expect(page.getByRole("heading", { name: "Workout builder", level: 1 })).toBeVisible();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
+
+    await page
+      .getByTestId("session-draft-description")
+      .fill("Edited in the dedicated workout builder route.");
+
+    const patchResponsePromise = page.waitForResponse(
+      (response) =>
+        /\/api\/my-library\/workouts\/[0-9a-f-]+$/.test(response.url()) &&
+        response.request().method() === "PATCH" &&
+        response.status() === 200
+    );
+
+    await page.getByTestId("workout-builder-save").click();
+    await patchResponsePromise;
+
+    await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
+    await expect(page.getByTestId("session-generator-draft-preview")).toContainText(
+      "Edited in the dedicated workout builder route."
+    );
   });
 });
