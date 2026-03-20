@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-16`
+- `updated`: `2026-03-19`
 
 ## Goal
 
@@ -16,8 +16,12 @@ Deliver a Garmin-familiar workout-builder experience in FreeSwimming that is eas
 
 - Use **Garmin-familiar interaction patterns** (steps, repeats, distance/rest, pool size, notes).
 - Do **not** clone Garmin branding/look 1:1. Keep FreeSwimming visual identity.
+- Keep two product tracks explicit:
+  - `manual builder`: user-authored workouts/programs that can later be exported to Garmin,
+  - `AI generator`: goal-based session/program creation that produces drafts for review/editing.
 - Optimize for:
   - quick workout creation,
+  - generator intake before AI/session creation when My Library context exists,
   - poolside execution,
   - future export compatibility,
   - upsell paths (coaching/products) without harming lesson UX.
@@ -30,10 +34,11 @@ This epic is split into dedicated briefs for delivery quality and rollback safet
 2. `2026-02-28-drill-library-templates-and-favorites-10-10.md`
 3. `2026-02-28-workout-builder-and-poolside-execution-10-10.md`
 4. `2026-02-28-program-builder-calendar-completion-10-10.md`
-5. `2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
-6. `2026-02-28-workout-export-adapters-garmin-ready-pdf-10-10.md`
-7. `2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-8. `2026-02-28-garmin-training-api-partner-integration-10-10.md` (`blocked` until partner/API readiness)
+5. `2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10.md`
+6. `2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
+7. `2026-02-28-workout-export-adapters-garmin-ready-pdf-10-10.md`
+8. `2026-02-28-workout-commercial-analytics-funnel-10-10.md`
+9. `2026-02-28-garmin-training-api-partner-integration-10-10.md` (`blocked` until partner/API readiness)
 
 ## Out Of Scope (Current)
 
@@ -102,11 +107,13 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Milestones
 
 1. Data contract + drill/template foundation.
-2. Builder + poolside experience.
-3. Program planner + AI generation.
-4. Export adapters (Garmin-ready format + PDF).
-5. Commercial analytics and conversion hooks.
-6. Garmin partner integration when unblocked.
+2. Manual workout/session builder + poolside experience.
+3. Manual program builder/calendar/completion.
+4. Generator intake/prefill bridge from My Library context.
+5. AI session/program generation.
+6. Export adapters (Garmin-ready format + PDF).
+7. Commercial analytics and conversion hooks.
+8. Garmin partner integration when unblocked.
 
 ## Success KPIs
 
@@ -118,6 +125,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - per implementation slice: `npm run verify:pre-pr`
 - before merge recommendation: `npm run verify:pre-merge`
+
+## Checkpoint Log
+
+- `2026-03-19 | planning | clarified epic product split into manual builder/program track, generator-intake bridge, and AI generator track so future 10/10 briefs and implementation slices do not blur authoring, generation, export, and Garmin responsibilities | next: request owner detail later on exact AI session/program generator scope before turning planned briefs into implementation sequence`
 
 ## Completion Criteria For Epic
 

@@ -6,19 +6,33 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-16`
+- `updated`: `2026-03-19`
 
 ## Goal
 
-Generate editable swim plans via AI while keeping deterministic safety, schema correctness, and predictable quality.
+Generate AI-authored swim session/program drafts that help users reach goals while keeping deterministic safety, schema correctness, and predictable quality.
+
+## Dependencies And Boundaries
+
+- Upstream bridge slice for user-reviewed generator input:
+  - `docs/task-briefs/planned/2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10.md`
+- Upstream canonical workout/entity contract:
+  - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
+- This brief should consume a deterministic generator-intake handoff payload rather than querying raw My Library source entities ad hoc.
+- This brief owns AI generation behavior, not manual workout/session/program building.
+- This brief is not responsible for:
+  - defining My Library prefill UX,
+  - editing athlete profile/goals/preferences/personal records,
+  - manual builder ergonomics for user-authored sessions/programs,
+  - or deciding which saved user context should be included for a specific generation run.
 
 ## Scope
 
 - Input contract:
-  - user goal,
-  - test values (CSS/1000m),
+  - canonical generator-intake handoff payload,
+  - selected goal/focus/profile/metric/preference context from intake,
   - available time/sessions,
-  - constraints.
+  - per-run constraints.
 - Output contract:
   - strict JSON schema only,
   - weeks -> sessions -> steps.
@@ -39,7 +53,10 @@ Generate editable swim plans via AI while keeping deterministic safety, schema c
   - validated generated plans/sessions/steps that are explicitly accepted for persistence,
   - schema version, validation outcome, and any canonical entity references used during save.
 - Local-only:
-  - prompt draft input, transient preview of generated output, and temporary user edits before save/confirm.
+  - accepted generator-intake handoff for the current run,
+  - prompt draft input derived from that handoff,
+  - transient preview of generated output,
+  - temporary user edits before save/confirm.
 - Sync behavior:
   - AI output remains provisional until schema/invariant validation and explicit save succeed,
   - invalid or stale generated output must never be treated as canonical,
@@ -97,6 +114,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Acceptance Criteria
 
 - AI output always passes schema/invariant checks before save.
+- AI generation consumes canonical generator-intake handoff payloads without re-guessing raw My Library context or mutable labels.
+- AI goal-based generation remains a distinct flow from manual workout/session/program building.
 - Users can edit generated plan without data loss.
 - Failures are explicit and recoverable.
 - AI output never mutates canonical entity identity implicitly through renamed labels or reordered weeks/sessions.
@@ -107,3 +126,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - golden JSON tests + schema tests
 - integration for generate->validate->save
 - `npm run verify:pre-pr`
+
+## Checkpoint Log
+
+- `2026-03-19 | planning | clarified that this brief owns AI-authored session/program draft generation from generator-intake handoff, while manual workout/program building remains separate and downstream editing/review can happen after generation | next: request owner detail later on first generator scope, goal model, and generated-draft review/edit expectations before implementation starts`

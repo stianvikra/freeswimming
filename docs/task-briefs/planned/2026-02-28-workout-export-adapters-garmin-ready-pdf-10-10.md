@@ -6,11 +6,25 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-16`
+- `updated`: `2026-03-19`
 
 ## Goal
 
 Build export adapters so workouts are usable immediately (PDF/poolside) and technically ready for Garmin Training API mapping later.
+
+## Dependencies And Boundaries
+
+- Upstream canonical workout/entity contract:
+  - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
+- Upstream manual authoring flow:
+  - `docs/task-briefs/planned/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
+- Upstream AI-authored draft flow:
+  - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
+- Export should consume canonical workouts after they exist, regardless of whether they were authored manually or accepted from AI-generated drafts.
+- This brief is not responsible for:
+  - manual builder UX,
+  - AI generation behavior,
+  - or live Garmin API delivery.
 
 ## Scope
 
@@ -26,6 +40,8 @@ Build export adapters so workouts are usable immediately (PDF/poolside) and tech
 
 ## Out Of Scope
 
+- Manual workout/session/program building.
+- AI generation of workout/session/program drafts.
 - Live Garmin push.
 - OAuth token handling.
 
@@ -96,6 +112,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Garmin-ready adapter produces valid mapped payload for future API submission.
 - Adapter rejects unsupported step combos with actionable errors.
 - Adapter/output identity stays derived from canonical workout IDs, not mutable labels.
+- Export works from canonical workouts regardless of whether the source draft was created manually or originated from an accepted AI-generated draft.
 - Brief is scorecard-complete and identity-safe before implementation starts.
 
 ## Validation
@@ -103,3 +120,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - adapter contract tests
 - pdf rendering snapshot tests (where stable)
 - `npm run verify:pre-pr`
+
+## Checkpoint Log
+
+- `2026-03-19 | planning | clarified that export is downstream of canonical workouts from either manual builder or accepted AI-generated drafts, while live Garmin push remains a separate later slice | next: keep export adapter rules aligned with the canonical workout contract and future Garmin partner mapping`
