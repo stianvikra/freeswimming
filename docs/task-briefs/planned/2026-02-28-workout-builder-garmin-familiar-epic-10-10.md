@@ -42,10 +42,11 @@ This epic is split into dedicated briefs for delivery quality and rollback safet
 4. `2026-02-28-program-builder-calendar-completion-10-10.md`
 5. `2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10.md`
 6. `2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
-7. `2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
-8. `2026-02-28-workout-export-adapters-garmin-ready-pdf-10-10.md`
-9. `2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-10. `2026-02-28-garmin-training-api-partner-integration-10-10.md` (`blocked` until partner/API readiness)
+7. `2026-03-20-ai-session-generator-v1-garmin-minimum-draft-review-10-10.md`
+8. `2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
+9. `2026-02-28-workout-export-adapters-garmin-ready-pdf-10-10.md`
+10. `2026-02-28-workout-commercial-analytics-funnel-10-10.md`
+11. `2026-02-28-garmin-training-api-partner-integration-10-10.md` (`blocked` until partner/API readiness)
 
 ## Out Of Scope (Current)
 
@@ -118,7 +119,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 3. Manual program builder/calendar/completion.
 4. Generator intake/prefill bridge from My Library context.
 5. AI session/program generation across explicit horizons:
-   - `session`,
+   - `session` first, with explicit pool/open-water choice, supported pool lengths, session intent, effort preset, and time/distance targeting,
    - `week`,
    - `month`,
    - `three_months`,
@@ -147,6 +148,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-19 | planning | clarified epic product split into manual builder/program track, generator-intake bridge, and AI generator track so future 10/10 briefs and implementation slices do not blur authoring, generation, export, and Garmin responsibilities | next: request owner detail later on exact AI session/program generator scope before turning planned briefs into implementation sequence`
 - `2026-03-20 | planning | expanded the epic into four explicit product tracks (manual session builder, automatic generator, manual program builder, and training history), aligned the contract to threshold-based swim zones, and separated Garmin Training API send from later Garmin Activity API history reconciliation | next: update child briefs and use the new training-history brief as the parent track for done/cancel/comments and retrospective evaluation`
 - `2026-03-20 | planning | expanded the automatic-generator direction so users can explicitly choose `session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, or `to_competition_date`, and made competition-date planning carry explicit peak/taper intent rather than hidden logic | next: keep the AI generator, data contract, builder handoff, and history briefs aligned to the same plan-intent metadata before implementation starts`
+- `2026-03-20 | planning | tightened the first generator milestone around one editable AI session draft with explicit pool/open-water, pool-length, duration, session-intent, and effort choices so the epic proves the canonical workout model before expanding into larger program horizons | next: add and use a dedicated AI session generator v1 brief before broader program-generation implementation starts`
 
 ## Completion Criteria For Epic
 

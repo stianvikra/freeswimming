@@ -29,6 +29,34 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
 
 - Define canonical entities:
   - `drill`, `workout_template`, `workout`, `plan`, `plan_session`, `training_history_entry`.
+- Define canonical workout/session metadata:
+  - environment:
+    - `pool`,
+    - `open_water`,
+  - when environment is `pool`, supported `pool_length_m` values:
+    - `12.5`,
+    - `25`,
+    - `50`,
+  - session intent/type such as:
+    - `recovery`,
+    - `endurance`,
+    - `technique`,
+    - `threshold_css`,
+    - `speed`,
+    - `race_pace`,
+  - user-facing effort preset metadata:
+    - `easy`,
+    - `moderate`,
+    - `hard`,
+    - `very_hard`,
+    - `race_pace`,
+  - primary planning unit:
+    - `distance`,
+    - `estimated_time`,
+  - normalized workout totals:
+    - `target_distance_m`,
+    - `estimated_duration_sec`,
+  - editable workout title/summary fields that are presentation, not identity.
 - Define canonical plan metadata:
   - `planning_horizon` enum:
     - `session`,
@@ -63,7 +91,8 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
 - Define threshold-based swim-zone support:
   - normalized `threshold_sec_per_100`,
   - supported threshold source metadata,
-  - deterministic zone-band projection rules for workout targeting and export mapping.
+  - deterministic zone-band projection rules for workout targeting and export mapping,
+  - user-facing generator/builder flows may start from simpler effort presets, but canonical storage must still preserve deterministic mapping into the threshold-based method when threshold context exists.
 - Add invariant rules:
   - max step count,
   - repeat nesting constraints,
@@ -154,6 +183,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - Canonical schema documented and implemented in TS + DB.
 - Canonical plan/program entities support explicit planning-horizon metadata, optional calendar-window metadata, and optional competition-date/peak intent without relying on titles or week labels.
+- Canonical workout/session entities support explicit environment, pool length, session intent/type, effort preset metadata, and normalized time/distance totals without relying on free-text notes.
 - Step payloads are validated and normalized before persistence.
 - Totals (`meters`, step count, interval count) are deterministic.
 - Canonical step model can express Garmin-familiar single steps, repeats, and interval sets without ambiguous translation.
@@ -176,3 +206,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-20 | planning | aligned the canonical workout contract to Garmin-style duration/target/repeat semantics and threshold-based swim-zone normalization from 1000m or CSS sources so manual builder, AI generator, export, and later Garmin delivery share the same language | next: keep downstream builder/generator/export briefs pinned to this contract and avoid parallel zone systems`
 - `2026-03-20 | planning | added explicit plan-intent metadata expectations for planning horizon, optional calendar windows, and competition-date/peak intent so AI generation, planner editing, export, and later history evaluation do not infer those semantics from mutable labels | next: keep builder/generator/history briefs pinned to these canonical plan metadata fields before implementation starts`
+- `2026-03-20 | planning | expanded the canonical workout/session metadata to cover pool vs open-water context, supported pool lengths, session intent, effort presets, and normalized time/distance totals so the first AI session generator and later manual builder can share one editable model | next: keep AI session input UX simple while still mapping canonically onto threshold-based targeting and Garmin-ready step data`

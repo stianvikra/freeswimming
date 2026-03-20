@@ -40,6 +40,36 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
     - `date_range`,
     - `to_competition_date`,
   - selected goal/focus/profile/metric/preference context from intake,
+  - explicit generation-intent fields for the chosen horizon, such as:
+    - environment:
+      - `pool`,
+      - `open_water`,
+    - when `pool` is selected, explicit `pool_length_m`:
+      - `12.5`,
+      - `25`,
+      - `50`,
+    - preferred planning unit:
+      - `distance`,
+      - `estimated_time`,
+    - explicit duration target for the run:
+      - `target_distance_m`,
+      - or `target_time_min`,
+    - desired session/program intent such as:
+      - `recovery`,
+      - `endurance`,
+      - `technique`,
+      - `threshold_css`,
+      - `speed`,
+      - `race_pace`,
+    - user-facing effort selection:
+      - `easy`,
+      - `moderate`,
+      - `hard`,
+      - `very_hard`,
+      - `race_pace`,
+    - allowed stroke list for the current swimmer/run,
+    - whether drills and/or kick work should be included,
+    - optional allowed-equipment constraints where product chooses to support them,
   - optional calendar framing for date-based generations:
     - `start_date`,
     - `end_date`,
@@ -56,8 +86,11 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
   - one `session -> steps` draft for `session` horizon,
   - `weeks -> sessions -> steps` for multi-session horizons,
   - plan-level metadata that preserves selected planning horizon and competition intent when present,
+  - editable title/name suggestions rather than fixed AI-authored names,
+  - draft-first output state so generated content can be reviewed/edited before acceptance,
   - Garmin-compatible duration/target/repeat semantics,
-  - threshold-based swim-zone or pace targets when threshold context is available.
+  - threshold-based swim-zone or pace targets when threshold context is available,
+  - user-facing effort presets may stay simpler than exact zones, but canonical output must still map cleanly onto the shared threshold-based method when context exists.
 - Guardrails:
   - horizon-specific progression and recovery rules,
   - progression caps,
@@ -73,6 +106,8 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
 
 1. AI session generator:
    - one-session horizon,
+   - Garmin-minimum swim workout structure,
+   - explicit pool/open-water, duration, session-type, and effort inputs,
    - clean single-session draft review/edit handoff.
 2. AI short-horizon program generator:
    - one week,
@@ -168,12 +203,15 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - AI goal-based generation remains a distinct flow from manual workout/session/program building.
 - Users explicitly choose the planning horizon before generation rather than the model inferring `session` vs `program` implicitly.
 - Supported horizon choices include `session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, and `to_competition_date`.
+- Generation input includes explicit environment, pool-length, effort, duration, and session/program intent fields where relevant for the chosen horizon rather than relying on hidden AI assumptions.
 - If `date_range` is selected, explicit start/end dates are required or deterministically defaulted by product rules; the model must not guess a hidden calendar window.
 - If `to_competition_date` is selected, competition date and explicit peak/taper intent are required inputs rather than hidden AI assumptions.
 - Generated sessions/programs use the canonical Garmin-compatible step model and do not invent incompatible repeat/target structures.
-- When threshold context is available, generated intensity targets use the shared threshold-based swim-zone/pace model rather than a parallel AI-only zone scheme.
+- When threshold context is available, generated intensity targets use the shared threshold-based swim-zone/pace model rather than a parallel AI-only zone scheme, even if the user-facing input surface starts with simpler effort presets such as `easy`/`moderate`/`hard`.
 - Generated output preserves plan-level horizon/competition metadata so later builder, export, and history slices can understand original plan intent.
 - Users can edit generated plan without data loss.
+- Generated titles are suggestions only and can be edited before acceptance.
+- Generated output is treated as draft until the user reviews and accepts it.
 - Failures are explicit and recoverable.
 - AI output never mutates canonical entity identity implicitly through renamed labels or reordered weeks/sessions.
 - Brief is scorecard-complete and identity-safe before implementation starts.
@@ -189,3 +227,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-19 | planning | clarified that this brief owns AI-authored session/program draft generation from generator-intake handoff, while manual workout/program building remains separate and downstream editing/review can happen after generation | next: request owner detail later on first generator scope, goal model, and generated-draft review/edit expectations before implementation starts`
 - `2026-03-20 | planning | aligned AI generation requirements to the canonical Garmin-style step model and shared threshold-based swim-zone method, and kept retrospective completed-session analysis explicitly out of this generation brief | next: request owner detail later on whether the first AI slice should generate one session, one week, or a longer program`
 - `2026-03-20 | planning | expanded generator UX to require an explicit planning-horizon choice (`session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, or `to_competition_date`), added calendar-window inputs for date-range planning, and kept competition-date generation on explicit peak/taper intent instead of hidden AI assumptions | next: decide which subset of the full horizon matrix ships first and keep the data contract/builder/history briefs aligned to the same plan-intent metadata`
+- `2026-03-20 | planning | added explicit generation-intent expectations for environment, pool length, duration mode, session/program intent, effort presets, drills/kick inclusion, and editable draft-first naming so the first AI session slice can stay Garmin-familiar without forcing raw zone-picking UX on day one | next: land a dedicated AI session generator v1 brief that turns these assumptions into one implementation-ready child slice`
