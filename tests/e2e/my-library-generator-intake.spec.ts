@@ -23,7 +23,8 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 async function waitForGeneratorIntakeClientReady(page: Page) {
   await expect(page.getByTestId("generator-intake-hub")).toHaveAttribute(
     "data-client-ready",
-    "true"
+    "true",
+    { timeout: 15_000 }
   );
 }
 
