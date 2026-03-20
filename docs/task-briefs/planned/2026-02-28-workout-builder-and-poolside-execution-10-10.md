@@ -15,6 +15,7 @@ Ship a Garmin-familiar manual session builder and poolside execution experience 
 ## Scope
 
 - Manual workout/session authoring for user-built training sessions.
+- Editing surface for accepted single-session AI drafts after they become canonical workouts, without moving generation logic into this brief.
 - Builder UI patterns:
   - step cards,
   - add step,
@@ -45,6 +46,7 @@ Ship a Garmin-familiar manual session builder and poolside execution experience 
 ## Out Of Scope
 
 - AI session/program generation.
+- Selecting planning horizon or competition-date peak intent for a new AI generation run.
 - Goal-based automatic session creation.
 - Weekly program/calendar authoring beyond the single-workout builder flow.
 - Garmin API push.
@@ -115,6 +117,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - Users can create, reorder, repeat, and save workouts without confusion.
 - Users can manually author their own workouts without being routed through AI generation.
+- Accepted AI-generated single-session drafts can be edited through the same canonical workout editor once they exist, without forking identity rules.
 - Users can author Garmin-familiar target/duration/repeat structures without learning a hidden export model later.
 - Threshold-based swim zone targets, when shown, use the shared published method rather than a separate builder-only zone system.
 - Poolside mode supports clean execution with minimal cognitive load.
@@ -133,3 +136,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-19 | planning | clarified that this brief owns manual workout/session building and poolside execution only; AI generation and weekly program authoring remain separate briefs | next: request owner detail later on exact manual-builder ergonomics, save model, and Garmin-export handoff expectations before implementation starts`
 - `2026-03-20 | planning | tightened this brief into the explicit manual session builder track, added Garmin-familiar target/duration/repeat authoring requirements, and aligned swim-intensity editing to the shared threshold-based zone method | next: request owner detail later on exact builder editing ergonomics and how much compatibility guidance should be visible before export/send exists`
+- `2026-03-20 | planning | clarified that accepted AI-generated single-session drafts should hand off into this same editor after canonical save, while horizon selection and competition intent remain upstream generator concerns | next: keep later implementation focused on canonical workout editing and avoid mixing generation controls into the manual builder UI`
