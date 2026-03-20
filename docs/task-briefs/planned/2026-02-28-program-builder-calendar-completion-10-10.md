@@ -20,6 +20,7 @@ Enable users to manually turn workouts into clear weekly programs with determini
 - This brief sets measurable 10/10 thresholds so later slices can ship with predictable quality gates.
 - This brief is the manual program-building track.
 - AI-generated session/program creation belongs to a separate generator brief and must not be conflated with this manual planner flow.
+- Accepted AI-generated week/month/six-month/competition-date plans should still hand off into one editable planner surface after canonical save.
 - Canonical training-history state, manual done/cancel/comments, and Garmin-completed reconciliation belong to a separate history brief and must not be hidden inside planner-only flags.
 
 ## Scope
@@ -27,7 +28,8 @@ Enable users to manually turn workouts into clear weekly programs with determini
 - Weekly calendar/program builder:
   - assign workouts to days,
   - simple progression controls,
-  - rest day support.
+  - rest day support,
+  - editing/review of canonically saved programs regardless of whether the original source was manual assembly or an accepted AI-generated plan.
 - Planner-facing status visibility:
   - show scheduled vs completed vs cancelled state from canonical history/completion records,
   - expose clear handoff entry points into completion/history flows where needed.
@@ -39,6 +41,7 @@ Enable users to manually turn workouts into clear weekly programs with determini
 ## Out Of Scope
 
 - AI-generated program creation.
+- Choosing planning horizon, competition date, or peak/taper intent for a new AI generation run.
 - Goal-based automatic planning.
 - External activity imports.
 - Garmin partner sync.
@@ -116,6 +119,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Acceptance Criteria
 
 - Users can manually build and edit their own weekly programs quickly.
+- Accepted AI-generated programs can be edited in the same planner after canonical save without creating a parallel planner identity model.
 - Planner completion/cancelled state is reliable because it is read from canonical history/completion records, not planner-local flags.
 - Program metrics align with canonical workout data.
 - Data-boundary and conflict rules are implemented exactly as specified in this brief.
@@ -135,3 +139,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-16 | working tree | added explicit identity-and-rename contract so future program-builder implementation cannot couple canonical IDs to week/day order, editable labels, or reschedule flows | next: carry the same contract into implementation slices before schema/UI work starts`
 - `2026-03-19 | planning | clarified product direction that this brief owns manual program building from user-authored workouts, while AI goal-based session/program generation stays in a separate generator brief | next: request owner detail later on how AI-generated plans should hand off into editable builder/program flows`
 - `2026-03-20 | planning | narrowed this brief to the manual program builder and planner-status track, and moved canonical done/cancel/comments/history ownership into a separate training-history brief so scheduling truth and outcome truth stay cleanly separated | next: keep planner UI aligned to canonical history state instead of adding planner-local completion flags`
+- `2026-03-20 | planning | clarified that accepted AI-generated plans across week/month/six-month/competition-date horizons should still converge into this same editable planner after canonical save, while horizon selection and competition intent remain upstream generator concerns | next: keep later planner implementation compatible with AI-authored plan metadata without turning this brief into a generation brief`
