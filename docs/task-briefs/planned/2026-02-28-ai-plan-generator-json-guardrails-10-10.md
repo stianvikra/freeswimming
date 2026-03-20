@@ -10,7 +10,7 @@
 
 ## Goal
 
-Generate AI-authored swim session/program drafts that help users reach goals while keeping deterministic safety, schema correctness, and predictable quality.
+Generate AI-authored swim session/program drafts that help users reach goals while keeping deterministic safety, schema correctness, Garmin-ready step structure, and predictable quality.
 
 ## Dependencies And Boundaries
 
@@ -35,17 +35,21 @@ Generate AI-authored swim session/program drafts that help users reach goals whi
   - per-run constraints.
 - Output contract:
   - strict JSON schema only,
-  - weeks -> sessions -> steps.
+  - weeks -> sessions -> steps,
+  - Garmin-compatible duration/target/repeat semantics,
+  - threshold-based swim-zone or pace targets when threshold context is available.
 - Guardrails:
   - progression caps,
   - recovery rules,
-  - step-count budget for export compatibility.
+  - step-count budget for export compatibility,
+  - no unsupported ad hoc zone system outside the canonical threshold-based method.
 - Fallback UX when AI response is invalid/unavailable.
 
 ## Out Of Scope
 
 - Fine-tuning custom model.
 - Full coaching recommendation engine.
+- Retrospective AI evaluation of completed history entries after execution.
 
 ## Data Placement And Sync Contract (Required)
 
@@ -116,6 +120,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - AI output always passes schema/invariant checks before save.
 - AI generation consumes canonical generator-intake handoff payloads without re-guessing raw My Library context or mutable labels.
 - AI goal-based generation remains a distinct flow from manual workout/session/program building.
+- Generated sessions/programs use the canonical Garmin-compatible step model and do not invent incompatible repeat/target structures.
+- When threshold context is available, generated intensity targets use the shared threshold-based swim-zone/pace model rather than a parallel AI-only zone scheme.
 - Users can edit generated plan without data loss.
 - Failures are explicit and recoverable.
 - AI output never mutates canonical entity identity implicitly through renamed labels or reordered weeks/sessions.
@@ -130,3 +136,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-19 | planning | clarified that this brief owns AI-authored session/program draft generation from generator-intake handoff, while manual workout/program building remains separate and downstream editing/review can happen after generation | next: request owner detail later on first generator scope, goal model, and generated-draft review/edit expectations before implementation starts`
+- `2026-03-20 | planning | aligned AI generation requirements to the canonical Garmin-style step model and shared threshold-based swim-zone method, and kept retrospective completed-session analysis explicitly out of this generation brief | next: request owner detail later on whether the first AI slice should generate one session, one week, or a longer program`
