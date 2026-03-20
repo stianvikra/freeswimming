@@ -214,6 +214,24 @@ export default async function MyLibraryPage() {
                 </Link>
               </div>
             </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Generator intake</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Review which saved My Library signals should prefill later AI session or program
+                    generation, then add one-run overrides without editing your saved profile,
+                    records, goals, or focus.
+                  </p>
+                </div>
+                <Link
+                  href="/my-library/generator"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  Open generator intake
+                </Link>
+              </div>
+            </section>
             <LibrarySectionTabs showExploreTab={sections.explore.length > 0} />
 
             <div id="my-library-owned" className="space-y-4">

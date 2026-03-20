@@ -43,6 +43,14 @@ Provide a deterministic first-response flow for production incidents on core rou
 | `/my-library` | Library list missing, entitlement mismatch, retry loops             | Confirm library reads + entitlement state and recent commerce changes                       |
 | `/admin`      | Access gate loops, content mutations fail, save errors              | Confirm auth role path, admin API responses (`401/403` vs `500`), schema readiness warnings |
 
+Additional `My Library` sub-route checks:
+
+- `/my-library/generator`
+  - confirm `/api/my-library/generator-intake` returns owner-scoped `200` or fail-closed `401`,
+  - confirm stale/missing block copy names the affected source area (`profile`, `goals`, `focus`),
+  - confirm refresh does not mutate saved My Library records,
+  - confirm notes remain excluded from default intake prefill in v1.
+
 ## i18n Triage Overlay (When Locale Work Starts)
 
 Add these checks when incident scope is locale-specific:

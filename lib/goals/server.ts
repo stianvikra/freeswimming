@@ -20,7 +20,7 @@ import { isGoalsMvpSchemaMissing } from "@/lib/goals/schema";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
 
-const GOALS_SELECT = `
+export const GOALS_SELECT = `
   id,
   user_id,
   title,

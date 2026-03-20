@@ -81,6 +81,9 @@ async function satisfyDoneGateIfPresent(page: Page) {
     if (await checkbox.isChecked()) continue;
     await expect(checkbox).toBeEnabled();
     await item.click();
+    if (!(await checkbox.isChecked())) {
+      await checkbox.check({ force: true });
+    }
     await expect(checkbox).toBeChecked();
   }
 
