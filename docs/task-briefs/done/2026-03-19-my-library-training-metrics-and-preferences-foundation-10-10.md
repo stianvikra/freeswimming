@@ -14,7 +14,7 @@ Users can maintain private, generator-ready training metrics and training prefer
 
 ## Why This Brief Exists
 
-- The parent brief `docs/task-briefs/planned/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md` defines the broader direction.
+- The parent brief `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md` defines the broader direction.
 - The first child slice shipped the private athlete-profile foundation on `main`.
 - The next highest-value move is not `Personal records` yet.
 - The next highest-value move is:
@@ -27,7 +27,7 @@ Users can maintain private, generator-ready training metrics and training prefer
 ## Dependencies And Boundaries
 
 - Parent direction:
-  - `docs/task-briefs/planned/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md`
+  - `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-training-metrics-and-preferences-10-10.md`
 - Already-shipped child slice:
   - `docs/task-briefs/done/2026-03-19-my-library-athlete-profile-foundation-10-10.md`
 - Existing nearby private user-owned training surfaces that must stay separate but compatible:
