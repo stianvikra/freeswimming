@@ -34,12 +34,20 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
     - `session`,
     - `week`,
     - `month`,
+    - `three_months`,
     - `six_months`,
+    - `twelve_months`,
+    - `date_range`,
     - `to_competition_date`,
+  - optional calendar-window metadata:
+    - `start_date`,
+    - `end_date`,
+    - explicit rule for whether omitted `start_date` defaults to generation date / `today`,
   - optional competition intent metadata:
     - `competition_date`,
     - optional competition label,
-    - explicit `peak_for_competition` boolean or equivalent structured intent field.
+    - explicit `peak_for_competition` boolean or equivalent structured intent field,
+    - optional explicit competition-plan start date when different from default `today`.
 - Define canonical `steps` JSON schema:
   - step types (`warmup`, `drill`, `main`, `cooldown`, `rest`, `repeat_block`),
   - duration and distance target,
@@ -95,7 +103,7 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
 - Human-readable identifiers:
   - titles/slugs/labels are operator-facing and may be renameable where product UX needs it,
   - human-readable fields must never be the sole canonical key for progress, notes, exports, analytics, or plan references,
-  - week labels, phase labels such as `build`/`taper`, and competition display names are presentation only unless a separate canonical field explicitly owns that meaning.
+  - week labels, phase labels such as `build`/`taper`, date-window labels, and competition display names are presentation only unless a separate canonical field explicitly owns that meaning.
 - Mutability rules:
   - canonical IDs are write-once,
   - reorder operations change ordering fields only,
@@ -103,7 +111,7 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
 - Rename vs repurpose:
   - rename in place is allowed only when the underlying drill/template/workout/plan object is still semantically the same,
   - materially different content should create a new entity instead of overwriting an existing canonical ID,
-  - changing a saved plan from one planning horizon to another or changing its target competition/peak intent should default to new/versioned plan semantics rather than silent in-place repurpose.
+  - changing a saved plan from one planning horizon to another, changing its calendar window, or changing its target competition/peak intent should default to new/versioned plan semantics rather than silent in-place repurpose.
 - Compatibility contract:
   - import/AI/export flows must preserve canonical IDs for existing entities or create explicit new entities,
   - no production logic may infer canonical identity from editable labels or ordinal strings alone.
@@ -145,7 +153,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Acceptance Criteria
 
 - Canonical schema documented and implemented in TS + DB.
-- Canonical plan/program entities support explicit planning-horizon metadata and optional competition-date/peak intent without relying on titles or week labels.
+- Canonical plan/program entities support explicit planning-horizon metadata, optional calendar-window metadata, and optional competition-date/peak intent without relying on titles or week labels.
 - Step payloads are validated and normalized before persistence.
 - Totals (`meters`, step count, interval count) are deterministic.
 - Canonical step model can express Garmin-familiar single steps, repeats, and interval sets without ambiguous translation.
@@ -167,4 +175,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-20 | planning | aligned the canonical workout contract to Garmin-style duration/target/repeat semantics and threshold-based swim-zone normalization from 1000m or CSS sources so manual builder, AI generator, export, and later Garmin delivery share the same language | next: keep downstream builder/generator/export briefs pinned to this contract and avoid parallel zone systems`
-- `2026-03-20 | planning | added explicit plan-intent metadata expectations for planning horizon and competition-date/peak intent so AI generation, planner editing, export, and later history evaluation do not infer those semantics from mutable labels | next: keep builder/generator/history briefs pinned to these canonical plan metadata fields before implementation starts`
+- `2026-03-20 | planning | added explicit plan-intent metadata expectations for planning horizon, optional calendar windows, and competition-date/peak intent so AI generation, planner editing, export, and later history evaluation do not infer those semantics from mutable labels | next: keep builder/generator/history briefs pinned to these canonical plan metadata fields before implementation starts`

@@ -24,7 +24,7 @@ Deliver a Garmin-familiar workout creation, generation, planning, history, and e
 - Optimize for:
   - quick workout creation,
   - generator intake before AI/session creation when My Library context exists,
-  - explicit planning-horizon choice from one session to competition-date programs,
+  - explicit planning-horizon choice from one session to fixed-duration, custom date-range, and competition-date programs,
   - explicit peak/taper intent when a competition-date horizon is chosen,
   - poolside execution,
   - threshold-based swim-zone targeting from supported threshold tests,
@@ -121,7 +121,10 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
    - `session`,
    - `week`,
    - `month`,
+   - `three_months`,
    - `six_months`,
+   - `twelve_months`,
+   - `date_range`,
    - `to_competition_date` with explicit peak/taper intent.
 6. Training history/completion foundation with manual done/cancel/comments and later Garmin Activity API reconciliation hooks.
 7. Export adapters (Garmin-ready format + PDF).
@@ -143,7 +146,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-19 | planning | clarified epic product split into manual builder/program track, generator-intake bridge, and AI generator track so future 10/10 briefs and implementation slices do not blur authoring, generation, export, and Garmin responsibilities | next: request owner detail later on exact AI session/program generator scope before turning planned briefs into implementation sequence`
 - `2026-03-20 | planning | expanded the epic into four explicit product tracks (manual session builder, automatic generator, manual program builder, and training history), aligned the contract to threshold-based swim zones, and separated Garmin Training API send from later Garmin Activity API history reconciliation | next: update child briefs and use the new training-history brief as the parent track for done/cancel/comments and retrospective evaluation`
-- `2026-03-20 | planning | expanded the automatic-generator direction so users can explicitly choose `session`, `week`, `month`, `six_months`, or `to_competition_date`, and made competition-date planning carry explicit peak/taper intent rather than hidden logic | next: keep the AI generator, data contract, builder handoff, and history briefs aligned to the same plan-intent metadata before implementation starts`
+- `2026-03-20 | planning | expanded the automatic-generator direction so users can explicitly choose `session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, or `to_competition_date`, and made competition-date planning carry explicit peak/taper intent rather than hidden logic | next: keep the AI generator, data contract, builder handoff, and history briefs aligned to the same plan-intent metadata before implementation starts`
 
 ## Completion Criteria For Epic
 

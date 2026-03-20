@@ -10,7 +10,7 @@
 
 ## Goal
 
-Generate AI-authored swim session/program drafts across explicit planning horizons so users can choose anything from one session to a competition-date plan while keeping deterministic safety, schema correctness, Garmin-ready step structure, threshold-based targeting, and predictable quality.
+Generate AI-authored swim session/program drafts across explicit planning horizons so users can choose anything from one session to a fixed-duration, custom date-range, or competition-date plan while keeping deterministic safety, schema correctness, Garmin-ready step structure, threshold-based targeting, and predictable quality.
 
 ## Dependencies And Boundaries
 
@@ -34,13 +34,21 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
     - `session`,
     - `week`,
     - `month`,
+    - `three_months`,
     - `six_months`,
+    - `twelve_months`,
+    - `date_range`,
     - `to_competition_date`,
   - selected goal/focus/profile/metric/preference context from intake,
+  - optional calendar framing for date-based generations:
+    - `start_date`,
+    - `end_date`,
+    - for rolling horizons, default start is the generation date unless the user explicitly overrides it,
   - optional competition planning intent for competition-driven generations:
     - target competition date,
     - optional competition label,
     - explicit `peak_for_competition` / taper intent instead of hidden AI inference,
+    - optional explicit training start date when the user does not want the plan to begin immediately,
   - available time/sessions,
   - per-run constraints.
 - Output contract:
@@ -57,7 +65,8 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
   - taper/peak logic only when competition-date intent explicitly requests it,
   - step-count budget for export compatibility,
   - no unsupported ad hoc zone system outside the canonical threshold-based method,
-  - no hidden competition/taper assumptions when the user did not select a competition-driven horizon.
+  - no hidden competition/taper assumptions when the user did not select a competition-driven horizon,
+  - no hidden calendar-window assumptions when the user selected a custom date range.
 - Fallback UX when AI response is invalid/unavailable.
 
 ## Child Slice Sequencing
@@ -69,8 +78,13 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
    - one week,
    - one month,
    - progression/recovery across short cycles.
-3. AI long-horizon program generator:
+3. AI medium- and long-horizon program generator:
+   - three months,
    - six months,
+   - twelve months,
+   - custom `date_range`,
+   - explicit calendar window handling.
+4. AI competition-target generator:
    - to competition date,
    - explicit peak/taper intent and periodization guardrails.
 
@@ -89,7 +103,7 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
 - Local-only:
   - accepted generator-intake handoff for the current run,
   - prompt draft input derived from that handoff,
-  - selected planning horizon and one-run competition intent before save,
+  - selected planning horizon and one-run calendar/competition intent before save,
   - transient preview of generated output,
   - temporary user edits before save/confirm.
 - Sync behavior:
@@ -104,12 +118,12 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
 - Canonical stable IDs:
   - AI-generated plans/sessions/steps must either create new canonical IDs explicitly or map to existing canonical IDs via validated references; the model must never invent implicit identity from titles or week labels alone.
 - Human-readable identifiers:
-  - generated titles/labels, week labels such as `build`/`taper`, and competition display names are editable presentation fields and must not be treated as canonical keys during later edits/saves.
+  - generated titles/labels, week labels such as `build`/`taper`, date-window labels, and competition display names are editable presentation fields and must not be treated as canonical keys during later edits/saves.
 - Mutability rules:
   - post-generation edits may change titles/copy without rewriting canonical IDs for already-persisted entities.
 - Rename vs repurpose:
   - regenerating or materially replacing a plan/session should create a new entity/version unless the workflow explicitly confirms in-place overwrite against the same canonical object.
-  - changing the saved planning horizon or competition target/peak intent after persistence should be treated as a material repurpose unless the workflow explicitly supports a versioned rewrite.
+  - changing the saved planning horizon, date window, or competition target/peak intent after persistence should be treated as a material repurpose unless the workflow explicitly supports a versioned rewrite.
 - Compatibility contract:
   - generate -> validate -> save flows must reject unresolved references deterministically; no silent rebinding of AI output onto the wrong existing entity.
 - Observability and repair:
@@ -119,33 +133,33 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Mapping      | Target Threshold                                                                                                                                     | Evidence                              |
-| --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Product goals and IA                          | `target`     | AI plan generation fits a clear select-horizon -> generate -> inspect -> edit -> accept workflow with no ambiguity about save or competition intent. | UX contract + flow diagrams           |
-| UX flow clarity                               | `target`     | Users always understand whether output is draft, invalid, accepted, or needs retry, and which planning horizon/competition assumptions are active.   | e2e + manual QA                       |
-| Visual design quality                         | `supporting` | Supporting only: visual presentation of generated output is owned by later builder/planner UI slices.                                                | scope rationale                       |
-| Business logic correctness and data integrity | `target`     | Invalid AI output never reaches canonical data store and accepted plans preserve canonical identity rules.                                           | schema tests + save invariants        |
-| Admin editor ergonomics                       | `supporting` | Supporting only: no direct admin editing workflow is introduced in this slice.                                                                       | scope rationale                       |
-| Accessibility (a11y)                          | `supporting` | Supporting only: user-facing review UI belongs to downstream workflow slices, but error states must stay accessible.                                 | scope rationale + downstream contract |
-| Performance (CWV + payloads)                  | `supporting` | Supporting only: generation latency and preview payloads must not obviously degrade core builder flows.                                              | perf notes + scope rationale          |
-| Data placement and sync boundaries            | `target`     | Generated output remains local/provisional until validated save; server-canonical ownership is explicit.                                             | data contract + integration tests     |
-| Caching and invalidation strategy             | `supporting` | Supporting only: accepted/regenerated output must define deterministic invalidation of stale preview state.                                          | flow contract + scope rationale       |
-| Reliability and failure handling              | `target`     | Users always get actionable fallback on AI failure and no dead-end invalid-output state.                                                             | e2e + integration                     |
-| Security and authz                            | `target`     | AI endpoints are input-validated, rate-limited where needed, and protected save paths fail closed.                                                   | API tests                             |
-| Privacy and compliance                        | `supporting` | Supporting only: prompts and telemetry must avoid unnecessary sensitive data leakage.                                                                | payload review + scope rationale      |
-| Content governance                            | `supporting` | Supporting only: canonical plan/workout governance is defined by data-contract and program-builder slices.                                           | linked brief + scope rationale        |
-| Admin workflow and editability                | `supporting` | Supporting only: no admin workflow is directly changed in this AI guardrail slice.                                                                   | scope rationale                       |
-| SEO and crawlability                          | `supporting` | Supporting only: generated plans are not primary public crawl surfaces in this slice.                                                                | scope rationale                       |
-| AI discoverability                            | `supporting` | Supporting only: this slice governs AI generation safety, not public AI-discoverable content surfaces.                                               | scope rationale                       |
-| Analytics and KPI observability               | `supporting` | Supporting only: generation success/failure/acceptance events must stay available with safe payloads.                                                | event contract notes                  |
-| Commerce and revenue ops                      | `supporting` | Supporting only: no direct commerce mutation ships in this AI generation guardrail slice.                                                            | scope rationale                       |
-| Incident response and support operations      | `supporting` | Supporting only: rejected/rewritten AI output must leave support-visible diagnostics and operator guidance.                                          | error contract + scope rationale      |
-| Finance and reporting operations              | `supporting` | Supporting only: no finance/reporting mutation in this AI-only slice.                                                                                | scope rationale                       |
-| i18n operational readiness                    | `supporting` | Supporting only: generated labels and validation copy must remain locale-extensible later.                                                           | copy/schema review + scope rationale  |
-| Stack-fit and dependency discipline           | `target`     | Use existing schema-validation and app stack patterns; avoid unnecessary AI orchestration dependencies.                                              | dependency diff + code review         |
-| Testing and QA automation                     | `target`     | Golden tests, schema tests, and generate->validate->save integration coverage pass before merge.                                                     | CI + verify outputs                   |
-| Scalability and cost efficiency               | `supporting` | Supporting only: generation flow should avoid obvious runaway retries or oversized prompt/output churn.                                              | scope rationale + usage notes         |
-| DevOps and rollback readiness                 | `target`     | AI generation can be disabled or rolled back without corrupting canonical saved plans.                                                               | rollout notes + release checklist     |
+| Category                                      | Mapping      | Target Threshold                                                                                                                                                       | Evidence                              |
+| --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Product goals and IA                          | `target`     | AI plan generation fits a clear select-horizon -> generate -> inspect -> edit -> accept workflow with no ambiguity about save, calendar window, or competition intent. | UX contract + flow diagrams           |
+| UX flow clarity                               | `target`     | Users always understand whether output is draft, invalid, accepted, or needs retry, and which planning horizon/calendar/competition assumptions are active.            | e2e + manual QA                       |
+| Visual design quality                         | `supporting` | Supporting only: visual presentation of generated output is owned by later builder/planner UI slices.                                                                  | scope rationale                       |
+| Business logic correctness and data integrity | `target`     | Invalid AI output never reaches canonical data store and accepted plans preserve canonical identity rules.                                                             | schema tests + save invariants        |
+| Admin editor ergonomics                       | `supporting` | Supporting only: no direct admin editing workflow is introduced in this slice.                                                                                         | scope rationale                       |
+| Accessibility (a11y)                          | `supporting` | Supporting only: user-facing review UI belongs to downstream workflow slices, but error states must stay accessible.                                                   | scope rationale + downstream contract |
+| Performance (CWV + payloads)                  | `supporting` | Supporting only: generation latency and preview payloads must not obviously degrade core builder flows.                                                                | perf notes + scope rationale          |
+| Data placement and sync boundaries            | `target`     | Generated output remains local/provisional until validated save; server-canonical ownership is explicit.                                                               | data contract + integration tests     |
+| Caching and invalidation strategy             | `supporting` | Supporting only: accepted/regenerated output must define deterministic invalidation of stale preview state.                                                            | flow contract + scope rationale       |
+| Reliability and failure handling              | `target`     | Users always get actionable fallback on AI failure and no dead-end invalid-output state.                                                                               | e2e + integration                     |
+| Security and authz                            | `target`     | AI endpoints are input-validated, rate-limited where needed, and protected save paths fail closed.                                                                     | API tests                             |
+| Privacy and compliance                        | `supporting` | Supporting only: prompts and telemetry must avoid unnecessary sensitive data leakage.                                                                                  | payload review + scope rationale      |
+| Content governance                            | `supporting` | Supporting only: canonical plan/workout governance is defined by data-contract and program-builder slices.                                                             | linked brief + scope rationale        |
+| Admin workflow and editability                | `supporting` | Supporting only: no admin workflow is directly changed in this AI guardrail slice.                                                                                     | scope rationale                       |
+| SEO and crawlability                          | `supporting` | Supporting only: generated plans are not primary public crawl surfaces in this slice.                                                                                  | scope rationale                       |
+| AI discoverability                            | `supporting` | Supporting only: this slice governs AI generation safety, not public AI-discoverable content surfaces.                                                                 | scope rationale                       |
+| Analytics and KPI observability               | `supporting` | Supporting only: generation success/failure/acceptance events must stay available with safe payloads.                                                                  | event contract notes                  |
+| Commerce and revenue ops                      | `supporting` | Supporting only: no direct commerce mutation ships in this AI generation guardrail slice.                                                                              | scope rationale                       |
+| Incident response and support operations      | `supporting` | Supporting only: rejected/rewritten AI output must leave support-visible diagnostics and operator guidance.                                                            | error contract + scope rationale      |
+| Finance and reporting operations              | `supporting` | Supporting only: no finance/reporting mutation in this AI-only slice.                                                                                                  | scope rationale                       |
+| i18n operational readiness                    | `supporting` | Supporting only: generated labels and validation copy must remain locale-extensible later.                                                                             | copy/schema review + scope rationale  |
+| Stack-fit and dependency discipline           | `target`     | Use existing schema-validation and app stack patterns; avoid unnecessary AI orchestration dependencies.                                                                | dependency diff + code review         |
+| Testing and QA automation                     | `target`     | Golden tests, schema tests, and generate->validate->save integration coverage pass before merge.                                                                       | CI + verify outputs                   |
+| Scalability and cost efficiency               | `supporting` | Supporting only: generation flow should avoid obvious runaway retries or oversized prompt/output churn.                                                                | scope rationale + usage notes         |
+| DevOps and rollback readiness                 | `target`     | AI generation can be disabled or rolled back without corrupting canonical saved plans.                                                                                 | rollout notes + release checklist     |
 
 ## Acceptance Criteria
 
@@ -153,6 +167,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - AI generation consumes canonical generator-intake handoff payloads without re-guessing raw My Library context or mutable labels.
 - AI goal-based generation remains a distinct flow from manual workout/session/program building.
 - Users explicitly choose the planning horizon before generation rather than the model inferring `session` vs `program` implicitly.
+- Supported horizon choices include `session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, and `to_competition_date`.
+- If `date_range` is selected, explicit start/end dates are required or deterministically defaulted by product rules; the model must not guess a hidden calendar window.
 - If `to_competition_date` is selected, competition date and explicit peak/taper intent are required inputs rather than hidden AI assumptions.
 - Generated sessions/programs use the canonical Garmin-compatible step model and do not invent incompatible repeat/target structures.
 - When threshold context is available, generated intensity targets use the shared threshold-based swim-zone/pace model rather than a parallel AI-only zone scheme.
@@ -172,4 +188,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-19 | planning | clarified that this brief owns AI-authored session/program draft generation from generator-intake handoff, while manual workout/program building remains separate and downstream editing/review can happen after generation | next: request owner detail later on first generator scope, goal model, and generated-draft review/edit expectations before implementation starts`
 - `2026-03-20 | planning | aligned AI generation requirements to the canonical Garmin-style step model and shared threshold-based swim-zone method, and kept retrospective completed-session analysis explicitly out of this generation brief | next: request owner detail later on whether the first AI slice should generate one session, one week, or a longer program`
-- `2026-03-20 | planning | expanded generator UX to require an explicit planning-horizon choice (`session`, `week`, `month`, `six_months`, or `to_competition_date`) and made competition-date generation carry explicit peak/taper intent instead of hidden AI assumptions | next: decide which horizon becomes the first shipped AI slice and keep the data contract/builder/history briefs aligned to the same plan-intent metadata`
+- `2026-03-20 | planning | expanded generator UX to require an explicit planning-horizon choice (`session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, or `to_competition_date`), added calendar-window inputs for date-range planning, and kept competition-date generation on explicit peak/taper intent instead of hidden AI assumptions | next: decide which subset of the full horizon matrix ships first and keep the data contract/builder/history briefs aligned to the same plan-intent metadata`

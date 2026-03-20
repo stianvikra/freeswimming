@@ -66,7 +66,7 @@ Establish a canonical training-history system so planned sessions can move into 
   - conflicting final-state outcomes must surface explicit review state, not silently overwrite.
 - Retrospective AI-readiness hooks:
   - canonical history payload can later feed AI evaluation of individual sessions and longer-term progress against goals,
-  - linked plan-intent metadata should preserve planning horizon and any competition-date/peak intent that shaped the original plan.
+  - linked plan-intent metadata should preserve planning horizon, any original date window, and any competition-date/peak intent that shaped the original plan.
 
 ## Child Slice Sequencing
 
@@ -97,7 +97,7 @@ Establish a canonical training-history system so planned sessions can move into 
   - manual comments,
   - external provider references,
   - reconciliation status,
-  - plan-intent snapshot or references needed so later retrospective AI can understand original horizon and competition intent without guessing from mutable labels.
+  - plan-intent snapshot or references needed so later retrospective AI can understand original horizon, date window, and competition intent without guessing from mutable labels.
 - Local-only:
   - transient history filters,
   - unsaved comment draft,
@@ -171,7 +171,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Planner/calendar views read canonical history outcome state rather than maintaining a second completion truth.
 - Conflicting provider/manual outcomes enter explicit `needs_review` state instead of silent overwrite.
 - Later retrospective AI evaluation can consume canonical history entries and comments without becoming the source of truth for outcome state.
-- Later retrospective AI evaluation can also consume original plan-intent metadata, including planning horizon and competition-date/peak intent where present, without becoming the source of truth for outcome state.
+- Later retrospective AI evaluation can also consume original plan-intent metadata, including planning horizon, original date window, and competition-date/peak intent where present, without becoming the source of truth for outcome state.
 - Brief is scorecard-complete and identity-safe before implementation starts.
 
 ## Validation
@@ -185,4 +185,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-20 | planning | created a dedicated history/completion parent brief so manual done/cancel/comments, later Garmin Activity API reconciliation, and retrospective AI evaluation have one canonical state model instead of being split across planner and send-to-Garmin slices | next: use this brief to keep planner, Garmin send, and later provider-ingest work from inventing parallel completion/history truth`
-- `2026-03-20 | planning | clarified that retrospective evaluation should retain original plan-intent context such as planning horizon and explicit competition-date peak/taper intent, so future AI review can judge sessions against what the plan was actually trying to do | next: keep later history schema and AI evaluation slices aligned to canonical plan-intent metadata rather than mutable week labels`
+- `2026-03-20 | planning | clarified that retrospective evaluation should retain original plan-intent context such as planning horizon, explicit date window, and explicit competition-date peak/taper intent, so future AI review can judge sessions against what the plan was actually trying to do | next: keep later history schema and AI evaluation slices aligned to canonical plan-intent metadata rather than mutable week labels`
