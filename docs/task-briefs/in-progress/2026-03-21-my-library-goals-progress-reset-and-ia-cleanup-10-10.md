@@ -229,6 +229,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-21 | perf trend decision: hold | \`npm run verify:pre-pr\` reported two consecutive weekly green perf-budget runs and recommended tightening one stretch target step; decision is \`hold\` for this goals slice because changed scope does not alter the public budget routes tracked by AW-010 | next: revisit tighten/revert choice in the next perf-focused slice or AW-010 checkpoint/PR summary`
 - `2026-03-21 | working tree validated | implemented reset-result route support, calmer goals IA disclosure, summary filtering, action clarity copy, and automated coverage updates; validated with targeted vitest, eslint, typecheck, targeted Playwright, and full \`npm run verify:pre-pr\` | next: stage slice-only files, commit, and prepare PR handoff while leaving unrelated local planning files untouched`
 - `2026-03-21 | implementation started on branch \`fix/my-library-goals-reset-ia-2026-03-21\` | moved brief to in-progress and locked first implementation scope to progress-reset bugfix plus calmer goals-route IA cleanup before focus-v2 work | next: implement reset-result action, route disclosure cleanup, and targeted tests`
 - `2026-03-21 | planning | created dedicated goals cleanup brief from real user friction: stale reset bug, overloaded goals page, unclear focus/archive actions, and too much always-visible content on /my-library/goals | next: implement the bugfix first, then the route IA cleanup with targeted tests`
