@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
@@ -70,9 +70,12 @@ const POLICY_IMPACT_RULES = [
   },
 ];
 
-function run(command) {
+function runGit(args) {
   try {
-    return execSync(command, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    return execFileSync("git", args, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
     return "";
   }
@@ -298,12 +301,12 @@ function listChangedFilesForPullRequest(pullRequest) {
 
   let diffOutput = "";
   if (baseSha && headSha) {
-    diffOutput = run(`git diff --name-only ${baseSha}...${headSha}`);
+    diffOutput = runGit(["diff", "--name-only", `${baseSha}...${headSha}`]);
   }
   if (!diffOutput && baseRef) {
     diffOutput =
-      run(`git diff --name-only origin/${baseRef}...HEAD`) ||
-      run(`git diff --name-only ${baseRef}...HEAD`) ||
+      runGit(["diff", "--name-only", `origin/${baseRef}...HEAD`]) ||
+      runGit(["diff", "--name-only", `${baseRef}...HEAD`]) ||
       "";
   }
 
