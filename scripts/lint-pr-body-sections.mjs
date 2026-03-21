@@ -90,6 +90,66 @@ function parseEventPayload() {
   }
 }
 
+function buildPullRequestApiUrl(pullRequest, env = process.env) {
+  const directUrl = pullRequest?.url?.trim();
+  if (directUrl) return directUrl;
+
+  const repository = env.GITHUB_REPOSITORY?.trim();
+  const pullRequestNumber = pullRequest?.number;
+  const apiBase = (env.GITHUB_API_URL?.trim() || "https://api.github.com").replace(/\/$/, "");
+
+  if (!repository || !pullRequestNumber) return "";
+  return `${apiBase}/repos/${repository}/pulls/${pullRequestNumber}`;
+}
+
+export async function hydratePullRequestFromApi(pullRequest, options = {}) {
+  if (!pullRequest || typeof pullRequest !== "object") {
+    return pullRequest;
+  }
+
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  if (typeof fetchImpl !== "function") {
+    return pullRequest;
+  }
+
+  const env = options.env ?? process.env;
+  const apiUrl = buildPullRequestApiUrl(pullRequest, env);
+  if (!apiUrl) {
+    return pullRequest;
+  }
+
+  const token =
+    env.GITHUB_TOKEN?.trim() || env.GH_TOKEN?.trim() || env.GITHUB_API_TOKEN?.trim() || "";
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "freeswimming-pr-body-lint",
+    "X-GitHub-Api-Version": env.GITHUB_API_VERSION?.trim() || "2022-11-28",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetchImpl(apiUrl, { headers });
+    if (!response?.ok) {
+      return pullRequest;
+    }
+
+    const latestPullRequest = await response.json();
+    if (!latestPullRequest || typeof latestPullRequest !== "object") {
+      return pullRequest;
+    }
+
+    return {
+      ...pullRequest,
+      ...latestPullRequest,
+    };
+  } catch {
+    return pullRequest;
+  }
+}
+
 function extractSections(body) {
   const sections = new Map();
   const lines = body.split(/\r?\n/);
@@ -500,14 +560,16 @@ export function validatePullRequestBody(body, options = {}) {
   return errors;
 }
 
-function main() {
+async function main() {
   const payload = parseEventPayload();
-  const pullRequest = payload?.pull_request;
+  let pullRequest = payload?.pull_request;
 
   if (!pullRequest) {
     console.log("[pr-body-lint] No pull_request payload detected. Skipping.");
     return;
   }
+
+  pullRequest = await hydratePullRequestFromApi(pullRequest);
 
   const changedFiles = listChangedFilesForPullRequest(pullRequest);
   const errors = validatePullRequestBody(pullRequest.body ?? "", {
@@ -528,5 +590,5 @@ function main() {
 
 const isCliEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isCliEntrypoint) {
-  main();
+  await main();
 }
