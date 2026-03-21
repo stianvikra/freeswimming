@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { formatGoalDate, type GoalPrimaryAction, type GoalView } from "@/lib/goals/mvp";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
@@ -23,6 +23,7 @@ type Props = {
 };
 
 type LogResultAction = Extract<GoalPrimaryAction, { kind: "log_result" }>;
+type GoalFilter = "all" | "active" | "achieved" | "archived";
 
 type ApiError = {
   ok?: boolean;
@@ -33,6 +34,27 @@ const ACTIVE_STATUSES = new Set<GoalView["status"]>(["active", "on_track", "at_r
 
 function isActiveStatus(status: GoalView["status"]) {
   return ACTIVE_STATUSES.has(status);
+}
+
+function matchesGoalFilter(goal: GoalView, filter: GoalFilter) {
+  if (filter === "active") return isActiveStatus(goal.status);
+  if (filter === "achieved") return goal.status === "achieved";
+  if (filter === "archived") return goal.status === "archived";
+  return true;
+}
+
+function getDefaultGoalFilter(goals: GoalView[]): GoalFilter {
+  if (goals.some((goal) => isActiveStatus(goal.status))) return "active";
+  if (goals.some((goal) => goal.status === "achieved")) return "achieved";
+  return "all";
+}
+
+function orderGoals(goals: GoalView[]) {
+  return [
+    ...goals.filter((goal) => isActiveStatus(goal.status)),
+    ...goals.filter((goal) => goal.status === "achieved"),
+    ...goals.filter((goal) => goal.status === "archived"),
+  ];
 }
 
 function parseTimeInput(raw: string): number | null {
@@ -90,12 +112,19 @@ function getTemplateTargetCopy(template: TemplateOption) {
 export default function GoalsHub({ initialGoals, templates, activeLimit }: Props) {
   const [goals, setGoals] = useState<GoalView[]>(initialGoals);
   const [actionError, setActionError] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
   const [isOnline, setIsOnline] = useState(true);
   const [clientReady, setClientReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [pendingGoalId, setPendingGoalId] = useState<string | null>(null);
   const [resultDrafts, setResultDrafts] = useState<Record<string, string>>({});
+  const [activeFilter, setActiveFilter] = useState<GoalFilter>(() =>
+    getDefaultGoalFilter(initialGoals)
+  );
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(initialGoals.length === 0);
+  const goalsSectionRef = useRef<HTMLElement | null>(null);
 
   const [customTitle, setCustomTitle] = useState("");
   const [customMetric, setCustomMetric] = useState<
@@ -135,6 +164,11 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
     () => goals.filter((goal) => goal.status === "achieved").length,
     [goals]
   );
+  const archivedGoalCount = useMemo(
+    () => goals.filter((goal) => goal.status === "archived").length,
+    [goals]
+  );
+  const totalGoalCount = goals.length;
   const canCreateGoal = activeGoalCount < activeLimit;
   const activeTemplateTitleSet = useMemo(
     () =>
@@ -145,6 +179,11 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       ),
     [goals]
   );
+  const orderedGoals = useMemo(() => orderGoals(goals), [goals]);
+  const filteredGoals = useMemo(
+    () => orderedGoals.filter((goal) => matchesGoalFilter(goal, activeFilter)),
+    [orderedGoals, activeFilter]
+  );
 
   async function parseError(response: Response, fallback: string) {
     const payload = (await response.json().catch(() => null)) as ApiError | null;
@@ -154,6 +193,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
   async function refreshGoals() {
     setIsRefreshing(true);
     setActionError("");
+    setActionNotice("");
 
     try {
       const response = await fetch("/api/goals", {
@@ -179,6 +219,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       }
 
       setGoals(payload.goals);
+      setActionNotice("Goals refreshed.");
     } catch {
       setActionError("Could not refresh goals right now.");
     } finally {
@@ -202,11 +243,13 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
     if (!canCreateGoal) return;
     if (!isOnline) {
       setActionError("You are offline. Reconnect to create goals.");
+      setActionNotice("");
       return;
     }
 
     setPendingTemplateId(templateId);
     setActionError("");
+    setActionNotice("");
 
     try {
       const response = await fetch("/api/goals", {
@@ -237,7 +280,10 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       }
 
       upsertGoal(payload.goal);
-      setActionError("");
+      setActionNotice("Goal added from template.");
+      setShowTemplates(false);
+      setShowCreateForm(false);
+      setActiveFilter("active");
     } catch {
       setActionError("Could not create goal right now.");
     } finally {
@@ -250,11 +296,13 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
     if (!canCreateGoal) return;
     if (!isOnline) {
       setActionError("You are offline. Reconnect to create goals.");
+      setActionNotice("");
       return;
     }
 
     setIsCreatingCustom(true);
     setActionError("");
+    setActionNotice("");
 
     const payload: Record<string, unknown> = {
       mode: "custom",
@@ -306,6 +354,9 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       } else {
         setCustomCount("3");
       }
+      setActionNotice("Custom goal created.");
+      setShowCreateForm(false);
+      setActiveFilter("active");
     } catch {
       setActionError("Could not create custom goal right now.");
     } finally {
@@ -316,15 +367,18 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
   async function patchGoal(
     goalId: string,
     payload: Record<string, unknown>,
-    fallbackMessage: string
+    fallbackMessage: string,
+    successMessage?: string
   ) {
     if (!isOnline) {
       setActionError("You are offline. Reconnect to sync goal updates.");
+      setActionNotice("");
       return null;
     }
 
     setPendingGoalId(goalId);
     setActionError("");
+    setActionNotice("");
 
     try {
       const response = await fetch(`/api/goals/${goalId}`, {
@@ -351,6 +405,9 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       }
 
       upsertGoal(data.goal);
+      if (successMessage) {
+        setActionNotice(successMessage);
+      }
       return data.goal;
     } catch {
       setActionError(fallbackMessage);
@@ -391,11 +448,60 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       payload.count = parsed;
     }
 
-    const updated = await patchGoal(goal.id, payload, "Could not log this goal result right now.");
+    const updated = await patchGoal(
+      goal.id,
+      payload,
+      "Could not log this goal result right now.",
+      "Result saved."
+    );
     if (updated) {
       setResultDrafts((prev) => ({ ...prev, [goal.id]: "" }));
     }
   }
+
+  async function clearGoalResult(goal: GoalView) {
+    const updated = await patchGoal(
+      goal.id,
+      { action: "reset_result" },
+      "Could not clear this best result right now.",
+      "Best result cleared."
+    );
+
+    if (updated) {
+      setResultDrafts((prev) => ({ ...prev, [goal.id]: "" }));
+      setActiveFilter("active");
+    }
+  }
+
+  function handleSelectFilter(filter: GoalFilter) {
+    setActiveFilter(filter);
+    const scrollToGoals = () => {
+      goalsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(scrollToGoals);
+      return;
+    }
+    scrollToGoals();
+  }
+
+  const filterHeading =
+    activeFilter === "active"
+      ? "Current goals"
+      : activeFilter === "achieved"
+        ? "Achieved goals"
+        : activeFilter === "archived"
+          ? "Archived goals"
+          : "All goals";
+
+  const filterDescription =
+    activeFilter === "active"
+      ? "Show the goals that still need attention right now."
+      : activeFilter === "achieved"
+        ? "Review what is already done without mixing it into current work."
+        : activeFilter === "archived"
+          ? "Archived goals stay here for history and can be restored anytime."
+          : "See current work first, then achieved and archived goals below it.";
 
   function getInputLabel(action: LogResultAction) {
     if (action.inputKind === "time_seconds") return "Result (seconds or mm:ss)";
@@ -436,29 +542,58 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       </section>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <article className="rounded-2xl border border-blue-200 bg-blue-50/50 p-4">
+        <button
+          type="button"
+          onClick={() => handleSelectFilter("active")}
+          data-testid="goals-filter-active"
+          aria-pressed={activeFilter === "active"}
+          className={[
+            "rounded-2xl border p-4 text-left transition",
+            activeFilter === "active"
+              ? "border-blue-300 bg-blue-50/70 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.12)]"
+              : "border-blue-200 bg-blue-50/50 hover:bg-blue-50",
+          ].join(" ")}
+        >
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Active</p>
           <p className="mt-2 text-3xl font-bold text-slate-900">
             {activeGoalCount}/{activeLimit}
           </p>
-          <p className="mt-1 text-xs text-slate-600">Focused goals in progress.</p>
-        </article>
-        <article className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+          <p className="mt-1 text-xs text-slate-600">Show current goals in progress.</p>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSelectFilter("achieved")}
+          data-testid="goals-filter-achieved"
+          aria-pressed={activeFilter === "achieved"}
+          className={[
+            "rounded-2xl border p-4 text-left transition",
+            activeFilter === "achieved"
+              ? "border-emerald-300 bg-emerald-50/70 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.12)]"
+              : "border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50",
+          ].join(" ")}
+        >
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Achieved</p>
           <p className="mt-2 text-3xl font-bold text-slate-900">{achievedGoalCount}</p>
-          <p className="mt-1 text-xs text-slate-600">Milestones already reached.</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Sync</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {isOnline ? "Online and syncing" : "Offline mode"}
-          </p>
+          <p className="mt-1 text-xs text-slate-600">Show milestones you already reached.</p>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSelectFilter("all")}
+          data-testid="goals-filter-all"
+          aria-pressed={activeFilter === "all"}
+          className={[
+            "rounded-2xl border p-4 text-left transition",
+            activeFilter === "all"
+              ? "border-slate-300 bg-slate-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.14)]"
+              : "border-slate-200 bg-white hover:bg-slate-50",
+          ].join(" ")}
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">All goals</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{totalGoalCount}</p>
           <p className="mt-1 text-xs text-slate-600">
-            {isOnline
-              ? "Goal changes save to your account immediately."
-              : "Changes pause until your connection returns."}
+            Includes {archivedGoalCount} archived goal{archivedGoalCount === 1 ? "" : "s"}.
           </p>
-        </article>
+        </button>
       </div>
 
       {!isOnline ? (
@@ -481,206 +616,308 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
         </div>
       ) : null}
 
+      {actionNotice ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {actionNotice}
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+        <p className="text-sm text-slate-600">
+          Use <span className="font-medium text-slate-900">Use as focus</span> to prefill Focus &
+          Notes only. <span className="font-medium text-slate-900">Archive</span> hides a goal from
+          current work but keeps it in your history.
+        </p>
+        <button
+          type="button"
+          onClick={() => void refreshGoals()}
+          disabled={isRefreshing}
+          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isRefreshing ? "Refreshing…" : "Refresh goals"}
+        </button>
+      </div>
+
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">Start from a template</h2>
-          <p className="text-xs text-slate-600">
-            {canCreateGoal
-              ? `You can add ${Math.max(0, activeLimit - activeGoalCount)} more active goal(s).`
-              : "You reached the active goal limit. Archive one to add a new goal."}
-          </p>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Start from a template</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Keep templates tucked away until you want a quick starting point.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-xs text-slate-600">
+              {canCreateGoal
+                ? `You can add ${Math.max(0, activeLimit - activeGoalCount)} more active goal(s).`
+                : "You reached the active goal limit. Archive one to add a new goal."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowTemplates((prev) => !prev)}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              {showTemplates ? "Hide templates" : "Browse templates"}
+            </button>
+          </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          {templates.map((template) => {
-            const isAlreadyActive = activeTemplateTitleSet.has(template.title);
-            const isDisabled =
-              !canCreateGoal || isAlreadyActive || pendingTemplateId === template.id;
+        {showTemplates ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {templates.map((template) => {
+              const isAlreadyActive = activeTemplateTitleSet.has(template.title);
+              const isDisabled =
+                !canCreateGoal || isAlreadyActive || pendingTemplateId === template.id;
 
-            return (
-              <article
-                key={template.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4"
-              >
-                <h3 className="text-base font-semibold text-slate-900">{template.title}</h3>
-                <p className="mt-2 text-sm text-slate-600">{template.summary}</p>
-                <p className="mt-2 text-xs font-medium text-slate-500">
-                  Target: {getTemplateTargetCopy(template)}
-                </p>
-                <div className="mt-4 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => createTemplateGoal(template.id)}
-                    disabled={isDisabled}
-                    className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {pendingTemplateId === template.id
-                      ? "Adding…"
-                      : isAlreadyActive
-                        ? "Already active"
-                        : "Use template"}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+              return (
+                <article
+                  key={template.id}
+                  className="rounded-2xl border border-slate-200 bg-white p-4"
+                >
+                  <h3 className="text-base font-semibold text-slate-900">{template.title}</h3>
+                  <p className="mt-2 text-sm text-slate-600">{template.summary}</p>
+                  <p className="mt-2 text-xs font-medium text-slate-500">
+                    Target: {getTemplateTargetCopy(template)}
+                  </p>
+                  <div className="mt-4 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => createTemplateGoal(template.id)}
+                      disabled={isDisabled}
+                      className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {pendingTemplateId === template.id
+                        ? "Adding…"
+                        : isAlreadyActive
+                          ? "Already active"
+                          : "Use template"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
+            Open templates only when you want a ready-made goal instead of a custom one.
+          </div>
+        )}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-slate-900">Create a custom goal</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Define your own target with strict units so progress stays measurable.
-        </p>
-
-        <form onSubmit={createCustomGoal} className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label
-              className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-              htmlFor="goal-title"
-            >
-              Goal title
-            </label>
-            <input
-              id="goal-title"
-              value={customTitle}
-              onChange={(e) => setCustomTitle(e.target.value)}
-              placeholder="Example: Swim 800m continuous with calm breathing"
-              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              maxLength={80}
-              required
-            />
-          </div>
-
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <label
-              className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-              htmlFor="goal-metric"
-            >
-              Target type
-            </label>
-            <select
-              id="goal-metric"
-              value={customMetric}
-              onChange={(e) => setCustomMetric(e.target.value as typeof customMetric)}
-              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="distance_time">Distance + time</option>
-              <option value="distance_continuous">Distance (continuous)</option>
-              <option value="count">Count target</option>
-            </select>
+            <h2 className="text-lg font-semibold text-slate-900">Create a custom goal</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Open the creator only when you want a new measurable target.
+            </p>
           </div>
-
-          <div>
-            <label
-              className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-              htmlFor="goal-target-date"
+          {goals.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowCreateForm((prev) => !prev)}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Target date (optional)
-            </label>
-            <input
-              id="goal-target-date"
-              type="date"
-              value={customTargetDate}
-              onChange={(e) => setCustomTargetDate(e.target.value)}
-              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+              {showCreateForm ? "Collapse creator" : "Open creator"}
+            </button>
+          ) : null}
+        </div>
 
-          {customMetric === "distance_time" ? (
-            <>
+        {showCreateForm ? (
+          <form onSubmit={createCustomGoal} className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+                htmlFor="goal-title"
+              >
+                Goal title
+              </label>
+              <input
+                id="goal-title"
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                placeholder="Example: Swim 800m continuous with calm breathing"
+                className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                maxLength={80}
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+                htmlFor="goal-metric"
+              >
+                Target type
+              </label>
+              <select
+                id="goal-metric"
+                value={customMetric}
+                onChange={(e) => setCustomMetric(e.target.value as typeof customMetric)}
+                className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="distance_time">Distance + time</option>
+                <option value="distance_continuous">Distance (continuous)</option>
+                <option value="count">Count target</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+                htmlFor="goal-target-date"
+              >
+                Target date (optional)
+              </label>
+              <input
+                id="goal-target-date"
+                type="date"
+                value={customTargetDate}
+                onChange={(e) => setCustomTargetDate(e.target.value)}
+                className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            {customMetric === "distance_time" ? (
+              <>
+                <div>
+                  <label
+                    className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+                    htmlFor="goal-distance"
+                  >
+                    Distance (meters)
+                  </label>
+                  <input
+                    id="goal-distance"
+                    value={customDistanceM}
+                    onChange={(e) => setCustomDistanceM(e.target.value)}
+                    inputMode="numeric"
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <div>
+                  <label
+                    className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+                    htmlFor="goal-time"
+                  >
+                    Target time (seconds or mm:ss)
+                  </label>
+                  <input
+                    id="goal-time"
+                    value={customTimeSeconds}
+                    onChange={(e) => setCustomTimeSeconds(e.target.value)}
+                    className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {customMetric === "distance_continuous" ? (
               <div>
                 <label
                   className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                  htmlFor="goal-distance"
+                  htmlFor="goal-distance-only"
                 >
                   Distance (meters)
                 </label>
                 <input
-                  id="goal-distance"
+                  id="goal-distance-only"
                   value={customDistanceM}
                   onChange={(e) => setCustomDistanceM(e.target.value)}
                   inputMode="numeric"
                   className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
+            ) : null}
+
+            {customMetric === "count" ? (
               <div>
                 <label
                   className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                  htmlFor="goal-time"
+                  htmlFor="goal-count"
                 >
-                  Target time (seconds or mm:ss)
+                  Target count
                 </label>
                 <input
-                  id="goal-time"
-                  value={customTimeSeconds}
-                  onChange={(e) => setCustomTimeSeconds(e.target.value)}
+                  id="goal-count"
+                  value={customCount}
+                  onChange={(e) => setCustomCount(e.target.value)}
+                  inputMode="numeric"
                   className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
-            </>
-          ) : null}
+            ) : null}
 
-          {customMetric === "distance_continuous" ? (
-            <div>
-              <label
-                className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                htmlFor="goal-distance-only"
+            <div className="sm:col-span-2">
+              <button
+                type="submit"
+                disabled={isCreatingCustom || !canCreateGoal}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Distance (meters)
-              </label>
-              <input
-                id="goal-distance-only"
-                value={customDistanceM}
-                onChange={(e) => setCustomDistanceM(e.target.value)}
-                inputMode="numeric"
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              />
+                {isCreatingCustom ? "Creating…" : "Create custom goal"}
+              </button>
             </div>
-          ) : null}
-
-          {customMetric === "count" ? (
-            <div>
-              <label
-                className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                htmlFor="goal-count"
-              >
-                Target count
-              </label>
-              <input
-                id="goal-count"
-                value={customCount}
-                onChange={(e) => setCustomCount(e.target.value)}
-                inputMode="numeric"
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-          ) : null}
-
-          <div className="sm:col-span-2">
-            <button
-              type="submit"
-              disabled={isCreatingCustom || !canCreateGoal}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isCreatingCustom ? "Creating…" : "Create custom goal"}
-            </button>
+          </form>
+        ) : (
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
+            Keep the creator closed until you want to add another goal.
           </div>
-        </form>
+        )}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-900">Your goals</h2>
+      <section ref={goalsSectionRef} className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">{filterHeading}</h2>
+            <p className="mt-1 text-sm text-slate-600">{filterDescription}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: "all", label: `All (${totalGoalCount})` },
+              { key: "active", label: `Active (${activeGoalCount})` },
+              { key: "achieved", label: `Achieved (${achievedGoalCount})` },
+              { key: "archived", label: `Archived (${archivedGoalCount})` },
+            ].map((filter) => (
+              <button
+                key={filter.key}
+                type="button"
+                onClick={() => setActiveFilter(filter.key as GoalFilter)}
+                aria-pressed={activeFilter === filter.key}
+                className={[
+                  "inline-flex h-9 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition",
+                  activeFilter === filter.key
+                    ? "border-blue-300 bg-blue-50 text-blue-800"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                ].join(" ")}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {goals.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
             <p className="text-sm text-slate-700">
-              No goals yet. Pick a template above or create your own target to start tracking.
+              No goals yet. Open the creator or browse templates only when you want to start
+              tracking one.
+            </p>
+          </div>
+        ) : filteredGoals.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
+            <p className="text-sm text-slate-700">
+              {activeFilter === "active"
+                ? "No active goals right now. View achieved goals, restore an archived goal, or add a new one."
+                : activeFilter === "achieved"
+                  ? "No achieved goals yet. Keep working on current goals and come back when you want to review wins."
+                  : activeFilter === "archived"
+                    ? "No archived goals yet. Archive older goals only when you want them out of the current list."
+                    : "No goals match this view right now."}
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {goals.map((goal) => (
+            {filteredGoals.map((goal) => (
               <article
                 key={goal.id}
                 data-testid={`goal-card-${goal.id}`}
@@ -799,6 +1036,18 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                       >
                         {pendingGoalId === goal.id ? "Saving…" : goal.primaryAction.label}
                       </button>
+                      {goal.progressValue > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void clearGoalResult(goal);
+                          }}
+                          disabled={pendingGoalId === goal.id}
+                          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Clear best result
+                        </button>
+                      ) : null}
                     </div>
                   )}
 
@@ -809,7 +1058,8 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                         void patchGoal(
                           goal.id,
                           { action: "restore" },
-                          "Could not restore goal right now."
+                          "Could not restore goal right now.",
+                          "Goal restored."
                         );
                       }}
                       disabled={pendingGoalId === goal.id}
@@ -824,7 +1074,8 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                         void patchGoal(
                           goal.id,
                           { action: "archive" },
-                          "Could not archive goal right now."
+                          "Could not archive goal right now.",
+                          "Goal archived."
                         );
                       }}
                       disabled={pendingGoalId === goal.id}

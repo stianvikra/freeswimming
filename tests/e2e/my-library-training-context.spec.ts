@@ -46,6 +46,10 @@ test.describe("my library training context", () => {
     let useAsFocusLink = page.getByRole("link", { name: "Use as focus" }).first();
 
     if ((await useAsFocusLink.count()) === 0) {
+      const browseTemplatesButton = page.getByRole("button", { name: "Browse templates" });
+      if ((await browseTemplatesButton.count()) > 0) {
+        await browseTemplatesButton.click();
+      }
       createdGoalTitle = "1000m under 10:00";
       const createGoalResponse = page.waitForResponse(
         (response) =>
