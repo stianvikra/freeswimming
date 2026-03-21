@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { startTransition, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AdminCommerceManager from "@/components/admin/AdminCommerceManager";
 import AdminContentManager from "@/components/admin/AdminContentManager";
 import AdminCategoriesManager from "@/components/admin/AdminCategoriesManager";
@@ -9,16 +10,11 @@ import AdminHelpCenter from "@/components/admin/AdminHelpCenter";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
 import AdminQrLinksManager from "@/components/admin/AdminQrLinksManager";
-
-type AdminTab =
-  | "content"
-  | "qr-links"
-  | "commerce"
-  | "operations"
-  | "email-templates"
-  | "notes"
-  | "categories"
-  | "help";
+import {
+  applyAdminTabToSearchParams,
+  parseAdminTab,
+  type AdminTab,
+} from "@/lib/admin/admin-workspace";
 
 const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
   {
@@ -63,24 +59,30 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
   },
 ];
 
-function parseAdminTab(value: string | null): AdminTab | null {
-  if (!value) return null;
-  return TAB_LABELS.some((tab) => tab.id === value) ? (value as AdminTab) : null;
-}
-
-function resolveInitialAdminTab(): AdminTab {
-  if (typeof window === "undefined") return "content";
-  const params = new URLSearchParams(window.location.search);
-  return parseAdminTab(params.get("tab")) ?? "content";
-}
-
 export default function AdminWorkspace() {
-  const [activeTab, setActiveTab] = useState<AdminTab>(() => resolveInitialAdminTab());
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = useMemo(
+    () => parseAdminTab(searchParams.get("tab")) ?? "content",
+    [searchParams]
+  );
 
   const activeMeta = useMemo(
     () => TAB_LABELS.find((tab) => tab.id === activeTab) ?? TAB_LABELS[0],
     [activeTab]
   );
+
+  function selectTab(tab: AdminTab) {
+    const nextParams = applyAdminTabToSearchParams(
+      new URLSearchParams(searchParams.toString()),
+      tab
+    );
+    const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
+    startTransition(() => {
+      router.replace(nextHref, { scroll: false });
+    });
+  }
 
   return (
     <div>
@@ -91,7 +93,7 @@ export default function AdminWorkspace() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => selectTab(tab.id)}
               data-testid={`admin-tab-${tab.id}`}
               className={[
                 "rounded-2xl border px-4 py-3 text-left transition",

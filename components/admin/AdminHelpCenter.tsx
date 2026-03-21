@@ -16,7 +16,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-17";
+const LAST_UPDATED = "2026-03-21";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -63,8 +63,10 @@ const DASHBOARD_TABS: TabGuide[] = [
   },
   {
     name: "Notes",
-    primaryJob: "Capture internal tasks with clear context and completion status.",
-    commonRisk: "Unlinked notes lose context and slow follow-up.",
+    primaryJob:
+      "Run an internal work queue with visible note IDs, search, context filters, and done archive recovery.",
+    commonRisk:
+      "Hidden context or mixed open/done lists make the next operator pick the wrong note.",
   },
   {
     name: "Categories",
@@ -387,7 +389,17 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Use P0 template / Use P1 template / Use P2 template",
         meaning:
-          "Prefills standardized incident structure (severity, owner, mitigation, update cadence) for operations notes.",
+          "Prefills standardized incident structure. P0 = critical outage, P1 = major degradation with workaround, P2 = low-impact bug/UX issue.",
+      },
+      {
+        label: "Open / Done archive / All + Search + Context filters",
+        meaning:
+          "Turns Notes into a work queue so operators can find the right note by ID, text, category, route, or attached content context.",
+      },
+      {
+        label: "Visible note ID",
+        meaning:
+          "Shows the stable canonical note identifier so follow-up work can reference a note without pasting the full body.",
       },
       {
         label: "Save note / Save changes / Delete",
@@ -521,8 +533,9 @@ const DAILY_PLAYBOOKS: Playbook[] = [
     title: "Capture review notes with context",
     steps: [
       "Open the exact page/content row you are reviewing.",
-      "Create note with category and context link.",
-      "Mark completion status once resolved.",
+      "Create note with category and context link, then copy the visible note ID if you need to reference it later.",
+      "Use Search + Context filters in Notes to reopen the same note quickly.",
+      "Mark completion status once resolved, then use Done archive to confirm it is recoverable.",
     ],
   },
 ];

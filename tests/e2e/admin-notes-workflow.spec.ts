@@ -34,18 +34,31 @@ async function loginAsAdminViaDevBypass(page: Page) {
 
 async function openNotesSection(page: Page) {
   await page.getByTestId("admin-tab-notes").click();
+  await page.waitForURL(/\/admin\?tab=notes(?:&|$)/);
   await expect(page.getByTestId("admin-active-section-label")).toHaveText("Notes");
   await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
+  await waitForNotesSectionReady(page);
+}
 
+async function reloadNotesSection(page: Page) {
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForURL(/\/admin\?tab=notes(?:&|$)/);
+  await expect(page.getByTestId("admin-active-section-label")).toHaveText("Notes");
+  await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
+  await waitForNotesSectionReady(page);
+}
+
+async function waitForNotesSectionReady(page: Page) {
   const notesManager = page.getByTestId("admin-notes-manager");
   const loadingNotice = notesManager.getByText("Loading notes…");
   const errorNotice = notesManager.getByText("Could not load notes.").first();
 
-  await expect(loadingNotice).toHaveCount(0, { timeout: 20_000 });
+  await expect(notesManager).toBeVisible({ timeout: 20_000 });
+  await expect(loadingNotice).toHaveCount(0, { timeout: 45_000 });
 
   if (await errorNotice.isVisible().catch(() => false)) {
     await notesManager.getByRole("button", { name: "Retry" }).click();
-    await expect(loadingNotice).toHaveCount(0, { timeout: 20_000 });
+    await expect(loadingNotice).toHaveCount(0, { timeout: 45_000 });
   }
 
   if (await errorNotice.isVisible().catch(() => false)) {
@@ -65,6 +78,8 @@ test.describe("admin notes workflow", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+    test.setTimeout(90_000);
 
     await loginAsAdminViaDevBypass(page);
     await openNotesSection(page);
@@ -121,6 +136,7 @@ test.describe("admin notes workflow", () => {
     const createPayload = (await createResponse.json().catch(() => null)) as {
       ok?: boolean;
       error?: string;
+      item?: { id?: string; context_ref?: string | null };
     } | null;
     if (!createResponse.ok() || createPayload?.ok === false) {
       const reason =
@@ -130,13 +146,24 @@ test.describe("admin notes workflow", () => {
       test.skip(true, `Admin notes create is not write-ready in this environment (${reason}).`);
     }
 
-    await expect(page.getByText("Note saved.")).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("Note saved to open work queue.")).toBeVisible({
+      timeout: 5_000,
+    });
 
     const createdItem = page.getByTestId("admin-note-item").filter({ hasText: title }).first();
     await expect(createdItem).toBeVisible({ timeout: 15_000 });
     await expect(createdItem).toContainText("Operations");
     await expect(createdItem).toContainText(body);
     await expect(createdItem).toContainText("Course Lesson:");
+    const noteIdText = await createdItem.getByTestId("admin-note-id").textContent();
+    const noteId = noteIdText?.replace("Note ID", "").trim() ?? "";
+    expect(noteId.length).toBeGreaterThan(5);
+
+    const searchInput = page.getByTestId("admin-notes-search");
+    await searchInput.fill(noteId);
+    await expect(page.getByTestId("admin-note-item")).toHaveCount(1);
+    await expect(createdItem).toBeVisible();
+    await searchInput.fill("");
 
     await createdItem.getByRole("button", { name: "Edit" }).click();
     const editForm = createdItem.getByTestId("admin-note-edit-form");
@@ -145,7 +172,6 @@ test.describe("admin notes workflow", () => {
     await editForm.getByLabel("Edit category").fill("Product");
     await editForm.getByLabel("Edit date").fill("2026-02-21");
     await editForm.getByLabel("Edit text").fill(updatedBody);
-    await editForm.getByLabel("Mark as done").check();
     await editForm.getByRole("button", { name: "Save changes" }).click();
 
     const updatedItem = page
@@ -156,13 +182,50 @@ test.describe("admin notes workflow", () => {
     await expect(updatedItem).toContainText("Product");
     await expect(updatedItem).toContainText(updatedBody);
 
+    await page.getByTestId("admin-notes-category-filter").selectOption("Product");
+    await expect(updatedItem).toBeVisible();
+    await page.getByTestId("admin-notes-category-filter").selectOption("");
+
     const doneCheckbox = updatedItem.getByRole("checkbox");
-    await expect(doneCheckbox).toBeChecked();
-    await doneCheckbox.click();
     await expect(doneCheckbox).not.toBeChecked();
+    await doneCheckbox.click();
+    await expect(page.getByText("Note marked as done and moved to done archive.")).toBeVisible();
+    await expect(page.getByTestId("admin-note-item").filter({ hasText: updatedTitle })).toHaveCount(
+      0
+    );
+
+    await page.getByTestId("admin-notes-status-done").click();
+    await expect(page).toHaveURL(/tab=notes/);
+    await expect(page).toHaveURL(/notesStatus=done/);
+
+    const archivedItem = page
+      .getByTestId("admin-note-item")
+      .filter({ hasText: updatedTitle })
+      .first();
+    await expect(archivedItem).toBeVisible({ timeout: 10_000 });
+
+    const lessonContextRef = createPayload?.item?.context_ref ?? "";
+    if (lessonContextRef) {
+      await page.getByTestId("admin-notes-context-type-filter").selectOption("course_lesson");
+      await page.getByTestId("admin-notes-context-ref-filter").selectOption(lessonContextRef);
+      await expect(archivedItem).toBeVisible();
+    }
+
+    await searchInput.fill(noteId);
+    await expect(archivedItem).toBeVisible();
+    await expect(searchInput).toHaveValue(noteId);
+
+    await reloadNotesSection(page);
+    await expect(page).toHaveURL(/notesStatus=done/);
+    await expect(page.getByTestId("admin-notes-search")).toHaveValue(noteId);
+    const reloadedArchivedItem = page
+      .getByTestId("admin-note-item")
+      .filter({ hasText: updatedTitle })
+      .first();
+    await expect(reloadedArchivedItem).toBeVisible({ timeout: 10_000 });
 
     page.once("dialog", (dialog) => dialog.accept());
-    await updatedItem.getByRole("button", { name: "Delete" }).click();
+    await reloadedArchivedItem.getByRole("button", { name: "Delete" }).click();
     await expect(page.getByTestId("admin-note-item").filter({ hasText: updatedTitle })).toHaveCount(
       0
     );

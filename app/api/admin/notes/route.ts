@@ -4,7 +4,11 @@ import {
   parseAdminNoteContextInput,
   resolveAdminNoteContextLookupRefs,
 } from "@/lib/admin/note-context";
-import { parseCreateAdminNotePayload, type AdminNoteRow } from "@/lib/admin/notes";
+import {
+  parseCreateAdminNotePayload,
+  sortAdminNotesByNewest,
+  type AdminNoteRow,
+} from "@/lib/admin/notes";
 import { getAdminSchemaSetupMessage, isAdminNotesSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -38,19 +42,6 @@ function selectedFields() {
     created_at,
     updated_at
   `;
-}
-
-function sortAdminNotesByNewest(
-  a: { note_date: string; created_at: string },
-  b: {
-    note_date: string;
-    created_at: string;
-  }
-): number {
-  if (a.note_date !== b.note_date) {
-    return b.note_date.localeCompare(a.note_date);
-  }
-  return b.created_at.localeCompare(a.created_at);
 }
 
 export async function GET(request: Request) {

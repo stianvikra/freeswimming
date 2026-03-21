@@ -83,7 +83,10 @@ Add these checks when incident scope is locale-specific:
 ## Communication Contract
 
 - Open one incident note with:
+  - start in `/admin?tab=notes`,
+  - keep the note in the default `Open` queue until mitigation is complete,
   - timestamp,
+  - visible note ID,
   - taxonomy category (`Incident P0`, `Incident P1`, `Incident P2`, or `Incident Follow-up`),
   - severity,
   - owner,
@@ -114,6 +117,7 @@ Notes:
 
 - `Incident P0/P1/P2` categories should match selected severity.
 - Use `Incident Follow-up` for post-incident cleanup tasks after mitigation.
+- If the incident note is later marked done, use `Done archive` or note-ID search to recover it.
 
 ## Verification Gates Before Incident Closure
 

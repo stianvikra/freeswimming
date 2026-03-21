@@ -73,6 +73,16 @@ type ParseResult<T> =
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
+export function sortAdminNotesByNewest(
+  a: Pick<AdminNoteRow, "note_date" | "created_at">,
+  b: Pick<AdminNoteRow, "note_date" | "created_at">
+): number {
+  if (a.note_date !== b.note_date) {
+    return b.note_date.localeCompare(a.note_date);
+  }
+  return b.created_at.localeCompare(a.created_at);
+}
+
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
