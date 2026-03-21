@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ADMIN_NOTE_CONTEXT_TYPE_VALUES,
   type AdminNoteContextType,
@@ -13,10 +21,22 @@ import {
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import type { AdminContentItemRow } from "@/lib/admin/content";
 import {
+  ADMIN_INCIDENT_SEVERITY_GUIDANCE,
+  DEFAULT_ADMIN_NOTES_FILTER_STATE,
+  applyAdminNotesFilterStateToSearchParams,
+  buildAdminNoteReferenceLabel,
+  buildAdminNotesContextRefOptions,
+  buildAdminNotesCounts,
+  filterAdminNotes,
+  parseAdminNotesFilterState,
+  type AdminNotesStatusFilter,
+} from "@/lib/admin/notes-manager";
+import {
   ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
   ADMIN_INCIDENT_NOTE_CATEGORY_OPTIONS,
   INCIDENT_NOTE_SEVERITIES,
   buildIncidentNoteBodyTemplate,
+  sortAdminNotesByNewest,
   type AdminNoteRow,
   type IncidentNoteSeverity,
 } from "@/lib/admin/notes";
@@ -187,6 +207,9 @@ function normalizeContextRef(value: string): string {
 }
 
 export default function AdminNotesManager() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<AdminNoteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -263,7 +286,7 @@ export default function AdminNotesManager() {
         return;
       }
 
-      setItems(payload.items);
+      setItems([...payload.items].sort(sortAdminNotesByNewest));
       setSchemaReady(payload.schemaReady !== false);
       setWarning(payload.warning ?? null);
 
@@ -300,20 +323,82 @@ export default function AdminNotesManager() {
     void loadNotes();
   }, [loadNotes]);
 
+  const notesFilters = useMemo(() => parseAdminNotesFilterState(searchParams), [searchParams]);
+  const deferredQuery = useDeferredValue(notesFilters.query);
+  const effectiveNotesFilters = useMemo(
+    () =>
+      deferredQuery === notesFilters.query
+        ? notesFilters
+        : { ...notesFilters, query: deferredQuery },
+    [deferredQuery, notesFilters]
+  );
+  const noteCounts = useMemo(() => buildAdminNotesCounts(items), [items]);
+
   const noteSummary = useMemo(() => {
     if (items.length === 0) return "No notes yet.";
-    const done = items.filter((item) => item.is_done).length;
-    const open = items.length - done;
-    return `${open} open · ${done} done`;
-  }, [items]);
+    return `${noteCounts.open} open · ${noteCounts.done} done archive`;
+  }, [items.length, noteCounts.done, noteCounts.open]);
 
   const suggestedCategoryOptions = useMemo(() => {
-    return [...categoryOptions, ...ADMIN_INCIDENT_NOTE_CATEGORY_OPTIONS]
+    return [
+      ...categoryOptions,
+      ...items.map((item) => item.category),
+      ...ADMIN_INCIDENT_NOTE_CATEGORY_OPTIONS,
+    ]
       .map((entry) => entry.trim())
       .filter(Boolean)
       .filter((entry, index, all) => all.indexOf(entry) === index)
       .sort((left, right) => left.localeCompare(right, "nb-NO"));
-  }, [categoryOptions]);
+  }, [categoryOptions, items]);
+
+  const contextRefOptions = useMemo(
+    () =>
+      buildAdminNotesContextRefOptions({
+        items,
+        catalog: contextCatalog,
+        contextType: notesFilters.contextType,
+      }),
+    [contextCatalog, items, notesFilters.contextType]
+  );
+
+  const filteredItems = useMemo(
+    () =>
+      filterAdminNotes({
+        items,
+        filters: effectiveNotesFilters,
+        catalog: contextCatalog,
+      }),
+    [contextCatalog, effectiveNotesFilters, items]
+  );
+
+  const hasActiveFilters =
+    notesFilters.query !== DEFAULT_ADMIN_NOTES_FILTER_STATE.query ||
+    notesFilters.status !== DEFAULT_ADMIN_NOTES_FILTER_STATE.status ||
+    notesFilters.category !== DEFAULT_ADMIN_NOTES_FILTER_STATE.category ||
+    notesFilters.contextType !== DEFAULT_ADMIN_NOTES_FILTER_STATE.contextType ||
+    notesFilters.contextRef !== DEFAULT_ADMIN_NOTES_FILTER_STATE.contextRef;
+
+  function updateNotesFilters(next: Partial<typeof notesFilters>) {
+    const nextFilters = {
+      ...notesFilters,
+      ...next,
+    };
+    if (Object.prototype.hasOwnProperty.call(next, "contextType")) {
+      nextFilters.contextRef = "";
+    }
+    if (!nextFilters.contextType) {
+      nextFilters.contextRef = "";
+    }
+
+    const nextParams = applyAdminNotesFilterStateToSearchParams(
+      new URLSearchParams(searchParams.toString()),
+      nextFilters
+    );
+    const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
+    startTransition(() => {
+      router.replace(nextHref, { scroll: false });
+    });
+  }
 
   const createLessonOptions = useMemo(() => {
     if (formState.contextType !== "course_lesson") return [];
@@ -401,9 +486,15 @@ export default function AdminNotesManager() {
         return;
       }
 
-      setItems((prev) => [payload.item, ...prev]);
+      setItems((prev) =>
+        [...prev.filter((entry) => entry.id !== payload.item.id), payload.item].sort(
+          sortAdminNotesByNewest
+        )
+      );
       setFormState(INITIAL_FORM);
-      setActionNotice("Note saved.");
+      setActionNotice(
+        payload.item.is_done ? "Note saved to done archive." : "Note saved to open work queue."
+      );
     } catch {
       setActionError("Could not save note.");
     } finally {
@@ -485,7 +576,9 @@ export default function AdminNotesManager() {
       }
 
       setItems((prev) =>
-        prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+        prev
+          .map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+          .sort(sortAdminNotesByNewest)
       );
       setEditingId(null);
       setEditState(null);
@@ -522,9 +615,15 @@ export default function AdminNotesManager() {
       }
 
       setItems((prev) =>
-        prev.map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+        prev
+          .map((entry) => (entry.id === payload.item.id ? payload.item : entry))
+          .sort(sortAdminNotesByNewest)
       );
-      setActionNotice(payload.item.is_done ? "Note marked as done." : "Note reopened.");
+      setActionNotice(
+        payload.item.is_done
+          ? "Note marked as done and moved to done archive."
+          : "Note reopened and moved to open work queue."
+      );
     } catch {
       setActionError("Could not update note.");
     } finally {
@@ -629,8 +728,143 @@ export default function AdminNotesManager() {
         ) : null}
 
         {!loading && !error && items.length > 0 ? (
+          <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Work queue filters</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Showing {filteredItems.length} of {noteCounts.all} notes.
+                </p>
+              </div>
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={() => updateNotesFilters(DEFAULT_ADMIN_NOTES_FILTER_STATE)}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                >
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
+
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                <span>Search</span>
+                <input
+                  type="search"
+                  value={notesFilters.query}
+                  onChange={(e) => updateNotesFilters({ query: e.target.value })}
+                  data-testid="admin-notes-search"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  placeholder="Search note ID, title, text, or context"
+                />
+              </label>
+
+              <div className="space-y-1 text-sm font-medium text-slate-700">
+                <span>Status</span>
+                <div
+                  className="grid grid-cols-3 gap-2"
+                  role="group"
+                  aria-label="Notes status filter"
+                >
+                  {(["open", "done", "all"] as AdminNotesStatusFilter[]).map((status) => {
+                    const isActive = notesFilters.status === status;
+                    const count =
+                      status === "open"
+                        ? noteCounts.open
+                        : status === "done"
+                          ? noteCounts.done
+                          : noteCounts.all;
+
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        data-testid={`admin-notes-status-${status}`}
+                        onClick={() => updateNotesFilters({ status })}
+                        className={[
+                          "inline-flex h-10 items-center justify-center rounded-xl border px-3 text-sm font-semibold transition",
+                          isActive
+                            ? "border-blue-300 bg-blue-50 text-blue-800"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100",
+                        ].join(" ")}
+                        aria-pressed={isActive}
+                      >
+                        {status === "open"
+                          ? `Open (${count})`
+                          : status === "done"
+                            ? `Done archive (${count})`
+                            : `All (${count})`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                <span>Category</span>
+                <select
+                  value={notesFilters.category}
+                  onChange={(e) => updateNotesFilters({ category: e.target.value })}
+                  data-testid="admin-notes-category-filter"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                >
+                  <option value="">All categories</option>
+                  {suggestedCategoryOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                <span>Context type</span>
+                <select
+                  value={notesFilters.contextType}
+                  onChange={(e) =>
+                    updateNotesFilters({
+                      contextType: e.target.value as AdminNoteContextType | "",
+                    })
+                  }
+                  data-testid="admin-notes-context-type-filter"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                >
+                  <option value="">All context types</option>
+                  {CONTEXT_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                <span>Exact route/context</span>
+                <select
+                  value={notesFilters.contextRef}
+                  onChange={(e) => updateNotesFilters({ contextRef: e.target.value })}
+                  data-testid="admin-notes-context-ref-filter"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  disabled={contextRefOptions.length === 0}
+                >
+                  <option value="">
+                    {notesFilters.contextType ? "All selected targets" : "All routes and targets"}
+                  </option>
+                  {contextRefOptions.map((option) => (
+                    <option key={`${option.contextType}:${option.value}`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+        ) : null}
+
+        {!loading && !error && items.length > 0 && filteredItems.length > 0 ? (
           <ul className="mt-5 space-y-3">
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               const isUpdating = updatingId === item.id;
               const isDeleting = deletingId === item.id;
               const isEditing = editingId === item.id && editState !== null;
@@ -654,14 +888,26 @@ export default function AdminNotesManager() {
                       <p className="mt-1 text-xs text-slate-500">
                         {item.category} · {formatDateLabel(item.note_date)}
                       </p>
+                      <p
+                        className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500"
+                        data-testid="admin-note-id"
+                      >
+                        {buildAdminNoteReferenceLabel(item.id)}
+                      </p>
                       {item.context_type && item.context_ref ? (
-                        <p className="mt-1 text-xs font-medium text-slate-600">
-                          {resolveAdminNoteContextLabel({
-                            catalog: contextCatalog,
-                            contextType: item.context_type,
-                            contextRef: item.context_ref,
-                          })}
-                        </p>
+                        <>
+                          <p className="mt-1 text-xs font-medium text-slate-600">
+                            {resolveAdminNoteContextLabel({
+                              catalog: contextCatalog,
+                              contextType: item.context_type,
+                              contextRef: item.context_ref,
+                            })}
+                          </p>
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            Context ref:{" "}
+                            <span className="font-mono text-slate-700">{item.context_ref}</span>
+                          </p>
+                        </>
                       ) : null}
                     </div>
                     <div className="flex items-center gap-2">
@@ -960,6 +1206,13 @@ export default function AdminNotesManager() {
             })}
           </ul>
         ) : null}
+
+        {!loading && !error && items.length > 0 && filteredItems.length === 0 ? (
+          <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            No notes match the current filters. Clear filters or switch to done archive to find
+            older notes.
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -973,6 +1226,19 @@ export default function AdminNotesManager() {
             Use these for runbook incidents so severity, owner, and update cadence stay
             standardized.
           </p>
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            {INCIDENT_NOTE_SEVERITIES.map((severity) => (
+              <div
+                key={severity}
+                className="rounded-lg border border-amber-200 bg-white/80 px-3 py-2"
+              >
+                <p className="text-xs font-semibold text-amber-950">{severity}</p>
+                <p className="mt-1 text-xs text-amber-900">
+                  {ADMIN_INCIDENT_SEVERITY_GUIDANCE[severity]}
+                </p>
+              </div>
+            ))}
+          </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {INCIDENT_NOTE_SEVERITIES.map((severity) => (
               <button

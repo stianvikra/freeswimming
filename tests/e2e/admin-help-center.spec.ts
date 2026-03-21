@@ -99,6 +99,15 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Use P0 template / Use P1 template / Use P2 template:")
     ).toBeVisible();
+    await expect(
+      page.getByText(
+        "P0 = critical outage, P1 = major degradation with workaround, P2 = low-impact bug/UX issue."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText("Open / Done archive / All + Search + Context filters:")
+    ).toBeVisible();
+    await expect(page.getByText("Visible note ID:")).toBeVisible();
     await expect(page.getByText("Open lock operations workflow:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(page.getByText("Create template:")).toBeVisible();
