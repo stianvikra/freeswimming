@@ -21,6 +21,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "training_context_viewed",
   "training_context_refreshed",
   "training_focus_created",
+  "training_focus_primary_set",
   "training_focus_resolved",
   "training_note_created",
   "training_note_updated",

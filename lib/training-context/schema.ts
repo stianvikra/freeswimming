@@ -8,6 +8,7 @@ type PostgrestLikeError = {
 const TRAINING_CONTEXT_MARKERS = [
   "training_focuses",
   "training_notes",
+  "is_primary",
   "note_type",
   "context_type",
   "resolved_at",

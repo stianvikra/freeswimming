@@ -366,7 +366,7 @@ export default function SessionGeneratorPanel({
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Focus context
+                Focus cue
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {payload.overrides.focusText ?? payload.source.activeFocus?.title ?? "No focus cue"}

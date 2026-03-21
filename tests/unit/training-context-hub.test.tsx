@@ -1,32 +1,43 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import TrainingContextHub from "@/components/my-library/training/TrainingContextHub";
-import type { TrainingContextSnapshot } from "@/lib/training-context/server";
+import type { TrainingContextSnapshot, TrainingFocusView } from "@/lib/training-context/server";
 
 vi.mock("@/lib/analytics/client", () => ({
   sendClientAnalyticsEvent: vi.fn(),
 }));
 
-function buildSnapshot(): TrainingContextSnapshot {
+function buildFocus(overrides?: Partial<TrainingFocusView>): TrainingFocusView {
+  return {
+    id: "focus-1",
+    title: "Longer exhale in the water",
+    details: "Keep one goggle in while rotating to breathe.",
+    status: "open",
+    statusLabel: "Open",
+    isPrimary: true,
+    goalId: "goal-1",
+    goalTitle: "Swim 400m calmly",
+    contextType: null,
+    contextRef: null,
+    createdAt: "2026-03-19T10:00:00.000Z",
+    updatedAt: "2026-03-19T10:00:00.000Z",
+    completedAt: null,
+    archivedAt: null,
+    ...overrides,
+  };
+}
+
+function buildSnapshot(overrides?: Partial<TrainingContextSnapshot>): TrainingContextSnapshot {
+  const primaryFocus = buildFocus();
+
   return {
     schemaReady: true,
     loadError: null,
-    activeFocus: {
-      id: "focus-1",
-      title: "Longer exhale in the water",
-      details: "Keep one goggle in while rotating to breathe.",
-      status: "active",
-      statusLabel: "Active",
-      goalId: "goal-1",
-      goalTitle: "Swim 400m calmly",
-      contextType: null,
-      contextRef: null,
-      createdAt: "2026-03-19T10:00:00.000Z",
-      updatedAt: "2026-03-19T10:00:00.000Z",
-      completedAt: null,
-      archivedAt: null,
-    },
+    activeFocus: primaryFocus,
+    primaryFocus,
+    openFocuses: [primaryFocus],
     focusHistory: [],
+    focusNeedsPrimarySelection: false,
     recentNotes: [
       {
         id: "note-1",
@@ -64,6 +75,7 @@ function buildSnapshot(): TrainingContextSnapshot {
         statusLabel: "On track",
       },
     ],
+    ...overrides,
   };
 }
 
@@ -74,17 +86,16 @@ describe("TrainingContextHub", () => {
     vi.clearAllMocks();
   });
 
-  it("renders Focus and Notes as separate sections", () => {
+  it("renders open focuses and notes as separate sections", () => {
     render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
 
-    expect(screen.getByRole("heading", { name: "Current focus" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Open focuses" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Notes" })).toBeInTheDocument();
-    expect(screen.getByText("Longer exhale in the water")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Keep one active training priority at a time, separate from longer-term goals."
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("training-focus-card-focus-1")).toHaveTextContent(
+      "Longer exhale in the water"
+    );
+    expect(screen.getByText(/Keep several current training cues open\./i)).toBeInTheDocument();
+    expect(screen.getByText("Primary focus")).toBeInTheDocument();
   });
 
   it("opens question editing with answer field", () => {
@@ -103,7 +114,6 @@ describe("TrainingContextHub", () => {
         title: "Keep hips higher",
         details: "Stay long through the neck.",
         goalId: "",
-        replaceExistingStatus: "completed",
       })
     );
     localStorage.setItem(
@@ -149,5 +159,37 @@ describe("TrainingContextHub", () => {
     expect(screen.getByTestId("training-context-selected-goal")).toHaveTextContent(
       "Build smoother breathing"
     );
+  });
+
+  it("warns when multiple open focuses need a primary selection", () => {
+    const firstOpenFocus = buildFocus({
+      id: "focus-1",
+      isPrimary: false,
+      title: "Longer exhale in the water",
+    });
+    const secondOpenFocus = buildFocus({
+      id: "focus-2",
+      isPrimary: false,
+      title: "Patient catch timing",
+      goalId: null,
+      goalTitle: null,
+    });
+
+    render(
+      <TrainingContextHub
+        initialSnapshot={buildSnapshot({
+          activeFocus: null,
+          primaryFocus: null,
+          openFocuses: [firstOpenFocus, secondOpenFocus],
+          focusNeedsPrimarySelection: true,
+        })}
+      />
+    );
+
+    expect(screen.getByText("Choose a primary focus")).toBeInTheDocument();
+    expect(
+      screen.getByText(/You have 2 open focuses and no primary focus selected yet\./i)
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("training-focus-set-primary-focus-2")).toBeInTheDocument();
   });
 });

@@ -129,7 +129,7 @@ export async function GET() {
     supabase
       .from("training_focuses")
       .select(
-        "id, goal_id, title, details, status, context_type, context_ref, completed_at, archived_at, created_at, updated_at"
+        "id, goal_id, title, details, status, is_primary, context_type, context_ref, completed_at, archived_at, created_at, updated_at"
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false }),

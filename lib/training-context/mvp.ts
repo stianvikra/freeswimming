@@ -1,6 +1,6 @@
 import type { Database } from "@/types/database";
 
-export const TRAINING_FOCUS_STATUS_VALUES = ["active", "completed", "archived"] as const;
+export const TRAINING_FOCUS_STATUS_VALUES = ["open", "completed", "archived"] as const;
 export const TRAINING_NOTE_TYPE_VALUES = ["observation", "question"] as const;
 export const TRAINING_NOTE_STATUS_VALUES = [
   "open",
@@ -96,6 +96,7 @@ export function normalizeTrainingFocusStatus(
 ): TrainingFocusStatus | null {
   const normalized = normalizeText(value);
   if (!normalized) return null;
+  if (normalized === "active") return "open";
   return TRAINING_FOCUS_STATUS_VALUES.find((item) => item === normalized) ?? null;
 }
 
@@ -127,7 +128,7 @@ export function isTrainingNoteResolvedStatus(status: TrainingNoteStatus): boolea
 export function getTrainingFocusStatusLabel(status: TrainingFocusStatus): string {
   if (status === "completed") return "Completed";
   if (status === "archived") return "Archived";
-  return "Active";
+  return "Open";
 }
 
 export function getTrainingNoteTypeLabel(noteType: TrainingNoteType): string {
@@ -169,7 +170,8 @@ export function buildTrainingFocusInsert(
     goal_id: normalizeNullableId(input.goalId),
     context_type: contextType,
     context_ref: contextRef,
-    status: "active",
+    status: "open",
+    is_primary: false,
     completed_at: null,
     archived_at: null,
   };

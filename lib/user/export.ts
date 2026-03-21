@@ -94,6 +94,7 @@ type TrainingFocusRow = Pick<
   | "title"
   | "details"
   | "status"
+  | "is_primary"
   | "context_type"
   | "context_ref"
   | "completed_at"
@@ -287,6 +288,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       title: row.title,
       details: row.details,
       status: row.status,
+      isPrimary: row.is_primary,
       contextType: row.context_type,
       contextRef: row.context_ref,
       completedAt: row.completed_at,

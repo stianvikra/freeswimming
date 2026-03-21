@@ -3,6 +3,7 @@ import {
   buildTrainingFocusInsert,
   buildTrainingNoteInsert,
   getDefaultTrainingNoteStatus,
+  normalizeTrainingFocusStatus,
   isValidTrainingNoteState,
   resolveTrainingNoteResolvedAt,
 } from "@/lib/training-context/mvp";
@@ -18,8 +19,13 @@ describe("training context model", () => {
     expect(insert).toMatchObject({
       title: "Longer exhale before breathing",
       goal_id: "goal-1",
-      status: "active",
+      status: "open",
+      is_primary: false,
     });
+  });
+
+  it("normalizes legacy active focus status to open", () => {
+    expect(normalizeTrainingFocusStatus("active")).toBe("open");
   });
 
   it("rejects invalid focus titles", () => {

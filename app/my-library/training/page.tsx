@@ -56,7 +56,8 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
         <TrackEventOnMount
           eventName="training_context_viewed"
           payload={{
-            hasActiveFocus: Boolean(initialSnapshot.activeFocus),
+            hasPrimaryFocus: Boolean(initialSnapshot.primaryFocus),
+            openFocusCount: initialSnapshot.openFocuses.length,
             noteCount: initialSnapshot.recentNotes.length,
           }}
         />
@@ -68,9 +69,11 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Focus & Notes</h1>
               <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
-                Keep one active swim focus, capture what you notice in the pool, and come back with
-                answers or clear next actions after the session. Saved goals can prefill the next
-                step here without becoming the same thing as your focus or notes.
+                Keep multiple swim focuses open when needed, choose one primary cue when other My
+                Library surfaces need a single current focus, and capture what you notice in the
+                pool so you can come back with answers or clear next actions after the session.
+                Saved goals can prefill the next step here without becoming the same thing as your
+                focus or notes.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -100,7 +103,9 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
                   Focus
                 </p>
-                <p className="mt-2 text-sm text-slate-700">What you are training on right now.</p>
+                <p className="mt-2 text-sm text-slate-700">
+                  What you are training on now, with one optional primary cue.
+                </p>
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">

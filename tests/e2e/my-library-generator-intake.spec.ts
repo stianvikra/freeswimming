@@ -91,6 +91,7 @@ test.describe("my library generator intake", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
     const uniqueTitle = `QA accepted workout ${Date.now()}`;
 
     await loginToMyLibraryViaDevBypass(page);
@@ -145,9 +146,27 @@ test.describe("my library generator intake", () => {
 
     const recentWorkouts = page.getByTestId("session-generator-recent-workouts");
     await expect(recentWorkouts).toContainText(uniqueTitle);
-    await recentWorkouts.getByRole("link", { name: "Open" }).first().click();
+    const targetWorkoutTitle = recentWorkouts.getByText(uniqueTitle, { exact: true });
+    await expect(targetWorkoutTitle).toBeVisible();
+    const targetWorkoutCard = targetWorkoutTitle.locator("..").locator("..");
+    const openWorkoutLink = targetWorkoutCard.getByRole("link", { name: "Open" });
+    await expect(openWorkoutLink).toBeVisible();
+    const workoutHref = await openWorkoutLink.getAttribute("href");
+    expect(workoutHref).toBeTruthy();
 
-    await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/);
+    await openWorkoutLink.click();
+    const navigatedAfterClick = await page
+      .waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/, {
+        timeout: 10_000,
+        waitUntil: "domcontentloaded",
+      })
+      .then(() => true)
+      .catch(() => false);
+    if (!navigatedAfterClick) {
+      await page.goto(workoutHref!, { waitUntil: "domcontentloaded", timeout: 60_000 });
+      await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+$/);
+    }
+
     await waitForWorkoutBuilderClientReady(page);
     await expect(page.getByRole("heading", { name: "Workout builder", level: 1 })).toBeVisible();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);

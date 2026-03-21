@@ -8,7 +8,6 @@ type CreateFocusPayload = {
   title?: string | null;
   details?: string | null;
   goalId?: string | null;
-  replaceExistingStatus?: "completed" | "archived" | null;
 };
 
 const TRAINING_FOCUS_SELECT = `
@@ -18,6 +17,7 @@ const TRAINING_FOCUS_SELECT = `
   title,
   details,
   status,
+  is_primary,
   context_type,
   context_ref,
   completed_at,
@@ -38,12 +38,6 @@ function noStoreJson(
       "Cache-Control": "no-store",
     },
   });
-}
-
-function isValidReplacementStatus(
-  value: string | null | undefined
-): value is "completed" | "archived" {
-  return value === "completed" || value === "archived";
 }
 
 export async function POST(request: Request) {
@@ -109,15 +103,15 @@ export async function POST(request: Request) {
     }
   }
 
-  const activeFocusResult = await supabase
+  const openFocusResult = await supabase
     .from("training_focuses")
-    .select(TRAINING_FOCUS_SELECT)
+    .select("id")
     .eq("user_id", user.id)
-    .eq("status", "active")
-    .maybeSingle();
+    .eq("status", "open")
+    .limit(1);
 
-  if (activeFocusResult.error) {
-    if (isTrainingContextSchemaMissing(activeFocusResult.error)) {
+  if (openFocusResult.error) {
+    if (isTrainingContextSchemaMissing(openFocusResult.error)) {
       return applySupabaseCookies(
         noStoreJson(
           {
@@ -130,72 +124,22 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("[TrainingContext] Failed loading active focus", activeFocusResult.error);
+    console.error(
+      "[TrainingContext] Failed loading open focuses for create",
+      openFocusResult.error
+    );
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Could not load current focus." }, { status: 500 })
+      noStoreJson({ ok: false, error: "Could not load current focuses." }, { status: 500 })
     );
   }
 
-  const activeFocus = activeFocusResult.data;
-  if (activeFocus) {
-    if (!isValidReplacementStatus(payload?.replaceExistingStatus)) {
-      return applySupabaseCookies(
-        noStoreJson(
-          {
-            ok: false,
-            error: "Complete or archive the current focus before setting a new active focus.",
-            code: "ACTIVE_FOCUS_EXISTS",
-          },
-          { status: 409 }
-        )
-      );
-    }
-
-    const nowIso = new Date().toISOString();
-    const replacementPatch =
-      payload.replaceExistingStatus === "completed"
-        ? {
-            status: "completed" as const,
-            completed_at: nowIso,
-            archived_at: null,
-          }
-        : {
-            status: "archived" as const,
-            archived_at: nowIso,
-            completed_at: null,
-          };
-
-    const replaceResult = await supabase
-      .from("training_focuses")
-      .update(replacementPatch)
-      .eq("id", activeFocus.id)
-      .eq("user_id", user.id);
-
-    if (replaceResult.error) {
-      if (isTrainingContextSchemaMissing(replaceResult.error)) {
-        return applySupabaseCookies(
-          noStoreJson(
-            {
-              ok: false,
-              error: "Training context setup is still syncing. Please try again in a minute.",
-              code: "TRAINING_CONTEXT_SCHEMA_NOT_READY",
-            },
-            { status: 503 }
-          )
-        );
-      }
-
-      console.error("[TrainingContext] Failed replacing active focus", replaceResult.error);
-      return applySupabaseCookies(
-        noStoreJson({ ok: false, error: "Could not replace current focus." }, { status: 500 })
-      );
-    }
-  }
+  const hasExistingOpenFocus = (openFocusResult.data ?? []).length > 0;
 
   const insertResult = await supabase
     .from("training_focuses")
     .insert({
       ...insertPayload,
+      is_primary: hasExistingOpenFocus ? false : true,
       user_id: user.id,
     })
     .select(TRAINING_FOCUS_SELECT)
@@ -220,9 +164,8 @@ export async function POST(request: Request) {
         noStoreJson(
           {
             ok: false,
-            error:
-              "You already have an active focus. Refresh and resolve it before adding a new one.",
-            code: "ACTIVE_FOCUS_EXISTS",
+            error: "Could not save focus right now. Refresh and try again.",
+            code: "FOCUS_CREATE_CONFLICT",
           },
           { status: 409 }
         )
