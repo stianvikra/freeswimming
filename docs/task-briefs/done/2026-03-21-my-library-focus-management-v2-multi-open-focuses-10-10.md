@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-21-my-library-focus-management-v2-multi-open-focuses-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-21`
 - `updated`: `2026-03-21`
@@ -244,6 +244,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-21 | merged-ready closeout | moved this brief to \`done\`, passed local \`npm run verify:pre-merge\`, confirmed PR #255 had all required GitHub checks green, and recorded the latest perf-budget signal as a \`tighten\` recommendation with a deliberate \`hold\` decision for this slice because focus-v2 does not own budget target changes | next: squash merge PR #255 and sync local main`
 - `2026-03-21 | focus-v2 slice implemented and locally verified | shipped schema-backed multi-open focus support with one optional primary focus, updated training hub/My Library/generator compatibility semantics, added primary-focus analytics and export/schema contract updates, hardened focused My Library e2e coverage, and passed \`npm run verify:pre-pr\` after fixing a recent-workout locator/timing flake in the desktop generator-intake flow | next: stage only focus-v2 files, open PR, and monitor CI`
 - `2026-03-21 | perf trend decision | perf budget trend recommended tightening one stretch target step after two consecutive weekly green runs; decision for this slice is \`hold\` and carry the tighten/hold decision into the AW-010/PR summary because focus-v2 does not own performance-budget target selection | next: record the same note in PR handoff`
 - `2026-03-21 | implementation started on branch \`fix/my-library-focus-v2-2026-03-21\` | moved brief to in-progress, confirmed current single-focus assumptions across schema, training hub, My Library summary, and generator intake, and locked implementation direction to schema-backed multi-open focus support with one optional primary focus plus deterministic downstream fallback | next: ship schema/type updates first, then training-context UI and generator compatibility updates with targeted tests`
