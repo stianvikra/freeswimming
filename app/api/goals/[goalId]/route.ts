@@ -19,6 +19,9 @@ type PatchPayload =
       action: "restore";
     }
   | {
+      action: "reset_result";
+    }
+  | {
       action: "mark_celebrated";
     }
   | {
@@ -141,6 +144,25 @@ function computeLogResultPatch(goal: GoalRow, payload: PatchPayload): GoalUpdate
   return null;
 }
 
+function computeResetResultPatch(goal: GoalRow): GoalUpdate | null {
+  if (goal.status === "archived") return null;
+
+  if (
+    goal.goal_type !== "distance_time" &&
+    goal.goal_type !== "distance_continuous" &&
+    goal.goal_type !== "custom"
+  ) {
+    return null;
+  }
+
+  return {
+    progress_value: 0,
+    status: "active",
+    achieved_at: null,
+    celebrated_at: null,
+  };
+}
+
 export async function PATCH(request: Request, { params }: { params: Params }) {
   const { goalId } = await params;
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
@@ -206,6 +228,8 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     patch = {
       status: goal.status === "achieved" ? "achieved" : "active",
     };
+  } else if (payload?.action === "reset_result") {
+    patch = computeResetResultPatch(goal);
   } else if (payload?.action === "mark_celebrated") {
     patch = {
       celebrated_at: new Date().toISOString(),
