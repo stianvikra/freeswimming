@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-20`
-- `updated`: `2026-03-20`
+- `updated`: `2026-03-21`
 
 ## Goal
 
@@ -37,8 +37,12 @@ Users can move from a saved goal into a current focus or note in one clear workf
   - `/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
   - `/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
   - `/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
+  - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-21-my-library-focus-management-v2-multi-open-focuses-10-10.md`
 - This is a workflow-bridge slice, not a new schema/model slice.
 - This is private user-owned My Library UX, not admin workflow.
+- Dependency note:
+  - focus-v2 multi-open behavior is now shipped,
+  - this bridge follow-up must therefore use `open focus` + `primary focus` semantics rather than reintroducing singular-active-focus assumptions.
 
 ## Platform 10/10 Scorecard Mapping (Required)
 
@@ -117,7 +121,7 @@ Critical target categories for `10/10` claim in this brief:
   - editing a goal title in place does not break the bridge because selection stays id-based,
   - materially different goals/focuses/notes still require separate canonical rows rather than in-place repurposing.
 - Compatibility contract:
-  - this workflow bridge must remain compatible with later generator intake, which reads open goals and active focus canonically.
+  - this workflow bridge must remain compatible with later generator intake, which reads open goals and primary focus canonically.
 - Observability and repair:
   - if a URL/query prefill references a goal id that is no longer available to the user, the UI must fall back safely and explain that the selected goal is unavailable.
 
@@ -127,7 +131,7 @@ Critical target categories for `10/10` claim in this brief:
 - Add explicit quick actions from goals into `Focus & Notes`.
 - Add safe goal-prefill context on the training page so users do not need to re-select the same goal manually.
 - Surface active goal context inside training workflow so users can choose whether the selected goal should support:
-  - a new active focus,
+  - a new open focus,
   - a new note.
 - Keep all existing entity boundaries intact:
   - `Goal` remains long-term target,
@@ -152,9 +156,9 @@ Critical target categories for `10/10` claim in this brief:
 4. If the user already has unsaved draft text, the bridge does not silently wipe it.
 5. If the selected goal is unavailable or archived by the time the training page loads, the UI falls back safely with clear guidance.
 6. Training page quick actions can set goal context for both:
-   - `active focus`
+   - `open focus`
    - `note`
-7. Existing active-focus exclusivity and note-status rules continue to hold without regression.
+7. Existing multi-open focus, primary-focus selection, and note-status rules continue to hold without regression.
 8. Unauthorized access remains fail-closed on all touched API surfaces.
 9. `npm run lint:briefs`, relevant targeted tests, and `npm run verify:pre-pr` pass before PR update.
 
@@ -207,10 +211,13 @@ Critical target categories for `10/10` claim in this brief:
   - `success`
 - Keyboard and touch usage must remain complete for all added controls.
 - Draft preservation must be explicit and deterministic.
-- No silent goal mutation, no silent draft loss, and no ambiguous active-focus replacement behavior.
+- No silent goal mutation, no silent draft loss, and no ambiguous open-focus or primary-focus behavior.
 
 ## Checkpoint Log
 
+- `2026-03-21 | 9c4f753 | validation hardening checkpoint | hardened the goals-hub readiness wait in the new Playwright bridge coverage after a real hydration-timing failure on the note-intent flow, then reran full \`npm run verify:pre-pr\` green on branch head; the earlier install-prompt interruption was confirmed as a separate flake because the targeted rerun and the full pre-PR matrix both passed afterward | next: push branch head to PR #256, refresh PR summary, rerun \`npm run verify:pre-merge\`, and merge when required checks are green`
+- `2026-03-21 | intent-aware bridge follow-up | realigned the shipped workflow bridge to focus-v2 by honoring goal-prefill intent on initial load, highlighting the intended form, and extending unit + Playwright coverage for both deeplink paths | next: rerun brief lint + verify:pre-pr, then open/update PR`
+- `2026-03-21 | planning dependency note | recorded that this bridge slice currently assumes the shipped singular-active-focus model and must be realigned if the new focus-v2 multi-open/primary-focus brief is executed; this keeps follow-up goal->focus UX work from silently diverging from the new planned direction | next: sequence focus-v2 before further bridge follow-up changes`
 - `2026-03-20 | planning + implementation started | opened follow-up UX bridge slice because shipped goals/focus foundations are conceptually correct but still too detached for real day-to-day use; scope locked to goal-to-focus/note quick actions, safe prefill, and workflow clarity without schema changes | next: implement bridge UI, add targeted tests, update runbook, and run verify:pre-pr`
 - `2026-03-20 | local implementation checkpoint | shipped goal-to-training quick actions on the goals hub, added safe goal-prefill and goal chooser workflow on Focus & Notes, added unit coverage plus a dedicated goals->training Playwright flow, and updated the core incident-response runbook for the new private-route checks | next: commit branch head, rerun lint:briefs from branch diff, then run verify:pre-pr before PR handoff`
 - `2026-03-20 | c13fd63 | branch-head validation green | \`npm run lint:briefs\`, targeted eslint, \`npm run typecheck\`, targeted unit, targeted Playwright, and full \`npm run verify:pre-pr\` all passed; perf trend recommended \`tighten\` after the second consecutive weekly green run, and the decision for this workflow-focused slice is \`hold\` with the ratchet to be taken in the next perf-owned workstream or PR summary | next: push branch, open PR, monitor required checks, then run \`npm run verify:pre-merge\` before merge`

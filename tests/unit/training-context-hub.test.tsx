@@ -143,8 +143,19 @@ describe("TrainingContextHub", () => {
       screen.getByDisplayValue("I still rush the second half of the breath.")
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/was selected from Goals\. Existing draft text stayed in place\./i)
+      screen.getByText(
+        /was selected from Goals for your next focus\. Existing draft text stayed in place\./i
+      )
     ).toBeInTheDocument();
+    expect(screen.getByTestId("training-focus-form")).toHaveAttribute(
+      "data-goal-intent-highlight",
+      "true"
+    );
+    expect(screen.getByTestId("training-focus-intent-badge")).toBeInTheDocument();
+    expect(screen.getByTestId("training-note-form")).toHaveAttribute(
+      "data-goal-intent-highlight",
+      "false"
+    );
   });
 
   it("lets the user pick another goal for the note workflow from quick actions", async () => {
@@ -158,6 +169,35 @@ describe("TrainingContextHub", () => {
 
     expect(screen.getByTestId("training-context-selected-goal")).toHaveTextContent(
       "Build smoother breathing"
+    );
+    expect(screen.getByTestId("training-note-form")).toHaveAttribute(
+      "data-goal-intent-highlight",
+      "true"
+    );
+    expect(screen.getByTestId("training-note-intent-badge")).toBeInTheDocument();
+  });
+
+  it("highlights the note workflow when the goal intent is note", async () => {
+    render(
+      <TrainingContextHub
+        initialSnapshot={buildSnapshot()}
+        initialGoalPrefill={{ goalId: "goal-1", intent: "note" }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("training-note-goal-select")).toHaveValue("goal-1");
+    });
+
+    expect(screen.getByText(/was selected from Goals for your next note\./i)).toBeInTheDocument();
+    expect(screen.getByTestId("training-note-form")).toHaveAttribute(
+      "data-goal-intent-highlight",
+      "true"
+    );
+    expect(screen.getByTestId("training-note-intent-badge")).toBeInTheDocument();
+    expect(screen.getByTestId("training-focus-form")).toHaveAttribute(
+      "data-goal-intent-highlight",
+      "false"
     );
   });
 

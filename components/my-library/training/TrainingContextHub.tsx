@@ -15,6 +15,8 @@ export type TrainingGoalPrefill = {
   intent: "focus" | "note";
 };
 
+type WorkflowIntent = TrainingGoalPrefill["intent"];
+
 type Props = {
   initialSnapshot: TrainingContextSnapshot;
   initialGoalPrefill?: TrainingGoalPrefill | null;
@@ -105,6 +107,17 @@ function createNoteEditState(note: TrainingNoteView): NoteEditState {
   };
 }
 
+function getPrefillMessage(
+  goalTitle: string,
+  intent: WorkflowIntent,
+  hadExistingLocalDraft: boolean
+) {
+  const workflowLabel = intent === "focus" ? "focus" : "note";
+  return hadExistingLocalDraft
+    ? `${goalTitle} was selected from Goals for your next ${workflowLabel}. Existing draft text stayed in place.`
+    : `${goalTitle} was selected from Goals for your next ${workflowLabel}. Start in the highlighted ${workflowLabel} form below.`;
+}
+
 export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill }: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [isOnline, setIsOnline] = useState(true);
@@ -117,6 +130,9 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
   const [actionSuccess, setActionSuccess] = useState("");
   const [contextMessage, setContextMessage] = useState("");
   const [selectedGoalId, setSelectedGoalId] = useState("");
+  const [preferredWorkflowIntent, setPreferredWorkflowIntent] = useState<WorkflowIntent | null>(
+    null
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingFocusCreate, setPendingFocusCreate] = useState(false);
   const [pendingFocusActionId, setPendingFocusActionId] = useState<string | null>(null);
@@ -133,6 +149,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
 
     let nextSelectedGoalId = "";
     let nextContextMessage = "";
+    let nextPreferredWorkflowIntent: WorkflowIntent | null = null;
 
     if (initialGoalPrefill?.goalId) {
       const prefilledGoal = initialSnapshot.goalOptions.find(
@@ -140,6 +157,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
       );
 
       if (prefilledGoal) {
+        nextPreferredWorkflowIntent = initialGoalPrefill.intent;
         const hadExistingLocalDraft =
           restoredFocusDraft.title.trim().length > 0 ||
           restoredFocusDraft.details.trim().length > 0 ||
@@ -156,9 +174,11 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
           nextNoteDraft.goalId = prefilledGoal.id;
         }
 
-        nextContextMessage = hadExistingLocalDraft
-          ? `${prefilledGoal.title} was selected from Goals. Existing draft text stayed in place.`
-          : `${prefilledGoal.title} was selected from Goals. Choose whether to turn it into a focus or a note below.`;
+        nextContextMessage = getPrefillMessage(
+          prefilledGoal.title,
+          initialGoalPrefill.intent,
+          hadExistingLocalDraft
+        );
       } else {
         nextContextMessage =
           "The goal selected from Goals is no longer available. Pick another goal below.";
@@ -168,6 +188,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
     setFocusDraft(nextFocusDraft);
     setNoteDraft(nextNoteDraft);
     setSelectedGoalId(nextSelectedGoalId);
+    setPreferredWorkflowIntent(nextPreferredWorkflowIntent);
     setContextMessage(nextContextMessage);
     setClientReady(true);
 
@@ -185,7 +206,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-  }, [initialGoalPrefill?.goalId, initialSnapshot.goalOptions]);
+  }, [initialGoalPrefill?.goalId, initialGoalPrefill?.intent, initialSnapshot.goalOptions]);
 
   useEffect(() => {
     setStorageValue(FOCUS_DRAFT_STORAGE_KEY, focusDraft);
@@ -215,22 +236,28 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
     }
 
     setSelectedGoalId(goal.id);
+    setPreferredWorkflowIntent(intent);
     setActionError("");
     setActionSuccess("");
 
     if (intent === "focus") {
       setFocusDraft((prev) => ({ ...prev, goalId: goal.id }));
-      setContextMessage(`${goal.title} is selected for your next focus.`);
+      setContextMessage(
+        `${goal.title} is selected for your next focus. Start in the highlighted focus form below.`
+      );
       return;
     }
 
     setNoteDraft((prev) => ({ ...prev, goalId: goal.id }));
-    setContextMessage(`${goal.title} is selected for your next note.`);
+    setContextMessage(
+      `${goal.title} is selected for your next note. Start in the highlighted note form below.`
+    );
   }
 
   function clearGoalContext() {
     const currentGoalId = selectedGoalId;
     setSelectedGoalId("");
+    setPreferredWorkflowIntent(null);
     setContextMessage("Goal context cleared. You can still link a goal manually from either form.");
     setFocusDraft((prev) => (prev.goalId === currentGoalId ? { ...prev, goalId: "" } : prev));
     setNoteDraft((prev) => (prev.goalId === currentGoalId ? { ...prev, goalId: "" } : prev));
@@ -719,12 +746,34 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
 
           <form
             onSubmit={createFocus}
-            className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
+            data-testid="training-focus-form"
+            data-goal-intent-highlight={preferredWorkflowIntent === "focus" ? "true" : "false"}
+            className={`rounded-2xl border p-5 transition ${
+              preferredWorkflowIntent === "focus"
+                ? "border-blue-300 bg-blue-50/60 shadow-[0_12px_36px_rgba(37,99,235,0.08)]"
+                : "border-slate-200 bg-slate-50/60"
+            }`}
           >
-            <h3 className="text-base font-semibold text-slate-900">Add a new open focus</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold text-slate-900">Add a new open focus</h3>
+              {preferredWorkflowIntent === "focus" ? (
+                <span
+                  data-testid="training-focus-intent-badge"
+                  className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-700"
+                >
+                  From Goals
+                </span>
+              ) : null}
+            </div>
             <p className="mt-2 text-sm text-slate-600">
               Saving a new focus will never auto-complete or auto-archive the ones you already have.
             </p>
+            {preferredWorkflowIntent === "focus" ? (
+              <p className="mt-2 text-sm font-medium text-blue-700">
+                This is the recommended next step for the selected goal. The note form stays
+                available below if you want to capture an observation or question too.
+              </p>
+            ) : null}
             {focusDraft.goalId ? (
               <p className="mt-2 text-sm text-slate-600">
                 This focus will support:{" "}
@@ -913,9 +962,31 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
 
         <form
           onSubmit={createNote}
-          className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
+          data-testid="training-note-form"
+          data-goal-intent-highlight={preferredWorkflowIntent === "note" ? "true" : "false"}
+          className={`mt-5 rounded-2xl border p-5 transition ${
+            preferredWorkflowIntent === "note"
+              ? "border-blue-300 bg-blue-50/60 shadow-[0_12px_36px_rgba(37,99,235,0.08)]"
+              : "border-slate-200 bg-slate-50/60"
+          }`}
         >
-          <h3 className="text-base font-semibold text-slate-900">Add a note</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold text-slate-900">Add a note</h3>
+            {preferredWorkflowIntent === "note" ? (
+              <span
+                data-testid="training-note-intent-badge"
+                className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-700"
+              >
+                From Goals
+              </span>
+            ) : null}
+          </div>
+          {preferredWorkflowIntent === "note" ? (
+            <p className="mt-2 text-sm font-medium text-blue-700">
+              This is the recommended next step for the selected goal. Use it for an observation or
+              question without changing the goal itself.
+            </p>
+          ) : null}
           {noteDraft.goalId ? (
             <p className="mt-2 text-sm text-slate-600">
               This note is linked to:{" "}
