@@ -152,9 +152,9 @@ test.describe("api security negative paths", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
-    await expectUnauthorizedNoLeak(await request.get("/api/progress/course"));
-    await expectUnauthorizedNoLeak(
-      await request.post("/api/progress/course", {
+    await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/progress/course"));
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/progress/course", {
         headers: {
           "content-type": "application/json",
         },
@@ -164,9 +164,9 @@ test.describe("api security negative paths", () => {
       })
     );
 
-    await expectUnauthorizedNoLeak(await request.get("/api/progress/guide"));
-    await expectUnauthorizedNoLeak(
-      await request.post("/api/progress/guide", {
+    await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/progress/guide"));
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/progress/guide", {
         headers: {
           "content-type": "application/json",
         },
@@ -176,9 +176,9 @@ test.describe("api security negative paths", () => {
       })
     );
 
-    await expectUnauthorizedNoLeak(await request.get("/api/user/export"));
-    await expectUnauthorizedNoLeak(
-      await request.post("/api/user/delete", {
+    await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/user/export"));
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/user/delete", {
         headers: {
           "content-type": "application/json",
         },
