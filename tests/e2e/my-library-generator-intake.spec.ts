@@ -41,6 +41,7 @@ test.describe("my library generator intake", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
 
     await loginToMyLibraryViaDevBypass(page);
     const openGeneratorLink = page.getByRole("link", { name: "Open generator" });

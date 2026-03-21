@@ -112,8 +112,18 @@ describe("AthleteProfileHub", () => {
       expect(screen.getByText("Athlete profile saved.")).toBeInTheDocument();
     });
 
+    await waitFor(() => {
+      expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
+        "data-section-open",
+        "false"
+      );
+    });
+
     expect(screen.getAllByText("Poolside Stian").length).toBeGreaterThan(0);
     expect(localStorage.getItem("my-library-athlete-profile-profile-draft:user-1")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-profile"));
+    expect(screen.getByTestId("athlete-profile-display-name")).toHaveValue("Poolside Stian");
   });
 
   it("saves CSS and preferences updates", async () => {
@@ -295,8 +305,16 @@ describe("AthleteProfileHub", () => {
       expect(screen.getByText("Personal record saved.")).toBeInTheDocument();
     });
 
+    await waitFor(() => {
+      expect(screen.getByTestId("athlete-profile-section-records")).toHaveAttribute(
+        "data-section-open",
+        "false"
+      );
+    });
+
     expect(screen.getAllByText("100m Freestyle · 25m pool").length).toBeGreaterThan(0);
 
+    fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-records"));
     fireEvent.click(screen.getByTestId("athlete-record-delete-record-1"));
 
     await waitFor(() => {
@@ -304,5 +322,87 @@ describe("AthleteProfileHub", () => {
     });
 
     expect(screen.queryByText("100m Freestyle · 25m pool")).not.toBeInTheDocument();
+  });
+
+  it("keeps the profile section open when save fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error: "Could not save athlete profile right now.",
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+      )
+    );
+
+    render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
+
+    fireEvent.change(screen.getByTestId("athlete-profile-display-name"), {
+      target: { value: "Poolside Stian" },
+    });
+    fireEvent.click(screen.getByTestId("athlete-profile-save"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Could not save athlete profile right now.")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
+      "data-section-open",
+      "true"
+    );
+    expect(screen.getByTestId("athlete-profile-display-name")).toHaveValue("Poolside Stian");
+  });
+
+  it("persists disclosure state locally without storing sensitive values", async () => {
+    const savedSnapshot = buildSnapshot({
+      id: "profile-1",
+      displayName: "Poolside Stian",
+      firstName: "Stian",
+      lastName: "Vikra",
+      primaryName: "Poolside Stian",
+      ageBand: "35_44",
+      ageBandLabel: "35 to 44",
+      createdAt: "2026-03-19T18:00:00.000Z",
+      updatedAt: "2026-03-19T18:05:00.000Z",
+    });
+
+    render(<AthleteProfileHub initialSnapshot={savedSnapshot} userId="user-1" />);
+
+    expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
+      "data-section-open",
+      "false"
+    );
+
+    fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-profile"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
+        "data-section-open",
+        "true"
+      );
+    });
+
+    const storedDisclosure = localStorage.getItem("my-library-athlete-profile-disclosure:user-1");
+    expect(storedDisclosure).toContain('"profile":true');
+    expect(storedDisclosure).not.toContain("Poolside Stian");
+
+    cleanup();
+
+    render(<AthleteProfileHub initialSnapshot={savedSnapshot} userId="user-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
+        "data-section-open",
+        "true"
+      );
+    });
   });
 });

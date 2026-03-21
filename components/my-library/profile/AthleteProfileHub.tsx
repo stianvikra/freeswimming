@@ -72,6 +72,16 @@ type PersonalRecordDraft = {
   sourceNote: string;
 };
 
+type ProfileSectionKey = "profile" | "css" | "preferences" | "records";
+
+type SectionDisclosureState = Record<ProfileSectionKey, boolean>;
+
+type SectionSummaryCopy = {
+  summary: string;
+  detail: string;
+  hasData: boolean;
+};
+
 function buildProfileDraft(profile: AthleteProfileView | null): AthleteProfileDraft {
   return {
     displayName: profile?.displayName ?? "",
@@ -122,6 +132,10 @@ function getStorageKey(userId: string, scope: "profile" | "css" | "preferences" 
   return `my-library-athlete-profile-${scope}-draft:${userId}`;
 }
 
+function getDisclosureStorageKey(userId: string) {
+  return `my-library-athlete-profile-disclosure:${userId}`;
+}
+
 function getStorageValue<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -160,6 +174,213 @@ function findRecordById(records: PersonalRecordView[], recordId: string | null) 
   return records.find((record) => record.id === recordId) ?? null;
 }
 
+function buildDefaultDisclosureState({
+  snapshot,
+  hasProfileDraft,
+  hasCssDraft,
+  hasPreferencesDraft,
+  hasRecordDraft,
+}: {
+  snapshot: AthleteProfileSnapshot;
+  hasProfileDraft: boolean;
+  hasCssDraft: boolean;
+  hasPreferencesDraft: boolean;
+  hasRecordDraft: boolean;
+}): SectionDisclosureState {
+  return {
+    profile:
+      hasProfileDraft ||
+      !snapshot.profileSchemaReady ||
+      Boolean(snapshot.loadError) ||
+      !snapshot.profile,
+    css:
+      hasCssDraft ||
+      !snapshot.metricsSchemaReady ||
+      Boolean(snapshot.metricsLoadError) ||
+      !snapshot.cssMetric,
+    preferences:
+      hasPreferencesDraft ||
+      !snapshot.preferencesSchemaReady ||
+      Boolean(snapshot.preferencesLoadError) ||
+      !snapshot.preferences,
+    records:
+      hasRecordDraft ||
+      !snapshot.personalRecordsSchemaReady ||
+      Boolean(snapshot.personalRecordsLoadError) ||
+      snapshot.personalRecords.length === 0,
+  };
+}
+
+function normalizeDisclosureState(
+  value: Partial<Record<ProfileSectionKey, unknown>>,
+  fallback: SectionDisclosureState
+): SectionDisclosureState {
+  return {
+    profile: typeof value.profile === "boolean" ? value.profile : fallback.profile,
+    css: typeof value.css === "boolean" ? value.css : fallback.css,
+    preferences: typeof value.preferences === "boolean" ? value.preferences : fallback.preferences,
+    records: typeof value.records === "boolean" ? value.records : fallback.records,
+  };
+}
+
+function buildProfileSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
+  if (!snapshot.profileSchemaReady) {
+    return {
+      summary: "Athlete profile is still syncing.",
+      detail: "Open this section later to save swimmer details.",
+      hasData: false,
+    };
+  }
+
+  if (snapshot.loadError) {
+    return {
+      summary: "Could not load athlete profile.",
+      detail: snapshot.loadError,
+      hasData: false,
+    };
+  }
+
+  if (!snapshot.profile) {
+    return {
+      summary: "No athlete profile saved yet.",
+      detail: "Start with the swimmer name and age band you want this space to use.",
+      hasData: false,
+    };
+  }
+
+  return {
+    summary: snapshot.profile.primaryName ?? "Private swimmer",
+    detail: [snapshot.profile.ageBandLabel ?? "Age band not set", snapshot.profile.displayName]
+      .filter(Boolean)
+      .join(" · "),
+    hasData: true,
+  };
+}
+
+function buildCssSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
+  if (!snapshot.metricsSchemaReady) {
+    return {
+      summary: "CSS is still syncing.",
+      detail: "Open this section later to save the current test pace.",
+      hasData: false,
+    };
+  }
+
+  if (snapshot.metricsLoadError) {
+    return {
+      summary: "Could not load CSS.",
+      detail: snapshot.metricsLoadError,
+      hasData: false,
+    };
+  }
+
+  if (!snapshot.cssMetric) {
+    return {
+      summary: "No CSS saved yet.",
+      detail: "Add your current pace per 100m so later generator work has a trusted baseline.",
+      hasData: false,
+    };
+  }
+
+  return {
+    summary: `${snapshot.cssMetric.paceLabel}/100m`,
+    detail: [
+      snapshot.cssMetric.recordedOn ?? "Recorded date not set",
+      snapshot.cssMetric.sourceNote,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    hasData: true,
+  };
+}
+
+function buildPreferencesSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
+  if (!snapshot.preferencesSchemaReady) {
+    return {
+      summary: "Training preferences are still syncing.",
+      detail: "Open this section later to save planning defaults.",
+      hasData: false,
+    };
+  }
+
+  if (snapshot.preferencesLoadError) {
+    return {
+      summary: "Could not load training preferences.",
+      detail: snapshot.preferencesLoadError,
+      hasData: false,
+    };
+  }
+
+  if (!snapshot.preferences) {
+    return {
+      summary: "No training preferences saved yet.",
+      detail: "Add the pool and weekly defaults you want later sessions to respect.",
+      hasData: false,
+    };
+  }
+
+  const summaryParts = [
+    snapshot.preferences.poolLengthLabel ?? "Pool not set",
+    snapshot.preferences.preferredWeeklySessionCount
+      ? `${snapshot.preferences.preferredWeeklySessionCount} sessions/week`
+      : "Weekly count not set",
+    snapshot.preferences.preferredSessionMinutesLabel ?? "Duration not set",
+  ];
+  const availableDays =
+    snapshot.preferences.availableDayLabels.length > 0
+      ? buildAvailableDaysSummary(snapshot.preferences.availableDayLabels)
+      : "Available days not set";
+
+  return {
+    summary: summaryParts.join(" · "),
+    detail: availableDays,
+    hasData: true,
+  };
+}
+
+function buildRecordsSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
+  if (!snapshot.personalRecordsSchemaReady) {
+    return {
+      summary: "Personal records are still syncing.",
+      detail: "Open this section later to manage saved bests.",
+      hasData: false,
+    };
+  }
+
+  if (snapshot.personalRecordsLoadError) {
+    return {
+      summary: "Could not load personal records.",
+      detail: snapshot.personalRecordsLoadError,
+      hasData: false,
+    };
+  }
+
+  if (snapshot.personalRecords.length === 0) {
+    return {
+      summary: "No personal records saved yet.",
+      detail: "Start with the events you use most in training.",
+      hasData: false,
+    };
+  }
+
+  return {
+    summary: `${snapshot.personalRecords.length} current record${
+      snapshot.personalRecords.length === 1 ? "" : "s"
+    } saved.`,
+    detail: snapshot.personalRecords
+      .slice(0, 2)
+      .map((record) => record.eventLabel)
+      .join(" · "),
+    hasData: true,
+  };
+}
+
+function getNoticeClasses(kind: "error" | "success") {
+  return kind === "error"
+    ? "rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-900"
+    : "rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900";
+}
+
 export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [profileDraft, setProfileDraft] = useState(() =>
@@ -175,6 +396,16 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const [isClientReady, setIsClientReady] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeStatusSection, setActiveStatusSection] = useState<ProfileSectionKey | null>(null);
+  const [sectionOpenState, setSectionOpenState] = useState<SectionDisclosureState>(() =>
+    buildDefaultDisclosureState({
+      snapshot: initialSnapshot,
+      hasProfileDraft: false,
+      hasCssDraft: false,
+      hasPreferencesDraft: false,
+      hasRecordDraft: false,
+    })
+  );
   const [pendingProfileSave, setPendingProfileSave] = useState(false);
   const [pendingCssSave, setPendingCssSave] = useState(false);
   const [pendingPreferencesSave, setPendingPreferencesSave] = useState(false);
@@ -189,6 +420,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const cssStorageKey = useMemo(() => getStorageKey(userId, "css"), [userId]);
   const preferencesStorageKey = useMemo(() => getStorageKey(userId, "preferences"), [userId]);
   const recordStorageKey = useMemo(() => getStorageKey(userId, "records"), [userId]);
+  const disclosureStorageKey = useMemo(() => getDisclosureStorageKey(userId), [userId]);
 
   const savedProfileDraft = useMemo(() => buildProfileDraft(snapshot.profile), [snapshot.profile]);
   const savedCssDraft = useMemo(
@@ -236,11 +468,24 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     const storedCssDraft = getStorageValue(cssStorageKey, nextCssFallback);
     const storedPreferencesDraft = getStorageValue(preferencesStorageKey, nextPreferencesFallback);
     const storedRecordDraft = getStorageValue(recordStorageKey, nextRecordFallback);
+    const fallbackDisclosureState = buildDefaultDisclosureState({
+      snapshot: initialSnapshot,
+      hasProfileDraft: serializeDraft(storedProfileDraft) !== serializeDraft(nextProfileFallback),
+      hasCssDraft: serializeDraft(storedCssDraft) !== serializeDraft(nextCssFallback),
+      hasPreferencesDraft:
+        serializeDraft(storedPreferencesDraft) !== serializeDraft(nextPreferencesFallback),
+      hasRecordDraft: serializeDraft(storedRecordDraft) !== serializeDraft(nextRecordFallback),
+    });
+    const storedDisclosureState = normalizeDisclosureState(
+      getStorageValue(disclosureStorageKey, fallbackDisclosureState),
+      fallbackDisclosureState
+    );
 
     setProfileDraft(storedProfileDraft);
     setCssDraft(storedCssDraft);
     setPreferencesDraft(storedPreferencesDraft);
     setRecordDraft(storedRecordDraft);
+    setSectionOpenState(storedDisclosureState);
 
     setProfileDraftRecovered(
       serializeDraft(storedProfileDraft) !== serializeDraft(nextProfileFallback)
@@ -253,6 +498,8 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       serializeDraft(storedRecordDraft) !== serializeDraft(nextRecordFallback)
     );
     setActionError("");
+    setActionSuccess("");
+    setActiveStatusSection(null);
     setIsClientReady(true);
 
     function onOnline() {
@@ -272,6 +519,8 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     };
   }, [
     cssStorageKey,
+    disclosureStorageKey,
+    initialSnapshot,
     initialSnapshot.cssMetric,
     initialSnapshot.personalRecords,
     initialSnapshot.preferences,
@@ -317,15 +566,78 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setStorageValue(recordStorageKey, recordDraft);
   }, [recordDraft, recordStorageKey, savedRecordDraft]);
 
+  useEffect(() => {
+    if (!isClientReady) {
+      return;
+    }
+
+    setStorageValue(disclosureStorageKey, sectionOpenState);
+  }, [disclosureStorageKey, isClientReady, sectionOpenState]);
+
   async function parseError(response: Response, fallback: string) {
     const payload = (await response.json().catch(() => null)) as ApiError | null;
     return payload?.error || fallback;
   }
 
+  function setGlobalStatus(message: string, kind: "error" | "success") {
+    setActiveStatusSection(null);
+    setActionError(kind === "error" ? message : "");
+    setActionSuccess(kind === "success" ? message : "");
+  }
+
+  function setSectionStatus(
+    section: ProfileSectionKey,
+    message: string,
+    kind: "error" | "success",
+    options?: { collapse?: boolean }
+  ) {
+    setActiveStatusSection(section);
+    setActionError(kind === "error" ? message : "");
+    setActionSuccess(kind === "success" ? message : "");
+
+    if (kind === "error") {
+      setSectionOpenState((current) => ({ ...current, [section]: true }));
+      return;
+    }
+
+    if (options?.collapse) {
+      setSectionOpenState((current) => ({ ...current, [section]: false }));
+    }
+  }
+
+  function toggleSection(section: ProfileSectionKey) {
+    setSectionOpenState((current) => ({ ...current, [section]: !current[section] }));
+  }
+
+  function setSectionOpen(section: ProfileSectionKey, nextOpen: boolean) {
+    setSectionOpenState((current) => ({ ...current, [section]: nextOpen }));
+  }
+
+  function getSectionNotice(section: ProfileSectionKey) {
+    if (activeStatusSection !== section) {
+      return null;
+    }
+
+    if (actionError) {
+      return {
+        kind: "error" as const,
+        message: actionError,
+      };
+    }
+
+    if (actionSuccess) {
+      return {
+        kind: "success" as const,
+        message: actionSuccess,
+      };
+    }
+
+    return null;
+  }
+
   async function refreshProfile() {
     setIsRefreshing(true);
-    setActionError("");
-    setActionSuccess("");
+    setGlobalStatus("", "success");
 
     try {
       const response = await fetch("/api/my-library/profile", {
@@ -334,13 +646,16 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       });
 
       if (!response.ok) {
-        setActionError(await parseError(response, "Could not refresh training setup right now."));
+        setGlobalStatus(
+          await parseError(response, "Could not refresh training setup right now."),
+          "error"
+        );
         return;
       }
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setActionError("Could not refresh training setup right now.");
+        setGlobalStatus("Could not refresh training setup right now.", "error");
         return;
       }
 
@@ -373,7 +688,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         personalRecordCount: payload.snapshot.personalRecords.length,
       });
     } catch {
-      setActionError("Could not refresh training setup right now.");
+      setGlobalStatus("Could not refresh training setup right now.", "error");
     } finally {
       setIsRefreshing(false);
     }
@@ -383,18 +698,22 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     event.preventDefault();
 
     if (!snapshot.profileSchemaReady) {
-      setActionError("Athlete profile is still syncing in this environment.");
+      setSectionStatus("profile", "Athlete profile is still syncing in this environment.", "error");
       return;
     }
 
     if (!isOnline) {
-      setActionError("You are offline. Reconnect before saving athlete profile.");
+      setSectionStatus(
+        "profile",
+        "You are offline. Reconnect before saving athlete profile.",
+        "error"
+      );
       return;
     }
 
     setPendingProfileSave(true);
-    setActionError("");
-    setActionSuccess("");
+    setSectionStatus("profile", "", "success");
+    setSectionOpen("profile", true);
 
     try {
       const response = await fetch("/api/my-library/profile", {
@@ -406,13 +725,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       });
 
       if (!response.ok) {
-        setActionError(await parseError(response, "Could not save athlete profile right now."));
+        setSectionStatus(
+          "profile",
+          await parseError(response, "Could not save athlete profile right now."),
+          "error"
+        );
         return;
       }
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setActionError("Could not save athlete profile right now.");
+        setSectionStatus("profile", "Could not save athlete profile right now.", "error");
         return;
       }
 
@@ -421,14 +744,14 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       setProfileDraft(nextDraft);
       clearStorageValue(profileStorageKey);
       setProfileDraftRecovered(false);
-      setActionSuccess("Athlete profile saved.");
+      setSectionStatus("profile", "Athlete profile saved.", "success", { collapse: true });
 
       void sendClientAnalyticsEvent("athlete_profile_saved", {
         hasAgeBand: Boolean(payload.snapshot.profile?.ageBand),
         hasDisplayName: Boolean(payload.snapshot.profile?.displayName),
       });
     } catch {
-      setActionError("Could not save athlete profile right now.");
+      setSectionStatus("profile", "Could not save athlete profile right now.", "error");
     } finally {
       setPendingProfileSave(false);
     }
@@ -438,18 +761,18 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     event.preventDefault();
 
     if (!snapshot.metricsSchemaReady) {
-      setActionError("Training metrics are still syncing in this environment.");
+      setSectionStatus("css", "Training metrics are still syncing in this environment.", "error");
       return;
     }
 
     if (!isOnline) {
-      setActionError("You are offline. Reconnect before saving CSS.");
+      setSectionStatus("css", "You are offline. Reconnect before saving CSS.", "error");
       return;
     }
 
     setPendingCssSave(true);
-    setActionError("");
-    setActionSuccess("");
+    setSectionStatus("css", "", "success");
+    setSectionOpen("css", true);
 
     try {
       const response = await fetch("/api/my-library/profile/metrics", {
@@ -461,13 +784,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       });
 
       if (!response.ok) {
-        setActionError(await parseError(response, "Could not save CSS right now."));
+        setSectionStatus(
+          "css",
+          await parseError(response, "Could not save CSS right now."),
+          "error"
+        );
         return;
       }
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setActionError("Could not save CSS right now.");
+        setSectionStatus("css", "Could not save CSS right now.", "error");
         return;
       }
 
@@ -476,14 +803,19 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       setCssDraft(nextDraft);
       clearStorageValue(cssStorageKey);
       setCssDraftRecovered(false);
-      setActionSuccess(payload.snapshot.cssMetric ? "CSS saved." : "CSS cleared.");
+      setSectionStatus(
+        "css",
+        payload.snapshot.cssMetric ? "CSS saved." : "CSS cleared.",
+        "success",
+        { collapse: true }
+      );
 
       void sendClientAnalyticsEvent("training_metric_saved", {
         metricKey: payload.snapshot.cssMetric?.metricKey ?? "css",
         hasCssMetric: Boolean(payload.snapshot.cssMetric),
       });
     } catch {
-      setActionError("Could not save CSS right now.");
+      setSectionStatus("css", "Could not save CSS right now.", "error");
     } finally {
       setPendingCssSave(false);
     }
@@ -493,18 +825,26 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     event.preventDefault();
 
     if (!snapshot.preferencesSchemaReady) {
-      setActionError("Training preferences are still syncing in this environment.");
+      setSectionStatus(
+        "preferences",
+        "Training preferences are still syncing in this environment.",
+        "error"
+      );
       return;
     }
 
     if (!isOnline) {
-      setActionError("You are offline. Reconnect before saving training preferences.");
+      setSectionStatus(
+        "preferences",
+        "You are offline. Reconnect before saving training preferences.",
+        "error"
+      );
       return;
     }
 
     setPendingPreferencesSave(true);
-    setActionError("");
-    setActionSuccess("");
+    setSectionStatus("preferences", "", "success");
+    setSectionOpen("preferences", true);
 
     try {
       const response = await fetch("/api/my-library/profile/preferences", {
@@ -516,15 +856,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       });
 
       if (!response.ok) {
-        setActionError(
-          await parseError(response, "Could not save training preferences right now.")
+        setSectionStatus(
+          "preferences",
+          await parseError(response, "Could not save training preferences right now."),
+          "error"
         );
         return;
       }
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setActionError("Could not save training preferences right now.");
+        setSectionStatus("preferences", "Could not save training preferences right now.", "error");
         return;
       }
 
@@ -533,10 +875,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       setPreferencesDraft(nextDraft);
       clearStorageValue(preferencesStorageKey);
       setPreferencesDraftRecovered(false);
-      setActionSuccess(
+      setSectionStatus(
+        "preferences",
         payload.snapshot.preferences
           ? "Training preferences saved."
-          : "Training preferences cleared."
+          : "Training preferences cleared.",
+        "success",
+        { collapse: true }
       );
 
       void sendClientAnalyticsEvent("training_preferences_saved", {
@@ -544,7 +889,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         availableDayCount: payload.snapshot.preferences?.availableDays.length ?? 0,
       });
     } catch {
-      setActionError("Could not save training preferences right now.");
+      setSectionStatus("preferences", "Could not save training preferences right now.", "error");
     } finally {
       setPendingPreferencesSave(false);
     }
@@ -554,18 +899,26 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     event.preventDefault();
 
     if (!snapshot.personalRecordsSchemaReady) {
-      setActionError("Personal records are still syncing in this environment.");
+      setSectionStatus(
+        "records",
+        "Personal records are still syncing in this environment.",
+        "error"
+      );
       return;
     }
 
     if (!isOnline) {
-      setActionError("You are offline. Reconnect before saving personal records.");
+      setSectionStatus(
+        "records",
+        "You are offline. Reconnect before saving personal records.",
+        "error"
+      );
       return;
     }
 
     setPendingRecordSave(true);
-    setActionError("");
-    setActionSuccess("");
+    setSectionStatus("records", "", "success");
+    setSectionOpen("records", true);
 
     const isEditing = Boolean(recordDraft.editingRecordId);
     const requestUrl = recordDraft.editingRecordId
@@ -583,13 +936,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       });
 
       if (!response.ok) {
-        setActionError(await parseError(response, "Could not save personal record right now."));
+        setSectionStatus(
+          "records",
+          await parseError(response, "Could not save personal record right now."),
+          "error"
+        );
         return;
       }
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setActionError("Could not save personal record right now.");
+        setSectionStatus("records", "Could not save personal record right now.", "error");
         return;
       }
 
@@ -601,7 +958,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       setRecordDraft(nextDraft);
       clearStorageValue(recordStorageKey);
       setRecordDraftRecovered(false);
-      setActionSuccess(isEditing ? "Personal record updated." : "Personal record saved.");
+      setSectionStatus(
+        "records",
+        isEditing ? "Personal record updated." : "Personal record saved.",
+        "success",
+        { collapse: true }
+      );
 
       const savedRecord = findRecordById(
         payload.snapshot.personalRecords,
@@ -612,7 +974,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         hasRecordedOn: Boolean(savedRecord?.recordedOn),
       });
     } catch {
-      setActionError("Could not save personal record right now.");
+      setSectionStatus("records", "Could not save personal record right now.", "error");
     } finally {
       setPendingRecordSave(false);
     }
@@ -620,12 +982,20 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
   async function deletePersonalRecord(record: PersonalRecordView) {
     if (!snapshot.personalRecordsSchemaReady) {
-      setActionError("Personal records are still syncing in this environment.");
+      setSectionStatus(
+        "records",
+        "Personal records are still syncing in this environment.",
+        "error"
+      );
       return;
     }
 
     if (!isOnline) {
-      setActionError("You are offline. Reconnect before deleting personal records.");
+      setSectionStatus(
+        "records",
+        "You are offline. Reconnect before deleting personal records.",
+        "error"
+      );
       return;
     }
 
@@ -634,8 +1004,8 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     }
 
     setPendingRecordDeleteId(record.id);
-    setActionError("");
-    setActionSuccess("");
+    setSectionStatus("records", "", "success");
+    setSectionOpen("records", true);
 
     try {
       const response = await fetch(`/api/my-library/profile/records/${record.id}`, {
@@ -643,13 +1013,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       });
 
       if (!response.ok) {
-        setActionError(await parseError(response, "Could not delete personal record right now."));
+        setSectionStatus(
+          "records",
+          await parseError(response, "Could not delete personal record right now."),
+          "error"
+        );
         return;
       }
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setActionError("Could not delete personal record right now.");
+        setSectionStatus("records", "Could not delete personal record right now.", "error");
         return;
       }
 
@@ -661,13 +1035,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         setRecordDraftRecovered(false);
       }
 
-      setActionSuccess("Personal record deleted.");
+      setSectionStatus("records", "Personal record deleted.", "success");
 
       void sendClientAnalyticsEvent("personal_record_deleted", {
         eventLabel: record.eventLabel,
       });
     } catch {
-      setActionError("Could not delete personal record right now.");
+      setSectionStatus("records", "Could not delete personal record right now.", "error");
     } finally {
       setPendingRecordDeleteId(null);
     }
@@ -677,51 +1051,49 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setProfileDraft(savedProfileDraft);
     clearStorageValue(profileStorageKey);
     setProfileDraftRecovered(false);
-    setActionError("");
-    setActionSuccess("Draft reset to saved athlete profile.");
+    setSectionStatus("profile", "Draft reset to saved athlete profile.", "success");
   }
 
   function resetCssDraftToSaved() {
     setCssDraft(savedCssDraft);
     clearStorageValue(cssStorageKey);
     setCssDraftRecovered(false);
-    setActionError("");
-    setActionSuccess("Draft reset to saved CSS.");
+    setSectionStatus("css", "Draft reset to saved CSS.", "success");
   }
 
   function resetPreferencesDraftToSaved() {
     setPreferencesDraft(savedPreferencesDraft);
     clearStorageValue(preferencesStorageKey);
     setPreferencesDraftRecovered(false);
-    setActionError("");
-    setActionSuccess("Draft reset to saved training preferences.");
+    setSectionStatus("preferences", "Draft reset to saved training preferences.", "success");
   }
 
   function resetRecordDraftToSaved() {
     setRecordDraft(savedRecordDraft);
     clearStorageValue(recordStorageKey);
     setRecordDraftRecovered(false);
-    setActionError("");
-    setActionSuccess(
+    setSectionStatus(
+      "records",
       recordDraft.editingRecordId
         ? "Draft reset to saved personal record."
-        : "Draft reset to a new personal record."
+        : "Draft reset to a new personal record.",
+      "success"
     );
   }
 
   function startEditingRecord(record: PersonalRecordView) {
     setRecordDraft(buildPersonalRecordDraft(record));
     setRecordDraftRecovered(false);
-    setActionError("");
-    setActionSuccess(`Editing ${record.eventLabel}.`);
+    setSectionOpen("records", true);
+    setSectionStatus("records", `Editing ${record.eventLabel}.`, "success");
   }
 
   function startNewRecord() {
     setRecordDraft(buildPersonalRecordDraft(null));
     clearStorageValue(recordStorageKey);
     setRecordDraftRecovered(false);
-    setActionError("");
-    setActionSuccess("Ready to add a new personal record.");
+    setSectionOpen("records", true);
+    setSectionStatus("records", "Ready to add a new personal record.", "success");
   }
 
   function toggleAvailableDay(day: TrainingWeekday) {
@@ -744,6 +1116,16 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     lastName: profileDraft.lastName.trim() || null,
   });
   const currentEditedRecord = findRecordById(snapshot.personalRecords, recordDraft.editingRecordId);
+  const profileSummary = buildProfileSectionSummary(snapshot);
+  const cssSummary = buildCssSectionSummary(snapshot);
+  const preferencesSummary = buildPreferencesSectionSummary(snapshot);
+  const recordsSummary = buildRecordsSectionSummary(snapshot);
+  const profileNotice = getSectionNotice("profile");
+  const cssNotice = getSectionNotice("css");
+  const preferencesNotice = getSectionNotice("preferences");
+  const recordsNotice = getSectionNotice("records");
+  const globalActionError = activeStatusSection === null ? actionError : "";
+  const globalActionSuccess = activeStatusSection === null ? actionSuccess : "";
 
   return (
     <div
@@ -782,21 +1164,21 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         </div>
       ) : null}
 
-      {actionError ? (
+      {globalActionError ? (
         <div
           className="rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-900"
           role="alert"
         >
-          {actionError}
+          {globalActionError}
         </div>
       ) : null}
 
-      {actionSuccess ? (
+      {globalActionSuccess ? (
         <div
           className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900"
           aria-live="polite"
         >
-          {actionSuccess}
+          {globalActionSuccess}
         </div>
       ) : null}
 
@@ -811,727 +1193,791 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="text-lg font-semibold text-slate-900">Current athlete profile</h2>
-          {!snapshot.profileSchemaReady ? (
-            <p className="mt-3 text-sm text-amber-800">
-              Athlete profile is still syncing in this environment.
+      <section
+        data-testid="athlete-profile-section-profile"
+        data-section-open={sectionOpenState.profile ? "true" : "false"}
+        className="rounded-3xl border border-slate-200 bg-white p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Athlete profile
             </p>
-          ) : snapshot.loadError ? (
-            <p className="mt-3 text-sm text-rose-700">{snapshot.loadError}</p>
-          ) : !snapshot.profile ? (
-            <p className="mt-3 text-sm text-slate-600">No private athlete profile is saved yet.</p>
-          ) : (
-            <div className="mt-4 space-y-3 text-sm text-slate-700">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Primary name
-                </p>
-                <p className="mt-2 text-base font-semibold text-slate-900">
-                  {snapshot.profile.primaryName ?? "Private swimmer"}
-                </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Display name
-                    </p>
-                    <p className="mt-1">{snapshot.profile.displayName ?? "Not set"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Age band
-                    </p>
-                    <p className="mt-1">{snapshot.profile.ageBandLabel ?? "Not set"}</p>
-                  </div>
-                </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">Athlete identity</h2>
+              {hasUnsavedProfileChanges ? (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                  Unsaved edits
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm font-medium text-slate-900">{profileSummary.summary}</p>
+            <p className="text-sm text-slate-600">{profileSummary.detail}</p>
+          </div>
+          <button
+            type="button"
+            data-testid="athlete-profile-section-toggle-profile"
+            aria-expanded={sectionOpenState.profile}
+            aria-controls="athlete-profile-section-body-profile"
+            onClick={() => toggleSection("profile")}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            {sectionOpenState.profile
+              ? "Collapse"
+              : profileSummary.hasData
+                ? "Edit profile"
+                : "Open profile"}
+          </button>
+        </div>
+
+        {profileNotice && !sectionOpenState.profile ? (
+          <div
+            className={`mt-4 ${getNoticeClasses(profileNotice.kind)}`}
+            role={profileNotice.kind === "error" ? "alert" : undefined}
+            aria-live={profileNotice.kind === "success" ? "polite" : undefined}
+          >
+            {profileNotice.message}
+          </div>
+        ) : null}
+
+        {sectionOpenState.profile ? (
+          <form
+            id="athlete-profile-section-body-profile"
+            onSubmit={saveProfile}
+            className="mt-5 border-t border-slate-200 pt-5"
+          >
+            {profileNotice ? (
+              <div
+                className={`${getNoticeClasses(profileNotice.kind)} mb-4`}
+                role={profileNotice.kind === "error" ? "alert" : undefined}
+                aria-live={profileNotice.kind === "success" ? "polite" : undefined}
+              >
+                {profileNotice.message}
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="max-w-2xl text-sm text-slate-600">
+                Save enough private swimmer context to make this feel like your own training space.
+              </p>
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                {primaryName ?? "Private swimmer"}
               </div>
             </div>
-          )}
-        </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="text-lg font-semibold text-slate-900">Current CSS</h2>
-          {!snapshot.metricsSchemaReady ? (
-            <p className="mt-3 text-sm text-amber-800">
-              Training metrics are still syncing in this environment.
-            </p>
-          ) : snapshot.metricsLoadError ? (
-            <p className="mt-3 text-sm text-rose-700">{snapshot.metricsLoadError}</p>
-          ) : !snapshot.cssMetric ? (
-            <p className="mt-3 text-sm text-slate-600">
-              No CSS is saved yet. Add your current pace per 100m so later generator work has a
-              trusted baseline.
-            </p>
-          ) : (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Canonical pace
-              </p>
-              <p className="mt-2 text-base font-semibold text-slate-900">
-                {snapshot.cssMetric.paceLabel}/100m
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Recorded on
-                  </p>
-                  <p className="mt-1">{snapshot.cssMetric.recordedOn ?? "Not set"}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Source note
-                  </p>
-                  <p className="mt-1">{snapshot.cssMetric.sourceNote ?? "Not set"}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Display name</span>
+                <input
+                  data-testid="athlete-profile-display-name"
+                  type="text"
+                  value={profileDraft.displayName}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({ ...current, displayName: event.target.value }))
+                  }
+                  placeholder="How you want your swimmer profile to read"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="text-lg font-semibold text-slate-900">Current preferences</h2>
-          {!snapshot.preferencesSchemaReady ? (
-            <p className="mt-3 text-sm text-amber-800">
-              Training preferences are still syncing in this environment.
-            </p>
-          ) : snapshot.preferencesLoadError ? (
-            <p className="mt-3 text-sm text-rose-700">{snapshot.preferencesLoadError}</p>
-          ) : !snapshot.preferences ? (
-            <p className="mt-3 text-sm text-slate-600">
-              No training preferences are saved yet. Add the pool and weekly defaults you want later
-              session generation to respect.
-            </p>
-          ) : (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700">
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Pool length
-                  </p>
-                  <p className="mt-1">{snapshot.preferences.poolLengthLabel ?? "Not set"}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Weekly sessions
-                  </p>
-                  <p className="mt-1">
-                    {snapshot.preferences.preferredWeeklySessionCount ?? "Not set"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Preferred duration
-                  </p>
-                  <p className="mt-1">
-                    {snapshot.preferences.preferredSessionMinutesLabel ?? "Not set"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Available days
-                  </p>
-                  <p className="mt-1">
-                    {snapshot.preferences.availableDayLabels.length > 0
-                      ? buildAvailableDaysSummary(snapshot.preferences.availableDayLabels)
-                      : "Not set"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="text-lg font-semibold text-slate-900">Current personal records</h2>
-          {!snapshot.personalRecordsSchemaReady ? (
-            <p className="mt-3 text-sm text-amber-800">
-              Personal records are still syncing in this environment.
-            </p>
-          ) : snapshot.personalRecordsLoadError ? (
-            <p className="mt-3 text-sm text-rose-700">{snapshot.personalRecordsLoadError}</p>
-          ) : snapshot.personalRecords.length === 0 ? (
-            <p className="mt-3 text-sm text-slate-600">
-              No personal records are saved yet. Add explicit swim events and times you want to
-              reuse later.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              <p className="text-sm text-slate-600">
-                {snapshot.personalRecords.length} current record
-                {snapshot.personalRecords.length === 1 ? "" : "s"} saved privately.
-              </p>
-              {snapshot.personalRecords.slice(0, 3).map((record) => (
-                <div
-                  key={record.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700"
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Age band</span>
+                <select
+                  data-testid="athlete-profile-age-band"
+                  value={profileDraft.ageBand}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      ageBand: event.target.value as AthleteAgeBand | "",
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
+                  <option value="">Not set</option>
+                  {ATHLETE_AGE_BAND_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>First name</span>
+                <input
+                  data-testid="athlete-profile-first-name"
+                  type="text"
+                  value={profileDraft.firstName}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({ ...current, firstName: event.target.value }))
+                  }
+                  placeholder="Optional"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Last name</span>
+                <input
+                  data-testid="athlete-profile-last-name"
+                  type="text"
+                  value={profileDraft.lastName}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({ ...current, lastName: event.target.value }))
+                  }
+                  placeholder="Optional"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <button
+                data-testid="athlete-profile-save"
+                type="submit"
+                disabled={pendingProfileSave || !isOnline}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {pendingProfileSave ? "Saving..." : "Save athlete profile"}
+              </button>
+              <button
+                type="button"
+                onClick={resetProfileDraftToSaved}
+                disabled={!hasUnsavedProfileChanges}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                Reset draft
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </section>
+
+      <section
+        data-testid="athlete-profile-section-css"
+        data-section-open={sectionOpenState.css ? "true" : "false"}
+        className="rounded-3xl border border-slate-200 bg-white p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">CSS</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">Current CSS pace</h2>
+              {hasUnsavedCssChanges ? (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                  Unsaved edits
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm font-medium text-slate-900">{cssSummary.summary}</p>
+            <p className="text-sm text-slate-600">{cssSummary.detail}</p>
+          </div>
+          <button
+            type="button"
+            data-testid="athlete-profile-section-toggle-css"
+            aria-expanded={sectionOpenState.css}
+            aria-controls="athlete-profile-section-body-css"
+            onClick={() => toggleSection("css")}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            {sectionOpenState.css ? "Collapse" : cssSummary.hasData ? "Edit CSS" : "Open CSS"}
+          </button>
+        </div>
+
+        {cssNotice && !sectionOpenState.css ? (
+          <div
+            className={`mt-4 ${getNoticeClasses(cssNotice.kind)}`}
+            role={cssNotice.kind === "error" ? "alert" : undefined}
+            aria-live={cssNotice.kind === "success" ? "polite" : undefined}
+          >
+            {cssNotice.message}
+          </div>
+        ) : null}
+
+        {sectionOpenState.css ? (
+          <form
+            id="athlete-profile-section-body-css"
+            onSubmit={saveCssMetric}
+            className="mt-5 border-t border-slate-200 pt-5"
+          >
+            {cssNotice ? (
+              <div
+                className={`${getNoticeClasses(cssNotice.kind)} mb-4`}
+                role={cssNotice.kind === "error" ? "alert" : undefined}
+                aria-live={cssNotice.kind === "success" ? "polite" : undefined}
+              >
+                {cssNotice.message}
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="max-w-2xl text-sm text-slate-600">
+                Save your current critical swim speed as pace per 100m so later generator work can
+                trust one canonical value.
+              </p>
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                Stored canonically as seconds per 100m
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>CSS pace (m:ss)</span>
+                <input
+                  data-testid="athlete-profile-css-pace"
+                  type="text"
+                  inputMode="numeric"
+                  value={cssDraft.pace}
+                  onChange={(event) =>
+                    setCssDraft((current) => ({ ...current, pace: event.target.value }))
+                  }
+                  placeholder="1:58"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Recorded on</span>
+                <input
+                  data-testid="athlete-profile-css-recorded-on"
+                  type="date"
+                  value={cssDraft.recordedOn}
+                  onChange={(event) =>
+                    setCssDraft((current) => ({ ...current, recordedOn: event.target.value }))
+                  }
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-3">
+                <span>Source note</span>
+                <textarea
+                  data-testid="athlete-profile-css-source-note"
+                  value={cssDraft.sourceNote}
+                  onChange={(event) =>
+                    setCssDraft((current) => ({ ...current, sourceNote: event.target.value }))
+                  }
+                  placeholder="Optional note about the test set or source"
+                  rows={3}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <button
+                data-testid="athlete-profile-css-save"
+                type="submit"
+                disabled={pendingCssSave || !isOnline}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-cyan-600 px-4 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {pendingCssSave ? "Saving..." : "Save CSS"}
+              </button>
+              <button
+                data-testid="athlete-profile-css-reset"
+                type="button"
+                onClick={resetCssDraftToSaved}
+                disabled={!hasUnsavedCssChanges}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                Reset draft
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </section>
+
+      <section
+        data-testid="athlete-profile-section-preferences"
+        data-section-open={sectionOpenState.preferences ? "true" : "false"}
+        className="rounded-3xl border border-slate-200 bg-white p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Preferences
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">Training defaults</h2>
+              {hasUnsavedPreferencesChanges ? (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                  Unsaved edits
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm font-medium text-slate-900">{preferencesSummary.summary}</p>
+            <p className="text-sm text-slate-600">{preferencesSummary.detail}</p>
+          </div>
+          <button
+            type="button"
+            data-testid="athlete-profile-section-toggle-preferences"
+            aria-expanded={sectionOpenState.preferences}
+            aria-controls="athlete-profile-section-body-preferences"
+            onClick={() => toggleSection("preferences")}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            {sectionOpenState.preferences
+              ? "Collapse"
+              : preferencesSummary.hasData
+                ? "Edit preferences"
+                : "Open preferences"}
+          </button>
+        </div>
+
+        {preferencesNotice && !sectionOpenState.preferences ? (
+          <div
+            className={`mt-4 ${getNoticeClasses(preferencesNotice.kind)}`}
+            role={preferencesNotice.kind === "error" ? "alert" : undefined}
+            aria-live={preferencesNotice.kind === "success" ? "polite" : undefined}
+          >
+            {preferencesNotice.message}
+          </div>
+        ) : null}
+
+        {sectionOpenState.preferences ? (
+          <form
+            id="athlete-profile-section-body-preferences"
+            onSubmit={savePreferences}
+            className="mt-5 border-t border-slate-200 pt-5"
+          >
+            {preferencesNotice ? (
+              <div
+                className={`${getNoticeClasses(preferencesNotice.kind)} mb-4`}
+                role={preferencesNotice.kind === "error" ? "alert" : undefined}
+                aria-live={preferencesNotice.kind === "success" ? "polite" : undefined}
+              >
+                {preferencesNotice.message}
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="max-w-2xl text-sm text-slate-600">
+                Save the pool and planning defaults you want later session generation to respect.
+              </p>
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                Private to your account
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Default pool length</span>
+                <select
+                  data-testid="athlete-preferences-pool-length"
+                  value={preferencesDraft.poolLengthM}
+                  onChange={(event) =>
+                    setPreferencesDraft((current) => ({
+                      ...current,
+                      poolLengthM: event.target.value as TrainingPreferencesDraft["poolLengthM"],
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">Not set</option>
+                  {TRAINING_POOL_LENGTH_OPTIONS.map((option) => (
+                    <option key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-slate-700">
+                <span>Preferred weekly session count</span>
+                <input
+                  data-testid="athlete-preferences-weekly-session-count"
+                  type="number"
+                  min={1}
+                  max={14}
+                  value={preferencesDraft.preferredWeeklySessionCount}
+                  onChange={(event) =>
+                    setPreferencesDraft((current) => ({
+                      ...current,
+                      preferredWeeklySessionCount: event.target.value,
+                    }))
+                  }
+                  placeholder="5"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2">
+                <span>Preferred session duration</span>
+                <select
+                  data-testid="athlete-preferences-session-minutes"
+                  value={preferencesDraft.preferredSessionMinutes}
+                  onChange={(event) =>
+                    setPreferencesDraft((current) => ({
+                      ...current,
+                      preferredSessionMinutes: event.target
+                        .value as TrainingPreferencesDraft["preferredSessionMinutes"],
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">Not set</option>
+                  {TRAINING_SESSION_DURATION_OPTIONS.map((option) => (
+                    <option key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <fieldset className="space-y-3 md:col-span-2">
+                <legend className="text-sm font-medium text-slate-700">
+                  Available training days
+                </legend>
+                <div className="grid gap-2 sm:grid-cols-4">
+                  {TRAINING_WEEKDAY_OPTIONS.map((option) => {
+                    const checked = preferencesDraft.availableDays.includes(option.value);
+
+                    return (
+                      <label
+                        key={option.value}
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                      >
+                        <input
+                          data-testid={`athlete-preferences-day-${option.value}`}
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleAvailableDay(option.value)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <button
+                data-testid="athlete-preferences-save"
+                type="submit"
+                disabled={pendingPreferencesSave || !isOnline}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {pendingPreferencesSave ? "Saving..." : "Save preferences"}
+              </button>
+              <button
+                data-testid="athlete-preferences-reset"
+                type="button"
+                onClick={resetPreferencesDraftToSaved}
+                disabled={!hasUnsavedPreferencesChanges}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                Reset draft
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </section>
+
+      <section
+        data-testid="athlete-profile-section-records"
+        data-section-open={sectionOpenState.records ? "true" : "false"}
+        className="rounded-3xl border border-slate-200 bg-white p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Personal records
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">Event bests</h2>
+              {hasUnsavedRecordChanges ? (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                  Unsaved edits
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm font-medium text-slate-900">{recordsSummary.summary}</p>
+            <p className="text-sm text-slate-600">{recordsSummary.detail}</p>
+          </div>
+          <button
+            type="button"
+            data-testid="athlete-profile-section-toggle-records"
+            aria-expanded={sectionOpenState.records}
+            aria-controls="athlete-profile-section-body-records"
+            onClick={() => toggleSection("records")}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            {sectionOpenState.records
+              ? "Collapse"
+              : recordsSummary.hasData
+                ? "Edit records"
+                : "Open records"}
+          </button>
+        </div>
+
+        {recordsNotice && !sectionOpenState.records ? (
+          <div
+            className={`mt-4 ${getNoticeClasses(recordsNotice.kind)}`}
+            role={recordsNotice.kind === "error" ? "alert" : undefined}
+            aria-live={recordsNotice.kind === "success" ? "polite" : undefined}
+          >
+            {recordsNotice.message}
+          </div>
+        ) : null}
+
+        {sectionOpenState.records ? (
+          <div
+            id="athlete-profile-section-body-records"
+            className="mt-5 border-t border-slate-200 pt-5"
+          >
+            {recordsNotice ? (
+              <div
+                className={`${getNoticeClasses(recordsNotice.kind)} mb-4`}
+                role={recordsNotice.kind === "error" ? "alert" : undefined}
+                aria-live={recordsNotice.kind === "success" ? "polite" : undefined}
+              >
+                {recordsNotice.message}
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="max-w-2xl text-sm text-slate-600">
+                Save one private current best per event so later generator work can reuse trusted
+                event context without guessing.
+              </p>
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                One current record per event
+              </div>
+            </div>
+
+            {!snapshot.personalRecordsSchemaReady ? (
+              <p className="mt-5 text-sm text-amber-800">
+                Personal records are still syncing in this environment.
+              </p>
+            ) : snapshot.personalRecordsLoadError ? (
+              <p className="mt-5 text-sm text-rose-700">{snapshot.personalRecordsLoadError}</p>
+            ) : (
+              <div className="mt-5 space-y-4">
+                {snapshot.personalRecords.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
+                    No personal records saved yet. Start with the events you use most in training.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {snapshot.personalRecords.map((record) => (
+                      <article
+                        key={record.id}
+                        className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-base font-semibold text-slate-900">
+                              {record.eventLabel}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-600">
+                              {record.timeLabel}
+                              {record.recordedOn ? ` · ${record.recordedOn}` : ""}
+                            </p>
+                            {record.sourceNote ? (
+                              <p className="mt-2 text-sm text-slate-600">{record.sourceNote}</p>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              data-testid={`athlete-record-edit-${record.id}`}
+                              onClick={() => startEditingRecord(record)}
+                              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={`athlete-record-delete-${record.id}`}
+                              onClick={() => void deletePersonalRecord(record)}
+                              disabled={pendingRecordDeleteId === record.id}
+                              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-rose-300"
+                            >
+                              {pendingRecordDeleteId === record.id ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+
+                <form
+                  onSubmit={savePersonalRecord}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-base font-semibold text-slate-900">{record.eventLabel}</p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {record.timeLabel}
-                        {record.recordedOn ? ` · ${record.recordedOn}` : ""}
+                      <h3 className="text-base font-semibold text-slate-900">
+                        {currentEditedRecord ? "Edit personal record" : "Add personal record"}
+                      </h3>
+                      <p className="mt-2 text-sm text-slate-600">
+                        Use explicit event identity and swimmer-friendly time input: `59.87`,
+                        `1:02.34`, or `1:01:02.34`.
                       </p>
                     </div>
-                    <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
-                      {record.courseLabel}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-slate-900">Why keep this here</h2>
-        <ul className="mt-3 space-y-2 text-sm text-slate-700">
-          <li>Profile stays about the swimmer. CSS stays about current test pace.</li>
-          <li>Preferences stay about practical planning defaults, not goals or notes.</li>
-          <li>Personal records stay about event-specific bests, not your current CSS test pace.</li>
-          <li>Later generator slices can reuse this context without redesigning the model.</li>
-        </ul>
-      </section>
-
-      <form onSubmit={saveProfile} className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Edit athlete profile</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Save enough private swimmer context to make this feel like your own training space.
-            </p>
-          </div>
-          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-            {primaryName ?? "Private swimmer"}
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            <span>Display name</span>
-            <input
-              data-testid="athlete-profile-display-name"
-              type="text"
-              value={profileDraft.displayName}
-              onChange={(event) =>
-                setProfileDraft((current) => ({ ...current, displayName: event.target.value }))
-              }
-              placeholder="How you want your swimmer profile to read"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            <span>Age band</span>
-            <select
-              data-testid="athlete-profile-age-band"
-              value={profileDraft.ageBand}
-              onChange={(event) =>
-                setProfileDraft((current) => ({
-                  ...current,
-                  ageBand: event.target.value as AthleteAgeBand | "",
-                }))
-              }
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">Not set</option>
-              {ATHLETE_AGE_BAND_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            <span>First name</span>
-            <input
-              data-testid="athlete-profile-first-name"
-              type="text"
-              value={profileDraft.firstName}
-              onChange={(event) =>
-                setProfileDraft((current) => ({ ...current, firstName: event.target.value }))
-              }
-              placeholder="Optional"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            <span>Last name</span>
-            <input
-              data-testid="athlete-profile-last-name"
-              type="text"
-              value={profileDraft.lastName}
-              onChange={(event) =>
-                setProfileDraft((current) => ({ ...current, lastName: event.target.value }))
-              }
-              placeholder="Optional"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <button
-            data-testid="athlete-profile-save"
-            type="submit"
-            disabled={pendingProfileSave || !isOnline}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {pendingProfileSave ? "Saving..." : "Save athlete profile"}
-          </button>
-          <button
-            type="button"
-            onClick={resetProfileDraftToSaved}
-            disabled={!hasUnsavedProfileChanges}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
-          >
-            Reset draft
-          </button>
-        </div>
-      </form>
-
-      <form onSubmit={saveCssMetric} className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Current CSS</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Save your current critical swim speed as pace per 100m so later generator work can
-              trust one canonical value.
-            </p>
-          </div>
-          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-            Stored canonically as seconds per 100m
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            <span>CSS pace (m:ss)</span>
-            <input
-              data-testid="athlete-profile-css-pace"
-              type="text"
-              inputMode="numeric"
-              value={cssDraft.pace}
-              onChange={(event) =>
-                setCssDraft((current) => ({ ...current, pace: event.target.value }))
-              }
-              placeholder="1:58"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            <span>Recorded on</span>
-            <input
-              data-testid="athlete-profile-css-recorded-on"
-              type="date"
-              value={cssDraft.recordedOn}
-              onChange={(event) =>
-                setCssDraft((current) => ({ ...current, recordedOn: event.target.value }))
-              }
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-3">
-            <span>Source note</span>
-            <textarea
-              data-testid="athlete-profile-css-source-note"
-              value={cssDraft.sourceNote}
-              onChange={(event) =>
-                setCssDraft((current) => ({ ...current, sourceNote: event.target.value }))
-              }
-              placeholder="Optional note about the test set or source"
-              rows={3}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <button
-            data-testid="athlete-profile-css-save"
-            type="submit"
-            disabled={pendingCssSave || !isOnline}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-cyan-600 px-4 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {pendingCssSave ? "Saving..." : "Save CSS"}
-          </button>
-          <button
-            data-testid="athlete-profile-css-reset"
-            type="button"
-            onClick={resetCssDraftToSaved}
-            disabled={!hasUnsavedCssChanges}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
-          >
-            Reset draft
-          </button>
-        </div>
-      </form>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Personal records</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Save one private current best per event so later generator work can reuse trusted
-              event context without guessing.
-            </p>
-          </div>
-          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-            One current record per event
-          </div>
-        </div>
-
-        {!snapshot.personalRecordsSchemaReady ? (
-          <p className="mt-5 text-sm text-amber-800">
-            Personal records are still syncing in this environment.
-          </p>
-        ) : snapshot.personalRecordsLoadError ? (
-          <p className="mt-5 text-sm text-rose-700">{snapshot.personalRecordsLoadError}</p>
-        ) : (
-          <div className="mt-5 space-y-4">
-            {snapshot.personalRecords.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
-                No personal records saved yet. Start with the events you use most in training.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {snapshot.personalRecords.map((record) => (
-                  <article
-                    key={record.id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-base font-semibold text-slate-900">
-                          {record.eventLabel}
-                        </h3>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {record.timeLabel}
-                          {record.recordedOn ? ` · ${record.recordedOn}` : ""}
-                        </p>
-                        {record.sourceNote ? (
-                          <p className="mt-2 text-sm text-slate-600">{record.sourceNote}</p>
-                        ) : null}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      {currentEditedRecord ? (
+                        <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                          Editing {currentEditedRecord.eventLabel}
+                        </div>
+                      ) : null}
+                      {currentEditedRecord ? (
                         <button
                           type="button"
-                          data-testid={`athlete-record-edit-${record.id}`}
-                          onClick={() => startEditingRecord(record)}
+                          onClick={startNewRecord}
                           className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                         >
-                          Edit
+                          Start new
                         </button>
-                        <button
-                          type="button"
-                          data-testid={`athlete-record-delete-${record.id}`}
-                          onClick={() => void deletePersonalRecord(record)}
-                          disabled={pendingRecordDeleteId === record.id}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-rose-300"
-                        >
-                          {pendingRecordDeleteId === record.id ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
+                      ) : null}
                     </div>
-                  </article>
-                ))}
+                  </div>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <label className="space-y-2 text-sm font-medium text-slate-700">
+                      <span>Distance (m)</span>
+                      <input
+                        data-testid="athlete-record-distance-m"
+                        type="number"
+                        min={25}
+                        max={100000}
+                        value={recordDraft.distanceM}
+                        onChange={(event) =>
+                          setRecordDraft((current) => ({
+                            ...current,
+                            distanceM: event.target.value,
+                          }))
+                        }
+                        placeholder="100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm font-medium text-slate-700">
+                      <span>Stroke</span>
+                      <select
+                        data-testid="athlete-record-stroke"
+                        value={recordDraft.stroke}
+                        onChange={(event) =>
+                          setRecordDraft((current) => ({
+                            ...current,
+                            stroke: event.target.value as PersonalRecordStroke | "",
+                          }))
+                        }
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">Choose stroke</option>
+                        {PERSONAL_RECORD_STROKE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="space-y-2 text-sm font-medium text-slate-700">
+                      <span>Course</span>
+                      <select
+                        data-testid="athlete-record-course"
+                        value={recordDraft.course}
+                        onChange={(event) =>
+                          setRecordDraft((current) => ({
+                            ...current,
+                            course: event.target.value as PersonalRecordCourse | "",
+                          }))
+                        }
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="">Choose course</option>
+                        {PERSONAL_RECORD_COURSE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="space-y-2 text-sm font-medium text-slate-700">
+                      <span>Time</span>
+                      <input
+                        data-testid="athlete-record-time"
+                        type="text"
+                        inputMode="decimal"
+                        value={recordDraft.time}
+                        onChange={(event) =>
+                          setRecordDraft((current) => ({ ...current, time: event.target.value }))
+                        }
+                        placeholder="1:02.34"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm font-medium text-slate-700">
+                      <span>Recorded on</span>
+                      <input
+                        data-testid="athlete-record-recorded-on"
+                        type="date"
+                        value={recordDraft.recordedOn}
+                        onChange={(event) =>
+                          setRecordDraft((current) => ({
+                            ...current,
+                            recordedOn: event.target.value,
+                          }))
+                        }
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-3">
+                      <span>Source note</span>
+                      <textarea
+                        data-testid="athlete-record-source-note"
+                        value={recordDraft.sourceNote}
+                        onChange={(event) =>
+                          setRecordDraft((current) => ({
+                            ...current,
+                            sourceNote: event.target.value,
+                          }))
+                        }
+                        placeholder="Optional note about meet, set, or source"
+                        rows={3}
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                    <button
+                      data-testid="athlete-record-save"
+                      type="submit"
+                      disabled={pendingRecordSave || !isOnline}
+                      className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      {pendingRecordSave
+                        ? "Saving..."
+                        : currentEditedRecord
+                          ? "Update personal record"
+                          : "Save personal record"}
+                    </button>
+                    <button
+                      data-testid="athlete-record-reset"
+                      type="button"
+                      onClick={resetRecordDraftToSaved}
+                      disabled={!hasUnsavedRecordChanges}
+                      className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    >
+                      Reset draft
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
-
-            <form
-              onSubmit={savePersonalRecord}
-              className="rounded-2xl border border-slate-200 bg-white p-5"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-semibold text-slate-900">
-                    {currentEditedRecord ? "Edit personal record" : "Add personal record"}
-                  </h3>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Use explicit event identity and swimmer-friendly time input: `59.87`, `1:02.34`,
-                    or `1:01:02.34`.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {currentEditedRecord ? (
-                    <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-                      Editing {currentEditedRecord.eventLabel}
-                    </div>
-                  ) : null}
-                  {currentEditedRecord ? (
-                    <button
-                      type="button"
-                      onClick={startNewRecord}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Start new
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <label className="space-y-2 text-sm font-medium text-slate-700">
-                  <span>Distance (m)</span>
-                  <input
-                    data-testid="athlete-record-distance-m"
-                    type="number"
-                    min={25}
-                    max={100000}
-                    value={recordDraft.distanceM}
-                    onChange={(event) =>
-                      setRecordDraft((current) => ({ ...current, distanceM: event.target.value }))
-                    }
-                    placeholder="100"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </label>
-
-                <label className="space-y-2 text-sm font-medium text-slate-700">
-                  <span>Stroke</span>
-                  <select
-                    data-testid="athlete-record-stroke"
-                    value={recordDraft.stroke}
-                    onChange={(event) =>
-                      setRecordDraft((current) => ({
-                        ...current,
-                        stroke: event.target.value as PersonalRecordStroke | "",
-                      }))
-                    }
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value="">Choose stroke</option>
-                    {PERSONAL_RECORD_STROKE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-2 text-sm font-medium text-slate-700">
-                  <span>Course</span>
-                  <select
-                    data-testid="athlete-record-course"
-                    value={recordDraft.course}
-                    onChange={(event) =>
-                      setRecordDraft((current) => ({
-                        ...current,
-                        course: event.target.value as PersonalRecordCourse | "",
-                      }))
-                    }
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value="">Choose course</option>
-                    {PERSONAL_RECORD_COURSE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-2 text-sm font-medium text-slate-700">
-                  <span>Time</span>
-                  <input
-                    data-testid="athlete-record-time"
-                    type="text"
-                    inputMode="decimal"
-                    value={recordDraft.time}
-                    onChange={(event) =>
-                      setRecordDraft((current) => ({ ...current, time: event.target.value }))
-                    }
-                    placeholder="1:02.34"
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </label>
-
-                <label className="space-y-2 text-sm font-medium text-slate-700">
-                  <span>Recorded on</span>
-                  <input
-                    data-testid="athlete-record-recorded-on"
-                    type="date"
-                    value={recordDraft.recordedOn}
-                    onChange={(event) =>
-                      setRecordDraft((current) => ({ ...current, recordedOn: event.target.value }))
-                    }
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </label>
-
-                <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-3">
-                  <span>Source note</span>
-                  <textarea
-                    data-testid="athlete-record-source-note"
-                    value={recordDraft.sourceNote}
-                    onChange={(event) =>
-                      setRecordDraft((current) => ({ ...current, sourceNote: event.target.value }))
-                    }
-                    placeholder="Optional note about meet, set, or source"
-                    rows={3}
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </label>
-              </div>
-
-              <div className="mt-5 flex flex-wrap items-center gap-2">
-                <button
-                  data-testid="athlete-record-save"
-                  type="submit"
-                  disabled={pendingRecordSave || !isOnline}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-                >
-                  {pendingRecordSave
-                    ? "Saving..."
-                    : currentEditedRecord
-                      ? "Update personal record"
-                      : "Save personal record"}
-                </button>
-                <button
-                  data-testid="athlete-record-reset"
-                  type="button"
-                  onClick={resetRecordDraftToSaved}
-                  disabled={!hasUnsavedRecordChanges}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
-                >
-                  Reset draft
-                </button>
-              </div>
-            </form>
           </div>
-        )}
+        ) : null}
       </section>
-
-      <form onSubmit={savePreferences} className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Training preferences</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Save the pool and planning defaults you want later session generation to respect.
-            </p>
-          </div>
-          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-            Private to your account
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            <span>Default pool length</span>
-            <select
-              data-testid="athlete-preferences-pool-length"
-              value={preferencesDraft.poolLengthM}
-              onChange={(event) =>
-                setPreferencesDraft((current) => ({
-                  ...current,
-                  poolLengthM: event.target.value as TrainingPreferencesDraft["poolLengthM"],
-                }))
-              }
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">Not set</option>
-              {TRAINING_POOL_LENGTH_OPTIONS.map((option) => (
-                <option key={option.value} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            <span>Preferred weekly session count</span>
-            <input
-              data-testid="athlete-preferences-weekly-session-count"
-              type="number"
-              min={1}
-              max={14}
-              value={preferencesDraft.preferredWeeklySessionCount}
-              onChange={(event) =>
-                setPreferencesDraft((current) => ({
-                  ...current,
-                  preferredWeeklySessionCount: event.target.value,
-                }))
-              }
-              placeholder="5"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2">
-            <span>Preferred session duration</span>
-            <select
-              data-testid="athlete-preferences-session-minutes"
-              value={preferencesDraft.preferredSessionMinutes}
-              onChange={(event) =>
-                setPreferencesDraft((current) => ({
-                  ...current,
-                  preferredSessionMinutes: event.target
-                    .value as TrainingPreferencesDraft["preferredSessionMinutes"],
-                }))
-              }
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">Not set</option>
-              {TRAINING_SESSION_DURATION_OPTIONS.map((option) => (
-                <option key={option.value} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <fieldset className="space-y-3 md:col-span-2">
-            <legend className="text-sm font-medium text-slate-700">Available training days</legend>
-            <div className="grid gap-2 sm:grid-cols-4">
-              {TRAINING_WEEKDAY_OPTIONS.map((option) => {
-                const checked = preferencesDraft.availableDays.includes(option.value);
-
-                return (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                  >
-                    <input
-                      data-testid={`athlete-preferences-day-${option.value}`}
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleAvailableDay(option.value)}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <button
-            data-testid="athlete-preferences-save"
-            type="submit"
-            disabled={pendingPreferencesSave || !isOnline}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {pendingPreferencesSave ? "Saving..." : "Save preferences"}
-          </button>
-          <button
-            data-testid="athlete-preferences-reset"
-            type="button"
-            onClick={resetPreferencesDraftToSaved}
-            disabled={!hasUnsavedPreferencesChanges}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
-          >
-            Reset draft
-          </button>
-        </div>
-      </form>
     </div>
   );
 }
