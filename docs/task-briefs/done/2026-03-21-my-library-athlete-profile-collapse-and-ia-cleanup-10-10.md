@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-21-my-library-athlete-profile-collapse-and-ia-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-21`
 - `updated`: `2026-03-21`
@@ -222,5 +222,6 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-21 | merged | PR #257 merged to main as commit 21779969ce7fd2576f382cdd4351d74a9db7f75f after local verify:pre-pr + verify:pre-merge and green CI | next: continue with the next prioritized slice`
 - `2026-03-21 | implementation started | moved the athlete-profile IA cleanup slice into in-progress to ship collapse-first summaries, save-then-collapse behavior, and persisted disclosure state on `/my-library/profile` without changing canonical profile ownership | next: implement section disclosure model in the hub, add save/failure coverage, and run targeted validation`
 - `2026-03-21 | planning | created dedicated athlete-profile IA cleanup brief from real usage feedback: saved sections should collapse again, the route should scroll less, and the page should prefer compact summaries over always-open forms | next: implement collapse-first profile route behavior with targeted save/draft/disclosure tests`
