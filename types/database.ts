@@ -191,7 +191,8 @@ export type Database = {
           details: string | null;
           goal_id: string | null;
           id: string;
-          status: "active" | "completed" | "archived";
+          is_primary: boolean;
+          status: "open" | "completed" | "archived";
           title: string;
           updated_at: string;
           user_id: string;
@@ -212,7 +213,8 @@ export type Database = {
           details?: string | null;
           goal_id?: string | null;
           id?: string;
-          status?: "active" | "completed" | "archived";
+          is_primary?: boolean;
+          status?: "open" | "completed" | "archived";
           title: string;
           updated_at?: string;
           user_id: string;
@@ -233,7 +235,8 @@ export type Database = {
           details?: string | null;
           goal_id?: string | null;
           id?: string;
-          status?: "active" | "completed" | "archived";
+          is_primary?: boolean;
+          status?: "open" | "completed" | "archived";
           title?: string;
           updated_at?: string;
           user_id?: string;
@@ -1148,6 +1151,12 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      training_focus_set_primary: {
+        Args: {
+          p_focus_id: string;
+        };
+        Returns: undefined;
+      };
       set_updated_at: {
         Args: Record<PropertyKey, never>;
         Returns: unknown;

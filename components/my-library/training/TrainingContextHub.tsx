@@ -30,7 +30,6 @@ type FocusDraft = {
   title: string;
   details: string;
   goalId: string;
-  replaceExistingStatus: "completed" | "archived";
 };
 
 type NoteDraft = {
@@ -54,7 +53,6 @@ function getDefaultFocusDraft(): FocusDraft {
     title: "",
     details: "",
     goalId: "",
-    replaceExistingStatus: "completed",
   };
 }
 
@@ -122,6 +120,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingFocusCreate, setPendingFocusCreate] = useState(false);
   const [pendingFocusActionId, setPendingFocusActionId] = useState<string | null>(null);
+  const [showFocusHistory, setShowFocusHistory] = useState(false);
   const [pendingNoteCreate, setPendingNoteCreate] = useState(false);
   const [pendingNoteSaveId, setPendingNoteSaveId] = useState<string | null>(null);
 
@@ -221,7 +220,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
 
     if (intent === "focus") {
       setFocusDraft((prev) => ({ ...prev, goalId: goal.id }));
-      setContextMessage(`${goal.title} is selected for your next active focus.`);
+      setContextMessage(`${goal.title} is selected for your next focus.`);
       return;
     }
 
@@ -261,7 +260,8 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
       setSnapshot(payload.snapshot);
       void sendClientAnalyticsEvent("training_context_refreshed", {
         noteCount: payload.snapshot.recentNotes.length,
-        hasActiveFocus: Boolean(payload.snapshot.activeFocus),
+        hasPrimaryFocus: Boolean(payload.snapshot.primaryFocus),
+        openFocusCount: payload.snapshot.openFocuses.length,
       });
     } catch {
       setActionError("Could not refresh Focus and Notes right now.");
@@ -291,7 +291,6 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
           title: focusDraft.title,
           details: focusDraft.details,
           goalId: focusDraft.goalId || null,
-          replaceExistingStatus: snapshot.activeFocus ? focusDraft.replaceExistingStatus : null,
         }),
       });
 
@@ -309,10 +308,15 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
       setSnapshot(payload.snapshot);
       setFocusDraft(getDefaultFocusDraft());
       clearStorageValue(FOCUS_DRAFT_STORAGE_KEY);
-      setActionSuccess("Active focus saved.");
+      setActionSuccess(
+        payload.snapshot.primaryFocus
+          ? "Focus saved."
+          : "Focus saved. Choose a primary focus when you want one cue used elsewhere in My Library."
+      );
       void sendClientAnalyticsEvent("training_focus_created", {
         linkedGoal: Boolean(focusDraft.goalId),
-        replacedExisting: Boolean(snapshot.activeFocus),
+        openFocusCount: payload.snapshot.openFocuses.length,
+        hasPrimaryFocus: Boolean(payload.snapshot.primaryFocus),
       });
     } catch {
       setActionError("Could not save focus right now.");
@@ -321,7 +325,10 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
     }
   }
 
-  async function updateFocusStatus(focusId: string, action: "complete" | "archive") {
+  async function updateFocusStatus(
+    focusId: string,
+    action: "complete" | "archive" | "reopen" | "set_primary"
+  ) {
     if (!isOnline) {
       setActionError("You are offline. Reconnect before updating focus.");
       return;
@@ -352,10 +359,23 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
       }
 
       setSnapshot(payload.snapshot);
-      setActionSuccess(action === "complete" ? "Focus marked completed." : "Focus archived.");
-      void sendClientAnalyticsEvent("training_focus_resolved", {
-        action,
-      });
+      setActionSuccess(
+        action === "complete"
+          ? "Focus marked completed."
+          : action === "archive"
+            ? "Focus archived."
+            : action === "reopen"
+              ? "Focus reopened."
+              : "Primary focus updated."
+      );
+      void sendClientAnalyticsEvent(
+        action === "set_primary" ? "training_focus_primary_set" : "training_focus_resolved",
+        {
+          action,
+          openFocusCount: payload.snapshot.openFocuses.length,
+          hasPrimaryFocus: Boolean(payload.snapshot.primaryFocus),
+        }
+      );
     } catch {
       setActionError("Could not update focus right now.");
     } finally {
@@ -473,10 +493,9 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
     }
   }
 
-  const focusOptions = [
-    ...(snapshot.activeFocus ? [snapshot.activeFocus] : []),
-    ...snapshot.focusHistory,
-  ];
+  const focusOptions = [...snapshot.openFocuses, ...snapshot.focusHistory];
+  const selectedFocus = snapshot.activeFocus;
+  const primaryFocus = snapshot.primaryFocus;
 
   return (
     <div
@@ -547,7 +566,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                 Turn a goal into today&apos;s work
               </h2>
               <p className="mt-2 text-sm text-slate-600">
-                Goals stay long-term. Use one here to prefill the next active focus or note without
+                Goals stay long-term. Use one here to prefill the next focus or note without
                 re-selecting it everywhere.
               </p>
             </div>
@@ -627,9 +646,10 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Current focus</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Open focuses</h2>
             <p className="mt-2 text-sm text-slate-600">
-              Keep one active training priority at a time, separate from longer-term goals.
+              Keep several current training cues open. Choose one as your primary focus when My
+              Library needs one clear cue elsewhere.
             </p>
           </div>
           <button
@@ -641,48 +661,59 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
           </button>
         </div>
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-semibold text-slate-900">
-                {snapshot.activeFocus ? snapshot.activeFocus.title : "No active focus yet"}
-              </h3>
-              {snapshot.activeFocus ? (
-                <span className="inline-flex rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
-                  {snapshot.activeFocus.statusLabel}
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-2 text-sm text-slate-700">
-              {snapshot.activeFocus?.details ??
-                "Set the one thing you want to check or improve in the next session."}
-            </p>
-            {snapshot.activeFocus?.goalTitle ? (
-              <p className="mt-3 text-xs font-medium text-slate-600">
-                Linked goal: {snapshot.activeFocus.goalTitle}
-              </p>
-            ) : null}
-            {snapshot.activeFocus ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void updateFocusStatus(snapshot.activeFocus!.id, "complete")}
-                  disabled={pendingFocusActionId === snapshot.activeFocus.id}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {pendingFocusActionId === snapshot.activeFocus.id
-                    ? "Saving..."
-                    : "Mark completed"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void updateFocusStatus(snapshot.activeFocus!.id, "archive")}
-                  disabled={pendingFocusActionId === snapshot.activeFocus.id}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Archive
-                </button>
+        <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.95fr]">
+          <div className="space-y-4">
+            {snapshot.focusNeedsPrimarySelection ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-semibold text-slate-900">Choose a primary focus</h3>
+                  <span className="inline-flex rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700">
+                    Action needed
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-slate-700">
+                  You have {snapshot.openFocuses.length} open focuses and no primary focus selected
+                  yet. Pick one below before other My Library surfaces try to use a single current
+                  cue.
+                </p>
               </div>
+            ) : selectedFocus ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-semibold text-slate-900">
+                    {primaryFocus ? "Primary focus" : "Current focus cue"}
+                  </h3>
+                  <span className="inline-flex rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
+                    {selectedFocus.title}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-slate-700">
+                  {selectedFocus.details ??
+                    "This is the clearest current cue available across your open focus list."}
+                </p>
+                {selectedFocus.goalTitle ? (
+                  <p className="mt-3 text-xs font-medium text-slate-600">
+                    Linked goal: {selectedFocus.goalTitle}
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
+                <h3 className="text-base font-semibold text-slate-900">No open focus yet</h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Add the next technical or tactical cue you want to carry into the pool.
+                </p>
+              </div>
+            )}
+
+            {snapshot.focusHistory.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowFocusHistory((prev) => !prev)}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                {showFocusHistory ? "Hide completed & archived" : "Show completed & archived"}
+              </button>
             ) : null}
           </div>
 
@@ -690,7 +721,10 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
             onSubmit={createFocus}
             className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
           >
-            <h3 className="text-base font-semibold text-slate-900">Set a new active focus</h3>
+            <h3 className="text-base font-semibold text-slate-900">Add a new open focus</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Saving a new focus will never auto-complete or auto-archive the ones you already have.
+            </p>
             {focusDraft.goalId ? (
               <p className="mt-2 text-sm text-slate-600">
                 This focus will support:{" "}
@@ -738,43 +772,91 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                 </select>
               </label>
 
-              {snapshot.activeFocus ? (
-                <label className="block">
-                  <span className="text-sm font-medium text-slate-700">
-                    When this becomes active, current focus becomes
-                  </span>
-                  <select
-                    value={focusDraft.replaceExistingStatus}
-                    onChange={(e) =>
-                      setFocusDraft((prev) => ({
-                        ...prev,
-                        replaceExistingStatus: e.target
-                          .value as FocusDraft["replaceExistingStatus"],
-                      }))
-                    }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                  >
-                    <option value="completed">Completed</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </label>
-              ) : null}
-
               <button
                 type="submit"
                 disabled={!snapshot.schemaReady || pendingFocusCreate}
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {pendingFocusCreate ? "Saving..." : "Set active focus"}
+                {pendingFocusCreate ? "Saving..." : "Save open focus"}
               </button>
             </div>
           </form>
         </div>
 
-        {snapshot.focusHistory.length > 0 ? (
+        {snapshot.openFocuses.length > 0 ? (
           <div className="mt-5">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
-              Recent focus history
+              Open focus list
+            </h3>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {snapshot.openFocuses.map((focus) => (
+                <article
+                  key={focus.id}
+                  data-testid={`training-focus-card-${focus.id}`}
+                  className={`rounded-2xl border p-4 ${
+                    focus.isPrimary
+                      ? "border-emerald-200 bg-emerald-50/40"
+                      : "border-slate-200 bg-slate-50/50"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="text-sm font-semibold text-slate-900">{focus.title}</h4>
+                    <span className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                      {focus.statusLabel}
+                    </span>
+                    {focus.isPrimary ? (
+                      <span className="inline-flex rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
+                        Primary
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-2 text-sm text-slate-700">
+                    {focus.details ?? "No extra detail saved for this focus yet."}
+                  </p>
+                  {focus.goalTitle ? (
+                    <p className="mt-2 text-xs text-slate-600">Goal: {focus.goalTitle}</p>
+                  ) : null}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {!focus.isPrimary ? (
+                      <button
+                        type="button"
+                        data-testid={`training-focus-set-primary-${focus.id}`}
+                        onClick={() => void updateFocusStatus(focus.id, "set_primary")}
+                        disabled={pendingFocusActionId === focus.id}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {pendingFocusActionId === focus.id ? "Saving..." : "Set primary"}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      data-testid={`training-focus-complete-${focus.id}`}
+                      onClick={() => void updateFocusStatus(focus.id, "complete")}
+                      disabled={pendingFocusActionId === focus.id}
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {pendingFocusActionId === focus.id ? "Saving..." : "Mark completed"}
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`training-focus-archive-${focus.id}`}
+                      onClick={() => void updateFocusStatus(focus.id, "archive")}
+                      disabled={pendingFocusActionId === focus.id}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Archive
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {showFocusHistory && snapshot.focusHistory.length > 0 ? (
+          <div className="mt-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+              Completed & archived
             </h3>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
               {snapshot.focusHistory.map((focus) => (
@@ -791,6 +873,17 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                   {focus.goalTitle ? (
                     <p className="mt-2 text-xs text-slate-600">Goal: {focus.goalTitle}</p>
                   ) : null}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      data-testid={`training-focus-reopen-${focus.id}`}
+                      onClick={() => void updateFocusStatus(focus.id, "reopen")}
+                      disabled={pendingFocusActionId === focus.id}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {pendingFocusActionId === focus.id ? "Saving..." : "Reopen"}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -894,7 +987,9 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
               <option value="">No linked focus</option>
               {focusOptions.map((focus) => (
                 <option key={focus.id} value={focus.id}>
-                  {focus.title} ({focus.statusLabel})
+                  {focus.title}
+                  {focus.isPrimary ? " (Primary)" : ""}
+                  {` (${focus.statusLabel})`}
                 </option>
               ))}
             </select>

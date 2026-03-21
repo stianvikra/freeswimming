@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { validatePullRequestBody } from "../../scripts/lint-pr-body-sections.mjs";
+import { describe, expect, it, vi } from "vitest";
+import {
+  hydratePullRequestFromApi,
+  validatePullRequestBody,
+} from "../../scripts/lint-pr-body-sections.mjs";
 
 const HEAD_SHA = "abcdef1234567890abcdef1234567890abcdef12";
 
@@ -106,5 +109,64 @@ describe("validatePullRequestBody policy-impact enforcement", () => {
     expect(errors).toContain(
       'Section "## Summary" is missing a filled `Policy impact` line (`yes` or `no` + rationale).'
     );
+  });
+});
+
+describe("hydratePullRequestFromApi", () => {
+  it("prefers the latest GitHub API snapshot when it is available", async () => {
+    const originalPullRequest = {
+      number: 255,
+      url: "https://api.github.com/repos/stianvikra/freeswimming/pulls/255",
+      body: "stale body",
+      head: { sha: HEAD_SHA },
+      base: { ref: "main", sha: "base-sha" },
+    };
+    const latestPullRequest = {
+      ...originalPullRequest,
+      body: buildPrBody({
+        policyImpact: "yes (auth/session paths changed)",
+        policyVersionNote: "N/A (policy text unchanged after review against current behavior)",
+        policyChecklist:
+          "PASS (docs/checklists/policy-impact-release-review.md run on current scope)",
+      }),
+    };
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => latestPullRequest,
+    });
+
+    const hydrated = await hydratePullRequestFromApi(originalPullRequest, {
+      fetchImpl,
+      env: {},
+    });
+
+    expect(hydrated.body).toBe(latestPullRequest.body);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      originalPullRequest.url,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/vnd.github+json",
+          "User-Agent": "freeswimming-pr-body-lint",
+        }),
+      })
+    );
+  });
+
+  it("falls back to the event payload when the live GitHub API lookup fails", async () => {
+    const originalPullRequest = {
+      number: 255,
+      url: "https://api.github.com/repos/stianvikra/freeswimming/pulls/255",
+      body: "stale body",
+      head: { sha: HEAD_SHA },
+      base: { ref: "main", sha: "base-sha" },
+    };
+    const fetchImpl = vi.fn().mockRejectedValue(new Error("network down"));
+
+    const hydrated = await hydratePullRequestFromApi(originalPullRequest, {
+      fetchImpl,
+      env: {},
+    });
+
+    expect(hydrated).toEqual(originalPullRequest);
   });
 });

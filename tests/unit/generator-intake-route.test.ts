@@ -139,17 +139,18 @@ describe("generator intake route", () => {
         },
         focus: {
           key: "focus",
-          label: "Active focus",
+          label: "Primary focus cue",
           description: "desc",
           state: "empty",
           available: false,
           includedByDefault: false,
-          summary: "No active focus set right now.",
-          missingReason: "Set one active focus if you want a current technical priority in intake.",
+          summary: "No primary focus set right now.",
+          missingReason:
+            "Set one primary focus if you want a current technical priority in intake.",
           sourceIds: [],
           lastUpdatedAt: null,
           manageHref: "/my-library/training",
-          manageLabel: "Edit focus",
+          manageLabel: "Edit focuses",
         },
       },
     });

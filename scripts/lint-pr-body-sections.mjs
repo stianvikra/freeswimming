@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
@@ -70,9 +70,12 @@ const POLICY_IMPACT_RULES = [
   },
 ];
 
-function run(command) {
+function runGit(args) {
   try {
-    return execSync(command, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    return execFileSync("git", args, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
     return "";
   }
@@ -87,6 +90,66 @@ function parseEventPayload() {
     return JSON.parse(raw);
   } catch {
     return null;
+  }
+}
+
+function buildPullRequestApiUrl(pullRequest, env = process.env) {
+  const directUrl = pullRequest?.url?.trim();
+  if (directUrl) return directUrl;
+
+  const repository = env.GITHUB_REPOSITORY?.trim();
+  const pullRequestNumber = pullRequest?.number;
+  const apiBase = (env.GITHUB_API_URL?.trim() || "https://api.github.com").replace(/\/$/, "");
+
+  if (!repository || !pullRequestNumber) return "";
+  return `${apiBase}/repos/${repository}/pulls/${pullRequestNumber}`;
+}
+
+export async function hydratePullRequestFromApi(pullRequest, options = {}) {
+  if (!pullRequest || typeof pullRequest !== "object") {
+    return pullRequest;
+  }
+
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  if (typeof fetchImpl !== "function") {
+    return pullRequest;
+  }
+
+  const env = options.env ?? process.env;
+  const apiUrl = buildPullRequestApiUrl(pullRequest, env);
+  if (!apiUrl) {
+    return pullRequest;
+  }
+
+  const token =
+    env.GITHUB_TOKEN?.trim() || env.GH_TOKEN?.trim() || env.GITHUB_API_TOKEN?.trim() || "";
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "freeswimming-pr-body-lint",
+    "X-GitHub-Api-Version": env.GITHUB_API_VERSION?.trim() || "2022-11-28",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetchImpl(apiUrl, { headers });
+    if (!response?.ok) {
+      return pullRequest;
+    }
+
+    const latestPullRequest = await response.json();
+    if (!latestPullRequest || typeof latestPullRequest !== "object") {
+      return pullRequest;
+    }
+
+    return {
+      ...pullRequest,
+      ...latestPullRequest,
+    };
+  } catch {
+    return pullRequest;
   }
 }
 
@@ -238,12 +301,12 @@ function listChangedFilesForPullRequest(pullRequest) {
 
   let diffOutput = "";
   if (baseSha && headSha) {
-    diffOutput = run(`git diff --name-only ${baseSha}...${headSha}`);
+    diffOutput = runGit(["diff", "--name-only", `${baseSha}...${headSha}`]);
   }
   if (!diffOutput && baseRef) {
     diffOutput =
-      run(`git diff --name-only origin/${baseRef}...HEAD`) ||
-      run(`git diff --name-only ${baseRef}...HEAD`) ||
+      runGit(["diff", "--name-only", `origin/${baseRef}...HEAD`]) ||
+      runGit(["diff", "--name-only", `${baseRef}...HEAD`]) ||
       "";
   }
 
@@ -500,14 +563,16 @@ export function validatePullRequestBody(body, options = {}) {
   return errors;
 }
 
-function main() {
+async function main() {
   const payload = parseEventPayload();
-  const pullRequest = payload?.pull_request;
+  let pullRequest = payload?.pull_request;
 
   if (!pullRequest) {
     console.log("[pr-body-lint] No pull_request payload detected. Skipping.");
     return;
   }
+
+  pullRequest = await hydratePullRequestFromApi(pullRequest);
 
   const changedFiles = listChangedFilesForPullRequest(pullRequest);
   const errors = validatePullRequestBody(pullRequest.body ?? "", {
@@ -528,5 +593,5 @@ function main() {
 
 const isCliEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isCliEntrypoint) {
-  main();
+  await main();
 }

@@ -134,10 +134,11 @@ const BLOCK_META: Record<
     manageLabel: "Edit goals",
   },
   focus: {
-    label: "Active focus",
-    description: "Your current swim focus, kept separate from Notes in v1.",
+    label: "Primary focus cue",
+    description:
+      "A single current swim cue for generator use when My Library has one clear primary focus.",
     manageHref: "/my-library/training",
-    manageLabel: "Edit focus",
+    manageLabel: "Edit focuses",
   },
 };
 
@@ -225,6 +226,7 @@ export function buildGeneratorIntakeSnapshot(input: {
       personalRecords: input.athleteProfileSnapshot.personalRecords,
       openGoals: input.openGoals,
       activeFocus: input.trainingContextSnapshot.activeFocus,
+      focusNeedsPrimarySelection: input.trainingContextSnapshot.focusNeedsPrimarySelection,
     }),
     loadError:
       loadErrors.length > 0
@@ -319,6 +321,8 @@ function buildGeneratorIntakeBlocks(input: {
   goalsLoadError: string | null;
 }): Record<GeneratorIntakeBlockKey, GeneratorIntakeBlockSummary> {
   const { athleteProfileSnapshot, trainingContextSnapshot, openGoals, goalsLoadError } = input;
+  const selectedFocus = trainingContextSnapshot.activeFocus;
+  const focusNeedsPrimarySelection = trainingContextSnapshot.focusNeedsPrimarySelection;
 
   return {
     profile: buildBlockSummary("profile", {
@@ -410,27 +414,27 @@ function buildGeneratorIntakeBlocks(input: {
       lastUpdatedAt: null,
     }),
     focus: buildBlockSummary("focus", {
-      available: Boolean(trainingContextSnapshot.activeFocus),
-      summary: trainingContextSnapshot.activeFocus
+      available: Boolean(selectedFocus),
+      summary: selectedFocus
         ? [
-            trainingContextSnapshot.activeFocus.title,
-            trainingContextSnapshot.activeFocus.goalTitle
-              ? `linked to ${trainingContextSnapshot.activeFocus.goalTitle}`
-              : null,
+            selectedFocus.title,
+            selectedFocus.goalTitle ? `linked to ${selectedFocus.goalTitle}` : null,
           ]
             .filter(Boolean)
             .join(" · ")
-        : "No active focus set right now.",
+        : focusNeedsPrimarySelection
+          ? "Multiple open focuses are saved, but no primary focus is selected yet."
+          : "No primary focus set right now.",
       missingReason: resolveMissingReason({
-        available: Boolean(trainingContextSnapshot.activeFocus),
+        available: Boolean(selectedFocus),
         schemaReady: trainingContextSnapshot.schemaReady,
         loadError: trainingContextSnapshot.loadError,
-        emptyReason: "Set one active focus if you want a current technical priority in intake.",
+        emptyReason: focusNeedsPrimarySelection
+          ? "Choose one primary focus in My Library if you want intake to use a single technical cue."
+          : "Set one primary focus if you want a current technical priority in intake.",
       }),
-      sourceIds: trainingContextSnapshot.activeFocus
-        ? [trainingContextSnapshot.activeFocus.id]
-        : [],
-      lastUpdatedAt: trainingContextSnapshot.activeFocus?.updatedAt ?? null,
+      sourceIds: selectedFocus ? [selectedFocus.id] : [],
+      lastUpdatedAt: selectedFocus?.updatedAt ?? null,
     }),
   };
 }

@@ -23,7 +23,8 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 async function waitForTrainingContextClientReady(page: Page) {
   await expect(page.getByTestId("training-context-hub")).toHaveAttribute(
     "data-client-ready",
-    "true"
+    "true",
+    { timeout: 15_000 }
   );
 }
 

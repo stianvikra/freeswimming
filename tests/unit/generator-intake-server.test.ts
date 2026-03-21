@@ -80,8 +80,9 @@ function buildTrainingContextSnapshot(): TrainingContextSnapshot {
       id: "focus-1",
       title: "Breathing timing",
       details: "Keep the head quiet through the inhale.",
-      status: "active",
-      statusLabel: "Active",
+      status: "open",
+      statusLabel: "Open",
+      isPrimary: true,
       goalId: "goal-1",
       goalTitle: "Swim 1500m stronger",
       contextType: null,
@@ -91,7 +92,42 @@ function buildTrainingContextSnapshot(): TrainingContextSnapshot {
       completedAt: null,
       archivedAt: null,
     },
+    primaryFocus: {
+      id: "focus-1",
+      title: "Breathing timing",
+      details: "Keep the head quiet through the inhale.",
+      status: "open",
+      statusLabel: "Open",
+      isPrimary: true,
+      goalId: "goal-1",
+      goalTitle: "Swim 1500m stronger",
+      contextType: null,
+      contextRef: null,
+      createdAt: "2026-03-20T10:00:00.000Z",
+      updatedAt: "2026-03-20T10:00:00.000Z",
+      completedAt: null,
+      archivedAt: null,
+    },
+    openFocuses: [
+      {
+        id: "focus-1",
+        title: "Breathing timing",
+        details: "Keep the head quiet through the inhale.",
+        status: "open",
+        statusLabel: "Open",
+        isPrimary: true,
+        goalId: "goal-1",
+        goalTitle: "Swim 1500m stronger",
+        contextType: null,
+        contextRef: null,
+        createdAt: "2026-03-20T10:00:00.000Z",
+        updatedAt: "2026-03-20T10:00:00.000Z",
+        completedAt: null,
+        archivedAt: null,
+      },
+    ],
     focusHistory: [],
+    focusNeedsPrimarySelection: false,
     recentNotes: [],
     unresolvedObservationCount: 0,
     unansweredQuestionCount: 0,
@@ -202,5 +238,42 @@ describe("generator intake server helpers", () => {
     expect(payload.effectiveDefaults.sessionMinutes).toBe(45);
     expect(payload.effectiveDefaults.focusText).toBe("Race-pace breathing control");
     expect(payload.notesIncluded).toBe(false);
+  });
+
+  it("marks focus intake unavailable when multiple open focuses need a primary selection", () => {
+    const snapshot = buildGeneratorIntakeSnapshot({
+      athleteProfileSnapshot: buildAthleteProfileSnapshot(),
+      trainingContextSnapshot: {
+        ...buildTrainingContextSnapshot(),
+        activeFocus: null,
+        primaryFocus: null,
+        openFocuses: [
+          {
+            ...buildTrainingContextSnapshot().openFocuses[0],
+            isPrimary: false,
+          },
+          {
+            ...buildTrainingContextSnapshot().openFocuses[0],
+            id: "focus-2",
+            title: "Patient catch timing",
+            goalId: null,
+            goalTitle: null,
+            isPrimary: false,
+          },
+        ],
+        focusNeedsPrimarySelection: true,
+      },
+      openGoals: buildOpenGoals(),
+      goalsLoadError: null,
+      loadedAt: "2026-03-20T10:00:00.000Z",
+    });
+
+    expect(snapshot.blocks.focus.available).toBe(false);
+    expect(snapshot.blocks.focus.summary).toBe(
+      "Multiple open focuses are saved, but no primary focus is selected yet."
+    );
+    expect(snapshot.blocks.focus.missingReason).toBe(
+      "Choose one primary focus in My Library if you want intake to use a single technical cue."
+    );
   });
 });

@@ -54,7 +54,7 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
           payload={{
             availableBlockCount,
             hasOpenGoals: initialSnapshot.openGoals.length > 0,
-            hasActiveFocus: Boolean(initialSnapshot.activeFocus),
+            hasPrimaryFocus: Boolean(initialSnapshot.activeFocus),
             notesIncluded: initialSnapshot.notesIncluded,
           }}
         />
@@ -67,7 +67,8 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Generator intake</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
                 Review which saved My Library signals should prefill session generation, then apply
-                one-run overrides without editing your stored profile, records, goals, or focus.
+                one-run overrides without editing your stored profile, records, goals, or primary
+                focus cue.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -94,7 +95,8 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
                   Saved My Library data
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  Profile, CSS, preferences, records, goals, and active focus stay server-owned.
+                  Profile, CSS, preferences, records, goals, and the selected primary focus cue stay
+                  server-owned.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">

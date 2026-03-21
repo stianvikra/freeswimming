@@ -204,9 +204,11 @@ export default async function MyLibraryPage() {
                   <p className="mt-2 text-sm text-slate-600">
                     {!trainingContextSnapshot.schemaReady
                       ? "This training context is still syncing in this environment."
-                      : trainingContextSnapshot.activeFocus
-                        ? `Active focus: ${trainingContextSnapshot.activeFocus.title}. ${trainingContextSnapshot.unresolvedObservationCount} open observation${trainingContextSnapshot.unresolvedObservationCount === 1 ? "" : "s"} and ${trainingContextSnapshot.unansweredQuestionCount} unanswered question${trainingContextSnapshot.unansweredQuestionCount === 1 ? "" : "s"}.`
-                        : "Set one active focus and capture observations or questions between swim sessions."}
+                      : trainingContextSnapshot.focusNeedsPrimarySelection
+                        ? `You have ${trainingContextSnapshot.openFocuses.length} open focuses and need to choose one primary cue before other My Library surfaces use a single focus.`
+                        : trainingContextSnapshot.activeFocus
+                          ? `${trainingContextSnapshot.primaryFocus ? "Primary focus" : "Current focus cue"}: ${trainingContextSnapshot.activeFocus.title}. ${trainingContextSnapshot.unresolvedObservationCount} open observation${trainingContextSnapshot.unresolvedObservationCount === 1 ? "" : "s"} and ${trainingContextSnapshot.unansweredQuestionCount} unanswered question${trainingContextSnapshot.unansweredQuestionCount === 1 ? "" : "s"}.`
+                          : "Add an open focus and capture observations or questions between swim sessions."}
                   </p>
                 </div>
                 <Link
