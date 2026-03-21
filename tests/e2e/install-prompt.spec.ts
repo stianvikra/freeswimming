@@ -144,14 +144,33 @@ async function satisfyDoneGateIfPresent(page: Page) {
 
 async function activateMarkDoneButton(page: Page) {
   const markDoneButton = page.getByTestId("course-mark-done-button");
-  await expect(markDoneButton).toBeVisible();
-  await expect(markDoneButton).toBeEnabled();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await dismissSwipeHintIfPresent(page);
+    await expect(markDoneButton).toBeVisible();
+    await expect(markDoneButton).toBeEnabled();
+    await markDoneButton.scrollIntoViewIfNeeded();
 
-  try {
-    await markDoneButton.click({ timeout: 5_000 });
-  } catch {
-    await markDoneButton.focus();
-    await page.keyboard.press("Enter");
+    try {
+      await markDoneButton.click({ timeout: 5_000 });
+    } catch {
+      await markDoneButton.focus();
+      await page.keyboard.press("Enter");
+    }
+
+    const completed = await markDoneButton
+      .waitFor({
+        state: "attached",
+        timeout: 250,
+      })
+      .then(async () => (await markDoneButton.textContent())?.trim() === "Done")
+      .catch(() => false);
+
+    if (completed) {
+      await expect(markDoneButton).toHaveText("Done");
+      return;
+    }
+
+    await page.waitForTimeout(150);
   }
 
   await expect(markDoneButton).toHaveText("Done");
