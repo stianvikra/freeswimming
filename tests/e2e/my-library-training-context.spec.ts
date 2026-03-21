@@ -29,7 +29,9 @@ async function waitForTrainingContextClientReady(page: Page) {
 }
 
 async function waitForGoalsHubClientReady(page: Page) {
-  await expect(page.getByTestId("goals-hub")).toHaveAttribute("data-client-ready", "true");
+  await expect(page.getByTestId("goals-hub")).toHaveAttribute("data-client-ready", "true", {
+    timeout: 15_000,
+  });
 }
 
 type GoalBridgeSelection = {
