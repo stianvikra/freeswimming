@@ -12,6 +12,29 @@ async function openMainMenuFromCourse(page: Page) {
   await page.getByRole("button", { name: "Menu", exact: true }).click();
 }
 
+async function getCurrentLessonSignature(page: Page) {
+  const playLessonButton = page.getByRole("button", { name: /^Play lesson:/ });
+  await expect(playLessonButton).toBeVisible();
+  const text = await playLessonButton.textContent();
+  return (text ?? "").replace(/\s+/g, " ").trim();
+}
+
+async function dismissSwipeHintIfPresent(page: Page) {
+  const dismissButton = page.getByRole("button", { name: "Dismiss swipe hint" });
+  const hintVisible = await dismissButton
+    .waitFor({
+      state: "visible",
+      timeout: 1_500,
+    })
+    .then(() => true)
+    .catch(() => false);
+
+  if (hintVisible) {
+    await dismissButton.click();
+    await expect(dismissButton).toBeHidden();
+  }
+}
+
 async function blockBeforeInstallPrompt(page: Page) {
   await page.addInitScript(() => {
     const originalAddEventListener = window.addEventListener.bind(window);
@@ -65,26 +88,51 @@ async function primeInstallPrompt(page: Page, outcome: "accepted" | "dismissed")
   await page.waitForTimeout(120);
 }
 
+async function waitForInstallDismissalPersistence(page: Page) {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const value = localStorage.getItem("a2hs_dismissed_at");
+          return typeof value === "string" && value.length > 0;
+        }),
+      {
+        timeout: 5_000,
+      }
+    )
+    .toBe(true);
+}
+
 async function satisfyDoneGateIfPresent(page: Page) {
   const markDoneButton = page.getByTestId("course-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   if (await markDoneButton.isEnabled()) return;
 
+  await dismissSwipeHintIfPresent(page);
   const checklist = page.getByTestId("course-done-gate-checklist");
   await expect(checklist).toBeVisible();
+  const checkboxes = checklist.getByRole("checkbox");
+  await expect(checkboxes).toHaveCount(3);
 
-  const items = checklist.locator("label");
-  const count = await items.count();
-  for (let i = 0; i < count; i += 1) {
-    const item = items.nth(i);
-    const checkbox = item.getByRole("checkbox");
-    if (await checkbox.isChecked()) continue;
-    await expect(checkbox).toBeEnabled();
-    await item.click();
-    if (!(await checkbox.isChecked())) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await dismissSwipeHintIfPresent(page);
+    const count = await checkboxes.count();
+    for (let i = 0; i < count; i += 1) {
+      const checkbox = checkboxes.nth(i);
+      if (await checkbox.isChecked()) continue;
+      await dismissSwipeHintIfPresent(page);
+      await expect(checkbox).toBeEnabled();
+      await checkbox.scrollIntoViewIfNeeded();
       await checkbox.check({ force: true });
+      await expect(checkbox).toBeChecked();
+      await page.waitForTimeout(75);
     }
-    await expect(checkbox).toBeChecked();
+
+    if (await markDoneButton.isEnabled()) {
+      return;
+    }
+
+    await page.waitForTimeout(150);
   }
 
   await expect
@@ -96,25 +144,52 @@ async function satisfyDoneGateIfPresent(page: Page) {
 
 async function activateMarkDoneButton(page: Page) {
   const markDoneButton = page.getByTestId("course-mark-done-button");
-  await expect(markDoneButton).toBeVisible();
-  await expect(markDoneButton).toBeEnabled();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await dismissSwipeHintIfPresent(page);
+    await expect(markDoneButton).toBeVisible();
+    await expect(markDoneButton).toBeEnabled();
+    await markDoneButton.scrollIntoViewIfNeeded();
 
-  try {
-    await markDoneButton.click({ timeout: 5_000 });
-  } catch {
-    await markDoneButton.focus();
-    await page.keyboard.press("Enter");
+    try {
+      await markDoneButton.click({ timeout: 5_000 });
+    } catch {
+      await markDoneButton.focus();
+      await page.keyboard.press("Enter");
+    }
+
+    const completed = await markDoneButton
+      .waitFor({
+        state: "attached",
+        timeout: 250,
+      })
+      .then(async () => (await markDoneButton.textContent())?.trim() === "Done")
+      .catch(() => false);
+
+    if (completed) {
+      await expect(markDoneButton).toHaveText("Done");
+      return;
+    }
+
+    await page.waitForTimeout(150);
   }
+
+  await expect(markDoneButton).toHaveText("Done");
 }
 
 async function goToNextLesson(page: Page) {
   const currentLesson = new URL(page.url()).searchParams.get("lesson");
+  const currentLessonSignature = await getCurrentLessonSignature(page);
   await page.getByTestId("course-nav-right").click();
   await expect
     .poll(() => new URL(page.url()).searchParams.get("lesson"), {
       timeout: 10_000,
     })
     .not.toBe(currentLesson);
+  await expect
+    .poll(() => getCurrentLessonSignature(page), {
+      timeout: 10_000,
+    })
+    .not.toBe(currentLessonSignature);
 }
 
 test("main menu exposes a persistent install action", async ({ page }, testInfo) => {
@@ -238,6 +313,7 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   await page.goto("/course?lesson=mod3-l1");
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
   await expect(markDoneButton).toBeVisible();
+  await dismissSwipeHintIfPresent(page);
 
   await primeInstallPrompt(page, "dismissed");
 
@@ -254,8 +330,11 @@ test("first successful mark-as-done can trigger contextual install prompt once",
 
   await page.getByRole("button", { name: "Not now" }).click();
   await expect(prompt).toBeHidden();
+  await waitForInstallDismissalPersistence(page);
 
-  await page.getByRole("button", { name: "Done" }).click();
+  const courseMarkDoneButton = page.getByTestId("course-mark-done-button");
+  await courseMarkDoneButton.click();
+  await expect(courseMarkDoneButton).toHaveText("Mark as done");
   await activateMarkDoneButton(page);
   await page.waitForTimeout(1_900);
   await expect(prompt).toBeHidden();
@@ -273,6 +352,7 @@ test("contextual install prompt shows success confirmation after accepted instal
   await page.goto("/course?lesson=mod3-l1");
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
   await expect(markDoneButton).toBeVisible();
+  await dismissSwipeHintIfPresent(page);
 
   await primeInstallPrompt(page, "accepted");
   await satisfyDoneGateIfPresent(page);
@@ -306,10 +386,13 @@ test("guest sees free-account backup prompt after completing three lessons", asy
 
   await page.goto("/course?lesson=mod3-l1");
   await page.evaluate(() => {
+    localStorage.removeItem("a2hs_prompt_seen");
+    localStorage.setItem("a2hs_dismissed_at", String(Date.now()));
     localStorage.removeItem("fs_course_done_lessons");
     localStorage.removeItem("fs_course_backup_prompt_dismissed_at");
   });
-  await page.reload();
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
+  await dismissSwipeHintIfPresent(page);
 
   await satisfyDoneGateIfPresent(page);
   await activateMarkDoneButton(page);

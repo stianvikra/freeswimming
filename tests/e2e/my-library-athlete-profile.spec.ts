@@ -139,7 +139,17 @@ test.describe("my library athlete profile", () => {
 
     await createRecordResponse;
     await expect(page.getByText("Personal record saved.")).toBeVisible();
+    await expect(page.getByTestId("athlete-profile-section-records")).toHaveAttribute(
+      "data-section-open",
+      "false"
+    );
     await expect(page.getByRole("heading", { name: eventLabel })).toBeVisible();
+
+    await page.getByTestId("athlete-profile-section-toggle-records").click();
+    await expect(page.getByTestId("athlete-profile-section-records")).toHaveAttribute(
+      "data-section-open",
+      "true"
+    );
 
     const deleteRecordResponse = page.waitForResponse(
       (response) =>
