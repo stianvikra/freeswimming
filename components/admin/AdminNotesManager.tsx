@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import AdminNoteScreenshotCaptureButton from "@/components/admin/AdminNoteScreenshotCaptureButton";
 import {
   ADMIN_NOTE_CONTEXT_TYPE_VALUES,
   type AdminNoteContextType,
@@ -42,6 +43,7 @@ import {
   type AdminNotePriority,
   type IncidentNoteSeverity,
 } from "@/lib/admin/notes";
+import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 
 type AdminNotesResponse =
   | {
@@ -133,6 +135,16 @@ type FormState = {
   contextType: AdminNoteContextType | "";
   contextRef: string;
   contextModuleRef: string;
+};
+
+type PendingScreenshot = {
+  file: File;
+  previewUrl: string;
+};
+
+type CaptureRecovery = {
+  id: string;
+  title: string;
 };
 
 function todayDateInputValue(): string {
@@ -261,6 +273,18 @@ export default function AdminNotesManager() {
   const [linkingNoteId, setLinkingNoteId] = useState<string | null>(null);
   const [unlinkingKey, setUnlinkingKey] = useState<string | null>(null);
   const [linkDrafts, setLinkDrafts] = useState<Record<string, string>>({});
+  const [createPendingScreenshot, setCreatePendingScreenshot] = useState<PendingScreenshot | null>(
+    null
+  );
+  const [createCaptureRecovery, setCreateCaptureRecovery] = useState<CaptureRecovery | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (createPendingScreenshot?.previewUrl) {
+        URL.revokeObjectURL(createPendingScreenshot.previewUrl);
+      }
+    };
+  }, [createPendingScreenshot]);
 
   function sortNoteItems(nextItems: AdminNoteItem[]): AdminNoteItem[] {
     return [...nextItems].sort(sortAdminNotesByPriorityAndNewest);
@@ -487,6 +511,62 @@ export default function AdminNotesManager() {
     }));
   }
 
+  function setCreatePendingScreenshotFromFile(file: File) {
+    setCreatePendingScreenshot((current) => {
+      if (current?.previewUrl) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return {
+        file,
+        previewUrl: URL.createObjectURL(file),
+      };
+    });
+  }
+
+  function clearCreatePendingScreenshot() {
+    setCreatePendingScreenshot((current) => {
+      if (current?.previewUrl) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return null;
+    });
+  }
+
+  async function uploadCreatePendingScreenshot(noteId: string) {
+    if (!createPendingScreenshot) {
+      throw new Error("No screenshot is ready to upload.");
+    }
+
+    return uploadAdminNoteFiles({
+      noteId,
+      files: [createPendingScreenshot.file],
+    });
+  }
+
+  async function retryCreatePendingScreenshotUpload() {
+    if (!createCaptureRecovery || !createPendingScreenshot || submitting) return;
+
+    setSubmitting(true);
+    setActionError(null);
+    setActionNotice(null);
+
+    try {
+      const updatedItem = await uploadCreatePendingScreenshot(createCaptureRecovery.id);
+      setItems((prev) =>
+        sortNoteItems(prev.map((entry) => (entry.id === updatedItem.id ? updatedItem : entry)))
+      );
+      clearCreatePendingScreenshot();
+      setCreateCaptureRecovery(null);
+      setActionNotice("Screenshot attached to the saved note.");
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "Could not upload screenshot attachment."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function applyIncidentTemplate(severity: IncidentNoteSeverity) {
     const today = todayDateLabel();
     setFormState((prev) => ({
@@ -527,10 +607,40 @@ export default function AdminNotesManager() {
         return;
       }
 
+      if (createPendingScreenshot) {
+        try {
+          const updatedItem = await uploadCreatePendingScreenshot(payload.item.id);
+          setItems((prev) =>
+            sortNoteItems([...prev.filter((entry) => entry.id !== updatedItem.id), updatedItem])
+          );
+          clearCreatePendingScreenshot();
+          setCreateCaptureRecovery(null);
+          setFormState(INITIAL_FORM);
+          setActionNotice("Note saved with screenshot attached.");
+          return;
+        } catch (uploadError) {
+          setItems((prev) =>
+            sortNoteItems([...prev.filter((entry) => entry.id !== payload.item.id), payload.item])
+          );
+          setCreateCaptureRecovery({
+            id: payload.item.id,
+            title: payload.item.title,
+          });
+          setFormState(INITIAL_FORM);
+          setActionError(
+            uploadError instanceof Error
+              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry upload below or use Edit to add the screenshot later.`
+              : "Note saved, but screenshot upload failed. Retry upload below or use Edit to add the screenshot later."
+          );
+          return;
+        }
+      }
+
       setItems((prev) =>
         sortNoteItems([...prev.filter((entry) => entry.id !== payload.item.id), payload.item])
       );
       setFormState(INITIAL_FORM);
+      setCreateCaptureRecovery(null);
       setActionNotice(
         payload.item.is_done
           ? "Note saved to done archive."
@@ -781,45 +891,36 @@ export default function AdminNotesManager() {
     }
   }
 
-  async function uploadAttachments(item: AdminNoteItem, files: FileList | null) {
-    if (!files || files.length === 0) return;
+  async function uploadFilesForNote(itemId: string, files: File[]) {
+    if (files.length === 0) return;
     if (uploadingNoteId || deletingAttachmentId || linkingNoteId || unlinkingKey) return;
 
     setActionError(null);
     setActionNotice(null);
-    setUploadingNoteId(item.id);
+    setUploadingNoteId(itemId);
 
     try {
-      const formData = new FormData();
-      Array.from(files).forEach((file) => {
-        formData.append("files", file);
+      const updatedItem = await uploadAdminNoteFiles({
+        noteId: itemId,
+        files,
       });
-
-      const response = await fetch(`/api/admin/notes/${item.id}/attachments`, {
-        method: "POST",
-        credentials: "same-origin",
-        body: formData,
-      });
-
-      const payload = (await response.json()) as AdminNoteUpdateResponse;
-      if (!response.ok || !payload.ok || !payload.item) {
-        setActionError(
-          payload.ok
-            ? "Could not upload attachments."
-            : (payload.error ?? "Could not upload attachments.")
-        );
-        return;
-      }
-
-      applyMutatedItem(item.id, payload.item);
+      applyMutatedItem(itemId, updatedItem);
       setActionNotice(
-        payload.item.attachments.length === 1 ? "Attachment uploaded." : "Attachments uploaded."
+        updatedItem.attachments.length === 1 ? "Attachment uploaded." : "Attachments uploaded."
       );
-    } catch {
-      setActionError("Could not upload attachments.");
+      return updatedItem;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not upload attachments.";
+      setActionError(message);
+      return null;
     } finally {
       setUploadingNoteId(null);
     }
+  }
+
+  async function uploadAttachments(item: AdminNoteItem, files: FileList | null) {
+    if (!files || files.length === 0) return;
+    await uploadFilesForNote(item.id, Array.from(files));
   }
 
   async function deleteAttachment(noteId: string, attachmentId: string) {
@@ -1579,23 +1680,38 @@ export default function AdminNotesManager() {
                               PNG, JPEG, WEBP, or GIF up to 5 MB each. Images stay admin-only.
                             </p>
                           </div>
-                          <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100">
-                            <span>{isUploading ? "Uploading…" : "Add images"}</span>
-                            <input
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp,image/gif"
-                              multiple
-                              className="sr-only"
-                              data-testid="admin-note-attachment-input"
+                          <div className="flex flex-wrap items-center gap-2">
+                            <AdminNoteScreenshotCaptureButton
+                              buttonLabel={isUploading ? "Uploading…" : "Capture screenshot"}
+                              onCaptureReady={async (file) => {
+                                const updatedItem = await uploadFilesForNote(item.id, [file]);
+                                if (!updatedItem) {
+                                  throw new Error("Could not upload screenshot attachment.");
+                                }
+                                setActionNotice("Screenshot attached.");
+                              }}
                               disabled={Boolean(
                                 isUploading || deletingAttachmentId || updatingId || deletingId
                               )}
-                              onChange={(e) => {
-                                void uploadAttachments(item, e.target.files);
-                                e.currentTarget.value = "";
-                              }}
                             />
-                          </label>
+                            <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100">
+                              <span>{isUploading ? "Uploading…" : "Add images"}</span>
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp,image/gif"
+                                multiple
+                                className="sr-only"
+                                data-testid="admin-note-attachment-input"
+                                disabled={Boolean(
+                                  isUploading || deletingAttachmentId || updatingId || deletingId
+                                )}
+                                onChange={(e) => {
+                                  void uploadAttachments(item, e.target.files);
+                                  e.currentTarget.value = "";
+                                }}
+                              />
+                            </label>
+                          </div>
                         </div>
 
                         {item.attachments.length > 0 ? (
@@ -1825,7 +1941,8 @@ export default function AdminNotesManager() {
           Store planning notes with category, priority, date, and completion tracking.
         </p>
         <p className="mt-2 text-xs text-slate-500">
-          Save first, then use Edit on the new note to add screenshots or link related notes.
+          Stage one screenshot before save if needed, then use Edit to attach more images or link
+          related notes afterward.
         </p>
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs font-semibold text-amber-900">Incident quick templates</p>
@@ -1934,6 +2051,88 @@ export default function AdminNotesManager() {
               placeholder="What to do, blockers, and owner notes."
             />
           </label>
+
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Screenshot (optional)</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Capture a browser screenshot now and attach it after the note save succeeds.
+                </p>
+              </div>
+              <AdminNoteScreenshotCaptureButton
+                buttonLabel={createPendingScreenshot ? "Retake screenshot" : "Capture screenshot"}
+                onCaptureReady={async (file) => {
+                  setActionError(null);
+                  setCreateCaptureRecovery(null);
+                  setCreatePendingScreenshotFromFile(file);
+                }}
+                disabled={Boolean(submitting)}
+              />
+            </div>
+
+            {createPendingScreenshot ? (
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={createPendingScreenshot.previewUrl}
+                      alt="Pending screenshot preview"
+                      className="h-14 w-14 rounded-lg object-cover"
+                    />
+                    <div>
+                      <p className="text-xs font-semibold text-slate-900">
+                        Screenshot ready to attach
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-600">
+                        {createCaptureRecovery
+                          ? "The note is already saved. Retry upload or finish without the screenshot."
+                          : "The screenshot stays local until this note save finishes successfully."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {createCaptureRecovery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void retryCreatePendingScreenshotUpload();
+                        }}
+                        disabled={submitting}
+                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      >
+                        {submitting ? "Retrying…" : "Retry upload"}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearCreatePendingScreenshot();
+                        if (createCaptureRecovery) {
+                          setCreateCaptureRecovery(null);
+                          setActionError(null);
+                          setActionNotice(
+                            "Note saved without screenshot. Use Edit to attach one later if needed."
+                          );
+                        }
+                      }}
+                      disabled={submitting}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Remove screenshot
+                    </button>
+                  </div>
+                </div>
+                {createCaptureRecovery ? (
+                  <p className="mt-3 text-[11px] text-slate-600">
+                    Saved note: {createCaptureRecovery.title}. Retry the upload here or use Edit
+                    from the work queue later.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
 
           <label className="space-y-1 text-sm font-medium text-slate-700">
             <span>Attach to (optional)</span>
@@ -2087,7 +2286,7 @@ export default function AdminNotesManager() {
           <div className="sm:col-span-2">
             <button
               type="submit"
-              disabled={submitting || createContextInvalid}
+              disabled={submitting || createContextInvalid || Boolean(createCaptureRecovery)}
               className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
               {submitting ? "Saving…" : "Save note"}

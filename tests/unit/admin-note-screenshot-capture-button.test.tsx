@@ -1,0 +1,122 @@
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import AdminNoteScreenshotCaptureButton from "@/components/admin/AdminNoteScreenshotCaptureButton";
+
+type CaptureOverride = NonNullable<Window["__FS_ADMIN_SCREENSHOT_CAPTURE_OVERRIDE__"]>;
+
+function setCaptureOverride(override: CaptureOverride) {
+  window.__FS_ADMIN_SCREENSHOT_CAPTURE_OVERRIDE__ = override;
+}
+
+function clearCaptureOverride() {
+  delete window.__FS_ADMIN_SCREENSHOT_CAPTURE_OVERRIDE__;
+}
+
+function buildFrame() {
+  return {
+    blob: new Blob(["capture"], { type: "image/png" }),
+    width: 400,
+    height: 240,
+    fileName: "captured-proof.png",
+  };
+}
+
+describe("AdminNoteScreenshotCaptureButton", () => {
+  afterEach(() => {
+    cleanup();
+    clearCaptureOverride();
+    vi.restoreAllMocks();
+  });
+
+  it("captures a preview and forwards the cropped file on save", async () => {
+    const onCaptureReady = vi.fn().mockResolvedValue(undefined);
+    const croppedFile = new File(["cropped"], "captured-proof.png", { type: "image/png" });
+    setCaptureOverride({
+      isSupported: () => true,
+      capture: async () => buildFrame(),
+      cropToFile: async () => croppedFile,
+    });
+
+    render(<AdminNoteScreenshotCaptureButton onCaptureReady={onCaptureReady} />);
+
+    fireEvent.click(screen.getByTestId("admin-note-screenshot-capture-trigger"));
+
+    await screen.findByTestId("admin-note-screenshot-capture-dialog");
+    await screen.findByTestId("admin-note-screenshot-preview-image");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save screenshot" }));
+
+    await waitFor(() => {
+      expect(onCaptureReady).toHaveBeenCalledWith(croppedFile);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("admin-note-screenshot-capture-dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows permission recovery when browser access is denied", async () => {
+    setCaptureOverride({
+      isSupported: () => true,
+      capture: async () => {
+        const error = new Error("Permission denied");
+        error.name = "NotAllowedError";
+        throw error;
+      },
+    });
+
+    render(<AdminNoteScreenshotCaptureButton onCaptureReady={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId("admin-note-screenshot-capture-trigger"));
+
+    await screen.findByTestId("admin-note-screenshot-capture-dialog");
+    await screen.findByText(/Screenshot permission was denied/i);
+    expect(screen.getByRole("button", { name: "Retry capture" })).toBeInTheDocument();
+  });
+
+  it("keeps the preview open when save fails", async () => {
+    const onCaptureReady = vi.fn().mockRejectedValue(new Error("Could not upload screenshot."));
+    setCaptureOverride({
+      isSupported: () => true,
+      capture: async () => buildFrame(),
+      cropToFile: async () =>
+        new File(["cropped"], "captured-proof.png", {
+          type: "image/png",
+        }),
+    });
+
+    render(<AdminNoteScreenshotCaptureButton onCaptureReady={onCaptureReady} />);
+
+    fireEvent.click(screen.getByTestId("admin-note-screenshot-capture-trigger"));
+
+    await screen.findByTestId("admin-note-screenshot-preview-image");
+    fireEvent.click(screen.getByRole("button", { name: "Save screenshot" }));
+
+    await screen.findByText("Could not upload screenshot.");
+    expect(screen.getByTestId("admin-note-screenshot-capture-dialog")).toBeInTheDocument();
+  });
+
+  it("cancels preview without forwarding a file", async () => {
+    const onCaptureReady = vi.fn();
+    setCaptureOverride({
+      isSupported: () => true,
+      capture: async () => buildFrame(),
+      cropToFile: async () =>
+        new File(["cropped"], "captured-proof.png", {
+          type: "image/png",
+        }),
+    });
+
+    render(<AdminNoteScreenshotCaptureButton onCaptureReady={onCaptureReady} />);
+
+    fireEvent.click(screen.getByTestId("admin-note-screenshot-capture-trigger"));
+
+    await screen.findByTestId("admin-note-screenshot-preview-image");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("admin-note-screenshot-capture-dialog")).not.toBeInTheDocument();
+    });
+    expect(onCaptureReady).not.toHaveBeenCalled();
+  });
+});
