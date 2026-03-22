@@ -8,6 +8,15 @@ import type {
   WorkoutSummary,
 } from "@/lib/workouts/shared";
 
+const navigationState = vi.hoisted(() => ({
+  push: vi.fn(),
+  refresh: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => navigationState,
+}));
+
 function buildDraft(): SessionDraft {
   return {
     version: 1,
@@ -166,6 +175,7 @@ describe("WorkoutBuilderHub", () => {
     );
 
     expect(screen.getByText("That saved workout could not be found.")).toBeVisible();
+    expect(screen.getByTestId("workout-builder-empty-create-manual")).toBeVisible();
     expect(screen.getByRole("link", { name: "Open generator" })).toHaveAttribute(
       "href",
       "/my-library/generator"

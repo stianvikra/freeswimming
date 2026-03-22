@@ -68,8 +68,9 @@ function buildWorkoutRow(overrides?: Partial<WorkoutRow>): WorkoutRow {
   };
 }
 
-function buildDraftBody() {
+function buildDraftBody(overrides?: Partial<{ sourceKind: "ai_session_v1" | "manual" }>) {
   return {
+    sourceKind: "ai_session_v1" as const,
     draft: {
       version: 1,
       status: "draft",
@@ -111,6 +112,7 @@ function buildDraftBody() {
         },
       ],
     },
+    ...overrides,
   };
 }
 
@@ -193,6 +195,53 @@ describe("workouts routes", () => {
     expect(payload.ok).toBe(true);
     expect(payload.workout.id).toBe("11111111-1111-4111-8111-111111111111");
     expect(payload.summary.title).toBe("Threshold / CSS 25m Pool draft");
+  });
+
+  it("creates manual canonical workouts when the request source kind is manual", async () => {
+    const single = vi.fn().mockResolvedValue({
+      data: buildWorkoutRow({
+        source_kind: "manual",
+        title: "Manual pool workout",
+      }),
+      error: null,
+    });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    const from = vi.fn().mockReturnValue({ insert });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postWorkout(
+      new Request("http://127.0.0.1:3000/api/my-library/workouts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(buildDraftBody({ sourceKind: "manual" })),
+      })
+    );
+    const payload = (await response.json()) as {
+      ok: boolean;
+      workout: { id: string };
+      summary: { title: string };
+    };
+
+    expect(response.status).toBe(200);
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source_kind: "manual",
+      })
+    );
+    expect(payload.ok).toBe(true);
+    expect(payload.summary.title).toBe("Manual pool workout");
   });
 
   it("rejects invalid workout ids before attempting update", async () => {

@@ -15,10 +15,11 @@ Ship a Garmin-familiar manual session builder and poolside execution experience 
 ## Scope
 
 - Current runtime implementation slice under this brief:
-  - introduce a dedicated authenticated canonical workout editor route for already-saved workouts,
+  - keep the dedicated authenticated canonical workout editor route for already-saved workouts,
   - reuse the same editable workout model the AI session generator now writes into,
   - link accepted AI workouts into that dedicated route from Generator Intake and My Library,
-  - keep manual blank-workout creation and poolside execution deferred until the dedicated builder surface is stable.
+  - add first-party manual blank-workout creation into the canonical builder flow with a truthful `manual` source kind and a sensible starter scaffold,
+  - keep richer Garmin-like repeat/send-off authoring and poolside execution deferred until the manual creation entrypoint is stable.
 
 - Manual workout/session authoring for user-built training sessions.
 - Editing surface for accepted single-session AI drafts after they become canonical workouts, without moving generation logic into this brief.
@@ -178,3 +179,5 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | working tree | moved this brief to in-progress and narrowed the first runtime slice to a dedicated canonical workout editor route for already-accepted workouts, while manual blank-workout creation and poolside execution remain deferred | next: extract the shared workout editor out of Generator Intake, wire `/my-library/workouts/[workoutId]`, and point accepted workout links there`
 - `2026-03-20 | working tree | extracted the shared workout editor, added the dedicated `/my-library/workouts/[workoutId]` route plus My Library entrypoint, and covered generator -> builder handoff with unit + e2e validation | next: commit this slice on its own branch and rerun full repo gates from branch HEAD so PR-body/brief automation evaluates the current diff instead of falling back to the previous merge commit`
 - `2026-03-22 | planning | tightened the builder brief against observed Garmin swim-builder patterns and official Garmin developer docs so future manual-builder slices must treat `Add Step`, `Add Repeat`, starter scaffolds, Garmin-documented `WorkoutIntensity`, `open`, `swim_stroke`, lap/open-water context, and Garmin Connect UI concepts like `Main`, `Lap Button Press`, fixed rest, send-off, `Choice`, and `RIMO` as first-class UX with explicit mapping rather than export-only details | next: resume builder implementation with manual blank-workout creation and richer step authoring before jumping to weekly calendar planning`
+- `2026-03-22 | working tree | added the next manual-builder slice: My Library and Workout Builder can now create a canonical manual workout directly, the save API persists `source_kind = manual`, the starter draft includes a swim-friendly scaffold with explicit rest steps, and the new create flow is covered with unit + desktop e2e validation | next: run full `verify:pre-pr`, then commit/push/open the PR if the repo gate stays green`
+- `2026-03-22 | perf trend decision: hold | \`npm run verify:pre-pr\` reported two consecutive weekly green perf-budget runs and recommended tightening one stretch target step; decision is \`hold\` for this manual-builder slice because it does not change the public budget routes governed by AW-010, so the tighten choice should be recorded again in PR handoff and revisited in the next perf-focused checkpoint | next: keep builder implementation moving while carrying the AW-010 tighten/hold note forward`
