@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-20`
+- `updated`: `2026-03-22`
 
 ## Goal
 
@@ -25,6 +25,9 @@ Ship a Garmin-familiar manual session builder and poolside execution experience 
 - Builder UI patterns:
   - workout-level metadata editing,
   - step cards,
+  - first-class `Add Step` and `Add Repeat` actions with no hidden advanced mode for core Garmin-familiar authoring,
+  - explicit starter scaffolds for `Add Step` and `Add Repeat` when defaults are used, so users edit from a sensible swim-session skeleton instead of raw empty shells,
+  - compact step-card summaries that surface duration, stroke/target, rest/open state, and step totals before opening full edit,
   - add step,
   - add repeat block,
   - reorder/remove,
@@ -32,23 +35,36 @@ Ship a Garmin-familiar manual session builder and poolside execution experience 
 - Workout-level metadata editing:
   - title/name,
   - environment (`pool` or `open_water`),
-  - when `pool`, `pool_length_m` (`12.5`, `25`, `50`),
+  - when `pool`, `pool_length_m` as a numeric field with sensible presets plus custom entry so Garmin-like broader pool-size workflows are not blocked by a narrow enum,
   - session intent/type,
   - total target by distance and/or estimated time,
   - overall effort preset,
   - editable summary/description.
 - Garmin-familiar structured step authoring:
+  - Garmin Connect-style authoring labels such as `warmup`, `main`, `cooldown`, `rest`, and generic `swim`, without pretending those visible labels are the exact provider enums,
+  - separate intensity handling aligned to Garmin-documented `WorkoutIntensity` semantics such as `active`, `warmup`, `cooldown`, `rest`, `recovery`, and `interval`,
+  - Garmin-documented fixed `time`, fixed `distance`, and `open` duration behavior,
+  - Garmin Connect UI duration choices such as `Lap Button Press`, `Fixed Rest Time`, `Send-Off Time`, and `CSS-Based Send-Off Time`, with explicit internal mapping instead of pretending those labels are public API enums,
   - duration + target pairing,
+  - explicit standalone `rest` steps plus repeated active/rest sequences,
+  - swim stroke targeting where Garmin-documented (`freestyle`, `backstroke`, `breaststroke`, `butterfly`, `drill`, `mixed`, `IM`),
+  - if UI convenience options such as `Choice`, `IM by Round`, or `Reverse IM Order (RIMO)` are shown, they must map through explicit FreeSwimming aliases/composition rules rather than being assumed public Garmin API enums,
+  - Garmin Connect-style target modes such as `no target`, `effort-based`, `target pace`, and `CSS-based target pace`, with explicit canonical mapping,
+  - lap-swim vs open-water semantics kept explicit, including pool-length handling when the workout is lap swimming,
+  - drill and equipment selectors where the workout shape needs them, with mapping constraints called out when provider parity is not confirmed in public docs,
   - repeat/interval block editing,
   - rest editing,
   - compatibility hints where a step shape cannot map cleanly downstream.
 - Step editor:
-  - duration type,
-  - distance,
+  - section label / authoring role (`warmup`, `main`, `cooldown`, `rest`, `swim`),
+  - intensity selection aligned to Garmin-documented workout-intensity semantics,
+  - duration type that can represent Garmin-documented `time` / `distance` / `open` semantics and Garmin Connect UI labels for lap-button, fixed-rest, and send-off workflows,
+  - distance with common presets plus custom entry where needed,
   - stroke,
   - drill type,
   - equipment,
   - intensity target,
+  - explicit rest-mode handling when a step is a recovery/open-rest step,
   - threshold-based swim zone target when threshold context exists,
   - notes.
 - Poolside mode:
@@ -135,10 +151,15 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Accepted AI-generated single-session drafts can be edited through the same canonical workout editor once they exist, without forking identity rules.
 - The same editor can change workout-level metadata such as pool/open-water context, pool length, title, effort preset, session intent, and total target after AI generation or manual creation.
 - Users can author Garmin-familiar target/duration/repeat structures without learning a hidden export model later.
+- Users can author fixed rest and `open`/lap-button drill/rest steps without leaving the main builder flow.
+- Users can author send-off and CSS-based send-off style steps without learning a second advanced export-only vocabulary later.
+- If the UI exposes Garmin Connect-like labels such as `Main`, `Choice`, `IM by Round`, or `RIMO`, their internal mapping stays explicit and truthfully documented rather than implied as public Garmin provider fields.
 - Threshold-based swim zone targets, when shown, use the shared published method rather than a separate builder-only zone system.
 - Poolside mode supports clean execution with minimal cognitive load.
 - Save/cancel/dirty-state behavior is deterministic.
 - Builder is Garmin-familiar in structure without brand cloning.
+- `Add Step` and `Add Repeat` are first-class entry actions, and step cards show compact Garmin-familiar summaries before edit.
+- If the builder uses starter default steps or starter repeat scaffolds, those defaults are explicit, quick to overwrite, and never trap the user in hidden assumptions.
 - Reorder and autosave flows do not corrupt canonical item identity.
 - Brief is scorecard-complete and identity-safe before implementation starts.
 
@@ -156,3 +177,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | added explicit workout-level metadata editing expectations for environment, pool length, session intent, effort preset, and normalized distance/time totals so AI-authored drafts and manual workouts can truly share the same editor instead of only the same step cards | next: keep future builder implementation centered on one canonical workout form that can edit both metadata and steps`
 - `2026-03-20 | working tree | moved this brief to in-progress and narrowed the first runtime slice to a dedicated canonical workout editor route for already-accepted workouts, while manual blank-workout creation and poolside execution remain deferred | next: extract the shared workout editor out of Generator Intake, wire `/my-library/workouts/[workoutId]`, and point accepted workout links there`
 - `2026-03-20 | working tree | extracted the shared workout editor, added the dedicated `/my-library/workouts/[workoutId]` route plus My Library entrypoint, and covered generator -> builder handoff with unit + e2e validation | next: commit this slice on its own branch and rerun full repo gates from branch HEAD so PR-body/brief automation evaluates the current diff instead of falling back to the previous merge commit`
+- `2026-03-22 | planning | tightened the builder brief against observed Garmin swim-builder patterns and official Garmin developer docs so future manual-builder slices must treat `Add Step`, `Add Repeat`, starter scaffolds, Garmin-documented `WorkoutIntensity`, `open`, `swim_stroke`, lap/open-water context, and Garmin Connect UI concepts like `Main`, `Lap Button Press`, fixed rest, send-off, `Choice`, and `RIMO` as first-class UX with explicit mapping rather than export-only details | next: resume builder implementation with manual blank-workout creation and richer step authoring before jumping to weekly calendar planning`

@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-20`
+- `updated`: `2026-03-22`
 
 ## Goal
 
@@ -17,7 +17,7 @@ Build export adapters so canonical workouts/programs are usable immediately (PDF
 - Upstream canonical workout/entity contract:
   - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
 - Upstream manual authoring flow:
-  - `docs/task-briefs/planned/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
+  - `docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
 - Upstream AI-authored draft flow:
   - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
 - Export should consume canonical workouts after they exist, regardless of whether they were authored manually or accepted from AI-generated drafts.
@@ -37,6 +37,7 @@ Build export adapters so canonical workouts/programs are usable immediately (PDF
   - QR-ready if needed later.
 - Validation:
   - enforce Garmin-compatible bounds in adapter,
+  - preserve or explicitly reject Garmin-documented `WorkoutIntensity`, `time`, `distance`, `open`, `swim_stroke`, and lap/open-water sub-sport semantics, plus observed Garmin Connect UI swim concepts like `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, and `RIMO` workflows, with actionable diagnostics,
   - enforce threshold-based swim-zone target mapping or explicit rejection when unsupported.
 
 ## Out Of Scope
@@ -112,6 +113,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - PDF export renders consistently and readable on phone print view.
 - Garmin-ready adapter produces valid mapped workout/program payloads for future Training API submission.
+- Garmin-ready adapter preserves or explicitly rejects unsupported Garmin-documented `WorkoutIntensity`, `open`, `swim_stroke`, and lap/open-water sub-sport semantics and Garmin Connect UI swim concepts like `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, `RIMO`, and rest/repeat workflows with actionable errors instead of silent coercion.
 - Threshold-based swim-zone targets either map deterministically into export output or fail with actionable errors.
 - Adapter rejects unsupported step combos with actionable errors.
 - Adapter/output identity stays derived from canonical workout IDs, not mutable labels.
@@ -128,3 +130,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-19 | planning | clarified that export is downstream of canonical workouts from either manual builder or accepted AI-generated drafts, while live Garmin push remains a separate later slice | next: keep export adapter rules aligned with the canonical workout contract and future Garmin partner mapping`
 - `2026-03-20 | planning | expanded export scope to cover Garmin-ready workout/program mapping and threshold-based zone target handling, while keeping live send and activity-history ingestion outside this adapter brief | next: align later export adapters with the exact Training API publish model once partner docs and supported step matrix are finalized`
+- `2026-03-22 | planning | tightened adapter expectations around observed Garmin swim-builder behavior so later export must handle or explicitly reject Garmin-documented `WorkoutIntensity`, `open`, `swim_stroke`, and lap/open-water sub-sport semantics plus Garmin Connect UI concepts like `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, `RIMO`, and explicit rest/repeat swim sets rather than flattening them silently | next: keep adapter tests and blocked Garmin mapping matrix tied to these concrete swim-workout semantics`

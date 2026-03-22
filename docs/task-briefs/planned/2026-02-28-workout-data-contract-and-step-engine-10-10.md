@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-20`
+- `updated`: `2026-03-22`
 
 ## Goal
 
@@ -19,6 +19,12 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
   - target,
   - rest,
   - repeat/interval grouping.
+- Canonical step semantics must keep observed Garmin Connect authoring labels separate from Garmin-documented provider semantics:
+  - public developer anchors include `WorkoutIntensity`, `WorkoutStepDurationType`, `WorkoutStepTargetType`, `SubSport`, and `SwimStrokeType`,
+  - Garmin Connect UI labels such as `Main`, `Lap Button Press`, `Fixed Rest Time`, `Send-Off Time`, `CSS-Based Send-Off Time`, `Choice`, `IM by Round`, and `Reverse IM Order (RIMO)` must be treated as mapping-layer vocabulary until partner/API mapping is explicitly confirmed.
+- Canonical duration semantics must explicitly cover Garmin-documented fixed `time`, fixed `distance`, and `open` step behavior, while still being able to represent Garmin Connect UI concepts like `Lap Button Press`, fixed rest, and send-off workflows without a parallel model later.
+- Canonical target semantics must explicitly cover Garmin-documented `open`, pace/speed-derived targeting, and `swim_stroke` targeting, while still being able to map Garmin Connect UI concepts like `Effort-Based`, `Target Pace`, and `CSS-Based Target Pace` deterministically.
+- Repeat semantics must support ordered step sequences with explicit rest steps or active/rest interval pairing, because Garmin swim workouts are not limited to single-step repeats.
 - Swim intensity targeting must support threshold-based swim zones derived from supported threshold tests, not ad hoc zone naming invented per feature.
 - The contract should normalize threshold inputs from either:
   - `1000m test`,
@@ -33,10 +39,7 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
   - environment:
     - `pool`,
     - `open_water`,
-  - when environment is `pool`, supported `pool_length_m` values:
-    - `12.5`,
-    - `25`,
-    - `50`,
+  - when environment is `pool`, `pool_length_m` must remain a canonical numeric value rather than a narrow enum so FreeSwimming can support the broader Garmin Connect preset/custom pool-size model without schema churn,
   - session intent/type such as:
     - `recovery`,
     - `endurance`,
@@ -77,10 +80,14 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
     - explicit `peak_for_competition` boolean or equivalent structured intent field,
     - optional explicit competition-plan start date when different from default `today`.
 - Define canonical `steps` JSON schema:
-  - step types (`warmup`, `drill`, `main`, `cooldown`, `rest`, `repeat_block`),
-  - duration and distance target,
-  - target mode (`open`, `threshold_zone`, `pace_range`, `rpe`, `rest`),
-  - stroke/equipment,
+  - structure type that distinguishes `single_step` vs `repeat_block`,
+  - UI-facing section/authoring label such as `warmup`, `main`, `cooldown`, `rest`, or `swim`, kept separate from provider mapping,
+  - canonical intensity field aligned to Garmin-documented `WorkoutIntensity` semantics such as `active`, `warmup`, `cooldown`, `rest`, `recovery`, and `interval`,
+  - duration object with explicit canonical `duration_type` such as `time`, `distance`, `open`, and supported repeat-until variants, plus enough structured metadata to map observed Garmin Connect UI cases like `Lap Button Press`, fixed rest, and send-off workflows deterministically,
+  - target object with explicit canonical `target_type` such as `open`, `threshold_zone`, `pace_range`, `swim_stroke`, `rpe`, and `rest`, plus enough structured metadata to map observed Garmin Connect UI cases like `Effort-Based`, `Target Pace`, and `CSS-Based Target Pace` deterministically,
+  - swim context fields that can preserve Garmin-documented `SPORT_SWIMMING` plus `SUB_SPORT_LAP_SWIMMING` vs `SUB_SPORT_OPEN_WATER` semantics where relevant,
+  - repeat blocks that preserve ordered child-step sequences and can represent explicit rest steps instead of assuming rest is only metadata,
+  - stroke/equipment, with observed Garmin Connect conveniences like `Choice`, `IM by Round`, `Reverse IM Order (RIMO)`, and equipment pickers treated as explicit mapping cases rather than assumed public API enums,
   - rest,
   - optional notes.
 - Define Garmin-compatible structured-step semantics:
@@ -187,6 +194,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Step payloads are validated and normalized before persistence.
 - Totals (`meters`, step count, interval count) are deterministic.
 - Canonical step model can express Garmin-familiar single steps, repeats, and interval sets without ambiguous translation.
+- Canonical step model can express Garmin-documented intensity, fixed-duration, fixed-distance, `open`, swim-sub-sport, and `swim_stroke` semantics plus explicit rest steps and repeated swim sets, while also preserving enough structure to map Garmin Connect UI variants like `Main`, `Lap Button Press`, fixed rest, send-off, `Choice`, and `RIMO` workflows without ambiguous translation.
 - Threshold-based swim-zone targets are normalized from supported threshold sources into deterministic pace/zone references.
 - Invalid combinations return actionable validation errors.
 - Canonical identity rules are documented for all persisted entities before implementation starts.
@@ -207,3 +215,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | aligned the canonical workout contract to Garmin-style duration/target/repeat semantics and threshold-based swim-zone normalization from 1000m or CSS sources so manual builder, AI generator, export, and later Garmin delivery share the same language | next: keep downstream builder/generator/export briefs pinned to this contract and avoid parallel zone systems`
 - `2026-03-20 | planning | added explicit plan-intent metadata expectations for planning horizon, optional calendar windows, and competition-date/peak intent so AI generation, planner editing, export, and later history evaluation do not infer those semantics from mutable labels | next: keep builder/generator/history briefs pinned to these canonical plan metadata fields before implementation starts`
 - `2026-03-20 | planning | expanded the canonical workout/session metadata to cover pool vs open-water context, supported pool lengths, session intent, effort presets, and normalized time/distance totals so the first AI session generator and later manual builder can share one editable model | next: keep AI session input UX simple while still mapping canonically onto threshold-based targeting and Garmin-ready step data`
+- `2026-03-22 | planning | aligned the step contract more tightly to observed Garmin swim-builder behavior and official Garmin developer docs so Garmin-documented `WorkoutIntensity`, `time`, `distance`, `open`, `swim_stroke`, and lap/open-water sub-sport remain clearly separated from Garmin Connect UI labels like `Main`, `Lap Button Press`, fixed rest, send-off, `Choice`, and `RIMO` workflows that still need an explicit mapping matrix | next: keep manual builder, export, and blocked Garmin partner mapping matrix pinned to these concrete semantics rather than only generic Garmin-ready language`
