@@ -41,6 +41,7 @@ export const SESSION_DRAFT_STEP_CATEGORIES = [
   "drill",
   "kick",
   "main",
+  "rest",
   "cooldown",
 ] as const;
 export const SESSION_DRAFT_STEP_DURATION_MODES = ["distance", "time"] as const;
@@ -187,6 +188,7 @@ const STEP_CATEGORY_LABELS: Record<SessionDraftStepCategory, string> = {
   drill: "Drill",
   kick: "Kick",
   main: "Main",
+  rest: "Rest",
   cooldown: "Cooldown",
 };
 

@@ -7,7 +7,11 @@ import {
   buildWorkoutSummary,
   WORKOUT_SELECT,
 } from "@/lib/workouts/server";
-import type { WorkoutSaveApiResponse, WorkoutSaveRequestBody } from "@/lib/workouts/shared";
+import {
+  WORKOUT_SOURCE_KINDS,
+  type WorkoutSaveApiResponse,
+  type WorkoutSaveRequestBody,
+} from "@/lib/workouts/shared";
 
 function noStoreJson(
   body: WorkoutSaveApiResponse | Record<string, unknown>,
@@ -21,6 +25,13 @@ function noStoreJson(
       "Cache-Control": "no-store",
     },
   });
+}
+
+function normalizeSourceKind(value: WorkoutSaveRequestBody["sourceKind"]) {
+  if (value && WORKOUT_SOURCE_KINDS.includes(value)) {
+    return value;
+  }
+  return "ai_session_v1";
 }
 
 export async function POST(request: Request) {
@@ -46,7 +57,11 @@ export async function POST(request: Request) {
 
   let insertPayload;
   try {
-    insertPayload = buildWorkoutInsert(user.id, body.draft ?? null);
+    insertPayload = buildWorkoutInsert(
+      user.id,
+      body.draft ?? null,
+      normalizeSourceKind(body.sourceKind)
+    );
   } catch (error) {
     return applySupabaseCookies(
       noStoreJson(

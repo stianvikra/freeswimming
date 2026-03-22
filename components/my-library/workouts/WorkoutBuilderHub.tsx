@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
 import type {
   WorkoutEditorRecord,
@@ -99,9 +100,17 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
             the fuller manual builder flow.
           </p>
         </div>
-        <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-          Canonical workout
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {workoutLibrary.schemaReady ? (
+            <CreateManualWorkoutButton
+              testId="workout-builder-create-manual"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+            />
+          ) : null}
+          <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+            Canonical workout
+          </p>
+        </div>
       </div>
 
       {!workoutLibrary.schemaReady ? (
@@ -140,10 +149,16 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
                 : "No canonical workout is loaded in this route."}
             </p>
             <p className="mt-2 text-sm text-amber-900/90">
-              Return to the generator when you want a brand-new AI draft, or reopen another saved
-              workout below.
+              Create a starter manual workout here, return to the generator for a brand-new AI
+              draft, or reopen another saved workout below.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
+              {workoutLibrary.schemaReady ? (
+                <CreateManualWorkoutButton
+                  testId="workout-builder-empty-create-manual"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                />
+              ) : null}
               <Link
                 href="/my-library/generator"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
@@ -212,7 +227,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
             startNewDraftHref="/my-library/generator"
             startNewDraftLabel="Generate new draft"
             showLoadedBanner={false}
-            recentWorkoutsDescription="Open another saved workout here, or jump back to the generator when you want a brand-new AI draft."
+            recentWorkoutsDescription="Open another saved workout here, create a new manual workout from the header, or jump back to the generator when you want a brand-new AI draft."
             workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
             saveButtonTestId="workout-builder-save"
           />

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Database } from "@/types/database";
+import { buildManualWorkoutStarterDraft } from "@/lib/workouts/manual";
 import {
   buildWorkoutEditorRecord,
   buildWorkoutInsert,
@@ -125,6 +126,16 @@ describe("workouts server", () => {
     expect(insert.total_distance_m).toBe(2200);
     expect(insert.estimated_duration_min).toBe(51);
     expect(insert.allowed_strokes).toEqual(["freestyle"]);
+  });
+
+  it("supports manual source kind and starter scaffolds", () => {
+    const starter = buildManualWorkoutStarterDraft(new Date("2026-03-22T12:00:00.000Z"));
+    const insert = buildWorkoutInsert("user-1", starter, "manual");
+
+    expect(insert.source_kind).toBe("manual");
+    expect(insert.title).toBe("Manual pool workout");
+    expect(Array.isArray(insert.steps)).toBe(true);
+    expect(starter.steps.some((step) => step.category === "rest")).toBe(true);
   });
 
   it("maps persisted workout rows back into editor and summary records", () => {

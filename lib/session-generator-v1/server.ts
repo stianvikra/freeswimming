@@ -27,6 +27,7 @@ type SegmentPlan = {
   drill: number;
   kick: number;
   main: number;
+  rest: number;
   cooldown: number;
 };
 
@@ -195,12 +196,12 @@ function estimateDurationFromDistance(distanceM: number, basePaceSecondsPer100m:
 
 function buildSegmentPlan(input: SessionGeneratorInput): SegmentPlan {
   const baseByType: Record<SessionGeneratorSessionType, SegmentPlan> = {
-    recovery: { warmup: 30, drill: 0, kick: 0, main: 45, cooldown: 25 },
-    endurance: { warmup: 20, drill: 0, kick: 0, main: 60, cooldown: 20 },
-    technique: { warmup: 20, drill: 30, kick: 0, main: 30, cooldown: 20 },
-    threshold_css: { warmup: 20, drill: 0, kick: 0, main: 60, cooldown: 20 },
-    speed: { warmup: 20, drill: 10, kick: 0, main: 50, cooldown: 20 },
-    race_pace: { warmup: 20, drill: 5, kick: 0, main: 55, cooldown: 20 },
+    recovery: { warmup: 30, drill: 0, kick: 0, main: 45, rest: 0, cooldown: 25 },
+    endurance: { warmup: 20, drill: 0, kick: 0, main: 60, rest: 0, cooldown: 20 },
+    technique: { warmup: 20, drill: 30, kick: 0, main: 30, rest: 0, cooldown: 20 },
+    threshold_css: { warmup: 20, drill: 0, kick: 0, main: 60, rest: 0, cooldown: 20 },
+    speed: { warmup: 20, drill: 10, kick: 0, main: 50, rest: 0, cooldown: 20 },
+    race_pace: { warmup: 20, drill: 5, kick: 0, main: 55, rest: 0, cooldown: 20 },
   };
 
   const plan = { ...baseByType[input.sessionType] };
@@ -395,12 +396,20 @@ function allocateRoundedValues(
   plan: SegmentPlan,
   roundingUnit: number
 ): Record<SessionDraftStepCategory, number> {
-  const categories: SessionDraftStepCategory[] = ["warmup", "drill", "kick", "main", "cooldown"];
+  const categories: SessionDraftStepCategory[] = [
+    "warmup",
+    "drill",
+    "kick",
+    "main",
+    "rest",
+    "cooldown",
+  ];
   const result = {
     warmup: 0,
     drill: 0,
     kick: 0,
     main: 0,
+    rest: 0,
     cooldown: 0,
   } satisfies Record<SessionDraftStepCategory, number>;
 

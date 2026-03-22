@@ -48,6 +48,7 @@ export type WorkoutEditorRecord = {
 
 export type WorkoutSaveRequestBody = {
   draft?: SessionDraft | null;
+  sourceKind?: WorkoutSourceKind | null;
 };
 
 export type WorkoutSaveApiSuccess = {

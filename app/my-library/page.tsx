@@ -7,6 +7,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
+import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import LibrarySectionTabs from "@/components/my-library/LibrarySectionTabs";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
@@ -259,18 +260,22 @@ export default async function MyLibraryPage() {
                         : "Accepted AI-generated workouts will appear here for later canonical editing once you save your first session draft."}
                   </p>
                 </div>
-                <Link
-                  href={
-                    workoutLibrarySnapshot.recentWorkouts[0]
-                      ? `/my-library/workouts/${workoutLibrarySnapshot.recentWorkouts[0].id}`
-                      : "/my-library/generator"
-                  }
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-                >
-                  {workoutLibrarySnapshot.recentWorkouts[0]
-                    ? "Open workout builder"
-                    : "Create first workout"}
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                  {workoutLibrarySnapshot.recentWorkouts[0] ? (
+                    <Link
+                      href={`/my-library/workouts/${workoutLibrarySnapshot.recentWorkouts[0].id}`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      Open workout builder
+                    </Link>
+                  ) : null}
+                  {workoutLibrarySnapshot.schemaReady ? (
+                    <CreateManualWorkoutButton
+                      testId="my-library-create-manual-workout"
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    />
+                  ) : null}
+                </div>
               </div>
             </section>
             <LibrarySectionTabs showExploreTab={sections.explore.length > 0} />

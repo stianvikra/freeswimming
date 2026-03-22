@@ -52,7 +52,8 @@ export const WORKOUT_SELECT = `
 
 export function buildWorkoutInsert(
   userId: string,
-  draft: SessionDraft | null | undefined
+  draft: SessionDraft | null | undefined,
+  sourceKind: WorkoutSourceKind = "ai_session_v1"
 ): WorkoutInsert {
   const normalized = normalizeSessionDraftForWorkoutPersistence(draft);
   if (!normalized.ok) {
@@ -61,7 +62,7 @@ export function buildWorkoutInsert(
 
   return {
     user_id: userId,
-    source_kind: "ai_session_v1",
+    source_kind: sourceKind,
     status: "accepted",
     generator_kind: normalized.value.generatorKind,
     source_fingerprint: normalized.value.sourceFingerprint,
