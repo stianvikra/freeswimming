@@ -101,6 +101,7 @@ export async function GET(request: Request) {
         return applySupabaseCookies(
           noStoreJson({
             ok: true,
+            role: gate.role,
             items: [],
             schemaReady: false,
             warning: getAdminSchemaSetupMessage("notes"),
@@ -112,6 +113,7 @@ export async function GET(request: Request) {
       return applySupabaseCookies(
         noStoreJson({
           ok: true,
+          role: gate.role,
           items: [],
           schemaReady: false,
           warning: getAdminSchemaSetupMessage("notes"),
@@ -137,6 +139,7 @@ export async function GET(request: Request) {
           return applySupabaseCookies(
             noStoreJson({
               ok: true,
+              role: gate.role,
               items: [],
               schemaReady: false,
               warning: getAdminSchemaSetupMessage("notes"),
@@ -148,6 +151,7 @@ export async function GET(request: Request) {
         return applySupabaseCookies(
           noStoreJson({
             ok: true,
+            role: gate.role,
             items: [],
             schemaReady: false,
             warning: getAdminSchemaSetupMessage("notes"),
@@ -172,6 +176,7 @@ export async function GET(request: Request) {
         return applySupabaseCookies(
           noStoreJson({
             ok: true,
+            role: gate.role,
             items: [],
             schemaReady: false,
             warning: getAdminSchemaSetupMessage("notes"),
@@ -183,6 +188,7 @@ export async function GET(request: Request) {
       return applySupabaseCookies(
         noStoreJson({
           ok: true,
+          role: gate.role,
           items: [],
           schemaReady: false,
           warning: getAdminSchemaSetupMessage("notes"),
@@ -193,6 +199,7 @@ export async function GET(request: Request) {
     return applySupabaseCookies(
       noStoreJson({
         ok: true,
+        role: gate.role,
         items: hydrated.items,
         schemaReady: true,
         warning: null,
@@ -227,6 +234,7 @@ export async function GET(request: Request) {
       return applySupabaseCookies(
         noStoreJson({
           ok: true,
+          role: gate.role,
           items: [],
           schemaReady: false,
           warning: getAdminSchemaSetupMessage("notes"),
@@ -238,6 +246,7 @@ export async function GET(request: Request) {
     return applySupabaseCookies(
       noStoreJson({
         ok: true,
+        role: gate.role,
         items: [],
         schemaReady: false,
         warning: getAdminSchemaSetupMessage("notes"),
@@ -255,6 +264,7 @@ export async function GET(request: Request) {
       return applySupabaseCookies(
         noStoreJson({
           ok: true,
+          role: gate.role,
           items: [],
           schemaReady: false,
           warning: getAdminSchemaSetupMessage("notes"),
@@ -266,6 +276,7 @@ export async function GET(request: Request) {
     return applySupabaseCookies(
       noStoreJson({
         ok: true,
+        role: gate.role,
         items: [],
         schemaReady: false,
         warning: getAdminSchemaSetupMessage("notes"),
@@ -276,6 +287,7 @@ export async function GET(request: Request) {
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
+      role: gate.role,
       items: hydrated.items,
       schemaReady: true,
       warning: null,

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
+import { hasRequiredAdminRole, type AdminRole } from "@/lib/admin/access";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import type { AdminNoteItem } from "@/lib/admin/notes";
@@ -8,6 +10,7 @@ import type { AdminNoteItem } from "@/lib/admin/notes";
 type AdminNotesResponse =
   | {
       ok: true;
+      role: AdminRole;
       items: AdminNoteItem[];
       schemaReady?: boolean;
       warning?: string | null;
@@ -126,6 +129,7 @@ export default function AdminContextNotesPanel({
   const [expanded, setExpanded] = useState(!collapsedByDefault);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<AdminNoteItem[]>([]);
+  const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
@@ -169,6 +173,7 @@ export default function AdminContextNotesPanel({
 
       if (response.status === 401 || response.status === 403) {
         setAuthorized(false);
+        setAdminRole(null);
         setItems([]);
         setCategoryOptions([]);
         return;
@@ -187,6 +192,7 @@ export default function AdminContextNotesPanel({
       }
 
       setAuthorized(true);
+      setAdminRole(payload.role);
       setItems(payload.items);
       setSchemaReady(payload.schemaReady !== false);
       setWarning(payload.warning ?? null);
@@ -209,6 +215,7 @@ export default function AdminContextNotesPanel({
       }
     } catch {
       setAuthorized(true);
+      setAdminRole(null);
       setItems([]);
       setCategoryOptions([]);
       setError("Could not load context notes.");
@@ -394,6 +401,7 @@ export default function AdminContextNotesPanel({
     contextType === "course_lesson"
       ? items.filter((item) => item.context_type === "course_module").length
       : 0;
+  const canMutateNotes = Boolean(adminRole && hasRequiredAdminRole(adminRole, "editor"));
 
   return (
     <section
@@ -411,14 +419,28 @@ export default function AdminContextNotesPanel({
             {inheritedModuleCount > 0 ? ` · ${inheritedModuleCount} inherited from module` : ""}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-          data-testid="admin-context-notes-toggle"
-        >
-          {expanded ? "Collapse notes" : "Show notes"}
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <AdminNoteQuickCaptureLauncher
+            adminRole={adminRole}
+            contextType={contextType}
+            contextRef={normalizedContextRef}
+            contextLabel={contextLabel}
+            triggerLabel="Quick note"
+            onSaved={(item) => {
+              setItems((prev) => [item, ...prev.filter((entry) => entry.id !== item.id)]);
+              setActionError(null);
+              setActionNotice("Quick note saved.");
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            data-testid="admin-context-notes-toggle"
+          >
+            {expanded ? "Collapse notes" : "Show notes"}
+          </button>
+        </div>
       </div>
 
       {expanded ? (
@@ -495,38 +517,42 @@ export default function AdminContextNotesPanel({
                           </p>
                         ) : null}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <label className="inline-flex items-center gap-2 text-xs text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={item.is_done}
+                      {canMutateNotes ? (
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center gap-2 text-xs text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={item.is_done}
+                              disabled={Boolean(updatingId || deletingId || editingId)}
+                              onChange={() => {
+                                void toggleDone(item);
+                              }}
+                              className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                            />
+                            {isUpdating ? "Saving…" : "Done"}
+                          </label>
+                          <button
+                            type="button"
                             disabled={Boolean(updatingId || deletingId || editingId)}
-                            onChange={() => {
-                              void toggleDone(item);
+                            onClick={() => startEdit(item)}
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            disabled={Boolean(updatingId || deletingId)}
+                            onClick={() => {
+                              void handleDelete(item);
                             }}
-                            className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                          />
-                          {isUpdating ? "Saving…" : "Done"}
-                        </label>
-                        <button
-                          type="button"
-                          disabled={Boolean(updatingId || deletingId || editingId)}
-                          onClick={() => startEdit(item)}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          disabled={Boolean(updatingId || deletingId)}
-                          onClick={() => {
-                            void handleDelete(item);
-                          }}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {isDeleting ? "Deleting…" : "Delete"}
-                        </button>
-                      </div>
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-xs font-medium text-slate-500">Read only</p>
+                      )}
                     </div>
 
                     {isEditing && editState ? (
@@ -628,87 +654,100 @@ export default function AdminContextNotesPanel({
             </ul>
           ) : null}
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-3">
-            <h4 className="text-sm font-semibold text-slate-900">Add note</h4>
-            <p className="mt-1 text-xs text-slate-600">
-              Save an admin reminder directly on this item.
+          {canMutateNotes ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-3">
+              <h4 className="text-sm font-semibold text-slate-900">Add note</h4>
+              <p className="mt-1 text-xs text-slate-600">
+                Save an admin reminder directly on this item.
+              </p>
+              <form
+                className="mt-3 grid gap-3 sm:grid-cols-2"
+                onSubmit={handleCreate}
+                data-testid="admin-context-note-create-form"
+              >
+                <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <span>Title</span>
+                  <input
+                    type="text"
+                    required
+                    value={formState.title}
+                    onChange={(e) => setFormState((prev) => ({ ...prev, title: e.target.value }))}
+                    placeholder="What should be changed?"
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  />
+                </label>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <span>Category</span>
+                  <input
+                    type="text"
+                    list="admin-context-note-category-options"
+                    value={formState.category}
+                    onChange={(e) =>
+                      setFormState((prev) => ({ ...prev, category: e.target.value }))
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  />
+                </label>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <span>Date</span>
+                  <input
+                    type="date"
+                    value={formState.noteDate}
+                    onChange={(e) =>
+                      setFormState((prev) => ({ ...prev, noteDate: e.target.value }))
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  />
+                </label>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <span>Text</span>
+                  <textarea
+                    rows={3}
+                    value={formState.body}
+                    onChange={(e) => setFormState((prev) => ({ ...prev, body: e.target.value }))}
+                    placeholder="Write details you need to remember."
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                  />
+                </label>
+
+                <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={formState.isDone}
+                    onChange={(e) =>
+                      setFormState((prev) => ({ ...prev, isDone: e.target.checked }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                  />
+                  Mark as done
+                </label>
+
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={submitting || !schemaReady}
+                    className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  >
+                    {submitting ? "Saving…" : "Save note"}
+                  </button>
+                </div>
+              </form>
+
+              <datalist id="admin-context-note-category-options">
+                {categoryOptions.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+            </div>
+          ) : (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              Viewer role can review contextual notes here, but only editors/admins can create or
+              change them.
             </p>
-            <form
-              className="mt-3 grid gap-3 sm:grid-cols-2"
-              onSubmit={handleCreate}
-              data-testid="admin-context-note-create-form"
-            >
-              <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
-                <span>Title</span>
-                <input
-                  type="text"
-                  required
-                  value={formState.title}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="What should be changed?"
-                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                />
-              </label>
-
-              <label className="space-y-1 text-xs font-medium text-slate-700">
-                <span>Category</span>
-                <input
-                  type="text"
-                  list="admin-context-note-category-options"
-                  value={formState.category}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, category: e.target.value }))}
-                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                />
-              </label>
-
-              <label className="space-y-1 text-xs font-medium text-slate-700">
-                <span>Date</span>
-                <input
-                  type="date"
-                  value={formState.noteDate}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, noteDate: e.target.value }))}
-                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                />
-              </label>
-
-              <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
-                <span>Text</span>
-                <textarea
-                  rows={3}
-                  value={formState.body}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, body: e.target.value }))}
-                  placeholder="Write details you need to remember."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-                />
-              </label>
-
-              <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={formState.isDone}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, isDone: e.target.checked }))}
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                />
-                Mark as done
-              </label>
-
-              <div className="sm:col-span-2">
-                <button
-                  type="submit"
-                  disabled={submitting || !schemaReady}
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-                >
-                  {submitting ? "Saving…" : "Save note"}
-                </button>
-              </div>
-            </form>
-
-            <datalist id="admin-context-note-category-options">
-              {categoryOptions.map((option) => (
-                <option key={option} value={option} />
-              ))}
-            </datalist>
-          </div>
+          )}
         </div>
       ) : null}
     </section>

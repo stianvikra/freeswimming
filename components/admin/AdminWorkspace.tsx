@@ -2,6 +2,7 @@
 
 import { startTransition, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
 import AdminCommerceManager from "@/components/admin/AdminCommerceManager";
 import AdminContentManager from "@/components/admin/AdminContentManager";
 import AdminCategoriesManager from "@/components/admin/AdminCategoriesManager";
@@ -10,6 +11,7 @@ import AdminHelpCenter from "@/components/admin/AdminHelpCenter";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
 import AdminQrLinksManager from "@/components/admin/AdminQrLinksManager";
+import type { AdminRole } from "@/lib/admin/access";
 import {
   applyAdminTabToSearchParams,
   parseAdminTab,
@@ -59,7 +61,11 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
   },
 ];
 
-export default function AdminWorkspace() {
+type Props = {
+  role: AdminRole | null;
+};
+
+export default function AdminWorkspace({ role }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -118,16 +124,29 @@ export default function AdminWorkspace() {
       </div>
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Active section
-        </p>
-        <p
-          className="mt-1 text-sm font-semibold text-slate-900"
-          data-testid="admin-active-section-label"
-        >
-          {activeMeta.label}
-        </p>
-        <p className="mt-1 text-sm text-slate-600">{activeMeta.subtitle}</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Active section
+            </p>
+            <p
+              className="mt-1 text-sm font-semibold text-slate-900"
+              data-testid="admin-active-section-label"
+            >
+              {activeMeta.label}
+            </p>
+            <p className="mt-1 text-sm text-slate-600">{activeMeta.subtitle}</p>
+          </div>
+          <AdminNoteQuickCaptureLauncher
+            adminRole={role}
+            contextType="page"
+            contextRef="/admin"
+            contextLabel="Admin dashboard"
+            triggerLabel="Quick note"
+            triggerTestId="admin-workspace-quick-note-trigger"
+            description="Capture a page-level admin note from the dashboard without switching to the Notes tab first."
+          />
+        </div>
       </div>
 
       <div className="mt-6 space-y-6">
