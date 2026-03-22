@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-22-my-library-training-focus-edit-primary-and-section-nav-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-22`
 - `updated`: `2026-03-22`
@@ -203,3 +203,4 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-03-22 | planning + implementation start | opened a dedicated follow-up slice for editable focus cards, explicit primary removal, and clickable overview-card navigation after confirming current training-context API only supports set-primary and terminal status updates | next: implement route + UI updates, add tests, and run targeted validation`
+- `2026-03-22 | merged to main | PR #262 merged as 5fb3142633cfaa7b0b31c18c8026105c30a3afbc after local verify:pre-pr, local verify:pre-merge, and all required GitHub checks passed | next: manual Safari/iPhone QA if we want to raise the slice from release-ready to full 10/10 confidence`
