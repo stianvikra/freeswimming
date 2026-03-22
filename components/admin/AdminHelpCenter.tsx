@@ -389,7 +389,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Quick note",
         meaning:
-          "Opens the lightweight quick-capture sheet so you can save a route-aware note without switching to the Notes tab first.",
+          "Opens the lightweight quick-capture sheet so you can save a route-aware note, optionally stage one screenshot, and stay on the current admin surface.",
       },
       {
         label: "Use P0 template / Use P1 template / Use P2 template",
@@ -417,13 +417,18 @@ const BUTTON_GUIDE: ActionGroup[] = [
           "Attach admin-only screenshots for memory/debugging. Delete must remove both note metadata and the underlying stored image.",
       },
       {
+        label: "Capture screenshot / Retake screenshot / Retry upload",
+        meaning:
+          "Starts browser capture, lets you drag a tighter crop in preview, and keeps the screenshot local until note save plus attachment upload succeed.",
+      },
+      {
         label: "Link note / Remove link",
         meaning: "Connects related notes by stable note ID without merging them into one record.",
       },
       {
         label: "Save note / Save changes / Delete",
         meaning:
-          "Creates, updates, or removes task notes with route/content context. Save first, then add screenshots or related-note links from Edit.",
+          "Creates, updates, or removes task notes with route/content context. Create and Quick note can stage one screenshot before first save; Edit can add/remove more screenshots and related-note links later.",
       },
       {
         label: "Save category / Delete",
@@ -555,7 +560,9 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "Open the exact page/content row you are reviewing.",
       "Use `Quick note` when you want to capture the issue fast from the current surface without losing context.",
       "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
-      "Add screenshots when the issue is visual or hard to reproduce, and link any follow-up note instead of pasting duplicate text.",
+      "Use `Capture screenshot` when the issue is visual, drag to the relevant crop in preview, and save only after the preview looks right.",
+      "Remember that staged screenshots stay local until note save and attachment upload both succeed; if permission is denied, fall back to `Add images`.",
+      "Link any follow-up note instead of pasting duplicate text.",
       "Use Search + Priority + Context filters in Notes to reopen the same note quickly.",
       "Mark completion status once resolved, then use Done archive to confirm it is recoverable.",
     ],
@@ -871,6 +878,15 @@ export default function AdminHelpCenter() {
             <p className="text-sm font-semibold text-rose-900">Create or publish action fails</p>
             <p className="mt-1 text-sm text-rose-800">
               Read API error text, verify role/allowlist, and confirm required CI checks are green.
+            </p>
+          </article>
+          <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <p className="text-sm font-semibold text-amber-900">
+              Screenshot capture is denied or upload fails
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              Retry capture first. If browser permission is blocked or upload still fails, keep the
+              note ID, refresh Notes, and use Add images or the admin-notes recovery runbook.
             </p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">

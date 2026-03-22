@@ -1,12 +1,9 @@
-import { Buffer } from "node:buffer";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
-const TINY_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9wAAAABJRU5ErkJggg==",
-  "base64"
-);
+const TINY_PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9wAAAABJRU5ErkJggg==";
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Admin e2e is desktop-only.");
@@ -167,6 +164,43 @@ async function toggleDoneAndWait(page: Page, item: ReturnType<Page["getByTestId"
   }
 }
 
+async function installAdminScreenshotCaptureMock(
+  page: Page,
+  mode: "success" | "permission_denied"
+) {
+  await page.addInitScript(
+    ({ base64, captureMode }) => {
+      const decodePng = () => Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+
+      window.__FS_ADMIN_SCREENSHOT_CAPTURE_OVERRIDE__ = {
+        isSupported: () => true,
+        capture: async () => {
+          if (captureMode === "permission_denied") {
+            const error = new Error("Permission denied");
+            error.name = "NotAllowedError";
+            throw error;
+          }
+
+          return {
+            blob: new Blob([decodePng()], { type: "image/png" }),
+            width: 1,
+            height: 1,
+            fileName: "captured-proof.png",
+          };
+        },
+        cropToFile: async () =>
+          new File([decodePng()], "captured-proof.png", {
+            type: "image/png",
+          }),
+      };
+    },
+    {
+      base64: TINY_PNG_BASE64,
+      captureMode: mode,
+    }
+  );
+}
+
 test.describe("admin notes workflow", () => {
   test("allowlisted admin can create, edit, toggle, and delete notes", async ({
     page,
@@ -175,6 +209,7 @@ test.describe("admin notes workflow", () => {
     test.slow();
     test.setTimeout(90_000);
 
+    await installAdminScreenshotCaptureMock(page, "success");
     await loginAsAdminViaDevBypass(page);
     await openNotesSection(page);
 
@@ -350,14 +385,18 @@ test.describe("admin notes workflow", () => {
             response.request().method() === "POST",
           { timeout: 15_000 }
         ),
-        attachmentsEditForm.getByTestId("admin-note-attachment-input").setInputFiles({
-          name: "note-proof.png",
-          mimeType: "image/png",
-          buffer: TINY_PNG,
-        }),
+        (async () => {
+          await attachmentsEditForm.getByRole("button", { name: "Capture screenshot" }).click();
+          const captureDialog = page.getByTestId("admin-note-screenshot-capture-dialog");
+          await expect(captureDialog).toBeVisible();
+          await expect(
+            captureDialog.getByTestId("admin-note-screenshot-preview-image")
+          ).toBeVisible();
+          await captureDialog.getByRole("button", { name: "Save screenshot" }).click();
+        })(),
       ]);
     } catch {
-      test.skip(true, "Admin notes attachment upload timed out in this environment.");
+      test.skip(true, "Admin notes screenshot capture upload timed out in this environment.");
     }
     if (!uploadResponse) {
       return;
@@ -373,7 +412,7 @@ test.describe("admin notes workflow", () => {
           : `status ${uploadResponse.status()}`;
       test.skip(
         true,
-        `Admin notes attachment upload is not ready in this environment (${reason}).`
+        `Admin notes screenshot capture upload is not ready in this environment (${reason}).`
       );
     }
 
@@ -414,6 +453,41 @@ test.describe("admin notes workflow", () => {
 
     await expect(updatedItem).toContainText("1 related note");
     await expect(updatedItem).toContainText(secondaryTitle);
+
+    let deleteAttachmentResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+    try {
+      [deleteAttachmentResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes(`/api/admin/notes/${noteId}/attachments/`) &&
+            response.request().method() === "DELETE",
+          { timeout: 15_000 }
+        ),
+        attachmentsEditForm.getByTestId("admin-note-attachment-delete").click(),
+      ]);
+    } catch {
+      test.skip(true, "Admin notes screenshot delete request timed out in this environment.");
+    }
+    if (!deleteAttachmentResponse) {
+      return;
+    }
+
+    const deleteAttachmentPayload = (await deleteAttachmentResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
+    if (!deleteAttachmentResponse.ok() || deleteAttachmentPayload?.ok === false) {
+      const reason =
+        typeof deleteAttachmentPayload?.error === "string"
+          ? deleteAttachmentPayload.error
+          : `status ${deleteAttachmentResponse.status()}`;
+      test.skip(
+        true,
+        `Admin notes screenshot delete is not ready in this environment (${reason}).`
+      );
+    }
+
+    await expect(updatedItem).not.toContainText("1 image");
     await attachmentsEditForm.getByRole("button", { name: "Cancel" }).click();
 
     await page.getByTestId("admin-notes-category-filter").selectOption("Product");
@@ -468,8 +542,8 @@ test.describe("admin notes workflow", () => {
     const reopenFiltersButton = page.getByRole("button", { name: "Clear filters" });
     await expect(reopenFiltersButton).toBeVisible();
     await reopenFiltersButton.click();
-    await expect(page.getByTestId("admin-notes-search")).toHaveValue("");
-    await expect(page).not.toHaveURL(/notesQuery=/);
+    await expect(page).not.toHaveURL(/notesQuery=/, { timeout: 15_000 });
+    await expect(page.getByTestId("admin-notes-search")).toHaveValue("", { timeout: 15_000 });
     const relatedNoteItem = page
       .getByTestId("admin-note-item")
       .filter({ hasText: secondaryTitle })
@@ -480,6 +554,24 @@ test.describe("admin notes workflow", () => {
     await expect(
       page.getByTestId("admin-note-item").filter({ hasText: secondaryTitle })
     ).toHaveCount(0);
+  });
+
+  test("shows recovery when screenshot capture permission is denied", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await installAdminScreenshotCaptureMock(page, "permission_denied");
+    await loginAsAdminViaDevBypass(page);
+    await openNotesSection(page);
+
+    const createForm = page.getByTestId("admin-notes-create-form");
+    await createForm.getByRole("button", { name: "Capture screenshot" }).click();
+
+    const captureDialog = page.getByTestId("admin-note-screenshot-capture-dialog");
+    await expect(captureDialog).toBeVisible();
+    await expect(captureDialog).toContainText(/Screenshot permission was denied/i);
+    await expect(captureDialog.getByRole("button", { name: "Retry capture" })).toBeVisible();
   });
 
   test("allowlisted admin can quick-capture a dashboard note and jump into Notes", async ({

@@ -12,6 +12,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 
 - Save returns `Could not update note.` or `Could not save note.` even though another operator already changed the row.
 - Quick capture save fails or closes unexpectedly and you need to confirm whether a note was actually created.
+- Screenshot capture permission is denied, cancelled, or never reaches preview and you need to finish the note safely.
 - A contextual note panel shows outdated title/body/status after recent edits in admin.
 - You suspect duplicate/overlapping edits on the same note.
 - Screenshot upload/delete returns an error and you are unsure whether the stored image was fully removed.
@@ -31,9 +32,12 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
    - context label (`Course Lesson`, `Product`, `Page`, etc.),
    - raw context ref/path when relevant.
 6. If screenshots are involved:
+   - if capture permission was denied or cancelled, confirm whether the screenshot ever reached preview; if not, nothing was saved and you can retry or use `Add images`,
+   - if preview existed but note save failed, search by `Note ID` or title before retrying capture so you do not create duplicate notes,
    - confirm the attachment list and image count in the note row,
    - if delete failed, refresh once and verify whether the image is still present before retrying,
-   - if upload failed, retry only after confirming you are not looking at a stale duplicate preview.
+   - if upload failed after note save, retry only after confirming you are not looking at a stale duplicate preview,
+   - if the staged screenshot was removed locally, use `Capture screenshot` again or fall back to `Add images`.
 7. If related notes are involved:
    - open the visible linked note IDs from Search if needed,
    - confirm the intended link exists only once,
@@ -47,6 +51,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 - Recovery completes without deleting valid note history.
 - Final note state is consistent in admin list and contextual panel.
 - Attachment/image state and related-note links are consistent after one refresh.
+- Permission-denied or cancelled screenshot flows leave no fake saved attachment behind.
 - AW-012 checkpoint includes branch/SHA + one-line result summary.
 
 ## Evidence Note Template (Checkpoint Entry)

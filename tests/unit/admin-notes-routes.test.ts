@@ -35,6 +35,7 @@ vi.mock("@/lib/admin/notes-server", () => ({
 }));
 
 import { DELETE as deleteNote } from "@/app/api/admin/notes/[id]/route";
+import { POST as uploadAttachment } from "@/app/api/admin/notes/[id]/attachments/route";
 import { DELETE as deleteAttachment } from "@/app/api/admin/notes/[id]/attachments/[attachmentId]/route";
 import { POST as addRelatedNote } from "@/app/api/admin/notes/[id]/links/route";
 
@@ -318,5 +319,34 @@ describe("admin notes mutation routes", () => {
       related_note_id: noteId,
       created_by: "admin-user-id",
     });
+  });
+
+  it("fails closed for unauthorized attachment uploads", async () => {
+    const noteId = "123e4567-e89b-42d3-a456-426614174099";
+    requireAdminRoleFromSupabaseMock.mockResolvedValueOnce({
+      ok: false,
+      error: "Forbidden",
+      status: 403,
+    });
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {},
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const formData = new FormData();
+    formData.set("file", new File(["capture"], "captured-proof.png", { type: "image/png" }));
+
+    const response = await uploadAttachment(
+      new Request(`https://freeswimming.org/api/admin/notes/${noteId}/attachments`, {
+        method: "POST",
+        body: formData,
+      }),
+      noteContext(noteId)
+    );
+
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
+    expect(response.status).toBe(403);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Forbidden");
   });
 });
