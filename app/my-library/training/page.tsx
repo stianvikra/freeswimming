@@ -92,32 +92,6 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-            <h2 className="text-base font-semibold text-slate-900">How these work together</h2>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Goals</p>
-                <p className="mt-2 text-sm text-slate-700">Where you want to go over time.</p>
-              </div>
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                  Focus
-                </p>
-                <p className="mt-2 text-sm text-slate-700">
-                  What you are training on now, with one optional primary cue.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                  Notes
-                </p>
-                <p className="mt-2 text-sm text-slate-700">
-                  What you noticed or want to check later.
-                </p>
-              </div>
-            </div>
-          </div>
-
           <div className="mt-8">
             <TrainingContextHub
               initialSnapshot={initialSnapshot}

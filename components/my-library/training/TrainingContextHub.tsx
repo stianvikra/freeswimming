@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import {
@@ -7,7 +8,11 @@ import {
   getTrainingNoteTypeLabel,
   type TrainingNoteStatus,
 } from "@/lib/training-context/mvp";
-import type { TrainingContextSnapshot, TrainingNoteView } from "@/lib/training-context/server";
+import type {
+  TrainingContextSnapshot,
+  TrainingFocusView,
+  TrainingNoteView,
+} from "@/lib/training-context/server";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
 export type TrainingGoalPrefill = {
@@ -45,6 +50,12 @@ type NoteEditState = {
   body: string;
   status: TrainingNoteStatus;
   answer: string;
+};
+
+type FocusEditState = {
+  title: string;
+  details: string;
+  goalId: string;
 };
 
 const FOCUS_DRAFT_STORAGE_KEY = "training-context-focus-draft";
@@ -107,6 +118,21 @@ function createNoteEditState(note: TrainingNoteView): NoteEditState {
   };
 }
 
+function createFocusEditState(focus: TrainingFocusView): FocusEditState {
+  return {
+    title: focus.title,
+    details: focus.details ?? "",
+    goalId: focus.goalId ?? "",
+  };
+}
+
+function getPreviewText(value: string | null | undefined, fallback: string, maxLength = 96) {
+  const normalized = value?.trim() ?? "";
+  if (normalized.length === 0) return fallback;
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 1)}...`;
+}
+
 function getPrefillMessage(
   goalTitle: string,
   intent: WorkflowIntent,
@@ -124,6 +150,8 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
   const [clientReady, setClientReady] = useState(false);
   const [focusDraft, setFocusDraft] = useState<FocusDraft>(getDefaultFocusDraft);
   const [noteDraft, setNoteDraft] = useState<NoteDraft>(getDefaultNoteDraft);
+  const [editingFocusId, setEditingFocusId] = useState<string | null>(null);
+  const [focusEditState, setFocusEditState] = useState<FocusEditState | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteEditState, setNoteEditState] = useState<NoteEditState | null>(null);
   const [actionError, setActionError] = useState("");
@@ -136,6 +164,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingFocusCreate, setPendingFocusCreate] = useState(false);
   const [pendingFocusActionId, setPendingFocusActionId] = useState<string | null>(null);
+  const [pendingFocusSaveId, setPendingFocusSaveId] = useState<string | null>(null);
   const [showFocusHistory, setShowFocusHistory] = useState(false);
   const [pendingNoteCreate, setPendingNoteCreate] = useState(false);
   const [pendingNoteSaveId, setPendingNoteSaveId] = useState<string | null>(null);
@@ -354,7 +383,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
 
   async function updateFocusStatus(
     focusId: string,
-    action: "complete" | "archive" | "reopen" | "set_primary"
+    action: "complete" | "archive" | "reopen" | "set_primary" | "clear_primary"
   ) {
     if (!isOnline) {
       setActionError("You are offline. Reconnect before updating focus.");
@@ -393,10 +422,14 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
             ? "Focus archived."
             : action === "reopen"
               ? "Focus reopened."
-              : "Primary focus updated."
+              : action === "clear_primary"
+                ? "Primary focus removed."
+                : "Primary focus updated."
       );
       void sendClientAnalyticsEvent(
-        action === "set_primary" ? "training_focus_primary_set" : "training_focus_resolved",
+        action === "set_primary" || action === "clear_primary"
+          ? "training_focus_primary_updated"
+          : "training_focus_resolved",
         {
           action,
           openFocusCount: payload.snapshot.openFocuses.length,
@@ -464,6 +497,64 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
     }
   }
 
+  function openFocusEditor(focus: TrainingFocusView) {
+    setEditingFocusId(focus.id);
+    setFocusEditState(createFocusEditState(focus));
+    setActionError("");
+    setActionSuccess("");
+  }
+
+  async function saveFocus(focusId: string) {
+    if (!focusEditState) return;
+    if (!isOnline) {
+      setActionError("You are offline. Reconnect before updating focus.");
+      return;
+    }
+
+    setPendingFocusSaveId(focusId);
+    setActionError("");
+    setActionSuccess("");
+
+    try {
+      const response = await fetch(`/api/my-library/training-context/focus/${focusId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: focusEditState.title,
+          details: focusEditState.details,
+          goalId: focusEditState.goalId || null,
+        }),
+      });
+
+      if (!response.ok) {
+        setActionError(await parseError(response, "Could not save focus changes right now."));
+        return;
+      }
+
+      const payload = (await response.json().catch(() => null)) as ApiError | null;
+      if (!payload?.ok || !payload.snapshot) {
+        setActionError("Could not save focus changes right now.");
+        return;
+      }
+
+      setSnapshot(payload.snapshot);
+      setEditingFocusId(null);
+      setFocusEditState(null);
+      setActionSuccess("Focus updated.");
+      void sendClientAnalyticsEvent("training_focus_updated", {
+        linkedGoal: Boolean(focusEditState.goalId),
+        openFocusCount: payload.snapshot.openFocuses.length,
+        hasPrimaryFocus: Boolean(payload.snapshot.primaryFocus),
+      });
+    } catch {
+      setActionError("Could not save focus changes right now.");
+    } finally {
+      setPendingFocusSaveId(null);
+    }
+  }
+
   function openNoteEditor(note: TrainingNoteView) {
     setEditingNoteId(note.id);
     setNoteEditState(createNoteEditState(note));
@@ -523,6 +614,31 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
   const focusOptions = [...snapshot.openFocuses, ...snapshot.focusHistory];
   const selectedFocus = snapshot.activeFocus;
   const primaryFocus = snapshot.primaryFocus;
+  const editingFocus =
+    editingFocusId !== null
+      ? (snapshot.openFocuses.find((focus) => focus.id === editingFocusId) ?? null)
+      : null;
+  const editingNote =
+    editingNoteId !== null
+      ? (snapshot.recentNotes.find((note) => note.id === editingNoteId) ?? null)
+      : null;
+  const overviewGoal =
+    selectedGoal ??
+    (focusEditState?.goalId ? (goalOptionById.get(focusEditState.goalId) ?? null) : null) ??
+    (focusDraft.goalId ? (goalOptionById.get(focusDraft.goalId) ?? null) : null) ??
+    (noteDraft.goalId ? (goalOptionById.get(noteDraft.goalId) ?? null) : null) ??
+    (selectedFocus?.goalId ? (goalOptionById.get(selectedFocus.goalId) ?? null) : null) ??
+    (snapshot.recentNotes[0]?.goalId
+      ? (goalOptionById.get(snapshot.recentNotes[0].goalId) ?? null)
+      : null);
+  const overviewFocusTitle =
+    editingFocus && focusEditState
+      ? focusEditState.title.trim() || editingFocus.title
+      : (selectedFocus?.title ?? null);
+  const overviewNoteText =
+    editingNote && noteEditState
+      ? noteEditState.body.trim() || editingNote.body
+      : (snapshot.recentNotes[0]?.body ?? null);
 
   return (
     <div
@@ -585,46 +701,108 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
         </section>
       ) : null}
 
-      {snapshot.goalOptions.length > 0 ? (
-        <section className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Turn a goal into today&apos;s work
-              </h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Goals stay long-term. Use one here to prefill the next focus or note without
-                re-selecting it everywhere.
-              </p>
-            </div>
-            {selectedGoal ? (
-              <button
-                type="button"
-                onClick={clearGoalContext}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Clear selection
-              </button>
-            ) : null}
+      <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
+        <h2 className="text-base font-semibold text-slate-900">How these work together</h2>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <a
+            href="#training-goals-section"
+            data-testid="training-overview-card-goals"
+            className="rounded-2xl border border-white/80 bg-white/85 p-4 transition hover:border-blue-200 hover:bg-white"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Goals</p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">
+              {overviewGoal ? overviewGoal.title : "No goal selected yet"}
+            </p>
+            <p className="mt-2 text-sm text-slate-700">
+              {overviewGoal
+                ? `Current goal context${overviewGoal.statusLabel ? ` • ${overviewGoal.statusLabel}` : ""}`
+                : "Choose a goal below when you want to connect long-term direction to today’s work."}
+            </p>
+          </a>
+          <a
+            href="#training-focus-section"
+            data-testid="training-overview-card-focus"
+            className="rounded-2xl border border-white/80 bg-white/85 p-4 transition hover:border-emerald-200 hover:bg-white"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Focus</p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">
+              {snapshot.focusNeedsPrimarySelection
+                ? "Choose a primary focus"
+                : (overviewFocusTitle ?? "No open focus yet")}
+            </p>
+            <p className="mt-2 text-sm text-slate-700">
+              {snapshot.focusNeedsPrimarySelection
+                ? `${snapshot.openFocuses.length} open focuses need one explicit primary cue.`
+                : primaryFocus
+                  ? "Primary focus for the rest of My Library."
+                  : selectedFocus
+                    ? "Current focus cue shown from your open focus list."
+                    : "Add the next technical or tactical cue you want to carry into the pool."}
+            </p>
+          </a>
+          <a
+            href="#training-notes-section"
+            data-testid="training-overview-card-notes"
+            className="rounded-2xl border border-white/80 bg-white/85 p-4 transition hover:border-amber-200 hover:bg-white"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Notes</p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">
+              {snapshot.recentNotes.length > 0 ? "Latest note" : "No notes yet"}
+            </p>
+            <p className="mt-2 text-sm text-slate-700">
+              {getPreviewText(
+                overviewNoteText,
+                "Save what you noticed or what you want to check later.",
+                110
+              )}
+            </p>
+          </a>
+        </div>
+      </section>
+
+      <section
+        id="training-goals-section"
+        data-testid="training-goals-section"
+        className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Turn a goal into today&apos;s work
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Goals stay long-term. Use one here to prefill the next focus or note without
+              re-selecting it everywhere.
+            </p>
           </div>
-
           {selectedGoal ? (
-            <div
-              className="mt-4 rounded-2xl border border-blue-200 bg-white/90 p-4"
-              data-testid="training-context-selected-goal"
+            <button
+              type="button"
+              onClick={clearGoalContext}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                Selected goal
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-semibold text-slate-900">{selectedGoal.title}</h3>
-                <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                  {selectedGoal.statusLabel}
-                </span>
-              </div>
-            </div>
+              Clear selection
+            </button>
           ) : null}
+        </div>
 
+        {selectedGoal ? (
+          <div
+            className="mt-4 rounded-2xl border border-blue-200 bg-white/90 p-4"
+            data-testid="training-context-selected-goal"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+              Selected goal
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold text-slate-900">{selectedGoal.title}</h3>
+              <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                {selectedGoal.statusLabel}
+              </span>
+            </div>
+          </div>
+        ) : null}
+        {snapshot.goalOptions.length > 0 ? (
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {snapshot.goalOptions.map((goal) => {
               const isSelected = selectedGoalId === goal.id;
@@ -667,10 +845,27 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
               );
             })}
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <div className="mt-4 rounded-2xl border border-dashed border-blue-200 bg-white/90 p-5">
+            <p className="text-sm text-slate-700">
+              No active goals are available here yet. Create one in Goals first, then come back to
+              connect it to a focus or note.
+            </p>
+            <Link
+              href="/my-library/goals"
+              className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Open Goals
+            </Link>
+          </div>
+        )}
+      </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section
+        id="training-focus-section"
+        data-testid="training-focus-section"
+        className="rounded-2xl border border-slate-200 bg-white p-5"
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Open focuses</h2>
@@ -838,66 +1033,171 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
               Open focus list
             </h3>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {snapshot.openFocuses.map((focus) => (
-                <article
-                  key={focus.id}
-                  data-testid={`training-focus-card-${focus.id}`}
-                  className={`rounded-2xl border p-4 ${
-                    focus.isPrimary
-                      ? "border-emerald-200 bg-emerald-50/40"
-                      : "border-slate-200 bg-slate-50/50"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="text-sm font-semibold text-slate-900">{focus.title}</h4>
-                    <span className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                      {focus.statusLabel}
-                    </span>
-                    {focus.isPrimary ? (
-                      <span className="inline-flex rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
-                        Primary
+              {snapshot.openFocuses.map((focus) => {
+                const isEditing = editingFocusId === focus.id && focusEditState !== null;
+                const isStatusPending = pendingFocusActionId === focus.id;
+                const isSavePending = pendingFocusSaveId === focus.id;
+
+                return (
+                  <article
+                    key={focus.id}
+                    data-testid={`training-focus-card-${focus.id}`}
+                    className={`rounded-2xl border p-4 ${
+                      focus.isPrimary
+                        ? "border-emerald-200 bg-emerald-50/40"
+                        : "border-slate-200 bg-slate-50/50"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-sm font-semibold text-slate-900">
+                        {isEditing ? focusEditState.title || focus.title : focus.title}
+                      </h4>
+                      <span className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                        {focus.statusLabel}
                       </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-2 text-sm text-slate-700">
-                    {focus.details ?? "No extra detail saved for this focus yet."}
-                  </p>
-                  {focus.goalTitle ? (
-                    <p className="mt-2 text-xs text-slate-600">Goal: {focus.goalTitle}</p>
-                  ) : null}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {!focus.isPrimary ? (
-                      <button
-                        type="button"
-                        data-testid={`training-focus-set-primary-${focus.id}`}
-                        onClick={() => void updateFocusStatus(focus.id, "set_primary")}
-                        disabled={pendingFocusActionId === focus.id}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {pendingFocusActionId === focus.id ? "Saving..." : "Set primary"}
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      data-testid={`training-focus-complete-${focus.id}`}
-                      onClick={() => void updateFocusStatus(focus.id, "complete")}
-                      disabled={pendingFocusActionId === focus.id}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {pendingFocusActionId === focus.id ? "Saving..." : "Mark completed"}
-                    </button>
-                    <button
-                      type="button"
-                      data-testid={`training-focus-archive-${focus.id}`}
-                      onClick={() => void updateFocusStatus(focus.id, "archive")}
-                      disabled={pendingFocusActionId === focus.id}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Archive
-                    </button>
-                  </div>
-                </article>
-              ))}
+                      {focus.isPrimary ? (
+                        <span className="inline-flex rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
+                          Primary
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {isEditing ? (
+                      <div className="mt-4 space-y-4">
+                        <label className="block">
+                          <span className="text-sm font-medium text-slate-700">Focus title</span>
+                          <input
+                            value={focusEditState.title}
+                            onChange={(e) =>
+                              setFocusEditState((prev) =>
+                                prev ? { ...prev, title: e.target.value } : prev
+                              )
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-sm font-medium text-slate-700">
+                            Optional detail
+                          </span>
+                          <textarea
+                            value={focusEditState.details}
+                            onChange={(e) =>
+                              setFocusEditState((prev) =>
+                                prev ? { ...prev, details: e.target.value } : prev
+                              )
+                            }
+                            rows={3}
+                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-sm font-medium text-slate-700">
+                            Optional linked goal
+                          </span>
+                          <select
+                            data-testid={`training-focus-edit-goal-select-${focus.id}`}
+                            value={focusEditState.goalId}
+                            onChange={(e) =>
+                              setFocusEditState((prev) =>
+                                prev ? { ...prev, goalId: e.target.value } : prev
+                              )
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          >
+                            <option value="">No linked goal</option>
+                            {snapshot.goalOptions.map((goal) => (
+                              <option key={goal.id} value={goal.id}>
+                                {goal.title} ({goal.statusLabel})
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void saveFocus(focus.id)}
+                            disabled={isSavePending}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isSavePending ? "Saving..." : "Save focus"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingFocusId(null);
+                              setFocusEditState(null);
+                            }}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="mt-2 text-sm text-slate-700">
+                          {focus.details ?? "No extra detail saved for this focus yet."}
+                        </p>
+                        {focus.goalTitle ? (
+                          <p className="mt-2 text-xs text-slate-600">Goal: {focus.goalTitle}</p>
+                        ) : null}
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openFocusEditor(focus)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Edit focus
+                          </button>
+                          {focus.isPrimary ? (
+                            <button
+                              type="button"
+                              data-testid={`training-focus-clear-primary-${focus.id}`}
+                              onClick={() => void updateFocusStatus(focus.id, "clear_primary")}
+                              disabled={isStatusPending}
+                              className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isStatusPending ? "Saving..." : "Remove primary"}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              data-testid={`training-focus-set-primary-${focus.id}`}
+                              onClick={() => void updateFocusStatus(focus.id, "set_primary")}
+                              disabled={isStatusPending}
+                              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isStatusPending ? "Saving..." : "Set primary"}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            data-testid={`training-focus-complete-${focus.id}`}
+                            onClick={() => void updateFocusStatus(focus.id, "complete")}
+                            disabled={isStatusPending}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isStatusPending ? "Saving..." : "Mark completed"}
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`training-focus-archive-${focus.id}`}
+                            onClick={() => void updateFocusStatus(focus.id, "archive")}
+                            disabled={isStatusPending}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Archive
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -940,7 +1240,11 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section
+        id="training-notes-section"
+        data-testid="training-notes-section"
+        className="rounded-2xl border border-slate-200 bg-white p-5"
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Notes</h2>

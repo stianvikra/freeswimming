@@ -41,6 +41,12 @@ type FocusInsertInput = {
   contextRef?: string | null;
 };
 
+type FocusUpdateInput = {
+  title?: string | null;
+  details?: string | null;
+  goalId?: string | null;
+};
+
 type NoteInsertInput = {
   noteType?: string | null;
   body?: string | null;
@@ -174,6 +180,19 @@ export function buildTrainingFocusInsert(
     is_primary: false,
     completed_at: null,
     archived_at: null,
+  };
+}
+
+export function buildTrainingFocusUpdate(
+  input: FocusUpdateInput
+): Pick<TrainingFocusUpdate, "title" | "details" | "goal_id"> | null {
+  const title = normalizeText(input.title);
+  if (title.length < 3 || title.length > 140) return null;
+
+  return {
+    title,
+    details: normalizeNullableText(input.details),
+    goal_id: normalizeNullableId(input.goalId),
   };
 }
 

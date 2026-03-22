@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
-import { normalizeTrainingFocusStatus } from "@/lib/training-context/mvp";
+import { buildTrainingFocusUpdate, normalizeTrainingFocusStatus } from "@/lib/training-context/mvp";
 import { isTrainingContextSchemaMissing } from "@/lib/training-context/schema";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 
 type Params = Promise<{ focusId: string }>;
 
 type FocusPatchPayload = {
-  action?: "complete" | "archive" | "reopen" | "set_primary";
+  action?: "complete" | "archive" | "reopen" | "set_primary" | "clear_primary";
+  title?: string | null;
+  details?: string | null;
+  goalId?: string | null;
 };
 
 const TRAINING_FOCUS_SELECT = `
@@ -38,6 +41,39 @@ function noStoreJson(
       "Cache-Control": "no-store",
     },
   });
+}
+
+function hasFocusEditFields(payload: FocusPatchPayload | null) {
+  return (
+    payload?.title !== undefined || payload?.details !== undefined || payload?.goalId !== undefined
+  );
+}
+
+async function validateLinkedGoal(
+  supabase: Awaited<ReturnType<typeof createRouteHandlerSupabaseClient>>["supabase"],
+  userId: string,
+  goalId: string
+) {
+  const goalResult = await supabase
+    .from("goals")
+    .select("id")
+    .eq("id", goalId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (goalResult.error) {
+    return {
+      ok: false as const,
+      error: goalResult.error,
+      exists: false,
+    };
+  }
+
+  return {
+    ok: true as const,
+    error: null,
+    exists: Boolean(goalResult.data),
+  };
 }
 
 async function maybePromoteOnlyOpenFocus(
@@ -99,11 +135,19 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     );
   }
 
+  const hasAction = typeof payload?.action === "string";
+  const hasEditFields = hasFocusEditFields(payload);
+  const isValidAction =
+    payload?.action === "complete" ||
+    payload?.action === "archive" ||
+    payload?.action === "reopen" ||
+    payload?.action === "set_primary" ||
+    payload?.action === "clear_primary";
+
   if (
-    payload?.action !== "complete" &&
-    payload?.action !== "archive" &&
-    payload?.action !== "reopen" &&
-    payload?.action !== "set_primary"
+    (!hasAction && !hasEditFields) ||
+    (hasAction && hasEditFields) ||
+    (hasAction && !isValidAction)
   ) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Invalid focus update payload." }, { status: 400 })
@@ -150,22 +194,132 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     );
   }
 
-  if (payload.action === "set_primary") {
-    if (currentStatus !== "open") {
+  if (hasAction) {
+    if (payload.action === "set_primary") {
+      if (currentStatus !== "open") {
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Only open focuses can become the primary focus." },
+            { status: 409 }
+          )
+        );
+      }
+
+      const setPrimaryResult = await supabase.rpc("training_focus_set_primary", {
+        p_focus_id: focusId,
+      });
+
+      if (setPrimaryResult.error) {
+        if (isTrainingContextSchemaMissing(setPrimaryResult.error)) {
+          return applySupabaseCookies(
+            noStoreJson(
+              {
+                ok: false,
+                error: "Training context setup is still syncing. Please try again in a minute.",
+                code: "TRAINING_CONTEXT_SCHEMA_NOT_READY",
+              },
+              { status: 503 }
+            )
+          );
+        }
+
+        console.error("[TrainingContext] Failed setting primary focus", setPrimaryResult.error);
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Could not set the primary focus right now." },
+            { status: 500 }
+          )
+        );
+      }
+
+      const snapshot = await loadTrainingContextSnapshot(supabase, user.id);
       return applySupabaseCookies(
-        noStoreJson(
-          { ok: false, error: "Only open focuses can become the primary focus." },
-          { status: 409 }
-        )
+        noStoreJson({
+          ok: true,
+          snapshot,
+        })
       );
     }
 
-    const setPrimaryResult = await supabase.rpc("training_focus_set_primary", {
-      p_focus_id: focusId,
-    });
+    if (payload.action === "clear_primary") {
+      if (currentStatus !== "open") {
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Only open focuses can remove the primary focus state." },
+            { status: 409 }
+          )
+        );
+      }
 
-    if (setPrimaryResult.error) {
-      if (isTrainingContextSchemaMissing(setPrimaryResult.error)) {
+      const clearPrimaryResult = await supabase
+        .from("training_focuses")
+        .update({ is_primary: false })
+        .eq("id", focusId)
+        .eq("user_id", user.id);
+
+      if (clearPrimaryResult.error) {
+        if (isTrainingContextSchemaMissing(clearPrimaryResult.error)) {
+          return applySupabaseCookies(
+            noStoreJson(
+              {
+                ok: false,
+                error: "Training context setup is still syncing. Please try again in a minute.",
+                code: "TRAINING_CONTEXT_SCHEMA_NOT_READY",
+              },
+              { status: 503 }
+            )
+          );
+        }
+
+        console.error("[TrainingContext] Failed clearing primary focus", clearPrimaryResult.error);
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Could not clear the primary focus right now." },
+            { status: 500 }
+          )
+        );
+      }
+
+      const snapshot = await loadTrainingContextSnapshot(supabase, user.id);
+      return applySupabaseCookies(
+        noStoreJson({
+          ok: true,
+          snapshot,
+        })
+      );
+    }
+
+    const nowIso = new Date().toISOString();
+    const patch =
+      payload.action === "complete"
+        ? {
+            status: "completed" as const,
+            is_primary: false,
+            completed_at: nowIso,
+            archived_at: null,
+          }
+        : payload.action === "archive"
+          ? {
+              status: "archived" as const,
+              is_primary: false,
+              archived_at: nowIso,
+              completed_at: null,
+            }
+          : {
+              status: "open" as const,
+              is_primary: false,
+              completed_at: null,
+              archived_at: null,
+            };
+
+    const updateResult = await supabase
+      .from("training_focuses")
+      .update(patch)
+      .eq("id", focusId)
+      .eq("user_id", user.id);
+
+    if (updateResult.error) {
+      if (isTrainingContextSchemaMissing(updateResult.error)) {
         return applySupabaseCookies(
           noStoreJson(
             {
@@ -178,14 +332,13 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
         );
       }
 
-      console.error("[TrainingContext] Failed setting primary focus", setPrimaryResult.error);
+      console.error("[TrainingContext] Failed updating focus", updateResult.error);
       return applySupabaseCookies(
-        noStoreJson(
-          { ok: false, error: "Could not set the primary focus right now." },
-          { status: 500 }
-        )
+        noStoreJson({ ok: false, error: "Could not update focus right now." }, { status: 500 })
       );
     }
+
+    await maybePromoteOnlyOpenFocus(supabase, user.id);
 
     const snapshot = await loadTrainingContextSnapshot(supabase, user.id);
     return applySupabaseCookies(
@@ -196,37 +349,65 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     );
   }
 
-  const nowIso = new Date().toISOString();
-  const patch =
-    payload.action === "complete"
-      ? {
-          status: "completed" as const,
-          is_primary: false,
-          completed_at: nowIso,
-          archived_at: null,
-        }
-      : payload.action === "archive"
-        ? {
-            status: "archived" as const,
-            is_primary: false,
-            archived_at: nowIso,
-            completed_at: null,
-          }
-        : {
-            status: "open" as const,
-            is_primary: false,
-            completed_at: null,
-            archived_at: null,
-          };
+  if (currentStatus !== "open") {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Only open focuses can be edited." }, { status: 409 })
+    );
+  }
 
-  const updateResult = await supabase
+  const nextFocusUpdate = buildTrainingFocusUpdate({
+    title: payload?.title === undefined ? focusResult.data.title : payload.title,
+    details: payload?.details === undefined ? focusResult.data.details : payload.details,
+    goalId: payload?.goalId === undefined ? focusResult.data.goal_id : payload.goalId,
+  });
+
+  if (!nextFocusUpdate) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Focus title must be between 3 and 140 characters." },
+        { status: 400 }
+      )
+    );
+  }
+
+  if (nextFocusUpdate.goal_id && nextFocusUpdate.goal_id !== focusResult.data.goal_id) {
+    const goalValidation = await validateLinkedGoal(supabase, user.id, nextFocusUpdate.goal_id);
+
+    if (!goalValidation.ok) {
+      if (isTrainingContextSchemaMissing(goalValidation.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: "Training context setup is still syncing. Please try again in a minute.",
+              code: "TRAINING_CONTEXT_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
+
+      console.error("[TrainingContext] Failed loading goal for focus edit", goalValidation.error);
+      return applySupabaseCookies(
+        noStoreJson({ ok: false, error: "Could not validate linked goal." }, { status: 500 })
+      );
+    }
+
+    if (!goalValidation.exists) {
+      return applySupabaseCookies(
+        noStoreJson({ ok: false, error: "Linked goal not found." }, { status: 404 })
+      );
+    }
+  }
+
+  const editResult = await supabase
     .from("training_focuses")
-    .update(patch)
+    .update(nextFocusUpdate)
     .eq("id", focusId)
     .eq("user_id", user.id);
 
-  if (updateResult.error) {
-    if (isTrainingContextSchemaMissing(updateResult.error)) {
+  if (editResult.error) {
+    if (isTrainingContextSchemaMissing(editResult.error)) {
       return applySupabaseCookies(
         noStoreJson(
           {
@@ -239,13 +420,11 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
       );
     }
 
-    console.error("[TrainingContext] Failed updating focus", updateResult.error);
+    console.error("[TrainingContext] Failed editing focus", editResult.error);
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Could not update focus right now." }, { status: 500 })
+      noStoreJson({ ok: false, error: "Could not save focus changes right now." }, { status: 500 })
     );
   }
-
-  await maybePromoteOnlyOpenFocus(supabase, user.id);
 
   const snapshot = await loadTrainingContextSnapshot(supabase, user.id);
   return applySupabaseCookies(

@@ -84,6 +84,7 @@ describe("TrainingContextHub", () => {
     cleanup();
     localStorage.clear();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("renders open focuses and notes as separate sections", () => {
@@ -226,10 +227,141 @@ describe("TrainingContextHub", () => {
       />
     );
 
-    expect(screen.getByText("Choose a primary focus")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Choose a primary focus" })).toBeInTheDocument();
     expect(
       screen.getByText(/You have 2 open focuses and no primary focus selected yet\./i)
     ).toBeInTheDocument();
     expect(screen.getByTestId("training-focus-set-primary-focus-2")).toBeInTheDocument();
+  });
+
+  it("renders overview cards with jump links to goals, focus, and notes", () => {
+    render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
+
+    expect(screen.getByTestId("training-overview-card-goals")).toHaveAttribute(
+      "href",
+      "#training-goals-section"
+    );
+    expect(screen.getByTestId("training-overview-card-focus")).toHaveAttribute(
+      "href",
+      "#training-focus-section"
+    );
+    expect(screen.getByTestId("training-overview-card-notes")).toHaveAttribute(
+      "href",
+      "#training-notes-section"
+    );
+    expect(screen.getByTestId("training-overview-card-goals")).toHaveTextContent(
+      "Swim 400m calmly"
+    );
+    expect(screen.getByTestId("training-overview-card-focus")).toHaveTextContent(
+      "Longer exhale in the water"
+    );
+    expect(screen.getByTestId("training-overview-card-notes")).toHaveTextContent("Latest note");
+  });
+
+  it("edits an open focus inline and saves the updated snapshot", async () => {
+    const updatedFocus = buildFocus({
+      title: "Patient catch timing",
+      details: "Hold the line before pressing back.",
+      isPrimary: false,
+      goalId: "goal-2",
+      goalTitle: "Build smoother breathing",
+    });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          snapshot: buildSnapshot({
+            activeFocus: updatedFocus,
+            primaryFocus: null,
+            openFocuses: [updatedFocus],
+          }),
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit focus" }));
+    fireEvent.change(screen.getByDisplayValue("Longer exhale in the water"), {
+      target: { value: "Patient catch timing" },
+    });
+    fireEvent.change(screen.getByDisplayValue("Keep one goggle in while rotating to breathe."), {
+      target: { value: "Hold the line before pressing back." },
+    });
+    fireEvent.change(screen.getByTestId("training-focus-edit-goal-select-focus-1"), {
+      target: { value: "goal-2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save focus" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/my-library/training-context/focus/focus-1",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({
+            title: "Patient catch timing",
+            details: "Hold the line before pressing back.",
+            goalId: "goal-2",
+          }),
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Focus updated.")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("training-focus-card-focus-1")).toHaveTextContent(
+      "Patient catch timing"
+    );
+  });
+
+  it("removes primary focus explicitly without forcing another action", async () => {
+    const clearedPrimaryFocus = buildFocus({ isPrimary: false });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          snapshot: buildSnapshot({
+            activeFocus: clearedPrimaryFocus,
+            primaryFocus: null,
+            openFocuses: [clearedPrimaryFocus],
+          }),
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove primary" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/my-library/training-context/focus/focus-1",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({ action: "clear_primary" }),
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Primary focus removed.")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Primary focus")).not.toBeInTheDocument();
+    expect(screen.getByText("Current focus cue")).toBeInTheDocument();
   });
 });

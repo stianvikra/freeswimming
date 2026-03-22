@@ -116,6 +116,29 @@ async function archiveCreatedGoalIfNeeded(
 }
 
 test.describe("my library training context", () => {
+  test("overview cards jump to the matching goals, focus, and notes sections", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await loginToMyLibraryViaDevBypass(page);
+    await page.goto("/my-library/training", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await expect(page.getByRole("heading", { name: "Focus & Notes", level: 1 })).toBeVisible();
+    await waitForTrainingContextClientReady(page);
+
+    await page.getByTestId("training-overview-card-goals").click();
+    await expect(page).toHaveURL(/\/my-library\/training#training-goals-section$/);
+    await expect(page.getByTestId("training-goals-section")).toBeVisible();
+
+    await page.getByTestId("training-overview-card-focus").click();
+    await expect(page).toHaveURL(/\/my-library\/training#training-focus-section$/);
+    await expect(page.getByTestId("training-focus-section")).toBeVisible();
+
+    await page.getByTestId("training-overview-card-notes").click();
+    await expect(page).toHaveURL(/\/my-library\/training#training-notes-section$/);
+    await expect(page.getByTestId("training-notes-section")).toBeVisible();
+  });
+
   test("opens focus workflow from goals with goal context prefilled", async ({
     page,
   }, testInfo) => {
