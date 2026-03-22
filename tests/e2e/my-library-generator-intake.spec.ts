@@ -1,7 +1,8 @@
-import type { Page } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import type { APIRequestContext, APIResponse, Page } from "@playwright/test";
+import { expect, request as playwrightRequest, test } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
+const transientResponseStatuses = new Set([404]);
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Generator intake e2e is desktop-only.");
@@ -18,6 +19,60 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
   }
 
   await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+}
+
+async function createAuthenticatedRequestContext(page: Page): Promise<APIRequestContext> {
+  return playwrightRequest.newContext({
+    baseURL: new URL(page.url()).origin,
+    storageState: await page.context().storageState(),
+  });
+}
+
+async function sendWithTransientRetry(send: () => Promise<APIResponse>) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const response = await send();
+      if (!transientResponseStatuses.has(response.status()) || attempt === 3) {
+        return response;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isTransientNetworkError =
+        /timeout|Request context disposed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i.test(
+          errorMessage
+        );
+      if (!isTransientNetworkError || attempt === 3) {
+        throw error;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+
+  throw new Error("Transient retry exhausted.");
+}
+
+async function prewarmSessionDraftRoute(page: Page) {
+  const authenticatedRequest = await createAuthenticatedRequestContext(page);
+
+  try {
+    const response = await sendWithTransientRetry(() =>
+      authenticatedRequest.post("/api/my-library/generator/session-draft", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          overrides: {
+            targetType: "program",
+          },
+        }),
+      })
+    );
+
+    expect(response.status()).toBe(422);
+  } finally {
+    await authenticatedRequest.dispose();
+  }
 }
 
 async function waitForGeneratorIntakeClientReady(page: Page) {
@@ -102,6 +157,7 @@ test.describe("my library generator intake", () => {
 
     await page.getByTestId("generator-intake-target-session").check();
     await page.getByTestId("generator-intake-prepare").click();
+    await prewarmSessionDraftRoute(page);
 
     const generateResponsePromise = page.waitForResponse(
       (response) =>
