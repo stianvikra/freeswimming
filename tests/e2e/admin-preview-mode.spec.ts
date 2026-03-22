@@ -1,8 +1,9 @@
-import type { Page } from "@playwright/test";
+import type { APIResponse, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const unauthenticatedDeniedStatuses = new Set([401, 403, 423]);
+const transientResponseStatuses = new Set([404]);
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Admin preview e2e is desktop-only.");
@@ -35,11 +36,37 @@ async function loginAsAdminViaDevBypass(page: Page) {
   }
 }
 
+async function sendWithTransientRetry(send: () => Promise<APIResponse>) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const response = await send();
+      if (!transientResponseStatuses.has(response.status()) || attempt === 3) {
+        return response;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isTransientNetworkError =
+        /timeout|Request context disposed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i.test(
+          errorMessage
+        );
+      if (!isTransientNetworkError || attempt === 3) {
+        throw error;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+
+  throw new Error("Transient retry exhausted.");
+}
+
 test.describe("admin preview mode", () => {
   test("denies unauthenticated preview API access", async ({ request }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
-    const response = await request.get("/api/course/content?preview=1&previewMode=draft");
+    const response = await sendWithTransientRetry(() =>
+      request.get("/api/course/content?preview=1&previewMode=draft")
+    );
     expect(
       unauthenticatedDeniedStatuses.has(response.status()),
       `Unexpected status ${response.status()} for unauthenticated preview request`
@@ -98,7 +125,9 @@ test.describe("admin preview mode", () => {
     await expect(previewBanner).toContainText("not visible to learners");
 
     const previewPath = new URL(previewPage.url());
-    const previewResponse = await request.get(`${previewPath.pathname}${previewPath.search}`);
+    const previewResponse = await sendWithTransientRetry(() =>
+      request.get(`${previewPath.pathname}${previewPath.search}`)
+    );
     expect(previewResponse.headers()["x-robots-tag"]).toBe("noindex, nofollow, noarchive");
   });
 });

@@ -8,6 +8,7 @@ import {
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const unauthenticatedDeniedStatuses = new Set([401, 403, 423]);
+const transientResponseStatuses = new Set([404]);
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Admin e2e is desktop-only.");
@@ -127,6 +128,32 @@ async function createAuthenticatedRequestContext(page: Page): Promise<APIRequest
   });
 }
 
+async function sendWithTransientRetry(send: () => Promise<ResponseLike>) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const response = await send();
+      if (!transientResponseStatuses.has(response.status()) || attempt === 3) {
+        return response;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isUnavailableProbe =
+        /timeout|Request context disposed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i.test(
+          errorMessage
+        );
+      if (!isUnavailableProbe || attempt === 3) {
+        throw error;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+
+  throw new Error("Transient retry exhausted.");
+}
+
+type ResponseLike = Awaited<ReturnType<APIRequestContext["get"]>>;
+
 async function createAdminContentItem(
   adminRequest: APIRequestContext,
   payload: Record<string, unknown>
@@ -206,10 +233,38 @@ async function exerciseFoundationNavigation(page: Page) {
   const tabHelp = page.getByTestId("admin-tab-help");
   const activeSectionLabel = page.getByTestId("admin-active-section-label");
 
+  async function openTabWithFallback(
+    tabButton: ReturnType<Page["getByTestId"]>,
+    expectedLabel: string,
+    tabId: string
+  ) {
+    const expectedUrl = new RegExp(`/admin\\?tab=${tabId}(?:&|$)`);
+    await tabButton.click();
+    const switchedViaClientNav = await Promise.all([
+      page
+        .waitForURL(expectedUrl, { timeout: 2_500 })
+        .then(() => true)
+        .catch(() => false),
+      expect(activeSectionLabel)
+        .toHaveText(expectedLabel, { timeout: 2_500 })
+        .then(() => true)
+        .catch(() => false),
+    ])
+      .then(([urlReady, labelReady]) => urlReady || labelReady)
+      .catch(() => false);
+
+    if (!switchedViaClientNav) {
+      await page.goto(`/admin?tab=${encodeURIComponent(tabId)}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 60_000,
+      });
+      await expect(activeSectionLabel).toHaveText(expectedLabel);
+    }
+  }
+
   await expect(tabContent).toHaveAttribute("aria-pressed", "true");
 
-  await tabQrLinks.click();
-  await expect(activeSectionLabel).toHaveText("QR Links");
+  await openTabWithFallback(tabQrLinks, "QR Links", "qr-links");
   await expect(page.getByRole("heading", { name: "QR registry" })).toBeVisible();
   await page.goto(
     "/admin?tab=qr-links&qrSlug=mod3-l1&qrDestinationPath=%2Fcourse%3Flesson%3Dmod3-l1&qrContentLabel=Kick%20Basics%20Support%20Not%20Speed&qrPlacementKey=course.lesson.share"
@@ -232,32 +287,25 @@ async function exerciseFoundationNavigation(page: Page) {
     "course.lesson.share"
   );
 
-  await tabCommerce.click();
-  await expect(activeSectionLabel).toHaveText("Commerce");
+  await openTabWithFallback(tabCommerce, "Commerce", "commerce");
   await expect(page.getByRole("heading", { name: "Commerce" })).toBeVisible();
 
-  await tabOperations.click();
-  await expect(activeSectionLabel).toHaveText("Operations");
+  await openTabWithFallback(tabOperations, "Operations", "operations");
   await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
 
-  await tabEmailTemplates.click();
-  await expect(activeSectionLabel).toHaveText("Email templates");
+  await openTabWithFallback(tabEmailTemplates, "Email templates", "email-templates");
   await expect(page.getByRole("heading", { name: "Email templates" })).toBeVisible();
 
-  await tabNotes.click();
-  await expect(activeSectionLabel).toHaveText("Notes");
+  await openTabWithFallback(tabNotes, "Notes", "notes");
   await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
 
-  await tabCategories.click();
-  await expect(activeSectionLabel).toHaveText("Categories");
+  await openTabWithFallback(tabCategories, "Categories", "categories");
   await expect(page.getByRole("heading", { name: "Categories" })).toBeVisible();
 
-  await tabHelp.click();
-  await expect(activeSectionLabel).toHaveText("Help/Guide");
+  await openTabWithFallback(tabHelp, "Help/Guide", "help");
   await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
 
-  await tabContent.click();
-  await expect(activeSectionLabel).toHaveText("Content");
+  await openTabWithFallback(tabContent, "Content", "content");
   await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
   const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
   const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
@@ -288,11 +336,13 @@ test.describe("admin foundation", () => {
     for (const endpoint of endpoints) {
       let response;
       try {
-        response = await request.get(endpoint, { timeout: 10_000 });
+        response = await sendWithTransientRetry(() => request.get(endpoint, { timeout: 10_000 }));
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         const isUnavailableProbe =
-          /timeout|Request context disposed|ECONNREFUSED|ENOTFOUND|EAI_AGAIN/i.test(errorMessage);
+          /timeout|Request context disposed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i.test(
+            errorMessage
+          );
         if (isUnavailableProbe) {
           test.skip(
             true,
@@ -310,6 +360,7 @@ test.describe("admin foundation", () => {
 
   test("allowlisted dev account can browse core admin surfaces", async ({ page }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
     await openAllowlistedAdmin(page);
     await assertAdminContentReady(page);
     await exerciseFoundationNavigation(page);

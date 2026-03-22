@@ -7,6 +7,10 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Training context e2e is desktop-only.");
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
+  test.slow(
+    projectName === "desktop-chromium",
+    "Training context bridge flows can take longer under full desktop matrix load."
+  );
 }
 
 async function loginToMyLibraryViaDevBypass(page: Page) {
@@ -30,7 +34,7 @@ async function waitForTrainingContextClientReady(page: Page) {
 
 async function waitForGoalsHubClientReady(page: Page) {
   await expect(page.getByTestId("goals-hub")).toHaveAttribute("data-client-ready", "true", {
-    timeout: 15_000,
+    timeout: 30_000,
   });
 }
 

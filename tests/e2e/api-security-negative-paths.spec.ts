@@ -2,6 +2,7 @@ import { expect, test, type APIResponse } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const dummyUuid = "11111111-1111-4111-8111-111111111111";
+const transientResponseStatuses = new Set([404]);
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
@@ -33,7 +34,16 @@ async function expectUnauthorizedNoLeak(response: APIResponse) {
 async function expectUnauthorizedNoLeakWithTransientRetry(send: () => Promise<APIResponse>) {
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
-      await expectUnauthorizedNoLeak(await send());
+      const response = await send();
+      if (transientResponseStatuses.has(response.status())) {
+        if (attempt === 3) {
+          await expectUnauthorizedNoLeak(response);
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        continue;
+      }
+      await expectUnauthorizedNoLeak(response);
       return;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -49,31 +59,59 @@ async function expectUnauthorizedNoLeakWithTransientRetry(send: () => Promise<AP
   }
 }
 
+async function sendWithTransientRetry(send: () => Promise<APIResponse>) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const response = await send();
+      if (!transientResponseStatuses.has(response.status()) || attempt === 3) {
+        return response;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isTransientNetworkError =
+        /ECONNRESET|ECONNREFUSED|ETIMEDOUT|Request context disposed|socket hang up|Target page, context or browser has been closed/i.test(
+          errorMessage
+        );
+      if (!isTransientNetworkError || attempt === 3) {
+        throw error;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+
+  throw new Error("Transient retry exhausted.");
+}
+
 test.describe("api security negative paths", () => {
   test("returns deterministic non-sensitive errors for portal + checkout guardrails", async ({
     request,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
-    const portalUnsupported = await request.post("/api/portal", {
-      headers: {
-        "content-type": "text/plain",
-      },
-      data: "invalid",
-    });
+    const portalUnsupported = await sendWithTransientRetry(() =>
+      request.post("/api/portal", {
+        headers: {
+          "content-type": "text/plain",
+        },
+        data: "invalid",
+      })
+    );
     expect(portalUnsupported.status()).toBe(415);
     await expect(portalUnsupported.json()).resolves.toMatchObject({
       ok: false,
       error: "Unsupported content type.",
     });
 
-    const portalInvalidJson = await request.fetch("/api/portal", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      data: "{",
-    });
+    const portalInvalidJson = await sendWithTransientRetry(() =>
+      request.fetch("/api/portal", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        data: "{",
+      })
+    );
     const portalInvalidJsonStatus = portalInvalidJson.status();
     expect([400, 401]).toContain(portalInvalidJsonStatus);
     const portalInvalidJsonPayload = (await portalInvalidJson.json()) as {
@@ -92,14 +130,16 @@ test.describe("api security negative paths", () => {
       });
     }
 
-    const portalUnauthenticated = await request.post("/api/portal", {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({
-        returnPath: "/my-library",
-      }),
-    });
+    const portalUnauthenticated = await sendWithTransientRetry(() =>
+      request.post("/api/portal", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          returnPath: "/my-library",
+        }),
+      })
+    );
     expect(portalUnauthenticated.status()).toBe(401);
     const portalUnauthenticatedPayload = (await portalUnauthenticated.json()) as {
       ok?: boolean;
@@ -116,26 +156,30 @@ test.describe("api security negative paths", () => {
     expect(portalPayloadSerialized).not.toContain("supabase");
     expect(portalPayloadSerialized).not.toContain("stripe");
 
-    const checkoutUnsupported = await request.post("/api/checkout/session", {
-      headers: {
-        "content-type": "text/plain",
-      },
-      data: "invalid",
-    });
+    const checkoutUnsupported = await sendWithTransientRetry(() =>
+      request.post("/api/checkout/session", {
+        headers: {
+          "content-type": "text/plain",
+        },
+        data: "invalid",
+      })
+    );
     expect(checkoutUnsupported.status()).toBe(415);
     await expect(checkoutUnsupported.json()).resolves.toMatchObject({
       ok: false,
       error: "Unsupported content type.",
     });
 
-    const checkoutUnknownProduct = await request.post("/api/checkout/session", {
-      headers: {
-        "content-type": "application/json",
-      },
-      data: JSON.stringify({
-        productId: "non-existent-product",
-      }),
-    });
+    const checkoutUnknownProduct = await sendWithTransientRetry(() =>
+      request.post("/api/checkout/session", {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          productId: "non-existent-product",
+        }),
+      })
+    );
     expect(checkoutUnknownProduct.status()).toBe(400);
     const checkoutUnknownProductPayload = (await checkoutUnknownProduct.json()) as {
       ok?: boolean;

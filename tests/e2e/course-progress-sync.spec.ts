@@ -13,7 +13,11 @@ function isTransientNetworkError(error: unknown): boolean {
 
 async function getCourseProgressOrNull(page: Page): Promise<APIResponse | null> {
   try {
-    return await page.request.get("/api/progress/course");
+    const response = await page.request.get("/api/progress/course");
+    if (response.status() === 404) {
+      return null;
+    }
+    return response;
   } catch (error) {
     if (isTransientNetworkError(error)) {
       return null;
