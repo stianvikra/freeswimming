@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-20`
+- `updated`: `2026-03-22`
 
 ## Goal
 
@@ -14,7 +14,7 @@ Deliver a Garmin-familiar workout creation, generation, planning, history, and e
 
 ## Product Positioning And UX Direction
 
-- Use **Garmin-familiar interaction patterns** (steps, repeats, distance/rest, pool size, notes).
+- Use **Garmin-familiar interaction patterns** (steps, repeats, distance/rest, pool size, notes, `open`/lap-button steps, and swim-stroke targeting), while keeping observed Garmin Connect UI labels separate from confirmed public developer semantics.
 - Do **not** clone Garmin branding/look 1:1. Keep FreeSwimming visual identity.
 - Keep four product tracks explicit:
   - `manual session builder`: user-authored workouts that can later be exported or sent to Garmin,
@@ -149,6 +149,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | expanded the epic into four explicit product tracks (manual session builder, automatic generator, manual program builder, and training history), aligned the contract to threshold-based swim zones, and separated Garmin Training API send from later Garmin Activity API history reconciliation | next: update child briefs and use the new training-history brief as the parent track for done/cancel/comments and retrospective evaluation`
 - `2026-03-20 | planning | expanded the automatic-generator direction so users can explicitly choose `session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, or `to_competition_date`, and made competition-date planning carry explicit peak/taper intent rather than hidden logic | next: keep the AI generator, data contract, builder handoff, and history briefs aligned to the same plan-intent metadata before implementation starts`
 - `2026-03-20 | planning | tightened the first generator milestone around one editable AI session draft with explicit pool/open-water, pool-length, duration, session-intent, and effort choices so the epic proves the canonical workout model before expanding into larger program horizons | next: add and use a dedicated AI session generator v1 brief before broader program-generation implementation starts`
+- `2026-03-22 | planning | tightened the epic-level Garmin-familiar contract after reviewing manual Garmin swim-builder patterns so downstream briefs now need explicit support for confirmed public Garmin semantics like `WorkoutIntensity`, `open`, `swim_stroke`, and swim sub-sport plus explicit mapping of Connect-UI labels like `Main`, lap-button, `Choice`, and `RIMO` before the planner track becomes the next major implementation focus | next: continue the manual workout-builder track before the weekly calendar/program-builder track`
 
 ## Completion Criteria For Epic
 

@@ -6,7 +6,7 @@
 - `status`: `blocked`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-20`
+- `updated`: `2026-03-22`
 
 ## Goal
 
@@ -27,13 +27,14 @@ All of the following must be true:
 
 1. Garmin partner status approved.
 2. Production and preview credentials provisioned securely.
-3. Supported workout/program step-mapping matrix signed off.
+3. Supported workout/program step-mapping matrix signed off across Garmin-documented `WorkoutIntensity`, `time`, `distance`, `open`, `swim_stroke`, `SPORT_SWIMMING`, `SUB_SPORT_LAP_SWIMMING`, `SUB_SPORT_OPEN_WATER`, interval/rest structure, and the observed Garmin Connect UI swim concepts like `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, and `RIMO` workflows.
 4. Rollback/runbook approved by owner.
 
 ## Planned Scope After Unblock
 
 - OAuth connect/disconnect flow with encrypted token storage.
 - Send workout and training-plan endpoints with queue/retry handling.
+- Deterministic provider mapping for Garmin-documented `WorkoutIntensity`, `time`, `distance`, `open`, `swim_stroke`, `SPORT_SWIMMING`, lap-swim vs open-water subtype, interval/rest structure, and the observed Garmin Connect UI swim concepts like `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, `RIMO`, and explicit repeat/rest swim sets.
 - Sync status model (`queued`, `sent`, `failed`, `needs-attention`).
 - Deterministic failure UX and admin/audit visibility.
 - Explicit guarantee that send status does not mark sessions complete or move them into training history.
@@ -107,6 +108,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Risks
 
 - API capability mismatch with planned step model.
+- Swim-workout capability mismatch between public Garmin developer concepts and Garmin Connect UI swim-builder concepts like `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, `RIMO`, swim-stroke targets, or repeat/rest structures.
 - Rate limits or throughput constraints.
 - Consent/compliance gaps if token scope is too broad.
 
@@ -119,3 +121,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-20 | planning | tightened this blocked brief around Garmin Training API send-to-calendar/device delivery for workouts and programs, and explicitly separated later completed-session/history ingestion into a different history track that can depend on Garmin Activity API | next: keep this brief blocked until partner approval, auth setup, and mapping matrix signoff are concrete`
+- `2026-03-22 | planning | tightened the unblock contract after reviewing Garmin swim-builder patterns so partner signoff must explicitly cover Garmin-documented `WorkoutIntensity`, `time`, `distance`, `open`, `swim_stroke`, swim sport/sub-sport, interval/rest structure, and Garmin Connect UI swim concepts like `Main`, lap-button, fixed-rest, send-off, `Choice`, and `RIMO` workflows before live send work starts | next: do not unblock provider delivery on generic “Garmin-ready” language alone; require a concrete step-mapping matrix`
