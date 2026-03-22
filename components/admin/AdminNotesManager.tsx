@@ -746,7 +746,16 @@ export default function AdminNotesManager() {
         return;
       }
 
-      setItems((prev) => prev.filter((entry) => entry.id !== payload.id));
+      setItems((prev) =>
+        prev
+          .filter((entry) => entry.id !== payload.id)
+          .map((entry) => ({
+            ...entry,
+            related_notes: entry.related_notes.filter(
+              (relatedNote) => relatedNote.id !== payload.id
+            ),
+          }))
+      );
       if (editingId === payload.id) {
         setEditingId(null);
         setEditState(null);

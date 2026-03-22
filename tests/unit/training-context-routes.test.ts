@@ -98,6 +98,23 @@ describe("training context routes", () => {
     expect(response.status).toBe(401);
   });
 
+  it("rejects mixed focus action and edit payloads before load", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue(buildRouteClient("user-1"));
+
+    const response = await patchFocus(
+      new Request("http://127.0.0.1:3000/api/my-library/training-context/focus/focus-1", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "set_primary", title: "Patient catch timing" }),
+      }),
+      { params: Promise.resolve({ focusId: "focus-1" }) }
+    );
+
+    expect(response.status).toBe(400);
+  });
+
   it("fails closed for unauthenticated note patch", async () => {
     createRouteHandlerSupabaseClientMock.mockResolvedValue(buildRouteClient(null));
 
@@ -113,6 +130,57 @@ describe("training context routes", () => {
     );
 
     expect(response.status).toBe(401);
+  });
+
+  it("rejects clearing primary on a non-open focus", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "focus-1",
+        user_id: "user-1",
+        goal_id: null,
+        title: "Patient catch timing",
+        details: null,
+        status: "completed",
+        is_primary: false,
+        context_type: null,
+        context_ref: null,
+        completed_at: "2026-03-22T09:00:00.000Z",
+        archived_at: null,
+        created_at: "2026-03-22T08:00:00.000Z",
+        updated_at: "2026-03-22T09:00:00.000Z",
+      },
+      error: null,
+    });
+    const eqUser = vi.fn(() => ({ maybeSingle }));
+    const eqId = vi.fn(() => ({ eq: eqUser }));
+    const select = vi.fn(() => ({ eq: eqId }));
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({
+            data: { user: { id: "user-1" } },
+          }),
+        },
+        from: vi.fn(() => ({
+          select,
+        })),
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchFocus(
+      new Request("http://127.0.0.1:3000/api/my-library/training-context/focus/focus-1", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "clear_primary" }),
+      }),
+      { params: Promise.resolve({ focusId: "focus-1" }) }
+    );
+
+    expect(response.status).toBe(409);
   });
 
   it("rejects invalid question patch payloads before write", async () => {

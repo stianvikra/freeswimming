@@ -222,7 +222,14 @@ test.describe("admin notes workflow", () => {
     await searchInput.fill(noteId);
     await expect(page.getByTestId("admin-note-item")).toHaveCount(1);
     await expect(createdItem).toBeVisible();
-    await searchInput.fill("");
+    const clearFiltersButton = page.getByRole("button", { name: "Clear filters" });
+    await expect(clearFiltersButton).toBeVisible();
+    await clearFiltersButton.click();
+    await expect(searchInput).toHaveValue("");
+    await expect(page.getByTestId("admin-notes-priority-filter")).toHaveValue("");
+    await expect(page).not.toHaveURL(/notesQuery=/);
+    await expect(page).not.toHaveURL(/notesPriority=/);
+    await expect(createdItem).toBeVisible();
 
     await createdItem.getByRole("button", { name: "Edit" }).click();
     const editForm = createdItem.getByTestId("admin-note-edit-form");
@@ -369,6 +376,11 @@ test.describe("admin notes workflow", () => {
     );
 
     await page.getByTestId("admin-notes-status-all").click();
+    const reopenFiltersButton = page.getByRole("button", { name: "Clear filters" });
+    await expect(reopenFiltersButton).toBeVisible();
+    await reopenFiltersButton.click();
+    await expect(page.getByTestId("admin-notes-search")).toHaveValue("");
+    await expect(page).not.toHaveURL(/notesQuery=/);
     const relatedNoteItem = page
       .getByTestId("admin-note-item")
       .filter({ hasText: secondaryTitle })

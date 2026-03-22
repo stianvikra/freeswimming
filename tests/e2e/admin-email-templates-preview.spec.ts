@@ -151,7 +151,10 @@ test.describe("admin email template preview", () => {
       createdTemplate.getByText("Preview sample values must be valid JSON.")
     ).toHaveCount(0);
 
-    const publishedFallbackLine = createdTemplate.getByText("Fallback defaults used:");
+    const publishedFallbackLine = createdTemplate
+      .locator("p")
+      .filter({ hasText: "Fallback defaults used:" })
+      .last();
     await expect(publishedFallbackLine).toContainText("app_name");
     await expect(publishedFallbackLine).toContainText("support_email");
   });
