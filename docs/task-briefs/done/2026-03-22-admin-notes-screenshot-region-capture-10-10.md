@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-22-admin-notes-screenshot-region-capture-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-22`
 - `updated`: `2026-03-22`
@@ -239,3 +239,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-03-22 | planning | created a dedicated planned brief for admin-only screenshot region capture so browser permission, crop/preview, privacy, and attachment-lifecycle risk stay isolated from quick-capture rollout and builder work | next: implement admin-notes quick-capture launcher first, then build screenshot capture on top of that launcher and existing attachment lifecycle`
 - `2026-03-22 | feat/admin-notes-screenshot-capture-2026-03-22@working-tree | moved brief to in-progress and implemented browser screenshot capture preview/crop flow for Admin Notes create, edit, and quick-capture surfaces using the existing attachment lifecycle plus operator recovery states | next: finish docs alignment, run targeted validation, then clear verify:pre-pr`
+- `2026-03-22 | main@9182abd | merged PR #266 for admin-only screenshot capture across Admin Notes manager and quick-capture surfaces, including preview/crop, permission-denied recovery, help/runbook updates, and unit/e2e coverage; local verify:pre-pr and verify:pre-merge plus required GitHub checks all passed before merge | next: return to the builder calendar completion slice unless a new admin-notes follow-up is intentionally prioritized`
