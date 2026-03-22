@@ -384,14 +384,13 @@ test("guest sees free-account backup prompt after completing three lessons", asy
   );
   test.slow();
 
-  await page.goto("/course?lesson=mod3-l1");
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     localStorage.removeItem("a2hs_prompt_seen");
     localStorage.setItem("a2hs_dismissed_at", String(Date.now()));
     localStorage.removeItem("fs_course_done_lessons");
     localStorage.removeItem("fs_course_backup_prompt_dismissed_at");
   });
-  await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
+  await page.goto("/course?lesson=mod3-l1");
   await dismissSwipeHintIfPresent(page);
 
   await satisfyDoneGateIfPresent(page);
