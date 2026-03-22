@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-22-admin-notes-quick-capture-launcher-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-22`
 - `updated`: `2026-03-22`
@@ -136,4 +136,6 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-22 | verify:pre-pr green | completed reusable quick-note launcher rollout for admin dashboard and contextual notes surfaces, added viewer-safe authz gating, updated Help/Guide + recovery runbook, and passed full local verify:pre-pr on branch \`fix/admin-notes-quick-capture-launcher-2026-03-22\` | next: commit, push, open PR, and run merge gate`
+- `2026-03-22 | implementation started | moved quick-capture launcher brief to in-progress, added a reusable admin quick-note launcher for dashboard/contextual surfaces, and aligned contextual notes authz so viewer sessions do not get create affordances | next: finish targeted unit/e2e coverage, update Help/Guide + recovery docs, and run lint/verify gates`
 - `2026-03-22 | planning | split quick capture out of the richer attachments/linking notes scope so launcher rollout can be implemented and tested as its own authz/navigation slice after storage-backed note enrichments land | next: finish attachments/priority/related links first, then implement launcher surfaces on a dedicated branch`

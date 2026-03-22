@@ -183,17 +183,21 @@ test.describe("admin contextual notes", () => {
 
     const panel = page.getByTestId("admin-context-notes-panel");
     await expect(panel).toBeVisible({ timeout: 10_000 });
-    const toggle = panel.getByTestId("admin-context-notes-toggle");
-    if ((await toggle.textContent())?.includes("Show")) {
-      await toggle.click();
-    }
-
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const title = `Plans Note ${unique}`;
+    await panel.getByRole("button", { name: "Quick note" }).click();
+    const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
+    await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+    await quickCaptureDialog.getByLabel("Title").fill(`Cancel ${title}`);
+    await quickCaptureDialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(quickCaptureDialog).toHaveCount(0);
 
-    const createForm = panel.getByTestId("admin-context-note-create-form");
+    await panel.getByRole("button", { name: "Quick note" }).click();
+    await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+    const createForm = page.getByTestId("admin-note-quick-capture-form");
     await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Category").fill("Content");
+    await createForm.getByLabel("Priority").selectOption("high");
     await createForm.getByLabel("Text").fill("Page-level admin note for plans.");
     let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
     try {
@@ -224,7 +228,12 @@ test.describe("admin contextual notes", () => {
       test.skip(true, `Context notes create is not write-ready in this environment (${reason}).`);
     }
 
-    await expect(panel.getByText("Note saved.")).toBeVisible({ timeout: 5_000 });
+    await expect(panel.getByText("Quick note saved.")).toBeVisible({ timeout: 10_000 });
+
+    const toggle = panel.getByTestId("admin-context-notes-toggle");
+    if ((await toggle.textContent())?.includes("Show")) {
+      await toggle.click();
+    }
 
     const createdItem = panel
       .getByTestId("admin-context-note-item")

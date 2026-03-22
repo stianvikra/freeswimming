@@ -104,6 +104,7 @@ test.describe("admin help center", () => {
         "P0 = critical outage, P1 = major degradation with workaround, P2 = low-impact bug/UX issue."
       )
     ).toBeVisible();
+    await expect(page.getByText("Quick note:")).toBeVisible();
     await expect(
       page.getByText("Open / Done archive / All + Search + Context filters:")
     ).toBeVisible();
@@ -128,6 +129,11 @@ test.describe("admin help center", () => {
     await expect(page.getByText("docs/runbooks/site-lock-operations.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-notes-recovery.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-email-template-governance.md")).toBeVisible();
+    await expect(
+      page.getByText(
+        "Use `Quick note` when you want to capture the issue fast from the current surface without losing context."
+      )
+    ).toBeVisible();
     await expect(
       page.getByText(
         "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later."

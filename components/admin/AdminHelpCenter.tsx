@@ -387,6 +387,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
     section: "Notes, Categories, and Commerce",
     actions: [
       {
+        label: "Quick note",
+        meaning:
+          "Opens the lightweight quick-capture sheet so you can save a route-aware note without switching to the Notes tab first.",
+      },
+      {
         label: "Use P0 template / Use P1 template / Use P2 template",
         meaning:
           "Prefills standardized incident structure. P0 = critical outage, P1 = major degradation with workaround, P2 = low-impact bug/UX issue.",
@@ -548,6 +553,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
     title: "Capture review notes with context",
     steps: [
       "Open the exact page/content row you are reviewing.",
+      "Use `Quick note` when you want to capture the issue fast from the current surface without losing context.",
       "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
       "Add screenshots when the issue is visual or hard to reproduce, and link any follow-up note instead of pasting duplicate text.",
       "Use Search + Priority + Context filters in Notes to reopen the same note quickly.",
