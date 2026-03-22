@@ -1,7 +1,12 @@
+import { Buffer } from "node:buffer";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
+const TINY_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9wAAAABJRU5ErkJggg==",
+  "base64"
+);
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Admin e2e is desktop-only.");
@@ -86,6 +91,7 @@ test.describe("admin notes workflow", () => {
 
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const title = `E2E Note ${unique}`;
+    const secondaryTitle = `E2E Related Note ${unique}`;
     const updatedTitle = `E2E Note Updated ${unique}`;
     const body = "Initial note body from Playwright.";
     const updatedBody = "Updated note body from Playwright.";
@@ -96,6 +102,7 @@ test.describe("admin notes workflow", () => {
     await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Category").fill("Operations");
     await createForm.locator('input[type="date"]').fill("2026-02-20");
+    await createForm.getByLabel("Priority").selectOption("high");
     await createForm.getByLabel("Text").fill(body);
     await createForm.getByTestId("admin-note-create-context-type").selectOption("course_lesson");
     const modulePicker = createForm.getByTestId("admin-note-create-context-lesson-module");
@@ -154,10 +161,62 @@ test.describe("admin notes workflow", () => {
     await expect(createdItem).toBeVisible({ timeout: 15_000 });
     await expect(createdItem).toContainText("Operations");
     await expect(createdItem).toContainText(body);
+    await expect(createdItem).toContainText("High");
     await expect(createdItem).toContainText("Course Lesson:");
     const noteIdText = await createdItem.getByTestId("admin-note-id").textContent();
     const noteId = noteIdText?.replace("Note ID", "").trim() ?? "";
     expect(noteId.length).toBeGreaterThan(5);
+
+    await createForm.getByLabel("Title").fill(secondaryTitle);
+    await createForm.getByLabel("Category").fill("Operations");
+    await createForm.getByLabel("Priority").selectOption("low");
+    await createForm.getByLabel("Text").fill("Secondary note used for related-link flow.");
+    await createForm.getByTestId("admin-note-create-context-type").selectOption("");
+    let secondaryCreateResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+    try {
+      [secondaryCreateResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/admin/notes") && response.request().method() === "POST",
+          { timeout: 15_000 }
+        ),
+        createForm.getByRole("button", { name: "Save note" }).click(),
+      ]);
+    } catch {
+      test.skip(true, "Admin notes secondary create request timed out in this environment.");
+    }
+    if (!secondaryCreateResponse) {
+      return;
+    }
+
+    const secondaryPayload = (await secondaryCreateResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
+    if (!secondaryCreateResponse.ok() || secondaryPayload?.ok === false) {
+      const reason =
+        typeof secondaryPayload?.error === "string"
+          ? secondaryPayload.error
+          : `status ${secondaryCreateResponse.status()}`;
+      test.skip(
+        true,
+        `Admin notes secondary create is not write-ready in this environment (${reason}).`
+      );
+    }
+
+    const secondaryItem = page
+      .getByTestId("admin-note-item")
+      .filter({ hasText: secondaryTitle })
+      .first();
+    await expect(secondaryItem).toBeVisible({ timeout: 10_000 });
+    const secondaryNoteIdText = await secondaryItem.getByTestId("admin-note-id").textContent();
+    const secondaryNoteId = secondaryNoteIdText?.replace("Note ID", "").trim() ?? "";
+    expect(secondaryNoteId.length).toBeGreaterThan(5);
+
+    await page.getByTestId("admin-notes-priority-filter").selectOption("high");
+    await expect(createdItem).toBeVisible();
+    await expect(page.getByTestId("admin-note-item")).toHaveCount(1);
+    await page.getByTestId("admin-notes-priority-filter").selectOption("");
 
     const searchInput = page.getByTestId("admin-notes-search");
     await searchInput.fill(noteId);
@@ -171,6 +230,7 @@ test.describe("admin notes workflow", () => {
     await editForm.getByLabel("Edit title").fill(updatedTitle);
     await editForm.getByLabel("Edit category").fill("Product");
     await editForm.getByLabel("Edit date").fill("2026-02-21");
+    await editForm.getByLabel("Priority").selectOption("urgent");
     await editForm.getByLabel("Edit text").fill(updatedBody);
     await editForm.getByRole("button", { name: "Save changes" }).click();
 
@@ -181,6 +241,84 @@ test.describe("admin notes workflow", () => {
     await expect(updatedItem).toBeVisible({ timeout: 10_000 });
     await expect(updatedItem).toContainText("Product");
     await expect(updatedItem).toContainText(updatedBody);
+    await expect(updatedItem).toContainText("Urgent");
+
+    await updatedItem.getByRole("button", { name: "Edit" }).click();
+    const attachmentsEditForm = updatedItem.getByTestId("admin-note-edit-form");
+    let uploadResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+    try {
+      [uploadResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes(`/api/admin/notes/${noteId}/attachments`) &&
+            response.request().method() === "POST",
+          { timeout: 15_000 }
+        ),
+        attachmentsEditForm.getByTestId("admin-note-attachment-input").setInputFiles({
+          name: "note-proof.png",
+          mimeType: "image/png",
+          buffer: TINY_PNG,
+        }),
+      ]);
+    } catch {
+      test.skip(true, "Admin notes attachment upload timed out in this environment.");
+    }
+    if (!uploadResponse) {
+      return;
+    }
+    const uploadPayload = (await uploadResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
+    if (!uploadResponse.ok() || uploadPayload?.ok === false) {
+      const reason =
+        typeof uploadPayload?.error === "string"
+          ? uploadPayload.error
+          : `status ${uploadResponse.status()}`;
+      test.skip(
+        true,
+        `Admin notes attachment upload is not ready in this environment (${reason}).`
+      );
+    }
+
+    await expect(updatedItem).toContainText("1 image");
+
+    await attachmentsEditForm
+      .getByTestId("admin-note-related-select")
+      .selectOption(secondaryNoteId);
+    let linkResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+    try {
+      [linkResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes(`/api/admin/notes/${noteId}/links`) &&
+            response.request().method() === "POST",
+          { timeout: 15_000 }
+        ),
+        attachmentsEditForm.getByTestId("admin-note-related-add").click(),
+      ]);
+    } catch {
+      test.skip(true, "Admin notes related-link request timed out in this environment.");
+    }
+    if (!linkResponse) {
+      return;
+    }
+
+    const linkPayload = (await linkResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
+    if (!linkResponse.ok() || linkPayload?.ok === false) {
+      const reason =
+        typeof linkPayload?.error === "string"
+          ? linkPayload.error
+          : `status ${linkResponse.status()}`;
+      test.skip(true, `Admin notes related-link is not ready in this environment (${reason}).`);
+    }
+
+    await expect(updatedItem).toContainText("1 related note");
+    await expect(updatedItem).toContainText(secondaryTitle);
+    await attachmentsEditForm.getByRole("button", { name: "Cancel" }).click();
 
     await page.getByTestId("admin-notes-category-filter").selectOption("Product");
     await expect(updatedItem).toBeVisible();
@@ -229,5 +367,17 @@ test.describe("admin notes workflow", () => {
     await expect(page.getByTestId("admin-note-item").filter({ hasText: updatedTitle })).toHaveCount(
       0
     );
+
+    await page.getByTestId("admin-notes-status-all").click();
+    const relatedNoteItem = page
+      .getByTestId("admin-note-item")
+      .filter({ hasText: secondaryTitle })
+      .first();
+    await expect(relatedNoteItem).toBeVisible({ timeout: 10_000 });
+    page.once("dialog", (dialog) => dialog.accept());
+    await relatedNoteItem.getByRole("button", { name: "Delete" }).click();
+    await expect(
+      page.getByTestId("admin-note-item").filter({ hasText: secondaryTitle })
+    ).toHaveCount(0);
   });
 });

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hydrateAdminNoteRows, selectAdminNoteFields } from "@/lib/admin/notes-server";
 import {
   deriveCourseModuleRefFromLessonRef,
   parseAdminNoteContextInput,
@@ -25,23 +26,6 @@ function noStoreJson(
       "Cache-Control": "no-store",
     },
   });
-}
-
-function selectedFields() {
-  return `
-    id,
-    title,
-    body,
-    category,
-    note_date,
-    is_done,
-    context_type,
-    context_ref,
-    created_by,
-    updated_by,
-    created_at,
-    updated_at
-  `;
 }
 
 export async function GET(request: Request) {
@@ -104,7 +88,7 @@ export async function GET(request: Request) {
 
     const lessonResult = await supabase
       .from("admin_notes")
-      .select(selectedFields())
+      .select(selectAdminNoteFields())
       .eq("context_type", "course_lesson")
       .in("context_ref", lessonLookupRefs)
       .order("note_date", { ascending: false })
@@ -140,7 +124,7 @@ export async function GET(request: Request) {
     if (moduleLookupRefs.length > 0) {
       const moduleResult = await supabase
         .from("admin_notes")
-        .select(selectedFields())
+        .select(selectAdminNoteFields())
         .eq("context_type", "course_module")
         .in("context_ref", moduleLookupRefs)
         .order("note_date", { ascending: false })
@@ -178,18 +162,45 @@ export async function GET(request: Request) {
     const deduped = Array.from(new Map(merged.map((item) => [item.id, item])).values()).sort(
       sortAdminNotesByNewest
     );
+    const hydrated = await hydrateAdminNoteRows({
+      supabase,
+      rows: deduped,
+    });
+
+    if (!hydrated.ok) {
+      if (isAdminNotesSchemaMissing(hydrated.error)) {
+        return applySupabaseCookies(
+          noStoreJson({
+            ok: true,
+            items: [],
+            schemaReady: false,
+            warning: getAdminSchemaSetupMessage("notes"),
+          })
+        );
+      }
+
+      console.error("[AdminNotes] Could not hydrate notes", hydrated.error);
+      return applySupabaseCookies(
+        noStoreJson({
+          ok: true,
+          items: [],
+          schemaReady: false,
+          warning: getAdminSchemaSetupMessage("notes"),
+        })
+      );
+    }
 
     return applySupabaseCookies(
       noStoreJson({
         ok: true,
-        items: deduped,
+        items: hydrated.items,
         schemaReady: true,
         warning: null,
       })
     );
   }
 
-  let query = supabase.from("admin_notes").select(selectedFields());
+  let query = supabase.from("admin_notes").select(selectAdminNoteFields());
 
   if (contextFilter.value) {
     const lookupRefs = resolveAdminNoteContextLookupRefs({
@@ -234,10 +245,38 @@ export async function GET(request: Request) {
     );
   }
 
+  const hydrated = await hydrateAdminNoteRows({
+    supabase,
+    rows: (result.data ?? []) as unknown as AdminNoteRow[],
+  });
+
+  if (!hydrated.ok) {
+    if (isAdminNotesSchemaMissing(hydrated.error)) {
+      return applySupabaseCookies(
+        noStoreJson({
+          ok: true,
+          items: [],
+          schemaReady: false,
+          warning: getAdminSchemaSetupMessage("notes"),
+        })
+      );
+    }
+
+    console.error("[AdminNotes] Could not hydrate notes", hydrated.error);
+    return applySupabaseCookies(
+      noStoreJson({
+        ok: true,
+        items: [],
+        schemaReady: false,
+        warning: getAdminSchemaSetupMessage("notes"),
+      })
+    );
+  }
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
-      items: result.data ?? [],
+      items: hydrated.items,
       schemaReady: true,
       warning: null,
     })
@@ -285,13 +324,14 @@ export async function POST(request: Request) {
       body: parsed.value.body,
       category: parsed.value.category,
       note_date: parsed.value.noteDate,
+      priority: parsed.value.priority,
       is_done: parsed.value.isDone,
       context_type: parsed.value.contextType,
       context_ref: parsed.value.contextRef,
       created_by: gate.user.id,
       updated_by: gate.user.id,
     })
-    .select(selectedFields())
+    .select(selectAdminNoteFields())
     .single();
 
   if (insertResult.error || !insertResult.data) {
@@ -314,11 +354,36 @@ export async function POST(request: Request) {
     );
   }
 
+  const hydrated = await hydrateAdminNoteRows({
+    supabase,
+    rows: [insertResult.data as unknown as AdminNoteRow],
+  });
+
+  if (!hydrated.ok) {
+    if (isAdminNotesSchemaMissing(hydrated.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("notes"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
+    console.error("[AdminNotes] Could not hydrate created note", hydrated.error);
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Could not save note right now." }, { status: 500 })
+    );
+  }
+
   return applySupabaseCookies(
     noStoreJson(
       {
         ok: true,
-        item: insertResult.data,
+        item: hydrated.items[0],
       },
       { status: 201 }
     )

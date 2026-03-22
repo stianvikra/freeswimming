@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AdminNoteRow } from "@/lib/admin/notes";
+import type { AdminNoteItem } from "@/lib/admin/notes";
 import {
   ADMIN_NOTES_QUERY_KEYS,
   DEFAULT_ADMIN_NOTES_FILTER_STATE,
@@ -11,13 +11,14 @@ import {
   parseAdminNotesFilterState,
 } from "@/lib/admin/notes-manager";
 
-function buildNote(overrides?: Partial<AdminNoteRow>): AdminNoteRow {
+function buildNote(overrides?: Partial<AdminNoteItem>): AdminNoteItem {
   return {
     id: "note-1",
     title: "Follow up note",
     body: "Check the plans page issue.",
     category: "Operations",
     note_date: "2026-03-21",
+    priority: "normal",
     is_done: false,
     context_type: "page",
     context_ref: "/plans",
@@ -25,6 +26,8 @@ function buildNote(overrides?: Partial<AdminNoteRow>): AdminNoteRow {
     updated_by: "admin-user",
     created_at: "2026-03-21T10:00:00.000Z",
     updated_at: "2026-03-21T10:00:00.000Z",
+    attachments: [],
+    related_notes: [],
     ...overrides,
   };
 }
@@ -49,6 +52,7 @@ describe("admin notes manager filter state", () => {
       query: "note-123",
       status: "done",
       category: "Operations",
+      priority: "high",
       contextType: "page",
       contextRef: "/plans",
     });
@@ -57,6 +61,7 @@ describe("admin notes manager filter state", () => {
     expect(next.get(ADMIN_NOTES_QUERY_KEYS.query)).toBe("note-123");
     expect(next.get(ADMIN_NOTES_QUERY_KEYS.status)).toBe("done");
     expect(next.get(ADMIN_NOTES_QUERY_KEYS.category)).toBe("Operations");
+    expect(next.get(ADMIN_NOTES_QUERY_KEYS.priority)).toBe("high");
     expect(next.get(ADMIN_NOTES_QUERY_KEYS.contextType)).toBe("page");
     expect(next.get(ADMIN_NOTES_QUERY_KEYS.contextRef)).toBe("/plans");
   });
@@ -81,6 +86,7 @@ describe("admin notes manager filtering", () => {
         query: "note-1",
         status: "open",
         category: "",
+        priority: "",
         contextType: "",
         contextRef: "",
       },
@@ -97,6 +103,7 @@ describe("admin notes manager filtering", () => {
         query: "",
         status: "done",
         category: "Content",
+        priority: "",
         contextType: "course_lesson",
         contextRef: "kick-drills--kick-basics-support-not-speed",
       },
@@ -129,5 +136,49 @@ describe("admin notes manager filtering", () => {
       "Course Lesson: M3 · L1 · Kick basics support, not speed (kick-drills--kick-basics-support-not-speed)",
       "Page: Plans (/plans)",
     ]);
+  });
+
+  it("filters by priority and searches attachment + related note metadata", () => {
+    const withAttachment = buildNote({
+      id: "note-3",
+      priority: "urgent",
+      attachments: [
+        {
+          id: "attachment-1",
+          note_id: "note-3",
+          file_name: "checkout-error.png",
+          mime_type: "image/png",
+          size_bytes: 1024,
+          created_at: "2026-03-21T10:05:00.000Z",
+          created_by: "admin-user",
+          signed_url: "https://example.com/checkout-error.png",
+        },
+      ],
+      related_notes: [
+        {
+          id: "note-4",
+          title: "Billing follow-up",
+          category: "Commerce",
+          note_date: "2026-03-20",
+          is_done: false,
+          priority: "high",
+        },
+      ],
+    });
+
+    const filtered = filterAdminNotes({
+      items: [openPlansNote, withAttachment],
+      filters: {
+        query: "checkout-error",
+        status: "open",
+        category: "",
+        priority: "urgent",
+        contextType: "",
+        contextRef: "",
+      },
+      catalog,
+    });
+
+    expect(filtered).toEqual([withAttachment]);
   });
 });

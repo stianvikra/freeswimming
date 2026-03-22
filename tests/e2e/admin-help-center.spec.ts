@@ -108,6 +108,9 @@ test.describe("admin help center", () => {
       page.getByText("Open / Done archive / All + Search + Context filters:")
     ).toBeVisible();
     await expect(page.getByText("Visible note ID:")).toBeVisible();
+    await expect(page.getByText("Priority:")).toBeVisible();
+    await expect(page.getByText("Add images / Delete image:")).toBeVisible();
+    await expect(page.getByText("Link note / Remove link:")).toBeVisible();
     await expect(page.getByText("Open lock operations workflow:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
     await expect(page.getByText("Create template:")).toBeVisible();
@@ -125,5 +128,15 @@ test.describe("admin help center", () => {
     await expect(page.getByText("docs/runbooks/site-lock-operations.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-notes-recovery.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-email-template-governance.md")).toBeVisible();
+    await expect(
+      page.getByText(
+        "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Add screenshots when the issue is visual or hard to reproduce, and link any follow-up note instead of pasting duplicate text."
+      )
+    ).toBeVisible();
   });
 });

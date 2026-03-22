@@ -321,6 +321,25 @@ test.describe("api security negative paths", () => {
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.delete(`/api/admin/notes/${dummyUuid}`)
     );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post(`/api/admin/notes/${dummyUuid}/attachments`)
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.delete(`/api/admin/notes/${dummyUuid}/attachments/${dummyUuid}`)
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post(`/api/admin/notes/${dummyUuid}/links`, {
+        headers: {
+          "content-type": "application/json",
+        },
+        data: JSON.stringify({
+          relatedNoteId: dummyUuid,
+        }),
+      })
+    );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.delete(`/api/admin/notes/${dummyUuid}/links/${dummyUuid}`)
+    );
 
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.get("/api/admin/categories/notes")

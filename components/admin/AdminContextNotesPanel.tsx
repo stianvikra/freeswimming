@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
-import type { AdminNoteRow } from "@/lib/admin/notes";
+import type { AdminNoteItem } from "@/lib/admin/notes";
 
 type AdminNotesResponse =
   | {
       ok: true;
-      items: AdminNoteRow[];
+      items: AdminNoteItem[];
       schemaReady?: boolean;
       warning?: string | null;
     }
@@ -20,7 +20,7 @@ type AdminNotesResponse =
 type AdminNoteCreateResponse =
   | {
       ok: true;
-      item: AdminNoteRow;
+      item: AdminNoteItem;
     }
   | {
       ok: false;
@@ -30,7 +30,7 @@ type AdminNoteCreateResponse =
 type AdminNoteUpdateResponse =
   | {
       ok: true;
-      item: AdminNoteRow;
+      item: AdminNoteItem;
     }
   | {
       ok: false;
@@ -98,7 +98,7 @@ function formatDateLabel(value: string): string {
   }).format(date);
 }
 
-function toFormState(note: AdminNoteRow): FormState {
+function toFormState(note: AdminNoteItem): FormState {
   return {
     title: note.title,
     body: note.body,
@@ -125,7 +125,7 @@ export default function AdminContextNotesPanel({
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [expanded, setExpanded] = useState(!collapsedByDefault);
   const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState<AdminNoteRow[]>([]);
+  const [items, setItems] = useState<AdminNoteItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
@@ -222,7 +222,7 @@ export default function AdminContextNotesPanel({
     void loadNotes();
   }, [loadNotes]);
 
-  function startEdit(item: AdminNoteRow) {
+  function startEdit(item: AdminNoteItem) {
     if (updatingId || deletingId) return;
     setActionError(null);
     setActionNotice(null);
@@ -318,7 +318,7 @@ export default function AdminContextNotesPanel({
     }
   }
 
-  async function toggleDone(item: AdminNoteRow) {
+  async function toggleDone(item: AdminNoteItem) {
     if (updatingId || deletingId || editingId) return;
     setActionError(null);
     setActionNotice(null);
@@ -351,7 +351,7 @@ export default function AdminContextNotesPanel({
     }
   }
 
-  async function handleDelete(item: AdminNoteRow) {
+  async function handleDelete(item: AdminNoteItem) {
     if (updatingId || deletingId) return;
     const confirmed = window.confirm(`Delete note "${item.title}"?`);
     if (!confirmed) return;
