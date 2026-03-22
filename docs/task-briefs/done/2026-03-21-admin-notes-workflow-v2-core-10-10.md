@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-21-admin-notes-workflow-v2-core-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-21`
 - `updated`: `2026-03-21`
@@ -234,6 +234,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-21 | merged to main | PR #259 merged as \`3d854c3\` after local \`verify:pre-pr\` + \`verify:pre-merge\` PASS and all GitHub checks green; PR summary recorded a perf-trend \`hold\` because AW-010 stretch-target tightening stays outside this admin-notes slice | next: continue with admin notes attachments/linking or the next planned product slice`
 - `2026-03-21 | verify:pre-pr passed | full gate green after hardening admin-notes workflow reload waits and explicit timeout; local verify passed with 87 e2e passed / 243 skipped, and admin notes workflow stayed green inside full desktop Chromium coverage | next: stage slice, open PR, and record a perf-trend hold in PR summary because AW-010 stretch-target tightening is outside this admin-notes scope`
 - `2026-03-21 | implementation started | moved admin notes core v2 into in-progress to ship visible note IDs, default-open work queue filters, notes-tab URL continuity, and clearer incident severity guidance before attachments/linking | next: implement notes manager filters + URL state, update Help/Guide/runbooks, and run targeted validation`
 - `2026-03-21 | planning | created admin notes core v2 brief from real operational friction: visible IDs, search/filter by route and status, done hidden by default, persistent Notes-tab state, and clearer incident severity meaning | next: implement core list/search/filter/tab continuity before taking on attachments and linked-note graph work`
