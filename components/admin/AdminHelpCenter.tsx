@@ -16,7 +16,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-21";
+const LAST_UPDATED = "2026-03-22";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -64,9 +64,9 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Notes",
     primaryJob:
-      "Run an internal work queue with visible note IDs, search, context filters, and done archive recovery.",
+      "Run an internal work queue with visible note IDs, priority, screenshots, related-note links, context filters, and done archive recovery.",
     commonRisk:
-      "Hidden context or mixed open/done lists make the next operator pick the wrong note.",
+      "Hidden context, missing screenshots, or mixed open/done queues make the next operator pick the wrong note.",
   },
   {
     name: "Categories",
@@ -394,7 +394,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Open / Done archive / All + Search + Context filters",
         meaning:
-          "Turns Notes into a work queue so operators can find the right note by ID, text, category, route, or attached content context.",
+          "Turns Notes into a work queue so operators can find the right note by ID, text, category, priority, route, or attached content context.",
       },
       {
         label: "Visible note ID",
@@ -402,8 +402,23 @@ const BUTTON_GUIDE: ActionGroup[] = [
           "Shows the stable canonical note identifier so follow-up work can reference a note without pasting the full body.",
       },
       {
+        label: "Priority",
+        meaning:
+          "Marks urgency separately from category. Urgent/high notes should surface first in the work queue.",
+      },
+      {
+        label: "Add images / Delete image",
+        meaning:
+          "Attach admin-only screenshots for memory/debugging. Delete must remove both note metadata and the underlying stored image.",
+      },
+      {
+        label: "Link note / Remove link",
+        meaning: "Connects related notes by stable note ID without merging them into one record.",
+      },
+      {
         label: "Save note / Save changes / Delete",
-        meaning: "Creates, updates, or removes task notes with route/content context.",
+        meaning:
+          "Creates, updates, or removes task notes with route/content context. Save first, then add screenshots or related-note links from Edit.",
       },
       {
         label: "Save category / Delete",
@@ -533,8 +548,9 @@ const DAILY_PLAYBOOKS: Playbook[] = [
     title: "Capture review notes with context",
     steps: [
       "Open the exact page/content row you are reviewing.",
-      "Create note with category and context link, then copy the visible note ID if you need to reference it later.",
-      "Use Search + Context filters in Notes to reopen the same note quickly.",
+      "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
+      "Add screenshots when the issue is visual or hard to reproduce, and link any follow-up note instead of pasting duplicate text.",
+      "Use Search + Priority + Context filters in Notes to reopen the same note quickly.",
       "Mark completion status once resolved, then use Done archive to confirm it is recoverable.",
     ],
   },

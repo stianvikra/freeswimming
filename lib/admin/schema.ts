@@ -71,7 +71,12 @@ export function isAdminNotesSchemaMissing(error: PostgrestLikeError | null | und
   const blob = buildErrorBlob(error);
   if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
 
-  return includesAnyMarker(blob, ["admin_notes"]);
+  return includesAnyMarker(blob, [
+    "admin_notes",
+    "admin_note_attachments",
+    "admin_note_links",
+    "admin-note-attachments",
+  ]);
 }
 
 export function isAdminCommerceSchemaMissing(

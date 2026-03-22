@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
+  buildAdminNoteAttachmentStoragePath,
   buildIncidentNoteBodyTemplate,
+  canonicalizeAdminNoteLinkPair,
   parseCreateAdminNotePayload,
   parseUpdateAdminNotePayload,
+  validateAdminNoteAttachment,
 } from "@/lib/admin/notes";
 
 describe("parseCreateAdminNotePayload", () => {
@@ -24,6 +27,7 @@ describe("parseCreateAdminNotePayload", () => {
     expect(parsed.value.title).toBe("Follow up Stripe webhook");
     expect(parsed.value.category).toBe("Commerce");
     expect(parsed.value.noteDate).toBe("2026-02-20");
+    expect(parsed.value.priority).toBe("normal");
     expect(parsed.value.contextType).toBe("course_lesson");
     expect(parsed.value.contextRef).toBe("kick-drills--kick-basics-support-not-speed");
   });
@@ -51,6 +55,7 @@ describe("parseUpdateAdminNotePayload", () => {
     const parsed = parseUpdateAdminNotePayload({
       isDone: true,
       category: "Product",
+      priority: "urgent",
     });
 
     expect(parsed.ok).toBe(true);
@@ -58,6 +63,7 @@ describe("parseUpdateAdminNotePayload", () => {
 
     expect(parsed.value.isDone).toBe(true);
     expect(parsed.value.category).toBe("Product");
+    expect(parsed.value.priority).toBe("urgent");
   });
 
   it("allows context update", () => {
@@ -96,6 +102,62 @@ describe("parseUpdateAdminNotePayload", () => {
   it("rejects unknown/empty updates", () => {
     const parsed = parseUpdateAdminNotePayload({});
     expect(parsed.ok).toBe(false);
+  });
+});
+
+describe("admin note attachment validation", () => {
+  it("accepts allowed image types and builds storage paths", () => {
+    const validated = validateAdminNoteAttachment({
+      fileName: "Checkout error 1.png",
+      mimeType: "image/png",
+      sizeBytes: 2048,
+    });
+
+    expect(validated.ok).toBe(true);
+    if (!validated.ok) return;
+
+    expect(validated.value.fileName).toBe("Checkout-error-1.png");
+    expect(
+      buildAdminNoteAttachmentStoragePath({
+        noteId: "123e4567-e89b-42d3-a456-426614174000",
+        attachmentId: "123e4567-e89b-42d3-a456-426614174001",
+        fileName: validated.value.fileName,
+      })
+    ).toContain("Checkout-error-1.png");
+  });
+
+  it("rejects unsupported types", () => {
+    const validated = validateAdminNoteAttachment({
+      fileName: "malware.svg",
+      mimeType: "image/svg+xml",
+      sizeBytes: 1024,
+    });
+
+    expect(validated.ok).toBe(false);
+  });
+});
+
+describe("admin note link canonicalization", () => {
+  it("sorts note ids into a canonical pair", () => {
+    const canonical = canonicalizeAdminNoteLinkPair(
+      "123e4567-e89b-42d3-a456-426614174099",
+      "123e4567-e89b-42d3-a456-426614174001"
+    );
+
+    expect(canonical.ok).toBe(true);
+    if (!canonical.ok) return;
+
+    expect(canonical.value.noteId).toBe("123e4567-e89b-42d3-a456-426614174001");
+    expect(canonical.value.relatedNoteId).toBe("123e4567-e89b-42d3-a456-426614174099");
+  });
+
+  it("rejects self-links", () => {
+    const canonical = canonicalizeAdminNoteLinkPair(
+      "123e4567-e89b-42d3-a456-426614174001",
+      "123e4567-e89b-42d3-a456-426614174001"
+    );
+
+    expect(canonical.ok).toBe(false);
   });
 });
 

@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { parseUpdateAdminNotePayload } from "@/lib/admin/notes";
+import { hydrateAdminNoteRows, selectAdminNoteFields } from "@/lib/admin/notes-server";
+import {
+  ADMIN_NOTE_ATTACHMENT_BUCKET,
+  isUuid,
+  parseUpdateAdminNotePayload,
+  type AdminNoteAttachmentRow,
+  type AdminNoteRow,
+} from "@/lib/admin/notes";
 import { getAdminSchemaSetupMessage, isAdminNotesSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -24,25 +30,17 @@ function noStoreJson(
   });
 }
 
-function selectedFields() {
+function selectAttachmentMutationFields() {
   return `
     id,
-    title,
-    body,
-    category,
-    note_date,
-    is_done,
-    context_type,
-    context_ref,
-    created_by,
-    updated_by,
+    note_id,
+    file_name,
+    mime_type,
+    size_bytes,
+    storage_path,
     created_at,
-    updated_at
+    created_by
   `;
-}
-
-function isUuid(value: string): boolean {
-  return UUID_REGEX.test(value);
 }
 
 async function resolveNoteId(context: RouteContext): Promise<string> {
@@ -96,13 +94,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       ...(parsed.value.body !== undefined ? { body: parsed.value.body } : {}),
       ...(parsed.value.category !== undefined ? { category: parsed.value.category } : {}),
       ...(parsed.value.noteDate !== undefined ? { note_date: parsed.value.noteDate } : {}),
+      ...(parsed.value.priority !== undefined ? { priority: parsed.value.priority } : {}),
       ...(parsed.value.isDone !== undefined ? { is_done: parsed.value.isDone } : {}),
       ...(parsed.value.contextType !== undefined ? { context_type: parsed.value.contextType } : {}),
       ...(parsed.value.contextRef !== undefined ? { context_ref: parsed.value.contextRef } : {}),
       updated_by: gate.user.id,
     })
     .eq("id", noteId)
-    .select(selectedFields())
+    .select(selectAdminNoteFields())
     .maybeSingle();
 
   if (updateResult.error) {
@@ -131,10 +130,35 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  const hydrated = await hydrateAdminNoteRows({
+    supabase,
+    rows: [updateResult.data as unknown as AdminNoteRow],
+  });
+
+  if (!hydrated.ok) {
+    if (isAdminNotesSchemaMissing(hydrated.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("notes"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
+    console.error("[AdminNotes] Could not hydrate updated note", hydrated.error);
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Could not update note right now." }, { status: 500 })
+    );
+  }
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
-      item: updateResult.data,
+      item: hydrated.items[0],
     })
   );
 }
@@ -155,6 +179,100 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: gate.error }, { status: gate.status })
     );
+  }
+
+  const attachmentsResult = await supabase
+    .from("admin_note_attachments")
+    .select(selectAttachmentMutationFields())
+    .eq("note_id", noteId)
+    .order("created_at", { ascending: true });
+
+  if (attachmentsResult.error) {
+    if (isAdminNotesSchemaMissing(attachmentsResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("notes"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
+    console.error("[AdminNotes] Could not load note attachments", attachmentsResult.error);
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Could not delete note right now." }, { status: 500 })
+    );
+  }
+
+  const attachmentRows = (attachmentsResult.data ?? []) as unknown as AdminNoteAttachmentRow[];
+
+  if (attachmentRows.length > 0) {
+    const deleteAttachmentsResult = await supabase
+      .from("admin_note_attachments")
+      .delete()
+      .eq("note_id", noteId)
+      .select(selectAttachmentMutationFields());
+
+    if (deleteAttachmentsResult.error) {
+      if (isAdminNotesSchemaMissing(deleteAttachmentsResult.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            {
+              ok: false,
+              error: getAdminSchemaSetupMessage("notes"),
+              code: "ADMIN_SCHEMA_NOT_READY",
+            },
+            { status: 503 }
+          )
+        );
+      }
+
+      console.error(
+        "[AdminNotes] Could not delete note attachments",
+        deleteAttachmentsResult.error
+      );
+      return applySupabaseCookies(
+        noStoreJson({ ok: false, error: "Could not delete note right now." }, { status: 500 })
+      );
+    }
+
+    const adminSupabase = createAdminSupabaseClient();
+    const storageDelete = await adminSupabase.storage
+      .from(ADMIN_NOTE_ATTACHMENT_BUCKET)
+      .remove(attachmentRows.map((row) => row.storage_path));
+
+    if (storageDelete.error) {
+      const restoreResult = await supabase
+        .from("admin_note_attachments")
+        .insert(attachmentRows.map((row) => ({ ...row })));
+
+      if (restoreResult.error) {
+        console.error("[AdminNotes] Could not restore attachment metadata after storage failure", {
+          noteId,
+          attachmentIds: attachmentRows.map((row) => row.id),
+          error: restoreResult.error,
+        });
+      }
+
+      console.error("[AdminNotes] Could not remove note attachments from storage", {
+        noteId,
+        attachmentIds: attachmentRows.map((row) => row.id),
+        error: storageDelete.error,
+      });
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error:
+              "Could not delete note attachments right now. Refresh and retry so storage cleanup stays complete.",
+          },
+          { status: 500 }
+        )
+      );
+    }
   }
 
   const deleteResult = await supabase
@@ -180,7 +298,16 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
     console.error("[AdminNotes] Could not delete note", deleteResult.error);
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Could not delete note right now." }, { status: 500 })
+      noStoreJson(
+        {
+          ok: false,
+          error:
+            attachmentRows.length > 0
+              ? "Attachments were removed, but the note could not be deleted. Refresh and retry delete."
+              : "Could not delete note right now.",
+        },
+        { status: 500 }
+      )
     );
   }
 

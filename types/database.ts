@@ -657,6 +657,7 @@ export type Database = {
           id: string;
           is_done: boolean;
           note_date: string;
+          priority: "low" | "normal" | "high" | "urgent";
           title: string;
           updated_at: string;
           updated_by: string | null;
@@ -671,6 +672,7 @@ export type Database = {
           id?: string;
           is_done?: boolean;
           note_date?: string;
+          priority?: "low" | "normal" | "high" | "urgent";
           title: string;
           updated_at?: string;
           updated_by?: string | null;
@@ -685,11 +687,89 @@ export type Database = {
           id?: string;
           is_done?: boolean;
           note_date?: string;
+          priority?: "low" | "normal" | "high" | "urgent";
           title?: string;
           updated_at?: string;
           updated_by?: string | null;
         };
         Relationships: [];
+      };
+      admin_note_attachments: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          file_name: string;
+          id: string;
+          mime_type: string;
+          note_id: string;
+          size_bytes: number;
+          storage_path: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          file_name: string;
+          id?: string;
+          mime_type: string;
+          note_id: string;
+          size_bytes: number;
+          storage_path: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          file_name?: string;
+          id?: string;
+          mime_type?: string;
+          note_id?: string;
+          size_bytes?: number;
+          storage_path?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "admin_note_attachments_note_id_fkey";
+            columns: ["note_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_notes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      admin_note_links: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          note_id: string;
+          related_note_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          note_id: string;
+          related_note_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          note_id?: string;
+          related_note_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "admin_note_links_note_id_fkey";
+            columns: ["note_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_notes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "admin_note_links_related_note_id_fkey";
+            columns: ["related_note_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_notes";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       admin_runtime_flags: {
         Row: {

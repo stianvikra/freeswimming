@@ -7,7 +7,12 @@ import {
   isAdminNoteContextType,
   type AdminNoteContextType,
 } from "@/lib/admin/note-context";
-import type { AdminNoteRow, IncidentNoteSeverity } from "@/lib/admin/notes";
+import {
+  isAdminNotePriority,
+  type AdminNoteItem,
+  type AdminNotePriority,
+  type IncidentNoteSeverity,
+} from "@/lib/admin/notes";
 
 type SearchParamsLike = {
   get(name: string): string | null;
@@ -20,6 +25,7 @@ export type AdminNotesFilterState = {
   query: string;
   status: AdminNotesStatusFilter;
   category: string;
+  priority: AdminNotePriority | "";
   contextType: AdminNoteContextType | "";
   contextRef: string;
 };
@@ -34,6 +40,7 @@ export const ADMIN_NOTES_QUERY_KEYS = {
   query: "notesQuery",
   status: "notesStatus",
   category: "notesCategory",
+  priority: "notesPriority",
   contextType: "notesContextType",
   contextRef: "notesContextRef",
 } as const;
@@ -42,6 +49,7 @@ export const DEFAULT_ADMIN_NOTES_FILTER_STATE: AdminNotesFilterState = {
   query: "",
   status: "open",
   category: "",
+  priority: "",
   contextType: "",
   contextRef: "",
 };
@@ -81,6 +89,8 @@ export function parseAdminNotesFilterState(searchParams: SearchParamsLike): Admi
   )
     ? (rawContextType as AdminNoteContextType)
     : "";
+  const rawPriority = normalizeLowerText(searchParams.get(ADMIN_NOTES_QUERY_KEYS.priority));
+  const priority = isAdminNotePriority(rawPriority) ? rawPriority : "";
 
   const contextRef = normalizeContextRef(searchParams.get(ADMIN_NOTES_QUERY_KEYS.contextRef));
 
@@ -88,6 +98,7 @@ export function parseAdminNotesFilterState(searchParams: SearchParamsLike): Admi
     query: normalizeText(searchParams.get(ADMIN_NOTES_QUERY_KEYS.query)),
     status: parseAdminNotesStatusFilter(searchParams.get(ADMIN_NOTES_QUERY_KEYS.status)),
     category: normalizeText(searchParams.get(ADMIN_NOTES_QUERY_KEYS.category)),
+    priority,
     contextType,
     contextRef: contextType ? contextRef : "",
   };
@@ -101,6 +112,7 @@ export function applyAdminNotesFilterStateToSearchParams(
   const normalizedQuery = normalizeText(state.query);
   const normalizedCategory = normalizeText(state.category);
   const normalizedContextRef = normalizeContextRef(state.contextRef);
+  const normalizedPriority = normalizeLowerText(state.priority);
 
   if (normalizedQuery) {
     next.set(ADMIN_NOTES_QUERY_KEYS.query, normalizedQuery);
@@ -118,6 +130,12 @@ export function applyAdminNotesFilterStateToSearchParams(
     next.set(ADMIN_NOTES_QUERY_KEYS.category, normalizedCategory);
   } else {
     next.delete(ADMIN_NOTES_QUERY_KEYS.category);
+  }
+
+  if (normalizedPriority) {
+    next.set(ADMIN_NOTES_QUERY_KEYS.priority, normalizedPriority);
+  } else {
+    next.delete(ADMIN_NOTES_QUERY_KEYS.priority);
   }
 
   if (state.contextType) {
@@ -160,7 +178,7 @@ export function buildAdminNoteContextFilterLabel(params: {
 }
 
 function buildAdminNoteSearchIndex(params: {
-  item: AdminNoteRow;
+  item: AdminNoteItem;
   catalog: Pick<AdminNoteContextCatalog, "labelsByContextKey">;
 }): string {
   const contextLabel =
@@ -179,16 +197,19 @@ function buildAdminNoteSearchIndex(params: {
     params.item.title,
     params.item.body,
     params.item.category,
+    params.item.priority,
     params.item.context_type,
     params.item.context_ref,
     contextLabel,
+    ...params.item.attachments.map((attachment) => attachment.file_name),
+    ...params.item.related_notes.flatMap((note) => [note.id, note.title]),
   ]
     .filter(Boolean)
     .join("\n")
     .toLowerCase();
 }
 
-export function buildAdminNotesCounts(items: AdminNoteRow[]): {
+export function buildAdminNotesCounts(items: AdminNoteItem[]): {
   open: number;
   done: number;
   all: number;
@@ -202,10 +223,10 @@ export function buildAdminNotesCounts(items: AdminNoteRow[]): {
 }
 
 export function filterAdminNotes(params: {
-  items: AdminNoteRow[];
+  items: AdminNoteItem[];
   filters: AdminNotesFilterState;
   catalog: Pick<AdminNoteContextCatalog, "labelsByContextKey">;
-}): AdminNoteRow[] {
+}): AdminNoteItem[] {
   const normalizedQuery = normalizeLowerText(params.filters.query);
   const normalizedCategory = normalizeLowerText(params.filters.category);
   const normalizedContextRef = normalizeContextRef(params.filters.contextRef);
@@ -215,6 +236,10 @@ export function filterAdminNotes(params: {
     if (params.filters.status === "done" && !item.is_done) return false;
 
     if (normalizedCategory && normalizeLowerText(item.category) !== normalizedCategory) {
+      return false;
+    }
+
+    if (params.filters.priority && item.priority !== params.filters.priority) {
       return false;
     }
 
@@ -236,7 +261,7 @@ export function filterAdminNotes(params: {
 }
 
 export function buildAdminNotesContextRefOptions(params: {
-  items: AdminNoteRow[];
+  items: AdminNoteItem[];
   catalog: Pick<AdminNoteContextCatalog, "labelsByContextKey">;
   contextType: AdminNoteContextType | "";
 }): AdminNotesContextRefOption[] {
