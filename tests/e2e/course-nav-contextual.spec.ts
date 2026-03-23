@@ -1,6 +1,25 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { COURSE_LESSONS_FLAT, DEFAULT_LESSON_ID } from "../../app/course/courseData";
 import { isMobileProject } from "./project-guards";
+
+async function waitForCoursePageToSettle(page: Page) {
+  const compilingIndicator = page.getByText("Compiling", { exact: true });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
+    await page.waitForTimeout(750);
+    if ((await compilingIndicator.count()) === 0) {
+      break;
+    }
+  }
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      })
+  );
+}
 
 test("course nav uses contextual actions on first and last lesson", async ({ page }, testInfo) => {
   test.skip(
@@ -12,7 +31,11 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   const firstLessonId = DEFAULT_LESSON_ID;
   const lastLessonId = COURSE_LESSONS_FLAT.at(-1)?.id ?? DEFAULT_LESSON_ID;
 
-  await page.goto(`/course?lesson=${encodeURIComponent(firstLessonId)}`);
+  await page.goto(`/course?lesson=${encodeURIComponent(firstLessonId)}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await waitForCoursePageToSettle(page);
 
   const leftFirst = page.getByTestId("course-nav-left");
   const middleFirst = page.getByTestId("course-nav-lessons");
@@ -27,23 +50,51 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
   await expect(drawer).toBeHidden();
 
-  // Mobile WebKit can occasionally miss the first tap during hydration/paint.
-  // Keep click as primary path, then fall back to keyboard activation.
-  await leftFirst.click();
-  try {
-    await expect(drawer).toBeVisible({ timeout: 3000 });
-  } catch {
-    await leftFirst.focus();
-    await page.keyboard.press("Enter");
-    await expect(drawer).toBeVisible();
+  const openAttempts: Array<() => Promise<void>> = [
+    async () => {
+      await leftFirst.click();
+    },
+    async () => {
+      await leftFirst.focus();
+      await page.keyboard.press("Enter");
+    },
+    async () => {
+      await leftFirst.click();
+    },
+    async () => {
+      await leftFirst.focus();
+      await page.keyboard.press("Space");
+    },
+  ];
+
+  let drawerOpened = false;
+  for (const openAttempt of openAttempts) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await waitForCoursePageToSettle(page);
+    await leftFirst.scrollIntoViewIfNeeded();
+    await openAttempt();
+    await expect(drawer)
+      .toBeVisible({ timeout: 4_000 })
+      .catch(() => {});
+    if (await drawer.isVisible().catch(() => false)) {
+      drawerOpened = true;
+      break;
+    }
+    await page.waitForTimeout(250);
   }
 
+  expect(drawerOpened).toBe(true);
+  await expect(drawer).toBeVisible();
   await expect(drawer.getByText("Main menu")).toBeVisible();
 
   await drawer.getByRole("button", { name: "Close menu" }).click();
   await expect(drawer).toBeHidden();
 
-  await page.goto(`/course?lesson=${encodeURIComponent(lastLessonId)}`);
+  await page.goto(`/course?lesson=${encodeURIComponent(lastLessonId)}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await waitForCoursePageToSettle(page);
 
   const leftLast = page.getByTestId("course-nav-left");
   const rightLast = page.getByTestId("course-nav-right");

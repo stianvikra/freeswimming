@@ -36,8 +36,13 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 }
 
 async function openFirstNewLessonFromNotice(page: Page) {
-  const openLink = page.getByTestId("my-library-new-content-open");
+  const openLink = page
+    .getByTestId("my-library-new-content-notice")
+    .getByTestId("my-library-new-content-open");
+  await expect(openLink).toBeVisible();
   await expect(openLink).toHaveAttribute("href", /\/course\?lesson=/);
+  const href = await openLink.getAttribute("href");
+  expect(href).toBeTruthy();
 
   await openLink.click();
   const navigatedAfterClick = await page
@@ -46,8 +51,6 @@ async function openFirstNewLessonFromNotice(page: Page) {
     .catch(() => false);
   if (navigatedAfterClick) return;
 
-  const href = await openLink.getAttribute("href");
-  expect(href).toBeTruthy();
   await page.goto(href!, { waitUntil: "domcontentloaded", timeout: 60_000 });
   await expect(page).toHaveURL(/\/course(\?|$)/);
 }

@@ -65,10 +65,19 @@ async function openNotesSection(page: Page) {
 }
 
 async function reloadNotesSection(page: Page) {
+  const activeSectionLabel = page.getByTestId("admin-active-section-label");
+  const notesManager = page.getByTestId("admin-notes-manager");
+
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForURL(/\/admin\?tab=notes(?:&|$)/);
-  await expect(page.getByTestId("admin-active-section-label")).toHaveText("Notes");
-  await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
+  await page.waitForURL(/\/admin\?tab=notes(?:&|$)/, { timeout: 10_000 });
+  await expect(activeSectionLabel).toHaveText("Notes", { timeout: 15_000 });
+
+  const notesManagerVisible = await notesManager.isVisible().catch(() => false);
+  if (!notesManagerVisible) {
+    await page.getByTestId("admin-tab-notes").click();
+  }
+
+  await expect(notesManager).toBeVisible({ timeout: 20_000 });
   await waitForNotesSectionReady(page);
 }
 

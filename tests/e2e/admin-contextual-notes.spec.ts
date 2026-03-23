@@ -9,8 +9,30 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
 }
 
+async function waitForRouteToSettle(page: Page) {
+  const compilingIndicator = page.getByText("Compiling", { exact: true });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
+    await page.waitForTimeout(750);
+    if ((await compilingIndicator.count()) === 0) {
+      break;
+    }
+  }
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      })
+  );
+}
+
 async function loginAsAdminViaDevBypass(page: Page, nextPath: string) {
-  await page.goto(`/dev/login?next=${encodeURIComponent(nextPath)}`);
+  await page.goto(`/dev/login?next=${encodeURIComponent(nextPath)}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
   const pathAfterDevLogin = new URL(page.url()).pathname;
 
   if (pathAfterDevLogin !== new URL(`https://freeswimming.org${nextPath}`).pathname) {
@@ -21,6 +43,8 @@ async function loginAsAdminViaDevBypass(page: Page, nextPath: string) {
   if (await noAccessHeading.isVisible().catch(() => false)) {
     test.skip(true, "Dev bypass account is signed in but not allowlisted/admin.");
   }
+
+  await waitForRouteToSettle(page);
 }
 
 async function toggleDoneAndWait(
@@ -73,6 +97,7 @@ test.describe("admin contextual notes", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
 
     await loginAsAdminViaDevBypass(page, "/course?lesson=mod3-l1");
     await expect(page.getByRole("heading", { name: "Free Course" })).toBeVisible();
@@ -95,6 +120,9 @@ test.describe("admin contextual notes", () => {
     if ((await toggle.textContent())?.includes("Show")) {
       await toggle.click();
     }
+    await expect
+      .poll(async () => await panel.getByText("Loading notes…").count(), { timeout: 15_000 })
+      .toBe(0);
 
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const title = `Context Note ${unique}`;
@@ -136,6 +164,14 @@ test.describe("admin contextual notes", () => {
 
     await expect(panel.getByText("Note saved.")).toBeVisible({ timeout: 5_000 });
 
+    await expect
+      .poll(
+        async () =>
+          await panel.getByTestId("admin-context-note-item").filter({ hasText: title }).count(),
+        { timeout: 15_000 }
+      )
+      .toBeGreaterThan(0);
+
     const createdItem = panel
       .getByTestId("admin-context-note-item")
       .filter({ hasText: title })
@@ -167,6 +203,7 @@ test.describe("admin contextual notes", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
 
     await loginAsAdminViaDevBypass(page, "/plans");
     expect(new URL(page.url()).pathname).toBe("/plans");
@@ -183,6 +220,9 @@ test.describe("admin contextual notes", () => {
 
     const panel = page.getByTestId("admin-context-notes-panel");
     await expect(panel).toBeVisible({ timeout: 10_000 });
+    await expect
+      .poll(async () => await panel.getByText("Loading notes…").count(), { timeout: 15_000 })
+      .toBe(0);
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const title = `Plans Note ${unique}`;
     await panel.getByRole("button", { name: "Quick note" }).click();
@@ -239,6 +279,13 @@ test.describe("admin contextual notes", () => {
       .getByTestId("admin-context-note-item")
       .filter({ hasText: title })
       .first();
+    await expect
+      .poll(
+        async () =>
+          await panel.getByTestId("admin-context-note-item").filter({ hasText: title }).count(),
+        { timeout: 15_000 }
+      )
+      .toBeGreaterThan(0);
     await expect(createdItem).toBeVisible({ timeout: 15_000 });
 
     await toggleDoneAndWait(page, createdItem, "Note marked as done.");

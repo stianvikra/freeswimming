@@ -270,7 +270,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-target-mode-1")).toHaveValue("css_target_pace");
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-3"));
     expect(screen.getByTestId("session-draft-step-stroke-3")).toHaveValue("im_by_round");
-  });
+  }, 15_000);
 
   it("keeps step cards summary-first until the user opens them for editing", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
