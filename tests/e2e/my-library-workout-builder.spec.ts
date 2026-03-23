@@ -60,6 +60,9 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-add-repeat").click();
     await page.getByTestId("session-draft-repeat-count-5").fill("6");
     await page.getByTestId("session-draft-step-name-5").fill("Repeat swim focus");
+    await page.getByTestId("session-draft-step-stroke-5").selectOption("backstroke");
+    await page.getByTestId("session-draft-step-drill-type-5").selectOption("pull");
+    await page.getByTestId("session-draft-step-equipment-5").selectOption("fins");
     await page.getByTestId("session-draft-step-target-mode-5").selectOption("target_pace");
     await page.getByTestId("session-draft-step-target-pace-minutes-5").fill("1");
     await page.getByTestId("session-draft-step-target-pace-seconds-5").fill("35");
@@ -84,6 +87,9 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
     await expect(page.getByTestId("session-draft-repeat-count-5")).toHaveValue("6");
     await expect(page.getByTestId("session-draft-step-name-5")).toHaveValue("Repeat swim focus");
+    await expect(page.getByTestId("session-draft-step-stroke-5")).toHaveValue("backstroke");
+    await expect(page.getByTestId("session-draft-step-drill-type-5")).toHaveValue("pull");
+    await expect(page.getByTestId("session-draft-step-equipment-5")).toHaveValue("fins");
     await expect(page.getByTestId("session-draft-step-target-mode-5")).toHaveValue("target_pace");
     await expect(page.getByTestId("session-draft-step-target-pace-minutes-5")).toHaveValue("1");
     await expect(page.getByTestId("session-draft-step-target-pace-seconds-5")).toHaveValue("35");
@@ -91,5 +97,15 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue("QA open reset");
     await expect(page.getByTestId("session-draft-step-duration-mode-7")).toHaveValue("lap_button");
     await expect(page.getByTestId("session-draft-step-target-mode-7")).toHaveValue("none");
+    await expect(
+      page.locator("fieldset").filter({ hasText: "Session strokes" }).getByRole("checkbox", {
+        name: "Backstroke",
+      })
+    ).toBeChecked();
+    await expect(
+      page.locator("fieldset").filter({ hasText: "Equipment" }).getByRole("checkbox", {
+        name: "Fins",
+      })
+    ).toBeChecked();
   });
 });

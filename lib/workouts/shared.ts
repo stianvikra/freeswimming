@@ -1,9 +1,12 @@
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
+  SESSION_DRAFT_STEP_DRILL_TYPES,
   SESSION_DRAFT_STEP_DURATION_MODES,
+  SESSION_DRAFT_STEP_EQUIPMENT,
   SESSION_DRAFT_REPEAT_MAX,
   SESSION_DRAFT_REPEAT_MIN,
+  SESSION_DRAFT_STEP_STROKES,
   SESSION_DRAFT_STEP_TARGET_MODES,
   SESSION_GENERATOR_ENVIRONMENTS,
   SESSION_GENERATOR_EFFORT_PRESETS,
@@ -147,16 +150,15 @@ export function normalizeSessionDraftForWorkoutPersistence(
   }
 
   const explicitStepStrokes = normalizedSteps
-    .map((step) => step.stroke)
-    .filter((stroke): stroke is SessionGeneratorStroke => stroke !== "choice");
-
-  const missingStroke = explicitStepStrokes.find((stroke) => !allowedStrokes.includes(stroke));
-  if (missingStroke) {
-    return {
-      ok: false,
-      error: "Every explicit step stroke must also be included in the session stroke list.",
-    };
-  }
+    .map((step) => mapDraftStepStrokeToAllowedStroke(step.stroke))
+    .filter((stroke): stroke is SessionGeneratorStroke => Boolean(stroke));
+  const requiredEquipment = normalizedSteps
+    .map((step) => mapDraftStepEquipmentToAllowlist(step.equipment))
+    .filter((item): item is (typeof SESSION_GENERATOR_EQUIPMENT)[number] => Boolean(item));
+  const canonicalAllowedStrokes = Array.from(new Set([...allowedStrokes, ...explicitStepStrokes]));
+  const canonicalEquipmentAllowlist = Array.from(
+    new Set([...equipmentAllowlist, ...requiredEquipment])
+  );
 
   const repeatGroups = new Map<string, { repeatCount: number; lastIndex: number }>();
 
@@ -216,8 +218,8 @@ export function normalizeSessionDraftForWorkoutPersistence(
     estimatedDurationMin: null,
     basePaceSecondsPer100m,
     usedCssPaceLabel: normalizeNullableText(input.usedCssPaceLabel, 32),
-    allowedStrokes,
-    equipmentAllowlist,
+    allowedStrokes: canonicalAllowedStrokes,
+    equipmentAllowlist: canonicalEquipmentAllowlist,
     focusText: normalizeNullableText(input.focusText, 120),
     goalTitle: normalizeNullableText(input.goalTitle, 120),
     constraintText: normalizeNullableText(input.constraintText, 240),
@@ -276,10 +278,7 @@ function normalizeStep(
     };
   }
 
-  if (
-    input.stroke !== "choice" &&
-    !SESSION_GENERATOR_STROKES.includes(input.stroke as SessionGeneratorStroke)
-  ) {
+  if (!SESSION_DRAFT_STEP_STROKES.includes(input.stroke as SessionDraftStep["stroke"])) {
     return {
       ok: false,
       error: `Step ${index + 1} uses an unsupported stroke.`,
@@ -303,6 +302,8 @@ function normalizeStep(
   const id = normalizeRequiredText(input.id, 80) ?? `step-${index + 1}`;
   const repeatGroupId = normalizeNullableText(input.repeatGroupId, 80);
   const repeatCount = normalizeNullableInteger(input.repeatCount);
+  const drillType = normalizeStepDrillType(input.drillType);
+  const equipment = normalizeStepEquipment(input.equipment);
   const targetMode = normalizeTargetMode(input.targetMode);
   const effortTarget = targetMode === "effort" ? normalizeEffortPreset(input.effortTarget) : null;
   const targetPaceSecondsPer100m =
@@ -362,6 +363,8 @@ function normalizeStep(
         category: input.category,
         name,
         stroke: input.stroke,
+        drillType,
+        equipment,
         intensity: input.intensity,
         durationMode: "distance",
         distanceM,
@@ -386,6 +389,8 @@ function normalizeStep(
         category: input.category,
         name,
         stroke: input.stroke,
+        drillType,
+        equipment,
         intensity: input.intensity,
         durationMode: "lap_button",
         distanceM: null,
@@ -414,6 +419,8 @@ function normalizeStep(
       category: input.category,
       name,
       stroke: input.stroke,
+      drillType,
+      equipment,
       intensity: input.intensity,
       durationMode: input.durationMode === "fixed_rest" ? "fixed_rest" : "time",
       distanceM: null,
@@ -477,6 +484,34 @@ function normalizeTargetMode(value: unknown) {
   )
     ? (value as (typeof SESSION_DRAFT_STEP_TARGET_MODES)[number])
     : "none";
+}
+
+function normalizeStepDrillType(value: unknown) {
+  return SESSION_DRAFT_STEP_DRILL_TYPES.includes(
+    value as (typeof SESSION_DRAFT_STEP_DRILL_TYPES)[number]
+  )
+    ? (value as (typeof SESSION_DRAFT_STEP_DRILL_TYPES)[number])
+    : "none";
+}
+
+function normalizeStepEquipment(value: unknown) {
+  return SESSION_DRAFT_STEP_EQUIPMENT.includes(
+    value as (typeof SESSION_DRAFT_STEP_EQUIPMENT)[number]
+  )
+    ? (value as (typeof SESSION_DRAFT_STEP_EQUIPMENT)[number])
+    : "none";
+}
+
+function mapDraftStepStrokeToAllowedStroke(value: SessionDraftStep["stroke"]) {
+  return SESSION_GENERATOR_STROKES.includes(value as SessionGeneratorStroke)
+    ? (value as SessionGeneratorStroke)
+    : null;
+}
+
+function mapDraftStepEquipmentToAllowlist(value: SessionDraftStep["equipment"]) {
+  return SESSION_GENERATOR_EQUIPMENT.includes(value as (typeof SESSION_GENERATOR_EQUIPMENT)[number])
+    ? (value as (typeof SESSION_GENERATOR_EQUIPMENT)[number])
+    : null;
 }
 
 function normalizeCssOffset(value: unknown) {

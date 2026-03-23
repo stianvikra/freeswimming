@@ -36,6 +36,25 @@ export const SESSION_GENERATOR_EQUIPMENT = [
   "paddles",
   "snorkel",
 ] as const;
+export const SESSION_DRAFT_STEP_STROKES = [
+  "choice",
+  "freestyle",
+  "backstroke",
+  "breaststroke",
+  "butterfly",
+  "individual_medley",
+  "mixed",
+  "drill",
+] as const;
+export const SESSION_DRAFT_STEP_DRILL_TYPES = ["none", "kick", "pull", "drill"] as const;
+export const SESSION_DRAFT_STEP_EQUIPMENT = [
+  "none",
+  "kickboard",
+  "pull_buoy",
+  "fins",
+  "paddles",
+  "snorkel",
+] as const;
 export const SESSION_DRAFT_STEP_CATEGORIES = [
   "warmup",
   "drill",
@@ -70,6 +89,9 @@ export type SessionGeneratorEffortPreset = (typeof SESSION_GENERATOR_EFFORT_PRES
 export type SessionGeneratorSizeMode = (typeof SESSION_GENERATOR_SIZE_MODES)[number];
 export type SessionGeneratorStroke = (typeof SESSION_GENERATOR_STROKES)[number];
 export type SessionGeneratorEquipment = (typeof SESSION_GENERATOR_EQUIPMENT)[number];
+export type SessionDraftStepStroke = (typeof SESSION_DRAFT_STEP_STROKES)[number];
+export type SessionDraftStepDrillType = (typeof SESSION_DRAFT_STEP_DRILL_TYPES)[number];
+export type SessionDraftStepEquipment = (typeof SESSION_DRAFT_STEP_EQUIPMENT)[number];
 export type SessionDraftStepCategory = (typeof SESSION_DRAFT_STEP_CATEGORIES)[number];
 export type SessionDraftStepDurationMode = (typeof SESSION_DRAFT_STEP_DURATION_MODES)[number];
 export type SessionDraftStepTargetMode = (typeof SESSION_DRAFT_STEP_TARGET_MODES)[number];
@@ -112,7 +134,9 @@ export type SessionDraftStep = {
   id: string;
   category: SessionDraftStepCategory;
   name: string;
-  stroke: SessionGeneratorStroke | "choice";
+  stroke: SessionDraftStepStroke;
+  drillType?: SessionDraftStepDrillType | null;
+  equipment?: SessionDraftStepEquipment | null;
   intensity: SessionGeneratorEffortPreset;
   durationMode: SessionDraftStepDurationMode;
   distanceM: number | null;
@@ -207,6 +231,33 @@ const EQUIPMENT_LABELS: Record<SessionGeneratorEquipment, string> = {
   snorkel: "Snorkel",
 };
 
+const STEP_STROKE_LABELS: Record<SessionDraftStepStroke, string> = {
+  choice: "Stroke choice",
+  freestyle: "Freestyle",
+  backstroke: "Backstroke",
+  breaststroke: "Breaststroke",
+  butterfly: "Butterfly",
+  individual_medley: "Individual medley",
+  mixed: "Mixed",
+  drill: "Drill",
+};
+
+const STEP_DRILL_TYPE_LABELS: Record<SessionDraftStepDrillType, string> = {
+  none: "None",
+  kick: "Kick",
+  pull: "Pull",
+  drill: "Drill",
+};
+
+const STEP_EQUIPMENT_LABELS: Record<SessionDraftStepEquipment, string> = {
+  none: "None",
+  kickboard: "Kickboard",
+  pull_buoy: "Pull buoy",
+  fins: "Fins",
+  paddles: "Paddles",
+  snorkel: "Snorkel",
+};
+
 const STEP_CATEGORY_LABELS: Record<SessionDraftStepCategory, string> = {
   warmup: "Warmup",
   drill: "Drill",
@@ -248,8 +299,20 @@ export function getSessionStrokeLabel(value: SessionGeneratorStroke | "choice") 
   return STROKE_LABELS[value];
 }
 
+export function getSessionStepStrokeLabel(value: SessionDraftStepStroke) {
+  return STEP_STROKE_LABELS[value];
+}
+
+export function getSessionStepDrillTypeLabel(value: SessionDraftStepDrillType) {
+  return STEP_DRILL_TYPE_LABELS[value];
+}
+
 export function getSessionEquipmentLabel(value: SessionGeneratorEquipment) {
   return EQUIPMENT_LABELS[value];
+}
+
+export function getSessionStepEquipmentLabel(value: SessionDraftStepEquipment) {
+  return STEP_EQUIPMENT_LABELS[value];
 }
 
 export function getSessionStepCategoryLabel(value: SessionDraftStepCategory) {
