@@ -176,6 +176,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-step-css-offset-1"), {
       target: { value: "2" },
     });
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-2"));
     fireEvent.change(screen.getByTestId("session-draft-step-duration-mode-2"), {
       target: { value: "send_off" },
     });
@@ -237,11 +238,36 @@ describe("WorkoutBuilderHub", () => {
     expect(fetchBody.draft.allowedStrokes).toContain("backstroke");
     expect(fetchBody.draft.equipmentAllowlist).toContain("fins");
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Builder edited workout");
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-1"));
     expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim focus");
     expect(screen.getByTestId("session-draft-step-stroke-1")).toHaveValue("backstroke");
     expect(screen.getByTestId("session-draft-step-drill-type-1")).toHaveValue("pull");
     expect(screen.getByTestId("session-draft-step-equipment-1")).toHaveValue("fins");
     expect(screen.getByTestId("session-draft-step-target-mode-1")).toHaveValue("css_target_pace");
+  });
+
+  it("keeps step cards summary-first until the user opens them for editing", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.queryByTestId("session-draft-step-name-0")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Edit step");
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+
+    expect(screen.getByTestId("session-draft-step-name-0")).toHaveValue("Easy warmup swim");
+    expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Done");
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+
+    expect(screen.queryByTestId("session-draft-step-name-0")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Edit step");
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {

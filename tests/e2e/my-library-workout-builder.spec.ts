@@ -68,9 +68,13 @@ test.describe("my library workout builder", () => {
     await waitForWorkoutBuilderSaveReady(page);
 
     await expect(page.getByTestId("session-draft-title")).toHaveValue("Manual pool workout");
+    await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
+    await expect(page.getByTestId("session-draft-step-name-0")).toHaveCount(0);
+
+    await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
-    await expect(page.getByTestId("session-draft-step-name-1")).toHaveValue("Reset rest");
-    await expect(page.getByTestId("session-draft-step-name-2")).toHaveValue("Main swim set");
+    await page.getByTestId("session-draft-step-toggle-0").click();
+    await expect(page.getByTestId("session-draft-step-name-0")).toHaveCount(0);
 
     await page.getByTestId("session-draft-pool-length-input").fill("33.33");
     await page.getByTestId("session-draft-add-repeat").click();
@@ -82,6 +86,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-target-mode-5").selectOption("target_pace");
     await page.getByTestId("session-draft-step-target-pace-minutes-5").fill("1");
     await page.getByTestId("session-draft-step-target-pace-seconds-5").fill("35");
+    await page.getByTestId("session-draft-step-toggle-6").click();
     await page.getByTestId("session-draft-step-duration-mode-6").selectOption("send_off");
     await page.getByTestId("session-draft-step-sendoff-minutes-6").fill("2");
     await page.getByTestId("session-draft-step-sendoff-seconds-6").fill("00");
@@ -109,6 +114,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
     await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("33.33");
     await expect(page.getByTestId("session-draft-repeat-count-5")).toHaveValue("6");
+    await page.getByTestId("session-draft-step-toggle-5").click();
     await expect(page.getByTestId("session-draft-step-name-5")).toHaveValue("Repeat swim focus");
     await expect(page.getByTestId("session-draft-step-stroke-5")).toHaveValue("backstroke");
     await expect(page.getByTestId("session-draft-step-drill-type-5")).toHaveValue("pull");
@@ -116,9 +122,11 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-target-mode-5")).toHaveValue("target_pace");
     await expect(page.getByTestId("session-draft-step-target-pace-minutes-5")).toHaveValue("1");
     await expect(page.getByTestId("session-draft-step-target-pace-seconds-5")).toHaveValue("35");
+    await page.getByTestId("session-draft-step-toggle-6").click();
     await expect(page.getByTestId("session-draft-step-duration-mode-6")).toHaveValue("send_off");
     await expect(page.getByTestId("session-draft-step-sendoff-minutes-6")).toHaveValue("2");
     await expect(page.getByTestId("session-draft-step-sendoff-seconds-6")).toHaveValue("00");
+    await page.getByTestId("session-draft-step-toggle-7").click();
     await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue(
       "QA CSS send-off reset"
     );
