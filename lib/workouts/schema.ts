@@ -17,6 +17,10 @@ function isSchemaMissing(error: PostgrestLikeError | null | undefined, markers: 
     return true;
   }
 
+  if (typeof error.code === "string" && error.code.length > 0) {
+    return false;
+  }
+
   const blob = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`.toLowerCase();
   return markers.some((marker) => blob.includes(marker));
 }

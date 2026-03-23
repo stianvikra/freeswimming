@@ -205,6 +205,7 @@ describe("workouts routes", () => {
     const body = buildDraftBody({ sourceKind: "manual" });
     body.draft.title = "Manual pool workout";
     body.draft.titleSuggestions = ["Manual pool workout"];
+    body.draft.poolLengthM = 33.33;
     body.draft.steps = [
       {
         id: "step-1",
@@ -305,6 +306,7 @@ describe("workouts routes", () => {
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
         source_kind: "manual",
+        pool_length_m: 33.33,
         allowed_strokes: ["freestyle", "backstroke"],
         equipment_allowlist: ["kickboard", "fins"],
         steps: expect.arrayContaining([

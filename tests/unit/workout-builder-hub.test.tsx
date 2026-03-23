@@ -151,6 +151,9 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-description"), {
       target: { value: "Edited in the dedicated builder route." },
     });
+    fireEvent.change(screen.getByTestId("session-draft-pool-length-input"), {
+      target: { value: "33.33" },
+    });
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
     fireEvent.change(screen.getByLabelText("Repeat count"), {
       target: { value: "6" },
@@ -214,6 +217,7 @@ describe("WorkoutBuilderHub", () => {
 
     expect(repeatSteps).toHaveLength(2);
     expect(repeatSteps.every((step) => step.repeatCount === 6)).toBe(true);
+    expect(fetchBody.draft.poolLengthM).toBe(33.33);
     expect(repeatSteps[0]).toMatchObject({
       stroke: "backstroke",
       drillType: "pull",

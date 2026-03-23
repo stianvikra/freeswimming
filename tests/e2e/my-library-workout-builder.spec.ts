@@ -28,6 +28,20 @@ async function waitForWorkoutBuilderClientReady(page: Page) {
   );
 }
 
+async function waitForWorkoutBuilderSaveReady(page: Page) {
+  const schemaWarning = page.getByText(
+    "Canonical workout save is still syncing in this environment."
+  );
+  const saveButton = page.getByTestId("workout-builder-save");
+
+  if ((await schemaWarning.count()) > 0 && (await schemaWarning.first().isVisible())) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForWorkoutBuilderClientReady(page);
+  }
+
+  await expect(saveButton).toBeEnabled({ timeout: 15_000 });
+}
+
 test.describe("my library workout builder", () => {
   test("creates a manual starter workout and saves canonical edits", async ({ page }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
@@ -51,12 +65,14 @@ test.describe("my library workout builder", () => {
       waitUntil: "domcontentloaded",
     });
     await waitForWorkoutBuilderClientReady(page);
+    await waitForWorkoutBuilderSaveReady(page);
 
     await expect(page.getByTestId("session-draft-title")).toHaveValue("Manual pool workout");
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
     await expect(page.getByTestId("session-draft-step-name-1")).toHaveValue("Reset rest");
     await expect(page.getByTestId("session-draft-step-name-2")).toHaveValue("Main swim set");
 
+    await page.getByTestId("session-draft-pool-length-input").fill("33.33");
     await page.getByTestId("session-draft-add-repeat").click();
     await page.getByTestId("session-draft-repeat-count-5").fill("6");
     await page.getByTestId("session-draft-step-name-5").fill("Repeat swim focus");
@@ -79,15 +95,19 @@ test.describe("my library workout builder", () => {
     const patchResponsePromise = page.waitForResponse(
       (response) =>
         /\/api\/my-library\/workouts\/[0-9a-f-]+$/.test(response.url()) &&
-        response.request().method() === "PATCH" &&
-        response.status() === 200
+        response.request().method() === "PATCH"
     );
 
     await page.getByTestId("workout-builder-save").click();
-    await patchResponsePromise;
+    const patchResponse = await patchResponsePromise;
+    const patchPayload = (await patchResponse.json().catch(() => null)) as { ok?: boolean } | null;
+
+    expect(patchResponse.status()).toBe(200);
+    expect(patchPayload?.ok).toBe(true);
 
     await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
+    await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("33.33");
     await expect(page.getByTestId("session-draft-repeat-count-5")).toHaveValue("6");
     await expect(page.getByTestId("session-draft-step-name-5")).toHaveValue("Repeat swim focus");
     await expect(page.getByTestId("session-draft-step-stroke-5")).toHaveValue("backstroke");

@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { SessionDraft } from "@/lib/session-generator-v1/shared";
+import {
+  normalizeSessionDraftPoolLength,
+  type SessionDraft,
+} from "@/lib/session-generator-v1/shared";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 import {
   normalizeSessionDraftForWorkoutPersistence,
@@ -270,6 +273,5 @@ function normalizeTextArray(value: string[] | null) {
 }
 
 function normalizePoolLength(value: number | null): SessionDraft["poolLengthM"] {
-  if (value === null) return null;
-  return value === 12.5 || value === 25 || value === 50 ? value : null;
+  return normalizeSessionDraftPoolLength(value);
 }
