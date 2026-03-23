@@ -139,6 +139,29 @@ describe("workouts server", () => {
     expect(starter.steps.some((step) => step.durationMode === "fixed_rest")).toBe(true);
   });
 
+  it("persists and reloads custom pool lengths for manual builder workouts", () => {
+    const customPoolDraft: SessionDraft = {
+      ...buildDraft(),
+      title: "Custom pool workout",
+      titleSuggestions: ["Custom pool workout"],
+      poolLengthM: 33.33,
+    };
+
+    const insert = buildWorkoutInsert("user-1", customPoolDraft, "manual");
+    const storedRow = buildWorkoutRow({
+      source_kind: "manual",
+      title: "Custom pool workout",
+      title_suggestions: ["Custom pool workout"],
+      pool_length_m: 33.33,
+    });
+    const editorRecord = buildWorkoutEditorRecord(storedRow);
+    const summary = buildWorkoutSummary(storedRow);
+
+    expect(insert.pool_length_m).toBe(33.33);
+    expect(editorRecord.draft.poolLengthM).toBe(33.33);
+    expect(summary.poolLengthM).toBe(33.33);
+  });
+
   it("persists repeat metadata and multiplies totals from grouped repeat steps", () => {
     const repeatDraft: SessionDraft = {
       ...buildDraft(),

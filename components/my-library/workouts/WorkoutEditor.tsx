@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
   SESSION_DRAFT_STEP_DRILL_TYPES,
+  SESSION_DRAFT_POOL_LENGTH_MAX,
+  SESSION_DRAFT_POOL_LENGTH_MIN,
+  SESSION_DRAFT_POOL_LENGTH_PRESETS,
   SESSION_DRAFT_STEP_DURATION_MODES,
   SESSION_DRAFT_STEP_EQUIPMENT,
   SESSION_DRAFT_REPEAT_MAX,
@@ -33,12 +37,12 @@ import {
   getSessionStepTargetModeLabel,
   getSessionStrokeLabel,
   getSessionTypeLabel,
+  isSessionDraftPoolLengthPreset,
   type SessionDraft,
   type SessionDraftStep,
   type SessionDraftStepCategory,
   type SessionDraftStepDurationMode,
   type SessionGeneratorEnvironment,
-  type SessionGeneratorPoolLength,
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
 import type { WorkoutEditorRecord, WorkoutSummary } from "@/lib/workouts/shared";
@@ -118,6 +122,27 @@ function parsePositiveInteger(value: string) {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
   return parsed;
+}
+
+function parsePoolLengthInput(value: string) {
+  const trimmed = value.trim().replace(",", ".");
+  if (trimmed.length === 0) return null;
+  if (!/^\d+(\.\d{0,2})?$/.test(trimmed)) return null;
+
+  const parsed = Number.parseFloat(trimmed);
+  if (!Number.isFinite(parsed)) return null;
+
+  const normalized = Math.round(parsed * 100) / 100;
+  if (normalized < SESSION_DRAFT_POOL_LENGTH_MIN || normalized > SESSION_DRAFT_POOL_LENGTH_MAX) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function formatEditablePoolLength(value: number | null | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
+  return value.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
@@ -351,6 +376,15 @@ export default function WorkoutEditor({
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const stepGroups = buildStepRenderGroups(draft.steps);
+  const [poolLengthInput, setPoolLengthInput] = useState(() =>
+    formatEditablePoolLength(draft.poolLengthM)
+  );
+  const poolLengthUsesPreset =
+    typeof draft.poolLengthM === "number" && isSessionDraftPoolLengthPreset(draft.poolLengthM);
+
+  useEffect(() => {
+    setPoolLengthInput(formatEditablePoolLength(draft.poolLengthM));
+  }, [draft.poolLengthM]);
 
   function syncDraftSelections(nextDraft: SessionDraft) {
     const requiredStrokes = Array.from(
@@ -567,6 +601,13 @@ export default function WorkoutEditor({
         ? draft.equipmentAllowlist.filter((value) => value !== item)
         : [...draft.equipmentAllowlist, item]
     );
+  }
+
+  function updateDraftPoolLengthInput(nextValue: string) {
+    setPoolLengthInput(nextValue);
+
+    const parsed = parsePoolLengthInput(nextValue);
+    updateDraft("poolLengthM", parsed);
   }
 
   function renderStepEditorCard(
@@ -1222,26 +1263,55 @@ export default function WorkoutEditor({
         </fieldset>
 
         {draft.environment === "pool" ? (
-          <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-            Pool length
-            <select
-              value={draft.poolLengthM ? String(draft.poolLengthM) : ""}
-              onChange={(event) =>
-                updateDraft(
-                  "poolLengthM",
-                  (parsePositiveNumber(event.target.value) as SessionGeneratorPoolLength | null) ??
-                    null
-                )
-              }
-              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            >
-              {SESSION_GENERATOR_POOL_LENGTHS.map((value) => (
-                <option key={value} value={String(value)}>
-                  {formatPoolLengthLabel(value)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
+            <p className="text-sm font-medium text-slate-900">Pool length</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Choose a common pool size or type the exact length when you build for a less common
+              setup.
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {SESSION_DRAFT_POOL_LENGTH_PRESETS.map((value) => {
+                const isSelected = draft.poolLengthM === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => updateDraft("poolLengthM", value)}
+                    className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
+                      isSelected
+                        ? "border-blue-600 bg-blue-50 text-blue-700"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {formatPoolLengthLabel(value)}
+                  </button>
+                );
+              })}
+            </div>
+
+            <label className="mt-4 block text-sm text-slate-700">
+              Exact pool length (m)
+              <input
+                type="text"
+                inputMode="decimal"
+                value={poolLengthInput}
+                onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
+                data-testid="session-draft-pool-length-input"
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:max-w-xs"
+              />
+            </label>
+
+            <p className="mt-2 text-xs text-slate-500">
+              Supported range: {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MIN)} to{" "}
+              {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}.{" "}
+              {poolLengthUsesPreset
+                ? "Preset selected."
+                : draft.poolLengthM
+                  ? `Custom length saved as ${formatPoolLengthLabel(draft.poolLengthM)}.`
+                  : "Enter a valid pool length before saving."}
+            </p>
+          </div>
         ) : null}
 
         <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">

@@ -11,14 +11,13 @@ import {
   SESSION_GENERATOR_ENVIRONMENTS,
   SESSION_GENERATOR_EFFORT_PRESETS,
   SESSION_GENERATOR_EQUIPMENT,
-  SESSION_GENERATOR_POOL_LENGTHS,
   SESSION_GENERATOR_SESSION_TYPES,
   SESSION_GENERATOR_STROKES,
   computeSessionDraftDerivedTotals,
+  normalizeSessionDraftPoolLength,
   type SessionDraft,
   type SessionDraftStep,
   type SessionGeneratorEnvironment,
-  type SessionGeneratorPoolLength,
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
 
@@ -32,7 +31,7 @@ export type WorkoutSummary = {
   id: string;
   title: string;
   environment: SessionGeneratorEnvironment;
-  poolLengthM: SessionGeneratorPoolLength | null;
+  poolLengthM: SessionDraft["poolLengthM"];
   sessionType: SessionDraft["sessionType"];
   effort: SessionDraft["effort"];
   totalDistanceM: number | null;
@@ -484,8 +483,7 @@ function normalizeStep(
 }
 
 function normalizePoolLength(value: SessionDraft["poolLengthM"]) {
-  if (value === null) return null;
-  return SESSION_GENERATOR_POOL_LENGTHS.includes(value) ? value : null;
+  return normalizeSessionDraftPoolLength(value);
 }
 
 function normalizeRequiredText(value: unknown, maxLength: number) {

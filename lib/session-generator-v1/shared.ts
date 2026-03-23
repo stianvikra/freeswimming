@@ -83,6 +83,11 @@ export const SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS = [
 ] as const;
 export const SESSION_DRAFT_REPEAT_MIN = 2;
 export const SESSION_DRAFT_REPEAT_MAX = 20;
+export const SESSION_DRAFT_POOL_LENGTH_PRESETS = [
+  12.5, 25, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500,
+] as const;
+export const SESSION_DRAFT_POOL_LENGTH_MIN = 12.5;
+export const SESSION_DRAFT_POOL_LENGTH_MAX = 500;
 
 export type SessionGeneratorEnvironment = (typeof SESSION_GENERATOR_ENVIRONMENTS)[number];
 export type SessionGeneratorPoolLength = (typeof SESSION_GENERATOR_POOL_LENGTHS)[number];
@@ -91,12 +96,14 @@ export type SessionGeneratorEffortPreset = (typeof SESSION_GENERATOR_EFFORT_PRES
 export type SessionGeneratorSizeMode = (typeof SESSION_GENERATOR_SIZE_MODES)[number];
 export type SessionGeneratorStroke = (typeof SESSION_GENERATOR_STROKES)[number];
 export type SessionGeneratorEquipment = (typeof SESSION_GENERATOR_EQUIPMENT)[number];
+export type SessionDraftPoolLengthPreset = (typeof SESSION_DRAFT_POOL_LENGTH_PRESETS)[number];
 export type SessionDraftStepStroke = (typeof SESSION_DRAFT_STEP_STROKES)[number];
 export type SessionDraftStepDrillType = (typeof SESSION_DRAFT_STEP_DRILL_TYPES)[number];
 export type SessionDraftStepEquipment = (typeof SESSION_DRAFT_STEP_EQUIPMENT)[number];
 export type SessionDraftStepCategory = (typeof SESSION_DRAFT_STEP_CATEGORIES)[number];
 export type SessionDraftStepDurationMode = (typeof SESSION_DRAFT_STEP_DURATION_MODES)[number];
 export type SessionDraftStepTargetMode = (typeof SESSION_DRAFT_STEP_TARGET_MODES)[number];
+export type SessionDraftPoolLength = number;
 
 export type SessionGeneratorFormState = {
   environment: SessionGeneratorEnvironment;
@@ -164,7 +171,7 @@ export type SessionDraft = {
   titleSuggestions: string[];
   description: string;
   environment: SessionGeneratorEnvironment;
-  poolLengthM: SessionGeneratorPoolLength | null;
+  poolLengthM: SessionDraftPoolLength | null;
   sessionType: SessionGeneratorSessionType;
   effort: SessionGeneratorEffortPreset;
   sizeMode: SessionGeneratorSizeMode;
@@ -332,8 +339,27 @@ export function getSessionStepTargetModeLabel(value: SessionDraftStepTargetMode)
   return STEP_TARGET_MODE_LABELS[value];
 }
 
-export function formatPoolLengthLabel(value: SessionGeneratorPoolLength) {
-  return `${value}m`;
+export function formatPoolLengthLabel(value: number) {
+  return `${value.toFixed(2).replace(/\.?0+$/, "")}m`;
+}
+
+export function normalizeSessionDraftPoolLength(value: unknown): SessionDraft["poolLengthM"] {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  const normalized = Math.round(value * 100) / 100;
+  if (normalized < SESSION_DRAFT_POOL_LENGTH_MIN || normalized > SESSION_DRAFT_POOL_LENGTH_MAX) {
+    return null;
+  }
+
+  return normalized;
+}
+
+export function isSessionDraftPoolLengthPreset(
+  value: number
+): value is SessionDraftPoolLengthPreset {
+  return SESSION_DRAFT_POOL_LENGTH_PRESETS.includes(value as SessionDraftPoolLengthPreset);
 }
 
 export function formatPaceSecondsPer100m(value: number) {
