@@ -45,6 +45,8 @@ export const SESSION_DRAFT_STEP_CATEGORIES = [
   "cooldown",
 ] as const;
 export const SESSION_DRAFT_STEP_DURATION_MODES = ["distance", "time"] as const;
+export const SESSION_DRAFT_REPEAT_MIN = 2;
+export const SESSION_DRAFT_REPEAT_MAX = 20;
 
 export type SessionGeneratorEnvironment = (typeof SESSION_GENERATOR_ENVIRONMENTS)[number];
 export type SessionGeneratorPoolLength = (typeof SESSION_GENERATOR_POOL_LENGTHS)[number];
@@ -101,6 +103,8 @@ export type SessionDraftStep = {
   timeMin: number | null;
   targetSummary: string;
   notes: string;
+  repeatGroupId?: string | null;
+  repeatCount?: number | null;
 };
 
 export type SessionDraft = {
@@ -357,17 +361,22 @@ export function computeSessionDraftDerivedTotals(draft: SessionDraft): {
   let estimatedMinutes = 0;
 
   for (const step of draft.steps) {
+    const repeatMultiplier =
+      step.repeatGroupId && step.repeatCount && step.repeatCount >= SESSION_DRAFT_REPEAT_MIN
+        ? step.repeatCount
+        : 1;
+
     if (step.distanceM) {
-      totalDistanceM += step.distanceM;
+      totalDistanceM += step.distanceM * repeatMultiplier;
       estimatedMinutes +=
-        ((step.distanceM / 100) *
+        (((step.distanceM * repeatMultiplier) / 100) *
           draft.basePaceSecondsPer100m *
           getIntensityMultiplier(step.intensity)) /
         60;
     }
 
     if (step.timeMin) {
-      estimatedMinutes += step.timeMin;
+      estimatedMinutes += step.timeMin * repeatMultiplier;
     }
   }
 

@@ -57,8 +57,11 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-name-1")).toHaveValue("Reset rest");
     await expect(page.getByTestId("session-draft-step-name-2")).toHaveValue("Main swim set");
 
+    await page.getByTestId("session-draft-add-repeat").click();
+    await page.getByTestId("session-draft-repeat-count-5").fill("6");
+    await page.getByTestId("session-draft-step-name-5").fill("Repeat swim focus");
     await page.getByTestId("session-draft-add-step").click();
-    await page.getByTestId("session-draft-step-name-5").fill("QA add-on step");
+    await page.getByTestId("session-draft-step-name-7").fill("QA add-on step");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
 
     const patchResponsePromise = page.waitForResponse(
@@ -73,6 +76,8 @@ test.describe("my library workout builder", () => {
 
     await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
-    await expect(page.getByTestId("session-draft-step-name-5")).toHaveValue("QA add-on step");
+    await expect(page.getByTestId("session-draft-repeat-count-5")).toHaveValue("6");
+    await expect(page.getByTestId("session-draft-step-name-5")).toHaveValue("Repeat swim focus");
+    await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue("QA add-on step");
   });
 });
