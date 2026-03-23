@@ -244,6 +244,81 @@ describe("workouts routes", () => {
     expect(payload.summary.title).toBe("Manual pool workout");
   });
 
+  it("rejects non-contiguous repeat blocks before mutating canonical workouts", async () => {
+    const insert = vi.fn();
+    const from = vi.fn().mockReturnValue({ insert });
+    const body = buildDraftBody();
+
+    body.draft.steps = [
+      {
+        id: "repeat-1-step-1",
+        category: "main",
+        name: "Repeat swim",
+        stroke: "freestyle",
+        intensity: "moderate",
+        durationMode: "distance",
+        distanceM: 100,
+        timeMin: null,
+        targetSummary: "Hold pace.",
+        notes: "Round one.",
+        repeatGroupId: "repeat-1",
+        repeatCount: 4,
+      },
+      {
+        id: "step-2",
+        category: "cooldown",
+        name: "Cooldown swim",
+        stroke: "choice",
+        intensity: "easy",
+        durationMode: "distance",
+        distanceM: 200,
+        timeMin: null,
+        targetSummary: "Easy finish.",
+        notes: "Breaks the repeat block.",
+      },
+      {
+        id: "repeat-1-step-2",
+        category: "rest",
+        name: "Repeat rest",
+        stroke: "choice",
+        intensity: "easy",
+        durationMode: "time",
+        distanceM: null,
+        timeMin: 1,
+        targetSummary: "Reset.",
+        notes: "Should have stayed contiguous.",
+        repeatGroupId: "repeat-1",
+        repeatCount: 4,
+      },
+    ] as typeof body.draft.steps;
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postWorkout(
+      new Request("http://127.0.0.1:3000/api/my-library/workouts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
+    );
+    const payload = (await response.json()) as { ok: false; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toContain("must stay contiguous");
+    expect(insert).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid workout ids before attempting update", async () => {
     const from = vi.fn();
 

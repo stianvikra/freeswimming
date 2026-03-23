@@ -4,6 +4,8 @@ import Link from "next/link";
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_DURATION_MODES,
+  SESSION_DRAFT_REPEAT_MAX,
+  SESSION_DRAFT_REPEAT_MIN,
   SESSION_GENERATOR_ENVIRONMENTS,
   SESSION_GENERATOR_EFFORT_PRESETS,
   SESSION_GENERATOR_EQUIPMENT,
@@ -47,7 +49,27 @@ type Props = {
   saveButtonTestId?: string;
 };
 
-function buildBlankStep(index: number): SessionDraftStep {
+type StepRenderEntry = {
+  step: SessionDraftStep;
+  index: number;
+};
+
+type StepRenderGroup =
+  | {
+      kind: "single";
+      entries: [StepRenderEntry];
+    }
+  | {
+      kind: "repeat";
+      repeatGroupId: string;
+      repeatCount: number | null;
+      entries: StepRenderEntry[];
+    };
+
+function buildBlankStep(
+  index: number,
+  overrides: Partial<SessionDraftStep> = {}
+): SessionDraftStep {
   return {
     id: `step-${Date.now()}-${index}`,
     category: "main",
@@ -59,6 +81,9 @@ function buildBlankStep(index: number): SessionDraftStep {
     timeMin: null,
     targetSummary: "",
     notes: "",
+    repeatGroupId: null,
+    repeatCount: null,
+    ...overrides,
   };
 }
 
@@ -67,6 +92,133 @@ function parsePositiveNumber(value: string) {
   const parsed = Number.parseFloat(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
   return parsed;
+}
+
+function parsePositiveInteger(value: string) {
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
+function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
+  const groupId = `repeat-${Date.now()}-${index}`;
+
+  return [
+    buildBlankStep(index, {
+      id: `${groupId}-step-1`,
+      category: "main",
+      name: "Repeat swim",
+      stroke: "freestyle",
+      intensity: "moderate",
+      durationMode: "distance",
+      distanceM: 100,
+      timeMin: null,
+      targetSummary: "Repeatable working swim for the core set.",
+      notes: "Edit this into the exact repeat you want to hold.",
+      repeatGroupId: groupId,
+      repeatCount: 4,
+    }),
+    buildBlankStep(index + 1, {
+      id: `${groupId}-step-2`,
+      category: "rest",
+      name: "Repeat rest",
+      stroke: "choice",
+      intensity: "easy",
+      durationMode: "time",
+      distanceM: null,
+      timeMin: 1,
+      targetSummary: "Short recovery before the next round.",
+      notes: "Adjust or remove this recovery once the set is dialed in.",
+      repeatGroupId: groupId,
+      repeatCount: 4,
+    }),
+  ];
+}
+
+function formatMinutesLabel(value: number) {
+  return `${Number.isInteger(value) ? value : value.toFixed(1).replace(/\.0$/, "")} min`;
+}
+
+function buildStepSummary(step: SessionDraftStep) {
+  const durationLabel =
+    step.durationMode === "distance"
+      ? step.distanceM
+        ? `${step.distanceM}m`
+        : "Distance not set"
+      : step.timeMin
+        ? formatMinutesLabel(step.timeMin)
+        : "Time not set";
+
+  return [durationLabel, getSessionStrokeLabel(step.stroke), getSessionEffortLabel(step.intensity)]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function buildRepeatSummary(entries: StepRenderEntry[], repeatCount: number | null) {
+  if (repeatCount === null) {
+    return "Set a repeat count to keep this block valid.";
+  }
+
+  let roundDistanceM = 0;
+  let roundMinutes = 0;
+
+  for (const { step } of entries) {
+    if (step.distanceM) {
+      roundDistanceM += step.distanceM;
+    }
+    if (step.timeMin) {
+      roundMinutes += step.timeMin;
+    }
+  }
+
+  const parts = [`${repeatCount} rounds`];
+  const roundParts: string[] = [];
+
+  if (roundDistanceM > 0) roundParts.push(`${roundDistanceM}m`);
+  if (roundMinutes > 0) roundParts.push(formatMinutesLabel(roundMinutes));
+  if (roundParts.length > 0) {
+    parts.push(`${roundParts.join(" + ")} per round`);
+  }
+  if (roundDistanceM > 0) {
+    parts.push(`${roundDistanceM * repeatCount}m repeated distance`);
+  }
+
+  return parts.join(" · ");
+}
+
+function buildStepRenderGroups(steps: SessionDraftStep[]): StepRenderGroup[] {
+  const groups: StepRenderGroup[] = [];
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+
+    if (!step.repeatGroupId) {
+      groups.push({
+        kind: "single",
+        entries: [{ step, index }],
+      });
+      continue;
+    }
+
+    const entries: StepRenderEntry[] = [{ step, index }];
+    let nextIndex = index + 1;
+
+    while (nextIndex < steps.length && steps[nextIndex].repeatGroupId === step.repeatGroupId) {
+      entries.push({ step: steps[nextIndex], index: nextIndex });
+      nextIndex += 1;
+    }
+
+    groups.push({
+      kind: "repeat",
+      repeatGroupId: step.repeatGroupId,
+      repeatCount: step.repeatCount ?? null,
+      entries,
+    });
+    index = nextIndex - 1;
+  }
+
+  return groups;
 }
 
 export default function WorkoutEditor({
@@ -87,6 +239,7 @@ export default function WorkoutEditor({
   saveButtonTestId = "session-generator-save",
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
+  const stepGroups = buildStepRenderGroups(draft.steps);
 
   function updateDraft<K extends keyof SessionDraft>(key: K, value: SessionDraft[K]) {
     onDraftChange({
@@ -102,16 +255,17 @@ export default function WorkoutEditor({
     });
   }
 
-  function moveStep(stepId: string, direction: -1 | 1) {
-    const index = draft.steps.findIndex((step) => step.id === stepId);
-    const nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= draft.steps.length) return;
-    const nextSteps = [...draft.steps];
-    const [step] = nextSteps.splice(index, 1);
-    nextSteps.splice(nextIndex, 0, step);
+  function moveDraftGroup(groupIndex: number, direction: -1 | 1) {
+    const nextGroupIndex = groupIndex + direction;
+    if (groupIndex < 0 || nextGroupIndex < 0 || nextGroupIndex >= stepGroups.length) return;
+
+    const nextGroups = [...stepGroups];
+    const [group] = nextGroups.splice(groupIndex, 1);
+    nextGroups.splice(nextGroupIndex, 0, group);
+
     onDraftChange({
       ...draft,
-      steps: nextSteps,
+      steps: nextGroups.flatMap((group) => group.entries.map((entry) => entry.step)),
     });
   }
 
@@ -122,10 +276,40 @@ export default function WorkoutEditor({
     });
   }
 
+  function addRepeat() {
+    onDraftChange({
+      ...draft,
+      steps: [...draft.steps, ...buildRepeatStarterSteps(draft.steps.length + 1)],
+    });
+  }
+
   function removeStep(stepId: string) {
     onDraftChange({
       ...draft,
       steps: draft.steps.filter((step) => step.id !== stepId),
+    });
+  }
+
+  function removeRepeatGroup(repeatGroupId: string) {
+    onDraftChange({
+      ...draft,
+      steps: draft.steps.filter((step) => step.repeatGroupId !== repeatGroupId),
+    });
+  }
+
+  function updateRepeatGroupCount(repeatGroupId: string, value: string) {
+    const nextRepeatCount = parsePositiveInteger(value);
+
+    onDraftChange({
+      ...draft,
+      steps: draft.steps.map((step) =>
+        step.repeatGroupId === repeatGroupId
+          ? {
+              ...step,
+              repeatCount: nextRepeatCount,
+            }
+          : step
+      ),
     });
   }
 
@@ -146,6 +330,240 @@ export default function WorkoutEditor({
       exists
         ? draft.equipmentAllowlist.filter((value) => value !== item)
         : [...draft.equipmentAllowlist, item]
+    );
+  }
+
+  function renderStepEditorCard(
+    step: SessionDraftStep,
+    index: number,
+    groupIndex: number,
+    options?: {
+      insideRepeatGroup?: boolean;
+      repeatStepNumber?: number;
+    }
+  ) {
+    const insideRepeatGroup = options?.insideRepeatGroup ?? false;
+
+    return (
+      <article
+        key={step.id}
+        className={`rounded-2xl border p-4 ${
+          insideRepeatGroup ? "border-blue-200 bg-white" : "border-slate-200 bg-slate-50/70"
+        }`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {insideRepeatGroup
+                ? `Repeat step ${options?.repeatStepNumber ?? 1}`
+                : `Step ${index + 1}`}
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-900">
+              {getSessionStepCategoryLabel(step.category)}
+            </p>
+            <p className="mt-1 text-xs text-slate-600">{buildStepSummary(step)}</p>
+            {step.targetSummary ? (
+              <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {insideRepeatGroup ? (
+              <p className="text-xs text-slate-500">Move the full repeat block from the header.</p>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => moveDraftGroup(groupIndex, -1)}
+                  disabled={groupIndex === 0}
+                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Move up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveDraftGroup(groupIndex, 1)}
+                  disabled={groupIndex === stepGroups.length - 1}
+                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Move down
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => removeStep(step.id)}
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="text-sm text-slate-700">
+            Step name
+            <input
+              type="text"
+              value={step.name}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
+              data-testid={`session-draft-step-name-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </label>
+
+          <label className="text-sm text-slate-700">
+            Category
+            <select
+              value={step.category}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  category: event.target.value as SessionDraftStepCategory,
+                }))
+              }
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_DRAFT_STEP_CATEGORIES.map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStepCategoryLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm text-slate-700">
+            Stroke
+            <select
+              value={step.stroke}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  stroke: event.target.value as SessionDraftStep["stroke"],
+                }))
+              }
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="choice">Stroke choice</option>
+              {SESSION_GENERATOR_STROKES.map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStrokeLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm text-slate-700">
+            Intensity
+            <select
+              value={step.intensity}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  intensity: event.target.value as SessionDraft["effort"],
+                }))
+              }
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
+                <option key={value} value={value}>
+                  {getSessionEffortLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm text-slate-700">
+            Duration mode
+            <select
+              value={step.durationMode}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  durationMode: event.target.value as SessionDraftStepDurationMode,
+                  distanceM: event.target.value === "distance" ? (current.distanceM ?? 100) : null,
+                  timeMin: event.target.value === "time" ? (current.timeMin ?? 10) : null,
+                }))
+              }
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_DRAFT_STEP_DURATION_MODES.map((value) => (
+                <option key={value} value={value}>
+                  {value === "distance" ? "Distance" : "Time"}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {step.durationMode === "distance" ? (
+            <label className="text-sm text-slate-700">
+              Distance (m)
+              <input
+                type="text"
+                inputMode="numeric"
+                value={step.distanceM ?? ""}
+                onChange={(event) =>
+                  updateDraftStep(step.id, (current) => ({
+                    ...current,
+                    distanceM: parsePositiveNumber(event.target.value),
+                  }))
+                }
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </label>
+          ) : (
+            <label className="text-sm text-slate-700">
+              Time (min)
+              <input
+                type="text"
+                inputMode="numeric"
+                value={step.timeMin ?? ""}
+                onChange={(event) =>
+                  updateDraftStep(step.id, (current) => ({
+                    ...current,
+                    timeMin: parsePositiveNumber(event.target.value),
+                  }))
+                }
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </label>
+          )}
+
+          <label className="text-sm text-slate-700 md:col-span-2">
+            Target summary
+            <input
+              type="text"
+              value={step.targetSummary}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  targetSummary: event.target.value,
+                }))
+              }
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </label>
+
+          <label className="text-sm text-slate-700 md:col-span-2">
+            Notes
+            <textarea
+              value={step.notes}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  notes: event.target.value,
+                }))
+              }
+              rows={3}
+              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </label>
+        </div>
+      </article>
     );
   }
 
@@ -415,225 +833,105 @@ export default function WorkoutEditor({
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-base font-semibold text-slate-900">Editable draft steps</h3>
-          <button
-            type="button"
-            onClick={addStep}
-            data-testid="session-draft-add-step"
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-          >
-            Add step
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={addStep}
+              data-testid="session-draft-add-step"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              Add step
+            </button>
+            <button
+              type="button"
+              onClick={addRepeat}
+              data-testid="session-draft-add-repeat"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
+            >
+              Add repeat
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 space-y-4">
-          {draft.steps.map((step, index) => (
-            <article
-              key={step.id}
-              className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Step {index + 1}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-slate-900">
-                    {getSessionStepCategoryLabel(step.category)}
-                  </p>
+          {stepGroups.map((group, groupIndex) =>
+            group.kind === "single" ? (
+              renderStepEditorCard(group.entries[0].step, group.entries[0].index, groupIndex)
+            ) : (
+              <section
+                key={group.repeatGroupId}
+                className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      Repeat block
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-900">
+                      {buildRepeatSummary(group.entries, group.repeatCount)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      Garmin-familiar starter scaffold: edit the repeated steps below instead of
+                      duplicating every round by hand.
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
+                      {SESSION_DRAFT_REPEAT_MAX} rounds per block.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label className="text-sm text-slate-700">
+                      Repeat count
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={group.repeatCount ?? ""}
+                        onChange={(event) =>
+                          updateRepeatGroupCount(group.repeatGroupId, event.target.value)
+                        }
+                        min={SESSION_DRAFT_REPEAT_MIN}
+                        max={SESSION_DRAFT_REPEAT_MAX}
+                        data-testid={`session-draft-repeat-count-${groupIndex}`}
+                        className="mt-2 block h-11 w-28 rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => moveDraftGroup(groupIndex, -1)}
+                      disabled={groupIndex === 0}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Move up
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveDraftGroup(groupIndex, 1)}
+                      disabled={groupIndex === stepGroups.length - 1}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Move down
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeRepeatGroup(group.repeatGroupId)}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+                    >
+                      Remove repeat
+                    </button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => moveStep(step.id, -1)}
-                    disabled={index === 0}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Move up
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveStep(step.id, 1)}
-                    disabled={index === draft.steps.length - 1}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Move down
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeStep(step.id)}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-                  >
-                    Remove
-                  </button>
+
+                <div className="mt-4 space-y-3">
+                  {group.entries.map((entry, repeatIndex) =>
+                    renderStepEditorCard(entry.step, entry.index, groupIndex, {
+                      insideRepeatGroup: true,
+                      repeatStepNumber: repeatIndex + 1,
+                    })
+                  )}
                 </div>
-              </div>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="text-sm text-slate-700">
-                  Step name
-                  <input
-                    type="text"
-                    value={step.name}
-                    onChange={(event) =>
-                      updateDraftStep(step.id, (current) => ({
-                        ...current,
-                        name: event.target.value,
-                      }))
-                    }
-                    data-testid={`session-draft-step-name-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-
-                <label className="text-sm text-slate-700">
-                  Category
-                  <select
-                    value={step.category}
-                    onChange={(event) =>
-                      updateDraftStep(step.id, (current) => ({
-                        ...current,
-                        category: event.target.value as SessionDraftStepCategory,
-                      }))
-                    }
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    {SESSION_DRAFT_STEP_CATEGORIES.map((value) => (
-                      <option key={value} value={value}>
-                        {getSessionStepCategoryLabel(value)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="text-sm text-slate-700">
-                  Stroke
-                  <select
-                    value={step.stroke}
-                    onChange={(event) =>
-                      updateDraftStep(step.id, (current) => ({
-                        ...current,
-                        stroke: event.target.value as SessionDraftStep["stroke"],
-                      }))
-                    }
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    <option value="choice">Stroke choice</option>
-                    {SESSION_GENERATOR_STROKES.map((value) => (
-                      <option key={value} value={value}>
-                        {getSessionStrokeLabel(value)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="text-sm text-slate-700">
-                  Intensity
-                  <select
-                    value={step.intensity}
-                    onChange={(event) =>
-                      updateDraftStep(step.id, (current) => ({
-                        ...current,
-                        intensity: event.target.value as SessionDraft["effort"],
-                      }))
-                    }
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
-                      <option key={value} value={value}>
-                        {getSessionEffortLabel(value)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="text-sm text-slate-700">
-                  Duration mode
-                  <select
-                    value={step.durationMode}
-                    onChange={(event) =>
-                      updateDraftStep(step.id, (current) => ({
-                        ...current,
-                        durationMode: event.target.value as SessionDraftStepDurationMode,
-                        distanceM:
-                          event.target.value === "distance" ? (current.distanceM ?? 100) : null,
-                        timeMin: event.target.value === "time" ? (current.timeMin ?? 10) : null,
-                      }))
-                    }
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    {SESSION_DRAFT_STEP_DURATION_MODES.map((value) => (
-                      <option key={value} value={value}>
-                        {value === "distance" ? "Distance" : "Time"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {step.durationMode === "distance" ? (
-                  <label className="text-sm text-slate-700">
-                    Distance (m)
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={step.distanceM ?? ""}
-                      onChange={(event) =>
-                        updateDraftStep(step.id, (current) => ({
-                          ...current,
-                          distanceM: parsePositiveNumber(event.target.value),
-                        }))
-                      }
-                      className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
-                  </label>
-                ) : (
-                  <label className="text-sm text-slate-700">
-                    Time (min)
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={step.timeMin ?? ""}
-                      onChange={(event) =>
-                        updateDraftStep(step.id, (current) => ({
-                          ...current,
-                          timeMin: parsePositiveNumber(event.target.value),
-                        }))
-                      }
-                      className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
-                  </label>
-                )}
-
-                <label className="text-sm text-slate-700 md:col-span-2">
-                  Target summary
-                  <input
-                    type="text"
-                    value={step.targetSummary}
-                    onChange={(event) =>
-                      updateDraftStep(step.id, (current) => ({
-                        ...current,
-                        targetSummary: event.target.value,
-                      }))
-                    }
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-
-                <label className="text-sm text-slate-700 md:col-span-2">
-                  Notes
-                  <textarea
-                    value={step.notes}
-                    onChange={(event) =>
-                      updateDraftStep(step.id, (current) => ({
-                        ...current,
-                        notes: event.target.value,
-                      }))
-                    }
-                    rows={3}
-                    className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-              </div>
-            </article>
-          ))}
+              </section>
+            )
+          )}
         </div>
       </div>
 

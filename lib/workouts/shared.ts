@@ -1,6 +1,8 @@
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_DURATION_MODES,
+  SESSION_DRAFT_REPEAT_MAX,
+  SESSION_DRAFT_REPEAT_MIN,
   SESSION_GENERATOR_ENVIRONMENTS,
   SESSION_GENERATOR_EFFORT_PRESETS,
   SESSION_GENERATOR_EQUIPMENT,
@@ -154,6 +156,37 @@ export function normalizeSessionDraftForWorkoutPersistence(
     };
   }
 
+  const repeatGroups = new Map<string, { repeatCount: number; lastIndex: number }>();
+
+  for (const [index, step] of normalizedSteps.entries()) {
+    if (!step.repeatGroupId || step.repeatCount == null) continue;
+
+    const existing = repeatGroups.get(step.repeatGroupId);
+    if (!existing) {
+      repeatGroups.set(step.repeatGroupId, {
+        repeatCount: step.repeatCount,
+        lastIndex: index,
+      });
+      continue;
+    }
+
+    if (existing.repeatCount !== step.repeatCount) {
+      return {
+        ok: false,
+        error: `Repeat block ${step.repeatGroupId} must use the same repeat count on every step.`,
+      };
+    }
+
+    if (existing.lastIndex !== index - 1) {
+      return {
+        ok: false,
+        error: `Repeat block ${step.repeatGroupId} must stay contiguous in the workout order.`,
+      };
+    }
+
+    existing.lastIndex = index;
+  }
+
   const createdAt = normalizeIsoDate(input.createdAt) ?? new Date().toISOString();
   const basePaceSecondsPer100m = normalizePositiveNumber(input.basePaceSecondsPer100m);
 
@@ -266,6 +299,25 @@ function normalizeStep(
   const targetSummary = normalizeText(input.targetSummary, 160);
   const notes = normalizeText(input.notes, 400);
   const id = normalizeRequiredText(input.id, 80) ?? `step-${index + 1}`;
+  const repeatGroupId = normalizeNullableText(input.repeatGroupId, 80);
+  const repeatCount = normalizeNullableInteger(input.repeatCount);
+
+  if (Boolean(repeatGroupId) !== Boolean(repeatCount)) {
+    return {
+      ok: false,
+      error: `Step ${index + 1} must include both repeat metadata fields or neither.`,
+    };
+  }
+
+  if (
+    repeatCount !== null &&
+    (repeatCount < SESSION_DRAFT_REPEAT_MIN || repeatCount > SESSION_DRAFT_REPEAT_MAX)
+  ) {
+    return {
+      ok: false,
+      error: `Step ${index + 1} repeat count must stay between ${SESSION_DRAFT_REPEAT_MIN} and ${SESSION_DRAFT_REPEAT_MAX}.`,
+    };
+  }
 
   if (input.durationMode === "distance") {
     const distanceM = normalizeNullableInteger(input.distanceM);
@@ -287,6 +339,8 @@ function normalizeStep(
         timeMin: null,
         targetSummary,
         notes,
+        repeatGroupId,
+        repeatCount,
       },
     };
   }
@@ -309,6 +363,8 @@ function normalizeStep(
       timeMin,
       targetSummary,
       notes,
+      repeatGroupId,
+      repeatCount,
     },
   };
 }

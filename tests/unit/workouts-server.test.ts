@@ -138,6 +138,80 @@ describe("workouts server", () => {
     expect(starter.steps.some((step) => step.category === "rest")).toBe(true);
   });
 
+  it("persists repeat metadata and multiplies totals from grouped repeat steps", () => {
+    const repeatDraft: SessionDraft = {
+      ...buildDraft(),
+      title: "Repeat block workout",
+      titleSuggestions: ["Repeat block workout"],
+      targetDistanceM: 1000,
+      totalDistanceM: 1000,
+      steps: [
+        {
+          id: "step-1",
+          category: "warmup",
+          name: "Warmup swim",
+          stroke: "freestyle",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 400,
+          timeMin: null,
+          targetSummary: "Easy settle-in.",
+          notes: "Relax.",
+        },
+        {
+          id: "repeat-1-step-1",
+          category: "main",
+          name: "Repeat swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "Hold steady pace.",
+          notes: "Keep the stroke long.",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+        },
+        {
+          id: "repeat-1-step-2",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "time",
+          distanceM: null,
+          timeMin: 1,
+          targetSummary: "Short reset.",
+          notes: "Breathe before the next round.",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+        },
+        {
+          id: "step-4",
+          category: "cooldown",
+          name: "Cooldown swim",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 200,
+          timeMin: null,
+          targetSummary: "Easy finish.",
+          notes: "Calm breathing.",
+        },
+      ],
+    };
+
+    const insert = buildWorkoutInsert("user-1", repeatDraft, "manual");
+    const repeatSteps = (insert.steps as unknown as SessionDraft["steps"]).filter(
+      (step) => step.repeatGroupId === "repeat-1"
+    );
+
+    expect(insert.total_distance_m).toBe(1000);
+    expect(insert.estimated_duration_min).toBeGreaterThan(0);
+    expect(repeatSteps).toHaveLength(2);
+    expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
+  });
+
   it("maps persisted workout rows back into editor and summary records", () => {
     const row = buildWorkoutRow();
 

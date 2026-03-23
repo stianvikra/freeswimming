@@ -115,22 +115,26 @@ describe("WorkoutBuilderHub", () => {
   });
 
   it("loads an accepted workout and saves canonical edits back to the same workout", async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
+    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        draft: SessionDraft;
+      };
+
+      return {
         ok: true,
-        workout: buildWorkoutRecord({
-          draft: {
-            ...buildDraft(),
-            title: "Builder edited workout",
-            description: "Edited in the dedicated builder route.",
-          },
+        json: async () => ({
+          ok: true,
+          workout: buildWorkoutRecord({
+            draft: body.draft,
+          }),
+          summary: buildWorkoutSummary({
+            title: body.draft.title,
+            totalDistanceM: body.draft.totalDistanceM,
+            estimatedDurationMin: body.draft.estimatedDurationMin,
+          }),
         }),
-        summary: buildWorkoutSummary({
-          title: "Builder edited workout",
-        }),
-      }),
-    } as Response);
+      } as Response;
+    });
 
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
@@ -147,6 +151,13 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-description"), {
       target: { value: "Edited in the dedicated builder route." },
     });
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    fireEvent.change(screen.getByLabelText("Repeat count"), {
+      target: { value: "6" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-name-1"), {
+      target: { value: "Repeat swim focus" },
+    });
     fireEvent.click(screen.getByTestId("workout-builder-save"));
 
     await waitFor(() => {
@@ -161,7 +172,16 @@ describe("WorkoutBuilderHub", () => {
     await waitFor(() => {
       expect(screen.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
     });
+
+    const fetchBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
+      draft: SessionDraft;
+    };
+    const repeatSteps = fetchBody.draft.steps.filter((step) => step.repeatGroupId);
+
+    expect(repeatSteps).toHaveLength(2);
+    expect(repeatSteps.every((step) => step.repeatCount === 6)).toBe(true);
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Builder edited workout");
+    expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim focus");
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {
