@@ -69,6 +69,8 @@ export const SESSION_DRAFT_STEP_DURATION_MODES = [
   "time",
   "fixed_rest",
   "lap_button",
+  "send_off",
+  "css_send_off",
 ] as const;
 export const SESSION_DRAFT_STEP_TARGET_MODES = [
   "none",
@@ -145,6 +147,7 @@ export type SessionDraftStep = {
   effortTarget?: SessionGeneratorEffortPreset | null;
   targetPaceSecondsPer100m?: number | null;
   cssTargetOffsetSeconds?: number | null;
+  cssSendOffOffsetSeconds?: number | null;
   targetSummary: string;
   notes: string;
   repeatGroupId?: string | null;
@@ -273,6 +276,8 @@ const STEP_DURATION_MODE_LABELS: Record<SessionDraftStepDurationMode, string> = 
   time: "Time",
   fixed_rest: "Fixed rest",
   lap_button: "Lap button press",
+  send_off: "Send-off time",
+  css_send_off: "CSS-based send-off",
 };
 
 const STEP_TARGET_MODE_LABELS: Record<SessionDraftStepTargetMode, string> = {
@@ -519,8 +524,18 @@ export function computeSessionDraftDerivedTotals(draft: SessionDraft): {
         60;
     }
 
-    if ((durationMode === "time" || durationMode === "fixed_rest") && step.timeMin) {
+    if (
+      (durationMode === "time" || durationMode === "fixed_rest" || durationMode === "send_off") &&
+      step.timeMin
+    ) {
       estimatedMinutes += step.timeMin * repeatMultiplier;
+    }
+
+    if (durationMode === "css_send_off" && typeof step.cssSendOffOffsetSeconds === "number") {
+      estimatedMinutes +=
+        (Math.max(1, draft.basePaceSecondsPer100m + Math.round(step.cssSendOffOffsetSeconds)) *
+          repeatMultiplier) /
+        60;
     }
   }
 

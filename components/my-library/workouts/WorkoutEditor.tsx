@@ -97,6 +97,7 @@ function buildBlankStep(
     effortTarget: "moderate",
     targetPaceSecondsPer100m: null,
     cssTargetOffsetSeconds: null,
+    cssSendOffOffsetSeconds: null,
     targetSummary: "",
     notes: "",
     repeatGroupId: null,
@@ -161,14 +162,43 @@ function formatMinutesLabel(value: number) {
   return `${Number.isInteger(value) ? value : value.toFixed(1).replace(/\.0$/, "")} min`;
 }
 
-function buildDurationSummary(step: SessionDraftStep) {
+function getClockTotalSeconds(valueMinutes: number | null | undefined) {
+  if (!valueMinutes || valueMinutes <= 0) return 0;
+  return Math.max(0, Math.round(valueMinutes * 60));
+}
+
+function formatClockDurationLabelFromSeconds(totalSeconds: number) {
+  const normalizedSeconds = Math.max(0, Math.round(totalSeconds));
+  const minutes = Math.floor(normalizedSeconds / 60);
+  const seconds = normalizedSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatClockDurationLabel(valueMinutes: number | null | undefined) {
+  return formatClockDurationLabelFromSeconds(getClockTotalSeconds(valueMinutes));
+}
+
+function buildDurationSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
   switch (step.durationMode) {
     case "distance":
       return step.distanceM ? `${step.distanceM}m` : "Distance not set";
     case "time":
       return step.timeMin ? formatMinutesLabel(step.timeMin) : "Time not set";
     case "fixed_rest":
-      return step.timeMin ? `Fixed rest ${formatMinutesLabel(step.timeMin)}` : "Fixed rest not set";
+      return step.timeMin
+        ? `Fixed rest ${formatClockDurationLabel(step.timeMin)}`
+        : "Fixed rest not set";
+    case "send_off":
+      return step.timeMin
+        ? `Send-off ${formatClockDurationLabel(step.timeMin)}`
+        : "Send-off not set";
+    case "css_send_off":
+      if (typeof step.cssSendOffOffsetSeconds !== "number") {
+        return "CSS send-off not set";
+      }
+      return `CSS ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s send-off (${formatClockDurationLabelFromSeconds(
+        basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
+      )})`;
     case "lap_button":
       return "Lap button press";
     default:
@@ -192,7 +222,7 @@ function buildStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number
   }
 
   return [
-    buildDurationSummary(step),
+    buildDurationSummary(step, basePaceSecondsPer100m),
     contextParts.join(" · "),
     structuredTarget ?? getSessionEffortLabel(step.intensity),
   ]
@@ -200,20 +230,32 @@ function buildStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number
     .join(" · ");
 }
 
-function buildRepeatSummary(entries: StepRenderEntry[], repeatCount: number | null) {
+function buildRepeatSummary(
+  entries: StepRenderEntry[],
+  repeatCount: number | null,
+  basePaceSecondsPer100m: number
+) {
   if (repeatCount === null) {
     return "Set a repeat count to keep this block valid.";
   }
 
   let roundDistanceM = 0;
-  let roundMinutes = 0;
+  let roundDurationSeconds = 0;
 
   for (const { step } of entries) {
     if (step.durationMode === "distance" && step.distanceM) {
       roundDistanceM += step.distanceM;
     }
-    if ((step.durationMode === "time" || step.durationMode === "fixed_rest") && step.timeMin) {
-      roundMinutes += step.timeMin;
+    if (
+      (step.durationMode === "time" ||
+        step.durationMode === "fixed_rest" ||
+        step.durationMode === "send_off") &&
+      step.timeMin
+    ) {
+      roundDurationSeconds += getClockTotalSeconds(step.timeMin);
+    }
+    if (step.durationMode === "css_send_off" && typeof step.cssSendOffOffsetSeconds === "number") {
+      roundDurationSeconds += Math.max(1, basePaceSecondsPer100m + step.cssSendOffOffsetSeconds);
     }
   }
 
@@ -221,7 +263,9 @@ function buildRepeatSummary(entries: StepRenderEntry[], repeatCount: number | nu
   const roundParts: string[] = [];
 
   if (roundDistanceM > 0) roundParts.push(`${roundDistanceM}m`);
-  if (roundMinutes > 0) roundParts.push(formatMinutesLabel(roundMinutes));
+  if (roundDurationSeconds > 0) {
+    roundParts.push(formatClockDurationLabelFromSeconds(roundDurationSeconds));
+  }
   if (roundParts.length > 0) {
     parts.push(`${roundParts.join(" + ")} per round`);
   }
@@ -240,6 +284,18 @@ function getPaceMinutes(secondsPer100m: number | null | undefined) {
 function getPaceSeconds(secondsPer100m: number | null | undefined) {
   if (!secondsPer100m || secondsPer100m <= 0) return "";
   return String(secondsPer100m % 60).padStart(2, "0");
+}
+
+function getDurationMinutes(valueMinutes: number | null | undefined) {
+  const totalSeconds = getClockTotalSeconds(valueMinutes);
+  if (totalSeconds <= 0) return "";
+  return String(Math.floor(totalSeconds / 60));
+}
+
+function getDurationSeconds(valueMinutes: number | null | undefined) {
+  const totalSeconds = getClockTotalSeconds(valueMinutes);
+  if (totalSeconds <= 0) return "";
+  return String(totalSeconds % 60).padStart(2, "0");
 }
 
 function buildStepRenderGroups(steps: SessionDraftStep[]): StepRenderGroup[] {
@@ -445,6 +501,50 @@ export default function WorkoutEditor({
       return {
         ...current,
         targetPaceSecondsPer100m: totalSeconds > 0 ? totalSeconds : null,
+      };
+    });
+  }
+
+  function updateStepDurationMode(stepId: string, nextMode: SessionDraftStepDurationMode) {
+    updateDraftStep(stepId, (current) => ({
+      ...current,
+      durationMode: nextMode,
+      distanceM: nextMode === "distance" ? (current.distanceM ?? 100) : null,
+      timeMin:
+        nextMode === "time" || nextMode === "fixed_rest" || nextMode === "send_off"
+          ? (current.timeMin ?? (nextMode === "send_off" ? 2 : 1))
+          : null,
+      cssSendOffOffsetSeconds:
+        nextMode === "css_send_off" ? (current.cssSendOffOffsetSeconds ?? 0) : null,
+    }));
+  }
+
+  function updateStepDurationClock(
+    stepId: string,
+    nextPart: "minutes" | "seconds",
+    rawValue: string
+  ) {
+    const sanitized = rawValue.replace(/[^\d]/g, "").slice(0, 2);
+
+    updateDraftStep(stepId, (current) => {
+      const currentSeconds = getClockTotalSeconds(current.timeMin);
+      const minutes =
+        nextPart === "minutes"
+          ? sanitized.length > 0
+            ? Number.parseInt(sanitized, 10)
+            : 0
+          : Math.floor(currentSeconds / 60);
+      const seconds =
+        nextPart === "seconds"
+          ? sanitized.length > 0
+            ? Math.min(59, Number.parseInt(sanitized, 10))
+            : 0
+          : currentSeconds % 60;
+      const totalSeconds = minutes * 60 + seconds;
+
+      return {
+        ...current,
+        timeMin: totalSeconds > 0 ? totalSeconds / 60 : null,
       };
     });
   }
@@ -670,15 +770,7 @@ export default function WorkoutEditor({
             <select
               value={step.durationMode}
               onChange={(event) =>
-                updateDraftStep(step.id, (current) => ({
-                  ...current,
-                  durationMode: event.target.value as SessionDraftStepDurationMode,
-                  distanceM: event.target.value === "distance" ? (current.distanceM ?? 100) : null,
-                  timeMin:
-                    event.target.value === "time" || event.target.value === "fixed_rest"
-                      ? (current.timeMin ?? 1)
-                      : null,
-                }))
+                updateStepDurationMode(step.id, event.target.value as SessionDraftStepDurationMode)
               }
               data-testid={`session-draft-step-duration-mode-${index}`}
               className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -724,6 +816,66 @@ export default function WorkoutEditor({
                 data-testid={`session-draft-step-time-${index}`}
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
+            </label>
+          ) : step.durationMode === "send_off" ? (
+            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
+              <label className="text-sm text-slate-700">
+                Send-off min
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={getDurationMinutes(step.timeMin)}
+                  onChange={(event) =>
+                    updateStepDurationClock(step.id, "minutes", event.target.value)
+                  }
+                  data-testid={`session-draft-step-sendoff-minutes-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </label>
+              <label className="text-sm text-slate-700">
+                Send-off sec
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={getDurationSeconds(step.timeMin)}
+                  onChange={(event) =>
+                    updateStepDurationClock(step.id, "seconds", event.target.value)
+                  }
+                  data-testid={`session-draft-step-sendoff-seconds-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </label>
+              <div className="self-end text-sm text-slate-500">
+                {step.timeMin
+                  ? `${formatClockDurationLabel(step.timeMin)} send-off`
+                  : "Set send-off"}
+              </div>
+            </div>
+          ) : step.durationMode === "css_send_off" ? (
+            <label className="text-sm text-slate-700 md:col-span-2">
+              CSS send-off offset
+              <select
+                value={String(step.cssSendOffOffsetSeconds ?? 0)}
+                onChange={(event) =>
+                  updateDraftStep(step.id, (current) => ({
+                    ...current,
+                    cssSendOffOffsetSeconds: Number.parseInt(event.target.value, 10),
+                  }))
+                }
+                data-testid={`session-draft-step-css-sendoff-offset-${index}`}
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                {SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.map((value) => {
+                  const sign = value > 0 ? "+" : "";
+                  return (
+                    <option key={value} value={String(value)}>
+                      {`CSS ${sign}${value}s (${formatClockDurationLabelFromSeconds(
+                        draft.basePaceSecondsPer100m + value
+                      )})`}
+                    </option>
+                  );
+                })}
+              </select>
             </label>
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600">
@@ -1188,7 +1340,11 @@ export default function WorkoutEditor({
                       Repeat block
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-900">
-                      {buildRepeatSummary(group.entries, group.repeatCount)}
+                      {buildRepeatSummary(
+                        group.entries,
+                        group.repeatCount,
+                        draft.basePaceSecondsPer100m
+                      )}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
                       Garmin-familiar starter scaffold: edit the repeated steps below instead of

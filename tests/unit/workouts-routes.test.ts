@@ -225,18 +225,32 @@ describe("workouts routes", () => {
       {
         id: "step-2",
         category: "rest",
-        name: "Fixed reset",
+        name: "Send-off reset",
         stroke: "choice",
         intensity: "easy",
-        durationMode: "fixed_rest",
+        durationMode: "send_off",
         distanceM: null,
-        timeMin: 0.5,
+        timeMin: 1.6333,
         targetMode: "none",
-        targetSummary: "Short reset.",
-        notes: "Breathe and restart.",
+        targetSummary: "Send-off keeps the next round honest.",
+        notes: "Leave on 1:38.",
       },
       {
         id: "step-3",
+        category: "rest",
+        name: "CSS send-off reset",
+        stroke: "choice",
+        intensity: "easy",
+        durationMode: "css_send_off",
+        distanceM: null,
+        timeMin: null,
+        cssSendOffOffsetSeconds: 2,
+        targetMode: "none",
+        targetSummary: "CSS +2 seconds send-off.",
+        notes: "Hold the send-off rhythm off CSS.",
+      },
+      {
+        id: "step-4",
         category: "rest",
         name: "Open reset",
         stroke: "choice",
@@ -300,8 +314,14 @@ describe("workouts routes", () => {
             equipment: "fins",
           }),
           expect.objectContaining({
-            durationMode: "fixed_rest",
-            timeMin: 0.5,
+            durationMode: "send_off",
+            timeMin: 1.6333,
+            targetMode: "none",
+          }),
+          expect.objectContaining({
+            durationMode: "css_send_off",
+            timeMin: null,
+            cssSendOffOffsetSeconds: 2,
             targetMode: "none",
           }),
           expect.objectContaining({
@@ -366,6 +386,54 @@ describe("workouts routes", () => {
     expect(response.status).toBe(400);
     expect(payload.ok).toBe(false);
     expect(payload.error).toContain("needs a target pace");
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects CSS send-off steps that are missing CSS offset metadata", async () => {
+    const insert = vi.fn();
+    const from = vi.fn().mockReturnValue({ insert });
+    const body = buildDraftBody({ sourceKind: "manual" });
+
+    body.draft.steps = [
+      {
+        id: "step-1",
+        category: "rest",
+        name: "Broken CSS send-off",
+        stroke: "choice",
+        intensity: "easy",
+        durationMode: "css_send_off",
+        distanceM: null,
+        timeMin: null,
+        targetMode: "none",
+        targetSummary: "Should fail without CSS send-off metadata.",
+        notes: "Missing CSS send-off offset.",
+      },
+    ];
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postWorkout(
+      new Request("http://127.0.0.1:3000/api/my-library/workouts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
+    );
+    const payload = (await response.json()) as { ok: false; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toContain("CSS send-off offset");
     expect(insert).not.toHaveBeenCalled();
   });
 
