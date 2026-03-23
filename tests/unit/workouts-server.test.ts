@@ -249,6 +249,33 @@ describe("workouts server", () => {
         {
           id: "step-3",
           category: "rest",
+          name: "Send-off reset",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "send_off",
+          distanceM: null,
+          timeMin: 2,
+          targetMode: "none",
+          targetSummary: "Leave every 2:00.",
+          notes: "Hold the cycle time.",
+        },
+        {
+          id: "step-4",
+          category: "rest",
+          name: "CSS send-off reset",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "css_send_off",
+          distanceM: null,
+          timeMin: null,
+          cssSendOffOffsetSeconds: 2,
+          targetMode: "none",
+          targetSummary: "CSS +2 seconds send-off.",
+          notes: "Use CSS to anchor the send-off.",
+        },
+        {
+          id: "step-5",
+          category: "rest",
           name: "Open reset",
           stroke: "choice",
           intensity: "easy",
@@ -265,7 +292,7 @@ describe("workouts server", () => {
     const insert = buildWorkoutInsert("user-1", targetDraft, "manual");
 
     expect(insert.total_distance_m).toBe(400);
-    expect(insert.estimated_duration_min).toBe(7);
+    expect(insert.estimated_duration_min).toBe(11);
   });
 
   it("keeps step-level stroke, drill, and equipment context canonical on save", () => {

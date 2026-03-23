@@ -66,10 +66,13 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-target-mode-5").selectOption("target_pace");
     await page.getByTestId("session-draft-step-target-pace-minutes-5").fill("1");
     await page.getByTestId("session-draft-step-target-pace-seconds-5").fill("35");
-    await page.getByTestId("session-draft-step-time-6").fill("0.5");
+    await page.getByTestId("session-draft-step-duration-mode-6").selectOption("send_off");
+    await page.getByTestId("session-draft-step-sendoff-minutes-6").fill("2");
+    await page.getByTestId("session-draft-step-sendoff-seconds-6").fill("00");
     await page.getByTestId("session-draft-add-step").click();
-    await page.getByTestId("session-draft-step-name-7").fill("QA open reset");
-    await page.getByTestId("session-draft-step-duration-mode-7").selectOption("lap_button");
+    await page.getByTestId("session-draft-step-name-7").fill("QA CSS send-off reset");
+    await page.getByTestId("session-draft-step-duration-mode-7").selectOption("css_send_off");
+    await page.getByTestId("session-draft-step-css-sendoff-offset-7").selectOption("2");
     await page.getByTestId("session-draft-step-target-mode-7").selectOption("none");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
 
@@ -93,9 +96,16 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-target-mode-5")).toHaveValue("target_pace");
     await expect(page.getByTestId("session-draft-step-target-pace-minutes-5")).toHaveValue("1");
     await expect(page.getByTestId("session-draft-step-target-pace-seconds-5")).toHaveValue("35");
-    await expect(page.getByTestId("session-draft-step-time-6")).toHaveValue("0.5");
-    await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue("QA open reset");
-    await expect(page.getByTestId("session-draft-step-duration-mode-7")).toHaveValue("lap_button");
+    await expect(page.getByTestId("session-draft-step-duration-mode-6")).toHaveValue("send_off");
+    await expect(page.getByTestId("session-draft-step-sendoff-minutes-6")).toHaveValue("2");
+    await expect(page.getByTestId("session-draft-step-sendoff-seconds-6")).toHaveValue("00");
+    await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue(
+      "QA CSS send-off reset"
+    );
+    await expect(page.getByTestId("session-draft-step-duration-mode-7")).toHaveValue(
+      "css_send_off"
+    );
+    await expect(page.getByTestId("session-draft-step-css-sendoff-offset-7")).toHaveValue("2");
     await expect(page.getByTestId("session-draft-step-target-mode-7")).toHaveValue("none");
     await expect(
       page.locator("fieldset").filter({ hasText: "Session strokes" }).getByRole("checkbox", {

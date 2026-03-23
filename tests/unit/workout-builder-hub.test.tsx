@@ -173,6 +173,25 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-step-css-offset-1"), {
       target: { value: "2" },
     });
+    fireEvent.change(screen.getByTestId("session-draft-step-duration-mode-2"), {
+      target: { value: "send_off" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-sendoff-minutes-2"), {
+      target: { value: "2" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-sendoff-seconds-2"), {
+      target: { value: "0" },
+    });
+    fireEvent.click(screen.getByTestId("session-draft-add-step"));
+    fireEvent.change(screen.getByTestId("session-draft-step-name-3"), {
+      target: { value: "CSS send-off rest" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-duration-mode-3"), {
+      target: { value: "css_send_off" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-css-sendoff-offset-3"), {
+      target: { value: "2" },
+    });
     fireEvent.click(screen.getByTestId("workout-builder-save"));
 
     await waitFor(() => {
@@ -201,6 +220,15 @@ describe("WorkoutBuilderHub", () => {
       equipment: "fins",
       targetMode: "css_target_pace",
       cssTargetOffsetSeconds: 2,
+    });
+    expect(fetchBody.draft.steps[2]).toMatchObject({
+      durationMode: "send_off",
+      timeMin: 2,
+    });
+    expect(fetchBody.draft.steps[3]).toMatchObject({
+      name: "CSS send-off rest",
+      durationMode: "css_send_off",
+      cssSendOffOffsetSeconds: 2,
     });
     expect(fetchBody.draft.allowedStrokes).toContain("backstroke");
     expect(fetchBody.draft.equipmentAllowlist).toContain("fins");

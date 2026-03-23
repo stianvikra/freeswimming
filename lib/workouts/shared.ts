@@ -310,6 +310,10 @@ function normalizeStep(
     targetMode === "target_pace" ? normalizeNullableInteger(input.targetPaceSecondsPer100m) : null;
   const cssTargetOffsetSeconds =
     targetMode === "css_target_pace" ? normalizeCssOffset(input.cssTargetOffsetSeconds) : null;
+  const cssSendOffOffsetSeconds =
+    input.durationMode === "css_send_off"
+      ? normalizeCssOffset(input.cssSendOffOffsetSeconds)
+      : null;
 
   if (Boolean(repeatGroupId) !== Boolean(repeatCount)) {
     return {
@@ -349,6 +353,13 @@ function normalizeStep(
     };
   }
 
+  if (input.durationMode === "css_send_off" && cssSendOffOffsetSeconds === null) {
+    return {
+      ok: false,
+      error: `Step ${index + 1} needs a CSS send-off offset before saving.`,
+    };
+  }
+
   if (input.durationMode === "distance") {
     const distanceM = normalizeNullableInteger(input.distanceM);
 
@@ -373,6 +384,7 @@ function normalizeStep(
         effortTarget,
         targetPaceSecondsPer100m,
         cssTargetOffsetSeconds,
+        cssSendOffOffsetSeconds: null,
         targetSummary,
         notes,
         repeatGroupId,
@@ -399,6 +411,34 @@ function normalizeStep(
         effortTarget,
         targetPaceSecondsPer100m,
         cssTargetOffsetSeconds,
+        cssSendOffOffsetSeconds: null,
+        targetSummary,
+        notes,
+        repeatGroupId,
+        repeatCount,
+      },
+    };
+  }
+
+  if (input.durationMode === "css_send_off") {
+    return {
+      ok: true,
+      value: {
+        id,
+        category: input.category,
+        name,
+        stroke: input.stroke,
+        drillType,
+        equipment,
+        intensity: input.intensity,
+        durationMode: "css_send_off",
+        distanceM: null,
+        timeMin: null,
+        targetMode,
+        effortTarget,
+        targetPaceSecondsPer100m,
+        cssTargetOffsetSeconds,
+        cssSendOffOffsetSeconds,
         targetSummary,
         notes,
         repeatGroupId,
@@ -422,13 +462,19 @@ function normalizeStep(
       drillType,
       equipment,
       intensity: input.intensity,
-      durationMode: input.durationMode === "fixed_rest" ? "fixed_rest" : "time",
+      durationMode:
+        input.durationMode === "fixed_rest"
+          ? "fixed_rest"
+          : input.durationMode === "send_off"
+            ? "send_off"
+            : "time",
       distanceM: null,
       timeMin,
       targetMode,
       effortTarget,
       targetPaceSecondsPer100m,
       cssTargetOffsetSeconds,
+      cssSendOffOffsetSeconds: null,
       targetSummary,
       notes,
       repeatGroupId,
@@ -469,7 +515,7 @@ function normalizeNullableInteger(value: unknown) {
 
 function normalizePositiveNumber(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
-  return Math.round(value * 10) / 10;
+  return Math.round(value * 10000) / 10000;
 }
 
 function normalizeEffortPreset(value: unknown) {
