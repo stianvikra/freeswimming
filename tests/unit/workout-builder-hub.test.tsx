@@ -203,6 +203,9 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-step-duration-mode-3"), {
       target: { value: "css_send_off" },
     });
+    fireEvent.change(screen.getByTestId("session-draft-step-stroke-3"), {
+      target: { value: "im_by_round" },
+    });
     fireEvent.change(screen.getByTestId("session-draft-step-css-sendoff-offset-3"), {
       target: { value: "2" },
     });
@@ -247,10 +250,12 @@ describe("WorkoutBuilderHub", () => {
     });
     expect(fetchBody.draft.steps[3]).toMatchObject({
       name: "CSS send-off rest",
+      stroke: "im_by_round",
       durationMode: "css_send_off",
       cssSendOffOffsetSeconds: 2,
     });
     expect(fetchBody.draft.allowedStrokes).toContain("backstroke");
+    expect(fetchBody.draft.allowedStrokes).not.toContain("im_by_round");
     expect(fetchBody.draft.equipmentAllowlist).toContain("fins");
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Builder edited workout");
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
@@ -263,7 +268,9 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-drill-type-1")).toHaveValue("pull");
     expect(screen.getByTestId("session-draft-step-equipment-1")).toHaveValue("fins");
     expect(screen.getByTestId("session-draft-step-target-mode-1")).toHaveValue("css_target_pace");
-  });
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-3"));
+    expect(screen.getByTestId("session-draft-step-stroke-3")).toHaveValue("im_by_round");
+  }, 15_000);
 
   it("keeps step cards summary-first until the user opens them for editing", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);

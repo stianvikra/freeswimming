@@ -97,6 +97,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-add-step").click();
     await page.getByTestId("session-draft-step-name-7").fill("QA CSS send-off reset");
     await page.getByTestId("session-draft-step-duration-mode-7").selectOption("css_send_off");
+    await page.getByTestId("session-draft-step-stroke-7").selectOption("reverse_im_order");
     await page.getByTestId("session-draft-step-css-sendoff-offset-7").selectOption("2");
     await page.getByTestId("session-draft-step-target-mode-7").selectOption("none");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
@@ -138,6 +139,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue(
       "QA CSS send-off reset"
     );
+    await expect(page.getByTestId("session-draft-step-stroke-7")).toHaveValue("reverse_im_order");
     await expect(page.getByTestId("session-draft-step-duration-mode-7")).toHaveValue(
       "css_send_off"
     );

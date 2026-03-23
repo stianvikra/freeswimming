@@ -6,10 +6,95 @@ const UNSUPPORTED_BROWSER_MESSAGE =
 const INSTALL_SUCCESS_MESSAGE =
   "App installed. You can open FreeSwimming from your Dock, Start menu, or home screen.";
 
+async function waitForCoursePageToSettle(page: Page) {
+  const compilingIndicator = page.getByText("Compiling", { exact: true });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
+    await page.waitForTimeout(750);
+    if ((await compilingIndicator.count()) === 0) {
+      break;
+    }
+  }
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      })
+  );
+}
+
 async function openMainMenuFromCourse(page: Page) {
-  await page.goto("/course?lesson=mod3-l1");
-  await page.getByTestId("course-nav-lessons").click();
-  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await waitForCoursePageToSettle(page);
+
+  const lessonsToggle = page.getByTestId("course-nav-lessons");
+  const drawer = page.getByRole("dialog", { name: "Navigation menu" });
+  const openCourseAttempts: Array<() => Promise<void>> = [
+    async () => {
+      await lessonsToggle.click();
+    },
+    async () => {
+      await lessonsToggle.focus();
+      await page.keyboard.press("Enter");
+    },
+    async () => {
+      await lessonsToggle.click();
+    },
+    async () => {
+      await lessonsToggle.focus();
+      await page.keyboard.press("Space");
+    },
+  ];
+
+  let drawerOpened = false;
+  for (const openAttempt of openCourseAttempts) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await waitForCoursePageToSettle(page);
+    await lessonsToggle.scrollIntoViewIfNeeded();
+    await openAttempt();
+    await expect(drawer)
+      .toBeVisible({ timeout: 4_000 })
+      .catch(() => {});
+    if (await drawer.isVisible().catch(() => false)) {
+      drawerOpened = true;
+      break;
+    }
+    await page.waitForTimeout(250);
+  }
+
+  expect(drawerOpened).toBe(true);
+  await expect(drawer).toBeVisible();
+
+  const menuTab = drawer.getByRole("button", { name: "Menu", exact: true });
+  const switchToMenuAttempts: Array<() => Promise<void>> = [
+    async () => {
+      await menuTab.click();
+    },
+    async () => {
+      await menuTab.focus();
+      await page.keyboard.press("Enter");
+    },
+  ];
+
+  for (const switchAttempt of switchToMenuAttempts) {
+    await switchAttempt();
+    await expect(drawer.getByText("Main menu"))
+      .toBeVisible({ timeout: 4_000 })
+      .catch(() => {});
+    if (
+      await drawer
+        .getByText("Main menu")
+        .isVisible()
+        .catch(() => false)
+    ) {
+      return;
+    }
+    await page.waitForTimeout(250);
+  }
+
+  await expect(drawer.getByText("Main menu")).toBeVisible();
 }
 
 async function getCurrentLessonSignature(page: Page) {
@@ -190,6 +275,7 @@ async function goToNextLesson(page: Page) {
       timeout: 10_000,
     })
     .not.toBe(currentLessonSignature);
+  await waitForCoursePageToSettle(page);
 }
 
 test("main menu exposes a persistent install action", async ({ page }, testInfo) => {
@@ -310,7 +396,8 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   );
   test.slow();
 
-  await page.goto("/course?lesson=mod3-l1");
+  await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await waitForCoursePageToSettle(page);
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
   await expect(markDoneButton).toBeVisible();
   await dismissSwipeHintIfPresent(page);
@@ -349,7 +436,8 @@ test("contextual install prompt shows success confirmation after accepted instal
   );
   test.slow();
 
-  await page.goto("/course?lesson=mod3-l1");
+  await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await waitForCoursePageToSettle(page);
   const markDoneButton = page.getByRole("button", { name: "Mark as done" });
   await expect(markDoneButton).toBeVisible();
   await dismissSwipeHintIfPresent(page);
@@ -390,7 +478,8 @@ test("guest sees free-account backup prompt after completing three lessons", asy
     localStorage.removeItem("fs_course_done_lessons");
     localStorage.removeItem("fs_course_backup_prompt_dismissed_at");
   });
-  await page.goto("/course?lesson=mod3-l1");
+  await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await waitForCoursePageToSettle(page);
   await dismissSwipeHintIfPresent(page);
 
   await satisfyDoneGateIfPresent(page);

@@ -43,6 +43,8 @@ export const SESSION_DRAFT_STEP_STROKES = [
   "breaststroke",
   "butterfly",
   "individual_medley",
+  "im_by_round",
+  "reverse_im_order",
   "mixed",
   "drill",
 ] as const;
@@ -246,12 +248,14 @@ const EQUIPMENT_LABELS: Record<SessionGeneratorEquipment, string> = {
 };
 
 const STEP_STROKE_LABELS: Record<SessionDraftStepStroke, string> = {
-  choice: "Stroke choice",
+  choice: "Choice",
   freestyle: "Freestyle",
   backstroke: "Backstroke",
   breaststroke: "Breaststroke",
   butterfly: "Butterfly",
-  individual_medley: "Individual medley",
+  individual_medley: "Individual medley (IM)",
+  im_by_round: "IM by round",
+  reverse_im_order: "Reverse IM order (RIMO)",
   mixed: "Mixed",
   drill: "Drill",
 };

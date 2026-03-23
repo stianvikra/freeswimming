@@ -340,6 +340,22 @@ describe("workouts server", () => {
           targetSummary: "Backstroke pull focus with fins.",
           notes: "Hold posture and timing.",
         },
+        {
+          id: "step-2",
+          category: "main",
+          name: "RIMO pacing block",
+          stroke: "reverse_im_order",
+          drillType: "none",
+          equipment: "none",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 200,
+          timeMin: null,
+          targetMode: "effort",
+          effortTarget: "moderate",
+          targetSummary: "Garmin-familiar IM convenience stroke should stay step-local.",
+          notes: "Rotate the IM order in reverse without changing session stroke allowlist.",
+        },
       ],
     };
 
@@ -352,6 +368,11 @@ describe("workouts server", () => {
       stroke: "backstroke",
       drillType: "pull",
       equipment: "fins",
+    });
+    expect(savedSteps[1]).toMatchObject({
+      stroke: "reverse_im_order",
+      drillType: "none",
+      equipment: "none",
     });
   });
 

@@ -367,6 +367,7 @@ function CoursePageClient() {
   const [showInstallSuccessNotice, setShowInstallSuccessNotice] = useState(false);
   const [installPromptBusy, setInstallPromptBusy] = useState(false);
   const [installPromptFeedback, setInstallPromptFeedback] = useState<string | null>(null);
+  const [autoInstallPromptArmed, setAutoInstallPromptArmed] = useState(false);
   const overviewJumpDraggingRef = useRef(false);
   const installPromptTimerRef = useRef<number | null>(null);
   const courseSyncTimerRef = useRef<number | null>(null);
@@ -1255,6 +1256,7 @@ function CoursePageClient() {
   function dismissInstallPrompt() {
     clearInstallPromptTimer();
     markAutoPromptDismissed();
+    setAutoInstallPromptArmed(false);
     setShowInstallPrompt(false);
     setShowInstallIosGuide(false);
     setShowInstallMacSafariGuide(false);
@@ -1264,6 +1266,7 @@ function CoursePageClient() {
 
   function closeIosInstallGuide() {
     markAutoPromptDismissed();
+    setAutoInstallPromptArmed(false);
     setShowInstallPrompt(false);
     setShowInstallIosGuide(false);
     setShowInstallMacSafariGuide(false);
@@ -1273,6 +1276,7 @@ function CoursePageClient() {
 
   function closeMacSafariInstallGuide() {
     markAutoPromptDismissed();
+    setAutoInstallPromptArmed(false);
     setShowInstallPrompt(false);
     setShowInstallIosGuide(false);
     setShowInstallMacSafariGuide(false);
@@ -1281,6 +1285,7 @@ function CoursePageClient() {
   }
 
   function closeInstallSuccessNotice() {
+    setAutoInstallPromptArmed(false);
     setShowInstallPrompt(false);
     setShowInstallIosGuide(false);
     setShowInstallMacSafariGuide(false);
@@ -1302,8 +1307,21 @@ function CoursePageClient() {
   }, [clearInstallPromptTimer]);
 
   useEffect(() => {
+    if (!autoInstallPromptArmed) return;
+    if (install.isInstalled) {
+      setAutoInstallPromptArmed(false);
+      return;
+    }
+    if (!install.canInstall) return;
+
+    queueAutoInstallPrompt();
+    setAutoInstallPromptArmed(false);
+  }, [autoInstallPromptArmed, install.canInstall, install.isInstalled, queueAutoInstallPrompt]);
+
+  useEffect(() => {
     if (!install.isInstalled) return;
     clearInstallPromptTimer();
+    setAutoInstallPromptArmed(false);
     setShowInstallPrompt(false);
     setShowInstallIosGuide(false);
     setShowInstallMacSafariGuide(false);
@@ -1355,10 +1373,11 @@ function CoursePageClient() {
           [activeLesson.id]: new Date().toISOString(),
         }));
       }
-      queueAutoInstallPrompt();
+      setAutoInstallPromptArmed(true);
       return;
     }
 
+    setAutoInstallPromptArmed(false);
     setDoneConfirmationByLessonId((prev) => {
       if (!(activeLesson.id in prev)) return prev;
       const next = { ...prev };

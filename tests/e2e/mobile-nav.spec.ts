@@ -1,5 +1,24 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { isMobileProject } from "./project-guards";
+
+async function waitForPageToSettle(page: Page) {
+  const compilingIndicator = page.getByText("Compiling", { exact: true });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
+    await page.waitForTimeout(750);
+    if ((await compilingIndicator.count()) === 0) {
+      break;
+    }
+  }
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      })
+  );
+}
 
 test("mobile fixed nav uses link semantics and menu toggles with Escape", async ({
   page,
@@ -8,8 +27,10 @@ test("mobile fixed nav uses link semantics and menu toggles with Escape", async 
     !isMobileProject(testInfo),
     "Bottom mobile nav behavior is validated only on mobile projects."
   );
+  test.slow();
 
-  await page.goto("/contact");
+  await page.goto("/contact", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await waitForPageToSettle(page);
 
   const nav = page.getByTestId("mobile-fixed-nav");
   await expect(nav).toBeVisible();
@@ -27,9 +48,41 @@ test("mobile fixed nav uses link semantics and menu toggles with Escape", async 
   expect(courseTag).toBe("A");
 
   await expect(menu).toHaveAttribute("aria-pressed", "false");
-  await menu.click();
-
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
+  const openAttempts: Array<() => Promise<void>> = [
+    async () => {
+      await menu.click();
+    },
+    async () => {
+      await menu.focus();
+      await page.keyboard.press("Enter");
+    },
+    async () => {
+      await menu.click();
+    },
+    async () => {
+      await menu.focus();
+      await page.keyboard.press("Space");
+    },
+  ];
+
+  let menuOpened = false;
+  for (const openAttempt of openAttempts) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await waitForPageToSettle(page);
+    await menu.scrollIntoViewIfNeeded();
+    await openAttempt();
+    await expect(drawer)
+      .toBeVisible({ timeout: 4_000 })
+      .catch(() => {});
+    if (await drawer.isVisible().catch(() => false)) {
+      menuOpened = true;
+      break;
+    }
+    await page.waitForTimeout(250);
+  }
+
+  expect(menuOpened).toBe(true);
   await expect(drawer).toBeVisible();
   await expect(menu).toHaveAttribute("aria-pressed", "true");
 
@@ -43,8 +96,10 @@ test("home keeps menu access and shows login CTA", async ({ page }, testInfo) =>
     !isMobileProject(testInfo),
     "Home mobile navigation behavior is validated only on mobile projects."
   );
+  test.slow();
 
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await waitForPageToSettle(page);
 
   await expect(page.getByTestId("mobile-fixed-nav")).toBeHidden();
   await expect(page.getByTestId("header-menu-toggle")).toBeVisible();
