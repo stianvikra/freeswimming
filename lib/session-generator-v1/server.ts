@@ -29,6 +29,7 @@ type SegmentPlan = {
   main: number;
   rest: number;
   cooldown: number;
+  swim: number;
 };
 
 export function buildSessionDraft(
@@ -196,12 +197,20 @@ function estimateDurationFromDistance(distanceM: number, basePaceSecondsPer100m:
 
 function buildSegmentPlan(input: SessionGeneratorInput): SegmentPlan {
   const baseByType: Record<SessionGeneratorSessionType, SegmentPlan> = {
-    recovery: { warmup: 30, drill: 0, kick: 0, main: 45, rest: 0, cooldown: 25 },
-    endurance: { warmup: 20, drill: 0, kick: 0, main: 60, rest: 0, cooldown: 20 },
-    technique: { warmup: 20, drill: 30, kick: 0, main: 30, rest: 0, cooldown: 20 },
-    threshold_css: { warmup: 20, drill: 0, kick: 0, main: 60, rest: 0, cooldown: 20 },
-    speed: { warmup: 20, drill: 10, kick: 0, main: 50, rest: 0, cooldown: 20 },
-    race_pace: { warmup: 20, drill: 5, kick: 0, main: 55, rest: 0, cooldown: 20 },
+    recovery: { warmup: 30, drill: 0, kick: 0, main: 45, rest: 0, cooldown: 25, swim: 0 },
+    endurance: { warmup: 20, drill: 0, kick: 0, main: 60, rest: 0, cooldown: 20, swim: 0 },
+    technique: { warmup: 20, drill: 30, kick: 0, main: 30, rest: 0, cooldown: 20, swim: 0 },
+    threshold_css: {
+      warmup: 20,
+      drill: 0,
+      kick: 0,
+      main: 60,
+      rest: 0,
+      cooldown: 20,
+      swim: 0,
+    },
+    speed: { warmup: 20, drill: 10, kick: 0, main: 50, rest: 0, cooldown: 20, swim: 0 },
+    race_pace: { warmup: 20, drill: 5, kick: 0, main: 55, rest: 0, cooldown: 20, swim: 0 },
   };
 
   const plan = { ...baseByType[input.sessionType] };
@@ -250,6 +259,8 @@ function buildDistanceBasedSteps(input: {
     durationMode: "distance",
     distanceM: segments.warmup,
     timeMin: null,
+    targetMode: "effort",
+    effortTarget: "easy",
     targetSummary: "Easy swimming with relaxed breathing and long strokes.",
     notes: focusText
       ? `Keep ${focusText.toLowerCase()} present from the first length.`
@@ -266,6 +277,8 @@ function buildDistanceBasedSteps(input: {
       durationMode: "distance",
       distanceM: segments.drill,
       timeMin: null,
+      targetMode: "effort",
+      effortTarget: "easy",
       targetSummary: "Alternate drill and swim to keep form ahead of speed.",
       notes: focusText
         ? `Suggested format: 25 drill / 25 swim with ${focusText.toLowerCase()} as the main cue.`
@@ -283,6 +296,8 @@ function buildDistanceBasedSteps(input: {
       durationMode: "distance",
       distanceM: segments.kick,
       timeMin: null,
+      targetMode: "effort",
+      effortTarget: "moderate",
       targetSummary: "Controlled kick that supports body line without spiking fatigue.",
       notes: buildKickNote(sessionInput.equipmentAllowlist, constraintText),
     });
@@ -297,6 +312,8 @@ function buildDistanceBasedSteps(input: {
     durationMode: "distance",
     distanceM: segments.main,
     timeMin: null,
+    targetMode: "effort",
+    effortTarget: sessionInput.effort,
     targetSummary: buildMainTargetSummary(
       sessionInput.sessionType,
       sessionInput.effort,
@@ -319,6 +336,8 @@ function buildDistanceBasedSteps(input: {
     durationMode: "distance",
     distanceM: segments.cooldown,
     timeMin: null,
+    targetMode: "effort",
+    effortTarget: "easy",
     targetSummary: "Easy swim to bring the heart rate and tension down.",
     notes: "Finish smoother than you started and leave the water feeling controlled.",
   });
@@ -353,6 +372,8 @@ function buildTimeBasedSteps(input: {
       durationMode: "time",
       distanceM: null,
       timeMin: segments.warmup,
+      targetMode: "effort",
+      effortTarget: "easy",
       targetSummary: "Easy swim with relaxed breathing and sighting setup.",
       notes: focusText
         ? `Keep ${focusText.toLowerCase()} present while finding rhythm.`
@@ -367,6 +388,8 @@ function buildTimeBasedSteps(input: {
       durationMode: "time",
       distanceM: null,
       timeMin: segments.main,
+      targetMode: "effort",
+      effortTarget: sessionInput.effort,
       targetSummary: buildMainTargetSummary(sessionInput.sessionType, sessionInput.effort, null),
       notes: buildOpenWaterMainSetNote({
         input: sessionInput,
@@ -385,6 +408,8 @@ function buildTimeBasedSteps(input: {
       durationMode: "time",
       distanceM: null,
       timeMin: segments.cooldown,
+      targetMode: "effort",
+      effortTarget: "easy",
       targetSummary: "Easy swimming to reset stroke length before finishing.",
       notes: "Ease off the pressure and finish with calm breathing.",
     },
@@ -403,6 +428,7 @@ function allocateRoundedValues(
     "main",
     "rest",
     "cooldown",
+    "swim",
   ];
   const result = {
     warmup: 0,
@@ -411,6 +437,7 @@ function allocateRoundedValues(
     main: 0,
     rest: 0,
     cooldown: 0,
+    swim: 0,
   } satisfies Record<SessionDraftStepCategory, number>;
 
   for (const category of categories) {

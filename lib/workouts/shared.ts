@@ -1,8 +1,10 @@
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
+  SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
   SESSION_DRAFT_STEP_DURATION_MODES,
   SESSION_DRAFT_REPEAT_MAX,
   SESSION_DRAFT_REPEAT_MIN,
+  SESSION_DRAFT_STEP_TARGET_MODES,
   SESSION_GENERATOR_ENVIRONMENTS,
   SESSION_GENERATOR_EFFORT_PRESETS,
   SESSION_GENERATOR_EQUIPMENT,
@@ -301,6 +303,12 @@ function normalizeStep(
   const id = normalizeRequiredText(input.id, 80) ?? `step-${index + 1}`;
   const repeatGroupId = normalizeNullableText(input.repeatGroupId, 80);
   const repeatCount = normalizeNullableInteger(input.repeatCount);
+  const targetMode = normalizeTargetMode(input.targetMode);
+  const effortTarget = targetMode === "effort" ? normalizeEffortPreset(input.effortTarget) : null;
+  const targetPaceSecondsPer100m =
+    targetMode === "target_pace" ? normalizeNullableInteger(input.targetPaceSecondsPer100m) : null;
+  const cssTargetOffsetSeconds =
+    targetMode === "css_target_pace" ? normalizeCssOffset(input.cssTargetOffsetSeconds) : null;
 
   if (Boolean(repeatGroupId) !== Boolean(repeatCount)) {
     return {
@@ -316,6 +324,27 @@ function normalizeStep(
     return {
       ok: false,
       error: `Step ${index + 1} repeat count must stay between ${SESSION_DRAFT_REPEAT_MIN} and ${SESSION_DRAFT_REPEAT_MAX}.`,
+    };
+  }
+
+  if (targetMode === "effort" && !effortTarget) {
+    return {
+      ok: false,
+      error: `Step ${index + 1} needs an effort target before saving.`,
+    };
+  }
+
+  if (targetMode === "target_pace" && targetPaceSecondsPer100m === null) {
+    return {
+      ok: false,
+      error: `Step ${index + 1} needs a target pace before saving.`,
+    };
+  }
+
+  if (targetMode === "css_target_pace" && cssTargetOffsetSeconds === null) {
+    return {
+      ok: false,
+      error: `Step ${index + 1} needs a CSS pace offset before saving.`,
     };
   }
 
@@ -337,6 +366,34 @@ function normalizeStep(
         durationMode: "distance",
         distanceM,
         timeMin: null,
+        targetMode,
+        effortTarget,
+        targetPaceSecondsPer100m,
+        cssTargetOffsetSeconds,
+        targetSummary,
+        notes,
+        repeatGroupId,
+        repeatCount,
+      },
+    };
+  }
+
+  if (input.durationMode === "lap_button") {
+    return {
+      ok: true,
+      value: {
+        id,
+        category: input.category,
+        name,
+        stroke: input.stroke,
+        intensity: input.intensity,
+        durationMode: "lap_button",
+        distanceM: null,
+        timeMin: null,
+        targetMode,
+        effortTarget,
+        targetPaceSecondsPer100m,
+        cssTargetOffsetSeconds,
         targetSummary,
         notes,
         repeatGroupId,
@@ -358,9 +415,13 @@ function normalizeStep(
       name,
       stroke: input.stroke,
       intensity: input.intensity,
-      durationMode: "time",
+      durationMode: input.durationMode === "fixed_rest" ? "fixed_rest" : "time",
       distanceM: null,
       timeMin,
+      targetMode,
+      effortTarget,
+      targetPaceSecondsPer100m,
+      cssTargetOffsetSeconds,
       targetSummary,
       notes,
       repeatGroupId,
@@ -402,6 +463,30 @@ function normalizeNullableInteger(value: unknown) {
 function normalizePositiveNumber(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
   return Math.round(value * 10) / 10;
+}
+
+function normalizeEffortPreset(value: unknown) {
+  return SESSION_GENERATOR_EFFORT_PRESETS.includes(value as SessionDraft["effort"])
+    ? (value as SessionDraft["effort"])
+    : null;
+}
+
+function normalizeTargetMode(value: unknown) {
+  return SESSION_DRAFT_STEP_TARGET_MODES.includes(
+    value as (typeof SESSION_DRAFT_STEP_TARGET_MODES)[number]
+  )
+    ? (value as (typeof SESSION_DRAFT_STEP_TARGET_MODES)[number])
+    : "none";
+}
+
+function normalizeCssOffset(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const normalized = Math.round(value);
+  return SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.includes(
+    normalized as (typeof SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS)[number]
+  )
+    ? normalized
+    : null;
 }
 
 function normalizeIsoDate(value: unknown) {

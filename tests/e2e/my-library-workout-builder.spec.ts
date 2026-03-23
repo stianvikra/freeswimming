@@ -60,8 +60,14 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-add-repeat").click();
     await page.getByTestId("session-draft-repeat-count-5").fill("6");
     await page.getByTestId("session-draft-step-name-5").fill("Repeat swim focus");
+    await page.getByTestId("session-draft-step-target-mode-5").selectOption("target_pace");
+    await page.getByTestId("session-draft-step-target-pace-minutes-5").fill("1");
+    await page.getByTestId("session-draft-step-target-pace-seconds-5").fill("35");
+    await page.getByTestId("session-draft-step-time-6").fill("0.5");
     await page.getByTestId("session-draft-add-step").click();
-    await page.getByTestId("session-draft-step-name-7").fill("QA add-on step");
+    await page.getByTestId("session-draft-step-name-7").fill("QA open reset");
+    await page.getByTestId("session-draft-step-duration-mode-7").selectOption("lap_button");
+    await page.getByTestId("session-draft-step-target-mode-7").selectOption("none");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
 
     const patchResponsePromise = page.waitForResponse(
@@ -78,6 +84,12 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
     await expect(page.getByTestId("session-draft-repeat-count-5")).toHaveValue("6");
     await expect(page.getByTestId("session-draft-step-name-5")).toHaveValue("Repeat swim focus");
-    await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue("QA add-on step");
+    await expect(page.getByTestId("session-draft-step-target-mode-5")).toHaveValue("target_pace");
+    await expect(page.getByTestId("session-draft-step-target-pace-minutes-5")).toHaveValue("1");
+    await expect(page.getByTestId("session-draft-step-target-pace-seconds-5")).toHaveValue("35");
+    await expect(page.getByTestId("session-draft-step-time-6")).toHaveValue("0.5");
+    await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue("QA open reset");
+    await expect(page.getByTestId("session-draft-step-duration-mode-7")).toHaveValue("lap_button");
+    await expect(page.getByTestId("session-draft-step-target-mode-7")).toHaveValue("none");
   });
 });
