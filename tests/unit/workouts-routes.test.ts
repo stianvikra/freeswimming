@@ -210,7 +210,9 @@ describe("workouts routes", () => {
         id: "step-1",
         category: "swim",
         name: "Pace hold",
-        stroke: "freestyle",
+        stroke: "backstroke",
+        drillType: "pull",
+        equipment: "fins",
         intensity: "moderate",
         durationMode: "distance",
         distanceM: 400,
@@ -289,7 +291,14 @@ describe("workouts routes", () => {
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
         source_kind: "manual",
+        allowed_strokes: ["freestyle", "backstroke"],
+        equipment_allowlist: ["kickboard", "fins"],
         steps: expect.arrayContaining([
+          expect.objectContaining({
+            stroke: "backstroke",
+            drillType: "pull",
+            equipment: "fins",
+          }),
           expect.objectContaining({
             durationMode: "fixed_rest",
             timeMin: 0.5,

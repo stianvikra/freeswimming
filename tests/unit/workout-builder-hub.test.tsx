@@ -158,6 +158,15 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-step-name-1"), {
       target: { value: "Repeat swim focus" },
     });
+    fireEvent.change(screen.getByTestId("session-draft-step-stroke-1"), {
+      target: { value: "backstroke" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-drill-type-1"), {
+      target: { value: "pull" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-equipment-1"), {
+      target: { value: "fins" },
+    });
     fireEvent.change(screen.getByTestId("session-draft-step-target-mode-1"), {
       target: { value: "css_target_pace" },
     });
@@ -187,11 +196,19 @@ describe("WorkoutBuilderHub", () => {
     expect(repeatSteps).toHaveLength(2);
     expect(repeatSteps.every((step) => step.repeatCount === 6)).toBe(true);
     expect(repeatSteps[0]).toMatchObject({
+      stroke: "backstroke",
+      drillType: "pull",
+      equipment: "fins",
       targetMode: "css_target_pace",
       cssTargetOffsetSeconds: 2,
     });
+    expect(fetchBody.draft.allowedStrokes).toContain("backstroke");
+    expect(fetchBody.draft.equipmentAllowlist).toContain("fins");
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Builder edited workout");
     expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim focus");
+    expect(screen.getByTestId("session-draft-step-stroke-1")).toHaveValue("backstroke");
+    expect(screen.getByTestId("session-draft-step-drill-type-1")).toHaveValue("pull");
+    expect(screen.getByTestId("session-draft-step-equipment-1")).toHaveValue("fins");
     expect(screen.getByTestId("session-draft-step-target-mode-1")).toHaveValue("css_target_pace");
   });
 

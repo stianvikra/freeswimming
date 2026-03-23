@@ -4,9 +4,12 @@ import Link from "next/link";
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
+  SESSION_DRAFT_STEP_DRILL_TYPES,
   SESSION_DRAFT_STEP_DURATION_MODES,
+  SESSION_DRAFT_STEP_EQUIPMENT,
   SESSION_DRAFT_REPEAT_MAX,
   SESSION_DRAFT_REPEAT_MIN,
+  SESSION_DRAFT_STEP_STROKES,
   SESSION_DRAFT_STEP_TARGET_MODES,
   SESSION_GENERATOR_ENVIRONMENTS,
   SESSION_GENERATOR_EFFORT_PRESETS,
@@ -23,6 +26,9 @@ import {
   getSessionEnvironmentLabel,
   getSessionEquipmentLabel,
   getSessionStepCategoryLabel,
+  getSessionStepDrillTypeLabel,
+  getSessionStepEquipmentLabel,
+  getSessionStepStrokeLabel,
   getSessionStepDurationModeLabel,
   getSessionStepTargetModeLabel,
   getSessionStrokeLabel,
@@ -81,6 +87,8 @@ function buildBlankStep(
     category: "main",
     name: "Custom step",
     stroke: "choice",
+    drillType: "none",
+    equipment: "none",
     intensity: "moderate",
     durationMode: "distance",
     distanceM: 100,
@@ -170,10 +178,22 @@ function buildDurationSummary(step: SessionDraftStep) {
 
 function buildStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
   const structuredTarget = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
+  const contextParts = [getSessionStepStrokeLabel(step.stroke)];
+
+  if (step.drillType && step.drillType !== "none") {
+    const drillLabel = getSessionStepDrillTypeLabel(step.drillType);
+    if (!(step.stroke === "drill" && drillLabel === "Drill")) {
+      contextParts.push(drillLabel);
+    }
+  }
+
+  if (step.equipment && step.equipment !== "none") {
+    contextParts.push(getSessionStepEquipmentLabel(step.equipment));
+  }
 
   return [
     buildDurationSummary(step),
-    getSessionStrokeLabel(step.stroke),
+    contextParts.join(" · "),
     structuredTarget ?? getSessionEffortLabel(step.intensity),
   ]
     .filter(Boolean)
@@ -276,18 +296,61 @@ export default function WorkoutEditor({
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const stepGroups = buildStepRenderGroups(draft.steps);
 
+  function syncDraftSelections(nextDraft: SessionDraft) {
+    const requiredStrokes = Array.from(
+      new Set(
+        nextDraft.steps
+          .map((step) => step.stroke)
+          .filter((stroke): stroke is SessionGeneratorStroke =>
+            SESSION_GENERATOR_STROKES.includes(stroke as SessionGeneratorStroke)
+          )
+      )
+    );
+    const requiredEquipment = Array.from(
+      new Set(
+        nextDraft.steps
+          .map((step) => step.equipment)
+          .filter((value): value is (typeof SESSION_GENERATOR_EQUIPMENT)[number] =>
+            SESSION_GENERATOR_EQUIPMENT.includes(
+              value as (typeof SESSION_GENERATOR_EQUIPMENT)[number]
+            )
+          )
+      )
+    );
+
+    return {
+      ...nextDraft,
+      allowedStrokes: Array.from(new Set([...nextDraft.allowedStrokes, ...requiredStrokes])),
+      equipmentAllowlist: Array.from(
+        new Set([...nextDraft.equipmentAllowlist, ...requiredEquipment])
+      ),
+    };
+  }
+
+  function stepUsesAllowedStroke(stroke: SessionGeneratorStroke) {
+    return draft.steps.some((step) => step.stroke === stroke);
+  }
+
+  function stepUsesEquipment(item: (typeof SESSION_GENERATOR_EQUIPMENT)[number]) {
+    return draft.steps.some((step) => step.equipment === item);
+  }
+
   function updateDraft<K extends keyof SessionDraft>(key: K, value: SessionDraft[K]) {
-    onDraftChange({
-      ...draft,
-      [key]: value,
-    });
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        [key]: value,
+      })
+    );
   }
 
   function updateDraftStep(stepId: string, updater: (step: SessionDraftStep) => SessionDraftStep) {
-    onDraftChange({
-      ...draft,
-      steps: draft.steps.map((step) => (step.id === stepId ? updater(step) : step)),
-    });
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: draft.steps.map((step) => (step.id === stepId ? updater(step) : step)),
+      })
+    );
   }
 
   function moveDraftGroup(groupIndex: number, direction: -1 | 1) {
@@ -298,54 +361,66 @@ export default function WorkoutEditor({
     const [group] = nextGroups.splice(groupIndex, 1);
     nextGroups.splice(nextGroupIndex, 0, group);
 
-    onDraftChange({
-      ...draft,
-      steps: nextGroups.flatMap((group) => group.entries.map((entry) => entry.step)),
-    });
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: nextGroups.flatMap((group) => group.entries.map((entry) => entry.step)),
+      })
+    );
   }
 
   function addStep() {
-    onDraftChange({
-      ...draft,
-      steps: [...draft.steps, buildBlankStep(draft.steps.length + 1)],
-    });
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: [...draft.steps, buildBlankStep(draft.steps.length + 1)],
+      })
+    );
   }
 
   function addRepeat() {
-    onDraftChange({
-      ...draft,
-      steps: [...draft.steps, ...buildRepeatStarterSteps(draft.steps.length + 1)],
-    });
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: [...draft.steps, ...buildRepeatStarterSteps(draft.steps.length + 1)],
+      })
+    );
   }
 
   function removeStep(stepId: string) {
-    onDraftChange({
-      ...draft,
-      steps: draft.steps.filter((step) => step.id !== stepId),
-    });
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: draft.steps.filter((step) => step.id !== stepId),
+      })
+    );
   }
 
   function removeRepeatGroup(repeatGroupId: string) {
-    onDraftChange({
-      ...draft,
-      steps: draft.steps.filter((step) => step.repeatGroupId !== repeatGroupId),
-    });
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: draft.steps.filter((step) => step.repeatGroupId !== repeatGroupId),
+      })
+    );
   }
 
   function updateRepeatGroupCount(repeatGroupId: string, value: string) {
     const nextRepeatCount = parsePositiveInteger(value);
 
-    onDraftChange({
-      ...draft,
-      steps: draft.steps.map((step) =>
-        step.repeatGroupId === repeatGroupId
-          ? {
-              ...step,
-              repeatCount: nextRepeatCount,
-            }
-          : step
-      ),
-    });
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: draft.steps.map((step) =>
+          step.repeatGroupId === repeatGroupId
+            ? {
+                ...step,
+                repeatCount: nextRepeatCount,
+              }
+            : step
+        ),
+      })
+    );
   }
 
   function updateStepTargetPace(stepId: string, nextPart: "minutes" | "seconds", rawValue: string) {
@@ -502,19 +577,69 @@ export default function WorkoutEditor({
           <label className="text-sm text-slate-700">
             Stroke
             <select
-              value={step.stroke}
+              value={step.stroke ?? "choice"}
+              onChange={(event) => {
+                const nextStroke = event.target.value as SessionDraftStep["stroke"];
+
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  stroke: nextStroke,
+                  drillType:
+                    nextStroke === "drill"
+                      ? current.drillType && current.drillType !== "none"
+                        ? current.drillType
+                        : "drill"
+                      : (current.drillType ?? "none"),
+                }));
+              }}
+              data-testid={`session-draft-step-stroke-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_DRAFT_STEP_STROKES.map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStepStrokeLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm text-slate-700">
+            Drill focus
+            <select
+              value={step.drillType ?? "none"}
               onChange={(event) =>
                 updateDraftStep(step.id, (current) => ({
                   ...current,
-                  stroke: event.target.value as SessionDraftStep["stroke"],
+                  drillType: event.target.value as NonNullable<SessionDraftStep["drillType"]>,
                 }))
               }
+              data-testid={`session-draft-step-drill-type-${index}`}
               className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             >
-              <option value="choice">Stroke choice</option>
-              {SESSION_GENERATOR_STROKES.map((value) => (
+              {SESSION_DRAFT_STEP_DRILL_TYPES.map((value) => (
                 <option key={value} value={value}>
-                  {getSessionStrokeLabel(value)}
+                  {getSessionStepDrillTypeLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm text-slate-700">
+            Equipment
+            <select
+              value={step.equipment ?? "none"}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  equipment: event.target.value as NonNullable<SessionDraftStep["equipment"]>,
+                }))
+              }
+              data-testid={`session-draft-step-equipment-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_DRAFT_STEP_EQUIPMENT.map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStepEquipmentLabel(value)}
                 </option>
               ))}
             </select>
@@ -993,11 +1118,15 @@ export default function WorkoutEditor({
                   type="checkbox"
                   checked={draft.allowedStrokes.includes(stroke)}
                   onChange={() => toggleDraftStroke(stroke)}
+                  disabled={stepUsesAllowedStroke(stroke)}
                 />
                 {getSessionStrokeLabel(stroke)}
               </label>
             ))}
           </div>
+          <p className="mt-3 text-xs text-slate-500">
+            Strokes already used on a step stay selected here until those steps change.
+          </p>
         </fieldset>
 
         <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:col-span-2">
@@ -1009,11 +1138,15 @@ export default function WorkoutEditor({
                   type="checkbox"
                   checked={draft.equipmentAllowlist.includes(item)}
                   onChange={() => toggleDraftEquipment(item)}
+                  disabled={stepUsesEquipment(item)}
                 />
                 {getSessionEquipmentLabel(item)}
               </label>
             ))}
           </div>
+          <p className="mt-3 text-xs text-slate-500">
+            Equipment used on a step stays selected here until those step details change.
+          </p>
         </fieldset>
       </div>
 

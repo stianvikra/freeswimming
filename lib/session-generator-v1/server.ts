@@ -5,7 +5,7 @@ import {
   formatPoolLengthLabel,
   getSessionEffortLabel,
   getSessionEnvironmentLabel,
-  getSessionStrokeLabel,
+  getSessionStepStrokeLabel,
   getSessionTypeLabel,
   roundDistanceForEnvironment,
   type SessionDraft,
@@ -646,7 +646,7 @@ export function buildSessionDraftSummary(draft: SessionDraft) {
     draft.usedCssPaceLabel ? `CSS ${draft.usedCssPaceLabel}/100m` : "Fallback pace guidance",
     draft.steps.length > 0
       ? `Steps: ${draft.steps
-          .map((step) => `${step.name} (${getSessionStrokeLabel(step.stroke)})`)
+          .map((step) => `${step.name} (${getSessionStepStrokeLabel(step.stroke)})`)
           .join(" · ")}`
       : null,
   ]

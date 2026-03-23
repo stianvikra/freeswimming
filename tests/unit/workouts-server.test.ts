@@ -268,6 +268,43 @@ describe("workouts server", () => {
     expect(insert.estimated_duration_min).toBe(7);
   });
 
+  it("keeps step-level stroke, drill, and equipment context canonical on save", () => {
+    const contextDraft: SessionDraft = {
+      ...buildDraft(),
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: [],
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Pull focus backstroke",
+          stroke: "backstroke",
+          drillType: "pull",
+          equipment: "fins",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 300,
+          timeMin: null,
+          targetMode: "effort",
+          effortTarget: "moderate",
+          targetSummary: "Backstroke pull focus with fins.",
+          notes: "Hold posture and timing.",
+        },
+      ],
+    };
+
+    const insert = buildWorkoutInsert("user-1", contextDraft, "manual");
+    const savedSteps = insert.steps as unknown as SessionDraft["steps"];
+
+    expect(insert.allowed_strokes).toEqual(["freestyle", "backstroke"]);
+    expect(insert.equipment_allowlist).toEqual(["fins"]);
+    expect(savedSteps[0]).toMatchObject({
+      stroke: "backstroke",
+      drillType: "pull",
+      equipment: "fins",
+    });
+  });
+
   it("maps persisted workout rows back into editor and summary records", () => {
     const row = buildWorkoutRow();
 
