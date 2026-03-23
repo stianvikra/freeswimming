@@ -136,6 +136,7 @@ describe("workouts server", () => {
     expect(insert.title).toBe("Manual pool workout");
     expect(Array.isArray(insert.steps)).toBe(true);
     expect(starter.steps.some((step) => step.category === "rest")).toBe(true);
+    expect(starter.steps.some((step) => step.durationMode === "fixed_rest")).toBe(true);
   });
 
   it("persists repeat metadata and multiplies totals from grouped repeat steps", () => {
@@ -210,6 +211,61 @@ describe("workouts server", () => {
     expect(insert.estimated_duration_min).toBeGreaterThan(0);
     expect(repeatSteps).toHaveLength(2);
     expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
+  });
+
+  it("uses structured pace targets and fixed rest when computing workout totals", () => {
+    const targetDraft: SessionDraft = {
+      ...buildDraft(),
+      title: "Pace-aware workout",
+      titleSuggestions: ["Pace-aware workout"],
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Pace reps",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 400,
+          timeMin: null,
+          targetMode: "target_pace",
+          targetPaceSecondsPer100m: 90,
+          targetSummary: "Hold 1:30/100m pace.",
+          notes: "Controlled but precise.",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Reset rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 1,
+          targetMode: "none",
+          targetSummary: "Fixed 1 minute rest.",
+          notes: "Reset between rounds.",
+        },
+        {
+          id: "step-3",
+          category: "rest",
+          name: "Open reset",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "lap_button",
+          distanceM: null,
+          timeMin: null,
+          targetMode: "none",
+          targetSummary: "Open rest until ready.",
+          notes: "Advance manually when ready.",
+        },
+      ],
+    };
+
+    const insert = buildWorkoutInsert("user-1", targetDraft, "manual");
+
+    expect(insert.total_distance_m).toBe(400);
+    expect(insert.estimated_duration_min).toBe(7);
   });
 
   it("maps persisted workout rows back into editor and summary records", () => {

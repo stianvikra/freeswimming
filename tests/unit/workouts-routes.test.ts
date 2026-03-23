@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase/route-handler", () => ({
 
 import { PATCH as patchWorkout } from "@/app/api/my-library/workouts/[workoutId]/route";
 import { POST as postWorkout } from "@/app/api/my-library/workouts/route";
+import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import type { Database } from "@/types/database";
 
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
@@ -68,7 +69,10 @@ function buildWorkoutRow(overrides?: Partial<WorkoutRow>): WorkoutRow {
   };
 }
 
-function buildDraftBody(overrides?: Partial<{ sourceKind: "ai_session_v1" | "manual" }>) {
+function buildDraftBody(overrides?: Partial<{ sourceKind: "ai_session_v1" | "manual" }>): {
+  sourceKind: "ai_session_v1" | "manual";
+  draft: SessionDraft;
+} {
   return {
     sourceKind: "ai_session_v1" as const,
     draft: {
@@ -198,10 +202,57 @@ describe("workouts routes", () => {
   });
 
   it("creates manual canonical workouts when the request source kind is manual", async () => {
+    const body = buildDraftBody({ sourceKind: "manual" });
+    body.draft.title = "Manual pool workout";
+    body.draft.titleSuggestions = ["Manual pool workout"];
+    body.draft.steps = [
+      {
+        id: "step-1",
+        category: "swim",
+        name: "Pace hold",
+        stroke: "freestyle",
+        intensity: "moderate",
+        durationMode: "distance",
+        distanceM: 400,
+        timeMin: null,
+        targetMode: "css_target_pace",
+        cssTargetOffsetSeconds: 2,
+        targetSummary: "Hold CSS +2 seconds.",
+        notes: "Stay controlled.",
+      },
+      {
+        id: "step-2",
+        category: "rest",
+        name: "Fixed reset",
+        stroke: "choice",
+        intensity: "easy",
+        durationMode: "fixed_rest",
+        distanceM: null,
+        timeMin: 0.5,
+        targetMode: "none",
+        targetSummary: "Short reset.",
+        notes: "Breathe and restart.",
+      },
+      {
+        id: "step-3",
+        category: "rest",
+        name: "Open reset",
+        stroke: "choice",
+        intensity: "easy",
+        durationMode: "lap_button",
+        distanceM: null,
+        timeMin: null,
+        targetMode: "none",
+        targetSummary: "Advance manually when ready.",
+        notes: "Lap button rest.",
+      },
+    ];
+
     const single = vi.fn().mockResolvedValue({
       data: buildWorkoutRow({
         source_kind: "manual",
         title: "Manual pool workout",
+        steps: body.draft.steps as WorkoutRow["steps"],
       }),
       error: null,
     });
@@ -225,7 +276,7 @@ describe("workouts routes", () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(buildDraftBody({ sourceKind: "manual" })),
+        body: JSON.stringify(body),
       })
     );
     const payload = (await response.json()) as {
@@ -238,10 +289,75 @@ describe("workouts routes", () => {
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
         source_kind: "manual",
+        steps: expect.arrayContaining([
+          expect.objectContaining({
+            durationMode: "fixed_rest",
+            timeMin: 0.5,
+            targetMode: "none",
+          }),
+          expect.objectContaining({
+            durationMode: "lap_button",
+            timeMin: null,
+            targetMode: "none",
+          }),
+          expect.objectContaining({
+            durationMode: "distance",
+            targetMode: "css_target_pace",
+            cssTargetOffsetSeconds: 2,
+          }),
+        ]),
       })
     );
     expect(payload.ok).toBe(true);
     expect(payload.summary.title).toBe("Manual pool workout");
+  });
+
+  it("rejects structured target steps that are missing target pace metadata", async () => {
+    const insert = vi.fn();
+    const from = vi.fn().mockReturnValue({ insert });
+    const body = buildDraftBody({ sourceKind: "manual" });
+
+    body.draft.steps = [
+      {
+        id: "step-1",
+        category: "main",
+        name: "Broken pace step",
+        stroke: "freestyle",
+        intensity: "moderate",
+        durationMode: "distance",
+        distanceM: 200,
+        timeMin: null,
+        targetMode: "target_pace",
+        targetSummary: "Should fail without a pace.",
+        notes: "Missing pace metadata.",
+      },
+    ];
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postWorkout(
+      new Request("http://127.0.0.1:3000/api/my-library/workouts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
+    );
+    const payload = (await response.json()) as { ok: false; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toContain("needs a target pace");
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it("rejects non-contiguous repeat blocks before mutating canonical workouts", async () => {

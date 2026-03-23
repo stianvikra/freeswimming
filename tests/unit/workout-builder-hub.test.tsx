@@ -158,6 +158,12 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-step-name-1"), {
       target: { value: "Repeat swim focus" },
     });
+    fireEvent.change(screen.getByTestId("session-draft-step-target-mode-1"), {
+      target: { value: "css_target_pace" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-css-offset-1"), {
+      target: { value: "2" },
+    });
     fireEvent.click(screen.getByTestId("workout-builder-save"));
 
     await waitFor(() => {
@@ -180,8 +186,13 @@ describe("WorkoutBuilderHub", () => {
 
     expect(repeatSteps).toHaveLength(2);
     expect(repeatSteps.every((step) => step.repeatCount === 6)).toBe(true);
+    expect(repeatSteps[0]).toMatchObject({
+      targetMode: "css_target_pace",
+      cssTargetOffsetSeconds: 2,
+    });
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Builder edited workout");
     expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim focus");
+    expect(screen.getByTestId("session-draft-step-target-mode-1")).toHaveValue("css_target_pace");
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {

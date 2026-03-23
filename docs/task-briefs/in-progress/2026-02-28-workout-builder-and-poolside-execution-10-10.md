@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-22`
+- `updated`: `2026-03-23`
 
 ## Goal
 
@@ -20,7 +20,8 @@ Ship a Garmin-familiar manual session builder and poolside execution experience 
   - link accepted AI workouts into that dedicated route from Generator Intake and My Library,
   - add first-party manual blank-workout creation into the canonical builder flow with a truthful `manual` source kind and a sensible starter scaffold,
   - add first-class repeat scaffolds with canonical repeat metadata and grouped builder controls,
-  - keep send-off/CSS-send-off authoring, richer target modes, and poolside execution deferred until the repeat contract is stable.
+  - add the first Garmin-familiar structured step modes for `fixed rest`, `lap button press`, `target pace`, and `CSS-based target pace`,
+  - keep send-off/CSS-send-off authoring, drill/equipment editing, and poolside execution deferred until the richer step contract is stable.
 
 - Manual workout/session authoring for user-built training sessions.
 - Editing surface for accepted single-session AI drafts after they become canonical workouts, without moving generation logic into this brief.
@@ -184,3 +185,5 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-22 | perf trend decision: hold | \`npm run verify:pre-pr\` reported two consecutive weekly green perf-budget runs and recommended tightening one stretch target step; decision is \`hold\` for this manual-builder slice because it does not change the public budget routes governed by AW-010, so the tighten choice should be recorded again in PR handoff and revisited in the next perf-focused checkpoint | next: keep builder implementation moving while carrying the AW-010 tighten/hold note forward`
 - `2026-03-23 | working tree | added the next builder slice: workout steps can now carry canonical repeat metadata, the editor exposes a grouped `Add Repeat` scaffold with repeat-count controls and group-safe movement, and targeted unit + desktop e2e validation for repeat save/load behavior is green | next: run full \`verify:pre-pr\`, then commit/push/open the PR if the repo gate stays green`
 - `2026-03-23 | perf trend decision: hold | \`npm run verify:pre-pr\` reported three consecutive weekly green perf-budget runs and recommended tightening one stretch target step; decision is \`hold\` for this repeat-block builder slice because it does not materially change the public perf-budget routes owned by AW-010 | next: carry the same tighten/hold note into PR handoff and revisit tightening in the next perf-focused checkpoint`
+- `2026-03-23 | working tree | added the next builder slice: workout steps now support canonical `fixed_rest`and`lap_button`duration modes plus structured`effort`, `target_pace`, and `css_target_pace` targets; the editor exposes these modes directly, route validation rejects incomplete target metadata, and targeted unit + desktop e2e coverage are green | next: carry the green \`verify:pre-pr\` evidence into commit/push/PR handoff for this slice`
+- `2026-03-23 | perf trend decision: hold | \`npm run verify:pre-pr\` again reported the AW-010 tighten recommendation after another green perf-budget run; decision remains \`hold\` for this builder-step-mode slice because it does not materially change the public perf-budget routes owned by AW-010 | next: record the same hold rationale in PR handoff and revisit tightening at the next perf-focused checkpoint`
