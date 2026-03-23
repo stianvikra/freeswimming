@@ -173,6 +173,7 @@ test.describe("my library generator intake", () => {
     await expect(titleInput).toBeVisible();
     await titleInput.fill("QA edited session draft");
 
+    await page.getByTestId("session-draft-step-toggle-0").click();
     const firstStepName = page.getByTestId("session-draft-step-name-0");
     await firstStepName.fill("QA warmup block");
     await titleInput.fill(uniqueTitle);

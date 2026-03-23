@@ -321,6 +321,8 @@ describe("SessionGeneratorPanel", () => {
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "My edited threshold draft" },
     });
+    expect(screen.queryByTestId("session-draft-step-name-0")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
     fireEvent.change(screen.getByTestId("session-draft-step-name-0"), {
       target: { value: "Gentle warmup swim" },
     });
