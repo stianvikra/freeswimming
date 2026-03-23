@@ -154,12 +154,22 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-pool-length-input"), {
       target: { value: "33.33" },
     });
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.change(screen.getByTestId("session-draft-step-distance-0"), {
+      target: { value: "custom" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-distance-custom-0"), {
+      target: { value: "333" },
+    });
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
     fireEvent.change(screen.getByLabelText("Repeat count"), {
       target: { value: "6" },
     });
     fireEvent.change(screen.getByTestId("session-draft-step-name-1"), {
       target: { value: "Repeat swim focus" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-distance-1"), {
+      target: { value: "200" },
     });
     fireEvent.change(screen.getByTestId("session-draft-step-stroke-1"), {
       target: { value: "backstroke" },
@@ -219,7 +229,12 @@ describe("WorkoutBuilderHub", () => {
     expect(repeatSteps).toHaveLength(2);
     expect(repeatSteps.every((step) => step.repeatCount === 6)).toBe(true);
     expect(fetchBody.draft.poolLengthM).toBe(33.33);
+    expect(fetchBody.draft.steps[0]).toMatchObject({
+      durationMode: "distance",
+      distanceM: 333,
+    });
     expect(repeatSteps[0]).toMatchObject({
+      distanceM: 200,
       stroke: "backstroke",
       drillType: "pull",
       equipment: "fins",
@@ -238,8 +253,12 @@ describe("WorkoutBuilderHub", () => {
     expect(fetchBody.draft.allowedStrokes).toContain("backstroke");
     expect(fetchBody.draft.equipmentAllowlist).toContain("fins");
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Builder edited workout");
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    expect(screen.getByTestId("session-draft-step-distance-0")).toHaveValue("custom");
+    expect(screen.getByTestId("session-draft-step-distance-custom-0")).toHaveValue("333");
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-1"));
     expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim focus");
+    expect(screen.getByTestId("session-draft-step-distance-1")).toHaveValue("200");
     expect(screen.getByTestId("session-draft-step-stroke-1")).toHaveValue("backstroke");
     expect(screen.getByTestId("session-draft-step-drill-type-1")).toHaveValue("pull");
     expect(screen.getByTestId("session-draft-step-equipment-1")).toHaveValue("fins");

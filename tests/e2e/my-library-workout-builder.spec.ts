@@ -77,9 +77,13 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveCount(0);
 
     await page.getByTestId("session-draft-pool-length-input").fill("33.33");
+    await page.getByTestId("session-draft-step-toggle-0").click();
+    await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
+    await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
     await page.getByTestId("session-draft-add-repeat").click();
     await page.getByTestId("session-draft-repeat-count-5").fill("6");
     await page.getByTestId("session-draft-step-name-5").fill("Repeat swim focus");
+    await page.getByTestId("session-draft-step-distance-5").selectOption("200");
     await page.getByTestId("session-draft-step-stroke-5").selectOption("backstroke");
     await page.getByTestId("session-draft-step-drill-type-5").selectOption("pull");
     await page.getByTestId("session-draft-step-equipment-5").selectOption("fins");
@@ -113,9 +117,13 @@ test.describe("my library workout builder", () => {
     await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
     await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("33.33");
+    await page.getByTestId("session-draft-step-toggle-0").click();
+    await expect(page.getByTestId("session-draft-step-distance-0")).toHaveValue("custom");
+    await expect(page.getByTestId("session-draft-step-distance-custom-0")).toHaveValue("333");
     await expect(page.getByTestId("session-draft-repeat-count-5")).toHaveValue("6");
     await page.getByTestId("session-draft-step-toggle-5").click();
     await expect(page.getByTestId("session-draft-step-name-5")).toHaveValue("Repeat swim focus");
+    await expect(page.getByTestId("session-draft-step-distance-5")).toHaveValue("200");
     await expect(page.getByTestId("session-draft-step-stroke-5")).toHaveValue("backstroke");
     await expect(page.getByTestId("session-draft-step-drill-type-5")).toHaveValue("pull");
     await expect(page.getByTestId("session-draft-step-equipment-5")).toHaveValue("fins");

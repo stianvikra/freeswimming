@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
+  SESSION_DRAFT_STEP_DISTANCE_PRESETS,
   SESSION_DRAFT_STEP_DRILL_TYPES,
   SESSION_DRAFT_POOL_LENGTH_MAX,
   SESSION_DRAFT_POOL_LENGTH_MIN,
@@ -24,6 +25,7 @@ import {
   buildSessionStepStructuredTargetLabel,
   buildSessionTargetSummary,
   computeSessionDraftDerivedTotals,
+  formatDistanceMetersLabel,
   formatPaceSecondsPer100m,
   formatPoolLengthLabel,
   getSessionEffortLabel,
@@ -38,6 +40,7 @@ import {
   getSessionStrokeLabel,
   getSessionTypeLabel,
   isSessionDraftPoolLengthPreset,
+  isSessionDraftStepDistancePreset,
   type SessionDraft,
   type SessionDraftStep,
   type SessionDraftStepCategory,
@@ -81,6 +84,8 @@ type StepRenderGroup =
       repeatCount: number | null;
       entries: StepRenderEntry[];
     };
+
+const CUSTOM_DISTANCE_VALUE = "custom";
 
 function buildBlankStep(
   index: number,
@@ -143,6 +148,11 @@ function parsePoolLengthInput(value: string) {
 function formatEditablePoolLength(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
   return value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function formatEditableDistance(value: number | null | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
+  return String(Math.round(value));
 }
 
 function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
@@ -606,6 +616,18 @@ export default function WorkoutEditor({
     });
   }
 
+  function updateStepDistanceSelection(stepId: string, value: string) {
+    updateDraftStep(stepId, (current) => ({
+      ...current,
+      distanceM:
+        value === CUSTOM_DISTANCE_VALUE
+          ? isSessionDraftStepDistancePreset(current.distanceM ?? Number.NaN)
+            ? null
+            : current.distanceM
+          : Number.parseInt(value, 10),
+    }));
+  }
+
   function toggleDraftStroke(stroke: SessionGeneratorStroke) {
     const exists = draft.allowedStrokes.includes(stroke);
     updateDraft(
@@ -877,22 +899,54 @@ export default function WorkoutEditor({
             </label>
 
             {step.durationMode === "distance" ? (
-              <label className="text-sm text-slate-700">
-                Distance (m)
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={step.distanceM ?? ""}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      distanceM: parsePositiveNumber(event.target.value),
-                    }))
-                  }
-                  data-testid={`session-draft-step-distance-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-              </label>
+              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                <label className="text-sm text-slate-700">
+                  Distance
+                  <select
+                    value={
+                      typeof step.distanceM === "number" &&
+                      isSessionDraftStepDistancePreset(step.distanceM)
+                        ? String(step.distanceM)
+                        : CUSTOM_DISTANCE_VALUE
+                    }
+                    onChange={(event) => updateStepDistanceSelection(step.id, event.target.value)}
+                    data-testid={`session-draft-step-distance-${index}`}
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    {SESSION_DRAFT_STEP_DISTANCE_PRESETS.map((value) => (
+                      <option key={value} value={String(value)}>
+                        {formatDistanceMetersLabel(value)}
+                      </option>
+                    ))}
+                    <option value={CUSTOM_DISTANCE_VALUE}>Custom distance</option>
+                  </select>
+                </label>
+                {!(
+                  typeof step.distanceM === "number" &&
+                  isSessionDraftStepDistancePreset(step.distanceM)
+                ) ? (
+                  <label className="text-sm text-slate-700">
+                    Custom distance (m)
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={formatEditableDistance(step.distanceM)}
+                      onChange={(event) =>
+                        updateDraftStep(step.id, (current) => ({
+                          ...current,
+                          distanceM: parsePositiveInteger(event.target.value),
+                        }))
+                      }
+                      data-testid={`session-draft-step-distance-custom-${index}`}
+                      className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                ) : (
+                  <div className="self-end text-sm text-slate-500">
+                    {formatDistanceMetersLabel(step.distanceM)}
+                  </div>
+                )}
+              </div>
             ) : step.durationMode === "time" || step.durationMode === "fixed_rest" ? (
               <label className="text-sm text-slate-700">
                 {step.durationMode === "fixed_rest" ? "Rest time (min)" : "Time (min)"}

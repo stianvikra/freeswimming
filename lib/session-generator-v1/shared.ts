@@ -81,6 +81,9 @@ export const SESSION_DRAFT_STEP_TARGET_MODES = [
 export const SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS = [
   -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5,
 ] as const;
+export const SESSION_DRAFT_STEP_DISTANCE_PRESETS = [
+  25, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500,
+] as const;
 export const SESSION_DRAFT_REPEAT_MIN = 2;
 export const SESSION_DRAFT_REPEAT_MAX = 20;
 export const SESSION_DRAFT_POOL_LENGTH_PRESETS = [
@@ -103,6 +106,7 @@ export type SessionDraftStepEquipment = (typeof SESSION_DRAFT_STEP_EQUIPMENT)[nu
 export type SessionDraftStepCategory = (typeof SESSION_DRAFT_STEP_CATEGORIES)[number];
 export type SessionDraftStepDurationMode = (typeof SESSION_DRAFT_STEP_DURATION_MODES)[number];
 export type SessionDraftStepTargetMode = (typeof SESSION_DRAFT_STEP_TARGET_MODES)[number];
+export type SessionDraftStepDistancePreset = (typeof SESSION_DRAFT_STEP_DISTANCE_PRESETS)[number];
 export type SessionDraftPoolLength = number;
 
 export type SessionGeneratorFormState = {
@@ -343,6 +347,10 @@ export function formatPoolLengthLabel(value: number) {
   return `${value.toFixed(2).replace(/\.?0+$/, "")}m`;
 }
 
+export function formatDistanceMetersLabel(value: number) {
+  return `${Math.round(value)}m`;
+}
+
 export function normalizeSessionDraftPoolLength(value: unknown): SessionDraft["poolLengthM"] {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return null;
@@ -360,6 +368,12 @@ export function isSessionDraftPoolLengthPreset(
   value: number
 ): value is SessionDraftPoolLengthPreset {
   return SESSION_DRAFT_POOL_LENGTH_PRESETS.includes(value as SessionDraftPoolLengthPreset);
+}
+
+export function isSessionDraftStepDistancePreset(
+  value: number
+): value is SessionDraftStepDistancePreset {
+  return SESSION_DRAFT_STEP_DISTANCE_PRESETS.includes(value as SessionDraftStepDistancePreset);
 }
 
 export function formatPaceSecondsPer100m(value: number) {
