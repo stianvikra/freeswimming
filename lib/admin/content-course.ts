@@ -203,6 +203,16 @@ export function toPublishedCourseModules(
   const moduleIdByRowId = new Map(
     normalizedModuleEntries.map((entry) => [entry.row.id, entry.moduleId])
   );
+  const fallbackLessonById = new Map<string, CourseLesson>();
+  for (const fallbackModule of fallback) {
+    for (const lesson of fallbackModule.lessons) {
+      for (const id of [lesson.id, ...(lesson.legacyIds ?? [])]) {
+        if (!fallbackLessonById.has(id)) {
+          fallbackLessonById.set(id, lesson);
+        }
+      }
+    }
+  }
   const seenLessonIds = new Set<string>();
 
   for (const row of lessonRows) {
@@ -223,6 +233,7 @@ export function toPublishedCourseModules(
     const targetModule = moduleById.get(moduleId);
     if (!targetModule) continue;
 
+    const fallbackLesson = fallbackLessonById.get(lessonId);
     const cues = getStringArray(body.cues);
     const commonMistakes = getStringArray(body.commonMistakes);
     const tags = getStringArray(body.tags);
@@ -248,7 +259,8 @@ export function toPublishedCourseModules(
       display: normalizeLessonDisplay(body.display),
       goal: getString(body.goal) ?? row.summary ?? "Refine your freestyle.",
       cues: cues.length > 0 ? cues : ["Swim relaxed and controlled."],
-      commonMistakes: commonMistakes.length > 0 ? commonMistakes : [],
+      commonMistakes:
+        commonMistakes.length > 0 ? commonMistakes : (fallbackLesson?.commonMistakes ?? []),
       drill: normalizeDrill(body.drill, safeFallbackDrill),
       nextStep: getString(body.nextStep) ?? "Continue to the next lesson.",
       tags: tags.length > 0 ? tags : undefined,

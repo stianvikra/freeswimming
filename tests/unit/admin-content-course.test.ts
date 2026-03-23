@@ -232,11 +232,14 @@ describe("toPublishedCourseModules", () => {
     );
 
     const mappedLesson = modules[0]?.lessons[0];
+    const fallbackLesson = COURSE_MODULES.flatMap((module) => module.lessons).find(
+      (lesson) => lesson.id === "kick-drills--kick-basics-support-not-speed"
+    );
     expect(mappedLesson?.id).toBe("kick-drills--kick-basics-support-not-speed");
     expect(mappedLesson?.title).toBe("Kick Basics mapped");
     expect(mappedLesson?.youtubeId).toBe("Xh6OblO06LY");
     expect(mappedLesson?.cues).toEqual(["Swim relaxed and controlled."]);
-    expect(mappedLesson?.commonMistakes).toEqual([]);
+    expect(mappedLesson?.commonMistakes).toEqual(fallbackLesson?.commonMistakes);
     expect(mappedLesson?.drill).toEqual({
       title: "Technique drill",
       steps: ["Mapped summary fallback"],
