@@ -48,7 +48,11 @@ import {
   type SessionGeneratorEnvironment,
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
-import type { WorkoutEditorRecord, WorkoutSummary } from "@/lib/workouts/shared";
+import {
+  buildWorkoutGarminReadinessReport,
+  type WorkoutEditorRecord,
+  type WorkoutSummary,
+} from "@/lib/workouts/shared";
 
 type Props = {
   draft: SessionDraft;
@@ -438,6 +442,7 @@ export default function WorkoutEditor({
   saveButtonTestId = "session-generator-save",
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
+  const garminReadiness = buildWorkoutGarminReadinessReport(draft);
   const stepGroups = buildStepRenderGroups(draft.steps);
   const [openStepId, setOpenStepId] = useState<string | null>(null);
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
@@ -1564,6 +1569,71 @@ export default function WorkoutEditor({
         </div>
       ) : null}
 
+      <div
+        data-testid="workout-editor-garmin-readiness"
+        data-readiness-status={garminReadiness.status}
+        className={`rounded-2xl border p-4 ${
+          garminReadiness.status === "ready"
+            ? "border-emerald-200 bg-emerald-50/80"
+            : "border-amber-200 bg-amber-50/80"
+        }`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p
+              className={`text-xs font-semibold uppercase tracking-wide ${
+                garminReadiness.status === "ready" ? "text-emerald-700" : "text-amber-700"
+              }`}
+            >
+              Garmin/export readiness
+            </p>
+            <p
+              data-testid="workout-editor-garmin-readiness-summary"
+              className={`mt-2 text-sm font-medium ${
+                garminReadiness.status === "ready" ? "text-emerald-950" : "text-amber-950"
+              }`}
+            >
+              {garminReadiness.summary}
+            </p>
+            <p
+              className={`mt-1 text-sm ${
+                garminReadiness.status === "ready" ? "text-emerald-900" : "text-amber-900"
+              }`}
+            >
+              {garminReadiness.status === "ready"
+                ? "This workout stays inside the current Garmin-ready builder contract."
+                : "Builder save still works, but these are handoff warnings that should be reviewed before export or later Garmin delivery."}
+            </p>
+          </div>
+          <p
+            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+              garminReadiness.status === "ready"
+                ? "bg-white text-emerald-700"
+                : "bg-white text-amber-700"
+            }`}
+          >
+            {garminReadiness.status === "ready"
+              ? "Ready"
+              : `${garminReadiness.issues.length} review ${
+                  garminReadiness.issues.length === 1 ? "item" : "items"
+                }`}
+          </p>
+        </div>
+
+        {garminReadiness.issues.length > 0 ? (
+          <ul className="mt-3 space-y-2 text-sm text-amber-900">
+            {garminReadiness.issues.map((issue, index) => (
+              <li
+                key={issue.id}
+                data-testid={`workout-editor-garmin-readiness-issue-${index}`}
+              >
+                {issue.detail}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
@@ -2005,6 +2075,11 @@ export default function WorkoutEditor({
                 : "All builder changes are saved to the canonical workout."
               : "This draft still needs to be accepted into the canonical workout layer."}
           </p>
+          {garminReadiness.status === "review" ? (
+            <p className="mt-1 text-xs text-amber-700">
+              Review the Garmin/export notes above before you treat this workout as handoff-ready.
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {savedWorkout && onResetToSaved ? (

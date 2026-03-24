@@ -73,6 +73,13 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
     );
+    await expect(page.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
+      "data-readiness-status",
+      "ready"
+    );
+    await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
+      "Ready for the planned Garmin/export handoff."
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
     await page.getByTestId("session-draft-step-remove-0").click();
@@ -134,6 +141,22 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
     );
+    await expect(page.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
+      "data-readiness-status",
+      "review"
+    );
+    await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
+      "Review 5 Garmin/export mapping details before you treat this workout as handoff-ready."
+    );
+    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText(
+      "Pull"
+    );
+    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-1")).toContainText(
+      "Fins"
+    );
+    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-4")).toContainText(
+      "Reverse IM order (RIMO)"
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     const patchResponsePromise = page.waitForResponse(
@@ -152,6 +175,10 @@ test.describe("my library workout builder", () => {
     await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
+    );
+    await expect(page.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
+      "data-readiness-status",
+      "review"
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
