@@ -154,6 +154,13 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "All builder changes are saved to the canonical workout."
     );
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
+      "data-readiness-status",
+      "ready"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
+      "Ready for the planned Garmin/export handoff."
+    );
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeDisabled();
 
@@ -225,6 +232,23 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "Unsaved changes stay local until you save this workout."
     );
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
+      "data-readiness-status",
+      "review"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
+      "Review 3 Garmin/export mapping details before you treat this workout as handoff-ready."
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent(
+      "Pull"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent(
+      "Fins"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-2")).toHaveTextContent(
+      "IM by round"
+    );
+    expect(screen.getByText(/Review the Garmin\/export notes above/i)).toBeVisible();
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
 
@@ -244,6 +268,10 @@ describe("WorkoutBuilderHub", () => {
     });
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "All builder changes are saved to the canonical workout."
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
+      "data-readiness-status",
+      "review"
     );
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeDisabled();

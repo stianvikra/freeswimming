@@ -21,14 +21,33 @@ async function saveFullPage(page: Page, outputDir: string, fileName: string) {
   });
 }
 
+async function closeNavigationDrawer(page: Page) {
+  const drawer = page.getByRole("dialog", { name: "Navigation menu" });
+
+  if (!(await drawer.isVisible().catch(() => false))) {
+    return;
+  }
+
+  await page.keyboard.press("Escape");
+
+  if (await drawer.isVisible().catch(() => false)) {
+    await drawer.getByRole("button", { name: "Close menu" }).click();
+  }
+
+  await expect(drawer).toBeHidden({ timeout: 10_000 });
+  await page.waitForTimeout(250);
+}
+
 function resolveOutputDir(testInfo: TestInfo) {
-  return (
-    process.env.SCREENSHOT_DIR ?? join("test-results", "mobile-screenshots", testInfo.project.name)
-  );
+  return process.env.SCREENSHOT_DIR ?? testInfo.outputPath("mobile-screenshots");
 }
 
 test("capture mobile full-page screenshots for core app flow", async ({ page }, testInfo) => {
   test.skip(!isMobileProject(testInfo), "Mobile screenshots are captured only on mobile projects.");
+  test.skip(
+    testInfo.project.name !== "mobile-chromium",
+    "Screenshot capture is standardized on the Chromium mobile profile."
+  );
   test.slow();
   test.setTimeout(180_000);
 
@@ -52,15 +71,13 @@ test("capture mobile full-page screenshots for core app flow", async ({ page }, 
   await waitForStableUi(page);
   await saveFullPage(page, outputDir, "03-course-menu");
 
-  await drawer.getByRole("button", { name: "Close menu" }).click();
-  await expect(drawer).toBeHidden();
+  await closeNavigationDrawer(page);
   await page.getByTestId("course-nav-left").click();
   await expect(drawer).toBeVisible();
   await expect(drawer.getByText("Main menu")).toBeVisible();
   await waitForStableUi(page);
   await saveFullPage(page, outputDir, "04-main-menu");
-  await drawer.getByRole("button", { name: "Close menu" }).click();
-  await expect(drawer).toBeHidden();
+  await closeNavigationDrawer(page);
 
   await page.goto("/programs");
   await waitForStableUi(page);

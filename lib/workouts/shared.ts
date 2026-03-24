@@ -14,6 +14,8 @@ import {
   SESSION_GENERATOR_SESSION_TYPES,
   SESSION_GENERATOR_STROKES,
   computeSessionDraftDerivedTotals,
+  getSessionStepDrillTypeLabel,
+  getSessionStepEquipmentLabel,
   normalizeSessionDraftPoolLength,
   type SessionDraft,
   type SessionDraftStep,
@@ -78,6 +80,19 @@ export type WorkoutLibrarySnapshot = {
   recentWorkouts: WorkoutSummary[];
 };
 
+export type WorkoutGarminReadinessIssue = {
+  id: string;
+  stepId: string;
+  stepIndex: number;
+  detail: string;
+};
+
+export type WorkoutGarminReadinessReport = {
+  status: "ready" | "review";
+  summary: string;
+  issues: WorkoutGarminReadinessIssue[];
+};
+
 export function buildWorkoutDraftChangeSignature(
   draft: SessionDraft | null | undefined
 ): string | null {
@@ -96,6 +111,36 @@ export function haveWorkoutDraftChanges(
   if (currentSignature === null || savedSignature === null) return true;
 
   return currentSignature !== savedSignature;
+}
+
+export function buildWorkoutGarminReadinessReport(
+  draft: SessionDraft | null | undefined
+): WorkoutGarminReadinessReport {
+  if (!draft || !Array.isArray(draft.steps) || draft.steps.length === 0) {
+    return {
+      status: "review",
+      summary: "Add workout steps before you rely on Garmin/export handoff readiness.",
+      issues: [],
+    };
+  }
+
+  const issues = draft.steps.flatMap((step, index) => buildWorkoutGarminReadinessIssues(step, index));
+
+  if (issues.length === 0) {
+    return {
+      status: "ready",
+      summary: "Ready for the planned Garmin/export handoff.",
+      issues,
+    };
+  }
+
+  return {
+    status: "review",
+    summary: `Review ${issues.length} Garmin/export mapping detail${
+      issues.length === 1 ? "" : "s"
+    } before you treat this workout as handoff-ready.`,
+    issues,
+  };
 }
 
 export function normalizeSessionDraftForWorkoutPersistence(
@@ -277,6 +322,61 @@ export function normalizeSessionDraftForWorkoutPersistence(
       estimatedDurationMin: totals.estimatedDurationMin,
     },
   };
+}
+
+function buildWorkoutGarminReadinessIssues(
+  step: SessionDraftStep,
+  index: number
+): WorkoutGarminReadinessIssue[] {
+  const issues: WorkoutGarminReadinessIssue[] = [];
+  const stepLabel = buildWorkoutStepReadinessLabel(step, index);
+
+  if (step.stroke === "im_by_round") {
+    issues.push({
+      id: `${step.id}-im-by-round`,
+      stepId: step.id,
+      stepIndex: index,
+      detail: `${stepLabel} uses IM by round, which is a FreeSwimming convenience stroke and will need later Garmin/export decomposition.`,
+    });
+  }
+
+  if (step.stroke === "reverse_im_order") {
+    issues.push({
+      id: `${step.id}-reverse-im-order`,
+      stepId: step.id,
+      stepIndex: index,
+      detail: `${stepLabel} uses Reverse IM order (RIMO), which is a FreeSwimming convenience stroke and will need later Garmin/export decomposition.`,
+    });
+  }
+
+  if (step.drillType && step.drillType !== "none") {
+    issues.push({
+      id: `${step.id}-drill-focus`,
+      stepId: step.id,
+      stepIndex: index,
+      detail: `${stepLabel} uses ${getSessionStepDrillTypeLabel(
+        step.drillType
+      )} drill focus. Garmin/PDF adapter support for drill metadata still needs explicit review.`,
+    });
+  }
+
+  if (step.equipment && step.equipment !== "none") {
+    issues.push({
+      id: `${step.id}-equipment`,
+      stepId: step.id,
+      stepIndex: index,
+      detail: `${stepLabel} uses ${getSessionStepEquipmentLabel(
+        step.equipment
+      )}. Garmin/PDF adapter support for equipment metadata still needs explicit review.`,
+    });
+  }
+
+  return issues;
+}
+
+function buildWorkoutStepReadinessLabel(step: SessionDraftStep, index: number) {
+  const name = typeof step.name === "string" ? step.name.trim() : "";
+  return name ? `Step ${index + 1} (${name})` : `Step ${index + 1}`;
 }
 
 function normalizeStep(

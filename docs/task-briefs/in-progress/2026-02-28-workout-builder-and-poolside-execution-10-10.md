@@ -10,7 +10,7 @@
 
 ## Goal
 
-Ship a Garmin-familiar manual session builder and poolside execution experience that is fast, clear, reliable on mobile, and aligned to the canonical Garmin-ready workout contract.
+Ship a Garmin-familiar manual session builder with truthful Garmin/export handoff guidance first, and a later poolside execution experience, so authoring is fast, clear, reliable on mobile, and aligned to the canonical Garmin-ready workout contract.
 
 ## Scope
 
@@ -28,6 +28,7 @@ Ship a Garmin-familiar manual session builder and poolside execution experience 
   - add local confirm + undo recovery for destructive step and repeat removals so builder editing stays safe before canonical save,
   - add local duplicate actions for single steps and repeat blocks so manual authoring can branch an existing pattern without rebuilding every field by hand,
   - add contextual insert-after actions for single steps and repeat blocks so new starter scaffolds can be placed exactly where the next set belongs,
+  - surface truthful Garmin/export readiness diagnostics inside the canonical builder so convenience strokes, drill metadata, and equipment metadata are reviewed before later export/send handoff,
   - keep poolside execution deferred while the richer step contract continues to stabilize.
 
 - Manual workout/session authoring for user-built training sessions.
@@ -164,6 +165,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Users can author fixed rest and `open`/lap-button drill/rest steps without leaving the main builder flow.
 - Users can author send-off and CSS-based send-off style steps without learning a second advanced export-only vocabulary later.
 - If the UI exposes Garmin Connect-like labels such as `Main`, `Choice`, `IM by Round`, or `RIMO`, their internal mapping stays explicit and truthfully documented rather than implied as public Garmin provider fields.
+- Builder surfaces non-blocking Garmin/export readiness warnings whenever convenience strokes, drill metadata, or equipment metadata still need explicit downstream adapter review.
 - Threshold-based swim zone targets, when shown, use the shared published method rather than a separate builder-only zone system.
 - Poolside mode supports clean execution with minimal cognitive load.
 - Save/cancel/dirty-state behavior is deterministic.
@@ -212,3 +214,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-24 | working tree | added local destructive-edit recovery to the canonical workout editor: step and repeat removals now require explicit confirmation, save/reset stay blocked while a destructive confirmation is pending, and both removal paths offer a pre-save undo restore path with targeted unit + desktop e2e coverage being refreshed | next: run targeted validation, then \`npm run verify:pre-pr\` once this slice is ready for a clean PR checkpoint`
 - `2026-03-24 | working tree | added local duplication controls to the canonical workout editor: single steps and full repeat blocks can now be duplicated directly after the source pattern with fresh local identities, and targeted unit + desktop e2e coverage are being refreshed for the new authoring path | next: run targeted validation, then \`npm run verify:pre-pr\` once this slice is ready for a clean PR checkpoint`
 - `2026-03-24 | working tree | added contextual insert-after controls to the canonical workout editor: single steps and repeat blocks can now place new starter steps or repeat scaffolds directly after the active authoring context, while repeat-step insertion keeps the new blank step inside the same repeat group with the same round count | next: run targeted validation, then \`npm run verify:pre-pr\` once this slice is ready for a clean PR checkpoint`
+- `2026-03-24 | working tree | added a truthful Garmin/export readiness panel to the canonical workout editor: workouts that stay inside the current builder contract show `Ready`, while convenience strokes, drill metadata, and equipment metadata now surface non-blocking handoff review warnings before later export/send work; targeted unit + desktop e2e coverage are being refreshed for the new readiness contract | next: run targeted validation, then \`npm run verify:pre-pr\` once this slice is ready for a clean PR checkpoint`
+- `2026-03-24 | working tree | stabilized the local Playwright merge gate for the Garmin-readiness slice: local runs now default to webpack-backed Next dev, keep Playwright artifacts out of the repo watch tree, cap local workers at \`1\`, harden contextual-notes/email-preview/mobile-screenshot flows, and standardize screenshot capture on mobile Chromium so local false negatives stop blocking builder PR closeout | next: rerun full \`verify:pre-merge\` on branch HEAD and only carry merge-ready evidence forward if the full local gate stays green`
+- `2026-03-24 | verify:pre-merge | full local \`npm run verify:pre-merge\` passed for the Garmin-readiness slice after the Playwright harness stabilization work: lint/typecheck/unit/build/perf were green, public-mode Playwright finished with \`91 passed / 263 skipped\`, and the private-gate step was correctly skipped because \`SITE_LOCK_ENABLED!=1\` in this local run | next: stage the scoped builder + test-harness files, commit on the builder branch, push, and update PR \`#285\` with current-head local merge-gate evidence`
+- `2026-03-24 | perf trend decision: hold | the successful \`verify:pre-merge\` run again recommended \`hold\` on AW-010 tightening (`runs: 1/2`, worst margin `36.5%`); decision remains \`hold\` for this Garmin-readiness + local-gate stabilization slice because it does not materially change the public perf-budget routes owned by AW-010 | next: repeat the same hold rationale in PR handoff and revisit tightening in the next perf-focused route slice`

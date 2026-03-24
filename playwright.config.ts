@@ -2,23 +2,38 @@ import { defineConfig, devices } from "@playwright/test";
 
 const port = Number(process.env.PW_PORT ?? 3100);
 const baseURL = `http://127.0.0.1:${port}`;
+const readinessURL = `${baseURL}/manifest.webmanifest`;
 const nextDistDir = process.env.NEXT_DIST_DIR ?? ".next-playwright";
 const siteLockEnabled = process.env.SITE_LOCK_ENABLED ?? "0";
+const nextDevBundler = process.env.PW_NEXT_DEV_BUNDLER ?? "webpack";
+const nextDevBundlerArg = nextDevBundler === "webpack" ? "--webpack " : "";
+const workers = process.env.CI ? 1 : Number(process.env.PW_WORKERS ?? 1);
+const outputDir = process.env.PW_OUTPUT_DIR ?? "/tmp/freeswimming-playwright-results";
 
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers,
   reporter: "list",
+  outputDir,
   use: {
     baseURL,
     trace: "on-first-retry",
   },
   webServer: {
-    command: `NEXT_DIST_DIR=${nextDistDir} SITE_LOCK_ENABLED=${siteLockEnabled} npm run dev -- --hostname 127.0.0.1 --port ${port}`,
-    url: baseURL,
+    command: `NEXT_DIST_DIR=${nextDistDir} SITE_LOCK_ENABLED=${siteLockEnabled} npm run dev -- ${nextDevBundlerArg}--hostname 127.0.0.1 --port ${port}`,
+    // Use a cheap static route that stays accessible under site-lock so readiness
+    // does not depend on the home page compiling before tests even start. We
+    // default Playwright to webpack because local Turbopack dev servers can
+    // stall indefinitely on HTML route compilation for `/`, `/contact`, and
+    // `/course` on this repo, which makes the local merge gate unreliable. We
+    // also cap local workers below the Playwright auto default because the full
+    // matrix is otherwise prone to timeout-heavy false negatives on this repo.
+    // Playwright output also lives outside the repo so trace/screenshot writes
+    // do not trigger Next dev Fast Refresh mid-test.
+    url: readinessURL,
     reuseExistingServer: !process.env.CI && process.env.PW_REUSE_EXISTING_SERVER === "1",
     timeout: 120_000,
   },
