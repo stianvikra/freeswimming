@@ -56,8 +56,10 @@ type Props = {
   recentWorkouts: WorkoutSummary[];
   canonicalSaveReady: boolean;
   isSaving: boolean;
+  hasUnsavedChanges?: boolean;
   onSave: () => void;
   onDraftChange: (draft: SessionDraft) => void;
+  onResetToSaved?: (() => void) | null;
   startNewDraftHref?: string | null;
   startNewDraftLabel?: string;
   showLoadedBanner?: boolean;
@@ -373,8 +375,10 @@ export default function WorkoutEditor({
   recentWorkouts,
   canonicalSaveReady,
   isSaving,
+  hasUnsavedChanges = true,
   onSave,
   onDraftChange,
+  onResetToSaved = null,
   startNewDraftHref = null,
   startNewDraftLabel = "Start new draft",
   showLoadedBanner = true,
@@ -1595,20 +1599,49 @@ export default function WorkoutEditor({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-        <p className="text-sm text-slate-600">
-          {savedWorkout
-            ? "This workout is canonical now. Saving here updates the same workout instead of creating a new copy."
-            : "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it."}
-        </p>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={isSaving || !canonicalSaveReady}
-          data-testid={saveButtonTestId}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSaving ? "Saving..." : savedWorkout ? "Save changes" : "Accept and save workout"}
-        </button>
+        <div>
+          <p className="text-sm text-slate-600">
+            {savedWorkout
+              ? "This workout is canonical now. Saving here updates the same workout instead of creating a new copy."
+              : "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it."}
+          </p>
+          <p
+            data-testid="workout-editor-save-state"
+            className={`mt-2 text-sm font-medium ${
+              hasUnsavedChanges ? "text-amber-700" : "text-emerald-700"
+            }`}
+          >
+            {savedWorkout
+              ? hasUnsavedChanges
+                ? "Unsaved changes stay local until you save this workout."
+                : "All builder changes are saved to the canonical workout."
+              : "This draft still needs to be accepted into the canonical workout layer."}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {savedWorkout && onResetToSaved ? (
+            <button
+              type="button"
+              onClick={onResetToSaved}
+              disabled={isSaving || !hasUnsavedChanges}
+              data-testid="workout-editor-reset"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Reset to last saved
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={
+              isSaving || !canonicalSaveReady || (savedWorkout ? !hasUnsavedChanges : false)
+            }
+            data-testid={saveButtonTestId}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? "Saving..." : savedWorkout ? "Save changes" : "Accept and save workout"}
+          </button>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">

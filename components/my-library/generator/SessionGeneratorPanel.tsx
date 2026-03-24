@@ -36,6 +36,7 @@ import type {
   WorkoutSaveApiResponse,
   WorkoutSummary,
 } from "@/lib/workouts/shared";
+import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 
 type Props = {
   payload: GeneratorIntakeHandoffPayload;
@@ -94,6 +95,9 @@ export default function SessionGeneratorPanel({
   const sessionReady = payload.overrides.targetType === "session" && handoffPrepared;
   const canonicalSaveReady = workoutLibrary.schemaReady;
   const hasLoadedCanonicalWorkout = Boolean(savedWorkout);
+  const hasUnsavedChanges = savedWorkout
+    ? haveWorkoutDraftChanges(draft, savedWorkout.draft)
+    : true;
 
   function updateFormState<K extends keyof SessionGeneratorFormState>(
     key: K,
@@ -222,6 +226,14 @@ export default function SessionGeneratorPanel({
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function resetDraftToSavedWorkout() {
+    if (!savedWorkout) return;
+
+    setDraft(savedWorkout.draft);
+    setError("");
+    setSuccess("Unsaved builder edits were reset to the last saved workout.");
   }
 
   function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
@@ -617,10 +629,12 @@ export default function SessionGeneratorPanel({
             canonicalSaveReady={canonicalSaveReady}
             isSaving={isSaving}
             onSave={saveWorkout}
+            hasUnsavedChanges={hasUnsavedChanges}
             onDraftChange={(nextDraft) => {
               setDraft(nextDraft);
               setSuccess("");
             }}
+            onResetToSaved={resetDraftToSavedWorkout}
             startNewDraftHref="/my-library/generator"
             recentWorkoutsDescription="Open another saved session in the dedicated workout builder route."
             workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}

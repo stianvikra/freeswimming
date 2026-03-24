@@ -39,7 +39,7 @@ async function waitForWorkoutBuilderSaveReady(page: Page) {
     await waitForWorkoutBuilderClientReady(page);
   }
 
-  await expect(saveButton).toBeEnabled({ timeout: 15_000 });
+  await expect(saveButton).toBeVisible({ timeout: 15_000 });
 }
 
 test.describe("my library workout builder", () => {
@@ -70,6 +70,10 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-title")).toHaveValue("Manual pool workout");
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveCount(0);
+    await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
+      "All builder changes are saved to the canonical workout."
+    );
+    await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
     await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
@@ -101,6 +105,10 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-css-sendoff-offset-7").selectOption("2");
     await page.getByTestId("session-draft-step-target-mode-7").selectOption("none");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
+    await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
+      "Unsaved changes stay local until you save this workout."
+    );
+    await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     const patchResponsePromise = page.waitForResponse(
       (response) =>
@@ -116,6 +124,10 @@ test.describe("my library workout builder", () => {
     expect(patchPayload?.ok).toBe(true);
 
     await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
+    await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
+      "All builder changes are saved to the canonical workout."
+    );
+    await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
     await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("33.33");
     await page.getByTestId("session-draft-step-toggle-0").click();
