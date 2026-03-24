@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-23`
+- `updated`: `2026-03-24`
 
 ## Goal
 
@@ -25,6 +25,7 @@ Ship a Garmin-familiar manual session builder and poolside execution experience 
   - add broader pool-length presets plus exact custom pool-length entry for manual pool workouts,
   - switch the always-open step forms to summary-first Garmin-familiar step cards with explicit `Edit step` / `Done` controls,
   - add deterministic canonical-editor dirty-state feedback plus a reset-to-last-saved path so builder edits are obviously local until saved,
+  - add local confirm + undo recovery for destructive step and repeat removals so builder editing stays safe before canonical save,
   - keep poolside execution deferred while the richer step contract continues to stabilize.
 
 - Manual workout/session authoring for user-built training sessions.
@@ -206,3 +207,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-24 | working tree | added deterministic dirty-state builder controls: canonical workout editor now shows when changes are unsaved, disables save when nothing changed, and exposes reset-to-last-saved recovery in both the dedicated workout route and generator handoff; targeted unit coverage and desktop builder e2e should be rerun before the next PR handoff | next: run targeted validation, then \`npm run verify:pre-pr\` once the local tree is ready for a clean builder checkpoint`
 - `2026-03-24 | working tree | full \`verify:pre-pr\` passed for the dirty-state builder slice: local gates were green end-to-end (`lint:briefs` skipped because the builder brief change is still uncommitted on branch, eslint PASS, typecheck PASS, 124/124 vitest files PASS, build PASS, perf budgets PASS, Playwright PASS with 92 passed / 262 skipped) and the focused builder flows stayed green while dirty-state, reset-to-saved, and save-disabled-when-clean behavior were added to both canonical editor entrypoints | next: stage only the scoped builder files, commit on the builder branch, push, and open/update the PR without mixing in the separate admin-notes triage docs`
 - `2026-03-24 | perf trend decision: hold | full \`verify:pre-pr\` recommended \`hold\` again after the perf-budget run (`runs: 1/2`, worst margin `36.7%`); decision remains \`hold\` for this dirty-state builder slice because it does not materially change the public perf-budget routes owned by AW-010 | next: repeat the tighten/hold rationale in the PR handoff and revisit tightening in the next perf-focused route slice`
+- `2026-03-24 | working tree | added local destructive-edit recovery to the canonical workout editor: step and repeat removals now require explicit confirmation, save/reset stay blocked while a destructive confirmation is pending, and both removal paths offer a pre-save undo restore path with targeted unit + desktop e2e coverage being refreshed | next: run targeted validation, then \`npm run verify:pre-pr\` once this slice is ready for a clean PR checkpoint`

@@ -75,6 +75,28 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
+    await page.getByTestId("session-draft-step-remove-0").click();
+    await expect(page.getByTestId("workout-editor-removal-confirm")).toContainText(
+      "Remove Warmup swim?"
+    );
+    await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
+    await page.getByTestId("workout-editor-removal-cancel-button").click();
+    await expect(page.getByTestId("workout-editor-removal-confirm")).toHaveCount(0);
+    await page.getByTestId("session-draft-step-remove-0").click();
+    await page.getByTestId("workout-editor-removal-confirm-button").click();
+    await expect(page.getByTestId("workout-editor-removal-undo")).toContainText(
+      "Removed Warmup swim."
+    );
+    await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
+      "Unsaved changes stay local until you save this workout."
+    );
+    await page.getByTestId("workout-editor-removal-undo-button").click();
+    await expect(page.getByTestId("workout-editor-removal-undo")).toHaveCount(0);
+    await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
+      "All builder changes are saved to the canonical workout."
+    );
+    await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
+
     await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
     await page.getByTestId("session-draft-step-toggle-0").click();
