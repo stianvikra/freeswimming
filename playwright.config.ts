@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const port = Number(process.env.PW_PORT ?? 3100);
 const baseURL = `http://127.0.0.1:${port}`;
+const readinessURL = `${baseURL}/manifest.webmanifest`;
 const nextDistDir = process.env.NEXT_DIST_DIR ?? ".next-playwright";
 const siteLockEnabled = process.env.SITE_LOCK_ENABLED ?? "0";
 
@@ -18,7 +19,9 @@ export default defineConfig({
   },
   webServer: {
     command: `NEXT_DIST_DIR=${nextDistDir} SITE_LOCK_ENABLED=${siteLockEnabled} npm run dev -- --hostname 127.0.0.1 --port ${port}`,
-    url: baseURL,
+    // Use a cheap static route that stays accessible under site-lock so readiness
+    // does not depend on the home page compiling before tests even start.
+    url: readinessURL,
     reuseExistingServer: !process.env.CI && process.env.PW_REUSE_EXISTING_SERVER === "1",
     timeout: 120_000,
   },
