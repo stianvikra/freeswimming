@@ -235,13 +235,13 @@ function CoursePageClient() {
   const searchParams = useSearchParams();
   const install = useInstallContext();
 
-  const lessonParam = searchParams.get("lesson");
-  const previewEnabled = searchParams.get("preview") === "1";
-  const previewModeParam = searchParams.get("previewMode");
+  const lessonParam = searchParams?.get("lesson") ?? null;
+  const previewEnabled = searchParams?.get("preview") === "1";
+  const previewModeParam = searchParams?.get("previewMode") ?? null;
   const parsedPreviewMode = parseCoursePreviewMode(previewModeParam);
   const previewMode = parsedPreviewMode ?? "published";
-  const previewType = searchParams.get("previewType");
-  const previewRefRaw = searchParams.get("previewRef");
+  const previewType = searchParams?.get("previewType") ?? null;
+  const previewRefRaw = searchParams?.get("previewRef") ?? null;
   const previewRef = previewRefRaw?.trim() ?? "";
   const previewStorageKeys = useMemo(
     () =>

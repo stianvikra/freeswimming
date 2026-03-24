@@ -13,15 +13,15 @@ function buildDedupKey(pathname: string, source: string, productId: string) {
 }
 
 export default function TrackCheckoutCancel({ surface }: Props) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const checkout = searchParams.get("checkout");
+    const checkout = searchParams?.get("checkout");
     if (checkout !== "cancelled") return;
 
-    const source = searchParams.get("source") || "unknown";
-    const productId = searchParams.get("product") || "unknown";
+    const source = searchParams?.get("source") || "unknown";
+    const productId = searchParams?.get("product") || "unknown";
     const dedupKey = buildDedupKey(pathname, source, productId);
 
     try {

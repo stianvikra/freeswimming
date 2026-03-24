@@ -144,12 +144,22 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
+        "Paste an image anywhere in the note form when the screenshot is already on your clipboard; otherwise open image tools and use `Capture screenshot`."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
         "Use `Capture screenshot` when the issue is visual, drag to the relevant crop in preview, and save only after the preview looks right."
       )
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Remember that staged screenshots stay local until note save and attachment upload both succeed; if permission is denied, fall back to `Add images`."
+        "Remember that pasted or captured images stay local until note save and attachment upload both succeed; if permission is denied or the preview never appears, fall back to `Add images`."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "On mobile, keep image tools collapsed unless you actively need paste/capture so title, body, and context stay close together."
       )
     ).toBeVisible();
     await expect(page.getByText("Screenshot capture is denied or upload fails")).toBeVisible();

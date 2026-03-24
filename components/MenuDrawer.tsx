@@ -53,7 +53,7 @@ export default function MenuDrawer({
   titleMain = "Menu",
   titleCourse = "Course menu",
 }: Props) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const hasCourse = Boolean(course);
   const activeCourseLessonId = course?.activeLessonId ?? null;
   const courseModules = useMemo(() => {
@@ -135,7 +135,7 @@ export default function MenuDrawer({
 
   const isActiveRoute = (href: string) => {
     if (href === "/") return pathname === "/";
-    return pathname === href || pathname?.startsWith(`${href}/`);
+    return pathname === href || Boolean(pathname?.startsWith(`${href}/`));
   };
 
   async function handleInstallFromMenu() {

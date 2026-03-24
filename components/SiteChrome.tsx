@@ -43,7 +43,7 @@ type Props = {
 };
 
 export default function SiteChrome({ children, menu, bottomBar }: Props) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [dashboardVisible, setDashboardVisible] = useState(false);
 
@@ -122,11 +122,12 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const isMenuOpen = customMenu ? customMenu.isOpen : menuOpen;
 
   const isHomeRoute = pathname === "/";
-  const isCourseRoute = pathname === "/course" || pathname?.startsWith("/course");
-  const isAuthRoute = pathname === "/auth/sign-in" || pathname?.startsWith("/auth/");
-  const isAdminRoute = pathname === "/admin" || pathname?.startsWith("/admin/");
-  const isLibraryRoute = pathname === "/my-library" || pathname?.startsWith("/my-library/");
-  const isCheckoutRoute = pathname === "/checkout/success" || pathname?.startsWith("/checkout/");
+  const isCourseRoute = pathname === "/course" || pathname.startsWith("/course");
+  const isAuthRoute = pathname === "/auth/sign-in" || pathname.startsWith("/auth/");
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isLibraryRoute = pathname === "/my-library" || pathname.startsWith("/my-library/");
+  const isCheckoutRoute =
+    pathname === "/checkout/success" || pathname.startsWith("/checkout/");
   const isPublicRoute = !isAuthRoute && !isLibraryRoute && !isCheckoutRoute;
   const normalizedPageContextRef = normalizeAdminPageContextRef(pathname ?? "/");
   const pageContextLabel = getAdminPageContextLabel(normalizedPageContextRef);

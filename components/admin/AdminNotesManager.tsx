@@ -1,19 +1,13 @@
 "use client";
 
-import {
-  startTransition,
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import AdminNoteScreenshotCaptureButton from "@/components/admin/AdminNoteScreenshotCaptureButton";
 import {
   ADMIN_NOTE_CONTEXT_TYPE_VALUES,
   type AdminNoteContextType,
 } from "@/lib/admin/note-context";
+import { extractAdminNoteClipboardImage } from "@/lib/admin/note-compose";
 import {
   buildAdminNoteContextCatalog,
   resolveAdminNoteContextLabel,
@@ -30,6 +24,7 @@ import {
   buildAdminNotesCounts,
   filterAdminNotes,
   parseAdminNotesFilterState,
+  type AdminNotesFilterState,
   type AdminNotesStatusFilter,
 } from "@/lib/admin/notes-manager";
 import {
@@ -248,10 +243,27 @@ function normalizeContextRef(value: string): string {
   return value.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
+function areAdminNotesFilterStatesEqual(
+  left: AdminNotesFilterState,
+  right: AdminNotesFilterState
+): boolean {
+  return (
+    left.query === right.query &&
+    left.status === right.status &&
+    left.category === right.category &&
+    left.priority === right.priority &&
+    left.contextType === right.contextType &&
+    left.contextRef === right.contextRef
+  );
+}
+
 export default function AdminNotesManager() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const pathname = usePathname() ?? "/admin";
+  const rawSearchParams = useSearchParams();
+  const searchParams = useMemo(
+    () => rawSearchParams ?? new URLSearchParams(),
+    [rawSearchParams]
+  );
   const [items, setItems] = useState<AdminNoteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -386,14 +398,13 @@ export default function AdminNotesManager() {
     void loadNotes();
   }, [loadNotes]);
 
-  const notesFilters = useMemo(() => parseAdminNotesFilterState(searchParams), [searchParams]);
-  const deferredQuery = useDeferredValue(notesFilters.query);
+  const parsedNotesFilters = useMemo(() => parseAdminNotesFilterState(searchParams), [searchParams]);
+  const [notesFilters, setNotesFilters] = useState(parsedNotesFilters);
+  const [searchDraft, setSearchDraft] = useState(parsedNotesFilters.query);
+  const deferredSearchDraft = useDeferredValue(searchDraft);
   const effectiveNotesFilters = useMemo(
-    () =>
-      deferredQuery === notesFilters.query
-        ? notesFilters
-        : { ...notesFilters, query: deferredQuery },
-    [deferredQuery, notesFilters]
+    () => ({ ...notesFilters, query: deferredSearchDraft }),
+    [deferredSearchDraft, notesFilters]
   );
   const noteCounts = useMemo(() => buildAdminNotesCounts(items), [items]);
 
@@ -442,27 +453,42 @@ export default function AdminNotesManager() {
     notesFilters.contextType !== DEFAULT_ADMIN_NOTES_FILTER_STATE.contextType ||
     notesFilters.contextRef !== DEFAULT_ADMIN_NOTES_FILTER_STATE.contextRef;
 
-  function updateNotesFilters(next: Partial<typeof notesFilters>) {
-    const nextFilters = {
-      ...notesFilters,
-      ...next,
-    };
-    if (Object.prototype.hasOwnProperty.call(next, "contextType")) {
-      nextFilters.contextRef = "";
-    }
-    if (!nextFilters.contextType) {
-      nextFilters.contextRef = "";
-    }
+  const updateNotesFilters = useCallback((next: Partial<AdminNotesFilterState>) => {
+    setNotesFilters((currentFilters) => {
+      const nextFilters = {
+        ...currentFilters,
+        ...next,
+      };
+      if (Object.prototype.hasOwnProperty.call(next, "contextType")) {
+        nextFilters.contextRef = "";
+      }
+      if (!nextFilters.contextType) {
+        nextFilters.contextRef = "";
+      }
 
-    const nextParams = applyAdminNotesFilterStateToSearchParams(
-      new URLSearchParams(searchParams.toString()),
-      nextFilters
-    );
-    const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
-    startTransition(() => {
-      router.replace(nextHref, { scroll: false });
+      const nextParams = applyAdminNotesFilterStateToSearchParams(
+        new URLSearchParams(window.location.search),
+        nextFilters
+      );
+      const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
+      window.history.replaceState(window.history.state, "", nextHref);
+      return nextFilters;
     });
-  }
+  }, [pathname]);
+
+  useEffect(() => {
+    setNotesFilters((currentFilters) =>
+      areAdminNotesFilterStatesEqual(currentFilters, parsedNotesFilters)
+        ? currentFilters
+        : parsedNotesFilters
+    );
+  }, [parsedNotesFilters]);
+
+  useEffect(() => {
+    setSearchDraft((currentDraft) =>
+      currentDraft === parsedNotesFilters.query ? currentDraft : parsedNotesFilters.query
+    );
+  }, [parsedNotesFilters.query]);
 
   const createLessonOptions = useMemo(() => {
     if (formState.contextType !== "course_lesson") return [];
@@ -530,6 +556,29 @@ export default function AdminNotesManager() {
       }
       return null;
     });
+  }
+
+  function handleCreateFormPaste(event: React.ClipboardEvent<HTMLFormElement>) {
+    const result = extractAdminNoteClipboardImage({
+      clipboardData: event.clipboardData,
+    });
+
+    if (!result.matched) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!result.ok) {
+      setActionError(result.error);
+      setActionNotice(null);
+      return;
+    }
+
+    setActionError(null);
+    setActionNotice("Pasted image ready to attach on the next note save.");
+    setCreateCaptureRecovery(null);
+    setCreatePendingScreenshotFromFile(result.file);
   }
 
   async function uploadCreatePendingScreenshot(noteId: string) {
@@ -923,6 +972,26 @@ export default function AdminNotesManager() {
     await uploadFilesForNote(item.id, Array.from(files));
   }
 
+  function handleEditFormPaste(item: AdminNoteItem, event: React.ClipboardEvent<HTMLFormElement>) {
+    const result = extractAdminNoteClipboardImage({
+      clipboardData: event.clipboardData,
+    });
+
+    if (!result.matched) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!result.ok) {
+      setActionError(result.error);
+      setActionNotice(null);
+      return;
+    }
+
+    void uploadFilesForNote(item.id, [result.file]);
+  }
+
   async function deleteAttachment(noteId: string, attachmentId: string) {
     if (uploadingNoteId || deletingAttachmentId || linkingNoteId || unlinkingKey) return;
 
@@ -1094,7 +1163,10 @@ export default function AdminNotesManager() {
               {hasActiveFilters ? (
                 <button
                   type="button"
-                  onClick={() => updateNotesFilters(DEFAULT_ADMIN_NOTES_FILTER_STATE)}
+                  onClick={() => {
+                    setSearchDraft("");
+                    updateNotesFilters(DEFAULT_ADMIN_NOTES_FILTER_STATE);
+                  }}
                   className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                 >
                   Clear filters
@@ -1107,8 +1179,12 @@ export default function AdminNotesManager() {
                 <span>Search</span>
                 <input
                   type="search"
-                  value={notesFilters.query}
-                  onChange={(e) => updateNotesFilters({ query: e.target.value })}
+                  value={searchDraft}
+                  onChange={(e) => {
+                    const nextQuery = e.target.value;
+                    setSearchDraft(nextQuery);
+                    updateNotesFilters({ query: nextQuery });
+                  }}
                   data-testid="admin-notes-search"
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
                   placeholder="Search note ID, title, text, attachment, or context"
@@ -1437,6 +1513,7 @@ export default function AdminNotesManager() {
                     <form
                       className="mt-3 grid gap-3 sm:grid-cols-2"
                       data-testid="admin-note-edit-form"
+                      onPaste={(event) => handleEditFormPaste(item, event)}
                       onSubmit={(e) => {
                         e.preventDefault();
                         void saveEdit(item.id);
@@ -1677,7 +1754,8 @@ export default function AdminNotesManager() {
                               Images / screenshots
                             </p>
                             <p className="mt-1 text-[11px] text-slate-600">
-                              PNG, JPEG, WEBP, or GIF up to 5 MB each. Images stay admin-only.
+                              PNG, JPEG, WEBP, or GIF up to 5 MB each. Paste an image from
+                              clipboard anywhere in this form or use the capture/upload controls.
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
@@ -1979,6 +2057,7 @@ export default function AdminNotesManager() {
 
         <form
           className="mt-5 grid gap-4 sm:grid-cols-2"
+          onPaste={handleCreateFormPaste}
           onSubmit={handleCreate}
           data-testid="admin-notes-create-form"
         >
@@ -2057,7 +2136,8 @@ export default function AdminNotesManager() {
               <div>
                 <p className="text-sm font-semibold text-slate-900">Screenshot (optional)</p>
                 <p className="mt-1 text-xs text-slate-600">
-                  Capture a browser screenshot now and attach it after the note save succeeds.
+                  Paste an image from clipboard anywhere in this form, or capture a browser
+                  screenshot now and attach it after the note save succeeds.
                 </p>
               </div>
               <AdminNoteScreenshotCaptureButton
