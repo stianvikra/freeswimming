@@ -409,6 +409,31 @@ describe("WorkoutBuilderHub", () => {
     expect(previewDraft.steps[1]?.repeatGroupId ?? null).toBeNull();
   });
 
+  it("adds a starter repeat block directly after a single-step context", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-add-repeat-after-0"));
+
+    expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
+    expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim");
+
+    const previewDraft = readPreviewDraft();
+    const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
+
+    expect(previewDraft.steps).toHaveLength(3);
+    expect(repeatSteps).toHaveLength(2);
+    expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
+    expect(previewDraft.steps[0]?.repeatGroupId ?? null).toBeNull();
+    expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
+  });
+
   it("supports confirm and undo when removing a repeat block", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
@@ -472,6 +497,49 @@ describe("WorkoutBuilderHub", () => {
     expect(repeatSteps[0]?.repeatGroupId).not.toBe(repeatSteps[2]?.repeatGroupId);
     expect(repeatSteps.slice(0, 2).every((step) => step.repeatCount === 4)).toBe(true);
     expect(repeatSteps.slice(2).every((step) => step.repeatCount === 6)).toBe(true);
+    expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
+  });
+
+  it("inserts blank steps inside and after a repeat block with the right repeat boundaries", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+
+    const repeatGroupIdBeforeInsert =
+      readPreviewDraft().steps.find((step) => step.repeatGroupId)?.repeatGroupId ?? null;
+
+    expect(repeatGroupIdBeforeInsert).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-add-after-1"));
+
+    expect(screen.getByTestId("session-draft-step-name-2")).toHaveValue("Repeat step");
+
+    let previewDraft = readPreviewDraft();
+
+    expect(previewDraft.steps).toHaveLength(4);
+    expect(previewDraft.steps[2]).toMatchObject({
+      name: "Repeat step",
+      repeatGroupId: repeatGroupIdBeforeInsert,
+      repeatCount: 4,
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-repeat-add-step-after-1"));
+
+    previewDraft = readPreviewDraft();
+
+    expect(previewDraft.steps).toHaveLength(5);
+    expect(previewDraft.steps[4]).toMatchObject({
+      name: "Custom step",
+    });
+    expect(previewDraft.steps[4]?.repeatGroupId ?? null).toBeNull();
+    expect(screen.getByTestId("session-draft-step-name-4")).toHaveValue("Custom step");
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
   });
 

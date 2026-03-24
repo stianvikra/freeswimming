@@ -224,6 +224,20 @@ function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
   ];
 }
 
+function buildRepeatInsertedStep(
+  repeatGroupId: string,
+  repeatCount: number | null
+): Partial<SessionDraftStep> {
+  return {
+    name: "Repeat step",
+    stroke: "freestyle",
+    targetSummary: "Edit this into the next step for each round.",
+    notes: "",
+    repeatGroupId,
+    repeatCount,
+  };
+}
+
 function formatMinutesLabel(value: number) {
   return `${Number.isInteger(value) ? value : value.toFixed(1).replace(/\.0$/, "")} min`;
 }
@@ -541,30 +555,82 @@ export default function WorkoutEditor({
     );
   }
 
-  function addStep() {
-    setPendingRemoval(null);
-    const nextStep = buildBlankStep(draft.steps.length + 1);
+  function insertStepAt(insertIndex: number, overrides: Partial<SessionDraftStep> = {}) {
+    const nextStep = buildBlankStep(draft.steps.length + 1, overrides);
+    const nextSteps = [...draft.steps];
+    const safeInsertIndex = Math.min(Math.max(insertIndex, 0), nextSteps.length);
 
+    nextSteps.splice(safeInsertIndex, 0, nextStep);
+    setPendingRemoval(null);
+    setLastRemovedBlock(null);
     setOpenStepId(nextStep.id);
     onDraftChange(
       syncDraftSelections({
         ...draft,
-        steps: [...draft.steps, nextStep],
+        steps: nextSteps,
       })
     );
   }
 
-  function addRepeat() {
-    setPendingRemoval(null);
+  function insertRepeatAt(insertIndex: number) {
     const nextSteps = buildRepeatStarterSteps(draft.steps.length + 1);
+    const nextDraftSteps = [...draft.steps];
+    const safeInsertIndex = Math.min(Math.max(insertIndex, 0), nextDraftSteps.length);
 
+    nextDraftSteps.splice(safeInsertIndex, 0, ...nextSteps);
+    setPendingRemoval(null);
+    setLastRemovedBlock(null);
     setOpenStepId(nextSteps[0]?.id ?? null);
     onDraftChange(
       syncDraftSelections({
         ...draft,
-        steps: [...draft.steps, ...nextSteps],
+        steps: nextDraftSteps,
       })
     );
+  }
+
+  function getGroupInsertIndex(groupIndex: number) {
+    const group = stepGroups[groupIndex];
+    const lastEntry = group ? group.entries[group.entries.length - 1] : null;
+    if (!lastEntry) return null;
+    return lastEntry.index + 1;
+  }
+
+  function addStep() {
+    insertStepAt(draft.steps.length);
+  }
+
+  function addRepeat() {
+    insertRepeatAt(draft.steps.length);
+  }
+
+  function insertStepAfterStep(stepId: string) {
+    const sourceIndex = draft.steps.findIndex((step) => step.id === stepId);
+    if (sourceIndex === -1) return;
+
+    const sourceStep = draft.steps[sourceIndex];
+
+    insertStepAt(
+      sourceIndex + 1,
+      sourceStep.repeatGroupId
+        ? buildRepeatInsertedStep(
+            sourceStep.repeatGroupId,
+            sourceStep.repeatCount ?? null
+          )
+        : {}
+    );
+  }
+
+  function insertStepAfterGroup(groupIndex: number) {
+    const insertIndex = getGroupInsertIndex(groupIndex);
+    if (insertIndex === null) return;
+    insertStepAt(insertIndex);
+  }
+
+  function insertRepeatAfterGroup(groupIndex: number) {
+    const insertIndex = getGroupInsertIndex(groupIndex);
+    if (insertIndex === null) return;
+    insertRepeatAt(insertIndex);
   }
 
   function duplicateStep(stepId: string) {
@@ -933,6 +999,24 @@ export default function WorkoutEditor({
                 </button>
               </>
             )}
+            <button
+              type="button"
+              onClick={() => insertStepAfterStep(step.id)}
+              data-testid={`session-draft-step-add-after-${index}`}
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+            >
+              Add step after
+            </button>
+            {!insideRepeatGroup ? (
+              <button
+                type="button"
+                onClick={() => insertRepeatAfterGroup(groupIndex)}
+                data-testid={`session-draft-step-add-repeat-after-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+              >
+                Add repeat after
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => duplicateStep(step.id)}
@@ -1852,6 +1936,22 @@ export default function WorkoutEditor({
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Move down
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertStepAfterGroup(groupIndex)}
+                      data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                    >
+                      Add step after
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertRepeatAfterGroup(groupIndex)}
+                      data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                    >
+                      Add repeat after
                     </button>
                     <button
                       type="button"
