@@ -7,7 +7,10 @@ import type {
   WorkoutLibrarySnapshot,
   WorkoutSummary,
 } from "@/lib/workouts/shared";
-import { buildWorkoutHandoffFileName } from "@/lib/workouts/shared";
+import {
+  buildWorkoutGarminReadyExportFileName,
+  buildWorkoutHandoffFileName,
+} from "@/lib/workouts/shared";
 
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
@@ -632,6 +635,16 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
       "Title: Accepted threshold workout"
     );
+    expect(screen.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
+      "data-export-state",
+      "canonical"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
+      '"kind": "freeswimming_garmin_ready_workout_v1"'
+    );
+    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
+      '"draftState": "canonical"'
+    );
 
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "Local handoff workout" },
@@ -653,6 +666,19 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
       "Reverse IM order (RIMO)"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
+      "data-export-state",
+      "local_draft"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
+      '"draftState": "local_draft"'
+    );
+    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
+      '"title": "Local handoff workout"'
+    );
+    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
+      '"reviewIssueIds": ['
     );
 
     fireEvent.click(screen.getByTestId("workout-editor-handoff-copy"));
@@ -676,6 +702,23 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
       `Downloaded ${buildWorkoutHandoffFileName(
+        {
+          ...buildDraft(),
+          title: "Local handoff workout",
+        },
+        { draftState: "local_draft" }
+      )}.`
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-garmin-export-download"));
+
+    await waitFor(() => {
+      expect(createUrlSpy).toHaveBeenCalledTimes(2);
+      expect(clickSpy).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getByTestId("workout-editor-garmin-export-notice")).toHaveTextContent(
+      `Downloaded ${buildWorkoutGarminReadyExportFileName(
         {
           ...buildDraft(),
           title: "Local handoff workout",

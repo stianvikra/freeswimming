@@ -24,6 +24,7 @@ import {
   getSessionStepEquipmentLabel,
   getSessionStepStrokeLabel,
   getSessionStepDurationModeLabel,
+  getSessionStepTargetModeLabel,
   getSessionTypeLabel,
   normalizeSessionDraftPoolLength,
   type SessionDraft,
@@ -104,6 +105,119 @@ export type WorkoutGarminReadinessReport = {
 
 export type WorkoutHandoffDraftState = "canonical" | "local_draft";
 
+type WorkoutGarminReadyExportLabeledValue<T extends string> = {
+  value: T;
+  label: string;
+};
+
+export type WorkoutGarminReadyExportStep = {
+  id: string;
+  position: number;
+  name: string;
+  mappingStatus: "ready" | "review";
+  reviewIssueIds: string[];
+  category: WorkoutGarminReadyExportLabeledValue<SessionDraftStep["category"]>;
+  stroke: WorkoutGarminReadyExportLabeledValue<SessionDraftStep["stroke"]>;
+  drillType:
+    | WorkoutGarminReadyExportLabeledValue<
+        Exclude<SessionDraftStep["drillType"], null | undefined>
+      >
+    | null;
+  equipment:
+    | WorkoutGarminReadyExportLabeledValue<
+        Exclude<SessionDraftStep["equipment"], null | undefined>
+      >
+    | null;
+  intensity: WorkoutGarminReadyExportLabeledValue<SessionDraftStep["intensity"]>;
+  duration: {
+    mode: SessionDraftStep["durationMode"];
+    label: string;
+    distanceM: number | null;
+    timeMin: number | null;
+    cssSendOffOffsetSeconds: number | null;
+    summary: string;
+  };
+  target: {
+    mode: NonNullable<SessionDraftStep["targetMode"]>;
+    label: string;
+    effortTarget:
+      | WorkoutGarminReadyExportLabeledValue<
+          Exclude<SessionDraftStep["effortTarget"], null | undefined>
+        >
+      | null;
+    targetPaceSecondsPer100m: number | null;
+    cssTargetOffsetSeconds: number | null;
+    structuredLabel: string | null;
+    draftSummary: string | null;
+  };
+  notes: string | null;
+  repeatGroupId: string | null;
+  repeatCount: number | null;
+};
+
+export type WorkoutGarminReadyExportBlock =
+  | {
+      kind: "single";
+      position: number;
+      mappingStatus: "ready" | "review";
+      reviewIssueIds: string[];
+      step: WorkoutGarminReadyExportStep;
+    }
+  | {
+      kind: "repeat";
+      position: number;
+      repeatGroupId: string;
+      repeatCount: number | null;
+      mappingStatus: "ready" | "review";
+      reviewIssueIds: string[];
+      roundSummary: string;
+      roundDistanceM: number | null;
+      roundDurationSeconds: number | null;
+      steps: WorkoutGarminReadyExportStep[];
+    };
+
+export type WorkoutGarminReadyExport = {
+  version: 1;
+  kind: "freeswimming_garmin_ready_workout_v1";
+  draftState: WorkoutHandoffDraftState;
+  workoutId: string | null;
+  diagnostics: {
+    status: WorkoutGarminReadinessReport["status"];
+    summary: string;
+    issueCount: number;
+    issues: WorkoutGarminReadinessIssue[];
+  };
+  workout: {
+    title: string;
+    description: string | null;
+    summary: string;
+    sourceFingerprint: string;
+    createdAt: string;
+    environment: {
+      value: SessionDraft["environment"];
+      label: string;
+      subSport: "lap_swimming" | "open_water";
+      poolLengthM: number | null;
+    };
+    sessionType: WorkoutGarminReadyExportLabeledValue<SessionDraft["sessionType"]>;
+    effort: WorkoutGarminReadyExportLabeledValue<SessionDraft["effort"]>;
+    sizeMode: SessionDraft["sizeMode"];
+    targetDistanceM: number | null;
+    targetTimeMin: number | null;
+    totalDistanceM: number | null;
+    estimatedDurationMin: number | null;
+    basePaceSecondsPer100m: number;
+    usedCssPaceLabel: string | null;
+    allowedStrokes: SessionDraft["allowedStrokes"];
+    equipmentAllowlist: SessionDraft["equipmentAllowlist"];
+    goalTitle: string | null;
+    focusText: string | null;
+    constraintText: string | null;
+    warnings: string[];
+  } | null;
+  blocks: WorkoutGarminReadyExportBlock[];
+};
+
 export function buildWorkoutDraftChangeSignature(
   draft: SessionDraft | null | undefined
 ): string | null {
@@ -165,6 +279,163 @@ export function buildWorkoutHandoffFileName(
   const suffix = draftState === "canonical" ? "" : "-draft";
 
   return `freeswimming-${title || "workout"}-handoff${suffix}.txt`;
+}
+
+export function buildWorkoutGarminReadyExportFileName(
+  draft: SessionDraft | null | undefined,
+  options?: {
+    draftState?: WorkoutHandoffDraftState;
+  }
+) {
+  const title = normalizeFileNamePart(draft?.title ?? "");
+  const draftState = options?.draftState ?? "local_draft";
+  const suffix = draftState === "canonical" ? "" : "-draft";
+
+  return `freeswimming-${title || "workout"}-garmin-ready${suffix}.json`;
+}
+
+export function buildWorkoutGarminReadyExport(
+  draft: SessionDraft | null | undefined,
+  options?: {
+    draftState?: WorkoutHandoffDraftState;
+    workoutId?: string | null;
+  }
+): WorkoutGarminReadyExport {
+  const draftState = options?.draftState ?? "local_draft";
+  const workoutId = options?.workoutId ?? null;
+  const diagnostics = buildWorkoutGarminReadinessReport(draft);
+
+  if (!draft) {
+    return {
+      version: 1,
+      kind: "freeswimming_garmin_ready_workout_v1",
+      draftState,
+      workoutId,
+      diagnostics: {
+        status: diagnostics.status,
+        summary: diagnostics.summary,
+        issueCount: diagnostics.issues.length,
+        issues: diagnostics.issues,
+      },
+      workout: null,
+      blocks: [],
+    };
+  }
+
+  const totals = computeSessionDraftDerivedTotals(draft);
+  const normalizedDraft = {
+    ...draft,
+    totalDistanceM: totals.totalDistanceM ?? draft.totalDistanceM,
+    estimatedDurationMin: totals.estimatedDurationMin ?? draft.estimatedDurationMin,
+  };
+  const issueIdsByStepId = new Map<string, string[]>();
+
+  for (const issue of diagnostics.issues) {
+    const currentIssueIds = issueIdsByStepId.get(issue.stepId) ?? [];
+    currentIssueIds.push(issue.id);
+    issueIdsByStepId.set(issue.stepId, currentIssueIds);
+  }
+
+  const blocks = buildWorkoutHandoffGroups(draft.steps).map((group, index) => {
+    if (group.kind === "single") {
+      const entry = group.entries[0];
+      const reviewIssueIds = issueIdsByStepId.get(entry?.step.id ?? "") ?? [];
+      const step = buildWorkoutGarminReadyExportStep(
+        entry.step,
+        entry.index,
+        draft.basePaceSecondsPer100m,
+        reviewIssueIds
+      );
+
+      return {
+        kind: "single" as const,
+        position: index + 1,
+        mappingStatus: reviewIssueIds.length > 0 ? ("review" as const) : ("ready" as const),
+        reviewIssueIds,
+        step,
+      };
+    }
+
+    const reviewIssueIds = group.entries.flatMap(
+      (entry) => issueIdsByStepId.get(entry.step.id) ?? []
+    );
+    const roundMetrics = buildWorkoutRepeatRoundMetrics(
+      group.entries,
+      draft.basePaceSecondsPer100m
+    );
+
+    return {
+      kind: "repeat" as const,
+      position: index + 1,
+      repeatGroupId: group.repeatGroupId,
+      repeatCount: group.repeatCount,
+      mappingStatus: reviewIssueIds.length > 0 ? ("review" as const) : ("ready" as const),
+      reviewIssueIds,
+      roundSummary: buildWorkoutHandoffRepeatSummary(
+        group.entries,
+        group.repeatCount,
+        draft.basePaceSecondsPer100m
+      ),
+      roundDistanceM: roundMetrics.roundDistanceM,
+      roundDurationSeconds: roundMetrics.roundDurationSeconds,
+      steps: group.entries.map((entry) =>
+        buildWorkoutGarminReadyExportStep(
+          entry.step,
+          entry.index,
+          draft.basePaceSecondsPer100m,
+          issueIdsByStepId.get(entry.step.id) ?? []
+        )
+      ),
+    };
+  });
+
+  return {
+    version: 1,
+    kind: "freeswimming_garmin_ready_workout_v1",
+    draftState,
+    workoutId,
+    diagnostics: {
+      status: diagnostics.status,
+      summary: diagnostics.summary,
+      issueCount: diagnostics.issues.length,
+      issues: diagnostics.issues,
+    },
+    workout: {
+      title: draft.title,
+      description: draft.description || null,
+      summary: buildSessionTargetSummary(normalizedDraft),
+      sourceFingerprint: draft.sourceFingerprint,
+      createdAt: draft.createdAt,
+      environment: {
+        value: draft.environment,
+        label: getSessionEnvironmentLabel(draft.environment),
+        subSport: draft.environment === "open_water" ? "open_water" : "lap_swimming",
+        poolLengthM: draft.poolLengthM,
+      },
+      sessionType: {
+        value: draft.sessionType,
+        label: getSessionTypeLabel(draft.sessionType),
+      },
+      effort: {
+        value: draft.effort,
+        label: getSessionEffortLabel(draft.effort),
+      },
+      sizeMode: draft.sizeMode,
+      targetDistanceM: normalizedDraft.targetDistanceM,
+      targetTimeMin: normalizedDraft.targetTimeMin,
+      totalDistanceM: normalizedDraft.totalDistanceM,
+      estimatedDurationMin: normalizedDraft.estimatedDurationMin,
+      basePaceSecondsPer100m: draft.basePaceSecondsPer100m,
+      usedCssPaceLabel: draft.usedCssPaceLabel,
+      allowedStrokes: draft.allowedStrokes,
+      equipmentAllowlist: draft.equipmentAllowlist,
+      goalTitle: draft.goalTitle,
+      focusText: draft.focusText,
+      constraintText: draft.constraintText,
+      warnings: draft.warnings,
+    },
+    blocks,
+  };
 }
 
 export function buildWorkoutHandoffText(
@@ -603,6 +874,31 @@ function buildWorkoutHandoffRepeatSummary(
     return "repeat count not set";
   }
 
+  const roundMetrics = buildWorkoutRepeatRoundMetrics(entries, basePaceSecondsPer100m);
+
+  const parts = [`${repeatCount} rounds`];
+
+  if (roundMetrics.roundDistanceM !== null || roundMetrics.roundDurationSeconds !== null) {
+    const roundParts: string[] = [];
+
+    if (roundMetrics.roundDistanceM !== null) {
+      roundParts.push(`${roundMetrics.roundDistanceM}m`);
+    }
+
+    if (roundMetrics.roundDurationSeconds !== null) {
+      roundParts.push(formatClockDurationLabelFromSeconds(roundMetrics.roundDurationSeconds));
+    }
+
+    parts.push(`${roundParts.join(" + ")} per round`);
+  }
+
+  return parts.join(" · ");
+}
+
+function buildWorkoutRepeatRoundMetrics(
+  entries: WorkoutHandoffEntry[],
+  basePaceSecondsPer100m: number
+) {
   let roundDistanceM = 0;
   let roundDurationSeconds = 0;
 
@@ -625,23 +921,79 @@ function buildWorkoutHandoffRepeatSummary(
     }
   }
 
-  const parts = [`${repeatCount} rounds`];
+  return {
+    roundDistanceM: roundDistanceM > 0 ? roundDistanceM : null,
+    roundDurationSeconds: roundDurationSeconds > 0 ? roundDurationSeconds : null,
+  };
+}
 
-  if (roundDistanceM > 0 || roundDurationSeconds > 0) {
-    const roundParts: string[] = [];
+function buildWorkoutGarminReadyExportStep(
+  step: SessionDraftStep,
+  index: number,
+  basePaceSecondsPer100m: number,
+  reviewIssueIds: string[]
+): WorkoutGarminReadyExportStep {
+  const targetMode = step.targetMode ?? "none";
+  const structuredTargetLabel = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
 
-    if (roundDistanceM > 0) {
-      roundParts.push(`${roundDistanceM}m`);
-    }
-
-    if (roundDurationSeconds > 0) {
-      roundParts.push(formatClockDurationLabelFromSeconds(roundDurationSeconds));
-    }
-
-    parts.push(`${roundParts.join(" + ")} per round`);
-  }
-
-  return parts.join(" · ");
+  return {
+    id: step.id,
+    position: index + 1,
+    name: step.name,
+    mappingStatus: reviewIssueIds.length > 0 ? "review" : "ready",
+    reviewIssueIds,
+    category: {
+      value: step.category,
+      label: getSessionStepCategoryLabel(step.category),
+    },
+    stroke: {
+      value: step.stroke,
+      label: getSessionStepStrokeLabel(step.stroke),
+    },
+    drillType:
+      step.drillType && step.drillType !== "none"
+        ? {
+            value: step.drillType,
+            label: getSessionStepDrillTypeLabel(step.drillType),
+          }
+        : null,
+    equipment:
+      step.equipment && step.equipment !== "none"
+        ? {
+            value: step.equipment,
+            label: getSessionStepEquipmentLabel(step.equipment),
+          }
+        : null,
+    intensity: {
+      value: step.intensity,
+      label: getSessionEffortLabel(step.intensity),
+    },
+    duration: {
+      mode: step.durationMode,
+      label: getSessionStepDurationModeLabel(step.durationMode),
+      distanceM: step.distanceM ?? null,
+      timeMin: step.timeMin ?? null,
+      cssSendOffOffsetSeconds: step.cssSendOffOffsetSeconds ?? null,
+      summary: buildWorkoutHandoffDurationSummary(step, basePaceSecondsPer100m),
+    },
+    target: {
+      mode: targetMode,
+      label: getSessionStepTargetModeLabel(targetMode),
+      effortTarget: step.effortTarget
+        ? {
+            value: step.effortTarget,
+            label: getSessionEffortLabel(step.effortTarget),
+          }
+        : null,
+      targetPaceSecondsPer100m: step.targetPaceSecondsPer100m ?? null,
+      cssTargetOffsetSeconds: step.cssTargetOffsetSeconds ?? null,
+      structuredLabel: structuredTargetLabel ?? null,
+      draftSummary: step.targetSummary || null,
+    },
+    notes: step.notes || null,
+    repeatGroupId: step.repeatGroupId ?? null,
+    repeatCount: step.repeatCount ?? null,
+  };
 }
 
 function buildWorkoutHandoffStepSummary(
