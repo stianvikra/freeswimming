@@ -80,6 +80,16 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
       "Ready for the planned Garmin/export handoff."
     );
+    await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
+      "data-handoff-state",
+      "canonical"
+    );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
+      "Source: Canonical workout"
+    );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
+      "Title: Manual pool workout"
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
     await page.getByTestId("session-draft-step-remove-0").click();
@@ -157,6 +167,17 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-4")).toContainText(
       "Reverse IM order (RIMO)"
     );
+    await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
+      "data-handoff-state",
+      "local_draft"
+    );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
+      "Source: Local draft"
+    );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(uniqueTitle);
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
+      "Review before export/send"
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     const patchResponsePromise = page.waitForResponse(
@@ -180,6 +201,14 @@ test.describe("my library workout builder", () => {
       "data-readiness-status",
       "review"
     );
+    await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
+      "data-handoff-state",
+      "canonical"
+    );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
+      "Source: Canonical workout"
+    );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(uniqueTitle);
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
     await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("33.33");

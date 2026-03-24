@@ -14,8 +14,17 @@ import {
   SESSION_GENERATOR_SESSION_TYPES,
   SESSION_GENERATOR_STROKES,
   computeSessionDraftDerivedTotals,
+  buildSessionStepStructuredTargetLabel,
+  buildSessionTargetSummary,
+  formatPoolLengthLabel,
+  getSessionEffortLabel,
+  getSessionEnvironmentLabel,
+  getSessionStepCategoryLabel,
   getSessionStepDrillTypeLabel,
   getSessionStepEquipmentLabel,
+  getSessionStepStrokeLabel,
+  getSessionStepDurationModeLabel,
+  getSessionTypeLabel,
   normalizeSessionDraftPoolLength,
   type SessionDraft,
   type SessionDraftStep,
@@ -93,6 +102,8 @@ export type WorkoutGarminReadinessReport = {
   issues: WorkoutGarminReadinessIssue[];
 };
 
+export type WorkoutHandoffDraftState = "canonical" | "local_draft";
+
 export function buildWorkoutDraftChangeSignature(
   draft: SessionDraft | null | undefined
 ): string | null {
@@ -141,6 +152,142 @@ export function buildWorkoutGarminReadinessReport(
     } before you treat this workout as handoff-ready.`,
     issues,
   };
+}
+
+export function buildWorkoutHandoffFileName(
+  draft: SessionDraft | null | undefined,
+  options?: {
+    draftState?: WorkoutHandoffDraftState;
+  }
+) {
+  const title = normalizeFileNamePart(draft?.title ?? "");
+  const draftState = options?.draftState ?? "local_draft";
+  const suffix = draftState === "canonical" ? "" : "-draft";
+
+  return `freeswimming-${title || "workout"}-handoff${suffix}.txt`;
+}
+
+export function buildWorkoutHandoffText(
+  draft: SessionDraft | null | undefined,
+  options?: {
+    draftState?: WorkoutHandoffDraftState;
+  }
+) {
+  if (!draft) {
+    return "No workout draft is available yet.";
+  }
+
+  const draftState = options?.draftState ?? "local_draft";
+  const totals = computeSessionDraftDerivedTotals(draft);
+  const normalizedDraft = {
+    ...draft,
+    totalDistanceM: totals.totalDistanceM ?? draft.totalDistanceM,
+    estimatedDurationMin: totals.estimatedDurationMin ?? draft.estimatedDurationMin,
+  };
+  const readiness = buildWorkoutGarminReadinessReport(draft);
+  const stepGroups = buildWorkoutHandoffGroups(draft.steps);
+  const lines = [
+    "FreeSwimming workout handoff",
+    `Source: ${draftState === "canonical" ? "Canonical workout" : "Local draft"}`,
+    `Title: ${draft.title}`,
+    `Garmin/export readiness: ${readiness.status === "ready" ? "Ready" : "Review"}`,
+    `Readiness summary: ${readiness.summary}`,
+    "",
+    "Use this handoff for manual Garmin Connect entry, coach review, or poolside notes until direct Garmin delivery exists.",
+    "",
+    "Workout",
+    `- Session: ${buildSessionTargetSummary(normalizedDraft)}`,
+    `- Environment: ${buildWorkoutEnvironmentSummary(draft)}`,
+    `- Session type: ${getSessionTypeLabel(draft.sessionType)}`,
+    `- Effort: ${getSessionEffortLabel(draft.effort)}`,
+  ];
+
+  if (draft.goalTitle) {
+    lines.push(`- Goal: ${draft.goalTitle}`);
+  }
+
+  if (draft.focusText) {
+    lines.push(`- Focus: ${draft.focusText}`);
+  }
+
+  if (draft.constraintText) {
+    lines.push(`- Constraint: ${draft.constraintText}`);
+  }
+
+  if (draft.description) {
+    lines.push(`- Description: ${draft.description}`);
+  }
+
+  if (draft.warnings.length > 0) {
+    lines.push("", "Existing draft warnings");
+    for (const warning of draft.warnings) {
+      lines.push(`- ${warning}`);
+    }
+  }
+
+  if (readiness.issues.length > 0) {
+    lines.push("", "Review before export/send");
+    for (const issue of readiness.issues) {
+      lines.push(`- ${issue.detail}`);
+    }
+  }
+
+  lines.push("", "Steps");
+
+  stepGroups.forEach((group, groupIndex) => {
+    const groupLabel = `${groupIndex + 1}.`;
+
+    if (group.kind === "single") {
+      const entry = group.entries[0];
+      if (!entry) return;
+
+      lines.push(`${groupLabel} ${entry.step.name}`);
+      lines.push(
+        `   - ${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
+          entry.step,
+          draft.basePaceSecondsPer100m
+        )}`
+      );
+
+      if (entry.step.targetSummary) {
+        lines.push(`   - Target notes: ${entry.step.targetSummary}`);
+      }
+
+      if (entry.step.notes) {
+        lines.push(`   - Notes: ${entry.step.notes}`);
+      }
+
+      return;
+    }
+
+    lines.push(
+      `${groupLabel} Repeat block · ${buildWorkoutHandoffRepeatSummary(
+        group.entries,
+        group.repeatCount,
+        draft.basePaceSecondsPer100m
+      )}`
+    );
+
+    group.entries.forEach((entry, repeatIndex) => {
+      lines.push(`   ${groupIndex + 1}.${repeatIndex + 1} ${entry.step.name}`);
+      lines.push(
+        `      - ${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
+          entry.step,
+          draft.basePaceSecondsPer100m
+        )}`
+      );
+
+      if (entry.step.targetSummary) {
+        lines.push(`      - Target notes: ${entry.step.targetSummary}`);
+      }
+
+      if (entry.step.notes) {
+        lines.push(`      - Notes: ${entry.step.notes}`);
+      }
+    });
+  });
+
+  return lines.join("\n");
 }
 
 export function normalizeSessionDraftForWorkoutPersistence(
@@ -377,6 +524,211 @@ function buildWorkoutGarminReadinessIssues(
 function buildWorkoutStepReadinessLabel(step: SessionDraftStep, index: number) {
   const name = typeof step.name === "string" ? step.name.trim() : "";
   return name ? `Step ${index + 1} (${name})` : `Step ${index + 1}`;
+}
+
+type WorkoutHandoffEntry = {
+  step: SessionDraftStep;
+  index: number;
+};
+
+type WorkoutHandoffGroup =
+  | {
+      kind: "single";
+      entries: [WorkoutHandoffEntry];
+    }
+  | {
+      kind: "repeat";
+      repeatGroupId: string;
+      repeatCount: number | null;
+      entries: WorkoutHandoffEntry[];
+    };
+
+function buildWorkoutEnvironmentSummary(draft: SessionDraft) {
+  if (draft.environment !== "pool") {
+    return getSessionEnvironmentLabel(draft.environment);
+  }
+
+  const poolLength =
+    typeof draft.poolLengthM === "number" && Number.isFinite(draft.poolLengthM)
+      ? ` (${formatPoolLengthLabel(draft.poolLengthM)})`
+      : "";
+
+  return `${getSessionEnvironmentLabel(draft.environment)}${poolLength}`;
+}
+
+function buildWorkoutHandoffGroups(steps: SessionDraftStep[]): WorkoutHandoffGroup[] {
+  const groups: WorkoutHandoffGroup[] = [];
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+
+    if (!step) continue;
+
+    if (!step.repeatGroupId) {
+      groups.push({
+        kind: "single",
+        entries: [{ step, index }],
+      });
+      continue;
+    }
+
+    const entries: WorkoutHandoffEntry[] = [{ step, index }];
+    let nextIndex = index + 1;
+
+    while (nextIndex < steps.length && steps[nextIndex]?.repeatGroupId === step.repeatGroupId) {
+      const nextStep = steps[nextIndex];
+      if (!nextStep) break;
+      entries.push({ step: nextStep, index: nextIndex });
+      nextIndex += 1;
+    }
+
+    groups.push({
+      kind: "repeat",
+      repeatGroupId: step.repeatGroupId,
+      repeatCount: step.repeatCount ?? null,
+      entries,
+    });
+    index = nextIndex - 1;
+  }
+
+  return groups;
+}
+
+function buildWorkoutHandoffRepeatSummary(
+  entries: WorkoutHandoffEntry[],
+  repeatCount: number | null,
+  basePaceSecondsPer100m: number
+) {
+  if (repeatCount === null) {
+    return "repeat count not set";
+  }
+
+  let roundDistanceM = 0;
+  let roundDurationSeconds = 0;
+
+  for (const { step } of entries) {
+    if (step.durationMode === "distance" && step.distanceM) {
+      roundDistanceM += step.distanceM;
+    }
+
+    if (
+      (step.durationMode === "time" ||
+        step.durationMode === "fixed_rest" ||
+        step.durationMode === "send_off") &&
+      step.timeMin
+    ) {
+      roundDurationSeconds += getClockTotalSeconds(step.timeMin);
+    }
+
+    if (step.durationMode === "css_send_off" && typeof step.cssSendOffOffsetSeconds === "number") {
+      roundDurationSeconds += Math.max(1, basePaceSecondsPer100m + step.cssSendOffOffsetSeconds);
+    }
+  }
+
+  const parts = [`${repeatCount} rounds`];
+
+  if (roundDistanceM > 0 || roundDurationSeconds > 0) {
+    const roundParts: string[] = [];
+
+    if (roundDistanceM > 0) {
+      roundParts.push(`${roundDistanceM}m`);
+    }
+
+    if (roundDurationSeconds > 0) {
+      roundParts.push(formatClockDurationLabelFromSeconds(roundDurationSeconds));
+    }
+
+    parts.push(`${roundParts.join(" + ")} per round`);
+  }
+
+  return parts.join(" · ");
+}
+
+function buildWorkoutHandoffStepSummary(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number
+) {
+  const structuredTarget = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
+  const contextParts = [getSessionStepStrokeLabel(step.stroke)];
+
+  if (step.drillType && step.drillType !== "none") {
+    const drillLabel = getSessionStepDrillTypeLabel(step.drillType);
+    if (!(step.stroke === "drill" && drillLabel === "Drill")) {
+      contextParts.push(drillLabel);
+    }
+  }
+
+  if (step.equipment && step.equipment !== "none") {
+    contextParts.push(getSessionStepEquipmentLabel(step.equipment));
+  }
+
+  return [
+    buildWorkoutHandoffDurationSummary(step, basePaceSecondsPer100m),
+    contextParts.join(" · "),
+    structuredTarget ?? getSessionEffortLabel(step.intensity),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function buildWorkoutHandoffDurationSummary(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number
+) {
+  switch (step.durationMode) {
+    case "distance":
+      return step.distanceM ? `${step.distanceM}m` : "Distance not set";
+    case "time":
+      return step.timeMin ? formatMinutesLabel(step.timeMin) : "Time not set";
+    case "fixed_rest":
+      return step.timeMin
+        ? `Fixed rest ${formatClockDurationLabel(step.timeMin)}`
+        : "Fixed rest not set";
+    case "send_off":
+      return step.timeMin
+        ? `Send-off ${formatClockDurationLabel(step.timeMin)}`
+        : "Send-off not set";
+    case "css_send_off":
+      if (typeof step.cssSendOffOffsetSeconds !== "number") {
+        return "CSS send-off not set";
+      }
+
+      return `CSS ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s send-off (${formatClockDurationLabelFromSeconds(
+        basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
+      )})`;
+    case "lap_button":
+      return "Lap button press";
+    default:
+      return getSessionStepDurationModeLabel(step.durationMode);
+  }
+}
+
+function formatMinutesLabel(value: number) {
+  return `${Number.isInteger(value) ? value : value.toFixed(1).replace(/\.0$/, "")} min`;
+}
+
+function getClockTotalSeconds(valueMinutes: number | null | undefined) {
+  if (!valueMinutes || valueMinutes <= 0) return 0;
+  return Math.max(0, Math.round(valueMinutes * 60));
+}
+
+function formatClockDurationLabel(valueMinutes: number | null | undefined) {
+  return formatClockDurationLabelFromSeconds(getClockTotalSeconds(valueMinutes));
+}
+
+function formatClockDurationLabelFromSeconds(totalSeconds: number) {
+  const normalizedSeconds = Math.max(0, Math.round(totalSeconds));
+  const minutes = Math.floor(normalizedSeconds / 60);
+  const seconds = normalizedSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function normalizeFileNamePart(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
 }
 
 function normalizeStep(

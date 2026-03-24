@@ -50,7 +50,10 @@ import {
 } from "@/lib/session-generator-v1/shared";
 import {
   buildWorkoutGarminReadinessReport,
+  buildWorkoutHandoffFileName,
+  buildWorkoutHandoffText,
   type WorkoutEditorRecord,
+  type WorkoutHandoffDraftState,
   type WorkoutSummary,
 } from "@/lib/workouts/shared";
 
@@ -450,8 +453,25 @@ export default function WorkoutEditor({
   );
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
   const [lastRemovedBlock, setLastRemovedBlock] = useState<LastRemovedBlock | null>(null);
+  const [handoffNotice, setHandoffNotice] = useState("");
+  const [handoffError, setHandoffError] = useState("");
   const poolLengthUsesPreset =
     typeof draft.poolLengthM === "number" && isSessionDraftPoolLengthPreset(draft.poolLengthM);
+  const handoffDraftState: WorkoutHandoffDraftState =
+    savedWorkout && !hasUnsavedChanges ? "canonical" : "local_draft";
+  const handoffText = buildWorkoutHandoffText(draft, {
+    draftState: handoffDraftState,
+  });
+  const handoffFileName = buildWorkoutHandoffFileName(draft, {
+    draftState: handoffDraftState,
+  });
+  const handoffStateLabel =
+    handoffDraftState === "canonical" ? "Canonical handoff" : "Local draft handoff";
+  const handoffStateDescription = savedWorkout
+    ? hasUnsavedChanges
+      ? "Handoff preview reflects unsaved local edits. Save first if you want the canonical workout and handoff to match."
+      : "Handoff preview matches the saved canonical workout."
+    : "Handoff preview reflects the current local draft before canonical save.";
 
   useEffect(() => {
     setPoolLengthInput(formatEditablePoolLength(draft.poolLengthM));
@@ -486,6 +506,11 @@ export default function WorkoutEditor({
     setPendingRemoval(null);
     setLastRemovedBlock(null);
   }, [savedWorkout?.id, savedWorkout?.updatedAt]);
+
+  useEffect(() => {
+    setHandoffNotice("");
+    setHandoffError("");
+  }, [handoffText, handoffDraftState, savedWorkout?.id, savedWorkout?.updatedAt]);
 
   function syncDraftSelections(nextDraft: SessionDraft) {
     const requiredStrokes = Array.from(
@@ -933,6 +958,45 @@ export default function WorkoutEditor({
 
     const parsed = parsePoolLengthInput(nextValue);
     updateDraft("poolLengthM", parsed);
+  }
+
+  async function copyWorkoutHandoff() {
+    setHandoffNotice("");
+    setHandoffError("");
+
+    try {
+      if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable.");
+      }
+
+      await navigator.clipboard.writeText(handoffText);
+      setHandoffNotice("Workout handoff copied.");
+    } catch {
+      setHandoffError("Could not copy the workout handoff automatically. Use the preview below.");
+    }
+  }
+
+  function downloadWorkoutHandoff() {
+    setHandoffNotice("");
+    setHandoffError("");
+
+    try {
+      const blob = new Blob([handoffText], {
+        type: "text/plain;charset=utf-8",
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = handoffFileName;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setHandoffNotice(`Downloaded ${handoffFileName}.`);
+    } catch {
+      setHandoffError("Could not download the workout handoff right now.");
+    }
   }
 
   function renderStepEditorCard(
@@ -1632,6 +1696,70 @@ export default function WorkoutEditor({
             ))}
           </ul>
         ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Workout handoff
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-900">
+              Copy or download the current workout as structured text for manual Garmin Connect
+              entry, coach review, or poolside notes until direct provider delivery exists.
+            </p>
+            <p
+              data-testid="workout-editor-handoff-source"
+              data-handoff-state={handoffDraftState}
+              className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+            >
+              {handoffStateLabel}
+            </p>
+            <p className="mt-1 text-sm text-slate-600">{handoffStateDescription}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={copyWorkoutHandoff}
+              data-testid="workout-editor-handoff-copy"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              Copy handoff
+            </button>
+            <button
+              type="button"
+              onClick={downloadWorkoutHandoff}
+              data-testid="workout-editor-handoff-download"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              Download .txt
+            </button>
+          </div>
+        </div>
+
+        {handoffNotice ? (
+          <p
+            data-testid="workout-editor-handoff-notice"
+            className="mt-3 text-sm font-medium text-emerald-700"
+          >
+            {handoffNotice}
+          </p>
+        ) : null}
+
+        {handoffError ? (
+          <p data-testid="workout-editor-handoff-error" className="mt-3 text-sm text-rose-700">
+            {handoffError}
+          </p>
+        ) : null}
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+          <pre
+            data-testid="workout-editor-handoff-preview"
+            className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
+          >
+            {handoffText}
+          </pre>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
