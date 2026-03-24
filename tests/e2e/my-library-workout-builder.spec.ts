@@ -124,7 +124,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-repeat-count-6")).toHaveValue("6");
     await page.getByTestId("session-draft-repeat-count-6").fill("3");
     await page.getByTestId("session-draft-step-name-7").fill("Repeat swim copy focus");
-    await page.getByTestId("session-draft-add-step").click();
+    await page.getByTestId("session-draft-repeat-add-step-after-6").click();
     await page.getByTestId("session-draft-step-name-9").fill("QA CSS send-off reset");
     await page.getByTestId("session-draft-step-duration-mode-9").selectOption("css_send_off");
     await page.getByTestId("session-draft-step-stroke-9").selectOption("reverse_im_order");
