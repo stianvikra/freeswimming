@@ -7,6 +7,7 @@ import type {
   WorkoutLibrarySnapshot,
   WorkoutSummary,
 } from "@/lib/workouts/shared";
+import { buildWorkoutHandoffFileName } from "@/lib/workouts/shared";
 
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
@@ -593,6 +594,96 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.queryByTestId("session-draft-step-name-0")).not.toBeInTheDocument();
     expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Edit step");
+  });
+
+  it("builds a truthful handoff preview and supports copy/download actions", async () => {
+    const clipboardWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window.navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: clipboardWriteText,
+      },
+    });
+
+    const createUrlSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:http://127.0.0.1/mock-handoff");
+    const revokeUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
+      "data-handoff-state",
+      "canonical"
+    );
+    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
+      "Source: Canonical workout"
+    );
+    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
+      "Title: Accepted threshold workout"
+    );
+
+    fireEvent.change(screen.getByTestId("session-draft-title"), {
+      target: { value: "Local handoff workout" },
+    });
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.change(screen.getByTestId("session-draft-step-stroke-0"), {
+      target: { value: "reverse_im_order" },
+    });
+
+    expect(screen.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
+      "data-handoff-state",
+      "local_draft"
+    );
+    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
+      "Source: Local draft"
+    );
+    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
+      "Title: Local handoff workout"
+    );
+    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
+      "Reverse IM order (RIMO)"
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-handoff-copy"));
+
+    await waitFor(() => {
+      expect(clipboardWriteText).toHaveBeenCalledWith(
+        expect.stringContaining("Title: Local handoff workout")
+      );
+    });
+
+    expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
+      "Workout handoff copied."
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-handoff-download"));
+
+    await waitFor(() => {
+      expect(createUrlSpy).toHaveBeenCalledTimes(1);
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
+      `Downloaded ${buildWorkoutHandoffFileName(
+        {
+          ...buildDraft(),
+          title: "Local handoff workout",
+        },
+        { draftState: "local_draft" }
+      )}.`
+    );
+    expect(revokeUrlSpy).toHaveBeenCalledTimes(0);
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {
