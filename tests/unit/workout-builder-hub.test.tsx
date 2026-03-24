@@ -103,6 +103,12 @@ function buildWorkoutLibrary(overrides?: Partial<WorkoutLibrarySnapshot>): Worko
   };
 }
 
+function readPreviewDraft() {
+  return JSON.parse(
+    screen.getByTestId("session-generator-draft-preview").textContent ?? "{}"
+  ) as SessionDraft;
+}
+
 describe("WorkoutBuilderHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -372,6 +378,37 @@ describe("WorkoutBuilderHub", () => {
     );
   });
 
+  it("duplicates a single step after the source step with a fresh local identity", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-duplicate-0"));
+
+    expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Easy warmup swim");
+    expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "Unsaved changes stay local until you save this workout."
+    );
+
+    const previewDraft = readPreviewDraft();
+
+    expect(previewDraft.steps).toHaveLength(2);
+    expect(previewDraft.steps[0]?.id).not.toBe(previewDraft.steps[1]?.id);
+    expect(previewDraft.steps[1]).toMatchObject({
+      name: "Easy warmup swim",
+      category: "warmup",
+      durationMode: "distance",
+      distanceM: 400,
+    });
+    expect(previewDraft.steps[1]?.repeatGroupId ?? null).toBeNull();
+  });
+
   it("supports confirm and undo when removing a repeat block", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
@@ -403,6 +440,39 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.queryByTestId("workout-editor-removal-undo")).not.toBeInTheDocument();
     expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
+  });
+
+  it("duplicates a repeat block with a new repeat group identity", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    fireEvent.click(screen.getByTestId("session-draft-repeat-duplicate-1"));
+
+    expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
+    expect(screen.getByTestId("session-draft-repeat-count-2")).toHaveValue("4");
+    expect(screen.getByTestId("session-draft-step-name-3")).toHaveValue("Repeat swim");
+
+    fireEvent.change(screen.getByTestId("session-draft-repeat-count-2"), {
+      target: { value: "6" },
+    });
+
+    const previewDraft = readPreviewDraft();
+    const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
+
+    expect(repeatSteps).toHaveLength(4);
+    expect(repeatSteps[0]?.repeatGroupId).toBeTruthy();
+    expect(repeatSteps[2]?.repeatGroupId).toBeTruthy();
+    expect(repeatSteps[0]?.repeatGroupId).not.toBe(repeatSteps[2]?.repeatGroupId);
+    expect(repeatSteps.slice(0, 2).every((step) => step.repeatCount === 4)).toBe(true);
+    expect(repeatSteps.slice(2).every((step) => step.repeatCount === 6)).toBe(true);
+    expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
   });
 
   it("keeps step cards summary-first until the user opens them for editing", async () => {
