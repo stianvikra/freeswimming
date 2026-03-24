@@ -327,6 +327,84 @@ describe("WorkoutBuilderHub", () => {
     );
   });
 
+  it("requires confirmation and supports undo for destructive single-step removal", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-remove-0"));
+
+    expect(screen.getByTestId("workout-editor-removal-confirm")).toHaveTextContent(
+      "Remove Easy warmup swim?"
+    );
+    expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId("workout-editor-removal-cancel-button"));
+
+    expect(screen.queryByTestId("workout-editor-removal-confirm")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-step-toggle-0")).toBeVisible();
+    expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-remove-0"));
+    fireEvent.click(screen.getByTestId("workout-editor-removal-confirm-button"));
+
+    expect(screen.queryByTestId("session-draft-step-toggle-0")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-editor-removal-undo")).toHaveTextContent(
+      "Removed Easy warmup swim."
+    );
+    expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "Unsaved changes stay local until you save this workout."
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-removal-undo-button"));
+
+    expect(screen.queryByTestId("workout-editor-removal-undo")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-step-toggle-0")).toBeVisible();
+    expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "All builder changes are saved to the canonical workout."
+    );
+  });
+
+  it("supports confirm and undo when removing a repeat block", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+
+    expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
+
+    fireEvent.click(screen.getByTestId("session-draft-repeat-remove-1"));
+
+    expect(screen.getByTestId("workout-editor-removal-confirm")).toHaveTextContent(
+      "Repeat block (2 steps, 4 rounds)"
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-removal-confirm-button"));
+
+    expect(screen.queryByTestId("session-draft-repeat-count-1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-editor-removal-undo")).toHaveTextContent(
+      "Removed Repeat block (2 steps, 4 rounds)."
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-removal-undo-button"));
+
+    expect(screen.queryByTestId("workout-editor-removal-undo")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
+  });
+
   it("keeps step cards summary-first until the user opens them for editing", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 

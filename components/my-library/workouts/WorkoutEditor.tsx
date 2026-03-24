@@ -87,6 +87,27 @@ type StepRenderGroup =
       entries: StepRenderEntry[];
     };
 
+type PendingRemoval =
+  | {
+      kind: "step";
+      stepId: string;
+      label: string;
+      repeatGroupId: string | null;
+    }
+  | {
+      kind: "repeat";
+      repeatGroupId: string;
+      label: string;
+    };
+
+type LastRemovedBlock = {
+  kind: "step" | "repeat";
+  label: string;
+  steps: SessionDraftStep[];
+  insertIndex: number;
+  restoreOpenStepId: string | null;
+};
+
 const CUSTOM_DISTANCE_VALUE = "custom";
 
 function buildBlankStep(
@@ -213,6 +234,12 @@ function formatClockDurationLabelFromSeconds(totalSeconds: number) {
 
 function formatClockDurationLabel(valueMinutes: number | null | undefined) {
   return formatClockDurationLabelFromSeconds(getClockTotalSeconds(valueMinutes));
+}
+
+function buildStepRemovalLabel(step: SessionDraftStep, fallbackIndex: number) {
+  return (
+    step.name.trim() || `${getSessionStepCategoryLabel(step.category)} step ${fallbackIndex + 1}`
+  );
 }
 
 function buildDurationSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
@@ -394,6 +421,8 @@ export default function WorkoutEditor({
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
     formatEditablePoolLength(draft.poolLengthM)
   );
+  const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
+  const [lastRemovedBlock, setLastRemovedBlock] = useState<LastRemovedBlock | null>(null);
   const poolLengthUsesPreset =
     typeof draft.poolLengthM === "number" && isSessionDraftPoolLengthPreset(draft.poolLengthM);
 
@@ -406,6 +435,30 @@ export default function WorkoutEditor({
       setOpenStepId(null);
     }
   }, [draft.steps, openStepId]);
+
+  useEffect(() => {
+    if (!pendingRemoval) return;
+
+    if (
+      pendingRemoval.kind === "step" &&
+      !draft.steps.some((step) => step.id === pendingRemoval.stepId)
+    ) {
+      setPendingRemoval(null);
+      return;
+    }
+
+    if (
+      pendingRemoval.kind === "repeat" &&
+      !draft.steps.some((step) => step.repeatGroupId === pendingRemoval.repeatGroupId)
+    ) {
+      setPendingRemoval(null);
+    }
+  }, [draft.steps, pendingRemoval]);
+
+  useEffect(() => {
+    setPendingRemoval(null);
+    setLastRemovedBlock(null);
+  }, [savedWorkout?.id, savedWorkout?.updatedAt]);
 
   function syncDraftSelections(nextDraft: SessionDraft) {
     const requiredStrokes = Array.from(
@@ -481,6 +534,7 @@ export default function WorkoutEditor({
   }
 
   function addStep() {
+    setPendingRemoval(null);
     const nextStep = buildBlankStep(draft.steps.length + 1);
 
     setOpenStepId(nextStep.id);
@@ -493,6 +547,7 @@ export default function WorkoutEditor({
   }
 
   function addRepeat() {
+    setPendingRemoval(null);
     const nextSteps = buildRepeatStarterSteps(draft.steps.length + 1);
 
     setOpenStepId(nextSteps[0]?.id ?? null);
@@ -504,32 +559,124 @@ export default function WorkoutEditor({
     );
   }
 
-  function removeStep(stepId: string) {
-    if (openStepId === stepId) {
-      setOpenStepId(null);
+  function requestStepRemoval(stepId: string) {
+    const stepIndex = draft.steps.findIndex((step) => step.id === stepId);
+    if (stepIndex === -1) return;
+
+    const step = draft.steps[stepIndex];
+    setLastRemovedBlock(null);
+    setPendingRemoval({
+      kind: "step",
+      stepId,
+      label: buildStepRemovalLabel(step, stepIndex),
+      repeatGroupId: step.repeatGroupId ?? null,
+    });
+  }
+
+  function requestRepeatGroupRemoval(repeatGroupId: string) {
+    const repeatEntries = draft.steps.filter((step) => step.repeatGroupId === repeatGroupId);
+    if (repeatEntries.length === 0) return;
+
+    const repeatCount = repeatEntries[0]?.repeatCount;
+    const roundsLabel =
+      typeof repeatCount === "number" ? `${repeatCount} rounds` : "repeat count not set";
+
+    setLastRemovedBlock(null);
+    setPendingRemoval({
+      kind: "repeat",
+      repeatGroupId,
+      label: `Repeat block (${repeatEntries.length} steps, ${roundsLabel})`,
+    });
+  }
+
+  function cancelPendingRemoval() {
+    setPendingRemoval(null);
+  }
+
+  function confirmPendingRemoval() {
+    if (!pendingRemoval) return;
+
+    if (pendingRemoval.kind === "step") {
+      const removeIndex = draft.steps.findIndex((step) => step.id === pendingRemoval.stepId);
+      if (removeIndex === -1) {
+        setPendingRemoval(null);
+        return;
+      }
+
+      const removedStep = draft.steps[removeIndex];
+      const nextSteps = draft.steps.filter((step) => step.id !== pendingRemoval.stepId);
+      const removedOpenStep = openStepId === pendingRemoval.stepId;
+
+      setPendingRemoval(null);
+      setLastRemovedBlock({
+        kind: "step",
+        label: pendingRemoval.label,
+        steps: [removedStep],
+        insertIndex: removeIndex,
+        restoreOpenStepId: removedOpenStep ? removedStep.id : openStepId,
+      });
+      if (removedOpenStep) {
+        setOpenStepId(null);
+      }
+      onDraftChange(
+        syncDraftSelections({
+          ...draft,
+          steps: nextSteps,
+        })
+      );
+      return;
     }
 
+    const removedSteps = draft.steps.filter(
+      (step) => step.repeatGroupId === pendingRemoval.repeatGroupId
+    );
+    if (removedSteps.length === 0) {
+      setPendingRemoval(null);
+      return;
+    }
+
+    const insertIndex = draft.steps.findIndex(
+      (step) => step.repeatGroupId === pendingRemoval.repeatGroupId
+    );
+    const nextSteps = draft.steps.filter(
+      (step) => step.repeatGroupId !== pendingRemoval.repeatGroupId
+    );
+    const removedOpenStep = removedSteps.some((step) => step.id === openStepId);
+
+    setPendingRemoval(null);
+    setLastRemovedBlock({
+      kind: "repeat",
+      label: pendingRemoval.label,
+      steps: removedSteps,
+      insertIndex,
+      restoreOpenStepId: removedOpenStep ? (removedSteps[0]?.id ?? null) : openStepId,
+    });
+    if (removedOpenStep) {
+      setOpenStepId(null);
+    }
     onDraftChange(
       syncDraftSelections({
         ...draft,
-        steps: draft.steps.filter((step) => step.id !== stepId),
+        steps: nextSteps,
       })
     );
   }
 
-  function removeRepeatGroup(repeatGroupId: string) {
-    if (
-      draft.steps.some((step) => step.repeatGroupId === repeatGroupId && step.id === openStepId)
-    ) {
-      setOpenStepId(null);
-    }
+  function undoLastRemoval() {
+    if (!lastRemovedBlock) return;
+
+    const nextSteps = [...draft.steps];
+    const insertIndex = Math.min(Math.max(lastRemovedBlock.insertIndex, 0), nextSteps.length);
+    nextSteps.splice(insertIndex, 0, ...lastRemovedBlock.steps);
 
     onDraftChange(
       syncDraftSelections({
         ...draft,
-        steps: draft.steps.filter((step) => step.repeatGroupId !== repeatGroupId),
+        steps: nextSteps,
       })
     );
+    setOpenStepId(lastRemovedBlock.restoreOpenStepId);
+    setLastRemovedBlock(null);
   }
 
   function updateRepeatGroupCount(repeatGroupId: string, value: string) {
@@ -744,7 +891,8 @@ export default function WorkoutEditor({
             </button>
             <button
               type="button"
-              onClick={() => removeStep(step.id)}
+              onClick={() => requestStepRemoval(step.id)}
+              data-testid={`session-draft-step-remove-${index}`}
               className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
             >
               Remove
@@ -1513,6 +1661,71 @@ export default function WorkoutEditor({
         </div>
 
         <div className="mt-4 space-y-4">
+          {pendingRemoval ? (
+            <div
+              data-testid="workout-editor-removal-confirm"
+              className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4"
+            >
+              <p className="text-sm font-medium text-amber-950">
+                Confirm removal before this builder change is applied.
+              </p>
+              <p className="mt-1 text-sm text-amber-900">
+                Remove <span className="font-semibold">{pendingRemoval.label}</span>? You can still
+                undo it locally before saving.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={confirmPendingRemoval}
+                  data-testid="workout-editor-removal-confirm-button"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
+                >
+                  Remove now
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelPendingRemoval}
+                  data-testid="workout-editor-removal-cancel-button"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-100 active:bg-amber-200"
+                >
+                  Keep it
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {lastRemovedBlock ? (
+            <div
+              data-testid="workout-editor-removal-undo"
+              className="rounded-2xl border border-blue-200 bg-blue-50/90 p-4"
+            >
+              <p className="text-sm font-medium text-blue-950">
+                Removed <span className="font-semibold">{lastRemovedBlock.label}</span>.
+              </p>
+              <p className="mt-1 text-sm text-blue-900">
+                Undo restores it to the same local spot before you save this workout.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={undoLastRemoval}
+                  data-testid="workout-editor-removal-undo-button"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  Undo removal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLastRemovedBlock(null)}
+                  data-testid="workout-editor-removal-dismiss-button"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-900 transition hover:bg-blue-100 active:bg-blue-200"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {stepGroups.map((group, groupIndex) =>
             group.kind === "single" ? (
               renderStepEditorCard(group.entries[0].step, group.entries[0].index, groupIndex)
@@ -1576,7 +1789,8 @@ export default function WorkoutEditor({
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeRepeatGroup(group.repeatGroupId)}
+                      onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
+                      data-testid={`session-draft-repeat-remove-${groupIndex}`}
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
                     >
                       Remove repeat
@@ -1622,8 +1836,12 @@ export default function WorkoutEditor({
           {savedWorkout && onResetToSaved ? (
             <button
               type="button"
-              onClick={onResetToSaved}
-              disabled={isSaving || !hasUnsavedChanges}
+              onClick={() => {
+                setPendingRemoval(null);
+                setLastRemovedBlock(null);
+                onResetToSaved();
+              }}
+              disabled={isSaving || !hasUnsavedChanges || pendingRemoval !== null}
               data-testid="workout-editor-reset"
               className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -1632,9 +1850,16 @@ export default function WorkoutEditor({
           ) : null}
           <button
             type="button"
-            onClick={onSave}
+            onClick={() => {
+              setPendingRemoval(null);
+              setLastRemovedBlock(null);
+              onSave();
+            }}
             disabled={
-              isSaving || !canonicalSaveReady || (savedWorkout ? !hasUnsavedChanges : false)
+              isSaving ||
+              !canonicalSaveReady ||
+              pendingRemoval !== null ||
+              (savedWorkout ? !hasUnsavedChanges : false)
             }
             data-testid={saveButtonTestId}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
