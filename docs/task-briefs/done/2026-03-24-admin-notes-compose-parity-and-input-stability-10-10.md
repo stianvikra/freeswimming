@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-24-admin-notes-compose-parity-and-input-stability-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-24`
 - `updated`: `2026-03-24`
@@ -239,3 +239,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-24 | feat/admin-notes-compose-parity-clipboard@working-tree | moved brief to in-progress and implemented priority parity for contextual note forms, local search state with URL persistence in the notes manager, clipboard-image paste for attachment-capable note flows, and a lighter quick-capture image-tools disclosure for mobile | next: finish repo gates, open PR, and record the validation evidence`
 - `2026-03-24 | feat/admin-notes-compose-parity-clipboard@working-tree | help-guide and recovery docs now cover clipboard paste, collapsed image tools, and local-only staged-image recovery; targeted tests, targeted admin Playwright, typecheck, build, and full npm run verify:pre-pr passed with NODE_OPTIONS=--max-old-space-size=4096 in the isolated worktree | next: stage cleanly, rerun changed-brief lint, commit, push, and open PR`
 - `2026-03-24 | feat/admin-notes-compose-parity-clipboard@working-tree | hardened notes-manager filter state to stay local-first and hardened admin-notes workflow readiness checks so full-suite loading transients skip instead of failing half-hydrated note queues; final targeted admin-notes tests and final npm run verify:pre-pr passed in the isolated worktree | next: commit, push, open PR, and monitor CI`
+- `2026-03-24 | main@5221342 | PR #283 merged as squash commit 5221342fc9c5b8061b306f3ef7e834c1b8d577ad after required CI green plus local npm run verify:pre-merge PASS; brief moved to done in follow-up closeout branch so lifecycle state matches shipped code | next: return focus to builder/Garmin handoff priority`
