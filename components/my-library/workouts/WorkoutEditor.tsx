@@ -110,12 +110,20 @@ type LastRemovedBlock = {
 
 const CUSTOM_DISTANCE_VALUE = "custom";
 
+function buildStepId(index: number) {
+  return `step-${Date.now()}-${index}`;
+}
+
+function buildRepeatGroupId(index: number) {
+  return `repeat-${Date.now()}-${index}`;
+}
+
 function buildBlankStep(
   index: number,
   overrides: Partial<SessionDraftStep> = {}
 ): SessionDraftStep {
   return {
-    id: `step-${Date.now()}-${index}`,
+    id: buildStepId(index),
     category: "main",
     name: "Custom step",
     stroke: "choice",
@@ -179,7 +187,7 @@ function formatEditableDistance(value: number | null | undefined) {
 }
 
 function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
-  const groupId = `repeat-${Date.now()}-${index}`;
+  const groupId = buildRepeatGroupId(index);
 
   return [
     buildBlankStep(index, {
@@ -559,6 +567,56 @@ export default function WorkoutEditor({
     );
   }
 
+  function duplicateStep(stepId: string) {
+    const sourceIndex = draft.steps.findIndex((step) => step.id === stepId);
+    if (sourceIndex === -1) return;
+
+    const sourceStep = draft.steps[sourceIndex];
+    const duplicatedStep: SessionDraftStep = {
+      ...sourceStep,
+      id: buildStepId(draft.steps.length + 1),
+    };
+    const nextSteps = [...draft.steps];
+    nextSteps.splice(sourceIndex + 1, 0, duplicatedStep);
+
+    setPendingRemoval(null);
+    setLastRemovedBlock(null);
+    setOpenStepId(duplicatedStep.id);
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: nextSteps,
+      })
+    );
+  }
+
+  function duplicateRepeatGroup(repeatGroupId: string) {
+    const sourceIndex = draft.steps.findIndex((step) => step.repeatGroupId === repeatGroupId);
+    if (sourceIndex === -1) return;
+
+    const sourceSteps = draft.steps.filter((step) => step.repeatGroupId === repeatGroupId);
+    if (sourceSteps.length === 0) return;
+
+    const nextRepeatGroupId = buildRepeatGroupId(draft.steps.length + 1);
+    const duplicatedSteps = sourceSteps.map((step, index) => ({
+      ...step,
+      id: `${nextRepeatGroupId}-step-${index + 1}`,
+      repeatGroupId: nextRepeatGroupId,
+    }));
+    const nextSteps = [...draft.steps];
+    nextSteps.splice(sourceIndex + sourceSteps.length, 0, ...duplicatedSteps);
+
+    setPendingRemoval(null);
+    setLastRemovedBlock(null);
+    setOpenStepId(duplicatedSteps[0]?.id ?? null);
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: nextSteps,
+      })
+    );
+  }
+
   function requestStepRemoval(stepId: string) {
     const stepIndex = draft.steps.findIndex((step) => step.id === stepId);
     if (stepIndex === -1) return;
@@ -875,6 +933,14 @@ export default function WorkoutEditor({
                 </button>
               </>
             )}
+            <button
+              type="button"
+              onClick={() => duplicateStep(step.id)}
+              data-testid={`session-draft-step-duplicate-${index}`}
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50"
+            >
+              Duplicate
+            </button>
             <button
               type="button"
               onClick={() => setOpenStepId((current) => (current === step.id ? null : step.id))}
@@ -1786,6 +1852,14 @@ export default function WorkoutEditor({
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Move down
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
+                      data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                    >
+                      Duplicate repeat
                     </button>
                     <button
                       type="button"
