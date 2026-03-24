@@ -49,6 +49,8 @@ import {
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
 import {
+  buildWorkoutGarminReadyExport,
+  buildWorkoutGarminReadyExportFileName,
   buildWorkoutGarminReadinessReport,
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
@@ -453,12 +455,29 @@ export default function WorkoutEditor({
   );
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
   const [lastRemovedBlock, setLastRemovedBlock] = useState<LastRemovedBlock | null>(null);
+  const [garminExportNotice, setGarminExportNotice] = useState("");
+  const [garminExportError, setGarminExportError] = useState("");
   const [handoffNotice, setHandoffNotice] = useState("");
   const [handoffError, setHandoffError] = useState("");
   const poolLengthUsesPreset =
     typeof draft.poolLengthM === "number" && isSessionDraftPoolLengthPreset(draft.poolLengthM);
   const handoffDraftState: WorkoutHandoffDraftState =
     savedWorkout && !hasUnsavedChanges ? "canonical" : "local_draft";
+  const garminReadyExport = buildWorkoutGarminReadyExport(draft, {
+    draftState: handoffDraftState,
+    workoutId: savedWorkout?.id ?? null,
+  });
+  const garminReadyExportPreview = JSON.stringify(garminReadyExport, null, 2);
+  const garminReadyExportFileName = buildWorkoutGarminReadyExportFileName(draft, {
+    draftState: handoffDraftState,
+  });
+  const garminExportStateLabel =
+    handoffDraftState === "canonical" ? "Canonical Garmin-ready export" : "Local draft Garmin-ready export";
+  const garminExportStateDescription = savedWorkout
+    ? hasUnsavedChanges
+      ? "JSON export preview reflects unsaved local edits. Save first if you want the canonical workout and export adapter output to match."
+      : "JSON export preview matches the saved canonical workout."
+    : "JSON export preview reflects the current local draft before canonical save.";
   const handoffText = buildWorkoutHandoffText(draft, {
     draftState: handoffDraftState,
   });
@@ -506,6 +525,11 @@ export default function WorkoutEditor({
     setPendingRemoval(null);
     setLastRemovedBlock(null);
   }, [savedWorkout?.id, savedWorkout?.updatedAt]);
+
+  useEffect(() => {
+    setGarminExportNotice("");
+    setGarminExportError("");
+  }, [garminReadyExportPreview, handoffDraftState, savedWorkout?.id, savedWorkout?.updatedAt]);
 
   useEffect(() => {
     setHandoffNotice("");
@@ -996,6 +1020,29 @@ export default function WorkoutEditor({
       setHandoffNotice(`Downloaded ${handoffFileName}.`);
     } catch {
       setHandoffError("Could not download the workout handoff right now.");
+    }
+  }
+
+  function downloadWorkoutGarminReadyExport() {
+    setGarminExportNotice("");
+    setGarminExportError("");
+
+    try {
+      const blob = new Blob([garminReadyExportPreview], {
+        type: "application/json;charset=utf-8",
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = garminReadyExportFileName;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setGarminExportNotice(`Downloaded ${garminReadyExportFileName}.`);
+    } catch {
+      setGarminExportError("Could not download the Garmin-ready JSON right now.");
     }
   }
 
@@ -1696,6 +1743,66 @@ export default function WorkoutEditor({
             ))}
           </ul>
         ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+              Garmin-ready JSON
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-900">
+              Download the current workout as the truthful FreeSwimming `garmin-ready` adapter
+              output. This is not a live Garmin payload yet; it preserves current mapping warnings
+              so later provider delivery can stay explicit and deterministic.
+            </p>
+            <p
+              data-testid="workout-editor-garmin-export-source"
+              data-export-state={handoffDraftState}
+              className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+            >
+              {garminExportStateLabel}
+            </p>
+            <p className="mt-1 text-sm text-slate-600">{garminExportStateDescription}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={downloadWorkoutGarminReadyExport}
+              data-testid="workout-editor-garmin-export-download"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              Download .json
+            </button>
+          </div>
+        </div>
+
+        {garminExportNotice ? (
+          <p
+            data-testid="workout-editor-garmin-export-notice"
+            className="mt-3 text-sm font-medium text-emerald-700"
+          >
+            {garminExportNotice}
+          </p>
+        ) : null}
+
+        {garminExportError ? (
+          <p
+            data-testid="workout-editor-garmin-export-error"
+            className="mt-3 text-sm text-rose-700"
+          >
+            {garminExportError}
+          </p>
+        ) : null}
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+          <pre
+            data-testid="workout-editor-garmin-export-preview"
+            className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
+          >
+            {garminReadyExportPreview}
+          </pre>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">

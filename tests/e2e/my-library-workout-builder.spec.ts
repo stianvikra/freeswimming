@@ -90,6 +90,16 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
       "Title: Manual pool workout"
     );
+    await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
+      "data-export-state",
+      "canonical"
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      '"kind": "freeswimming_garmin_ready_workout_v1"'
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      '"draftState": "canonical"'
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
     await page.getByTestId("session-draft-step-remove-0").click();
@@ -178,6 +188,19 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
       "Review before export/send"
     );
+    await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
+      "data-export-state",
+      "local_draft"
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      '"draftState": "local_draft"'
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      `"title": "${uniqueTitle}"`
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      '"reviewIssueIds": ['
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     const patchResponsePromise = page.waitForResponse(
@@ -209,6 +232,16 @@ test.describe("my library workout builder", () => {
       "Source: Canonical workout"
     );
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(uniqueTitle);
+    await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
+      "data-export-state",
+      "canonical"
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      '"draftState": "canonical"'
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      `"title": "${uniqueTitle}"`
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
     await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("33.33");
