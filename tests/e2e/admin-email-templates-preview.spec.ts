@@ -73,23 +73,45 @@ test.describe("admin email template preview", () => {
     const createForm = page.getByTestId("admin-email-templates-create-form");
     await expect(createForm).toBeVisible();
 
-    await createForm.getByLabel("Subject").fill("Kode {{code}} i {{app_name}}");
+    const subjectField = createForm.getByLabel("Subject");
+    const bodyField = createForm.getByLabel("Body");
+    await expect(subjectField).toBeEditable();
+    await expect(bodyField).toBeEditable();
+
+    await subjectField.fill("Kode {{code}} i {{app_name}}");
+    await expect(subjectField).toHaveValue("Kode {{code}} i {{app_name}}");
     await createForm
       .getByLabel("Body")
       .fill(
         "Hei {{user_name}}. Bruk {{code}} innen {{expires_minutes}} min. Kontakt {{support_email}}. Ukjent {{custom_token}}."
       );
+    await expect(bodyField).toHaveValue(
+      "Hei {{user_name}}. Bruk {{code}} innen {{expires_minutes}} min. Kontakt {{support_email}}. Ukjent {{custom_token}}."
+    );
 
     const sampleValuesField = createForm.getByLabel("Preview sample values (JSON object)");
     await sampleValuesField.fill('{"code":');
-    await expect(createForm.getByTestId("admin-email-template-create-preview-error")).toHaveText(
-      "Preview sample values must be valid JSON."
-    );
+    await expect(sampleValuesField).toHaveValue('{"code":');
+    await expect
+      .poll(
+        async () =>
+          (await createForm
+            .getByTestId("admin-email-template-create-preview-error")
+            .textContent()
+            .catch(() => null)) ?? null,
+        { timeout: 10_000 }
+      )
+      .toBe("Preview sample values must be valid JSON.");
 
     await sampleValuesField.fill('{"code":"777111","user_name":"QA Tester"}');
-    await expect(createForm.getByTestId("admin-email-template-create-preview-error")).toHaveCount(
-      0
-    );
+    await expect(sampleValuesField).toHaveValue('{"code":"777111","user_name":"QA Tester"}');
+    await expect
+      .poll(
+        async () =>
+          await createForm.getByTestId("admin-email-template-create-preview-error").count(),
+        { timeout: 10_000 }
+      )
+      .toBe(0);
 
     const previewPanel = createForm.getByTestId("admin-email-template-create-preview");
     const detectedLine = previewPanel.getByTestId("admin-email-template-create-preview-detected");
