@@ -78,6 +78,26 @@ export type WorkoutLibrarySnapshot = {
   recentWorkouts: WorkoutSummary[];
 };
 
+export function buildWorkoutDraftChangeSignature(
+  draft: SessionDraft | null | undefined
+): string | null {
+  if (!draft) return null;
+  return JSON.stringify(draft);
+}
+
+export function haveWorkoutDraftChanges(
+  currentDraft: SessionDraft | null | undefined,
+  savedDraft: SessionDraft | null | undefined
+): boolean {
+  const currentSignature = buildWorkoutDraftChangeSignature(currentDraft);
+  const savedSignature = buildWorkoutDraftChangeSignature(savedDraft);
+
+  if (currentSignature === null && savedSignature === null) return false;
+  if (currentSignature === null || savedSignature === null) return true;
+
+  return currentSignature !== savedSignature;
+}
+
 export function normalizeSessionDraftForWorkoutPersistence(
   input: SessionDraft | null | undefined
 ): { ok: true; value: SessionDraft } | { ok: false; error: string } {

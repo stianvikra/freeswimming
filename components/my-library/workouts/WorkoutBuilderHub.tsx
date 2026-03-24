@@ -10,6 +10,7 @@ import type {
   WorkoutSaveApiResponse,
   WorkoutSummary,
 } from "@/lib/workouts/shared";
+import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 
 type Props = {
   workoutLibrary: WorkoutLibrarySnapshot;
@@ -30,6 +31,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
   const [success, setSuccess] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [clientReady, setClientReady] = useState(false);
+  const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
 
   useEffect(() => {
     setClientReady(true);
@@ -84,6 +86,14 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function resetDraftToSavedWorkout() {
+    if (!savedWorkout) return;
+
+    setDraft(savedWorkout.draft);
+    setError("");
+    setSuccess("Unsaved builder edits were reset to the last saved workout.");
   }
 
   return (
@@ -220,10 +230,12 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
             canonicalSaveReady={workoutLibrary.schemaReady}
             isSaving={isSaving}
             onSave={saveWorkout}
+            hasUnsavedChanges={hasUnsavedChanges}
             onDraftChange={(nextDraft) => {
               setDraft(nextDraft);
               setSuccess("");
             }}
+            onResetToSaved={resetDraftToSavedWorkout}
             startNewDraftHref="/my-library/generator"
             startNewDraftLabel="Generate new draft"
             showLoadedBanner={false}

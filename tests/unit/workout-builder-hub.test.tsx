@@ -145,6 +145,12 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "All builder changes are saved to the canonical workout."
+    );
+    expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
+    expect(screen.getByTestId("workout-editor-reset")).toBeDisabled();
+
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "Builder edited workout" },
     });
@@ -209,6 +215,13 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-step-css-sendoff-offset-3"), {
       target: { value: "2" },
     });
+
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "Unsaved changes stay local until you save this workout."
+    );
+    expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
+    expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
+
     fireEvent.click(screen.getByTestId("workout-builder-save"));
 
     await waitFor(() => {
@@ -223,6 +236,11 @@ describe("WorkoutBuilderHub", () => {
     await waitFor(() => {
       expect(screen.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
     });
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "All builder changes are saved to the canonical workout."
+    );
+    expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
+    expect(screen.getByTestId("workout-editor-reset")).toBeDisabled();
 
     const fetchBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
       draft: SessionDraft;
@@ -271,6 +289,43 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-3"));
     expect(screen.getByTestId("session-draft-step-stroke-3")).toHaveValue("im_by_round");
   }, 15_000);
+
+  it("can reset unsaved edits back to the last saved workout", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.change(screen.getByTestId("session-draft-title"), {
+      target: { value: "Temporary builder title" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-description"), {
+      target: { value: "Temporary builder description." },
+    });
+
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "Unsaved changes stay local until you save this workout."
+    );
+    expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
+
+    fireEvent.click(screen.getByTestId("workout-editor-reset"));
+
+    expect(
+      screen.getByText("Unsaved builder edits were reset to the last saved workout.")
+    ).toBeVisible();
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
+    expect(screen.getByTestId("session-draft-description")).toHaveValue(
+      "Threshold session in pool mode."
+    );
+    expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "All builder changes are saved to the canonical workout."
+    );
+  });
 
   it("keeps step cards summary-first until the user opens them for editing", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
