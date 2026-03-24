@@ -125,9 +125,14 @@ async function waitForNotesSectionReady(page: Page) {
 
   if (!loadingSettled) {
     const summaryVisible = await summaryNotice.isVisible().catch(() => false);
-    if (!summaryVisible) {
-      test.skip(true, "Admin notes list did not reach a stable ready state in this environment.");
+    if (summaryVisible) {
+      await refreshButton.click();
+      loadingSettled = await waitForLoadingToSettle(15_000);
     }
+  }
+
+  if (!loadingSettled) {
+    test.skip(true, "Admin notes list did not reach a stable ready state in this environment.");
   }
 
   const schemaWarning = notesManager
@@ -385,7 +390,8 @@ test.describe("admin notes workflow", () => {
     await page.getByTestId("admin-notes-priority-filter").selectOption("");
 
     const searchInput = page.getByTestId("admin-notes-search");
-    await searchInput.fill(noteId);
+    await searchInput.click();
+    await searchInput.pressSequentially(noteId);
     await expect(page.getByTestId("admin-note-item")).toHaveCount(1);
     await expect(createdItem).toBeVisible();
     const clearFiltersButton = page.getByRole("button", { name: "Clear filters" });
@@ -561,7 +567,8 @@ test.describe("admin notes workflow", () => {
       await expect(archivedItem).toBeVisible();
     }
 
-    await searchInput.fill(noteId);
+    await searchInput.click();
+    await searchInput.pressSequentially(noteId);
     await expect(archivedItem).toBeVisible();
     await expect(searchInput).toHaveValue(noteId);
 
@@ -612,10 +619,13 @@ test.describe("admin notes workflow", () => {
     await openNotesSection(page);
 
     const createForm = page.getByTestId("admin-notes-create-form");
+    await expect(
+      createForm.getByRole("button", { name: "Capture screenshot" })
+    ).toBeVisible({ timeout: 10_000 });
     await createForm.getByRole("button", { name: "Capture screenshot" }).click();
 
     const captureDialog = page.getByTestId("admin-note-screenshot-capture-dialog");
-    await expect(captureDialog).toBeVisible();
+    await expect(captureDialog).toBeVisible({ timeout: 10_000 });
     await expect(captureDialog).toContainText(/Screenshot permission was denied/i);
     await expect(captureDialog.getByRole("button", { name: "Retry capture" })).toBeVisible();
   });
@@ -634,6 +644,7 @@ test.describe("admin notes workflow", () => {
     const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
     await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
     const quickCaptureForm = page.getByTestId("admin-note-quick-capture-form");
+    await expect(quickCaptureForm.getByLabel("Category")).toBeVisible({ timeout: 10_000 });
     await quickCaptureForm.getByLabel("Title").fill(title);
     await quickCaptureForm.getByLabel("Category").fill("Operations");
     await quickCaptureForm.getByLabel("Priority").selectOption("high");

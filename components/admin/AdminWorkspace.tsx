@@ -66,11 +66,11 @@ type Props = {
 };
 
 export default function AdminWorkspace({ role }: Props) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/admin";
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = useMemo(
-    () => parseAdminTab(searchParams.get("tab")) ?? "content",
+    () => parseAdminTab(searchParams?.get("tab") ?? null) ?? "content",
     [searchParams]
   );
 
@@ -81,7 +81,7 @@ export default function AdminWorkspace({ role }: Props) {
 
   function selectTab(tab: AdminTab) {
     const nextParams = applyAdminTabToSearchParams(
-      new URLSearchParams(searchParams.toString()),
+      new URLSearchParams(searchParams?.toString() ?? ""),
       tab
     );
     const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;

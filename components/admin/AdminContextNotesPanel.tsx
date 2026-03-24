@@ -5,7 +5,11 @@ import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCapt
 import { hasRequiredAdminRole, type AdminRole } from "@/lib/admin/access";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
-import type { AdminNoteItem } from "@/lib/admin/notes";
+import {
+  ADMIN_NOTE_PRIORITY_VALUES,
+  type AdminNoteItem,
+  type AdminNotePriority,
+} from "@/lib/admin/notes";
 
 type AdminNotesResponse =
   | {
@@ -76,6 +80,7 @@ type FormState = {
   body: string;
   category: string;
   noteDate: string;
+  priority: AdminNotePriority;
   isDone: boolean;
 };
 
@@ -88,6 +93,7 @@ const INITIAL_FORM: FormState = {
   body: "",
   category: "General",
   noteDate: todayDateInputValue(),
+  priority: "normal",
   isDone: false,
 };
 
@@ -107,8 +113,13 @@ function toFormState(note: AdminNoteItem): FormState {
     body: note.body,
     category: note.category,
     noteDate: note.note_date,
+    priority: note.priority,
     isDone: note.is_done,
   };
+}
+
+function formatPriorityLabel(priority: AdminNotePriority): string {
+  return priority.charAt(0).toUpperCase() + priority.slice(1);
 }
 
 function normalizeContextRef(value: string): string {
@@ -508,7 +519,8 @@ export default function AdminContextNotesPanel({
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{item.title}</p>
                         <p className="text-xs text-slate-500">
-                          {item.category} · {formatDateLabel(item.note_date)}
+                          {item.category} · {formatPriorityLabel(item.priority)} ·{" "}
+                          {formatDateLabel(item.note_date)}
                         </p>
                         {contextType === "course_lesson" &&
                         item.context_type === "course_module" ? (
@@ -601,6 +613,26 @@ export default function AdminContextNotesPanel({
                             }
                             className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
                           />
+                        </label>
+
+                        <label className="space-y-1 text-xs font-medium text-slate-700">
+                          <span>Priority</span>
+                          <select
+                            value={editState.priority}
+                            onChange={(e) =>
+                              setEditField((prev) => ({
+                                ...prev,
+                                priority: e.target.value as AdminNotePriority,
+                              }))
+                            }
+                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          >
+                            {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
+                              <option key={priority} value={priority}>
+                                {formatPriorityLabel(priority)}
+                              </option>
+                            ))}
+                          </select>
                         </label>
 
                         <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
@@ -700,6 +732,26 @@ export default function AdminContextNotesPanel({
                     }
                     className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
                   />
+                </label>
+
+                <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <span>Priority</span>
+                  <select
+                    value={formState.priority}
+                    onChange={(e) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        priority: e.target.value as AdminNotePriority,
+                      }))
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
+                      <option key={priority} value={priority}>
+                        {formatPriorityLabel(priority)}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">

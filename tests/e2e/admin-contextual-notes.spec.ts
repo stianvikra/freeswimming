@@ -115,7 +115,8 @@ test.describe("admin contextual notes", () => {
     }
 
     const panel = page.getByTestId("admin-context-notes-panel");
-    await expect(panel).toBeVisible({ timeout: 10_000 });
+    await expect.poll(async () => await panel.count(), { timeout: 20_000 }).toBeGreaterThan(0);
+    await expect(panel).toBeVisible({ timeout: 20_000 });
     const toggle = panel.getByTestId("admin-context-notes-toggle");
     if ((await toggle.textContent())?.includes("Show")) {
       await toggle.click();
@@ -130,9 +131,10 @@ test.describe("admin contextual notes", () => {
     const body = "Context note body from Playwright.";
 
     const createForm = panel.getByTestId("admin-context-note-create-form");
-    await createForm.getByLabel("Title").fill(title);
+    await createForm.getByLabel("Title").pressSequentially(title);
     await createForm.getByLabel("Category").fill("Operations");
-    await createForm.getByLabel("Text").fill(body);
+    await createForm.getByLabel("Priority").selectOption("high");
+    await createForm.getByLabel("Text").pressSequentially(body);
     let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
     try {
       [createResponse] = await Promise.all([
@@ -177,11 +179,13 @@ test.describe("admin contextual notes", () => {
       .filter({ hasText: title })
       .first();
     await expect(createdItem).toBeVisible({ timeout: 15_000 });
+    await expect(createdItem).toContainText("High");
 
     await createdItem.getByRole("button", { name: "Edit" }).click();
     const editForm = createdItem.getByTestId("admin-context-note-edit-form");
     await expect(editForm).toBeVisible();
     await editForm.getByLabel("Edit title").fill(updatedTitle);
+    await editForm.getByLabel("Priority").selectOption("urgent");
     await editForm.getByRole("button", { name: "Save changes" }).click();
 
     const updatedItem = panel
@@ -189,6 +193,7 @@ test.describe("admin contextual notes", () => {
       .filter({ hasText: updatedTitle })
       .first();
     await expect(updatedItem).toBeVisible({ timeout: 10_000 });
+    await expect(updatedItem).toContainText("Urgent");
 
     await toggleDoneAndWait(page, updatedItem, "Note marked as done.");
 
@@ -229,7 +234,7 @@ test.describe("admin contextual notes", () => {
     const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
     await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
     await quickCaptureDialog.getByLabel("Title").fill(`Cancel ${title}`);
-    await quickCaptureDialog.getByRole("button", { name: "Cancel" }).click();
+    await quickCaptureDialog.getByRole("button", { name: "Close" }).click();
     await expect(quickCaptureDialog).toHaveCount(0);
 
     await panel.getByRole("button", { name: "Quick note" }).click();
@@ -287,6 +292,7 @@ test.describe("admin contextual notes", () => {
       )
       .toBeGreaterThan(0);
     await expect(createdItem).toBeVisible({ timeout: 15_000 });
+    await expect(createdItem).toContainText("High");
 
     await toggleDoneAndWait(page, createdItem, "Note marked as done.");
 

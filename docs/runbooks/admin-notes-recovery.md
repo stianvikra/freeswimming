@@ -13,6 +13,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 - Save returns `Could not update note.` or `Could not save note.` even though another operator already changed the row.
 - Quick capture save fails or closes unexpectedly and you need to confirm whether a note was actually created.
 - Screenshot capture permission is denied, cancelled, or never reaches preview and you need to finish the note safely.
+- A pasted clipboard image never reaches preview, disappears before save, or you are unsure whether it uploaded after note save.
 - A contextual note panel shows outdated title/body/status after recent edits in admin.
 - You suspect duplicate/overlapping edits on the same note.
 - Screenshot upload/delete returns an error and you are unsure whether the stored image was fully removed.
@@ -33,11 +34,13 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
    - raw context ref/path when relevant.
 6. If screenshots are involved:
    - if capture permission was denied or cancelled, confirm whether the screenshot ever reached preview; if not, nothing was saved and you can retry or use `Add images`,
+   - if you pasted an image from clipboard and no preview ever appeared, nothing was saved; reopen image tools if needed and paste again or use `Add images`,
    - if preview existed but note save failed, search by `Note ID` or title before retrying capture so you do not create duplicate notes,
+   - if a pasted image preview existed but note save failed, search by `Note ID` or title before retrying paste so you do not create duplicate notes,
    - confirm the attachment list and image count in the note row,
    - if delete failed, refresh once and verify whether the image is still present before retrying,
    - if upload failed after note save, retry only after confirming you are not looking at a stale duplicate preview,
-   - if the staged screenshot was removed locally, use `Capture screenshot` again or fall back to `Add images`.
+   - if the staged screenshot or pasted image was removed locally, use clipboard paste or `Capture screenshot` again, or fall back to `Add images`.
 7. If related notes are involved:
    - open the visible linked note IDs from Search if needed,
    - confirm the intended link exists only once,

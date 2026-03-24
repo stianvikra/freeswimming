@@ -7,6 +7,7 @@ import type { AdminRole } from "@/lib/admin/access";
 import { hasRequiredAdminRole } from "@/lib/admin/access";
 import { applyAdminTabToSearchParams } from "@/lib/admin/admin-workspace";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
+import { extractAdminNoteClipboardImage } from "@/lib/admin/note-compose";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 import {
@@ -129,6 +130,7 @@ export default function AdminNoteQuickCaptureLauncher({
   const [savedNotice, setSavedNotice] = useState<SavedNotice | null>(null);
   const [createdCaptureRecovery, setCreatedCaptureRecovery] = useState<SavedNotice | null>(null);
   const [pendingScreenshot, setPendingScreenshot] = useState<PendingScreenshot | null>(null);
+  const [imageToolsExpanded, setImageToolsExpanded] = useState(false);
   const datalistId = useId();
 
   const notesHref = useMemo(() => {
@@ -148,6 +150,12 @@ export default function AdminNoteQuickCaptureLauncher({
       }
     };
   }, [pendingScreenshot]);
+
+  useEffect(() => {
+    if (pendingScreenshot || createdCaptureRecovery) {
+      setImageToolsExpanded(true);
+    }
+  }, [createdCaptureRecovery, pendingScreenshot]);
 
   useEffect(() => {
     if (!open || categoryOptions.length > 0 || loadingCategories) return;
@@ -218,6 +226,7 @@ export default function AdminNoteQuickCaptureLauncher({
     setError(null);
     setSavedNotice(null);
     setCreatedCaptureRecovery(null);
+    setImageToolsExpanded(false);
     setOpen(true);
   }
 
@@ -230,7 +239,30 @@ export default function AdminNoteQuickCaptureLauncher({
     setError(null);
     setFormState(createInitialFormState());
     setCreatedCaptureRecovery(null);
+    setImageToolsExpanded(false);
     clearPendingScreenshot();
+  }
+
+  function handleFormPaste(event: React.ClipboardEvent<HTMLFormElement>) {
+    const result = extractAdminNoteClipboardImage({
+      clipboardData: event.clipboardData,
+    });
+
+    if (!result.matched) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    setError(null);
+    setCreatedCaptureRecovery(null);
+    setPendingScreenshotFromFile(result.file);
+    setImageToolsExpanded(true);
   }
 
   async function uploadPendingScreenshot(noteId: string) {
@@ -401,25 +433,43 @@ export default function AdminNoteQuickCaptureLauncher({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Screenshot
+                    Image evidence
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-900">
-                    Capture visual evidence before you save
+                    Keep image tools tucked away until you need them
                   </p>
                   <p className="mt-1 text-xs text-slate-600">
-                    The screenshot stays local until the note is saved and the attachment upload
-                    succeeds.
+                    Paste from clipboard anywhere in this form, or open image tools when you need a
+                    screenshot.
                   </p>
                 </div>
-                <AdminNoteScreenshotCaptureButton
-                  buttonLabel={pendingScreenshot ? "Retake screenshot" : "Capture screenshot"}
-                  onCaptureReady={async (file) => {
-                    setError(null);
-                    setCreatedCaptureRecovery(null);
-                    setPendingScreenshotFromFile(file);
-                  }}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setImageToolsExpanded((current) => !current)}
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {imageToolsExpanded ? "Hide image tools" : "Add image"}
+                  </button>
+                  {imageToolsExpanded ? (
+                    <AdminNoteScreenshotCaptureButton
+                      buttonLabel={pendingScreenshot ? "Retake screenshot" : "Capture screenshot"}
+                      onCaptureReady={async (file) => {
+                        setError(null);
+                        setCreatedCaptureRecovery(null);
+                        setPendingScreenshotFromFile(file);
+                      }}
+                    />
+                  ) : null}
+                </div>
               </div>
+
+              {imageToolsExpanded && !pendingScreenshot ? (
+                <p className="mt-3 text-xs text-slate-600">
+                  No image attached yet. Paste an image from clipboard or use screenshot capture to
+                  stage one before save.
+                </p>
+              ) : null}
 
               {pendingScreenshot ? (
                 <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
@@ -499,6 +549,7 @@ export default function AdminNoteQuickCaptureLauncher({
             <form
               className="mt-4 grid gap-3"
               onSubmit={handleSubmit}
+              onPaste={handleFormPaste}
               data-testid="admin-note-quick-capture-form"
             >
               <label className="space-y-1 text-xs font-medium text-slate-700">
@@ -596,7 +647,7 @@ export default function AdminNoteQuickCaptureLauncher({
                     ? "The note is already saved. Retry the screenshot upload or close and reopen it from Notes."
                     : loadingCategories
                       ? "Loading category suggestions…"
-                      : "The note stays local until you click Save note."}
+                      : "The note stays local until you click Save note. Clipboard images stay local until the save/upload path succeeds."}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
