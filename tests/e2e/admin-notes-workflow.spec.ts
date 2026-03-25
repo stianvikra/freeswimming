@@ -1,14 +1,21 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import { buildAdminNoteTestArtifactTitle } from "@/lib/admin/admin-note-test-artifacts";
+import { cleanupAdminNoteTestArtifacts } from "@/tests/e2e/admin-note-test-artifact-cleanup";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const TINY_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9wAAAABJRU5ErkJggg==";
+const ADMIN_NOTES_ARTIFACT_SCOPE = "notes-workflow";
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Admin e2e is desktop-only.");
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
+}
+
+function shouldManageAdminNoteArtifacts(projectName: string) {
+  return projectName === "desktop-chromium" && !isSiteLockEnabled;
 }
 
 async function loginAsAdminViaDevBypass(page: Page) {
@@ -249,6 +256,21 @@ async function installAdminScreenshotCaptureMock(
 }
 
 test.describe("admin notes workflow", () => {
+  test.beforeAll(async ({}, testInfo) => {
+    if (!shouldManageAdminNoteArtifacts(testInfo.project.name)) return;
+    await cleanupAdminNoteTestArtifacts({
+      scope: ADMIN_NOTES_ARTIFACT_SCOPE,
+      includeLegacy: true,
+    });
+  });
+
+  test.afterEach(async ({}, testInfo) => {
+    if (!shouldManageAdminNoteArtifacts(testInfo.project.name)) return;
+    await cleanupAdminNoteTestArtifacts({
+      scope: ADMIN_NOTES_ARTIFACT_SCOPE,
+    });
+  });
+
   test("allowlisted admin can create, edit, toggle, and delete notes", async ({
     page,
   }, testInfo) => {
@@ -261,9 +283,21 @@ test.describe("admin notes workflow", () => {
     await openNotesSection(page);
 
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const title = `E2E Note ${unique}`;
-    const secondaryTitle = `E2E Related Note ${unique}`;
-    const updatedTitle = `E2E Note Updated ${unique}`;
+    const title = buildAdminNoteTestArtifactTitle({
+      scope: ADMIN_NOTES_ARTIFACT_SCOPE,
+      label: "Primary note",
+      unique,
+    });
+    const secondaryTitle = buildAdminNoteTestArtifactTitle({
+      scope: ADMIN_NOTES_ARTIFACT_SCOPE,
+      label: "Related note",
+      unique,
+    });
+    const updatedTitle = buildAdminNoteTestArtifactTitle({
+      scope: ADMIN_NOTES_ARTIFACT_SCOPE,
+      label: "Updated note",
+      unique,
+    });
     const body = "Initial note body from Playwright.";
     const updatedBody = "Updated note body from Playwright.";
 
@@ -619,9 +653,9 @@ test.describe("admin notes workflow", () => {
     await openNotesSection(page);
 
     const createForm = page.getByTestId("admin-notes-create-form");
-    await expect(
-      createForm.getByRole("button", { name: "Capture screenshot" })
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(createForm.getByRole("button", { name: "Capture screenshot" })).toBeVisible({
+      timeout: 10_000,
+    });
     await createForm.getByRole("button", { name: "Capture screenshot" }).click();
 
     const captureDialog = page.getByTestId("admin-note-screenshot-capture-dialog");
@@ -638,7 +672,11 @@ test.describe("admin notes workflow", () => {
     await loginAsAdminViaDevBypass(page);
 
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const title = `Dashboard Quick Note ${unique}`;
+    const title = buildAdminNoteTestArtifactTitle({
+      scope: ADMIN_NOTES_ARTIFACT_SCOPE,
+      label: "Dashboard quick capture",
+      unique,
+    });
 
     await page.getByTestId("admin-workspace-quick-note-trigger").click();
     const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");

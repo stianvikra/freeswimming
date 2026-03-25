@@ -1,12 +1,19 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import { buildAdminNoteTestArtifactTitle } from "@/lib/admin/admin-note-test-artifacts";
+import { cleanupAdminNoteTestArtifacts } from "@/tests/e2e/admin-note-test-artifact-cleanup";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
+const ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE = "contextual-notes";
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Admin e2e is desktop-only.");
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
+}
+
+function shouldManageAdminNoteArtifacts(projectName: string) {
+  return projectName === "desktop-chromium" && !isSiteLockEnabled;
 }
 
 async function waitForRouteToSettle(page: Page) {
@@ -93,6 +100,21 @@ async function toggleDoneAndWait(
 }
 
 test.describe("admin contextual notes", () => {
+  test.beforeAll(async ({}, testInfo) => {
+    if (!shouldManageAdminNoteArtifacts(testInfo.project.name)) return;
+    await cleanupAdminNoteTestArtifacts({
+      scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
+      includeLegacy: true,
+    });
+  });
+
+  test.afterEach(async ({}, testInfo) => {
+    if (!shouldManageAdminNoteArtifacts(testInfo.project.name)) return;
+    await cleanupAdminNoteTestArtifacts({
+      scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
+    });
+  });
+
   test("allowlisted admin can manage contextual lesson notes from course page", async ({
     page,
   }, testInfo) => {
@@ -127,8 +149,16 @@ test.describe("admin contextual notes", () => {
       .toBe(0);
 
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const title = `Context Note ${unique}`;
-    const updatedTitle = `Context Note Updated ${unique}`;
+    const title = buildAdminNoteTestArtifactTitle({
+      scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
+      label: "Lesson note",
+      unique,
+    });
+    const updatedTitle = buildAdminNoteTestArtifactTitle({
+      scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
+      label: "Lesson note updated",
+      unique,
+    });
     const body = "Context note body from Playwright.";
 
     const createForm = panel.getByTestId("admin-context-note-create-form");
@@ -236,7 +266,11 @@ test.describe("admin contextual notes", () => {
       .poll(async () => await panel.getByText("Loading notes…").count(), { timeout: 15_000 })
       .toBe(0);
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const title = `Plans Note ${unique}`;
+    const title = buildAdminNoteTestArtifactTitle({
+      scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
+      label: "Plans quick capture",
+      unique,
+    });
     await panel.getByRole("button", { name: "Quick note" }).click();
     const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
     await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
