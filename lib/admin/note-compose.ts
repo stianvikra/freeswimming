@@ -15,6 +15,21 @@ type AdminNoteClipboardImageResult =
       file: File;
     };
 
+type AdminNotePreparedImageFileResult =
+  | {
+      ok: false;
+      error: string;
+    }
+  | {
+      ok: true;
+      file: File;
+    };
+
+type ClipboardReadableItem = {
+  types: readonly string[];
+  getType: (type: string) => Promise<Blob>;
+};
+
 function extensionForMimeType(mimeType: string): string {
   switch (mimeType) {
     case "image/jpeg":
@@ -31,6 +46,46 @@ function extensionForMimeType(mimeType: string): string {
 
 function buildClipboardFallbackName(mimeType: string): string {
   return `pasted-image.${extensionForMimeType(mimeType)}`;
+}
+
+export function prepareAdminNoteImageFile(params: {
+  file: Blob | File;
+  fileName?: string;
+}): AdminNotePreparedImageFileResult {
+  const mimeType = params.file.type.trim().toLowerCase();
+  if (!mimeType.startsWith("image/")) {
+    return { ok: false, error: "Only PNG, JPEG, WEBP, and GIF images are allowed." };
+  }
+
+  const fileName =
+    params.fileName?.trim() ||
+    ("name" in params.file && typeof params.file.name === "string"
+      ? params.file.name.trim()
+      : "") ||
+    buildClipboardFallbackName(mimeType);
+  const validated = validateAdminNoteAttachment({
+    fileName,
+    mimeType,
+    sizeBytes: params.file.size,
+  });
+
+  if (!validated.ok) {
+    return {
+      ok: false,
+      error: validated.error,
+    };
+  }
+
+  return {
+    ok: true,
+    file: new File([params.file], validated.value.fileName, {
+      type: validated.value.mimeType,
+      lastModified:
+        "lastModified" in params.file && typeof params.file.lastModified === "number"
+          ? params.file.lastModified
+          : Date.now(),
+    }),
+  };
 }
 
 export function extractAdminNoteClipboardImage(params: {
@@ -57,31 +112,85 @@ export function extractAdminNoteClipboardImage(params: {
     return {
       matched: true,
       ok: false,
-      error: "Could not read the pasted image. Try again or use screenshot capture instead.",
+      error: "Could not read the pasted image. Try again or use Upload image instead.",
     };
   }
 
-  const fileName = rawFile.name.trim() || buildClipboardFallbackName(rawFile.type);
-  const validated = validateAdminNoteAttachment({
-    fileName,
-    mimeType: rawFile.type,
-    sizeBytes: rawFile.size,
+  const prepared = prepareAdminNoteImageFile({
+    file: rawFile,
+    fileName: rawFile.name.trim() || buildClipboardFallbackName(rawFile.type),
   });
 
-  if (!validated.ok) {
+  return prepared.ok
+    ? { matched: true, ok: true, file: prepared.file }
+    : { matched: true, ok: false, error: prepared.error };
+}
+
+export async function readAdminNoteClipboardImageFromNavigator(params: {
+  clipboard:
+    | {
+        read: () => Promise<readonly ClipboardReadableItem[]>;
+      }
+    | null
+    | undefined;
+  secureContext?: boolean;
+}): Promise<AdminNotePreparedImageFileResult> {
+  if (params.secureContext === false) {
     return {
-      matched: true,
       ok: false,
-      error: validated.error,
+      error:
+        "Clipboard image paste requires a secure browser context here. Use Upload image instead.",
     };
   }
 
-  return {
-    matched: true,
-    ok: true,
-    file: new File([rawFile], validated.value.fileName, {
-      type: validated.value.mimeType,
-      lastModified: rawFile.lastModified || Date.now(),
-    }),
-  };
+  if (!params.clipboard?.read) {
+    return {
+      ok: false,
+      error:
+        "This browser cannot read clipboard images from a button here yet. Use Upload image instead.",
+    };
+  }
+
+  try {
+    const items = await params.clipboard.read();
+    for (const item of items) {
+      const imageMimeType = item.types.find((type) =>
+        type.trim().toLowerCase().startsWith("image/")
+      );
+      if (!imageMimeType) {
+        continue;
+      }
+
+      const blob = await item.getType(imageMimeType);
+      return prepareAdminNoteImageFile({
+        file: blob,
+        fileName: buildClipboardFallbackName(blob.type || imageMimeType),
+      });
+    }
+
+    return {
+      ok: false,
+      error: "Clipboard does not contain an image yet. Copy a screenshot first, then try again.",
+    };
+  } catch (error) {
+    const errorName =
+      error instanceof DOMException
+        ? error.name
+        : error && typeof error === "object" && "name" in error
+          ? String(error.name)
+          : "";
+
+    if (errorName === "NotAllowedError") {
+      return {
+        ok: false,
+        error:
+          "Clipboard access was blocked. Allow paste access, then try again, or use Upload image instead.",
+      };
+    }
+
+    return {
+      ok: false,
+      error: "Could not read an image from the clipboard right now. Use Upload image instead.",
+    };
+  }
 }

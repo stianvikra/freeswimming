@@ -2,12 +2,15 @@
 
 import { useEffect, useId, useMemo, useState } from "react";
 import Modal from "@/components/Modal";
-import AdminNoteScreenshotCaptureButton from "@/components/admin/AdminNoteScreenshotCaptureButton";
+import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import type { AdminRole } from "@/lib/admin/access";
 import { hasRequiredAdminRole } from "@/lib/admin/access";
 import { applyAdminTabToSearchParams } from "@/lib/admin/admin-workspace";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
-import { extractAdminNoteClipboardImage } from "@/lib/admin/note-compose";
+import {
+  extractAdminNoteClipboardImage,
+  prepareAdminNoteImageFile,
+} from "@/lib/admin/note-compose";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 import {
@@ -66,7 +69,7 @@ type SavedNotice = {
   title: string;
 };
 
-type PendingScreenshot = {
+type PendingImage = {
   file: File;
   previewUrl: string;
 };
@@ -129,8 +132,7 @@ export default function AdminNoteQuickCaptureLauncher({
   const [error, setError] = useState<string | null>(null);
   const [savedNotice, setSavedNotice] = useState<SavedNotice | null>(null);
   const [createdCaptureRecovery, setCreatedCaptureRecovery] = useState<SavedNotice | null>(null);
-  const [pendingScreenshot, setPendingScreenshot] = useState<PendingScreenshot | null>(null);
-  const [imageToolsExpanded, setImageToolsExpanded] = useState(false);
+  const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
   const datalistId = useId();
 
   const notesHref = useMemo(() => {
@@ -145,17 +147,11 @@ export default function AdminNoteQuickCaptureLauncher({
 
   useEffect(() => {
     return () => {
-      if (pendingScreenshot?.previewUrl) {
-        URL.revokeObjectURL(pendingScreenshot.previewUrl);
+      if (pendingImage?.previewUrl) {
+        URL.revokeObjectURL(pendingImage.previewUrl);
       }
     };
-  }, [pendingScreenshot]);
-
-  useEffect(() => {
-    if (pendingScreenshot || createdCaptureRecovery) {
-      setImageToolsExpanded(true);
-    }
-  }, [createdCaptureRecovery, pendingScreenshot]);
+  }, [pendingImage]);
 
   useEffect(() => {
     if (!open || categoryOptions.length > 0 || loadingCategories) return;
@@ -201,8 +197,8 @@ export default function AdminNoteQuickCaptureLauncher({
     return null;
   }
 
-  function setPendingScreenshotFromFile(file: File) {
-    setPendingScreenshot((current) => {
+  function setPendingImageFromFile(file: File) {
+    setPendingImage((current) => {
       if (current?.previewUrl) {
         URL.revokeObjectURL(current.previewUrl);
       }
@@ -213,8 +209,8 @@ export default function AdminNoteQuickCaptureLauncher({
     });
   }
 
-  function clearPendingScreenshot() {
-    setPendingScreenshot((current) => {
+  function clearPendingImage() {
+    setPendingImage((current) => {
       if (current?.previewUrl) {
         URL.revokeObjectURL(current.previewUrl);
       }
@@ -226,7 +222,6 @@ export default function AdminNoteQuickCaptureLauncher({
     setError(null);
     setSavedNotice(null);
     setCreatedCaptureRecovery(null);
-    setImageToolsExpanded(false);
     setOpen(true);
   }
 
@@ -239,8 +234,7 @@ export default function AdminNoteQuickCaptureLauncher({
     setError(null);
     setFormState(createInitialFormState());
     setCreatedCaptureRecovery(null);
-    setImageToolsExpanded(false);
-    clearPendingScreenshot();
+    clearPendingImage();
   }
 
   function handleFormPaste(event: React.ClipboardEvent<HTMLFormElement>) {
@@ -261,43 +255,53 @@ export default function AdminNoteQuickCaptureLauncher({
 
     setError(null);
     setCreatedCaptureRecovery(null);
-    setPendingScreenshotFromFile(result.file);
-    setImageToolsExpanded(true);
+    setPendingImageFromFile(result.file);
   }
 
-  async function uploadPendingScreenshot(noteId: string) {
-    if (!pendingScreenshot) {
-      throw new Error("No screenshot is ready to upload.");
+  function handlePendingImageSelection(files: FileList | null) {
+    const selectedFile = files?.[0];
+    if (!selectedFile) return;
+
+    const prepared = prepareAdminNoteImageFile({ file: selectedFile });
+    if (!prepared.ok) {
+      setError(prepared.error);
+      return;
+    }
+
+    setError(null);
+    setCreatedCaptureRecovery(null);
+    setPendingImageFromFile(prepared.file);
+  }
+
+  async function uploadPendingImage(noteId: string) {
+    if (!pendingImage) {
+      throw new Error("No image is ready to upload.");
     }
 
     return uploadAdminNoteFiles({
       noteId,
-      files: [pendingScreenshot.file],
+      files: [pendingImage.file],
     });
   }
 
-  async function retryPendingScreenshotUpload() {
-    if (!createdCaptureRecovery || !pendingScreenshot || submitting) return;
+  async function retryPendingImageUpload() {
+    if (!createdCaptureRecovery || !pendingImage || submitting) return;
 
     setSubmitting(true);
     setError(null);
 
     try {
-      const updatedItem = await uploadPendingScreenshot(createdCaptureRecovery.id);
+      const updatedItem = await uploadPendingImage(createdCaptureRecovery.id);
       setSavedNotice({
         id: updatedItem.id,
         title: updatedItem.title,
       });
       setCreatedCaptureRecovery(null);
-      clearPendingScreenshot();
+      clearPendingImage();
       onSaved?.(updatedItem);
       setOpen(false);
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : "Could not upload screenshot attachment."
-      );
+      setError(uploadError instanceof Error ? uploadError.message : "Could not upload image.");
     } finally {
       setSubmitting(false);
     }
@@ -330,14 +334,14 @@ export default function AdminNoteQuickCaptureLauncher({
         return;
       }
 
-      if (pendingScreenshot) {
+      if (pendingImage) {
         try {
-          const updatedItem = await uploadPendingScreenshot(payload.item.id);
+          const updatedItem = await uploadPendingImage(payload.item.id);
           setSavedNotice({
             id: updatedItem.id,
             title: updatedItem.title,
           });
-          clearPendingScreenshot();
+          clearPendingImage();
           setCreatedCaptureRecovery(null);
           onSaved?.(updatedItem);
           setOpen(false);
@@ -352,8 +356,8 @@ export default function AdminNoteQuickCaptureLauncher({
           onSaved?.(payload.item);
           setError(
             uploadError instanceof Error
-              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry screenshot upload or open the note in Notes.`
-              : "Note saved, but screenshot upload failed. Retry screenshot upload or open the note in Notes."
+              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry image upload or open the note in Notes.`
+              : "Note saved, but image upload failed. Retry image upload or open the note in Notes."
           );
           return;
         }
@@ -403,11 +407,7 @@ export default function AdminNoteQuickCaptureLauncher({
       ) : null}
 
       <Modal open={open} onClose={closeLauncher} ariaLabel="Quick note capture">
-        <div
-          className="flex h-full min-h-0 flex-col"
-          data-testid="admin-note-quick-capture-dialog"
-          data-admin-screenshot-hide-during-capture="true"
-        >
+        <div className="flex h-full min-h-0 flex-col" data-testid="admin-note-quick-capture-dialog">
           <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
@@ -440,59 +440,63 @@ export default function AdminNoteQuickCaptureLauncher({
                     Image evidence
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-900">
-                    Keep image tools tucked away until you need them
+                    Add one image if it helps explain the issue
                   </p>
                   <p className="mt-1 text-xs text-slate-600">
-                    Paste from clipboard anywhere in this form with Cmd+V or Ctrl+V, or open image
-                    tools when you need a screenshot.
+                    Copy a screenshot or image to clipboard, then paste it here, or upload a file.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setImageToolsExpanded((current) => !current)}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                  >
-                    {imageToolsExpanded ? "Hide image tools" : "Add image"}
-                  </button>
-                  {imageToolsExpanded ? (
-                    <AdminNoteScreenshotCaptureButton
-                      buttonLabel={pendingScreenshot ? "Retake screenshot" : "Capture screenshot"}
-                      onCaptureReady={async (file) => {
-                        setError(null);
-                        setCreatedCaptureRecovery(null);
-                        setPendingScreenshotFromFile(file);
+                  <AdminNoteClipboardPasteButton
+                    onPasteReady={async (file) => {
+                      setError(null);
+                      setCreatedCaptureRecovery(null);
+                      setPendingImageFromFile(file);
+                    }}
+                    onError={(message) => {
+                      setError(message);
+                    }}
+                  />
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                    <span>Upload image</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="sr-only"
+                      onChange={(event) => {
+                        handlePendingImageSelection(event.target.files);
+                        event.currentTarget.value = "";
                       }}
                     />
-                  ) : null}
+                  </label>
                 </div>
               </div>
 
-              {imageToolsExpanded && !pendingScreenshot ? (
+              {!pendingImage ? (
                 <p className="mt-3 text-xs text-slate-600">
-                  No image attached yet. Paste an image from clipboard or use screenshot capture to
-                  stage one before save.
+                  No image attached yet. Use the clipboard button after copying a screenshot, or
+                  upload an image file before save.
                 </p>
               ) : null}
 
-              {pendingScreenshot ? (
+              {pendingImage ? (
                 <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={pendingScreenshot.previewUrl}
-                        alt="Pending screenshot preview"
+                        src={pendingImage.previewUrl}
+                        alt="Pending image preview"
                         className="h-14 w-14 rounded-lg object-cover"
                       />
                       <div>
                         <p className="text-xs font-semibold text-slate-900">
-                          Screenshot ready to attach
+                          Image ready to attach
                         </p>
                         <p className="mt-1 text-[11px] text-slate-600">
                           {createdCaptureRecovery
-                            ? "The note is already saved. Retry the screenshot upload or finish without it."
-                            : "The next note save will upload this screenshot as an admin-only attachment."}
+                            ? "The note is already saved. Retry the image upload or finish without it."
+                            : "The next note save will upload this image as an admin-only attachment."}
                         </p>
                       </div>
                     </div>
@@ -501,7 +505,7 @@ export default function AdminNoteQuickCaptureLauncher({
                         <button
                           type="button"
                           onClick={() => {
-                            void retryPendingScreenshotUpload();
+                            void retryPendingImageUpload();
                           }}
                           disabled={submitting}
                           className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
@@ -518,12 +522,12 @@ export default function AdminNoteQuickCaptureLauncher({
                             setOpen(false);
                             setFormState(createInitialFormState());
                           }
-                          clearPendingScreenshot();
+                          clearPendingImage();
                         }}
                         disabled={submitting}
                         className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Remove screenshot
+                        Remove image
                       </button>
                     </div>
                   </div>
@@ -539,7 +543,7 @@ export default function AdminNoteQuickCaptureLauncher({
                   >
                     Open in Notes
                   </a>{" "}
-                  if you want to finish without retrying the screenshot.
+                  if you want to finish without retrying the image upload.
                 </p>
               ) : null}
             </div>
@@ -648,7 +652,7 @@ export default function AdminNoteQuickCaptureLauncher({
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
                 <p className="text-xs text-slate-500">
                   {createdCaptureRecovery
-                    ? "The note is already saved. Retry the screenshot upload or close and reopen it from Notes."
+                    ? "The note is already saved. Retry the image upload or close and reopen it from Notes."
                     : loadingCategories
                       ? "Loading category suggestions…"
                       : "The note stays local until you click Save note. Clipboard images stay local until the save/upload path succeeds."}

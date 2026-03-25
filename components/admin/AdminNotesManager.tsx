@@ -2,12 +2,15 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import AdminNoteScreenshotCaptureButton from "@/components/admin/AdminNoteScreenshotCaptureButton";
+import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import {
   ADMIN_NOTE_CONTEXT_TYPE_VALUES,
   type AdminNoteContextType,
 } from "@/lib/admin/note-context";
-import { extractAdminNoteClipboardImage } from "@/lib/admin/note-compose";
+import {
+  extractAdminNoteClipboardImage,
+  prepareAdminNoteImageFile,
+} from "@/lib/admin/note-compose";
 import {
   buildAdminNoteContextCatalog,
   resolveAdminNoteContextLabel,
@@ -579,14 +582,31 @@ export default function AdminNotesManager() {
     }
 
     setActionError(null);
-    setActionNotice("Pasted image ready to attach on the next note save.");
+    setActionNotice("Image ready to attach on the next note save.");
     setCreateCaptureRecovery(null);
     setCreatePendingScreenshotFromFile(result.file);
   }
 
+  function handleCreateImageSelection(files: FileList | null) {
+    const selectedFile = files?.[0];
+    if (!selectedFile) return;
+
+    const prepared = prepareAdminNoteImageFile({ file: selectedFile });
+    if (!prepared.ok) {
+      setActionError(prepared.error);
+      setActionNotice(null);
+      return;
+    }
+
+    setActionError(null);
+    setActionNotice("Image ready to attach on the next note save.");
+    setCreateCaptureRecovery(null);
+    setCreatePendingScreenshotFromFile(prepared.file);
+  }
+
   async function uploadCreatePendingScreenshot(noteId: string) {
     if (!createPendingScreenshot) {
-      throw new Error("No screenshot is ready to upload.");
+      throw new Error("No image is ready to upload.");
     }
 
     return uploadAdminNoteFiles({
@@ -609,11 +629,9 @@ export default function AdminNotesManager() {
       );
       clearCreatePendingScreenshot();
       setCreateCaptureRecovery(null);
-      setActionNotice("Screenshot attached to the saved note.");
+      setActionNotice("Image attached to the saved note.");
     } catch (error) {
-      setActionError(
-        error instanceof Error ? error.message : "Could not upload screenshot attachment."
-      );
+      setActionError(error instanceof Error ? error.message : "Could not upload image.");
     } finally {
       setSubmitting(false);
     }
@@ -668,7 +686,7 @@ export default function AdminNotesManager() {
           clearCreatePendingScreenshot();
           setCreateCaptureRecovery(null);
           setFormState(INITIAL_FORM);
-          setActionNotice("Note saved with screenshot attached.");
+          setActionNotice("Note saved with image attached.");
           return;
         } catch (uploadError) {
           setItems((prev) =>
@@ -681,8 +699,8 @@ export default function AdminNotesManager() {
           setFormState(INITIAL_FORM);
           setActionError(
             uploadError instanceof Error
-              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry upload below or use Edit to add the screenshot later.`
-              : "Note saved, but screenshot upload failed. Retry upload below or use Edit to add the screenshot later."
+              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry upload below or use Edit to add the image later.`
+              : "Note saved, but image upload failed. Retry upload below or use Edit to add the image later."
           );
           return;
         }
@@ -958,11 +976,11 @@ export default function AdminNotesManager() {
       });
       applyMutatedItem(itemId, updatedItem);
       setActionNotice(
-        updatedItem.attachments.length === 1 ? "Attachment uploaded." : "Attachments uploaded."
+        updatedItem.attachments.length === 1 ? "Image uploaded." : "Images uploaded."
       );
       return updatedItem;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not upload attachments.";
+      const message = error instanceof Error ? error.message : "Could not upload images.";
       setActionError(message);
       return null;
     } finally {
@@ -1011,17 +1029,15 @@ export default function AdminNotesManager() {
       const payload = (await response.json()) as AdminNoteUpdateResponse;
       if (!response.ok || !payload.ok) {
         setActionError(
-          payload.ok
-            ? "Could not delete attachment."
-            : (payload.error ?? "Could not delete attachment.")
+          payload.ok ? "Could not delete image." : (payload.error ?? "Could not delete image.")
         );
         return;
       }
 
       applyMutatedItem(noteId, payload.item);
-      setActionNotice("Attachment deleted.");
+      setActionNotice("Image deleted.");
     } catch {
-      setActionError("Could not delete attachment.");
+      setActionError("Could not delete image.");
     } finally {
       setDeletingAttachmentId(null);
     }
@@ -1460,7 +1476,7 @@ export default function AdminNotesManager() {
 
                   {!isEditing && item.attachments.length > 0 ? (
                     <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-white/80 p-3">
-                      <p className="text-xs font-semibold text-slate-700">Images / screenshots</p>
+                      <p className="text-xs font-semibold text-slate-700">Images</p>
                       <div className="flex flex-wrap gap-3">
                         {item.attachments.map((attachment) => (
                           <a
@@ -1753,30 +1769,29 @@ export default function AdminNotesManager() {
                       <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:col-span-2">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <p className="text-xs font-semibold text-slate-900">
-                              Images / screenshots
-                            </p>
+                            <p className="text-xs font-semibold text-slate-900">Images</p>
                             <p className="mt-1 text-[11px] text-slate-600">
-                              PNG, JPEG, WEBP, or GIF up to 5 MB each. Paste an image from clipboard
-                              anywhere in this form or use the capture/upload controls.
+                              PNG, JPEG, WEBP, or GIF up to 5 MB each. Upload images or paste one
+                              image from clipboard directly.
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <AdminNoteScreenshotCaptureButton
-                              buttonLabel={isUploading ? "Uploading…" : "Capture screenshot"}
-                              onCaptureReady={async (file) => {
-                                const updatedItem = await uploadFilesForNote(item.id, [file]);
-                                if (!updatedItem) {
-                                  throw new Error("Could not upload screenshot attachment.");
-                                }
-                                setActionNotice("Screenshot attached.");
+                            <AdminNoteClipboardPasteButton
+                              onPasteReady={async (file) => {
+                                setActionError(null);
+                                setActionNotice(null);
+                                await uploadFilesForNote(item.id, [file]);
+                              }}
+                              onError={(message) => {
+                                setActionError(message);
+                                setActionNotice(null);
                               }}
                               disabled={Boolean(
                                 isUploading || deletingAttachmentId || updatingId || deletingId
                               )}
                             />
                             <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100">
-                              <span>{isUploading ? "Uploading…" : "Add images"}</span>
+                              <span>{isUploading ? "Uploading…" : "Upload images"}</span>
                               <input
                                 type="file"
                                 accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1859,7 +1874,7 @@ export default function AdminNotesManager() {
                             })}
                           </ul>
                         ) : (
-                          <p className="text-[11px] text-slate-600">No screenshots attached yet.</p>
+                          <p className="text-[11px] text-slate-600">No images attached yet.</p>
                         )}
                       </div>
 
@@ -2022,8 +2037,8 @@ export default function AdminNotesManager() {
           Store planning notes with category, priority, date, and completion tracking.
         </p>
         <p className="mt-2 text-xs text-slate-500">
-          Stage one screenshot before save if needed, then use Edit to attach more images or link
-          related notes afterward.
+          Stage one image before save if needed, then use Edit to attach more images or link related
+          notes afterward.
         </p>
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs font-semibold text-amber-900">Incident quick templates</p>
@@ -2137,21 +2152,40 @@ export default function AdminNotesManager() {
           <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Screenshot (optional)</p>
+                <p className="text-sm font-semibold text-slate-900">Image (optional)</p>
                 <p className="mt-1 text-xs text-slate-600">
-                  Paste an image from clipboard anywhere in this form with Cmd+V or Ctrl+V, or
-                  capture a browser screenshot now and attach it after the note save succeeds.
+                  Copy a screenshot or image to clipboard, then paste it here, or upload one file
+                  before save.
                 </p>
               </div>
-              <AdminNoteScreenshotCaptureButton
-                buttonLabel={createPendingScreenshot ? "Retake screenshot" : "Capture screenshot"}
-                onCaptureReady={async (file) => {
-                  setActionError(null);
-                  setCreateCaptureRecovery(null);
-                  setCreatePendingScreenshotFromFile(file);
-                }}
-                disabled={Boolean(submitting)}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <AdminNoteClipboardPasteButton
+                  onPasteReady={async (file) => {
+                    setActionError(null);
+                    setActionNotice("Image ready to attach on the next note save.");
+                    setCreateCaptureRecovery(null);
+                    setCreatePendingScreenshotFromFile(file);
+                  }}
+                  onError={(message) => {
+                    setActionError(message);
+                    setActionNotice(null);
+                  }}
+                  disabled={Boolean(submitting)}
+                />
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                  <span>Upload image</span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="sr-only"
+                    disabled={Boolean(submitting)}
+                    onChange={(event) => {
+                      handleCreateImageSelection(event.target.files);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
             </div>
 
             {createPendingScreenshot ? (
@@ -2161,17 +2195,15 @@ export default function AdminNotesManager() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={createPendingScreenshot.previewUrl}
-                      alt="Pending screenshot preview"
+                      alt="Pending image preview"
                       className="h-14 w-14 rounded-lg object-cover"
                     />
                     <div>
-                      <p className="text-xs font-semibold text-slate-900">
-                        Screenshot ready to attach
-                      </p>
+                      <p className="text-xs font-semibold text-slate-900">Image ready to attach</p>
                       <p className="mt-1 text-[11px] text-slate-600">
                         {createCaptureRecovery
-                          ? "The note is already saved. Retry upload or finish without the screenshot."
-                          : "The screenshot stays local until this note save finishes successfully."}
+                          ? "The note is already saved. Retry upload or finish without the image."
+                          : "The image stays local until this note save finishes successfully."}
                       </p>
                     </div>
                   </div>
@@ -2196,14 +2228,14 @@ export default function AdminNotesManager() {
                           setCreateCaptureRecovery(null);
                           setActionError(null);
                           setActionNotice(
-                            "Note saved without screenshot. Use Edit to attach one later if needed."
+                            "Note saved without image. Use Edit to attach one later if needed."
                           );
                         }
                       }}
                       disabled={submitting}
                       className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Remove screenshot
+                      Remove image
                     </button>
                   </div>
                 </div>

@@ -218,39 +218,31 @@ async function deleteNoteAndWait(page: Page, noteId: string, trigger: () => Prom
   }
 }
 
-async function installAdminScreenshotCaptureMock(
-  page: Page,
-  mode: "success" | "permission_denied"
-) {
+async function installAdminClipboardReadMock(page: Page, mode: "success" | "permission_denied") {
   await page.addInitScript(
-    ({ base64, captureMode }) => {
+    ({ base64, clipboardMode }) => {
       const decodePng = () => Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          read: async () => {
+            if (clipboardMode === "permission_denied") {
+              throw new DOMException("Permission denied", "NotAllowedError");
+            }
 
-      window.__FS_ADMIN_SCREENSHOT_CAPTURE_OVERRIDE__ = {
-        isSupported: () => true,
-        capture: async () => {
-          if (captureMode === "permission_denied") {
-            const error = new Error("Permission denied");
-            error.name = "NotAllowedError";
-            throw error;
-          }
-
-          return {
-            blob: new Blob([decodePng()], { type: "image/png" }),
-            width: 1,
-            height: 1,
-            fileName: "captured-proof.png",
-          };
+            return [
+              {
+                types: ["image/png"],
+                getType: async () => new Blob([decodePng()], { type: "image/png" }),
+              },
+            ];
+          },
         },
-        cropToFile: async () =>
-          new File([decodePng()], "captured-proof.png", {
-            type: "image/png",
-          }),
-      };
+      });
     },
     {
       base64: TINY_PNG_BASE64,
-      captureMode: mode,
+      clipboardMode: mode,
     }
   );
 }
@@ -278,7 +270,7 @@ test.describe("admin notes workflow", () => {
     test.slow();
     test.setTimeout(90_000);
 
-    await installAdminScreenshotCaptureMock(page, "success");
+    await installAdminClipboardReadMock(page, "success");
     await loginAsAdminViaDevBypass(page);
     await openNotesSection(page);
 
@@ -303,6 +295,13 @@ test.describe("admin notes workflow", () => {
 
     await page.getByRole("button", { name: "Use P1 template" }).click();
     const createForm = page.getByTestId("admin-notes-create-form");
+    await expect(
+      createForm.getByRole("button", { name: "Paste image from clipboard" })
+    ).toBeVisible();
+    await expect(createForm.getByLabel("Upload image")).toBeVisible();
+    await expect(createForm.getByRole("button", { name: "Capture screenshot" })).toHaveCount(0);
+    await createForm.getByRole("button", { name: "Paste image from clipboard" }).click();
+    await expect(createForm.getByText("Image ready to attach")).toBeVisible({ timeout: 10_000 });
     await expect(createForm.getByLabel("Category")).toHaveValue("Incident P1");
     await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Category").fill("Operations");
@@ -329,19 +328,29 @@ test.describe("admin notes workflow", () => {
     }
     await lessonPicker.selectOption({ index: 1 });
     let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+    let createAttachmentResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
     try {
-      [createResponse] = await Promise.all([
+      [createResponse, createAttachmentResponse] = await Promise.all([
         page.waitForResponse(
           (response) =>
-            response.url().includes("/api/admin/notes") && response.request().method() === "POST",
+            response.url().includes("/api/admin/notes") &&
+            !response.url().includes("/attachments") &&
+            response.request().method() === "POST",
+          { timeout: 15_000 }
+        ),
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/admin/notes/") &&
+            response.url().includes("/attachments") &&
+            response.request().method() === "POST",
           { timeout: 15_000 }
         ),
         createForm.getByRole("button", { name: "Save note" }).click(),
       ]);
     } catch {
-      test.skip(true, "Admin notes create request timed out in this environment.");
+      test.skip(true, "Admin notes create or staged-image upload timed out in this environment.");
     }
-    if (!createResponse) {
+    if (!createResponse || !createAttachmentResponse) {
       return;
     }
 
@@ -357,8 +366,22 @@ test.describe("admin notes workflow", () => {
           : `status ${createResponse.status()}`;
       test.skip(true, `Admin notes create is not write-ready in this environment (${reason}).`);
     }
+    const createAttachmentPayload = (await createAttachmentResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
+    if (!createAttachmentResponse.ok() || createAttachmentPayload?.ok === false) {
+      const reason =
+        typeof createAttachmentPayload?.error === "string"
+          ? createAttachmentPayload.error
+          : `status ${createAttachmentResponse.status()}`;
+      test.skip(
+        true,
+        `Admin notes staged-image upload is not ready in this environment (${reason}).`
+      );
+    }
 
-    await expect(page.getByText("Note saved to open work queue.")).toBeVisible({
+    await expect(page.getByText("Note saved with image attached.")).toBeVisible({
       timeout: 5_000,
     });
 
@@ -368,6 +391,7 @@ test.describe("admin notes workflow", () => {
     await expect(createdItem).toContainText(body);
     await expect(createdItem).toContainText("High");
     await expect(createdItem).toContainText("Course Lesson:");
+    await expect(createdItem).toContainText("1 image");
     const noteIdText = await createdItem.getByTestId("admin-note-id").textContent();
     const noteId = noteIdText?.replace("Note ID", "").trim() ?? "";
     expect(noteId.length).toBeGreaterThan(5);
@@ -382,7 +406,9 @@ test.describe("admin notes workflow", () => {
       [secondaryCreateResponse] = await Promise.all([
         page.waitForResponse(
           (response) =>
-            response.url().includes("/api/admin/notes") && response.request().method() === "POST",
+            response.url().includes("/api/admin/notes") &&
+            !response.url().includes("/attachments") &&
+            response.request().method() === "POST",
           { timeout: 15_000 }
         ),
         createForm.getByRole("button", { name: "Save note" }).click(),
@@ -468,17 +494,18 @@ test.describe("admin notes workflow", () => {
           { timeout: 15_000 }
         ),
         (async () => {
-          await attachmentsEditForm.getByRole("button", { name: "Capture screenshot" }).click();
-          const captureDialog = page.getByTestId("admin-note-screenshot-capture-dialog");
-          await expect(captureDialog).toBeVisible();
           await expect(
-            captureDialog.getByTestId("admin-note-screenshot-preview-image")
-          ).toBeVisible();
-          await captureDialog.getByRole("button", { name: "Save screenshot" }).click();
+            attachmentsEditForm.getByRole("button", { name: "Capture screenshot" })
+          ).toHaveCount(0);
+          await attachmentsEditForm.getByTestId("admin-note-attachment-input").setInputFiles({
+            name: "uploaded-proof.png",
+            mimeType: "image/png",
+            buffer: Buffer.from(TINY_PNG_BASE64, "base64"),
+          });
         })(),
       ]);
     } catch {
-      test.skip(true, "Admin notes screenshot capture upload timed out in this environment.");
+      test.skip(true, "Admin notes image upload timed out in this environment.");
     }
     if (!uploadResponse) {
       return;
@@ -492,13 +519,10 @@ test.describe("admin notes workflow", () => {
         typeof uploadPayload?.error === "string"
           ? uploadPayload.error
           : `status ${uploadResponse.status()}`;
-      test.skip(
-        true,
-        `Admin notes screenshot capture upload is not ready in this environment (${reason}).`
-      );
+      test.skip(true, `Admin notes image upload is not ready in this environment (${reason}).`);
     }
 
-    await expect(updatedItem).toContainText("1 image");
+    await expect(updatedItem).toContainText("2 images");
 
     await attachmentsEditForm
       .getByTestId("admin-note-related-select")
@@ -548,7 +572,7 @@ test.describe("admin notes workflow", () => {
         attachmentsEditForm.getByTestId("admin-note-attachment-delete").click(),
       ]);
     } catch {
-      test.skip(true, "Admin notes screenshot delete request timed out in this environment.");
+      test.skip(true, "Admin notes image delete request timed out in this environment.");
     }
     if (!deleteAttachmentResponse) {
       return;
@@ -563,13 +587,10 @@ test.describe("admin notes workflow", () => {
         typeof deleteAttachmentPayload?.error === "string"
           ? deleteAttachmentPayload.error
           : `status ${deleteAttachmentResponse.status()}`;
-      test.skip(
-        true,
-        `Admin notes screenshot delete is not ready in this environment (${reason}).`
-      );
+      test.skip(true, `Admin notes image delete is not ready in this environment (${reason}).`);
     }
 
-    await expect(updatedItem).not.toContainText("1 image");
+    await expect(updatedItem).toContainText("1 image");
     await attachmentsEditForm.getByRole("button", { name: "Cancel" }).click();
 
     await page.getByTestId("admin-notes-category-filter").selectOption("Product");
@@ -643,25 +664,26 @@ test.describe("admin notes workflow", () => {
     ).toHaveCount(0);
   });
 
-  test("shows recovery when screenshot capture permission is denied", async ({
-    page,
-  }, testInfo) => {
+  test("shows recovery when clipboard image paste is blocked", async ({ page }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
-    await installAdminScreenshotCaptureMock(page, "permission_denied");
+    await installAdminClipboardReadMock(page, "permission_denied");
     await loginAsAdminViaDevBypass(page);
     await openNotesSection(page);
 
     const createForm = page.getByTestId("admin-notes-create-form");
-    await expect(createForm.getByRole("button", { name: "Capture screenshot" })).toBeVisible({
+    await expect(
+      createForm.getByRole("button", { name: "Paste image from clipboard" })
+    ).toBeVisible({
       timeout: 10_000,
     });
-    await createForm.getByRole("button", { name: "Capture screenshot" }).click();
-
-    const captureDialog = page.getByTestId("admin-note-screenshot-capture-dialog");
-    await expect(captureDialog).toBeVisible({ timeout: 10_000 });
-    await expect(captureDialog).toContainText(/Screenshot permission was denied/i);
-    await expect(captureDialog.getByRole("button", { name: "Retry capture" })).toBeVisible();
+    await expect(createForm.getByRole("button", { name: "Capture screenshot" })).toHaveCount(0);
+    await createForm.getByRole("button", { name: "Paste image from clipboard" }).click();
+    await expect(
+      page.getByText(
+        "Clipboard access was blocked. Allow paste access, then try again, or use Upload image instead."
+      )
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test("allowlisted admin can quick-capture a dashboard note and jump into Notes", async ({
