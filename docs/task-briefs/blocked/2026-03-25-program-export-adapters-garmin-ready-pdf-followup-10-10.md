@@ -26,6 +26,8 @@ Build the remaining program-level export adapters so canonical programs can prod
   - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
 - Upstream program builder/calendar contract:
   - `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
+- Immediate unblocking foundation:
+  - `docs/task-briefs/in-progress/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md`
 - Blocked live Garmin provider delivery remains separate:
   - `docs/task-briefs/blocked/2026-02-28-garmin-training-api-partner-integration-10-10.md`
 - This follow-up owns:
@@ -150,3 +152,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-25 | planning | created residual follow-up after workout-level Garmin-ready JSON export merged as \`2c4fcd8\` and workout PDF print export merged as \`e938560\`; remaining open scope is canonical program-level export structure and printable output, while live Garmin partner delivery remains separately blocked | next: implement program export adapters from updated \`main\` without reopening the shipped workout-level export slice`
 - `2026-03-25 | blocked | reconfirmed before implementation that program generation still shows \`session-generator-program-deferred\` in the UI, the session-draft API returns \`Program generation stays deferred\`, and the repo still has no canonical \`/api/my-library/programs\` surface or program editor/model to export from | next: unblock via the upstream program-builder/calendar completion track or a smaller canonical-program foundation slice before reopening program export`
+- `2026-03-25 | blocked | after blocker PR #292 merged as \`6047d26\`, created the narrower upstream brief \`docs/task-briefs/in-progress/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md\` so export can stay blocked truthfully on missing canonical program entities while implementation resumes on the smallest shared foundation instead of the full planner scope | next: reopen this export brief only after the canonical foundation ships and a real program surface exists`
