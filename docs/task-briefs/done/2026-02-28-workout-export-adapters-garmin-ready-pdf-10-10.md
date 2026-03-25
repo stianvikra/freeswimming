@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-02-28-workout-export-adapters-garmin-ready-pdf-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
 - `updated`: `2026-03-25`
 
 ## Goal
 
-Build export adapters so canonical workouts/programs are usable immediately (PDF/poolside) and technically ready for Garmin Training API publish mapping later.
+Build workout-level export adapters so canonical workouts are usable immediately (Garmin-ready JSON and PDF/poolside print view) and technically ready for future Garmin Training API publish mapping later.
 
 ## Dependencies And Boundaries
 
@@ -20,17 +20,20 @@ Build export adapters so canonical workouts/programs are usable immediately (PDF
   - `docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
 - Upstream AI-authored draft flow:
   - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
+- Residual follow-up for program-level export:
+  - `docs/task-briefs/planned/2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10.md`
 - Export should consume canonical workouts after they exist, regardless of whether they were authored manually or accepted from AI-generated drafts.
 - This brief is not responsible for:
   - manual builder UX,
   - AI generation behavior,
+  - program-level export bundles/PDF,
   - or live Garmin API delivery.
 
 ## Scope
 
 - Export adapter layer:
-  - canonical workout/program -> `garmin-ready` intermediate format,
-  - canonical workout/program -> printable PDF model.
+  - canonical workout -> `garmin-ready` intermediate format,
+  - canonical workout -> printable PDF model.
 - PDF export UX:
   - clear, professional layout,
   - poolside legibility,
@@ -44,6 +47,7 @@ Build export adapters so canonical workouts/programs are usable immediately (PDF
 
 - Manual workout/session/program building.
 - AI generation of workout/session/program drafts.
+- Program-level export bundles/PDF output.
 - Live Garmin push.
 - OAuth token handling.
 - Garmin Activity API completion/history ingestion.
@@ -112,7 +116,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Acceptance Criteria
 
 - PDF export renders consistently and readable on phone print view.
-- Garmin-ready adapter produces valid mapped workout/program payloads for future Training API submission.
+- Garmin-ready adapter produces valid mapped workout payloads for future Training API submission.
 - Garmin-ready adapter preserves or explicitly rejects unsupported Garmin-documented `WorkoutIntensity`, `open`, `swim_stroke`, and lap/open-water sub-sport semantics and Garmin Connect UI swim concepts like `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, `RIMO`, and rest/repeat workflows with actionable errors instead of silent coercion.
 - Threshold-based swim-zone targets either map deterministically into export output or fail with actionable errors.
 - Adapter rejects unsupported step combos with actionable errors.
@@ -123,8 +127,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Validation
 
 - adapter contract tests
-- pdf rendering snapshot tests (where stable)
+- targeted workout PDF rendering checks
 - `npm run verify:pre-pr`
+- before merge: `npm run verify:pre-merge`
 
 ## Help/Guide And Operator Training Contract
 
@@ -137,3 +142,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-22 | planning | tightened adapter expectations around observed Garmin swim-builder behavior so later export must handle or explicitly reject Garmin-documented `WorkoutIntensity`, `open`, `swim_stroke`, and lap/open-water sub-sport semantics plus Garmin Connect UI concepts like `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, `RIMO`, and explicit rest/repeat swim sets rather than flattening them silently | next: keep adapter tests and blocked Garmin mapping matrix tied to these concrete swim-workout semantics`
 - `2026-03-24 | in-progress | moved the export-adapter brief into active implementation and narrowed the first delivery to a truthful workout-level Garmin-ready JSON adapter with builder preview/download, while PDF/program export and live Garmin partner delivery remain open | next: land deterministic adapter output, repeat-aware diagnostics, and builder verification before opening the PR`
 - `2026-03-25 | working tree | added the next export slice: the canonical workout editor now opens a dedicated print-ready workout PDF view with canonical-vs-local draft labeling, review notes, and a poolside-friendly step layout so users can use browser Print / Save PDF without adding a heavy PDF dependency; targeted unit tests, typecheck, and desktop workout-builder Playwright coverage passed green | next: run full \`npm run verify:pre-pr\`, then package commit/push/PR handoff if the repo gate stays green`
+- `2026-03-25 | merged | workout-level Garmin-ready JSON export merged earlier as \`2c4fcd8\`, workout PDF print export merged as \`e938560\`, required CI checks passed, and local \`npm run verify:pre-merge\` passed on the green PR head; lifecycle moved from \`in-progress\` to \`done\` and remaining program-level export scope was split into \`docs/task-briefs/planned/2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10.md\` | next: implement the residual program-export slice from updated \`main\` when it outranks newer work`
