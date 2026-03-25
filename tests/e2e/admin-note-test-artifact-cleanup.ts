@@ -23,6 +23,11 @@ type AdminNoteAttachmentCleanupRow = Pick<
   "id" | "note_id" | "storage_path"
 >;
 
+type AdminNoteArtifactCleanupEnv = {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+};
+
 function readEnvFileValue(name: "NEXT_PUBLIC_SUPABASE_URL" | "SUPABASE_SERVICE_ROLE_KEY") {
   for (const fileName of [".env.local", ".env"]) {
     const filePath = path.join(process.cwd(), fileName);
@@ -54,17 +59,33 @@ function requireCleanupEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "SUPABASE_SERVICE_
   return value;
 }
 
-function createCleanupSupabaseClient() {
-  return createClient<Database>(
-    requireCleanupEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    requireCleanupEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+function resolveCleanupEnv(): AdminNoteArtifactCleanupEnv {
+  return {
+    supabaseUrl: requireCleanupEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    serviceRoleKey: requireCleanupEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  };
+}
+
+export function isPlaceholderAdminNoteArtifactCleanupEnv(env: AdminNoteArtifactCleanupEnv) {
+  try {
+    const hostname = new URL(env.supabaseUrl).hostname;
+    if (hostname === "example.com") {
+      return true;
     }
-  );
+  } catch {
+    // Fall through to the explicit key guard below.
+  }
+
+  return env.serviceRoleKey === "ci-service-role-key";
+}
+
+function createCleanupSupabaseClient(env: AdminNoteArtifactCleanupEnv) {
+  return createClient<Database>(env.supabaseUrl, env.serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }
 
 function selectArtifactNotes(
@@ -84,7 +105,15 @@ function selectArtifactNotes(
 }
 
 export async function cleanupAdminNoteTestArtifacts(options: AdminNoteArtifactCleanupOptions = {}) {
-  const supabase = createCleanupSupabaseClient();
+  const env = resolveCleanupEnv();
+  if (isPlaceholderAdminNoteArtifactCleanupEnv(env)) {
+    return {
+      deletedNoteIds: [] as string[],
+      skipped: "placeholder-ci-env" as const,
+    };
+  }
+
+  const supabase = createCleanupSupabaseClient(env);
   const notesResult = await supabase
     .from("admin_notes")
     .select("id,title,body")
