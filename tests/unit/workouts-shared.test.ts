@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import {
+  buildWorkoutPdfFileName,
+  buildWorkoutPdfHtmlDocument,
+  buildWorkoutPdfModel,
   buildWorkoutGarminReadyExport,
   buildWorkoutGarminReadyExportFileName,
   buildWorkoutGarminReadinessReport,
@@ -110,6 +113,34 @@ describe("workouts shared readiness", () => {
     expect(text).toContain("Warmup · 400m · Freestyle · Easy");
   });
 
+  it("builds a canonical workout PDF model with deterministic metadata and step summaries", () => {
+    const draft = buildDraft();
+    const model = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+    });
+
+    expect(buildWorkoutPdfFileName(draft, { draftState: "canonical" })).toBe(
+      "freeswimming-garmin-readiness-draft-print.pdf"
+    );
+    expect(model).toMatchObject({
+      fileName: "freeswimming-garmin-readiness-draft-print.pdf",
+      draftState: "canonical",
+      sourceLabel: "Canonical workout",
+      title: "Garmin readiness draft",
+      sessionSummary: "400m · ~10 min · Moderate",
+      environmentSummary: "Pool (25m)",
+      sessionTypeLabel: "Threshold / CSS",
+      effortLabel: "Moderate",
+    });
+    expect(model.blocks).toHaveLength(1);
+    expect(model.blocks[0]).toMatchObject({
+      kind: "single",
+      label: "1.",
+      title: "Warmup swim",
+      summary: "Warmup · 400m · Freestyle · Easy",
+    });
+  });
+
   it("builds a canonical garmin-ready export payload with deterministic workout metadata", () => {
     const draft = buildDraft();
     const exportPayload = buildWorkoutGarminReadyExport(draft, {
@@ -117,9 +148,9 @@ describe("workouts shared readiness", () => {
       workoutId: "workout-1",
     });
 
-    expect(
-      buildWorkoutGarminReadyExportFileName(draft, { draftState: "canonical" })
-    ).toBe("freeswimming-garmin-readiness-draft-garmin-ready.json");
+    expect(buildWorkoutGarminReadyExportFileName(draft, { draftState: "canonical" })).toBe(
+      "freeswimming-garmin-readiness-draft-garmin-ready.json"
+    );
     expect(exportPayload).toMatchObject({
       version: 1,
       kind: "freeswimming_garmin_ready_workout_v1",
@@ -277,9 +308,9 @@ describe("workouts shared readiness", () => {
       workoutId: "workout-2",
     });
 
-    expect(
-      buildWorkoutGarminReadyExportFileName(draft, { draftState: "local_draft" })
-    ).toBe("freeswimming-review-export-draft-garmin-ready-draft.json");
+    expect(buildWorkoutGarminReadyExportFileName(draft, { draftState: "local_draft" })).toBe(
+      "freeswimming-review-export-draft-garmin-ready-draft.json"
+    );
     expect(exportPayload.diagnostics.status).toBe("review");
     expect(exportPayload.diagnostics.issueCount).toBe(3);
     expect(exportPayload.blocks).toHaveLength(1);
@@ -331,5 +362,62 @@ describe("workouts shared readiness", () => {
         summary: "Send-off 2:00",
       },
     });
+  });
+
+  it("builds a printable workout PDF html document for local drafts with repeat review details", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      title: "Review print draft",
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Repeat review swim",
+          stroke: "reverse_im_order",
+          drillType: "pull",
+          equipment: "fins",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "Truthful mapping check.",
+          notes: "Keep the print view honest.",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Repeat review rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "send_off",
+          distanceM: null,
+          timeMin: 2,
+          targetSummary: "Leave room for setup.",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+        },
+      ],
+    };
+
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "local_draft",
+    });
+
+    expect(buildWorkoutPdfFileName(draft, { draftState: "local_draft" })).toBe(
+      "freeswimming-review-print-draft-print-draft.pdf"
+    );
+    expect(html).toContain("Workout PDF print view");
+    expect(html).toContain("Source: Local draft");
+    expect(html).toContain("Review print draft");
+    expect(html).toContain(
+      "Review 3 Garmin/export mapping details before you treat this workout as handoff-ready."
+    );
+    expect(html).toContain("Repeat block");
+    expect(html).toContain("Repeat review swim");
+    expect(html).toContain("Reverse IM order (RIMO)");
+    expect(html).toContain("Print / Save PDF");
   });
 });

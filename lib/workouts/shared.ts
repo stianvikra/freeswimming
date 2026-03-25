@@ -105,6 +105,52 @@ export type WorkoutGarminReadinessReport = {
 
 export type WorkoutHandoffDraftState = "canonical" | "local_draft";
 
+export type WorkoutPdfModelStep = {
+  label: string;
+  title: string;
+  summary: string;
+  targetNotes: string | null;
+  notes: string | null;
+  reviewDetails: string[];
+};
+
+export type WorkoutPdfModelBlock =
+  | {
+      kind: "single";
+      label: string;
+      title: string;
+      summary: string;
+      targetNotes: string | null;
+      notes: string | null;
+      reviewDetails: string[];
+    }
+  | {
+      kind: "repeat";
+      label: string;
+      title: string;
+      summary: string;
+      reviewDetails: string[];
+      steps: WorkoutPdfModelStep[];
+    };
+
+export type WorkoutPdfModel = {
+  fileName: string;
+  draftState: WorkoutHandoffDraftState;
+  sourceLabel: string;
+  title: string;
+  sessionSummary: string;
+  environmentSummary: string;
+  sessionTypeLabel: string;
+  effortLabel: string;
+  description: string | null;
+  goalTitle: string | null;
+  focusText: string | null;
+  constraintText: string | null;
+  warnings: string[];
+  readiness: WorkoutGarminReadinessReport;
+  blocks: WorkoutPdfModelBlock[];
+};
+
 type WorkoutGarminReadyExportLabeledValue<T extends string> = {
   value: T;
   label: string;
@@ -118,16 +164,12 @@ export type WorkoutGarminReadyExportStep = {
   reviewIssueIds: string[];
   category: WorkoutGarminReadyExportLabeledValue<SessionDraftStep["category"]>;
   stroke: WorkoutGarminReadyExportLabeledValue<SessionDraftStep["stroke"]>;
-  drillType:
-    | WorkoutGarminReadyExportLabeledValue<
-        Exclude<SessionDraftStep["drillType"], null | undefined>
-      >
-    | null;
-  equipment:
-    | WorkoutGarminReadyExportLabeledValue<
-        Exclude<SessionDraftStep["equipment"], null | undefined>
-      >
-    | null;
+  drillType: WorkoutGarminReadyExportLabeledValue<
+    Exclude<SessionDraftStep["drillType"], null | undefined>
+  > | null;
+  equipment: WorkoutGarminReadyExportLabeledValue<
+    Exclude<SessionDraftStep["equipment"], null | undefined>
+  > | null;
   intensity: WorkoutGarminReadyExportLabeledValue<SessionDraftStep["intensity"]>;
   duration: {
     mode: SessionDraftStep["durationMode"];
@@ -140,11 +182,9 @@ export type WorkoutGarminReadyExportStep = {
   target: {
     mode: NonNullable<SessionDraftStep["targetMode"]>;
     label: string;
-    effortTarget:
-      | WorkoutGarminReadyExportLabeledValue<
-          Exclude<SessionDraftStep["effortTarget"], null | undefined>
-        >
-      | null;
+    effortTarget: WorkoutGarminReadyExportLabeledValue<
+      Exclude<SessionDraftStep["effortTarget"], null | undefined>
+    > | null;
     targetPaceSecondsPer100m: number | null;
     cssTargetOffsetSeconds: number | null;
     structuredLabel: string | null;
@@ -249,7 +289,9 @@ export function buildWorkoutGarminReadinessReport(
     };
   }
 
-  const issues = draft.steps.flatMap((step, index) => buildWorkoutGarminReadinessIssues(step, index));
+  const issues = draft.steps.flatMap((step, index) =>
+    buildWorkoutGarminReadinessIssues(step, index)
+  );
 
   if (issues.length === 0) {
     return {
@@ -292,6 +334,19 @@ export function buildWorkoutGarminReadyExportFileName(
   const suffix = draftState === "canonical" ? "" : "-draft";
 
   return `freeswimming-${title || "workout"}-garmin-ready${suffix}.json`;
+}
+
+export function buildWorkoutPdfFileName(
+  draft: SessionDraft | null | undefined,
+  options?: {
+    draftState?: WorkoutHandoffDraftState;
+  }
+) {
+  const title = normalizeFileNamePart(draft?.title ?? "");
+  const draftState = options?.draftState ?? "local_draft";
+  const suffix = draftState === "canonical" ? "" : "-draft";
+
+  return `freeswimming-${title || "workout"}-print${suffix}.pdf`;
 }
 
 export function buildWorkoutGarminReadyExport(
@@ -561,6 +616,612 @@ export function buildWorkoutHandoffText(
   return lines.join("\n");
 }
 
+export function buildWorkoutPdfModel(
+  draft: SessionDraft | null | undefined,
+  options?: {
+    draftState?: WorkoutHandoffDraftState;
+  }
+): WorkoutPdfModel {
+  const draftState = options?.draftState ?? "local_draft";
+  const fileName = buildWorkoutPdfFileName(draft, { draftState });
+  const sourceLabel = draftState === "canonical" ? "Canonical workout" : "Local draft";
+
+  if (!draft) {
+    const readiness = buildWorkoutGarminReadinessReport(draft);
+    return {
+      fileName,
+      draftState,
+      sourceLabel,
+      title: "Workout PDF print view",
+      sessionSummary: "No workout draft is available yet.",
+      environmentSummary: "Not set",
+      sessionTypeLabel: "Not set",
+      effortLabel: "Not set",
+      description: null,
+      goalTitle: null,
+      focusText: null,
+      constraintText: null,
+      warnings: [],
+      readiness,
+      blocks: [],
+    };
+  }
+
+  const totals = computeSessionDraftDerivedTotals(draft);
+  const normalizedDraft = {
+    ...draft,
+    totalDistanceM: totals.totalDistanceM ?? draft.totalDistanceM,
+    estimatedDurationMin: totals.estimatedDurationMin ?? draft.estimatedDurationMin,
+  };
+  const readiness = buildWorkoutGarminReadinessReport(draft);
+  const issuesByStepId = new Map<string, string[]>();
+
+  for (const issue of readiness.issues) {
+    const current = issuesByStepId.get(issue.stepId) ?? [];
+    current.push(issue.detail);
+    issuesByStepId.set(issue.stepId, current);
+  }
+
+  const blocks = buildWorkoutHandoffGroups(draft.steps).map((group, groupIndex) => {
+    if (group.kind === "single") {
+      const entry = group.entries[0];
+      return {
+        kind: "single" as const,
+        label: `${groupIndex + 1}.`,
+        title: entry.step.name,
+        summary: `${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
+          entry.step,
+          draft.basePaceSecondsPer100m
+        )}`,
+        targetNotes: entry.step.targetSummary || null,
+        notes: entry.step.notes || null,
+        reviewDetails: issuesByStepId.get(entry.step.id) ?? [],
+      };
+    }
+
+    const steps = group.entries.map((entry, repeatIndex) => ({
+      label: `${groupIndex + 1}.${repeatIndex + 1}`,
+      title: entry.step.name,
+      summary: `${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
+        entry.step,
+        draft.basePaceSecondsPer100m
+      )}`,
+      targetNotes: entry.step.targetSummary || null,
+      notes: entry.step.notes || null,
+      reviewDetails: issuesByStepId.get(entry.step.id) ?? [],
+    }));
+
+    return {
+      kind: "repeat" as const,
+      label: `${groupIndex + 1}.`,
+      title: "Repeat block",
+      summary: buildWorkoutHandoffRepeatSummary(
+        group.entries,
+        group.repeatCount,
+        draft.basePaceSecondsPer100m
+      ),
+      reviewDetails: Array.from(new Set(steps.flatMap((step) => step.reviewDetails))),
+      steps,
+    };
+  });
+
+  return {
+    fileName,
+    draftState,
+    sourceLabel,
+    title: draft.title,
+    sessionSummary: buildSessionTargetSummary(normalizedDraft),
+    environmentSummary: buildWorkoutEnvironmentSummary(draft),
+    sessionTypeLabel: getSessionTypeLabel(draft.sessionType),
+    effortLabel: getSessionEffortLabel(draft.effort),
+    description: draft.description || null,
+    goalTitle: draft.goalTitle || null,
+    focusText: draft.focusText || null,
+    constraintText: draft.constraintText || null,
+    warnings: draft.warnings,
+    readiness,
+    blocks,
+  };
+}
+
+export function buildWorkoutPdfHtmlDocument(
+  draft: SessionDraft | null | undefined,
+  options?: {
+    draftState?: WorkoutHandoffDraftState;
+  }
+) {
+  const model = buildWorkoutPdfModel(draft, options);
+  const reviewDetailsHtml =
+    model.readiness.issues.length > 0
+      ? `
+        <section class="notice notice-warn">
+          <h2>Review before export/send</h2>
+          <p>${escapeHtml(model.readiness.summary)}</p>
+          <ul>
+            ${model.readiness.issues.map((issue) => `<li>${escapeHtml(issue.detail)}</li>`).join("")}
+          </ul>
+        </section>
+      `
+      : "";
+  const warningsHtml =
+    model.warnings.length > 0
+      ? `
+        <section class="notice notice-neutral">
+          <h2>Existing draft warnings</h2>
+          <ul>
+            ${model.warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}
+          </ul>
+        </section>
+      `
+      : "";
+  const contextCards = [
+    {
+      label: "Source",
+      value: model.sourceLabel,
+    },
+    {
+      label: "Environment",
+      value: model.environmentSummary,
+    },
+    {
+      label: "Session type",
+      value: model.sessionTypeLabel,
+    },
+    {
+      label: "Effort",
+      value: model.effortLabel,
+    },
+    model.goalTitle
+      ? {
+          label: "Goal",
+          value: model.goalTitle,
+        }
+      : null,
+    model.focusText
+      ? {
+          label: "Focus",
+          value: model.focusText,
+        }
+      : null,
+    model.constraintText
+      ? {
+          label: "Constraint",
+          value: model.constraintText,
+        }
+      : null,
+  ]
+    .filter((card): card is { label: string; value: string } => Boolean(card))
+    .map(
+      (card) => `
+        <div class="meta-card">
+          <p class="meta-label">${escapeHtml(card.label)}</p>
+          <p class="meta-value">${escapeHtml(card.value)}</p>
+        </div>
+      `
+    )
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(model.fileName)} - FreeSwimming</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172033;
+        --muted: #526079;
+        --line: #d7dce5;
+        --surface: #fffdf8;
+        --surface-soft: #f4efe6;
+        --accent: #0f766e;
+        --accent-soft: #dff5f2;
+        --warn: #92400e;
+        --warn-soft: #fff4d6;
+        --notice: #eef3ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #e7e0d3;
+        color: var(--ink);
+        font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      body {
+        min-height: 100vh;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 20px;
+        background: rgba(23, 32, 51, 0.96);
+        color: #fff;
+      }
+
+      .toolbar-copy {
+        display: grid;
+        gap: 4px;
+      }
+
+      .toolbar-kicker {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.72);
+      }
+
+      .toolbar-title {
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .toolbar-button {
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: transparent;
+        color: #fff;
+        border-radius: 999px;
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+
+      .toolbar-button-primary {
+        background: #fff;
+        color: var(--ink);
+        border-color: #fff;
+      }
+
+      .shell {
+        padding: 24px 16px 40px;
+      }
+
+      .page {
+        max-width: 920px;
+        margin: 0 auto;
+        background: var(--surface);
+        border: 1px solid rgba(23, 32, 51, 0.08);
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 28px 80px rgba(23, 32, 51, 0.14);
+      }
+
+      .hero {
+        padding: 32px;
+        background:
+          radial-gradient(circle at top right, rgba(15, 118, 110, 0.14), transparent 28%),
+          linear-gradient(135deg, #f3ede2 0%, #fffdf8 50%, #ebf7f5 100%);
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .source-pill {
+        display: inline-flex;
+        margin: 14px 0 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.82);
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 18px 0 0;
+        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        line-height: 1.04;
+      }
+
+      .lede {
+        margin: 14px 0 0;
+        max-width: 42rem;
+        font-size: 1rem;
+        line-height: 1.65;
+        color: var(--muted);
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .meta-card {
+        border: 1px solid rgba(23, 32, 51, 0.08);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.82);
+        padding: 14px 16px;
+      }
+
+      .meta-label {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .meta-value {
+        margin: 8px 0 0;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.5;
+      }
+
+      .body {
+        padding: 28px 32px 36px;
+      }
+
+      .notice {
+        border-radius: 22px;
+        padding: 18px 20px;
+        margin-bottom: 18px;
+      }
+
+      .notice h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .notice p {
+        margin: 10px 0 0;
+        line-height: 1.6;
+      }
+
+      .notice ul {
+        margin: 12px 0 0;
+        padding-left: 18px;
+      }
+
+      .notice li + li {
+        margin-top: 8px;
+      }
+
+      .notice-warn {
+        background: var(--warn-soft);
+        border: 1px solid rgba(146, 64, 14, 0.18);
+        color: var(--warn);
+      }
+
+      .notice-neutral {
+        background: var(--notice);
+        border: 1px solid rgba(82, 96, 121, 0.16);
+      }
+
+      .section-title {
+        margin: 28px 0 16px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .steps {
+        display: grid;
+        gap: 14px;
+      }
+
+      .step-block {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: #fff;
+        overflow: hidden;
+      }
+
+      .step-block-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+        background: var(--surface-soft);
+      }
+
+      .step-kicker {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .step-title {
+        margin: 8px 0 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .step-summary {
+        margin: 6px 0 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .step-body {
+        padding: 18px 20px 20px;
+      }
+
+      .step-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .repeat-step {
+        border: 1px solid rgba(23, 32, 51, 0.08);
+        border-radius: 18px;
+        padding: 14px 16px;
+        background: #fffdfa;
+      }
+
+      .detail-list,
+      .review-list {
+        margin: 12px 0 0;
+        padding-left: 18px;
+      }
+
+      .detail-list li + li,
+      .review-list li + li {
+        margin-top: 6px;
+      }
+
+      .review-list {
+        color: var(--warn);
+      }
+
+      .footer-note {
+        margin-top: 28px;
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      @media (max-width: 720px) {
+        .toolbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .meta-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero,
+        .body {
+          padding: 22px 20px 24px;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          background: #fff;
+        }
+
+        .toolbar {
+          display: none;
+        }
+
+        .shell {
+          padding: 0;
+        }
+
+        .page {
+          max-width: none;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+        }
+
+        .step-block,
+        .repeat-step,
+        .meta-card,
+        .notice {
+          break-inside: avoid;
+        }
+      }
+
+      @page {
+        size: auto;
+        margin: 12mm;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <div class="toolbar-copy">
+        <span class="toolbar-kicker">FreeSwimming</span>
+        <span class="toolbar-title">Workout PDF print view</span>
+      </div>
+      <div class="toolbar-actions">
+        <button class="toolbar-button toolbar-button-primary" type="button" onclick="window.print()">
+          Print / Save PDF
+        </button>
+        <button class="toolbar-button" type="button" onclick="window.close()">
+          Close
+        </button>
+      </div>
+    </div>
+    <main class="shell">
+      <article class="page" data-testid="workout-pdf-print-view">
+        <header class="hero">
+          <p class="eyebrow">FreeSwimming workout PDF</p>
+          <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
+          <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
+          <p class="lede">${escapeHtml(model.sessionSummary)}</p>
+          <div class="meta-grid">
+            ${contextCards}
+          </div>
+        </header>
+        <div class="body">
+          ${
+            model.description
+              ? `
+                <section class="notice notice-neutral">
+                  <h2>Description</h2>
+                  <p>${escapeHtml(model.description)}</p>
+                </section>
+              `
+              : ""
+          }
+          ${warningsHtml}
+          ${reviewDetailsHtml}
+          <h2 class="section-title">Steps</h2>
+          <section class="steps">
+            ${model.blocks.map((block) => renderWorkoutPdfBlockHtml(block)).join("")}
+          </section>
+          <p class="footer-note">
+            This print view reflects the ${
+              model.draftState === "canonical" ? "saved canonical workout" : "current local draft"
+            }. Use your browser&apos;s Print / Save PDF flow for a poolside-ready copy.
+          </p>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>`;
+}
+
 export function normalizeSessionDraftForWorkoutPersistence(
   input: SessionDraft | null | undefined
 ): { ok: true; value: SessionDraft } | { ok: false; error: string } {
@@ -797,6 +1458,79 @@ function buildWorkoutStepReadinessLabel(step: SessionDraftStep, index: number) {
   return name ? `Step ${index + 1} (${name})` : `Step ${index + 1}`;
 }
 
+function renderWorkoutPdfBlockHtml(block: WorkoutPdfModelBlock) {
+  if (block.kind === "single") {
+    return `
+      <article class="step-block">
+        <div class="step-block-head">
+          <div>
+            <p class="step-kicker">${escapeHtml(block.label)}</p>
+            <h3 class="step-title">${escapeHtml(block.title)}</h3>
+            <p class="step-summary">${escapeHtml(block.summary)}</p>
+          </div>
+        </div>
+        <div class="step-body">
+          ${renderWorkoutPdfDetailList(block.targetNotes, block.notes)}
+          ${renderWorkoutPdfReviewList(block.reviewDetails)}
+        </div>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="step-block">
+      <div class="step-block-head">
+        <div>
+          <p class="step-kicker">${escapeHtml(block.label)}</p>
+          <h3 class="step-title">${escapeHtml(block.title)}</h3>
+          <p class="step-summary">${escapeHtml(block.summary)}</p>
+        </div>
+      </div>
+      <div class="step-body">
+        ${renderWorkoutPdfReviewList(block.reviewDetails)}
+        <div class="step-list">
+          ${block.steps
+            .map(
+              (step) => `
+                <section class="repeat-step">
+                  <p class="step-kicker">${escapeHtml(step.label)}</p>
+                  <h4 class="step-title">${escapeHtml(step.title)}</h4>
+                  <p class="step-summary">${escapeHtml(step.summary)}</p>
+                  ${renderWorkoutPdfDetailList(step.targetNotes, step.notes)}
+                  ${renderWorkoutPdfReviewList(step.reviewDetails)}
+                </section>
+              `
+            )
+            .join("")}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderWorkoutPdfDetailList(targetNotes: string | null, notes: string | null) {
+  const items = [
+    targetNotes ? `<li>Target notes: ${escapeHtml(targetNotes)}</li>` : "",
+    notes ? `<li>Notes: ${escapeHtml(notes)}</li>` : "",
+  ].filter(Boolean);
+
+  if (items.length === 0) {
+    return "";
+  }
+
+  return `<ul class="detail-list">${items.join("")}</ul>`;
+}
+
+function renderWorkoutPdfReviewList(reviewDetails: string[]) {
+  if (reviewDetails.length === 0) {
+    return "";
+  }
+
+  return `<ul class="review-list">${reviewDetails
+    .map((detail) => `<li>${escapeHtml(detail)}</li>`)
+    .join("")}</ul>`;
+}
+
 type WorkoutHandoffEntry = {
   step: SessionDraftStep;
   index: number;
@@ -996,10 +1730,7 @@ function buildWorkoutGarminReadyExportStep(
   };
 }
 
-function buildWorkoutHandoffStepSummary(
-  step: SessionDraftStep,
-  basePaceSecondsPer100m: number
-) {
+function buildWorkoutHandoffStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
   const structuredTarget = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
   const contextParts = [getSessionStepStrokeLabel(step.stroke)];
 
@@ -1081,6 +1812,15 @@ function normalizeFileNamePart(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function normalizeStep(

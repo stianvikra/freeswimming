@@ -168,12 +168,8 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
       "Review 5 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
-    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText(
-      "Pull"
-    );
-    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-1")).toContainText(
-      "Fins"
-    );
+    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText("Pull");
+    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-1")).toContainText("Fins");
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-4")).toContainText(
       "Reverse IM order (RIMO)"
     );
@@ -201,7 +197,25 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
       '"reviewIssueIds": ['
     );
+    await expect(page.getByTestId("workout-editor-pdf-source")).toHaveAttribute(
+      "data-pdf-state",
+      "local_draft"
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
+
+    const pdfPopupPromise = page.waitForEvent("popup");
+    await page.getByTestId("workout-editor-pdf-open").click();
+    const pdfPopup = await pdfPopupPromise;
+    await expect(page.getByTestId("workout-editor-pdf-notice")).toContainText("Opened print view");
+    await expect(pdfPopup.locator('[data-testid="workout-pdf-print-view"]')).toBeVisible();
+    await expect(pdfPopup.locator('[data-testid="workout-pdf-source"]')).toContainText(
+      "Source: Local draft"
+    );
+    await expect(pdfPopup.locator('[data-testid="workout-pdf-title"]')).toContainText(uniqueTitle);
+    await expect(pdfPopup.locator("body")).toContainText("Workout PDF print view");
+    await expect(pdfPopup.locator("body")).toContainText("Print / Save PDF");
+    await expect(pdfPopup.locator("body")).toContainText("Reverse IM order (RIMO)");
+    await pdfPopup.close();
 
     const patchResponsePromise = page.waitForResponse(
       (response) =>
