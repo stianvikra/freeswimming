@@ -8,6 +8,7 @@ import type {
   WorkoutSummary,
 } from "@/lib/workouts/shared";
 import {
+  buildWorkoutPdfFileName,
   buildWorkoutGarminReadyExportFileName,
   buildWorkoutHandoffFileName,
 } from "@/lib/workouts/shared";
@@ -243,12 +244,8 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
       "Review 3 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent(
-      "Pull"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent(
-      "Fins"
-    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent("Pull");
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent("Fins");
     expect(screen.getByTestId("workout-editor-garmin-readiness-issue-2")).toHaveTextContent(
       "IM by round"
     );
@@ -727,6 +724,72 @@ describe("WorkoutBuilderHub", () => {
       )}.`
     );
     expect(revokeUrlSpy).toHaveBeenCalledTimes(0);
+  });
+
+  it("opens a truthful workout PDF print view for the current draft state", async () => {
+    const printWindow = {
+      document: {
+        open: vi.fn(),
+        write: vi.fn(),
+        close: vi.fn(),
+      },
+      focus: vi.fn(),
+    };
+
+    const openSpy = vi.spyOn(window, "open").mockReturnValue(printWindow as unknown as Window);
+
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.change(screen.getByTestId("session-draft-title"), {
+      target: { value: "Local PDF workout" },
+    });
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.change(screen.getByTestId("session-draft-step-stroke-0"), {
+      target: { value: "reverse_im_order" },
+    });
+
+    expect(screen.getByTestId("workout-editor-pdf-source")).toHaveAttribute(
+      "data-pdf-state",
+      "local_draft"
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
+
+    await waitFor(() => {
+      expect(openSpy).toHaveBeenCalledWith("", "_blank");
+      expect(printWindow.document.open).toHaveBeenCalledTimes(1);
+      expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining("Local PDF workout")
+      );
+    });
+
+    expect(printWindow.document.write).toHaveBeenCalledWith(
+      expect.stringContaining("Workout PDF print view")
+    );
+    expect(printWindow.document.write).toHaveBeenCalledWith(
+      expect.stringContaining("Source: Local draft")
+    );
+    expect(printWindow.document.write).toHaveBeenCalledWith(
+      expect.stringContaining("Reverse IM order (RIMO)")
+    );
+    expect(printWindow.document.close).toHaveBeenCalledTimes(1);
+    expect(printWindow.focus).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("workout-editor-pdf-notice")).toHaveTextContent(
+      `Opened print view for ${buildWorkoutPdfFileName(
+        {
+          ...buildDraft(),
+          title: "Local PDF workout",
+        },
+        { draftState: "local_draft" }
+      )}. Use Print / Save PDF in that tab.`
+    );
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {

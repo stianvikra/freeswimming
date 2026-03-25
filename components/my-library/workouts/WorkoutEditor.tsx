@@ -49,6 +49,8 @@ import {
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
 import {
+  buildWorkoutPdfFileName,
+  buildWorkoutPdfHtmlDocument,
   buildWorkoutGarminReadyExport,
   buildWorkoutGarminReadyExportFileName,
   buildWorkoutGarminReadinessReport,
@@ -455,6 +457,8 @@ export default function WorkoutEditor({
   );
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
   const [lastRemovedBlock, setLastRemovedBlock] = useState<LastRemovedBlock | null>(null);
+  const [workoutPdfNotice, setWorkoutPdfNotice] = useState("");
+  const [workoutPdfError, setWorkoutPdfError] = useState("");
   const [garminExportNotice, setGarminExportNotice] = useState("");
   const [garminExportError, setGarminExportError] = useState("");
   const [handoffNotice, setHandoffNotice] = useState("");
@@ -471,8 +475,23 @@ export default function WorkoutEditor({
   const garminReadyExportFileName = buildWorkoutGarminReadyExportFileName(draft, {
     draftState: handoffDraftState,
   });
+  const workoutPdfFileName = buildWorkoutPdfFileName(draft, {
+    draftState: handoffDraftState,
+  });
+  const workoutPdfHtml = buildWorkoutPdfHtmlDocument(draft, {
+    draftState: handoffDraftState,
+  });
+  const workoutPdfStateLabel =
+    handoffDraftState === "canonical" ? "Canonical workout PDF" : "Local draft workout PDF";
+  const workoutPdfStateDescription = savedWorkout
+    ? hasUnsavedChanges
+      ? "Print view reflects unsaved local edits. Save first if you want the canonical workout and PDF to match."
+      : "Print view matches the saved canonical workout."
+    : "Print view reflects the current local draft before canonical save.";
   const garminExportStateLabel =
-    handoffDraftState === "canonical" ? "Canonical Garmin-ready export" : "Local draft Garmin-ready export";
+    handoffDraftState === "canonical"
+      ? "Canonical Garmin-ready export"
+      : "Local draft Garmin-ready export";
   const garminExportStateDescription = savedWorkout
     ? hasUnsavedChanges
       ? "JSON export preview reflects unsaved local edits. Save first if you want the canonical workout and export adapter output to match."
@@ -525,6 +544,11 @@ export default function WorkoutEditor({
     setPendingRemoval(null);
     setLastRemovedBlock(null);
   }, [savedWorkout?.id, savedWorkout?.updatedAt]);
+
+  useEffect(() => {
+    setWorkoutPdfNotice("");
+    setWorkoutPdfError("");
+  }, [workoutPdfHtml, handoffDraftState, savedWorkout?.id, savedWorkout?.updatedAt]);
 
   useEffect(() => {
     setGarminExportNotice("");
@@ -667,10 +691,7 @@ export default function WorkoutEditor({
     insertStepAt(
       sourceIndex + 1,
       sourceStep.repeatGroupId
-        ? buildRepeatInsertedStep(
-            sourceStep.repeatGroupId,
-            sourceStep.repeatCount ?? null
-          )
+        ? buildRepeatInsertedStep(sourceStep.repeatGroupId, sourceStep.repeatCount ?? null)
         : {}
     );
   }
@@ -1043,6 +1064,35 @@ export default function WorkoutEditor({
       setGarminExportNotice(`Downloaded ${garminReadyExportFileName}.`);
     } catch {
       setGarminExportError("Could not download the Garmin-ready JSON right now.");
+    }
+  }
+
+  function openWorkoutPdfPrintView() {
+    setWorkoutPdfNotice("");
+    setWorkoutPdfError("");
+
+    try {
+      if (typeof window === "undefined") {
+        throw new Error("Window unavailable.");
+      }
+
+      const printWindow = window.open("", "_blank");
+
+      if (!printWindow?.document) {
+        throw new Error("Popup blocked.");
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(workoutPdfHtml);
+      printWindow.document.close();
+      printWindow.focus?.();
+      setWorkoutPdfNotice(
+        `Opened print view for ${workoutPdfFileName}. Use Print / Save PDF in that tab.`
+      );
+    } catch {
+      setWorkoutPdfError(
+        "Could not open the workout PDF print view. Check whether pop-ups are blocked."
+      );
     }
   }
 
@@ -1734,14 +1784,58 @@ export default function WorkoutEditor({
         {garminReadiness.issues.length > 0 ? (
           <ul className="mt-3 space-y-2 text-sm text-amber-900">
             {garminReadiness.issues.map((issue, index) => (
-              <li
-                key={issue.id}
-                data-testid={`workout-editor-garmin-readiness-issue-${index}`}
-              >
+              <li key={issue.id} data-testid={`workout-editor-garmin-readiness-issue-${index}`}>
                 {issue.detail}
               </li>
             ))}
           </ul>
+        ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+              Workout PDF
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-900">
+              Open a print-ready workout sheet in a dedicated tab, then use your browser&apos;s
+              Print / Save PDF flow for a poolside copy.
+            </p>
+            <p
+              data-testid="workout-editor-pdf-source"
+              data-pdf-state={handoffDraftState}
+              className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+            >
+              {workoutPdfStateLabel}
+            </p>
+            <p className="mt-1 text-sm text-slate-600">{workoutPdfStateDescription}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={openWorkoutPdfPrintView}
+              data-testid="workout-editor-pdf-open"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              Open print view
+            </button>
+          </div>
+        </div>
+
+        {workoutPdfNotice ? (
+          <p
+            data-testid="workout-editor-pdf-notice"
+            className="mt-3 text-sm font-medium text-emerald-700"
+          >
+            {workoutPdfNotice}
+          </p>
+        ) : null}
+
+        {workoutPdfError ? (
+          <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
+            {workoutPdfError}
+          </p>
         ) : null}
       </div>
 
