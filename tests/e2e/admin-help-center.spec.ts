@@ -111,9 +111,7 @@ test.describe("admin help center", () => {
     await expect(page.getByText("Visible note ID:")).toBeVisible();
     await expect(page.getByText("Priority:")).toBeVisible();
     await expect(page.getByText("Add images / Delete image:")).toBeVisible();
-    await expect(
-      page.getByText("Capture screenshot / Retake screenshot / Retry upload:")
-    ).toBeVisible();
+    await expect(page.getByText("Paste image from clipboard / Upload image:")).toBeVisible();
     await expect(page.getByText("Link note / Remove link:")).toBeVisible();
     await expect(page.getByText("Open lock operations workflow:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
@@ -144,17 +142,12 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Paste an image anywhere in the note form when the screenshot is already on your clipboard; otherwise open image tools and use `Capture screenshot`."
+        "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload image` if you already have the file."
       )
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Use `Capture screenshot` when the issue is visual, drag to the relevant crop in preview, and save only after the preview looks right."
-      )
-    ).toBeVisible();
-    await expect(
-      page.getByText(
-        "Remember that pasted or captured images stay local until note save and attachment upload both succeed; if permission is denied or the preview never appears, fall back to `Add images`."
+        "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload image`."
       )
     ).toBeVisible();
     await expect(
@@ -164,9 +157,9 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "On mobile, keep image tools collapsed unless you actively need paste/capture so title, body, and context stay close together."
+        "On mobile, the two image actions stay visible so you do not need to remember hidden paste shortcuts."
       )
     ).toBeVisible();
-    await expect(page.getByText("Screenshot capture is denied or upload fails")).toBeVisible();
+    await expect(page.getByText("Clipboard paste is blocked or image upload fails")).toBeVisible();
   });
 });

@@ -140,19 +140,8 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(openLink).toHaveAttribute("href", expect.stringContaining("notesContextRef=%2Fplans"));
   });
 
-  it("saves a quick note and uploads a captured screenshot attachment", async () => {
+  it("saves a quick note and uploads a selected image attachment", async () => {
     const onSaved = vi.fn();
-    window.__FS_ADMIN_SCREENSHOT_CAPTURE_OVERRIDE__ = {
-      isSupported: () => true,
-      capture: async () => ({
-        blob: new Blob(["capture"], { type: "image/png" }),
-        width: 200,
-        height: 100,
-        fileName: "captured-proof.png",
-      }),
-      cropToFile: async () => new File(["cropped"], "captured-proof.png", { type: "image/png" }),
-    };
-
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -234,11 +223,12 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
     await screen.findByTestId("admin-note-quick-capture-dialog");
 
-    fireEvent.click(screen.getByRole("button", { name: "Add image" }));
-    fireEvent.click(screen.getByRole("button", { name: "Capture screenshot" }));
-    await screen.findByTestId("admin-note-screenshot-preview-image");
-    fireEvent.click(screen.getByRole("button", { name: "Save screenshot" }));
-    await screen.findByText("Screenshot ready to attach");
+    fireEvent.change(screen.getByLabelText("Upload image"), {
+      target: {
+        files: [new File(["png"], "captured-proof.png", { type: "image/png" })],
+      },
+    });
+    await screen.findByText("Image ready to attach");
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Plans screenshot follow-up" },
@@ -260,18 +250,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     await screen.findByText("Quick note saved.");
   });
 
-  it("keeps screenshot recovery visible when note save succeeds but attachment upload fails", async () => {
-    window.__FS_ADMIN_SCREENSHOT_CAPTURE_OVERRIDE__ = {
-      isSupported: () => true,
-      capture: async () => ({
-        blob: new Blob(["capture"], { type: "image/png" }),
-        width: 200,
-        height: 100,
-        fileName: "captured-proof.png",
-      }),
-      cropToFile: async () => new File(["cropped"], "captured-proof.png", { type: "image/png" }),
-    };
-
+  it("keeps image recovery visible when note save succeeds but attachment upload fails", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -325,11 +304,12 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
     await screen.findByTestId("admin-note-quick-capture-dialog");
 
-    fireEvent.click(screen.getByRole("button", { name: "Add image" }));
-    fireEvent.click(screen.getByRole("button", { name: "Capture screenshot" }));
-    await screen.findByTestId("admin-note-screenshot-preview-image");
-    fireEvent.click(screen.getByRole("button", { name: "Save screenshot" }));
-    await screen.findByText("Screenshot ready to attach");
+    fireEvent.change(screen.getByLabelText("Upload image"), {
+      target: {
+        files: [new File(["png"], "captured-proof.png", { type: "image/png" })],
+      },
+    });
+    await screen.findByText("Image ready to attach");
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Plans screenshot follow-up" },
@@ -341,7 +321,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(screen.getByRole("link", { name: "Open in Notes" })).toBeInTheDocument();
   });
 
-  it("stages a pasted clipboard image and uploads it after the note save succeeds", async () => {
+  it("stages a clipboard image from the explicit paste button and uploads it after the note save succeeds", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -409,6 +389,21 @@ describe("AdminNoteQuickCaptureLauncher", () => {
         }),
       });
     vi.stubGlobal("fetch", fetchMock);
+    Object.defineProperty(window, "isSecureContext", {
+      configurable: true,
+      value: true,
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        read: vi.fn().mockResolvedValue([
+          {
+            types: ["image/png"],
+            getType: async () => new Blob(["png"], { type: "image/png" }),
+          },
+        ]),
+      },
+    });
 
     render(
       <AdminNoteQuickCaptureLauncher
@@ -421,17 +416,9 @@ describe("AdminNoteQuickCaptureLauncher", () => {
 
     fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
     await screen.findByTestId("admin-note-quick-capture-form");
-    const titleInput = screen.getByLabelText("Title");
+    fireEvent.click(screen.getByRole("button", { name: "Paste image from clipboard" }));
 
-    const pastedFile = new File(["png"], "", { type: "image/png" });
-    fireEvent.paste(titleInput, {
-      clipboardData: {
-        items: [],
-        files: [pastedFile],
-      },
-    });
-
-    await screen.findByText("Screenshot ready to attach");
+    await screen.findByText("Image ready to attach");
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Clipboard note" },

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractAdminNoteClipboardImage } from "@/lib/admin/note-compose";
+import {
+  extractAdminNoteClipboardImage,
+  prepareAdminNoteImageFile,
+  readAdminNoteClipboardImageFromNavigator,
+} from "@/lib/admin/note-compose";
 
 function buildClipboardData(params: {
   kind?: string;
@@ -87,5 +91,102 @@ describe("extractAdminNoteClipboardImage", () => {
       throw new Error("Expected oversized clipboard image to fail validation.");
     }
     expect(result.error).toMatch(/5 MB or smaller/i);
+  });
+});
+
+describe("prepareAdminNoteImageFile", () => {
+  it("normalizes uploaded image files with the same attachment rules", () => {
+    const file = new File(["png"], "evidence.png", { type: "image/png" });
+    const result = prepareAdminNoteImageFile({ file });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Expected uploaded image preparation to succeed.");
+    }
+
+    expect(result.file.name).toBe("evidence.png");
+    expect(result.file.type).toBe("image/png");
+  });
+
+  it("rejects non-image uploads before staging them locally", () => {
+    const file = new File(["pdf"], "notes.pdf", { type: "application/pdf" });
+    const result = prepareAdminNoteImageFile({ file });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Only PNG, JPEG, WEBP, and GIF images are allowed.",
+    });
+  });
+});
+
+describe("readAdminNoteClipboardImageFromNavigator", () => {
+  it("reads an image from the async clipboard button flow", async () => {
+    const result = await readAdminNoteClipboardImageFromNavigator({
+      clipboard: {
+        read: async () => [
+          {
+            types: ["image/png"],
+            getType: async () => new Blob(["png"], { type: "image/png" }),
+          },
+        ],
+      },
+      secureContext: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Expected clipboard button image read to succeed.");
+    }
+    expect(result.file.name).toBe("pasted-image.png");
+    expect(result.file.type).toBe("image/png");
+  });
+
+  it("explains when the clipboard button is unsupported in the current browser", async () => {
+    await expect(
+      readAdminNoteClipboardImageFromNavigator({
+        clipboard: null,
+        secureContext: true,
+      })
+    ).resolves.toEqual({
+      ok: false,
+      error:
+        "This browser cannot read clipboard images from a button here yet. Use Upload image instead.",
+    });
+  });
+
+  it("explains when no clipboard image is available for the button flow", async () => {
+    await expect(
+      readAdminNoteClipboardImageFromNavigator({
+        clipboard: {
+          read: async () => [
+            {
+              types: ["text/plain"],
+              getType: async () => new Blob(["text"], { type: "text/plain" }),
+            },
+          ],
+        },
+        secureContext: true,
+      })
+    ).resolves.toEqual({
+      ok: false,
+      error: "Clipboard does not contain an image yet. Copy a screenshot first, then try again.",
+    });
+  });
+
+  it("maps blocked clipboard access to actionable recovery guidance", async () => {
+    await expect(
+      readAdminNoteClipboardImageFromNavigator({
+        clipboard: {
+          read: async () => {
+            throw new DOMException("blocked", "NotAllowedError");
+          },
+        },
+        secureContext: true,
+      })
+    ).resolves.toEqual({
+      ok: false,
+      error:
+        "Clipboard access was blocked. Allow paste access, then try again, or use Upload image instead.",
+    });
   });
 });
