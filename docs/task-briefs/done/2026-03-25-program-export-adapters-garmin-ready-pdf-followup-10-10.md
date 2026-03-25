@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-25`
 - `updated`: `2026-03-25`
@@ -158,3 +158,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-25 | blocked | after blocker PR #292 merged as \`6047d26\`, created the narrower upstream brief \`docs/task-briefs/done/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md\` so export could stay blocked truthfully on missing canonical program entities while implementation resumed on the smallest shared foundation instead of the full planner scope | next: reopen this export brief only after the canonical foundation ships and a real program surface exists`
 - `2026-03-25 | in-progress | after PR #293 merged as \`e1531ff\`, reopened this brief on branch \`feat/program-export-adapters-2026-03-25\` to implement canonical-saved program Garmin-ready JSON and printable PDF outputs directly from the shipped program editor surface | next: land export adapters, route handlers, UI affordances, and scorecard-complete validation`
 - `2026-03-25 | in-progress | landed canonical program export adapters/routes/UI on the branch, added targeted unit coverage for export contracts + route auth, and added a desktop Chromium e2e that now skips explicitly when the local Playwright environment still reports the programs schema as not ready instead of timing out as a false product failure | next: commit the slice, rerun full \`npm run verify:pre-pr\` on branch HEAD, then open/update the PR from the validated commit`
+- `2026-03-25 | merged | program export adapters merged in PR #294 as \`df8247c\`, shipping canonical-saved Garmin-ready JSON and printable PDF outputs from the My Library program surface; local \`npm run verify:pre-pr\` and local \`npm run verify:pre-merge\` both passed on \`7ce057d\`, required GitHub checks were green, and the new environment-gated desktop Chromium export e2e skipped explicitly instead of timing out when the local Playwright environment still lacked the programs schema | next: move on to the broader program builder/calendar completion track now that both canonical program foundation and export handoff slices are done`

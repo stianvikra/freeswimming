@@ -24,8 +24,8 @@ Introduce a canonical user-owned program entity, persistence model, and minimal 
 - Upstream canonical workout foundation already exists in code and remains the source of truth for referenced workout payloads.
 - Broader downstream planner/completion scope remains in:
   - `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
-- Downstream export work now continues in:
-  - `docs/task-briefs/in-progress/2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10.md`
+- Downstream export work later shipped in:
+  - `docs/task-briefs/done/2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10.md`
 - AI generation guardrails remain separate in:
   - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
 - This brief owns:
