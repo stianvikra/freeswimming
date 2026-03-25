@@ -992,6 +992,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      programs: {
+        Row: {
+          created_at: string;
+          id: string;
+          source_kind: string;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+          weeks: Json;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          source_kind: string;
+          status: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+          weeks: Json;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          source_kind?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+          weeks?: Json;
+        };
+        Relationships: [];
+      };
       workouts: {
         Row: {
           accepted_at: string;

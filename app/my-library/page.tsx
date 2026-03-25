@@ -8,6 +8,7 @@ import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
+import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import LibrarySectionTabs from "@/components/my-library/LibrarySectionTabs";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
@@ -19,6 +20,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
+import { loadProgramLibrarySnapshot } from "@/lib/programs/server";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
@@ -85,12 +87,17 @@ export default async function MyLibraryPage() {
     console.error("[MyLibrary] Could not load active goal count", activeGoalCountError);
   }
 
-  const [trainingContextSnapshot, athleteProfileSnapshot, workoutLibrarySnapshot] =
-    await Promise.all([
-      loadTrainingContextSnapshot(supabase, user.id),
-      loadAthleteProfileSnapshot(supabase, user.id),
-      loadWorkoutLibrarySnapshot(supabase, user.id, null),
-    ]);
+  const [
+    trainingContextSnapshot,
+    athleteProfileSnapshot,
+    workoutLibrarySnapshot,
+    programLibrarySnapshot,
+  ] = await Promise.all([
+    loadTrainingContextSnapshot(supabase, user.id),
+    loadAthleteProfileSnapshot(supabase, user.id),
+    loadWorkoutLibrarySnapshot(supabase, user.id, null),
+    loadProgramLibrarySnapshot(supabase, user.id, null),
+  ]);
 
   const claimQuery = new URLSearchParams({ next: "/my-library" });
   if (user.email) {
@@ -178,6 +185,42 @@ export default async function MyLibraryPage() {
                 >
                   Open training setup
                 </Link>
+              </div>
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Program shell</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {!programLibrarySnapshot.schemaReady
+                      ? "This canonical program layer is still syncing in this environment."
+                      : programLibrarySnapshot.recentPrograms[0]
+                        ? [
+                            programLibrarySnapshot.recentPrograms[0].title,
+                            `${programLibrarySnapshot.recentPrograms[0].weekCount} week${programLibrarySnapshot.recentPrograms[0].weekCount === 1 ? "" : "s"}`,
+                            `${programLibrarySnapshot.recentPrograms[0].assignmentCount} scheduled workout${programLibrarySnapshot.recentPrograms[0].assignmentCount === 1 ? "" : "s"}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Create your first saved program shell and place accepted workouts into week/day slots before richer planner and export slices arrive."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {programLibrarySnapshot.recentPrograms[0] ? (
+                    <Link
+                      href={`/my-library/programs/${programLibrarySnapshot.recentPrograms[0].id}`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      Open program shell
+                    </Link>
+                  ) : null}
+                  {programLibrarySnapshot.schemaReady ? (
+                    <CreateManualProgramButton
+                      testId="my-library-create-manual-program"
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    />
+                  ) : null}
+                </div>
               </div>
             </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
