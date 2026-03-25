@@ -80,6 +80,29 @@ function buildProgramLibrary(overrides?: Partial<ProgramLibrarySnapshot>): Progr
   };
 }
 
+function buildProgramExportPreview(overrides?: Record<string, unknown>) {
+  return {
+    version: 1,
+    kind: "freeswimming_garmin_ready_program_v1",
+    source: "canonical_program",
+    programId: "program-1",
+    exportedAt: "2026-03-25T12:20:00.000Z",
+    diagnostics: {
+      status: "ready",
+      summary: "Ready for the planned Garmin/export handoff.",
+      issueCount: 0,
+      issues: [],
+    },
+    program: {
+      title: "Manual race prep shell",
+      weekCount: 1,
+      assignmentCount: 0,
+    },
+    weeks: [],
+    ...overrides,
+  };
+}
+
 describe("ProgramBuilderHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -92,7 +115,17 @@ describe("ProgramBuilderHub", () => {
   });
 
   it("adds a scheduled workout and saves canonical program edits", async () => {
-    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const method = init?.method ?? "GET";
+      const url = String(input);
+
+      if (url === "/api/my-library/programs/program-1/export/garmin-ready" && method === "GET") {
+        return {
+          ok: true,
+          json: async () => buildProgramExportPreview(),
+        } as Response;
+      }
+
       const body = JSON.parse(String(init?.body ?? "{}")) as {
         title: string;
         weeks: ProgramEditorRecord["weeks"];
@@ -157,7 +190,13 @@ describe("ProgramBuilderHub", () => {
       expect(screen.getByText("Program changes saved to the canonical program.")).toBeVisible();
     });
 
-    const fetchBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
+    const patchCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([input, init]) =>
+          String(input) === "/api/my-library/programs/program-1" && init?.method === "PATCH"
+      );
+    const fetchBody = JSON.parse(String(patchCall?.[1]?.body ?? "{}")) as {
       title: string;
       weeks: ProgramEditorRecord["weeks"];
     };
@@ -170,5 +209,95 @@ describe("ProgramBuilderHub", () => {
       position: 0,
     });
     expect(screen.getByTestId("program-builder-save")).toBeDisabled();
+  });
+
+  it("shows canonical export preview, downloads json, and opens the program pdf print view", async () => {
+    const openMock = vi.fn(() => ({ focus: vi.fn() }));
+    const createObjectUrlMock = vi.fn(() => "blob:program-export");
+    const revokeObjectUrlMock = vi.fn();
+    const anchorClickMock = vi.fn();
+
+    vi.stubGlobal("open", openMock);
+    vi.stubGlobal("URL", {
+      createObjectURL: createObjectUrlMock,
+      revokeObjectURL: revokeObjectUrlMock,
+    });
+    HTMLAnchorElement.prototype.click = anchorClickMock;
+
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () =>
+        buildProgramExportPreview({
+          weeks: [
+            {
+              id: "week-1",
+              label: "Week 1",
+              assignmentCount: 1,
+              days: [
+                {
+                  dayIndex: 0,
+                  dayLabel: "Monday",
+                  assignmentCount: 1,
+                  assignments: [
+                    {
+                      id: "assignment-1",
+                      workoutId: "workout-1",
+                      dayIndex: 0,
+                      dayLabel: "Monday",
+                      position: 0,
+                      mappingStatus: "ready",
+                      reviewIssueIds: [],
+                      workoutTitle: "Threshold builder workout",
+                      workoutSummary: "2200m · ~45 min",
+                      workoutEnvironmentLabel: "Pool",
+                      workoutSessionTypeLabel: "Threshold / CSS",
+                      workoutEffortLabel: "Moderate",
+                      workout: null,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+    } as Response);
+
+    render(<ProgramBuilderHub programLibrary={buildProgramLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("program-editor-garmin-export-preview")).toHaveTextContent(
+        '"kind": "freeswimming_garmin_ready_program_v1"'
+      );
+    });
+
+    expect(screen.getByTestId("program-editor-garmin-export-source")).toHaveAttribute(
+      "data-export-state",
+      "canonical"
+    );
+    expect(screen.getByTestId("program-editor-pdf-source")).toHaveAttribute(
+      "data-pdf-state",
+      "canonical"
+    );
+
+    fireEvent.click(screen.getByTestId("program-editor-garmin-export-download"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("program-editor-garmin-export-notice")).toHaveTextContent(
+        "Downloaded freeswimming-manual-race-prep-shell-garmin-ready.json."
+      );
+    });
+
+    expect(createObjectUrlMock).toHaveBeenCalled();
+    expect(anchorClickMock).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("program-editor-pdf-open"));
+
+    expect(openMock).toHaveBeenCalledWith(
+      "/api/my-library/programs/program-1/export/pdf",
+      "_blank"
+    );
+    expect(screen.getByTestId("program-editor-pdf-notice")).toHaveTextContent(
+      "Opened print view for freeswimming-manual-race-prep-shell-print.pdf."
+    );
   });
 });

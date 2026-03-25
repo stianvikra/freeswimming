@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import {
+  buildProgramGarminReadyExportFileName,
+  buildProgramPdfFileName,
+} from "@/lib/programs/export";
+import {
   PROGRAM_WEEKDAY_LABELS,
   buildProgramWeekdayGroups,
   createProgramEntityId,
@@ -50,6 +54,13 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
   const [success, setSuccess] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [clientReady, setClientReady] = useState(false);
+  const [programExportPreview, setProgramExportPreview] = useState("");
+  const [programExportPreviewError, setProgramExportPreviewError] = useState("");
+  const [isProgramExportLoading, setIsProgramExportLoading] = useState(false);
+  const [programExportNotice, setProgramExportNotice] = useState("");
+  const [programExportError, setProgramExportError] = useState("");
+  const [programPdfNotice, setProgramPdfNotice] = useState("");
+  const [programPdfError, setProgramPdfError] = useState("");
   const hasUnsavedChanges = haveProgramDraftChanges(
     savedProgram ? { title: draftTitle, weeks: draftWeeks } : null,
     savedProgram ? { title: savedProgram.title, weeks: savedProgram.weeks } : null
@@ -69,12 +80,99 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
     setPickerSelections({});
     setError("");
     setSuccess("");
+    setProgramExportPreview("");
+    setProgramExportPreviewError("");
+    setProgramExportNotice("");
+    setProgramExportError("");
+    setProgramPdfNotice("");
+    setProgramPdfError("");
   }, [programLibrary]);
 
   const workoutLookup = useMemo(
     () => new Map(availableWorkouts.map((workout) => [workout.id, workout])),
     [availableWorkouts]
   );
+  const programGarminExportRoute = savedProgram
+    ? `/api/my-library/programs/${savedProgram.id}/export/garmin-ready`
+    : null;
+  const programPdfRoute = savedProgram
+    ? `/api/my-library/programs/${savedProgram.id}/export/pdf`
+    : null;
+  const programGarminExportFileName = buildProgramGarminReadyExportFileName(savedProgram);
+  const programPdfFileName = buildProgramPdfFileName(savedProgram);
+  const programExportStateLabel = "Canonical program export";
+  const programExportStateDescription = hasUnsavedChanges
+    ? "Export preview reflects the last saved canonical program. Save first if you want export output to include current unsaved edits."
+    : "Export preview matches the saved canonical program.";
+  const programPdfStateLabel = "Canonical program PDF";
+  const programPdfStateDescription = hasUnsavedChanges
+    ? "Print view opens the last saved canonical program. Save first if you want PDF output to include current unsaved edits."
+    : "Print view matches the saved canonical program.";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProgramExportPreview() {
+      if (!programGarminExportRoute) {
+        setProgramExportPreview("");
+        setProgramExportPreviewError("");
+        setIsProgramExportLoading(false);
+        return;
+      }
+
+      setIsProgramExportLoading(true);
+      setProgramExportPreviewError("");
+
+      try {
+        const response = await fetch(programGarminExportRoute, {
+          method: "GET",
+          cache: "no-store",
+        });
+        const responseBody = (await response.json().catch(() => null)) as Record<
+          string,
+          unknown
+        > | null;
+        const responseError =
+          responseBody && typeof responseBody.error === "string"
+            ? responseBody.error
+            : "Could not load the canonical program export preview right now.";
+
+        if (!response.ok || !responseBody) {
+          throw new Error(responseError);
+        }
+
+        if (!cancelled) {
+          setProgramExportPreview(JSON.stringify(responseBody, null, 2));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setProgramExportPreview("");
+          setProgramExportPreviewError(
+            error instanceof Error
+              ? error.message
+              : "Could not load the canonical program export preview right now."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsProgramExportLoading(false);
+        }
+      }
+    }
+
+    void loadProgramExportPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [programGarminExportRoute, savedProgram?.updatedAt]);
+
+  useEffect(() => {
+    setProgramExportNotice("");
+    setProgramExportError("");
+    setProgramPdfNotice("");
+    setProgramPdfError("");
+  }, [savedProgram?.id, savedProgram?.updatedAt]);
 
   async function saveProgram() {
     if (!savedProgram) return;
@@ -210,6 +308,79 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
       );
       return [...otherAssignments, ...nextDayAssignments];
     });
+  }
+
+  async function downloadProgramGarminReadyExport() {
+    if (!programGarminExportRoute) return;
+
+    setProgramExportNotice("");
+    setProgramExportError("");
+
+    try {
+      const response = await fetch(programGarminExportRoute, {
+        method: "GET",
+        cache: "no-store",
+      });
+      const responseBody = (await response.json().catch(() => null)) as Record<
+        string,
+        unknown
+      > | null;
+      const responseError =
+        responseBody && typeof responseBody.error === "string"
+          ? responseBody.error
+          : "Could not download the program export right now.";
+
+      if (!response.ok || !responseBody) {
+        throw new Error(responseError);
+      }
+
+      const jsonPayload = JSON.stringify(responseBody, null, 2);
+      const blob = new Blob([jsonPayload], {
+        type: "application/json;charset=utf-8",
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = programGarminExportFileName;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setProgramExportPreview(jsonPayload);
+      setProgramExportNotice(`Downloaded ${programGarminExportFileName}.`);
+    } catch (error) {
+      setProgramExportError(
+        error instanceof Error ? error.message : "Could not download the program export right now."
+      );
+    }
+  }
+
+  function openProgramPdfPrintView() {
+    if (!programPdfRoute) return;
+
+    setProgramPdfNotice("");
+    setProgramPdfError("");
+
+    try {
+      if (typeof window === "undefined") {
+        throw new Error("Window unavailable.");
+      }
+
+      const printWindow = window.open(programPdfRoute, "_blank");
+      if (!printWindow) {
+        throw new Error("Popup blocked.");
+      }
+
+      printWindow.focus?.();
+      setProgramPdfNotice(
+        `Opened print view for ${programPdfFileName}. Use Print / Save PDF in that tab.`
+      );
+    } catch {
+      setProgramPdfError(
+        "Could not open the program PDF print view. Check whether pop-ups are blocked."
+      );
+    }
   }
 
   return (
@@ -365,6 +536,9 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   {hasUnsavedChanges
                     ? "Unsaved changes stay local until you save this program."
                     : "All program changes are saved to the canonical program."}
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  Program export stays read-only against the saved canonical program.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -549,6 +723,127 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
               </section>
             );
           })}
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                  Garmin-ready JSON
+                </p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  Download the saved canonical program as the truthful FreeSwimming `garmin-ready`
+                  bundle. It keeps missing references and workout review warnings explicit so later
+                  provider delivery can stay deterministic.
+                </p>
+                <p
+                  data-testid="program-editor-garmin-export-source"
+                  data-export-state="canonical"
+                  className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+                >
+                  {programExportStateLabel}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">{programExportStateDescription}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  data-testid="program-editor-garmin-export-download"
+                  onClick={downloadProgramGarminReadyExport}
+                  disabled={!savedProgram}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Download .json
+                </button>
+              </div>
+            </div>
+
+            {programExportNotice ? (
+              <p
+                data-testid="program-editor-garmin-export-notice"
+                className="mt-3 text-sm font-medium text-emerald-700"
+              >
+                {programExportNotice}
+              </p>
+            ) : null}
+
+            {programExportError ? (
+              <p
+                data-testid="program-editor-garmin-export-error"
+                className="mt-3 text-sm text-rose-700"
+              >
+                {programExportError}
+              </p>
+            ) : null}
+
+            {programExportPreviewError ? (
+              <p
+                data-testid="program-editor-garmin-export-preview-error"
+                className="mt-3 text-sm text-rose-700"
+              >
+                {programExportPreviewError}
+              </p>
+            ) : null}
+
+            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+              <pre
+                data-testid="program-editor-garmin-export-preview"
+                className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
+              >
+                {programExportPreview ||
+                  (isProgramExportLoading
+                    ? "Loading canonical export preview..."
+                    : "Canonical export preview will appear here once the saved program loads.")}
+              </pre>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                  Program PDF
+                </p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
+                  Open a print-ready program schedule in a dedicated tab, then use your
+                  browser&apos;s Print / Save PDF flow for a coach-readable weekly handoff.
+                </p>
+                <p
+                  data-testid="program-editor-pdf-source"
+                  data-pdf-state="canonical"
+                  className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+                >
+                  {programPdfStateLabel}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">{programPdfStateDescription}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  data-testid="program-editor-pdf-open"
+                  onClick={openProgramPdfPrintView}
+                  disabled={!savedProgram}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Open print view
+                </button>
+              </div>
+            </div>
+
+            {programPdfNotice ? (
+              <p
+                data-testid="program-editor-pdf-notice"
+                className="mt-3 text-sm font-medium text-emerald-700"
+              >
+                {programPdfNotice}
+              </p>
+            ) : null}
+
+            {programPdfError ? (
+              <p data-testid="program-editor-pdf-error" className="mt-3 text-sm text-rose-700">
+                {programPdfError}
+              </p>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>

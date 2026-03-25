@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-25-canonical-program-foundation-and-library-shell-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-25`
 - `updated`: `2026-03-25`
@@ -24,8 +24,8 @@ Introduce a canonical user-owned program entity, persistence model, and minimal 
 - Upstream canonical workout foundation already exists in code and remains the source of truth for referenced workout payloads.
 - Broader downstream planner/completion scope remains in:
   - `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
-- Downstream export work remains blocked in:
-  - `docs/task-briefs/blocked/2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10.md`
+- Downstream export work now continues in:
+  - `docs/task-briefs/in-progress/2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10.md`
 - AI generation guardrails remain separate in:
   - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
 - This brief owns:
@@ -169,3 +169,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-25 | planning | created this narrower upstream slice after PR #292 merged and confirmed that program export is blocked by missing canonical program entity/API/editor surfaces, while the broader planner brief remains intentionally larger than the minimum unblocking step | next: implement schema + API + minimal My Library program shell from updated main without reopening export or completion scope`
 - `2026-03-25 | in-progress | started implementation on branch \`feat/program-foundation-2026-03-25\`, chose one canonical \`programs\` row with stable nested week/assignment IDs inside \`weeks\` JSON so saves stay atomic in the existing Supabase stack, and landed initial schema/shared/API/My Library shell plus targeted program unit coverage green | next: run broader validation, then open PR once \`verify:pre-pr\` is green`
+- `2026-03-25 | merged | canonical program foundation shipped in PR #293 and merged to \`main\` as \`e1531ff\`, including the new \`programs\` table, user-owned program APIs, and the dedicated My Library program shell route; local \`npm run verify:pre-pr\`, local \`npm run verify:pre-merge\`, and required CI all passed before merge | next: resume the downstream program export follow-up from updated \`main\` now that canonical program identity and editor surfaces exist`

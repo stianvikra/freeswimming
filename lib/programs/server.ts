@@ -13,8 +13,12 @@ import {
   type ProgramSummary,
 } from "@/lib/programs/shared";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
-import { buildWorkoutSummary } from "@/lib/workouts/server";
-import type { WorkoutSummary } from "@/lib/workouts/shared";
+import {
+  buildWorkoutEditorRecord,
+  buildWorkoutSummary,
+  WORKOUT_SELECT,
+} from "@/lib/workouts/server";
+import type { WorkoutEditorRecord, WorkoutSummary } from "@/lib/workouts/shared";
 import type { Database } from "@/types/database";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
@@ -48,6 +52,11 @@ export const PROGRAM_SELECT = `
   created_at,
   updated_at
 `;
+
+export type ProgramExportSnapshot = {
+  program: ProgramEditorRecord;
+  workoutsById: Map<string, WorkoutEditorRecord>;
+};
 
 export function buildProgramInsert(
   userId: string,
@@ -304,4 +313,101 @@ export async function loadProgramLibrarySnapshot(
       missingWorkoutIds: [],
     };
   }
+}
+
+export async function loadProgramExportSnapshot(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  programId: string
+): Promise<
+  { ok: true; value: ProgramExportSnapshot } | { ok: false; status: number; error: string }
+> {
+  const programResult = await supabase
+    .from("programs")
+    .select(PROGRAM_SELECT)
+    .eq("user_id", userId)
+    .eq("id", programId)
+    .maybeSingle();
+
+  if (isProgramSchemaMissing(programResult.error)) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Canonical program export is still syncing in this environment.",
+    };
+  }
+
+  if (programResult.error) {
+    console.error("[Programs] Could not load canonical program export source", programResult.error);
+    return { ok: false, status: 500, error: "Could not load this program export right now." };
+  }
+
+  if (!programResult.data) {
+    return { ok: false, status: 404, error: "Program not found." };
+  }
+
+  let program: ProgramEditorRecord;
+  try {
+    program = buildProgramEditorRecord(programResult.data);
+  } catch (error) {
+    console.error("[Programs] Stored program payload is invalid for export", error);
+    return {
+      ok: false,
+      status: 500,
+      error: "This saved program could not be exported because its stored data is invalid.",
+    };
+  }
+
+  const workoutIds = Array.from(
+    new Set(
+      program.weeks.flatMap((week) => week.assignments.map((assignment) => assignment.workoutId))
+    )
+  );
+
+  if (workoutIds.length === 0) {
+    return {
+      ok: true,
+      value: {
+        program,
+        workoutsById: new Map<string, WorkoutEditorRecord>(),
+      },
+    };
+  }
+
+  const workoutsResult = await supabase
+    .from("workouts")
+    .select(WORKOUT_SELECT)
+    .eq("user_id", userId)
+    .in("id", workoutIds);
+
+  if (isWorkoutSchemaMissing(workoutsResult.error)) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Canonical workout export is still syncing in this environment.",
+    };
+  }
+
+  if (workoutsResult.error) {
+    console.error("[Programs] Could not load referenced workouts for export", workoutsResult.error);
+    return { ok: false, status: 500, error: "Could not load scheduled workouts right now." };
+  }
+
+  const workoutsById = new Map<string, WorkoutEditorRecord>();
+  for (const row of workoutsResult.data ?? []) {
+    try {
+      const workout = buildWorkoutEditorRecord(row as WorkoutRow);
+      workoutsById.set(workout.id, workout);
+    } catch (error) {
+      console.error("[Programs] Stored workout payload is invalid for program export", error);
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      program,
+      workoutsById,
+    },
+  };
 }

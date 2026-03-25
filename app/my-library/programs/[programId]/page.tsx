@@ -47,7 +47,7 @@ export default async function ProgramBuilderPage({ params }: Props) {
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Program shell</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
                 Open one saved program in its own route, place accepted workouts into week/day
-                slots, and keep the canonical program ready for later planner and export slices.
+                slots, and export the saved canonical program without forking planner identity.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

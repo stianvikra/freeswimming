@@ -202,7 +202,7 @@ export default async function MyLibraryPage() {
                           ]
                             .filter(Boolean)
                             .join(" · ")
-                        : "Create your first saved program shell and place accepted workouts into week/day slots before richer planner and export slices arrive."}
+                        : "Create your first saved program shell, place accepted workouts into week/day slots, and export the saved schedule once it is ready."}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
