@@ -683,12 +683,19 @@ test.describe("admin notes workflow", () => {
     await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
     const quickCaptureForm = page.getByTestId("admin-note-quick-capture-form");
     await expect(quickCaptureForm.getByLabel("Category")).toBeVisible({ timeout: 10_000 });
-    await quickCaptureForm.getByLabel("Title").fill(title);
+    const titleInput = quickCaptureForm.getByLabel("Title");
+    await titleInput.click();
+    await page.keyboard.type(title);
+    await expect(titleInput).toHaveValue(title);
+    await expect(titleInput).toBeFocused();
     await quickCaptureForm.getByLabel("Category").fill("Operations");
     await quickCaptureForm.getByLabel("Priority").selectOption("high");
-    await quickCaptureForm
-      .getByLabel("Text")
-      .fill("Dashboard-level quick capture from Playwright.");
+    const textInput = quickCaptureForm.getByLabel("Text");
+    const detailCopy = "Dashboard-level quick capture from Playwright.";
+    await textInput.click();
+    await page.keyboard.type(detailCopy);
+    await expect(textInput).toHaveValue(detailCopy);
+    await expect(textInput).toBeFocused();
 
     let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
     try {

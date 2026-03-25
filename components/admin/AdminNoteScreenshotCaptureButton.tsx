@@ -26,6 +26,49 @@ type PointerPoint = {
   y: number;
 };
 
+type HiddenCaptureTarget = {
+  element: HTMLElement;
+  visibility: string;
+  pointerEvents: string;
+};
+
+function hideAdminScreenshotCaptureTargets(): () => void {
+  if (typeof document === "undefined") {
+    return () => undefined;
+  }
+
+  const selector = '[data-admin-screenshot-hide-during-capture="true"]';
+  const targets = Array.from(document.querySelectorAll<HTMLElement>(selector)).map((element) => ({
+    element,
+    visibility: element.style.visibility,
+    pointerEvents: element.style.pointerEvents,
+  })) satisfies HiddenCaptureTarget[];
+
+  for (const target of targets) {
+    target.element.style.visibility = "hidden";
+    target.element.style.pointerEvents = "none";
+  }
+
+  return () => {
+    for (const target of targets) {
+      target.element.style.visibility = target.visibility;
+      target.element.style.pointerEvents = target.pointerEvents;
+    }
+  };
+}
+
+async function waitForNextPaint() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => resolve());
+    });
+  });
+}
+
 function selectionToPercentStyle(params: {
   selection: AdminScreenshotSelection;
   frame: Pick<AdminScreenshotFrame, "width" | "height">;
@@ -78,13 +121,13 @@ export default function AdminNoteScreenshotCaptureButton({
   }
 
   async function beginCapture() {
-    setOpen(true);
     setFrame(null);
     setSelection(null);
     setMessage(null);
     setPhase("requesting_permission");
 
     if (!captureDriver.isSupported()) {
+      setOpen(true);
       setPhase("unsupported");
       setMessage(
         "This browser does not support in-app screenshot capture yet. Use Add images if you already have a screenshot file."
@@ -92,13 +135,22 @@ export default function AdminNoteScreenshotCaptureButton({
       return;
     }
 
+    let restoreHiddenTargets: () => void = () => undefined;
+
     try {
+      restoreHiddenTargets = hideAdminScreenshotCaptureTargets();
+      await waitForNextPaint();
       const nextFrame = await captureDriver.capture();
+      restoreHiddenTargets();
+      restoreHiddenTargets = () => undefined;
+      setOpen(true);
       setFrame(nextFrame);
       setSelection(buildDefaultAdminScreenshotSelection(nextFrame.width, nextFrame.height));
       setPhase("preview");
     } catch (error) {
+      restoreHiddenTargets();
       const failure = classifyAdminScreenshotCaptureError(error);
+      setOpen(true);
       setPhase(failure.phase);
       setMessage(failure.message);
     }

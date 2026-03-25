@@ -34,6 +34,19 @@ describe("parseAdminNoteContextInput", () => {
     });
   });
 
+  it("accepts the home page root path as a valid page context", () => {
+    const parsed = parseAdminNoteContextInput({
+      contextType: "page",
+      contextRef: " / ",
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value).toEqual({
+      contextType: "page",
+      contextRef: "/",
+    });
+  });
+
   it("accepts empty context", () => {
     const parsed = parseAdminNoteContextInput({
       contextType: "",

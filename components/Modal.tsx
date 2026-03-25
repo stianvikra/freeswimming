@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import { createPortal } from "react-dom";
 
 type Props = {
@@ -29,6 +29,7 @@ export default function Modal({ open, isOpen, onClose, ariaLabel = "Dialog", chi
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const handleClose = useEffectEvent(onClose);
 
   useEffect(() => {
     if (!visible) return;
@@ -66,7 +67,7 @@ export default function Modal({ open, isOpen, onClose, ariaLabel = "Dialog", chi
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        handleClose();
         return;
       }
       if (e.key !== "Tab") return;
@@ -110,7 +111,7 @@ export default function Modal({ open, isOpen, onClose, ariaLabel = "Dialog", chi
         }
       });
     };
-  }, [visible, onClose]);
+  }, [visible]);
 
   useEffect(() => {
     if (!visible) return;

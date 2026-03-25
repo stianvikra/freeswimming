@@ -5,6 +5,7 @@ function buildClipboardData(params: {
   kind?: string;
   type?: string;
   file?: File | null;
+  files?: File[];
 }): DataTransfer {
   return {
     items: [
@@ -14,6 +15,7 @@ function buildClipboardData(params: {
         getAsFile: () => params.file ?? null,
       },
     ],
+    files: params.files ?? (params.file ? [params.file] : []),
   } as unknown as DataTransfer;
 }
 
@@ -39,6 +41,25 @@ describe("extractAdminNoteClipboardImage", () => {
     expect(result.matched).toBe(true);
     if (!result.matched || !result.ok) {
       throw new Error("Expected clipboard image paste to succeed.");
+    }
+    expect(result.file.name).toBe("pasted-image.png");
+    expect(result.file.type).toBe("image/png");
+  });
+
+  it("accepts clipboard images exposed only through DataTransfer.files", () => {
+    const file = new File(["png"], "", { type: "image/png" });
+    const result = extractAdminNoteClipboardImage({
+      clipboardData: buildClipboardData({
+        kind: "string",
+        type: "text/plain",
+        file: null,
+        files: [file],
+      }),
+    });
+
+    expect(result.matched).toBe(true);
+    if (!result.matched || !result.ok) {
+      throw new Error("Expected clipboard image fallback through files to succeed.");
     }
     expect(result.file.name).toBe("pasted-image.png");
     expect(result.file.type).toBe("image/png");

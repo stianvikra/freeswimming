@@ -55,6 +55,41 @@ describe("AdminNoteScreenshotCaptureButton", () => {
     });
   });
 
+  it("hides marked note surfaces while the capture frame is being collected", async () => {
+    const capture = vi.fn(async () => {
+      const hiddenTarget = screen.getByTestId("screenshot-hide-target");
+      expect(hiddenTarget.style.visibility).toBe("hidden");
+      expect(hiddenTarget.style.pointerEvents).toBe("none");
+      return buildFrame();
+    });
+
+    setCaptureOverride({
+      isSupported: () => true,
+      capture,
+      cropToFile: async () =>
+        new File(["cropped"], "captured-proof.png", {
+          type: "image/png",
+        }),
+    });
+
+    render(
+      <div data-testid="screenshot-hide-target" data-admin-screenshot-hide-during-capture="true">
+        <AdminNoteScreenshotCaptureButton onCaptureReady={vi.fn()} />
+      </div>
+    );
+
+    fireEvent.click(screen.getByTestId("admin-note-screenshot-capture-trigger"));
+
+    await waitFor(() => {
+      expect(capture).toHaveBeenCalledTimes(1);
+    });
+    await screen.findByTestId("admin-note-screenshot-preview-image");
+
+    const hiddenTarget = screen.getByTestId("screenshot-hide-target");
+    expect(hiddenTarget.style.visibility).toBe("");
+    expect(hiddenTarget.style.pointerEvents).toBe("");
+  });
+
   it("shows permission recovery when browser access is denied", async () => {
     setCaptureOverride({
       isSupported: () => true,
