@@ -159,6 +159,11 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
+        "If a note title starts with `[E2E Admin Note Artifact]`, it is automated test residue and should clear automatically; if it stays open, use the admin-notes recovery runbook before deleting anything manually."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
         "On mobile, keep image tools collapsed unless you actively need paste/capture so title, body, and context stay close together."
       )
     ).toBeVisible();

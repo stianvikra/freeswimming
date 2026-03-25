@@ -18,21 +18,26 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 - You suspect duplicate/overlapping edits on the same note.
 - Screenshot upload/delete returns an error and you are unsure whether the stored image was fully removed.
 - Related-note link/unlink returns an error and you need to confirm whether the link actually exists.
+- A note title starts with `[E2E Admin Note Artifact]` and did not clear automatically after automated testing.
 
 ## Manual Recovery Walkthrough
 
 1. Pause edits on the current row and copy your intended final text to a temporary local note.
 2. If the failure happened in `Quick note`, first search by the visible success state or intended title in `/admin?tab=notes` before retrying so you do not create duplicates.
 3. In `/admin?tab=notes`, keep the `Notes` tab active and click `Refresh` to reload server-canonical rows.
-4. If the note is no longer visible in the default queue, switch to `Done archive` or search by the visible `Note ID`.
-5. Re-open the target note and confirm:
+4. If the row title starts with `[E2E Admin Note Artifact]`, treat it as automated test residue:
+   - do not repurpose it for operator work,
+   - refresh once,
+   - if it still remains open, follow the active admin-note artifact cleanup brief or delete only after confirming it matches the test-artifact contract.
+5. If the note is no longer visible in the default queue, switch to `Done archive` or search by the visible `Note ID`.
+6. Re-open the target note and confirm:
    - note ID,
    - title/body/category/date,
    - priority,
    - completion status,
    - context label (`Course Lesson`, `Product`, `Page`, etc.),
    - raw context ref/path when relevant.
-6. If screenshots are involved:
+7. If screenshots are involved:
    - if capture permission was denied or cancelled, confirm whether the screenshot ever reached preview; if not, nothing was saved and you can retry or use `Add images`,
    - if you pasted an image from clipboard and no preview ever appeared, nothing was saved; reopen image tools if needed and paste again or use `Add images`,
    - if preview existed but note save failed, search by `Note ID` or title before retrying capture so you do not create duplicate notes,
@@ -41,13 +46,13 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
    - if delete failed, refresh once and verify whether the image is still present before retrying,
    - if upload failed after note save, retry only after confirming you are not looking at a stale duplicate preview,
    - if the staged screenshot or pasted image was removed locally, use clipboard paste or `Capture screenshot` again, or fall back to `Add images`.
-7. If related notes are involved:
+8. If related notes are involved:
    - open the visible linked note IDs from Search if needed,
    - confirm the intended link exists only once,
    - remove and re-add the link only if the relationship is clearly wrong.
-8. Re-apply only the intended delta and click `Save changes`.
-9. Confirm success notice (`Note updated.` or attachment/link success notice) and verify the same row in its contextual surface (`/course` or `/plans`) when relevant.
-10. If update still fails, create one incident note (P1/P2) with owner + next action and link it by note ID in AW-012 checkpoint evidence.
+9. Re-apply only the intended delta and click `Save changes`.
+10. Confirm success notice (`Note updated.` or attachment/link success notice) and verify the same row in its contextual surface (`/course` or `/plans`) when relevant.
+11. If update still fails, create one incident note (P1/P2) with owner + next action and link it by note ID in AW-012 checkpoint evidence.
 
 ## Pass Criteria
 

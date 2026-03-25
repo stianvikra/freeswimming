@@ -22,10 +22,12 @@ test("drawer traps keyboard focus and restores trigger focus on close", async ({
 
   const trigger = page.getByTestId("header-menu-toggle");
   await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
 
   await trigger.focus();
   await expect(trigger).toBeFocused();
-  await page.keyboard.press("Enter");
+  await trigger.press("Enter");
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
 
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
   await expect(drawer).toBeVisible();

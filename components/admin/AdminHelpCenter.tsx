@@ -1,5 +1,7 @@
 "use client";
 
+import { ADMIN_NOTE_TEST_ARTIFACT_PREFIX } from "@/lib/admin/admin-note-test-artifacts";
+
 type TabGuide = {
   name: string;
   primaryJob: string;
@@ -563,6 +565,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "Paste an image anywhere in the note form when the screenshot is already on your clipboard; otherwise open image tools and use `Capture screenshot`.",
       "Use `Capture screenshot` when the issue is visual, drag to the relevant crop in preview, and save only after the preview looks right.",
       "Remember that pasted or captured images stay local until note save and attachment upload both succeed; if permission is denied or the preview never appears, fall back to `Add images`.",
+      `If a note title starts with \`${ADMIN_NOTE_TEST_ARTIFACT_PREFIX}\`, it is automated test residue and should clear automatically; if it stays open, use the admin-notes recovery runbook before deleting anything manually.`,
       "On mobile, keep image tools collapsed unless you actively need paste/capture so title, body, and context stay close together.",
       "Link any follow-up note instead of pasting duplicate text.",
       "Use Search + Priority + Context filters in Notes to reopen the same note quickly.",
