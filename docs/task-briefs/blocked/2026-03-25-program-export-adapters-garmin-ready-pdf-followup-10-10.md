@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10`
-- `status`: `planned`
+- `status`: `blocked`
 - `owner`: `stianvikra`
 - `created`: `2026-03-25`
 - `updated`: `2026-03-25`
@@ -11,6 +11,12 @@
 ## Goal
 
 Build the remaining program-level export adapters so canonical programs can produce truthful Garmin-ready and printable outputs without mutating canonical program or workout identity.
+
+## Why Blocked
+
+- The repo does not currently expose a canonical program editor, API surface, or persisted program entity to export from.
+- Program generation is still explicitly deferred in both the UI and the API contract for the current generator slice.
+- Starting program export now would force placeholder contracts or duplicate state ownership before the upstream program-builder/calendar slice exists.
 
 ## Dependencies And Boundaries
 
@@ -143,3 +149,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 ## Checkpoint Log
 
 - `2026-03-25 | planning | created residual follow-up after workout-level Garmin-ready JSON export merged as \`2c4fcd8\` and workout PDF print export merged as \`e938560\`; remaining open scope is canonical program-level export structure and printable output, while live Garmin partner delivery remains separately blocked | next: implement program export adapters from updated \`main\` without reopening the shipped workout-level export slice`
+- `2026-03-25 | blocked | reconfirmed before implementation that program generation still shows \`session-generator-program-deferred\` in the UI, the session-draft API returns \`Program generation stays deferred\`, and the repo still has no canonical \`/api/my-library/programs\` surface or program editor/model to export from | next: unblock via the upstream program-builder/calendar completion track or a smaller canonical-program foundation slice before reopening program export`
