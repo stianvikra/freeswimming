@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-25-admin-notes-image-intake-simplification-and-clipboard-paste-button-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-25`
-- `updated`: `2026-03-25`
+- `updated`: `2026-03-26`
 
 ## Goal
 
@@ -194,3 +194,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-03-25 | in-progress | created a dedicated residual UX brief after live operator feedback showed that hidden keyboard paste is still too undiscoverable and in-app screenshot capture remains more confusing than normal OS screenshot-to-clipboard tools; decided to simplify admin notes image intake to visible upload + clipboard-paste actions before further admin-notes or planner work | next: implement explicit clipboard-paste buttons, add visible upload on quick note/create, remove visible screenshot-capture controls, and validate with targeted tests plus full verify`
 - `2026-03-25 | in-progress | implemented the simplified image-intake model across quick note, create, and edit; added explicit clipboard-paste button support plus visible upload affordances; updated Help/Guide + runbook copy; verified with targeted vitest, targeted Playwright (`admin-help-center`pass,`admin-notes-workflow` 2 pass / 1 environment skip), and full \`npm run verify:pre-pr\` pass | next: commit, push, open PR, and run \`npm run verify:pre-merge\` before merge`
+- `2026-03-26 | done | rebased PR #298 onto updated \`main\`, reran \`npm run verify:pre-pr\` and \`npm run verify:pre-merge\` successfully on \`fd8dff5\`, updated the PR handoff evidence, and squash-merged [#298](https://github.com/stianvikra/freeswimming/pull/298) as \`d02a1ca\` | next: none`
