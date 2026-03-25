@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-25-program-export-adapters-garmin-ready-pdf-followup-10-10`
-- `status`: `blocked`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-25`
 - `updated`: `2026-03-25`
@@ -12,11 +12,11 @@
 
 Build the remaining program-level export adapters so canonical programs can produce truthful Garmin-ready and printable outputs without mutating canonical program or workout identity.
 
-## Why Blocked
+## Why This Brief Exists
 
-- The repo does not currently expose a canonical program editor, API surface, or persisted program entity to export from.
-- Program generation is still explicitly deferred in both the UI and the API contract for the current generator slice.
-- Starting program export now would force placeholder contracts or duplicate state ownership before the upstream program-builder/calendar slice exists.
+- The canonical program foundation shipped in PR #293, so program export can now target one real persisted program entity and editor surface instead of placeholder contracts.
+- Workout-level Garmin-ready JSON and print export already exist, which makes this the next smallest truthful slice for program-level handoff.
+- Program generation is still deferred upstream, but that no longer blocks this brief because export can operate against saved canonical programs regardless of how they were authored.
 
 ## Dependencies And Boundaries
 
@@ -26,8 +26,8 @@ Build the remaining program-level export adapters so canonical programs can prod
   - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
 - Upstream program builder/calendar contract:
   - `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
-- Immediate unblocking foundation:
-  - `docs/task-briefs/in-progress/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md`
+- Canonical program foundation now shipped in:
+  - `docs/task-briefs/done/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md`
 - Blocked live Garmin provider delivery remains separate:
   - `docs/task-briefs/blocked/2026-02-28-garmin-training-api-partner-integration-10-10.md`
 - This follow-up owns:
@@ -48,6 +48,7 @@ Build the remaining program-level export adapters so canonical programs can prod
 - Program export UX:
   - clear export entry point from the canonical program surface,
   - truthful status/source labeling,
+  - canonical-saved export behavior that never treats unsaved local program edits as export truth,
   - poolside/coach-readable program output.
 - Validation:
   - preserve deterministic program ordering and nested workout identity,
@@ -71,9 +72,11 @@ Build the remaining program-level export adapters so canonical programs can prod
 - Local-only:
   - transient export UI state,
   - selected output mode,
-  - local preview/download state before final export completion.
+  - local preview/download state before final export completion,
+  - unsaved program editor changes until the user explicitly saves them into the canonical program.
 - Sync behavior:
   - program exports are read-only transforms from canonical program input,
+  - this first export slice targets the last saved canonical program only and must never silently include unsaved editor state,
   - export must never mutate canonical program/workout identity or ordering as a side effect,
   - retry behavior must be deterministic and must not duplicate canonical writes.
 - Invalidation:
@@ -152,4 +155,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-25 | planning | created residual follow-up after workout-level Garmin-ready JSON export merged as \`2c4fcd8\` and workout PDF print export merged as \`e938560\`; remaining open scope is canonical program-level export structure and printable output, while live Garmin partner delivery remains separately blocked | next: implement program export adapters from updated \`main\` without reopening the shipped workout-level export slice`
 - `2026-03-25 | blocked | reconfirmed before implementation that program generation still shows \`session-generator-program-deferred\` in the UI, the session-draft API returns \`Program generation stays deferred\`, and the repo still has no canonical \`/api/my-library/programs\` surface or program editor/model to export from | next: unblock via the upstream program-builder/calendar completion track or a smaller canonical-program foundation slice before reopening program export`
-- `2026-03-25 | blocked | after blocker PR #292 merged as \`6047d26\`, created the narrower upstream brief \`docs/task-briefs/in-progress/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md\` so export can stay blocked truthfully on missing canonical program entities while implementation resumes on the smallest shared foundation instead of the full planner scope | next: reopen this export brief only after the canonical foundation ships and a real program surface exists`
+- `2026-03-25 | blocked | after blocker PR #292 merged as \`6047d26\`, created the narrower upstream brief \`docs/task-briefs/done/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md\` so export could stay blocked truthfully on missing canonical program entities while implementation resumed on the smallest shared foundation instead of the full planner scope | next: reopen this export brief only after the canonical foundation ships and a real program surface exists`
+- `2026-03-25 | in-progress | after PR #293 merged as \`e1531ff\`, reopened this brief on branch \`feat/program-export-adapters-2026-03-25\` to implement canonical-saved program Garmin-ready JSON and printable PDF outputs directly from the shipped program editor surface | next: land export adapters, route handlers, UI affordances, and scorecard-complete validation`
+- `2026-03-25 | in-progress | landed canonical program export adapters/routes/UI on the branch, added targeted unit coverage for export contracts + route auth, and added a desktop Chromium e2e that now skips explicitly when the local Playwright environment still reports the programs schema as not ready instead of timing out as a false product failure | next: commit the slice, rerun full \`npm run verify:pre-pr\` on branch HEAD, then open/update the PR from the validated commit`
