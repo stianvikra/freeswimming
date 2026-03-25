@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-24-admin-notes-e2e-artifact-cleanup-and-isolation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-24`
 - `updated`: `2026-03-25`
@@ -185,3 +185,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-25 | implementation started | moved the cleanup brief into in-progress, added an explicit automated-artifact title contract for admin-note Playwright coverage, and wired deterministic before/after cleanup plus operator recovery guidance so stale test notes stop looking like real work | next: run targeted unit + admin E2E validation, then use the same contract to remove the remaining live artifact rows safely`
 - `2026-03-25 | verification | verified the artifact contract with targeted unit coverage, desktop admin-note Playwright coverage, and a full green \`npm run verify:pre-pr\`; also hardened the WebKit drawer-focus keyboard-open assertion so the release gate stops failing on an unrelated menu-toggle delivery race | next: commit/push the cleanup slice and hand off merge readiness`
 - `2026-03-25 | ci follow-up | fixed the CI-only placeholder Supabase env path so admin-note artifact cleanup no-ops against injected example credentials, added focused unit coverage for that guard, and reconfirmed the release gate with targeted admin-note Playwright coverage plus another full green \`npm run verify:pre-pr\` | next: push the follow-up commit, update PR handoff, and wait for required checks`
+- `2026-03-25 | merged | merged as \`97ac279\` after all required CI checks passed and local \`npm run verify:pre-merge\` passed on the green PR head; lifecycle state moved from \`in-progress\` to \`done\` | next: return priority to the next export/handoff slice unless newer triage outranks it`
