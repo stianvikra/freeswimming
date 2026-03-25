@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-25-admin-notes-quick-capture-and-page-notes-regressions-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-25`
 - `updated`: `2026-03-25`
@@ -180,3 +180,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-03-25 | triage + implementation start | opened dedicated regression brief after production verification found blocking quick-note typing focus loss plus unresolved home-page/page-notes and quick-capture friction; linked related-note UX comment back to the existing attachments/linking brief instead of mixing ownership | next: patch quick-note focus regression first, add regression coverage, then reassess whether home-page page-notes repair fits the same slice before PR`
 - `2026-03-25 | production verification update | confirmed a second live regression from operator testing: clipboard screenshot paste currently appears dead in both Quick note and the main admin-notes create form on freeswimming.org, so the hotfix scope now includes clipboard-paste repair alongside focus-loss and page-notes repair | next: widen clipboard image intake compatibility, harden field-level paste handling, and add regression coverage before returning to the home-page page-notes fix`
+- `2026-03-25 | merged | admin-notes regression hotfix merged in PR #296 as \`79c6c8b\`, shipping the quick-note focus-trap repair, broader clipboard-image paste compatibility for quick note and manager create, quick-capture screenshot self-overlay avoidance, and the home-page \`page:/\` context fix; local \`npm run lint:briefs\`, targeted unit/Playwright coverage, local \`npm run verify:pre-pr\`, local \`npm run verify:pre-merge\`, and required GitHub checks all passed before merge | next: continue triaging remaining admin-notes follow-up under the still-open attachments/linking brief before returning to broader planner/program scope`
