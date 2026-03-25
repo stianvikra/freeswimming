@@ -50,6 +50,17 @@ function normalizeContextRef(value: string): string {
   return value.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
+function isAdminNoteContextRefLengthValid(params: {
+  contextType: AdminNoteContextType;
+  contextRef: string;
+}): boolean {
+  if (params.contextType === "page" && params.contextRef === "/") {
+    return true;
+  }
+
+  return params.contextRef.length >= 2 && params.contextRef.length <= 160;
+}
+
 export function deriveCourseModuleRefFromLessonRef(lessonRef: string): string {
   const normalized = normalizeContextRef(lessonRef);
   if (!normalized) return "";
@@ -174,7 +185,7 @@ export function parseAdminNoteContextInput(input: {
   }
 
   const contextRef = normalizeContextRef(rawRef);
-  if (contextRef.length < 2 || contextRef.length > 160) {
+  if (!isAdminNoteContextRefLengthValid({ contextType: normalizedType, contextRef })) {
     return {
       ok: false,
       error: "Context reference must be between 2 and 160 characters.",

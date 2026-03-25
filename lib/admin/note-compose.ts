@@ -43,11 +43,16 @@ export function extractAdminNoteClipboardImage(params: {
       )
     : null;
 
-  if (!imageItem) {
+  const fileEntries = params.clipboardData?.files;
+  const imageFile = fileEntries
+    ? Array.from(fileEntries).find((file) => file.type.trim().toLowerCase().startsWith("image/"))
+    : null;
+
+  if (!imageItem && !imageFile) {
     return { matched: false };
   }
 
-  const rawFile = imageItem.getAsFile();
+  const rawFile = imageItem?.getAsFile() ?? imageFile ?? null;
   if (!rawFile) {
     return {
       matched: true,

@@ -403,7 +403,11 @@ export default function AdminNoteQuickCaptureLauncher({
       ) : null}
 
       <Modal open={open} onClose={closeLauncher} ariaLabel="Quick note capture">
-        <div className="flex h-full min-h-0 flex-col" data-testid="admin-note-quick-capture-dialog">
+        <div
+          className="flex h-full min-h-0 flex-col"
+          data-testid="admin-note-quick-capture-dialog"
+          data-admin-screenshot-hide-during-capture="true"
+        >
           <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
@@ -439,8 +443,8 @@ export default function AdminNoteQuickCaptureLauncher({
                     Keep image tools tucked away until you need them
                   </p>
                   <p className="mt-1 text-xs text-slate-600">
-                    Paste from clipboard anywhere in this form, or open image tools when you need a
-                    screenshot.
+                    Paste from clipboard anywhere in this form with Cmd+V or Ctrl+V, or open image
+                    tools when you need a screenshot.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -549,7 +553,7 @@ export default function AdminNoteQuickCaptureLauncher({
             <form
               className="mt-4 grid gap-3"
               onSubmit={handleSubmit}
-              onPaste={handleFormPaste}
+              onPasteCapture={handleFormPaste}
               data-testid="admin-note-quick-capture-form"
             >
               <label className="space-y-1 text-xs font-medium text-slate-700">

@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
 
@@ -20,6 +21,37 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     );
 
     expect(screen.queryByTestId("admin-note-quick-capture-trigger")).not.toBeInTheDocument();
+  });
+
+  it("keeps quick-note text entry focused while typing continuously", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        items: [{ id: "category-1", title: "Operations", is_active: true }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminNoteQuickCaptureLauncher
+        adminRole="editor"
+        contextType="page"
+        contextRef="/plans"
+        contextLabel="Plans page"
+      />
+    );
+
+    await user.click(screen.getByTestId("admin-note-quick-capture-trigger"));
+    await screen.findByTestId("admin-note-quick-capture-dialog");
+
+    const titleInput = screen.getByLabelText("Title");
+    await user.click(titleInput);
+    await user.type(titleInput, "Typing should stay active");
+
+    expect(titleInput).toHaveValue("Typing should stay active");
+    expect(titleInput).toHaveFocus();
   });
 
   it("saves a quick note with canonical context and exposes the notes link", async () => {
@@ -388,18 +420,14 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     );
 
     fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
-    const form = await screen.findByTestId("admin-note-quick-capture-form");
+    await screen.findByTestId("admin-note-quick-capture-form");
+    const titleInput = screen.getByLabelText("Title");
 
     const pastedFile = new File(["png"], "", { type: "image/png" });
-    fireEvent.paste(form, {
+    fireEvent.paste(titleInput, {
       clipboardData: {
-        items: [
-          {
-            kind: "file",
-            type: "image/png",
-            getAsFile: () => pastedFile,
-          },
-        ],
+        items: [],
+        files: [pastedFile],
       },
     });
 

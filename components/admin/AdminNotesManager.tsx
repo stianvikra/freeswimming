@@ -260,10 +260,7 @@ function areAdminNotesFilterStatesEqual(
 export default function AdminNotesManager() {
   const pathname = usePathname() ?? "/admin";
   const rawSearchParams = useSearchParams();
-  const searchParams = useMemo(
-    () => rawSearchParams ?? new URLSearchParams(),
-    [rawSearchParams]
-  );
+  const searchParams = useMemo(() => rawSearchParams ?? new URLSearchParams(), [rawSearchParams]);
   const [items, setItems] = useState<AdminNoteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -398,7 +395,10 @@ export default function AdminNotesManager() {
     void loadNotes();
   }, [loadNotes]);
 
-  const parsedNotesFilters = useMemo(() => parseAdminNotesFilterState(searchParams), [searchParams]);
+  const parsedNotesFilters = useMemo(
+    () => parseAdminNotesFilterState(searchParams),
+    [searchParams]
+  );
   const [notesFilters, setNotesFilters] = useState(parsedNotesFilters);
   const [searchDraft, setSearchDraft] = useState(parsedNotesFilters.query);
   const deferredSearchDraft = useDeferredValue(searchDraft);
@@ -453,28 +453,31 @@ export default function AdminNotesManager() {
     notesFilters.contextType !== DEFAULT_ADMIN_NOTES_FILTER_STATE.contextType ||
     notesFilters.contextRef !== DEFAULT_ADMIN_NOTES_FILTER_STATE.contextRef;
 
-  const updateNotesFilters = useCallback((next: Partial<AdminNotesFilterState>) => {
-    setNotesFilters((currentFilters) => {
-      const nextFilters = {
-        ...currentFilters,
-        ...next,
-      };
-      if (Object.prototype.hasOwnProperty.call(next, "contextType")) {
-        nextFilters.contextRef = "";
-      }
-      if (!nextFilters.contextType) {
-        nextFilters.contextRef = "";
-      }
+  const updateNotesFilters = useCallback(
+    (next: Partial<AdminNotesFilterState>) => {
+      setNotesFilters((currentFilters) => {
+        const nextFilters = {
+          ...currentFilters,
+          ...next,
+        };
+        if (Object.prototype.hasOwnProperty.call(next, "contextType")) {
+          nextFilters.contextRef = "";
+        }
+        if (!nextFilters.contextType) {
+          nextFilters.contextRef = "";
+        }
 
-      const nextParams = applyAdminNotesFilterStateToSearchParams(
-        new URLSearchParams(window.location.search),
-        nextFilters
-      );
-      const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
-      window.history.replaceState(window.history.state, "", nextHref);
-      return nextFilters;
-    });
-  }, [pathname]);
+        const nextParams = applyAdminNotesFilterStateToSearchParams(
+          new URLSearchParams(window.location.search),
+          nextFilters
+        );
+        const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
+        window.history.replaceState(window.history.state, "", nextHref);
+        return nextFilters;
+      });
+    },
+    [pathname]
+  );
 
   useEffect(() => {
     setNotesFilters((currentFilters) =>
@@ -1513,7 +1516,7 @@ export default function AdminNotesManager() {
                     <form
                       className="mt-3 grid gap-3 sm:grid-cols-2"
                       data-testid="admin-note-edit-form"
-                      onPaste={(event) => handleEditFormPaste(item, event)}
+                      onPasteCapture={(event) => handleEditFormPaste(item, event)}
                       onSubmit={(e) => {
                         e.preventDefault();
                         void saveEdit(item.id);
@@ -1754,8 +1757,8 @@ export default function AdminNotesManager() {
                               Images / screenshots
                             </p>
                             <p className="mt-1 text-[11px] text-slate-600">
-                              PNG, JPEG, WEBP, or GIF up to 5 MB each. Paste an image from
-                              clipboard anywhere in this form or use the capture/upload controls.
+                              PNG, JPEG, WEBP, or GIF up to 5 MB each. Paste an image from clipboard
+                              anywhere in this form or use the capture/upload controls.
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
@@ -2057,7 +2060,7 @@ export default function AdminNotesManager() {
 
         <form
           className="mt-5 grid gap-4 sm:grid-cols-2"
-          onPaste={handleCreateFormPaste}
+          onPasteCapture={handleCreateFormPaste}
           onSubmit={handleCreate}
           data-testid="admin-notes-create-form"
         >
@@ -2136,8 +2139,8 @@ export default function AdminNotesManager() {
               <div>
                 <p className="text-sm font-semibold text-slate-900">Screenshot (optional)</p>
                 <p className="mt-1 text-xs text-slate-600">
-                  Paste an image from clipboard anywhere in this form, or capture a browser
-                  screenshot now and attach it after the note save succeeds.
+                  Paste an image from clipboard anywhere in this form with Cmd+V or Ctrl+V, or
+                  capture a browser screenshot now and attach it after the note save succeeds.
                 </p>
               </div>
               <AdminNoteScreenshotCaptureButton
