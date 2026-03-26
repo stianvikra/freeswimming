@@ -24,7 +24,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 
 1. Pause edits on the current row and copy your intended final text to a temporary local note.
 2. If the failure happened in `Quick note`, first search by the visible success state or intended title in `/admin?tab=notes` before retrying so you do not create duplicates.
-3. If you still need to inspect the page before saving, collapse the quick-note draft instead of closing it; reopening from the floating resume card should preserve the current text and staged image.
+3. If you still need to inspect the page before saving, collapse the quick-note draft instead of closing it; reopening from the docked right-edge handle should preserve the current text and staged image.
 4. In `/admin?tab=notes`, keep the `Notes` tab active and click `Refresh` to reload server-canonical rows.
 5. If the row title starts with `[E2E Admin Note Artifact]`, treat it as automated test residue:
    - do not repurpose it for operator work,

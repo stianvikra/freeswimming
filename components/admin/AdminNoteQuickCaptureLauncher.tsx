@@ -455,37 +455,36 @@ export default function AdminNoteQuickCaptureLauncher({
 
       {minimized ? (
         <div
-          className="fixed right-4 top-24 z-[70] w-72 rounded-2xl border border-blue-200 bg-white/95 p-3 shadow-xl shadow-slate-200/70 backdrop-blur"
+          className="fixed right-0 top-24 z-[70]"
           data-testid="admin-note-quick-capture-minimized"
         >
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">
-            Quick capture
-          </p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">
-            {createdCaptureRecovery ? "Saved note ready to reopen" : "Draft collapsed"}
-          </p>
-          <p className="mt-1 text-xs text-slate-600">
-            {createdCaptureRecovery
-              ? "Open again to retry the staged image upload or finish from Notes."
-              : pendingImage
-                ? "Your draft is preserved with the staged image while you review the page."
-                : "Your unsaved draft is preserved while you scroll and gather more context."}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="bg-white/96 translate-x-[calc(100%-3.75rem)] rounded-l-[22px] border border-r-0 border-blue-200 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur transition-transform duration-200 ease-out">
             <button
               type="button"
               onClick={openLauncher}
               data-testid="admin-note-quick-capture-resume"
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500"
+              aria-label="Resume quick note"
+              className="flex h-36 w-16 flex-col items-center justify-start gap-3 rounded-l-[22px] px-2 py-3 text-blue-800 transition hover:bg-blue-50"
             >
-              Resume quick note
-            </button>
-            <button
-              type="button"
-              onClick={closeLauncher}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Discard
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-700">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                  <path
+                    d="M11.5 5.5L7 10l4.5 4.5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <span className="text-center text-[11px] font-semibold leading-tight">
+                Quick
+                <br />
+                note
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                {createdCaptureRecovery ? "Saved" : pendingImage ? "Image" : "Draft"}
+              </span>
             </button>
           </div>
         </div>

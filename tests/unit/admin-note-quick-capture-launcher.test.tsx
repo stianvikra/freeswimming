@@ -357,7 +357,11 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     });
 
     expect(screen.getByTestId("admin-note-quick-capture-minimized")).toBeInTheDocument();
-    expect(screen.getByText("Draft collapsed")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-note-quick-capture-resume")).toHaveAttribute(
+      "aria-label",
+      "Resume quick note"
+    );
+    expect(screen.queryByRole("button", { name: "Discard" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("admin-note-quick-capture-resume"));
 
