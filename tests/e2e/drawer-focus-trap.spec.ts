@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { isDesktopProject } from "./project-guards";
 
 test.use({
@@ -7,24 +7,57 @@ test.use({
   hasTouch: false,
 });
 
-test("drawer traps keyboard focus and restores trigger focus on close", async ({
-  page,
-}, testInfo) => {
-  test.skip(!isDesktopProject(testInfo), "Keyboard focus trap coverage runs on desktop projects.");
+async function waitForDrawerTriggerToSettle(page: Page) {
+  const compilingIndicator = page.getByText("Compiling", { exact: true });
+  await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
 
-  await page.goto("/contact");
+  const trigger = page.getByTestId("header-menu-toggle");
+  await expect(trigger).toBeVisible();
+  await expect
+    .poll(
+      () =>
+        trigger.evaluate((node) =>
+          Object.keys(node).some(
+            (key) => key.startsWith("__reactProps$") || key.startsWith("__reactFiber$")
+          )
+        ),
+      {
+        timeout: 15_000,
+        message: "Expected the header menu toggle to finish React hydration before focus checks.",
+      }
+    )
+    .toBe(true);
+
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       })
   );
+  await page.bringToFront();
+}
+
+test("drawer traps keyboard focus and restores trigger focus on close", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isDesktopProject(testInfo), "Keyboard focus trap coverage runs on desktop projects.");
+
+  await page.goto("/contact");
+  await waitForDrawerTriggerToSettle(page);
 
   const trigger = page.getByTestId("header-menu-toggle");
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await trigger.focus();
-  await expect(trigger).toBeFocused();
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset.testid ?? null),
+      {
+        timeout: 5_000,
+      }
+    )
+    .toBe("header-menu-toggle");
 
   await trigger.press("Enter");
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -45,5 +78,13 @@ test("drawer traps keyboard focus and restores trigger focus on close", async ({
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
-  await expect(trigger).toBeFocused();
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset.testid ?? null),
+      {
+        timeout: 5_000,
+      }
+    )
+    .toBe("header-menu-toggle");
 });

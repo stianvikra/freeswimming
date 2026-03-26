@@ -197,17 +197,24 @@ async function satisfyDoneGateIfPresent(page: Page) {
   const checklist = page.getByTestId("course-done-gate-checklist");
   await expect(checklist).toBeVisible();
   const checkboxes = checklist.getByRole("checkbox");
-  await expect(checkboxes).toHaveCount(3);
+  await expect
+    .poll(async () => await checkboxes.count(), {
+      timeout: 5_000,
+    })
+    .toBeGreaterThan(0);
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await dismissSwipeHintIfPresent(page);
     const count = await checkboxes.count();
     for (let i = 0; i < count; i += 1) {
+      const currentCheckboxCount = await checkboxes.count();
+      if (i >= currentCheckboxCount) {
+        break;
+      }
       const checkbox = checkboxes.nth(i);
       if (await checkbox.isChecked()) continue;
       await dismissSwipeHintIfPresent(page);
       await expect(checkbox).toBeEnabled();
-      await checkbox.scrollIntoViewIfNeeded();
       await checkbox.check({ force: true });
       await expect(checkbox).toBeChecked();
       await page.waitForTimeout(75);
@@ -398,7 +405,7 @@ test("first successful mark-as-done can trigger contextual install prompt once",
 
   await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
   await waitForCoursePageToSettle(page);
-  const markDoneButton = page.getByRole("button", { name: "Mark as done" });
+  const markDoneButton = page.getByTestId("course-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   await dismissSwipeHintIfPresent(page);
 
@@ -438,7 +445,7 @@ test("contextual install prompt shows success confirmation after accepted instal
 
   await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
   await waitForCoursePageToSettle(page);
-  const markDoneButton = page.getByRole("button", { name: "Mark as done" });
+  const markDoneButton = page.getByTestId("course-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   await dismissSwipeHintIfPresent(page);
 

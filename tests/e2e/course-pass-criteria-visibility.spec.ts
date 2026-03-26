@@ -9,5 +9,6 @@ test("learn lessons show pass criteria by default unless hidden", async ({ page 
 
   await expect(page.getByText("Pass criteria", { exact: true })).toBeVisible();
   await expect(page.getByTestId("course-done-gate-checklist")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Mark as done" })).toBeDisabled();
+  await expect(page.getByTestId("course-pass-criteria-mark-done-button")).toBeVisible();
+  await expect(page.getByTestId("course-pass-criteria-mark-done-button")).toBeDisabled();
 });

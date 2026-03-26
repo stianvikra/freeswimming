@@ -119,7 +119,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Course workspace (modules -> lessons)",
     detail:
-      "Use this first for day-to-day course production. Overview mode shows all modules with compact lesson previews. `Open module scope` switches to focus mode, where the selected module becomes the one primary lesson workspace below. Use `Show all modules` to return to overview. Lesson edits stay open after save so small follow-up fixes can be made without reopening the same row.",
+      "Use this first for day-to-day course production. Overview mode shows all modules with compact lesson previews. The current `Module workspace` stays on top so active scope is always visible, and overview cards now also expose quick `Open lesson`, `Edit lesson`, `Delete lesson`, and `Delete module` actions. `Open module scope` switches to focus mode, where the selected module becomes the one primary lesson workspace below. Use `Show all modules` to return to overview. Lesson edits stay open after save so small follow-up fixes can be made without reopening the same row.",
   },
   {
     title: "Learner common mistakes visibility",
@@ -233,16 +233,16 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Open module scope / Show all modules",
         meaning:
-          "Switch between compact course overview and one focused module workspace. Focus mode keeps one detailed lesson list active instead of repeating every lesson surface twice.",
+          "Switch between all-module overview and one focused module workspace. The active workspace selector stays on top so you can see or change current scope before scanning overview cards.",
       },
       {
         label: "Mirror snapshot cards",
         meaning: "Focuses list scope to the selected data group and jumps to the list workflow.",
       },
       {
-        label: "Edit lesson",
+        label: "Open lesson / Edit lesson / Delete lesson / Delete module",
         meaning:
-          "Opens lesson row edit with body fields and section visibility controls. Save keeps the same lesson editor open so small follow-up fixes can be made immediately.",
+          "Overview mode now supports quick lesson open/edit/delete actions inside each module card, plus module delete. Use focused module workspace when you need ordering, move controls, preview, or create in one place.",
       },
       {
         label: "Save changes / Cancel",
@@ -391,7 +391,12 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Quick note",
         meaning:
-          "Opens the lightweight quick-capture sheet so you can save a route-aware note, optionally paste one clipboard image or upload one image, and stay on the current admin surface.",
+          "Opens the lightweight quick-capture sheet so you can save a route-aware note, optionally paste one clipboard image or upload one image, and stay on the current admin surface. If you need to scroll the page before saving, collapse it and resume the same draft from the floating quick-note card.",
+      },
+      {
+        label: "Collapse / Resume quick note",
+        meaning:
+          "Temporarily tucks the quick-capture draft to the page edge without discarding text or the staged image, so you can keep reviewing the current surface before reopening the same note.",
       },
       {
         label: "Use P0 template / Use P1 template / Use P2 template",
@@ -431,7 +436,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Save note / Save changes / Delete",
         meaning:
-          "Creates, updates, or removes task notes with route/content context. Create and Quick note can stage one pasted/uploaded image before first save; Edit can add/remove more images and related-note links later.",
+          "Creates, updates, or removes task notes with route/content context. Contextual `Add note` stays at the top of the panel and collapses once notes exist so you can review first, then reopen compose only when needed. Create and Quick note can stage one pasted/uploaded image before first save; Edit can add/remove more images and related-note links later.",
       },
       {
         label: "Save category / Delete",
@@ -562,6 +567,8 @@ const DAILY_PLAYBOOKS: Playbook[] = [
     steps: [
       "Open the exact page/content row you are reviewing.",
       "Use `Quick note` when you want to capture the issue fast from the current surface without losing context.",
+      "If you still need to scroll or collect a screenshot before saving, collapse `Quick note` and reopen the same draft from the floating resume card on the right.",
+      "Use the top `Add note` section when you want full fields in place; if notes already exist it stays collapsed until you expand it again.",
       "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
       "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload image` if you already have the file.",
       "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload image`.",
