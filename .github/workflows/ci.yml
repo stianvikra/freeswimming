@@ -114,7 +114,11 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit firefox
+        # The hosted Ubuntu image already covers the browser runtime libraries we
+        # need for this matrix in practice; avoiding `--with-deps` here keeps
+        # the required verify job from burning its entire timeout budget on apt
+        # mirror slowness before tests even start.
+        run: npx playwright install chromium webkit firefox
 
       - name: Run verification suite
         env:
