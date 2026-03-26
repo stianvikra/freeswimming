@@ -22,6 +22,7 @@ import {
   ADMIN_INCIDENT_SEVERITY_GUIDANCE,
   DEFAULT_ADMIN_NOTES_FILTER_STATE,
   applyAdminNotesFilterStateToSearchParams,
+  buildAdminNoteRelatedJumpFilterState,
   buildAdminNoteReferenceLabel,
   buildAdminNotesContextRefOptions,
   buildAdminNotesCounts,
@@ -480,6 +481,20 @@ export default function AdminNotesManager() {
       });
     },
     [pathname]
+  );
+
+  const jumpToRelatedNote = useCallback(
+    (relatedNote: AdminNoteItem["related_notes"][number]) => {
+      const nextFilters = buildAdminNoteRelatedJumpFilterState({
+        noteId: relatedNote.id,
+        isDone: relatedNote.is_done,
+      });
+      setSearchDraft(nextFilters.query);
+      setEditingId(null);
+      setEditState(null);
+      updateNotesFilters(nextFilters);
+    },
+    [updateNotesFilters]
   );
 
   useEffect(() => {
@@ -1517,12 +1532,24 @@ export default function AdminNotesManager() {
                       <p className="text-xs font-semibold text-slate-700">Related notes</p>
                       <div className="flex flex-wrap gap-2">
                         {item.related_notes.map((relatedNote) => (
-                          <span
+                          <div
                             key={relatedNote.id}
                             className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] text-slate-700"
                           >
-                            {relatedNote.title} · {buildAdminNoteReferenceLabel(relatedNote.id)}
-                          </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                jumpToRelatedNote(relatedNote);
+                              }}
+                              className="font-medium text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                            >
+                              {relatedNote.title}
+                            </button>
+                            <span className="text-slate-500">
+                              {" "}
+                              · {buildAdminNoteReferenceLabel(relatedNote.id)}
+                            </span>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1898,7 +1925,15 @@ export default function AdminNotesManager() {
                                 >
                                   <div>
                                     <p className="text-xs font-medium text-slate-700">
-                                      {relatedNote.title}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          jumpToRelatedNote(relatedNote);
+                                        }}
+                                        className="text-left text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                      >
+                                        {relatedNote.title}
+                                      </button>
                                     </p>
                                     <p className="text-[11px] text-slate-500">
                                       {formatPriorityLabel(relatedNote.priority)} ·{" "}

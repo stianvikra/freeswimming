@@ -425,7 +425,8 @@ const BUTTON_GUIDE: ActionGroup[] = [
       },
       {
         label: "Link note / Remove link",
-        meaning: "Connects related notes by stable note ID without merging them into one record.",
+        meaning:
+          "Connects related notes by stable note ID without merging them into one record. After linking, click the related note title to jump straight to that note in the queue.",
       },
       {
         label: "Save note / Save changes / Delete",

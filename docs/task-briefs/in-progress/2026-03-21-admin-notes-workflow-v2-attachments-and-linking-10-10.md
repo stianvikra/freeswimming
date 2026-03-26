@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-21`
-- `updated`: `2026-03-22`
+- `updated`: `2026-03-26`
 
 ## Goal
 
@@ -26,6 +26,12 @@ Admin notes can hold screenshot/image attachments, explicit priority, and relate
   - richer note relationships,
   - stronger data-integrity requirements than the core queue/filter slice.
 - Quick capture from across the app is intentionally split into a later follow-up so storage/linking can ship without touching multiple app surfaces in the same PR.
+
+## Admin-Notes Triage Disposition
+
+- `1059a360-7719-4fe7-a0f1-36807e2c2be3` `Link related notes`
+  - Disposition: owned by this brief.
+  - Reason: the remaining production ask is related-note UX polish on top of the already-shipped linking model, not a new system outside this scope.
 
 ## Dependencies And Boundaries
 
@@ -222,3 +228,5 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-22 | scope split | moved attachments/linking brief into in-progress and explicitly split app-wide quick capture into a follow-up slice so storage lifecycle, priority, and related-note integrity can ship first without broad route-surface risk | next: implement schema + API + UI foundations for attachments, priority, and related-note links`
 - `2026-03-22 | implementation + verify | implemented attachment storage/delete lifecycle, priority, related-note linking, hydration, help/runbook updates, and authz negative-path coverage; local npm run verify:pre-pr passed | perf-budget trend recommended tighten, decision: hold for this slice because it does not change public core-route perf targets, and revisit tightening in the next AW-010 performance checkpoint/PR summary | next: run final diff review, commit, push, and open/update PR`
 - `2026-03-21 | planning | created separate advanced admin notes brief for screenshots, related-note links, explicit priority, and app-wide admin quick capture so storage-backed lifecycle risk does not block core notes search/filter continuity work | next: ship admin notes core first, then implement attachment/linking/launcher work with full delete-lifecycle coverage`
+- `2026-03-26 | in-progress | production note \`1059a360-7719-4fe7-a0f1-36807e2c2be3\` is now the active owned follow-up under this brief: linked note titles now jump directly to the related note in the queue while keeping \`Note ID …\` as non-clickable metadata, with help/runbook copy and regression coverage updated to match | next: run targeted tests, then full \`npm run verify:pre-pr\`, commit, push, and open/update PR`
+- `2026-03-26 | verify complete | exact note-ID search now resolves linked-note jumps to the target note instead of leaving referring notes in the filtered queue; targeted vitest/typecheck/playwright checks and full \`npm run verify:pre-pr\` all passed for the related-note jump polish | next: commit, push, open/update PR, and wait on required CI before recommending merge`

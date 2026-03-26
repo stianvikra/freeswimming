@@ -157,6 +157,17 @@ export function buildAdminNoteReferenceLabel(noteId: string): string {
   return `Note ID ${noteId}`;
 }
 
+export function buildAdminNoteRelatedJumpFilterState(params: {
+  noteId: string;
+  isDone: boolean;
+}): AdminNotesFilterState {
+  return {
+    ...DEFAULT_ADMIN_NOTES_FILTER_STATE,
+    query: params.noteId,
+    status: params.isDone ? "done" : "open",
+  };
+}
+
 export function buildAdminNoteContextFilterLabel(params: {
   catalog: Pick<AdminNoteContextCatalog, "labelsByContextKey">;
   contextType: AdminNoteContextType;
@@ -231,7 +242,7 @@ export function filterAdminNotes(params: {
   const normalizedCategory = normalizeLowerText(params.filters.category);
   const normalizedContextRef = normalizeContextRef(params.filters.contextRef);
 
-  return params.items.filter((item) => {
+  const filteredByStructuredFilters = params.items.filter((item) => {
     if (params.filters.status === "open" && item.is_done) return false;
     if (params.filters.status === "done" && !item.is_done) return false;
 
@@ -251,13 +262,26 @@ export function filterAdminNotes(params: {
       return false;
     }
 
-    if (!normalizedQuery) return true;
+    return true;
+  });
 
-    return buildAdminNoteSearchIndex({
+  if (!normalizedQuery) {
+    return filteredByStructuredFilters;
+  }
+
+  const exactIdMatches = filteredByStructuredFilters.filter(
+    (item) => normalizeLowerText(item.id) === normalizedQuery
+  );
+  if (exactIdMatches.length > 0) {
+    return exactIdMatches;
+  }
+
+  return filteredByStructuredFilters.filter((item) =>
+    buildAdminNoteSearchIndex({
       item,
       catalog: params.catalog,
-    }).includes(normalizedQuery);
-  });
+    }).includes(normalizedQuery)
+  );
 }
 
 export function buildAdminNotesContextRefOptions(params: {
