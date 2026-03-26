@@ -48,7 +48,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
    - if upload failed after note save, retry only after confirming you are not looking at a stale duplicate preview,
    - if the staged image was removed locally, use clipboard paste again or fall back to `Upload image`.
 8. If related notes are involved:
-   - open the visible linked note IDs from Search if needed,
+   - click the linked note title to jump straight to that note in the queue when available, or search by the visible `Note ID` if needed,
    - confirm the intended link exists only once,
    - remove and re-add the link only if the relationship is clearly wrong.
 9. Re-apply only the intended delta and click `Save changes`.

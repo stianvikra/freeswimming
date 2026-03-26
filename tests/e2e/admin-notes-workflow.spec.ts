@@ -593,6 +593,15 @@ test.describe("admin notes workflow", () => {
     await expect(updatedItem).toContainText("1 image");
     await attachmentsEditForm.getByRole("button", { name: "Cancel" }).click();
 
+    const relatedJumpSearchInput = page.getByTestId("admin-notes-search");
+    await updatedItem.getByRole("button", { name: secondaryTitle }).click();
+    await expect(relatedJumpSearchInput).toHaveValue(secondaryNoteId);
+    await expect(
+      page.getByTestId("admin-note-item").filter({ hasText: secondaryNoteId })
+    ).toBeVisible();
+    await relatedJumpSearchInput.fill("");
+    await expect(updatedItem).toBeVisible({ timeout: 10_000 });
+
     await page.getByTestId("admin-notes-category-filter").selectOption("Product");
     await expect(updatedItem).toBeVisible();
     await page.getByTestId("admin-notes-category-filter").selectOption("");

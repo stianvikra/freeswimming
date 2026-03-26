@@ -5,6 +5,7 @@ import {
   DEFAULT_ADMIN_NOTES_FILTER_STATE,
   applyAdminNotesFilterStateToSearchParams,
   buildAdminNoteContextFilterLabel,
+  buildAdminNoteRelatedJumpFilterState,
   buildAdminNoteReferenceLabel,
   buildAdminNotesContextRefOptions,
   filterAdminNotes,
@@ -64,6 +65,30 @@ describe("admin notes manager filter state", () => {
     expect(next.get(ADMIN_NOTES_QUERY_KEYS.priority)).toBe("high");
     expect(next.get(ADMIN_NOTES_QUERY_KEYS.contextType)).toBe("page");
     expect(next.get(ADMIN_NOTES_QUERY_KEYS.contextRef)).toBe("/plans");
+  });
+
+  it("builds jump filters for linked notes without carrying unrelated filters", () => {
+    expect(
+      buildAdminNoteRelatedJumpFilterState({
+        noteId: "note-4",
+        isDone: false,
+      })
+    ).toEqual({
+      ...DEFAULT_ADMIN_NOTES_FILTER_STATE,
+      query: "note-4",
+      status: "open",
+    });
+
+    expect(
+      buildAdminNoteRelatedJumpFilterState({
+        noteId: "note-5",
+        isDone: true,
+      })
+    ).toEqual({
+      ...DEFAULT_ADMIN_NOTES_FILTER_STATE,
+      query: "note-5",
+      status: "done",
+    });
   });
 });
 
@@ -180,5 +205,41 @@ describe("admin notes manager filtering", () => {
     });
 
     expect(filtered).toEqual([withAttachment]);
+  });
+
+  it("prefers exact note ID matches over related-note metadata matches", () => {
+    const withRelatedNote = buildNote({
+      id: "note-3",
+      related_notes: [
+        {
+          id: "note-4",
+          title: "Billing follow-up",
+          category: "Commerce",
+          note_date: "2026-03-20",
+          is_done: false,
+          priority: "high",
+        },
+      ],
+    });
+    const relatedTarget = buildNote({
+      id: "note-4",
+      title: "Billing follow-up",
+      body: "Target note that should own the exact ID search.",
+    });
+
+    const filtered = filterAdminNotes({
+      items: [withRelatedNote, relatedTarget],
+      filters: {
+        query: "note-4",
+        status: "open",
+        category: "",
+        priority: "",
+        contextType: "",
+        contextRef: "",
+      },
+      catalog,
+    });
+
+    expect(filtered).toEqual([relatedTarget]);
   });
 });
