@@ -93,7 +93,7 @@ jobs:
       - e2e-smoke
       - site-lock-smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -114,11 +114,12 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        # The hosted Ubuntu image already covers the browser runtime libraries we
-        # need for this matrix in practice; avoiding `--with-deps` here keeps
-        # the required verify job from burning its entire timeout budget on apt
-        # mirror slowness before tests even start.
-        run: npx playwright install chromium webkit firefox
+        # Verify runs Chromium, WebKit, and Firefox across the full public
+        # matrix. GitHub's hosted Ubuntu image does not reliably include the
+        # shared system libraries those browsers need, so keep `--with-deps`
+        # here and give the job enough time budget to complete both install and
+        # the actual verify/build gates.
+        run: npx playwright install --with-deps chromium webkit firefox
 
       - name: Run verification suite
         env:
