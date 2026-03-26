@@ -944,6 +944,11 @@ export default function AdminContentManager() {
     [courseLessonWorkspaceItems, courseModuleWorkspaceItems]
   );
 
+  const contentItemById = useMemo(
+    () => new Map<string, AdminContentItemRow>(items.map((item) => [item.id, item])),
+    [items]
+  );
+
   const hasNonCourseItems = useMemo(
     () => items.some((item) => !COURSE_CONTENT_TYPES.has(item.content_type)),
     [items]
@@ -2601,7 +2606,7 @@ export default function AdminContentManager() {
 
         {isCourseWorkspaceView ? (
           <article
-            className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4"
+            className="mt-5 flex flex-col rounded-xl border border-slate-200 bg-slate-50/80 p-4"
             data-testid="admin-course-lesson-workspace"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2669,6 +2674,7 @@ export default function AdminContentManager() {
                   );
                   const moduleScopeActive = workspaceModuleId === moduleItem.id;
                   const modulePreviewLessonId = firstRuntimeLessonIdByModuleId.get(moduleItem.id);
+                  const moduleRecord = contentItemById.get(moduleItem.id) ?? null;
                   const modulePreviewUrl = modulePreviewLessonId
                     ? buildCoursePreviewHref({
                         lessonId: modulePreviewLessonId,
@@ -2733,6 +2739,17 @@ export default function AdminContentManager() {
                         >
                           Add lesson
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!moduleRecord) return;
+                            void handleDelete(moduleRecord);
+                          }}
+                          disabled={!moduleRecord}
+                          className="inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                        >
+                          Delete module
+                        </button>
                         {modulePreviewUrl ? (
                           <a
                             href={modulePreviewUrl}
@@ -2762,7 +2779,7 @@ export default function AdminContentManager() {
                             </p>
                             {moduleLessonCount > 0 ? (
                               <span className="text-[11px] text-slate-500">
-                                Select module scope for full lesson workspace
+                                Use module scope for reordering and full lesson workspace
                               </span>
                             ) : null}
                           </div>
@@ -2775,17 +2792,53 @@ export default function AdminContentManager() {
                               data-testid={`admin-course-module-lesson-preview-${moduleItem.id}`}
                             >
                               <ol className="mt-2 space-y-1">
-                                {moduleLessonPreview.visibleLessons.map((lesson, lessonIndex) => (
-                                  <li
-                                    key={lesson.id}
-                                    data-testid="admin-course-module-lesson-preview-row"
-                                    className="rounded-md border border-slate-200 bg-white px-2 py-2"
-                                  >
-                                    <p className="text-xs font-medium text-slate-900">
-                                      {lessonIndex + 1}. {lesson.title}
-                                    </p>
-                                  </li>
-                                ))}
+                                {moduleLessonPreview.visibleLessons.map((lesson, lessonIndex) => {
+                                  const lessonRecord = contentItemById.get(lesson.id) ?? null;
+
+                                  return (
+                                    <li
+                                      key={lesson.id}
+                                      data-testid="admin-course-module-lesson-preview-row"
+                                      className="rounded-md border border-slate-200 bg-white px-2 py-2"
+                                    >
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <p className="text-xs font-medium text-slate-900">
+                                          {lessonIndex + 1}. {lesson.title}
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <a
+                                            href={`/course?lesson=${encodeURIComponent(
+                                              lesson.runtimeLessonId
+                                            )}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50"
+                                          >
+                                            Open lesson
+                                          </a>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleWorkspaceEditLesson(lesson.id)}
+                                            className="inline-flex h-7 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[11px] font-medium text-blue-800 transition hover:bg-blue-100"
+                                          >
+                                            Edit lesson
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              if (!lessonRecord) return;
+                                              void handleDelete(lessonRecord);
+                                            }}
+                                            disabled={!lessonRecord}
+                                            className="inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-2.5 text-[11px] font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                          >
+                                            Delete lesson
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
                               </ol>
                               {moduleLessonPreview.hiddenCount > 0 ? (
                                 <p className="mt-2 text-[11px] text-slate-500">
@@ -2806,7 +2859,7 @@ export default function AdminContentManager() {
 
             {workspaceModuleId !== WORKSPACE_ALL_MODULES_ID ? (
               <div
-                className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2"
+                className="order-first mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2"
                 data-testid="admin-course-workspace-current-scope"
               >
                 <div>
@@ -2824,7 +2877,7 @@ export default function AdminContentManager() {
             ) : null}
 
             <div
-              className="mt-3 rounded-xl border border-slate-200 bg-white p-3"
+              className="order-first mt-3 rounded-xl border border-slate-200 bg-white p-3"
               data-testid="admin-course-workspace-focus-panel"
             >
               <div className="flex flex-wrap items-end justify-between gap-3">
@@ -2868,7 +2921,7 @@ export default function AdminContentManager() {
 
               <p className="mt-2 text-xs text-slate-600">
                 {workspaceModuleId === WORKSPACE_ALL_MODULES_ID
-                  ? "Select one module to open the full ordered lesson workspace. Use All Content only when you need cross-module audit work."
+                  ? "Current workspace stays on top. Use overview below to scan modules quickly, then open a module here when you need full lesson ordering, move controls, or in-context create."
                   : workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID
                     ? "Focused exception view: repair lessons that are not attached to a valid module."
                     : "Focused module workspace: use this as the primary place to reorder, move, preview, and edit lessons in one module."}
@@ -3018,9 +3071,9 @@ export default function AdminContentManager() {
                   className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600"
                   data-testid="admin-course-workspace-overview-guidance"
                 >
-                  Choose a module above or from the selector to open one detailed lesson workspace.
-                  Overview mode keeps module context visible without repeating every lesson action
-                  twice on the page.
+                  Overview mode now supports quick lesson open/edit/delete from each module card.
+                  Choose a module above only when you need the full ordered workspace for move
+                  controls, create, and deeper lesson edits.
                 </p>
               ) : workspaceLessons.length === 0 ? (
                 <p className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600">

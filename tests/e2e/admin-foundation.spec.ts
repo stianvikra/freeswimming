@@ -527,6 +527,19 @@ test.describe("admin foundation", () => {
       await expect(lessonWorkspace).toBeVisible();
       await expect(page.getByTestId("admin-course-status-overview")).toBeVisible();
       await expect(page.getByTestId("admin-course-workspace-overview-guidance")).toBeVisible();
+      const workspaceFocusPanel = page.getByTestId("admin-course-workspace-focus-panel");
+      await expect(workspaceFocusPanel).toBeVisible();
+      const overviewHeading = lessonWorkspace.getByRole("heading", {
+        name: "Course workspace overview",
+      });
+      const [focusPanelBox, overviewHeadingBox] = await Promise.all([
+        workspaceFocusPanel.boundingBox(),
+        overviewHeading.boundingBox(),
+      ]);
+      if (!focusPanelBox || !overviewHeadingBox) {
+        throw new Error("Could not measure course workspace layout boxes.");
+      }
+      expect(focusPanelBox.y).toBeLessThan(overviewHeadingBox.y);
       const workspaceModuleSelect = lessonWorkspace.getByLabel("Module workspace");
       await expect(workspaceModuleSelect).toBeVisible();
       const fixtureModuleValue = await workspaceModuleSelect.evaluate((node, moduleId) => {
@@ -551,6 +564,17 @@ test.describe("admin foundation", () => {
       await expect(
         overviewModuleRow.getByTestId("admin-course-module-lesson-preview-row")
       ).toContainText(lessonFixtureTitle);
+      const overviewLessonRow = overviewModuleRow
+        .getByTestId("admin-course-module-lesson-preview-row")
+        .filter({ hasText: lessonFixtureTitle })
+        .first();
+      await expect(overviewLessonRow.getByRole("button", { name: "Edit lesson" })).toBeVisible();
+      await expect(overviewLessonRow.getByRole("button", { name: "Delete lesson" })).toBeVisible();
+      await expect(overviewModuleRow.getByRole("button", { name: "Delete module" })).toBeVisible();
+      await expect(overviewLessonRow.getByRole("link", { name: "Open lesson" })).toHaveAttribute(
+        "href",
+        new RegExp(`/course\\?lesson=${lessonFixtureRuntimeId}$`)
+      );
       await workspaceModuleSelect.selectOption(fixtureModuleValue);
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
       const scopedModuleRow = lessonWorkspace

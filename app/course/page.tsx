@@ -2959,8 +2959,29 @@ function CoursePageClient() {
 
                   {showPassOrNextCard ? (
                     <div className={cx(showDrillSection ? "mt-5 p-4" : "p-4", supportCardClass)}>
-                      <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-                        {showPassCriteria ? "Pass criteria" : "Next step"}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                          {showPassCriteria ? "Pass criteria" : "Next step"}
+                        </div>
+                        {showPassCriteria ? (
+                          <button
+                            type="button"
+                            onClick={toggleLessonDone}
+                            disabled={markDoneBlockedByGate}
+                            aria-pressed={isLessonDone}
+                            data-testid="course-pass-criteria-mark-done-button"
+                            className={cx(
+                              "inline-flex min-h-[34px] items-center justify-center rounded-full px-3 py-1 text-[12px] font-semibold transition",
+                              isLessonDone
+                                ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200"
+                                : markDoneBlockedByGate
+                                  ? "cursor-not-allowed bg-slate-200 text-slate-500"
+                                  : "bg-blue-600 text-white shadow-[0_10px_22px_rgba(37,99,235,0.20)] hover:bg-blue-500"
+                            )}
+                          >
+                            {isLessonDone ? "Done" : "Mark as done"}
+                          </button>
+                        ) : null}
                       </div>
                       {showPassCriteria ? (
                         doneGateRequired ? (
@@ -3008,7 +3029,7 @@ function CoursePageClient() {
                             ? "Check all items to unlock Mark as done."
                             : doneConfirmedLabel
                               ? `Marked done after criteria check on ${doneConfirmedLabel}.`
-                              : "When these are met, mark lesson as done in overview."}
+                              : "When these are met, mark lesson as done here or in overview."}
                         </p>
                       ) : null}
                     </div>

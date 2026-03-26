@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { COURSE_LESSONS_FLAT, DEFAULT_LESSON_ID } from "../../app/course/courseData";
+import { DEFAULT_LESSON_ID } from "../../app/course/courseData";
 import { isMobileProject } from "./project-guards";
 
 async function waitForCoursePageToSettle(page: Page) {
@@ -21,6 +21,30 @@ async function waitForCoursePageToSettle(page: Page) {
   );
 }
 
+async function getCanonicalCourseLessonIds(page: Page): Promise<string[]> {
+  const response = await page.request.get("/api/course/content");
+  expect(response.ok()).toBe(true);
+
+  const payload = (await response.json()) as {
+    modules?: Array<{
+      lessons?: Array<{
+        id?: string;
+      }>;
+    }>;
+  };
+
+  const lessonIds =
+    payload.modules?.flatMap((module) =>
+      (module.lessons ?? [])
+        .map((lesson) => lesson.id)
+        .filter(
+          (lessonId): lessonId is string => typeof lessonId === "string" && lessonId.length > 0
+        )
+    ) ?? [];
+
+  return lessonIds.length > 0 ? lessonIds : [DEFAULT_LESSON_ID];
+}
+
 test("course nav uses contextual actions on first and last lesson", async ({ page }, testInfo) => {
   test.skip(
     !isMobileProject(testInfo),
@@ -28,8 +52,9 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   );
   test.slow();
 
-  const firstLessonId = DEFAULT_LESSON_ID;
-  const lastLessonId = COURSE_LESSONS_FLAT.at(-1)?.id ?? DEFAULT_LESSON_ID;
+  const canonicalLessonIds = await getCanonicalCourseLessonIds(page);
+  const firstLessonId = canonicalLessonIds[0] ?? DEFAULT_LESSON_ID;
+  const lastLessonId = canonicalLessonIds.at(-1) ?? firstLessonId;
 
   await page.goto(`/course?lesson=${encodeURIComponent(firstLessonId)}`, {
     waitUntil: "domcontentloaded",
@@ -90,16 +115,21 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   await drawer.getByRole("button", { name: "Close menu" }).click();
   await expect(drawer).toBeHidden();
 
-  await page.goto(`/course?lesson=${encodeURIComponent(lastLessonId)}`, {
-    waitUntil: "domcontentloaded",
-    timeout: 60_000,
+  for (let step = 0; step < canonicalLessonIds.length - 1; step += 1) {
+    const rightNav = page.getByTestId("course-nav-right");
+    await expect(rightNav).toHaveText("Next", { timeout: 15_000 });
+    await rightNav.click();
+    await waitForCoursePageToSettle(page);
+  }
+
+  await expect(page).toHaveURL(new RegExp(`lesson=${encodeURIComponent(lastLessonId)}`), {
+    timeout: 15_000,
   });
-  await waitForCoursePageToSettle(page);
 
   const leftLast = page.getByTestId("course-nav-left");
   const rightLast = page.getByTestId("course-nav-right");
 
-  await expect(leftLast).toHaveText("Prev");
+  await expect(leftLast).toHaveText("Prev", { timeout: 15_000 });
   await expect(rightLast).toBeVisible({ timeout: 15_000 });
   await expect(rightLast).toHaveText("Programs", { timeout: 15_000 });
 

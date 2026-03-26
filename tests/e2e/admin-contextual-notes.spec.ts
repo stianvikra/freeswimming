@@ -56,6 +56,7 @@ async function loginAsAdminViaDevBypass(page: Page, nextPath: string) {
 
 async function toggleDoneAndWait(
   page: Page,
+  panel: ReturnType<Page["getByTestId"]>,
   item: ReturnType<Page["getByTestId"]>,
   expectedNotice: string
 ) {
@@ -96,7 +97,9 @@ async function toggleDoneAndWait(
   }
 
   await expect(doneCheckbox).toBeChecked({ timeout: 10_000 });
-  await expect(page.getByText(expectedNotice)).toBeVisible({ timeout: 10_000 });
+  await expect(panel.getByTestId("admin-context-note-action-notice")).toHaveText(expectedNotice, {
+    timeout: 10_000,
+  });
 }
 
 test.describe("admin contextual notes", () => {
@@ -162,6 +165,10 @@ test.describe("admin contextual notes", () => {
     const body = "Context note body from Playwright.";
 
     const createForm = panel.getByTestId("admin-context-note-create-form");
+    const existingCreateToggle = panel.getByTestId("admin-context-note-create-toggle");
+    if ((await createForm.count()) === 0 && (await existingCreateToggle.count()) > 0) {
+      await existingCreateToggle.click();
+    }
     try {
       await expect(createForm).toBeVisible({ timeout: 15_000 });
       await expect(createForm.getByLabel("Title")).toBeVisible({ timeout: 15_000 });
@@ -201,8 +208,6 @@ test.describe("admin contextual notes", () => {
       test.skip(true, `Context notes create is not write-ready in this environment (${reason}).`);
     }
 
-    await expect(panel.getByText("Note saved.")).toBeVisible({ timeout: 5_000 });
-
     await expect
       .poll(
         async () =>
@@ -217,6 +222,14 @@ test.describe("admin contextual notes", () => {
       .first();
     await expect(createdItem).toBeVisible({ timeout: 15_000 });
     await expect(createdItem).toContainText("High");
+    const createToggle = panel.getByTestId("admin-context-note-create-toggle");
+    await expect(createToggle).toBeVisible();
+    await expect(createToggle).toHaveText("Expand add note");
+    await expect(createForm).toHaveCount(0);
+    await createToggle.click();
+    await expect(createToggle).toHaveText("Collapse add note");
+    await expect(panel.getByTestId("admin-context-note-create-form")).toBeVisible();
+    await expect(panel.getByTestId("admin-context-note-paste-image")).toBeVisible();
 
     await createdItem.getByRole("button", { name: "Edit" }).click();
     const editForm = createdItem.getByTestId("admin-context-note-edit-form");
@@ -232,7 +245,10 @@ test.describe("admin contextual notes", () => {
     await expect(updatedItem).toBeVisible({ timeout: 10_000 });
     await expect(updatedItem).toContainText("Urgent");
 
-    await toggleDoneAndWait(page, updatedItem, "Note marked as done.");
+    await toggleDoneAndWait(page, panel, updatedItem, "Note marked as done.");
+    await expect(panel.getByTestId("admin-context-note-action-notice")).toHaveCount(0, {
+      timeout: 7_000,
+    });
 
     page.once("dialog", (dialog) => dialog.accept());
     await updatedItem.getByRole("button", { name: "Delete" }).click();
@@ -275,7 +291,7 @@ test.describe("admin contextual notes", () => {
     const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
     await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
     await quickCaptureDialog.getByLabel("Title").fill(`Cancel ${title}`);
-    await quickCaptureDialog.getByRole("button", { name: "Close" }).click();
+    await quickCaptureDialog.getByRole("button", { name: "Discard draft" }).click();
     await expect(quickCaptureDialog).toHaveCount(0);
 
     await panel.getByRole("button", { name: "Quick note" }).click();
@@ -315,6 +331,7 @@ test.describe("admin contextual notes", () => {
     }
 
     await expect(panel.getByText("Quick note saved.")).toBeVisible({ timeout: 10_000 });
+    await expect(panel.getByText("Quick note saved.")).toHaveCount(0, { timeout: 7_000 });
 
     const toggle = panel.getByTestId("admin-context-notes-toggle");
     if ((await toggle.textContent())?.includes("Show")) {
@@ -335,7 +352,7 @@ test.describe("admin contextual notes", () => {
     await expect(createdItem).toBeVisible({ timeout: 15_000 });
     await expect(createdItem).toContainText("High");
 
-    await toggleDoneAndWait(page, createdItem, "Note marked as done.");
+    await toggleDoneAndWait(page, panel, createdItem, "Note marked as done.");
 
     page.once("dialog", (dialog) => dialog.accept());
     await createdItem.getByRole("button", { name: "Delete" }).click();

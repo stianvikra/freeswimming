@@ -104,7 +104,7 @@ test.describe("admin help center", () => {
         "P0 = critical outage, P1 = major degradation with workaround, P2 = low-impact bug/UX issue."
       )
     ).toBeVisible();
-    await expect(page.getByText("Quick note:")).toBeVisible();
+    await expect(page.getByText("Quick note:", { exact: true })).toBeVisible();
     await expect(
       page.getByText("Open / Done archive / All + Search + Context filters:")
     ).toBeVisible();
@@ -133,6 +133,11 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText(
         "Use `Quick note` when you want to capture the issue fast from the current surface without losing context."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "If you still need to scroll or collect a screenshot before saving, collapse `Quick note` and reopen the same draft from the floating resume card on the right."
       )
     ).toBeVisible();
     await expect(

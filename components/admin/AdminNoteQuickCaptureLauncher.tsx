@@ -91,6 +91,17 @@ function createInitialFormState(): FormState {
   };
 }
 
+function isQuickCaptureDraftDirty(formState: FormState): boolean {
+  return (
+    formState.title.trim().length > 0 ||
+    formState.category.trim() !== INITIAL_CATEGORY ||
+    formState.noteDate !== todayDateInputValue() ||
+    formState.priority !== "normal" ||
+    formState.body.trim().length > 0 ||
+    formState.isDone
+  );
+}
+
 function formatPriorityLabel(priority: AdminNotePriority): string {
   return priority.charAt(0).toUpperCase() + priority.slice(1);
 }
@@ -133,6 +144,7 @@ export default function AdminNoteQuickCaptureLauncher({
   const [savedNotice, setSavedNotice] = useState<SavedNotice | null>(null);
   const [createdCaptureRecovery, setCreatedCaptureRecovery] = useState<SavedNotice | null>(null);
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
+  const [minimized, setMinimized] = useState(false);
   const datalistId = useId();
 
   const notesHref = useMemo(() => {
@@ -145,6 +157,14 @@ export default function AdminNoteQuickCaptureLauncher({
     });
   }, [contextRef, contextType, createdCaptureRecovery, savedNotice]);
 
+  const hasDraftState = useMemo(
+    () =>
+      isQuickCaptureDraftDirty(formState) ||
+      Boolean(pendingImage) ||
+      Boolean(createdCaptureRecovery),
+    [createdCaptureRecovery, formState, pendingImage]
+  );
+
   useEffect(() => {
     return () => {
       if (pendingImage?.previewUrl) {
@@ -152,6 +172,18 @@ export default function AdminNoteQuickCaptureLauncher({
       }
     };
   }, [pendingImage]);
+
+  useEffect(() => {
+    if (!savedNotice) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setSavedNotice(null);
+    }, 4_500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [savedNotice]);
 
   useEffect(() => {
     if (!open || categoryOptions.length > 0 || loadingCategories) return;
@@ -219,10 +251,21 @@ export default function AdminNoteQuickCaptureLauncher({
   }
 
   function openLauncher() {
-    setError(null);
     setSavedNotice(null);
+    if (minimized) {
+      setOpen(true);
+      setMinimized(false);
+      return;
+    }
+    setError(null);
     setCreatedCaptureRecovery(null);
     setOpen(true);
+  }
+
+  function minimizeLauncher() {
+    if (submitting) return;
+    setOpen(false);
+    setMinimized(true);
   }
 
   function closeLauncher() {
@@ -231,6 +274,7 @@ export default function AdminNoteQuickCaptureLauncher({
       setSavedNotice(createdCaptureRecovery);
     }
     setOpen(false);
+    setMinimized(false);
     setError(null);
     setFormState(createInitialFormState());
     setCreatedCaptureRecovery(null);
@@ -300,6 +344,7 @@ export default function AdminNoteQuickCaptureLauncher({
       clearPendingImage();
       onSaved?.(updatedItem);
       setOpen(false);
+      setMinimized(false);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Could not upload image.");
     } finally {
@@ -345,6 +390,7 @@ export default function AdminNoteQuickCaptureLauncher({
           setCreatedCaptureRecovery(null);
           onSaved?.(updatedItem);
           setOpen(false);
+          setMinimized(false);
           setFormState(createInitialFormState());
           return;
         } catch (uploadError) {
@@ -370,6 +416,7 @@ export default function AdminNoteQuickCaptureLauncher({
       setCreatedCaptureRecovery(null);
       onSaved?.(payload.item);
       setOpen(false);
+      setMinimized(false);
       setFormState(createInitialFormState());
     } catch {
       setError("Could not save note.");
@@ -406,7 +453,49 @@ export default function AdminNoteQuickCaptureLauncher({
         </div>
       ) : null}
 
-      <Modal open={open} onClose={closeLauncher} ariaLabel="Quick note capture">
+      {minimized ? (
+        <div
+          className="fixed right-4 top-24 z-[70] w-72 rounded-2xl border border-blue-200 bg-white/95 p-3 shadow-xl shadow-slate-200/70 backdrop-blur"
+          data-testid="admin-note-quick-capture-minimized"
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+            Quick capture
+          </p>
+          <p className="mt-1 text-sm font-semibold text-slate-900">
+            {createdCaptureRecovery ? "Saved note ready to reopen" : "Draft collapsed"}
+          </p>
+          <p className="mt-1 text-xs text-slate-600">
+            {createdCaptureRecovery
+              ? "Open again to retry the staged image upload or finish from Notes."
+              : pendingImage
+                ? "Your draft is preserved with the staged image while you review the page."
+                : "Your unsaved draft is preserved while you scroll and gather more context."}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={openLauncher}
+              data-testid="admin-note-quick-capture-resume"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500"
+            >
+              Resume quick note
+            </button>
+            <button
+              type="button"
+              onClick={closeLauncher}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <Modal
+        open={open}
+        onClose={hasDraftState ? minimizeLauncher : closeLauncher}
+        ariaLabel="Quick note capture"
+      >
         <div className="flex h-full min-h-0 flex-col" data-testid="admin-note-quick-capture-dialog">
           <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <div>
@@ -418,10 +507,10 @@ export default function AdminNoteQuickCaptureLauncher({
             </div>
             <button
               type="button"
-              onClick={closeLauncher}
+              onClick={hasDraftState ? minimizeLauncher : closeLauncher}
               className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              Close
+              {hasDraftState ? "Collapse" : "Close"}
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
@@ -664,7 +753,7 @@ export default function AdminNoteQuickCaptureLauncher({
                     disabled={submitting}
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {createdCaptureRecovery ? "Done" : "Cancel"}
+                    {createdCaptureRecovery ? "Done" : hasDraftState ? "Discard draft" : "Cancel"}
                   </button>
                   {!createdCaptureRecovery ? (
                     <button

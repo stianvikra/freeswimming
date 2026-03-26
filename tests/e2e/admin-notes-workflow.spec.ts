@@ -728,6 +728,15 @@ test.describe("admin notes workflow", () => {
     await expect(textInput).toHaveValue(detailCopy);
     await expect(textInput).toBeFocused();
 
+    await page.getByRole("button", { name: "Collapse" }).click();
+    await expect(quickCaptureDialog).toHaveCount(0);
+    const minimizedQuickCapture = page.getByTestId("admin-note-quick-capture-minimized");
+    await expect(minimizedQuickCapture).toBeVisible({ timeout: 10_000 });
+    await page.getByTestId("admin-note-quick-capture-resume").click();
+    await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+    await expect(quickCaptureForm.getByLabel("Title")).toHaveValue(title);
+    await expect(quickCaptureForm.getByLabel("Text")).toHaveValue(detailCopy);
+
     let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
     try {
       [createResponse] = await Promise.all([
