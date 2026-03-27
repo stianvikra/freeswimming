@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-26-course-content-live-review-and-learner-surface-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-26`
-- `updated`: `2026-03-26`
+- `updated`: `2026-03-27`
 
 ## Goal
 
@@ -317,3 +317,4 @@ These are nearby design/UI tweaks from older or adjacent brief lineage that I co
 - `2026-03-27 | contextual add-note remount hardening + spec resilience | the local gate kept finding one more real instability in the course lesson contextual-note compose path: the inline \`Add note\` form could disappear mid-entry under a same-context remount/reload window, which made the desktop-Chromium lesson-notes CRUD spec fail at \`Title/Category/Priority\` field discovery. Hardened the product surface in \`components/admin/AdminContextNotesPanel.tsx\` so same-context reloads preserve compose state and cached draft visibility instead of resetting the operator shell, then tightened \`tests/e2e/admin-contextual-notes.spec.ts\` to reopen the contextual compose form deterministically when the panel has just settled, while still exercising the real lesson/page CRUD path. Stress rerun \`npx playwright test tests/e2e/admin-contextual-notes.spec.ts --project=desktop-chromium --grep "allowlisted admin can manage contextual lesson notes from course page" --repeat-each=5 --max-failures=1\` passed \`5/5\`, and the full desktop-Chromium contextual-notes file now passes again. | next: rerun full \`npm run verify:pre-merge\` on the updated tree, then commit/push the follow-up if the full local gate stays green`
 - `2026-03-27 | full public verify re-cleared after contextual notes hardening | after the contextual add-note remount hardening and the updated lesson-notes test contract, full \`npm run verify:pre-pr\` passed again on the branch: lint, admin-audit, env/parity, eslint, typecheck, unit, build, perf budgets, and the full public Playwright matrix all returned green (\`89 passed / 271 skipped\`). This restores a clean PR-update gate on top of the latest local changes rather than relying on the earlier green run from before the contextual-notes fix. | next: run \`npm run verify:pre-merge\`, then commit/push/update PR \#303 only if the merge gate is also green`
 - `2026-03-27 | full merge gate re-cleared after contextual notes hardening | reran full \`npm run verify:pre-merge\` on the updated tree after the contextual compose-state preservation patch and the hardened desktop/mobile Playwright specs. The full merge gate completed green, including lint/admin-audit/env parity/eslint/typecheck/unit/build/perf budgets and the public Playwright matrix, so the latest local tree is now ready for commit/push back onto PR \#303 instead of relying on an earlier remote green run from before the remount fix. | next: commit the four-file follow-up, push the branch, and wait for refreshed GitHub checks before merge`
+- `2026-03-27 | done | committed the contextual compose-state + Playwright hardening follow-up as \`0954645\`, reran full \`npm run verify:pre-merge\` green on that exact tree, waited for refreshed GitHub checks to clear, and squash-merged [#303](https://github.com/stianvikra/freeswimming/pull/303) as \`37f90ef\`. This closes the docked quick-note minimize, calmer lesson-done CTA, canonical route stabilization, and contextual add-note remount resilience wave under one finished live-review slice. | next: none`
