@@ -137,7 +137,7 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "If you still need to scroll or collect a screenshot before saving, collapse `Quick note` and reopen the same draft from the floating resume card on the right."
+        "If you still need to scroll or collect a screenshot before saving, collapse `Quick note` and reopen the same draft from the docked edge handle on the right."
       )
     ).toBeVisible();
     await expect(

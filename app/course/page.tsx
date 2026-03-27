@@ -615,9 +615,18 @@ function CoursePageClient() {
   ]);
 
   useEffect(() => {
-    if (!lessonParam || !canonicalLessonParam || lessonParam === canonicalLessonParam) return;
+    if (!lessonParam || !canonicalLessonParam || lessonParam === canonicalLessonParam) {
+      canonicalLessonReplaceHrefRef.current = null;
+      return;
+    }
 
-    router.replace(`${pathname}?lesson=${encodeURIComponent(canonicalLessonParam)}`);
+    const nextCanonicalHref = `${pathname}?lesson=${encodeURIComponent(canonicalLessonParam)}`;
+    if (canonicalLessonReplaceHrefRef.current === nextCanonicalHref) {
+      return;
+    }
+
+    canonicalLessonReplaceHrefRef.current = nextCanonicalHref;
+    router.replace(nextCanonicalHref);
   }, [canonicalLessonParam, lessonParam, pathname, router]);
 
   useEffect(() => {
@@ -1094,6 +1103,7 @@ function CoursePageClient() {
   }, [clearCourseSyncTimer, stopProgressSaveTimer, syncCourseProgressNow]);
 
   const playerTopRef = useRef<HTMLDivElement | null>(null);
+  const canonicalLessonReplaceHrefRef = useRef<string | null>(null);
 
   const goToLesson = useCallback(
     (lessonId: string, options?: { scrollToPlayer?: boolean }) => {
@@ -2959,7 +2969,7 @@ function CoursePageClient() {
 
                   {showPassOrNextCard ? (
                     <div className={cx(showDrillSection ? "mt-5 p-4" : "p-4", supportCardClass)}>
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                         <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                           {showPassCriteria ? "Pass criteria" : "Next step"}
                         </div>
@@ -2971,12 +2981,12 @@ function CoursePageClient() {
                             aria-pressed={isLessonDone}
                             data-testid="course-pass-criteria-mark-done-button"
                             className={cx(
-                              "inline-flex min-h-[34px] items-center justify-center rounded-full px-3 py-1 text-[12px] font-semibold transition",
+                              "mt-1 inline-flex min-h-[30px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1 transition",
                               isLessonDone
-                                ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200"
+                                ? "bg-blue-50 text-blue-700 ring-blue-100/80"
                                 : markDoneBlockedByGate
-                                  ? "cursor-not-allowed bg-slate-200 text-slate-500"
-                                  : "bg-blue-600 text-white shadow-[0_10px_22px_rgba(37,99,235,0.20)] hover:bg-blue-500"
+                                  ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
+                                  : "bg-white/92 ring-slate-200/72 text-slate-700 hover:bg-slate-50"
                             )}
                           >
                             {isLessonDone ? "Done" : "Mark as done"}

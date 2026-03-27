@@ -567,7 +567,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
     steps: [
       "Open the exact page/content row you are reviewing.",
       "Use `Quick note` when you want to capture the issue fast from the current surface without losing context.",
-      "If you still need to scroll or collect a screenshot before saving, collapse `Quick note` and reopen the same draft from the floating resume card on the right.",
+      "If you still need to scroll or collect a screenshot before saving, collapse `Quick note` and reopen the same draft from the docked edge handle on the right.",
       "Use the top `Add note` section when you want full fields in place; if notes already exist it stays collapsed until you expand it again.",
       "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
       "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload image` if you already have the file.",
