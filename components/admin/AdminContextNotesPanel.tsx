@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
 import { hasRequiredAdminRole, type AdminRole } from "@/lib/admin/access";
@@ -113,6 +113,13 @@ const INITIAL_FORM: FormState = {
   isDone: false,
 };
 
+type ContextualCreateDraftSnapshot = {
+  formState: FormState;
+  createFormExpanded: boolean;
+};
+
+const contextualCreateDraftCache = new Map<string, ContextualCreateDraftSnapshot>();
+
 function formatDateLabel(value: string): string {
   const date = new Date(`${value}T00:00:00.000Z`);
   if (Number.isNaN(date.getTime())) return value;
@@ -151,6 +158,8 @@ export default function AdminContextNotesPanel({
   className = "",
 }: Props) {
   const normalizedContextRef = useMemo(() => normalizeContextRef(contextRef), [contextRef]);
+  const contextKey = `${contextType}:${normalizedContextRef}`;
+  const cachedCreateDraft = contextualCreateDraftCache.get(contextKey);
 
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [expanded, setExpanded] = useState(!collapsedByDefault);
@@ -163,8 +172,12 @@ export default function AdminContextNotesPanel({
   const [schemaReady, setSchemaReady] = useState(true);
   const [warning, setWarning] = useState<string | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
-  const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
-  const [createFormExpanded, setCreateFormExpanded] = useState(true);
+  const [formState, setFormState] = useState<FormState>(
+    () => cachedCreateDraft?.formState ?? INITIAL_FORM
+  );
+  const [createFormExpanded, setCreateFormExpanded] = useState(
+    () => cachedCreateDraft?.createFormExpanded ?? true
+  );
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -174,6 +187,33 @@ export default function AdminContextNotesPanel({
   const [pendingImageRecovery, setPendingImageRecovery] = useState<PendingImageRecovery | null>(
     null
   );
+  const lastLoadedContextKeyRef = useRef<string | null>(null);
+  const createDraftPresentRef = useRef(false);
+
+  useEffect(() => {
+    createDraftPresentRef.current =
+      formState.title.trim().length > 0 ||
+      formState.body.trim().length > 0 ||
+      formState.category !== INITIAL_FORM.category ||
+      formState.noteDate !== INITIAL_FORM.noteDate ||
+      formState.priority !== INITIAL_FORM.priority ||
+      formState.isDone !== INITIAL_FORM.isDone ||
+      pendingImage !== null ||
+      pendingImageRecovery !== null;
+  }, [formState, pendingImage, pendingImageRecovery]);
+
+  useEffect(() => {
+    const cachedDraft = contextualCreateDraftCache.get(contextKey);
+    setFormState(cachedDraft?.formState ?? INITIAL_FORM);
+    setCreateFormExpanded(cachedDraft?.createFormExpanded ?? true);
+  }, [contextKey]);
+
+  useEffect(() => {
+    contextualCreateDraftCache.set(contextKey, {
+      formState,
+      createFormExpanded,
+    });
+  }, [contextKey, createFormExpanded, formState]);
 
   const loadNotes = useCallback(async () => {
     if (!normalizedContextRef) {
@@ -181,15 +221,29 @@ export default function AdminContextNotesPanel({
       return;
     }
 
+    const nextContextKey = `${contextType}:${normalizedContextRef}`;
+    const previousContextKey = lastLoadedContextKeyRef.current;
+    const contextChanged = previousContextKey !== null && previousContextKey !== nextContextKey;
+    const preserveComposeDraft = createDraftPresentRef.current;
+
     setLoading(true);
     setError(null);
     setWarning(null);
-    setActionError(null);
-    setActionNotice(null);
-    setEditingId(null);
-    setEditState(null);
-    setPendingImageRecovery(null);
-    clearPendingImage();
+
+    if (contextChanged) {
+      setItems([]);
+      setCategoryOptions([]);
+      setEditingId(null);
+      setEditState(null);
+      setActionError(null);
+      setActionNotice(null);
+
+      if (!preserveComposeDraft) {
+        setFormState(INITIAL_FORM);
+        setPendingImageRecovery(null);
+        clearPendingImage();
+      }
+    }
 
     try {
       const query = new URLSearchParams({
@@ -230,7 +284,13 @@ export default function AdminContextNotesPanel({
       setItems(payload.items);
       setSchemaReady(payload.schemaReady !== false);
       setWarning(payload.warning ?? null);
-      setCreateFormExpanded(payload.items.length === 0);
+      const cachedDraft = contextualCreateDraftCache.get(nextContextKey);
+      if (previousContextKey === null) {
+        setCreateFormExpanded(cachedDraft?.createFormExpanded ?? payload.items.length === 0);
+      } else if (contextChanged) {
+        setCreateFormExpanded(preserveComposeDraft ? true : payload.items.length === 0);
+      }
+      lastLoadedContextKeyRef.current = nextContextKey;
 
       const categoriesResponse = await fetch("/api/admin/categories/notes", {
         method: "GET",
@@ -260,7 +320,6 @@ export default function AdminContextNotesPanel({
   }, [contextType, includeModuleContextForCourseLesson, normalizedContextRef]);
 
   useEffect(() => {
-    setAuthorized(null);
     void loadNotes();
   }, [loadNotes]);
 

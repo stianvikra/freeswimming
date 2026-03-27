@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { buildAdminNoteTestArtifactTitle } from "@/lib/admin/admin-note-test-artifacts";
+import { resolveCanonicalCourseLessonRuntimeId } from "@/lib/course/runtime-id-manifest";
 import { cleanupAdminNoteTestArtifacts } from "@/tests/e2e/admin-note-test-artifact-cleanup";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
@@ -57,10 +58,13 @@ async function loginAsAdminViaDevBypass(page: Page, nextPath: string) {
 async function toggleDoneAndWait(
   page: Page,
   panel: ReturnType<Page["getByTestId"]>,
-  item: ReturnType<Page["getByTestId"]>,
+  itemText: string,
   expectedNotice: string
 ) {
-  const doneCheckbox = item.getByRole("checkbox");
+  const item = () =>
+    panel.getByTestId("admin-context-note-item").filter({ hasText: itemText }).first();
+  const doneCheckbox = item().getByRole("checkbox");
+  await expect(item()).toBeVisible({ timeout: 10_000 });
   await expect(doneCheckbox).toBeEnabled({ timeout: 10_000 });
 
   let updateResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
@@ -96,10 +100,29 @@ async function toggleDoneAndWait(
     );
   }
 
-  await expect(doneCheckbox).toBeChecked({ timeout: 10_000 });
+  await expect(item().getByRole("checkbox")).toBeChecked({ timeout: 10_000 });
   await expect(panel.getByTestId("admin-context-note-action-notice")).toHaveText(expectedNotice, {
     timeout: 10_000,
   });
+}
+
+async function ensureContextCreateFormOpen(page: Page, panel: ReturnType<Page["getByTestId"]>) {
+  const createToggle = panel.getByTestId("admin-context-note-create-toggle");
+  let createForm = panel.getByTestId("admin-context-note-create-form");
+
+  for (let attempt = 0; attempt < 3 && (await createForm.count()) === 0; attempt += 1) {
+    if ((await createToggle.count()) === 0) {
+      break;
+    }
+    await createToggle.click();
+    await page.waitForTimeout(250);
+    createForm = panel.getByTestId("admin-context-note-create-form");
+  }
+  await expect(createForm).toBeVisible({ timeout: 15_000 });
+  await expect(createForm.getByLabel("Title")).toBeVisible({ timeout: 15_000 });
+  await expect(createForm.getByLabel("Category")).toBeVisible({ timeout: 15_000 });
+
+  return createForm;
 }
 
 test.describe("admin contextual notes", () => {
@@ -124,11 +147,18 @@ test.describe("admin contextual notes", () => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
 
-    await loginAsAdminViaDevBypass(page, "/course?lesson=mod3-l1");
+    const canonicalLessonContextRef = resolveCanonicalCourseLessonRuntimeId("mod3-l1") ?? "mod3-l1";
+    await loginAsAdminViaDevBypass(
+      page,
+      `/course?lesson=${encodeURIComponent(canonicalLessonContextRef)}`
+    );
     await expect(page.getByRole("heading", { name: "Free Course" })).toBeVisible();
+    await expect
+      .poll(() => page.url(), { timeout: 15_000 })
+      .toContain(`lesson=${encodeURIComponent(canonicalLessonContextRef)}`);
 
     const probe = await page.request.get(
-      "/api/admin/notes?contextType=course_lesson&contextRef=mod3-l1"
+      `/api/admin/notes?contextType=course_lesson&contextRef=${encodeURIComponent(canonicalLessonContextRef)}`
     );
     if (!probe.ok()) {
       test.skip(true, `Context notes API unavailable (${probe.status()}).`);
@@ -164,21 +194,18 @@ test.describe("admin contextual notes", () => {
     });
     const body = "Context note body from Playwright.";
 
-    const createForm = panel.getByTestId("admin-context-note-create-form");
-    const existingCreateToggle = panel.getByTestId("admin-context-note-create-toggle");
-    if ((await createForm.count()) === 0 && (await existingCreateToggle.count()) > 0) {
-      await existingCreateToggle.click();
-    }
     try {
-      await expect(createForm).toBeVisible({ timeout: 15_000 });
-      await expect(createForm.getByLabel("Title")).toBeVisible({ timeout: 15_000 });
+      await ensureContextCreateFormOpen(page, panel);
     } catch {
       test.skip(true, "Context notes mutation form did not become available in this environment.");
     }
-    await createForm.getByLabel("Title").pressSequentially(title);
+    let createForm = await ensureContextCreateFormOpen(page, panel);
+    await createForm.getByLabel("Title").fill(title);
+    createForm = await ensureContextCreateFormOpen(page, panel);
+    await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Category").fill("Operations");
     await createForm.getByLabel("Priority").selectOption("high");
-    await createForm.getByLabel("Text").pressSequentially(body);
+    await createForm.getByLabel("Text").fill(body);
     let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
     try {
       [createResponse] = await Promise.all([
@@ -245,7 +272,7 @@ test.describe("admin contextual notes", () => {
     await expect(updatedItem).toBeVisible({ timeout: 10_000 });
     await expect(updatedItem).toContainText("Urgent");
 
-    await toggleDoneAndWait(page, panel, updatedItem, "Note marked as done.");
+    await toggleDoneAndWait(page, panel, updatedTitle, "Note marked as done.");
     await expect(panel.getByTestId("admin-context-note-action-notice")).toHaveCount(0, {
       timeout: 7_000,
     });
@@ -352,7 +379,7 @@ test.describe("admin contextual notes", () => {
     await expect(createdItem).toBeVisible({ timeout: 15_000 });
     await expect(createdItem).toContainText("High");
 
-    await toggleDoneAndWait(page, panel, createdItem, "Note marked as done.");
+    await toggleDoneAndWait(page, panel, title, "Note marked as done.");
 
     page.once("dialog", (dialog) => dialog.accept());
     await createdItem.getByRole("button", { name: "Delete" }).click();
