@@ -137,7 +137,12 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "If you still need to scroll or collect a screenshot before saving, collapse `Quick note` and reopen the same draft from the docked edge handle on the right."
+        "If you still need to scroll, click, or collect a screenshot before saving, collapse `Quick note`; the page stays interactive underneath and you can reopen the same draft from the docked edge handle on the right."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "If you navigate to another supported admin/context surface before saving, the same draft can follow you, but it stays attached to the original locked context shown in the panel."
       )
     ).toBeVisible();
     await expect(

@@ -391,12 +391,12 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Quick note",
         meaning:
-          "Opens the lightweight quick-capture sheet so you can save a route-aware note, optionally paste one clipboard image or upload one image, and stay on the current admin surface. If you need to scroll the page before saving, collapse it and resume the same draft from the floating quick-note card.",
+          "Opens the lightweight quick-capture utility panel so you can save a route-aware note, optionally paste one clipboard image or upload one image, and keep the page underneath interactive while you work.",
       },
       {
         label: "Collapse / Resume quick note",
         meaning:
-          "Temporarily tucks the quick-capture draft to the page edge without discarding text or the staged image, so you can keep reviewing the current surface before reopening the same note.",
+          "Temporarily slides the quick-note draft out to the right edge without discarding text or the staged image. Reopen it from the slim edge handle when you are ready to continue.",
       },
       {
         label: "Use P0 template / Use P1 template / Use P2 template",
@@ -567,7 +567,8 @@ const DAILY_PLAYBOOKS: Playbook[] = [
     steps: [
       "Open the exact page/content row you are reviewing.",
       "Use `Quick note` when you want to capture the issue fast from the current surface without losing context.",
-      "If you still need to scroll or collect a screenshot before saving, collapse `Quick note` and reopen the same draft from the docked edge handle on the right.",
+      "If you still need to scroll, click, or collect a screenshot before saving, collapse `Quick note`; the page stays interactive underneath and you can reopen the same draft from the docked edge handle on the right.",
+      "If you navigate to another supported admin/context surface before saving, the same draft can follow you, but it stays attached to the original locked context shown in the panel.",
       "Use the top `Add note` section when you want full fields in place; if notes already exist it stays collapsed until you expand it again.",
       "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
       "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload image` if you already have the file.",

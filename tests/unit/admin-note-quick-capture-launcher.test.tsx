@@ -2,12 +2,15 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
+import { clearQuickCaptureDraftStore } from "@/lib/admin/admin-note-quick-capture-draft";
 
 describe("AdminNoteQuickCaptureLauncher", () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    clearQuickCaptureDraftStore();
+    window.sessionStorage.clear();
     delete window.__FS_ADMIN_SCREENSHOT_CAPTURE_OVERRIDE__;
   });
 
@@ -53,6 +56,33 @@ describe("AdminNoteQuickCaptureLauncher", () => {
 
     expect(titleInput).toHaveValue("Typing should stay active");
     expect(titleInput).toHaveFocus();
+  });
+
+  it("opens as a non-modal utility panel instead of a blocking dialog", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        items: [{ id: "category-1", title: "Operations", is_active: true }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminNoteQuickCaptureLauncher
+        adminRole="editor"
+        contextType="page"
+        contextRef="/plans"
+        contextLabel="Plans page"
+      />
+    );
+
+    await user.click(screen.getByTestId("admin-note-quick-capture-trigger"));
+    await screen.findByTestId("admin-note-quick-capture-dialog");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Collapse quick note" })).toBeInTheDocument();
   });
 
   it("saves a quick note with canonical context and exposes the notes link", async () => {
@@ -350,7 +380,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
       target: { value: "Keep this draft while reviewing the page." },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Collapse" }));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse quick note" }));
 
     await waitFor(() => {
       expect(screen.queryByTestId("admin-note-quick-capture-dialog")).not.toBeInTheDocument();
@@ -369,6 +399,67 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(screen.getByLabelText("Title")).toHaveValue("Collapsed quick note");
     expect(screen.getByLabelText("Text")).toHaveValue("Keep this draft while reviewing the page.");
     expect(screen.getByText("Image ready to attach")).toBeInTheDocument();
+  });
+
+  it("restores the same draft on another supported surface while keeping the original locked context", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        items: [{ id: "category-1", title: "Operations", is_active: true }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const firstRender = render(
+      <AdminNoteQuickCaptureLauncher
+        adminRole="editor"
+        contextType="page"
+        contextRef="/plans"
+        contextLabel="Plans page"
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
+    await screen.findByTestId("admin-note-quick-capture-dialog");
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Carry this draft across pages" },
+    });
+    fireEvent.change(screen.getByLabelText("Text"), {
+      target: { value: "Stay attached to the original page context." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Collapse quick note" }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("admin-note-quick-capture-dialog")).not.toBeInTheDocument();
+    });
+
+    firstRender.unmount();
+
+    render(
+      <AdminNoteQuickCaptureLauncher
+        adminRole="editor"
+        contextType="course_lesson"
+        contextRef="lesson-123"
+        contextLabel="Lesson: Floating on your back"
+      />
+    );
+
+    expect(screen.getByTestId("admin-note-quick-capture-minimized")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("admin-note-quick-capture-resume"));
+
+    await screen.findByTestId("admin-note-quick-capture-dialog");
+    expect(screen.getByLabelText("Title")).toHaveValue("Carry this draft across pages");
+    expect(screen.getByLabelText("Text")).toHaveValue(
+      "Stay attached to the original page context."
+    );
+    expect(screen.getAllByText("Plans page")).toHaveLength(2);
+    expect(
+      screen.getByText("You are viewing another page right now. This draft will still save to", {
+        exact: false,
+      })
+    ).toBeInTheDocument();
   });
 
   it("keeps image recovery visible when note save succeeds but attachment upload fails", async () => {

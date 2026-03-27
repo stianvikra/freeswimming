@@ -728,7 +728,7 @@ test.describe("admin notes workflow", () => {
     await expect(textInput).toHaveValue(detailCopy);
     await expect(textInput).toBeFocused();
 
-    await page.getByRole("button", { name: "Collapse" }).click();
+    await page.getByRole("button", { name: "Collapse quick note" }).click();
     await expect(quickCaptureDialog).toHaveCount(0);
     const minimizedQuickCapture = page.getByTestId("admin-note-quick-capture-minimized");
     await expect(minimizedQuickCapture).toBeVisible({ timeout: 10_000 });
