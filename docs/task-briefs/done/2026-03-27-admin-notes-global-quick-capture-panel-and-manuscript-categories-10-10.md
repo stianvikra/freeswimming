@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-27-admin-notes-global-quick-capture-panel-and-manuscript-categories-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
 - `updated`: `2026-03-27`
@@ -243,5 +243,6 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-27 | merged + closeout | PR #305 merged as \`db6b76e\`; quick note now ships as a non-modal docked utility panel with collapse/reopen, locked-context draft continuity across supported route navigation, updated Help/Guide + recovery docs, and manuscript/Swimshop categories live via migration plus production category insertion; local \`npm run verify:pre-merge\` passed before merge | next: none`
 - `2026-03-27 | verify:pre-pr green + prod categories inserted | replaced modal quick capture with a non-modal docked utility panel, preserved drafts across supported-route navigation with locked original context, updated Help/Guide + recovery docs, added Lesson Manuscript/Page Manuscript/Video Manuscript/Swimshop via migration, inserted the same four categories directly into the production admin_categories table, and passed targeted unit/e2e plus full \`npm run verify:pre-pr\` | next: review worktree, commit, push, open PR, and wait for CI before merge gate`
 - `2026-03-27 | planning | confirmed production note 881e222b-4c14-4a23-b677-60b0713e220f as the canonical quick-capture follow-up owner, and added owner-requested taxonomy scope for Video Manuscript, Lesson Manuscript, Page Manuscript, and Swimshop | next: implement non-modal docked panel, draft persistence, category migration, docs, and tests`
