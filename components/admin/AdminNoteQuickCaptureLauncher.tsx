@@ -1,10 +1,24 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
-import Modal from "@/components/Modal";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import type { AdminRole } from "@/lib/admin/access";
 import { hasRequiredAdminRole } from "@/lib/admin/access";
+import {
+  claimQuickCaptureDraftOwner,
+  clearQuickCaptureDraftStore,
+  createQuickCaptureInitialFormState,
+  getQuickCaptureDraftOwnerId,
+  isQuickCaptureDraftDirty,
+  readQuickCaptureDraftStore,
+  releaseQuickCaptureDraftOwner,
+  type QuickCaptureFormState,
+  type QuickCaptureLockedContext,
+  type QuickCapturePendingImage,
+  type QuickCaptureSavedNotice,
+  writeQuickCaptureDraftStore,
+} from "@/lib/admin/admin-note-quick-capture-draft";
 import { applyAdminTabToSearchParams } from "@/lib/admin/admin-workspace";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import {
@@ -55,51 +69,8 @@ type Props = {
   onSaved?: (item: AdminNoteItem) => void;
 };
 
-type FormState = {
-  title: string;
-  category: string;
-  noteDate: string;
-  priority: AdminNotePriority;
-  body: string;
-  isDone: boolean;
-};
-
-type SavedNotice = {
-  id: string;
-  title: string;
-};
-
-type PendingImage = {
-  file: File;
-  previewUrl: string;
-};
-
-const INITIAL_CATEGORY = "General";
-
 function todayDateInputValue(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function createInitialFormState(): FormState {
-  return {
-    title: "",
-    category: INITIAL_CATEGORY,
-    noteDate: todayDateInputValue(),
-    priority: "normal",
-    body: "",
-    isDone: false,
-  };
-}
-
-function isQuickCaptureDraftDirty(formState: FormState): boolean {
-  return (
-    formState.title.trim().length > 0 ||
-    formState.category.trim() !== INITIAL_CATEGORY ||
-    formState.noteDate !== todayDateInputValue() ||
-    formState.priority !== "normal" ||
-    formState.body.trim().length > 0 ||
-    formState.isDone
-  );
 }
 
 function formatPriorityLabel(priority: AdminNotePriority): string {
@@ -123,55 +94,151 @@ function buildAdminNotesHref(params: {
   return search ? `/admin?${search}` : "/admin";
 }
 
-export default function AdminNoteQuickCaptureLauncher({
-  adminRole,
-  contextType,
-  contextRef,
-  contextLabel,
+function buildCurrentContext(params: Props): QuickCaptureLockedContext {
+  return {
+    contextType: params.contextType,
+    contextRef: params.contextRef,
+    contextLabel: params.contextLabel,
+  };
+}
+
+function ChevronIcon({
+  direction,
   className = "",
-  triggerLabel = "Quick note",
-  triggerTestId = "admin-note-quick-capture-trigger",
-  description = "Capture a context-aware admin note without leaving this surface.",
-  onSaved,
-}: Props) {
+}: {
+  direction: "left" | "right";
+  className?: string;
+}) {
+  const path = direction === "left" ? "M11.5 5.5L7 10l4.5 4.5" : "M8.5 5.5L13 10l-4.5 4.5";
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className={className}>
+      <path
+        d={path}
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export default function AdminNoteQuickCaptureLauncher(props: Props) {
+  const {
+    adminRole,
+    contextType,
+    contextRef,
+    contextLabel,
+    className = "",
+    triggerLabel = "Quick note",
+    triggerTestId = "admin-note-quick-capture-trigger",
+    description = "Capture a context-aware admin note without leaving this surface.",
+    onSaved,
+  } = props;
+
   const canCreateNotes = Boolean(adminRole && hasRequiredAdminRole(adminRole, "editor"));
-  const [open, setOpen] = useState(false);
-  const [formState, setFormState] = useState<FormState>(() => createInitialFormState());
+  const instanceId = useId();
+  const datalistId = useId();
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const [panelState, setPanelState] = useState<"closed" | "open" | "collapsed">("closed");
+  const [draftContext, setDraftContext] = useState<QuickCaptureLockedContext>(() =>
+    buildCurrentContext(props)
+  );
+  const [formState, setFormState] = useState<QuickCaptureFormState>(() =>
+    createQuickCaptureInitialFormState(todayDateInputValue())
+  );
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedNotice, setSavedNotice] = useState<SavedNotice | null>(null);
-  const [createdCaptureRecovery, setCreatedCaptureRecovery] = useState<SavedNotice | null>(null);
-  const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
-  const [minimized, setMinimized] = useState(false);
-  const datalistId = useId();
+  const [savedNotice, setSavedNotice] = useState<QuickCaptureSavedNotice | null>(null);
+  const [createdCaptureRecovery, setCreatedCaptureRecovery] =
+    useState<QuickCaptureSavedNotice | null>(null);
+  const [pendingImage, setPendingImage] = useState<QuickCapturePendingImage | null>(null);
+  const [focusTitleOnOpen, setFocusTitleOnOpen] = useState(false);
+
+  const open = panelState === "open";
+  const minimized = panelState === "collapsed";
+  const todayValue = todayDateInputValue();
+  const hasDraftState = useMemo(
+    () =>
+      isQuickCaptureDraftDirty(formState, todayValue) ||
+      Boolean(pendingImage) ||
+      Boolean(createdCaptureRecovery),
+    [createdCaptureRecovery, formState, pendingImage, todayValue]
+  );
+  const currentSurfaceMatchesDraftContext =
+    draftContext.contextType === contextType && draftContext.contextRef === contextRef;
 
   const notesHref = useMemo(() => {
     const notice = savedNotice ?? createdCaptureRecovery;
     if (!notice) return null;
     return buildAdminNotesHref({
       noteId: notice.id,
-      contextType,
-      contextRef,
+      contextType: draftContext.contextType,
+      contextRef: draftContext.contextRef,
     });
-  }, [contextRef, contextType, createdCaptureRecovery, savedNotice]);
+  }, [createdCaptureRecovery, draftContext.contextRef, draftContext.contextType, savedNotice]);
 
-  const hasDraftState = useMemo(
-    () =>
-      isQuickCaptureDraftDirty(formState) ||
-      Boolean(pendingImage) ||
-      Boolean(createdCaptureRecovery),
-    [createdCaptureRecovery, formState, pendingImage]
-  );
+  const headerCloseActionLabel = createdCaptureRecovery
+    ? "Close panel"
+    : hasDraftState
+      ? "Discard"
+      : "Close panel";
+  const closeActionLabel = createdCaptureRecovery
+    ? "Close panel"
+    : hasDraftState
+      ? "Discard draft"
+      : "Close panel";
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      setPortalRoot(document.body);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!canCreateNotes) return;
+
+    const currentOwnerId = getQuickCaptureDraftOwnerId();
+    if (currentOwnerId && currentOwnerId !== instanceId) {
+      return;
+    }
+
+    const storedDraft = readQuickCaptureDraftStore();
+    if (!storedDraft) {
+      return;
+    }
+
+    claimQuickCaptureDraftOwner(instanceId);
+    setDraftContext(storedDraft.snapshot.context);
+    setFormState(storedDraft.snapshot.formState);
+    setCreatedCaptureRecovery(storedDraft.snapshot.createdCaptureRecovery);
+    setPendingImage(storedDraft.pendingImage);
+    setPanelState(storedDraft.snapshot.panelState);
+  }, [canCreateNotes, instanceId]);
 
   useEffect(() => {
     return () => {
-      if (pendingImage?.previewUrl) {
-        URL.revokeObjectURL(pendingImage.previewUrl);
-      }
+      releaseQuickCaptureDraftOwner(instanceId);
     };
-  }, [pendingImage]);
+  }, [instanceId]);
+
+  useEffect(() => {
+    if (readQuickCaptureDraftStore()) {
+      return;
+    }
+
+    if (panelState === "closed" && !hasDraftState) {
+      setDraftContext({
+        contextType,
+        contextRef,
+        contextLabel,
+      });
+    }
+  }, [contextLabel, contextRef, contextType, hasDraftState, panelState]);
 
   useEffect(() => {
     if (!savedNotice) return;
@@ -225,8 +292,62 @@ export default function AdminNoteQuickCaptureLauncher({
     };
   }, [categoryOptions.length, loadingCategories, open]);
 
+  useEffect(() => {
+    const currentOwnerId = getQuickCaptureDraftOwnerId();
+    if (currentOwnerId && currentOwnerId !== instanceId) {
+      return;
+    }
+
+    const shouldPersist = panelState !== "closed" || hasDraftState;
+    if (!shouldPersist) {
+      if (currentOwnerId === instanceId) {
+        clearQuickCaptureDraftStore();
+        releaseQuickCaptureDraftOwner(instanceId);
+      }
+      return;
+    }
+
+    claimQuickCaptureDraftOwner(instanceId);
+    writeQuickCaptureDraftStore({
+      snapshot: {
+        version: 1,
+        panelState: minimized ? "collapsed" : "open",
+        context: draftContext,
+        formState,
+        createdCaptureRecovery,
+        updatedAt: Date.now(),
+      },
+      pendingImage,
+    });
+  }, [
+    createdCaptureRecovery,
+    draftContext,
+    formState,
+    hasDraftState,
+    instanceId,
+    minimized,
+    panelState,
+    pendingImage,
+  ]);
+
+  useEffect(() => {
+    if (!open || !focusTitleOnOpen) return;
+    titleInputRef.current?.focus();
+    setFocusTitleOnOpen(false);
+  }, [focusTitleOnOpen, open]);
+
   if (!canCreateNotes) {
     return null;
+  }
+
+  function resetDraftState() {
+    setPanelState("closed");
+    setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
+    setCreatedCaptureRecovery(null);
+    setError(null);
+    setFocusTitleOnOpen(false);
+    setDraftContext(buildCurrentContext(props));
+    clearPendingImage();
   }
 
   function setPendingImageFromFile(file: File) {
@@ -250,22 +371,45 @@ export default function AdminNoteQuickCaptureLauncher({
     });
   }
 
+  function notifySaved(item: AdminNoteItem) {
+    if (currentSurfaceMatchesDraftContext) {
+      onSaved?.(item);
+    }
+  }
+
   function openLauncher() {
     setSavedNotice(null);
-    if (minimized) {
-      setOpen(true);
-      setMinimized(false);
+    setError(null);
+    setFocusTitleOnOpen(true);
+
+    if (panelState === "collapsed") {
+      setPanelState("open");
       return;
     }
-    setError(null);
-    setCreatedCaptureRecovery(null);
-    setOpen(true);
+
+    const currentOwnerId = getQuickCaptureDraftOwnerId();
+    const storedDraft = readQuickCaptureDraftStore();
+    if (storedDraft && (!currentOwnerId || currentOwnerId === instanceId)) {
+      claimQuickCaptureDraftOwner(instanceId);
+      setDraftContext(storedDraft.snapshot.context);
+      setFormState(storedDraft.snapshot.formState);
+      setCreatedCaptureRecovery(storedDraft.snapshot.createdCaptureRecovery);
+      setPendingImage(storedDraft.pendingImage);
+      setPanelState("open");
+      return;
+    }
+
+    if (panelState === "closed" && !hasDraftState) {
+      setDraftContext(buildCurrentContext(props));
+    }
+
+    setPanelState("open");
   }
 
   function minimizeLauncher() {
     if (submitting) return;
-    setOpen(false);
-    setMinimized(true);
+    setError(null);
+    setPanelState("collapsed");
   }
 
   function closeLauncher() {
@@ -273,12 +417,7 @@ export default function AdminNoteQuickCaptureLauncher({
     if (createdCaptureRecovery) {
       setSavedNotice(createdCaptureRecovery);
     }
-    setOpen(false);
-    setMinimized(false);
-    setError(null);
-    setFormState(createInitialFormState());
-    setCreatedCaptureRecovery(null);
-    clearPendingImage();
+    resetDraftState();
   }
 
   function handleFormPaste(event: React.ClipboardEvent<HTMLFormElement>) {
@@ -342,9 +481,10 @@ export default function AdminNoteQuickCaptureLauncher({
       });
       setCreatedCaptureRecovery(null);
       clearPendingImage();
-      onSaved?.(updatedItem);
-      setOpen(false);
-      setMinimized(false);
+      notifySaved(updatedItem);
+      setPanelState("closed");
+      setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
+      setDraftContext(buildCurrentContext(props));
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Could not upload image.");
     } finally {
@@ -368,8 +508,8 @@ export default function AdminNoteQuickCaptureLauncher({
         credentials: "same-origin",
         body: JSON.stringify({
           ...formState,
-          contextType,
-          contextRef,
+          contextType: draftContext.contextType,
+          contextRef: draftContext.contextRef,
         }),
       });
 
@@ -388,18 +528,18 @@ export default function AdminNoteQuickCaptureLauncher({
           });
           clearPendingImage();
           setCreatedCaptureRecovery(null);
-          onSaved?.(updatedItem);
-          setOpen(false);
-          setMinimized(false);
-          setFormState(createInitialFormState());
+          notifySaved(updatedItem);
+          setPanelState("closed");
+          setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
+          setDraftContext(buildCurrentContext(props));
           return;
         } catch (uploadError) {
           setCreatedCaptureRecovery({
             id: payload.item.id,
             title: payload.item.title,
           });
-          setFormState(createInitialFormState());
-          onSaved?.(payload.item);
+          setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
+          notifySaved(payload.item);
           setError(
             uploadError instanceof Error
               ? `Note saved, but ${uploadError.message.toLowerCase()} Retry image upload or open the note in Notes.`
@@ -414,16 +554,362 @@ export default function AdminNoteQuickCaptureLauncher({
         title: payload.item.title,
       });
       setCreatedCaptureRecovery(null);
-      onSaved?.(payload.item);
-      setOpen(false);
-      setMinimized(false);
-      setFormState(createInitialFormState());
+      notifySaved(payload.item);
+      setPanelState("closed");
+      setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
+      setDraftContext(buildCurrentContext(props));
     } catch {
       setError("Could not save note.");
     } finally {
       setSubmitting(false);
     }
   }
+
+  const quickCaptureSurface =
+    portalRoot && (open || minimized)
+      ? createPortal(
+          <div className="pointer-events-none fixed inset-y-0 right-0 z-[70] flex items-start justify-end">
+            {minimized ? (
+              <div
+                className="pointer-events-auto mr-0 mt-24"
+                data-testid="admin-note-quick-capture-minimized"
+              >
+                <button
+                  type="button"
+                  onClick={openLauncher}
+                  data-testid="admin-note-quick-capture-resume"
+                  aria-label="Resume quick note"
+                  className="bg-white/96 flex h-36 w-14 translate-x-[calc(100%-1.75rem)] flex-col items-center justify-start rounded-l-[22px] border border-r-0 border-blue-200 px-2 py-3 text-blue-800 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur transition-transform duration-200 ease-out hover:translate-x-[calc(100%-2.1rem)] hover:bg-blue-50"
+                >
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-700">
+                    <ChevronIcon direction="left" className="h-4 w-4" />
+                  </span>
+                  <span className="mt-3 text-center text-[11px] font-semibold leading-tight">
+                    Quick
+                    <br />
+                    note
+                  </span>
+                </button>
+              </div>
+            ) : null}
+
+            {open ? (
+              <aside
+                aria-label="Quick note capture panel"
+                data-testid="admin-note-quick-capture-dialog"
+                className="pointer-events-auto mb-3 mr-3 mt-16 flex h-[calc(100vh-5rem)] w-[min(28rem,calc(100vw-1rem))] min-w-0 flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.18)]"
+              >
+                <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      Quick capture
+                    </p>
+                    <h2 className="mt-1 text-lg font-semibold text-slate-900">Create note fast</h2>
+                    <p className="mt-1 text-sm text-slate-600">{description}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={minimizeLauncher}
+                      aria-label="Collapse quick note"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <ChevronIcon direction="right" className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeLauncher}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      {headerCloseActionLabel}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      Locked context
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-900">
+                      {draftContext.contextLabel}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      This note stays attached to the page/item where you started it, even if you
+                      browse somewhere else before saving.
+                    </p>
+                  </div>
+
+                  {!currentSurfaceMatchesDraftContext ? (
+                    <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                      You are viewing another page right now. This draft will still save to{" "}
+                      <span className="font-semibold">{draftContext.contextLabel}</span>.
+                    </p>
+                  ) : null}
+
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                          Image evidence
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-slate-900">
+                          Add one image if it helps explain the issue
+                        </p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          Copy a screenshot or image to clipboard, then paste it here, or upload a
+                          file.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <AdminNoteClipboardPasteButton
+                          onPasteReady={async (file) => {
+                            setError(null);
+                            setCreatedCaptureRecovery(null);
+                            setPendingImageFromFile(file);
+                          }}
+                          onError={(message) => {
+                            setError(message);
+                          }}
+                        />
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                          <span>Upload image</span>
+                          <input
+                            aria-label="Upload image"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/gif"
+                            className="sr-only"
+                            onChange={(event) => {
+                              handlePendingImageSelection(event.target.files);
+                              event.currentTarget.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {!pendingImage ? (
+                      <p className="mt-3 text-xs text-slate-600">
+                        No image attached yet. Use the clipboard button after copying a screenshot,
+                        or upload an image file before save.
+                      </p>
+                    ) : null}
+
+                    {pendingImage ? (
+                      <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={pendingImage.previewUrl}
+                              alt="Pending image preview"
+                              className="h-14 w-14 rounded-lg object-cover"
+                            />
+                            <div>
+                              <p className="text-xs font-semibold text-slate-900">
+                                Image ready to attach
+                              </p>
+                              <p className="mt-1 text-[11px] text-slate-600">
+                                {createdCaptureRecovery
+                                  ? "The note is already saved. Retry the image upload or finish without it."
+                                  : "The next note save will upload this image as an admin-only attachment."}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {createdCaptureRecovery ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void retryPendingImageUpload();
+                                }}
+                                disabled={submitting}
+                                className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                              >
+                                {submitting ? "Retrying…" : "Retry upload"}
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (createdCaptureRecovery) {
+                                  setSavedNotice(createdCaptureRecovery);
+                                  setCreatedCaptureRecovery(null);
+                                  setPanelState("closed");
+                                  setFormState(
+                                    createQuickCaptureInitialFormState(todayDateInputValue())
+                                  );
+                                  setDraftContext(buildCurrentContext(props));
+                                }
+                                clearPendingImage();
+                              }}
+                              disabled={submitting}
+                              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Remove image
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {createdCaptureRecovery && notesHref ? (
+                      <p className="mt-3 text-xs text-slate-600">
+                        Note saved already.{" "}
+                        <a
+                          href={notesHref}
+                          className="font-semibold text-blue-700 underline underline-offset-2"
+                        >
+                          Open in Notes
+                        </a>{" "}
+                        if you want to finish without retrying the image upload.
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {error ? (
+                    <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                      {error}
+                    </p>
+                  ) : null}
+
+                  <form
+                    className="mt-4 grid gap-3"
+                    onSubmit={handleSubmit}
+                    onPasteCapture={handleFormPaste}
+                    data-testid="admin-note-quick-capture-form"
+                  >
+                    <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <span>Title</span>
+                      <input
+                        ref={titleInputRef}
+                        type="text"
+                        required
+                        value={formState.title}
+                        onChange={(event) =>
+                          setFormState((prev) => ({ ...prev, title: event.target.value }))
+                        }
+                        placeholder="What should be changed?"
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      />
+                    </label>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <span>Category</span>
+                        <input
+                          type="text"
+                          list={datalistId}
+                          value={formState.category}
+                          onChange={(event) =>
+                            setFormState((prev) => ({ ...prev, category: event.target.value }))
+                          }
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        />
+                      </label>
+
+                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <span>Date</span>
+                        <input
+                          type="date"
+                          value={formState.noteDate}
+                          onChange={(event) =>
+                            setFormState((prev) => ({ ...prev, noteDate: event.target.value }))
+                          }
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <span>Priority</span>
+                        <select
+                          value={formState.priority}
+                          onChange={(event) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              priority: event.target.value as AdminNotePriority,
+                            }))
+                          }
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        >
+                          {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
+                            <option key={priority} value={priority}>
+                              {formatPriorityLabel(priority)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="inline-flex items-center gap-2 self-end rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-medium text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={formState.isDone}
+                          onChange={(event) =>
+                            setFormState((prev) => ({ ...prev, isDone: event.target.checked }))
+                          }
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                        />
+                        Mark as done
+                      </label>
+                    </div>
+
+                    <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <span>Text</span>
+                      <textarea
+                        rows={5}
+                        value={formState.body}
+                        onChange={(event) =>
+                          setFormState((prev) => ({ ...prev, body: event.target.value }))
+                        }
+                        placeholder="Write the details you need to remember."
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      />
+                    </label>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                      <p className="text-xs text-slate-500">
+                        {createdCaptureRecovery
+                          ? "The note is already saved. Retry the image upload or close and reopen it from Notes."
+                          : loadingCategories
+                            ? "Loading category suggestions…"
+                            : "The draft stays local until you click Save note. Collapse hides the panel without discarding it."}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={closeLauncher}
+                          disabled={submitting}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {closeActionLabel}
+                        </button>
+                        {!createdCaptureRecovery ? (
+                          <button
+                            type="submit"
+                            disabled={submitting}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                          >
+                            {submitting ? "Saving…" : "Save note"}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </form>
+
+                  <datalist id={datalistId}>
+                    {categoryOptions.map((option) => (
+                      <option key={option} value={option} />
+                    ))}
+                  </datalist>
+                </div>
+              </aside>
+            ) : null}
+          </div>,
+          portalRoot
+        )
+      : null;
 
   return (
     <div className={className}>
@@ -453,328 +939,7 @@ export default function AdminNoteQuickCaptureLauncher({
         </div>
       ) : null}
 
-      {minimized ? (
-        <div
-          className="fixed right-0 top-24 z-[70]"
-          data-testid="admin-note-quick-capture-minimized"
-        >
-          <div className="bg-white/96 translate-x-[calc(100%-3.75rem)] rounded-l-[22px] border border-r-0 border-blue-200 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur transition-transform duration-200 ease-out">
-            <button
-              type="button"
-              onClick={openLauncher}
-              data-testid="admin-note-quick-capture-resume"
-              aria-label="Resume quick note"
-              className="flex h-36 w-16 flex-col items-center justify-start gap-3 rounded-l-[22px] px-2 py-3 text-blue-800 transition hover:bg-blue-50"
-            >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-700">
-                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
-                  <path
-                    d="M11.5 5.5L7 10l4.5 4.5"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              <span className="text-center text-[11px] font-semibold leading-tight">
-                Quick
-                <br />
-                note
-              </span>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-                {createdCaptureRecovery ? "Saved" : pendingImage ? "Image" : "Draft"}
-              </span>
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <Modal
-        open={open}
-        onClose={hasDraftState ? minimizeLauncher : closeLauncher}
-        ariaLabel="Quick note capture"
-      >
-        <div className="flex h-full min-h-0 flex-col" data-testid="admin-note-quick-capture-dialog">
-          <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                Quick capture
-              </p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-900">Create note fast</h2>
-              <p className="mt-1 text-sm text-slate-600">{description}</p>
-            </div>
-            <button
-              type="button"
-              onClick={hasDraftState ? minimizeLauncher : closeLauncher}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              {hasDraftState ? "Collapse" : "Close"}
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-            <div className="rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Context</p>
-              <p className="mt-1 text-sm font-medium text-slate-900">{contextLabel}</p>
-              <p className="mt-1 text-xs text-slate-600">
-                This note will be attached to the canonical route/content context for this surface.
-              </p>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Image evidence
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-slate-900">
-                    Add one image if it helps explain the issue
-                  </p>
-                  <p className="mt-1 text-xs text-slate-600">
-                    Copy a screenshot or image to clipboard, then paste it here, or upload a file.
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <AdminNoteClipboardPasteButton
-                    onPasteReady={async (file) => {
-                      setError(null);
-                      setCreatedCaptureRecovery(null);
-                      setPendingImageFromFile(file);
-                    }}
-                    onError={(message) => {
-                      setError(message);
-                    }}
-                  />
-                  <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
-                    <span>Upload image</span>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif"
-                      className="sr-only"
-                      onChange={(event) => {
-                        handlePendingImageSelection(event.target.files);
-                        event.currentTarget.value = "";
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {!pendingImage ? (
-                <p className="mt-3 text-xs text-slate-600">
-                  No image attached yet. Use the clipboard button after copying a screenshot, or
-                  upload an image file before save.
-                </p>
-              ) : null}
-
-              {pendingImage ? (
-                <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={pendingImage.previewUrl}
-                        alt="Pending image preview"
-                        className="h-14 w-14 rounded-lg object-cover"
-                      />
-                      <div>
-                        <p className="text-xs font-semibold text-slate-900">
-                          Image ready to attach
-                        </p>
-                        <p className="mt-1 text-[11px] text-slate-600">
-                          {createdCaptureRecovery
-                            ? "The note is already saved. Retry the image upload or finish without it."
-                            : "The next note save will upload this image as an admin-only attachment."}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {createdCaptureRecovery ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void retryPendingImageUpload();
-                          }}
-                          disabled={submitting}
-                          className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-                        >
-                          {submitting ? "Retrying…" : "Retry upload"}
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (createdCaptureRecovery) {
-                            setSavedNotice(createdCaptureRecovery);
-                            setCreatedCaptureRecovery(null);
-                            setOpen(false);
-                            setFormState(createInitialFormState());
-                          }
-                          clearPendingImage();
-                        }}
-                        disabled={submitting}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Remove image
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {createdCaptureRecovery && notesHref ? (
-                <p className="mt-3 text-xs text-slate-600">
-                  Note saved already.{" "}
-                  <a
-                    href={notesHref}
-                    className="font-semibold text-blue-700 underline underline-offset-2"
-                  >
-                    Open in Notes
-                  </a>{" "}
-                  if you want to finish without retrying the image upload.
-                </p>
-              ) : null}
-            </div>
-
-            {error ? (
-              <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {error}
-              </p>
-            ) : null}
-
-            <form
-              className="mt-4 grid gap-3"
-              onSubmit={handleSubmit}
-              onPasteCapture={handleFormPaste}
-              data-testid="admin-note-quick-capture-form"
-            >
-              <label className="space-y-1 text-xs font-medium text-slate-700">
-                <span>Title</span>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  value={formState.title}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, title: event.target.value }))
-                  }
-                  placeholder="What should be changed?"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                />
-              </label>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-1 text-xs font-medium text-slate-700">
-                  <span>Category</span>
-                  <input
-                    type="text"
-                    list={datalistId}
-                    value={formState.category}
-                    onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, category: event.target.value }))
-                    }
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  />
-                </label>
-
-                <label className="space-y-1 text-xs font-medium text-slate-700">
-                  <span>Date</span>
-                  <input
-                    type="date"
-                    value={formState.noteDate}
-                    onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, noteDate: event.target.value }))
-                    }
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  />
-                </label>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-1 text-xs font-medium text-slate-700">
-                  <span>Priority</span>
-                  <select
-                    value={formState.priority}
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        priority: event.target.value as AdminNotePriority,
-                      }))
-                    }
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  >
-                    {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
-                      <option key={priority} value={priority}>
-                        {formatPriorityLabel(priority)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="inline-flex items-center gap-2 self-end rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-medium text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={formState.isDone}
-                    onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, isDone: event.target.checked }))
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                  />
-                  Mark as done
-                </label>
-              </div>
-
-              <label className="space-y-1 text-xs font-medium text-slate-700">
-                <span>Text</span>
-                <textarea
-                  rows={5}
-                  value={formState.body}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, body: event.target.value }))
-                  }
-                  placeholder="Write the details you need to remember."
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-                />
-              </label>
-
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-                <p className="text-xs text-slate-500">
-                  {createdCaptureRecovery
-                    ? "The note is already saved. Retry the image upload or close and reopen it from Notes."
-                    : loadingCategories
-                      ? "Loading category suggestions…"
-                      : "The note stays local until you click Save note. Clipboard images stay local until the save/upload path succeeds."}
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={closeLauncher}
-                    disabled={submitting}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {createdCaptureRecovery ? "Done" : hasDraftState ? "Discard draft" : "Cancel"}
-                  </button>
-                  {!createdCaptureRecovery ? (
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-                    >
-                      {submitting ? "Saving…" : "Save note"}
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </form>
-
-            <datalist id={datalistId}>
-              {categoryOptions.map((option) => (
-                <option key={option} value={option} />
-              ))}
-            </datalist>
-          </div>
-        </div>
-      </Modal>
+      {quickCaptureSurface}
     </div>
   );
 }
