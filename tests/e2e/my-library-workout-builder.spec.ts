@@ -80,6 +80,8 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
       "Ready for the planned Garmin/export handoff."
     );
+    await page.getByTestId("workout-editor-garmin-export-toggle").click();
+    await page.getByTestId("workout-editor-handoff-toggle").click();
     await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
       "data-handoff-state",
       "canonical"
@@ -168,6 +170,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
       "Review 5 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
+    await page.getByTestId("workout-editor-garmin-readiness-toggle").click();
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText("Pull");
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-1")).toContainText("Fins");
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-4")).toContainText(
@@ -302,5 +305,32 @@ test.describe("my library workout builder", () => {
         name: "Fins",
       })
     ).toBeChecked();
+
+    const workoutMatch = page.url().match(/\/my-library\/workouts\/([0-9a-f-]+)$/);
+    expect(workoutMatch?.[1]).toBeTruthy();
+    const workoutId = workoutMatch![1];
+
+    const deleteResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/my-library/workouts/${workoutId}`) &&
+        response.request().method() === "DELETE"
+    );
+
+    await page.getByTestId("session-generator-recent-workouts-toggle").click();
+    await page.getByTestId(`workout-builder-delete-workout-${workoutId}`).click();
+    await page.getByTestId(`workout-builder-confirm-delete-workout-${workoutId}`).click();
+
+    const deleteResponse = await deleteResponsePromise;
+    const deletePayload = (await deleteResponse.json().catch(() => null)) as {
+      ok?: boolean;
+    } | null;
+
+    expect(deleteResponse.status()).toBe(200);
+    expect(deletePayload?.ok).toBe(true);
+    await page.waitForURL(/\/my-library$/, {
+      timeout: 10_000,
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
   });
 });

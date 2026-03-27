@@ -25,7 +25,7 @@ export default function LibrarySectionTabs({ showExploreTab }: Props) {
         className={TAB_CLASS}
         aria-label="Jump to owned items"
       >
-        My Library
+        Owned
       </a>
       {showExploreTab ? (
         <a
@@ -34,7 +34,7 @@ export default function LibrarySectionTabs({ showExploreTab }: Props) {
           className={TAB_CLASS}
           aria-label="Jump to explore section"
         >
-          Explore More
+          Explore
         </a>
       ) : null}
     </div>

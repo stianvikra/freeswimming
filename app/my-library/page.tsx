@@ -190,7 +190,7 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Program shell</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">Program planning (early)</h2>
                   <p className="mt-2 text-sm text-slate-600">
                     {!programLibrarySnapshot.schemaReady
                       ? "This canonical program layer is still syncing in this environment."
@@ -202,7 +202,7 @@ export default async function MyLibraryPage() {
                           ]
                             .filter(Boolean)
                             .join(" · ")
-                        : "Create your first saved program shell, place accepted workouts into week/day slots, and export the saved schedule once it is ready."}
+                        : "Create your first saved plan, place accepted workouts into week/day slots, and keep one early program surface ready for later planner work."}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -211,7 +211,7 @@ export default async function MyLibraryPage() {
                       href={`/my-library/programs/${programLibrarySnapshot.recentPrograms[0].id}`}
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                     >
-                      Open program shell
+                      Open saved plan
                     </Link>
                   ) : null}
                   {programLibrarySnapshot.schemaReady ? (

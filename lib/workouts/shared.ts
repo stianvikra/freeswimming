@@ -82,6 +82,18 @@ export type WorkoutSaveApiError = {
 
 export type WorkoutSaveApiResponse = WorkoutSaveApiSuccess | WorkoutSaveApiError;
 
+export type WorkoutDeleteApiSuccess = {
+  ok: true;
+  deletedWorkoutId: string;
+};
+
+export type WorkoutDeleteApiError = {
+  ok: false;
+  error: string;
+};
+
+export type WorkoutDeleteApiResponse = WorkoutDeleteApiSuccess | WorkoutDeleteApiError;
+
 export type WorkoutLibrarySnapshot = {
   schemaReady: boolean;
   loadError: string | null;

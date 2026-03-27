@@ -119,6 +119,8 @@ type LastRemovedBlock = {
   restoreOpenStepId: string | null;
 };
 
+type SupportSectionKey = "readiness" | "garminExport" | "handoff";
+
 const CUSTOM_DISTANCE_VALUE = "custom";
 
 function buildStepId(index: number) {
@@ -463,6 +465,11 @@ export default function WorkoutEditor({
   const [garminExportError, setGarminExportError] = useState("");
   const [handoffNotice, setHandoffNotice] = useState("");
   const [handoffError, setHandoffError] = useState("");
+  const [supportSectionOpen, setSupportSectionOpen] = useState<Record<SupportSectionKey, boolean>>({
+    readiness: false,
+    garminExport: false,
+    handoff: false,
+  });
   const poolLengthUsesPreset =
     typeof draft.poolLengthM === "number" && isSessionDraftPoolLengthPreset(draft.poolLengthM);
   const handoffDraftState: WorkoutHandoffDraftState =
@@ -559,6 +566,14 @@ export default function WorkoutEditor({
     setHandoffNotice("");
     setHandoffError("");
   }, [handoffText, handoffDraftState, savedWorkout?.id, savedWorkout?.updatedAt]);
+
+  useEffect(() => {
+    setSupportSectionOpen({
+      readiness: false,
+      garminExport: false,
+      handoff: false,
+    });
+  }, [savedWorkout?.id]);
 
   function syncDraftSelections(nextDraft: SessionDraft) {
     const requiredStrokes = Array.from(
@@ -1766,22 +1781,38 @@ export default function WorkoutEditor({
                 : "Builder save still works, but these are handoff warnings that should be reviewed before export or later Garmin delivery."}
             </p>
           </div>
-          <p
-            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-              garminReadiness.status === "ready"
-                ? "bg-white text-emerald-700"
-                : "bg-white text-amber-700"
-            }`}
-          >
-            {garminReadiness.status === "ready"
-              ? "Ready"
-              : `${garminReadiness.issues.length} review ${
-                  garminReadiness.issues.length === 1 ? "item" : "items"
-                }`}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p
+              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                garminReadiness.status === "ready"
+                  ? "bg-white text-emerald-700"
+                  : "bg-white text-amber-700"
+              }`}
+            >
+              {garminReadiness.status === "ready"
+                ? "Ready"
+                : `${garminReadiness.issues.length} review ${
+                    garminReadiness.issues.length === 1 ? "item" : "items"
+                  }`}
+            </p>
+            <button
+              type="button"
+              aria-expanded={supportSectionOpen.readiness}
+              data-testid="workout-editor-garmin-readiness-toggle"
+              onClick={() =>
+                setSupportSectionOpen((current) => ({
+                  ...current,
+                  readiness: !current.readiness,
+                }))
+              }
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-white bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-white/80 active:bg-white/70"
+            >
+              {supportSectionOpen.readiness ? "Hide details" : "Show details"}
+            </button>
+          </div>
         </div>
 
-        {garminReadiness.issues.length > 0 ? (
+        {supportSectionOpen.readiness && garminReadiness.issues.length > 0 ? (
           <ul className="mt-3 space-y-2 text-sm text-amber-900">
             {garminReadiness.issues.map((issue, index) => (
               <li key={issue.id} data-testid={`workout-editor-garmin-readiness-issue-${index}`}>
@@ -1796,11 +1827,12 @@ export default function WorkoutEditor({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-              Workout PDF
+              Poolside PDF
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
               Open a print-ready workout sheet in a dedicated tab, then use your browser&apos;s
-              Print / Save PDF flow for a poolside copy.
+              Print / Save PDF flow for a poolside copy that matches the current supported workout
+              contract.
             </p>
             <p
               data-testid="workout-editor-pdf-source"
@@ -1818,7 +1850,7 @@ export default function WorkoutEditor({
               data-testid="workout-editor-pdf-open"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              Open print view
+              Open poolside PDF
             </button>
           </div>
         </div>
@@ -1868,6 +1900,20 @@ export default function WorkoutEditor({
             >
               Download .json
             </button>
+            <button
+              type="button"
+              aria-expanded={supportSectionOpen.garminExport}
+              data-testid="workout-editor-garmin-export-toggle"
+              onClick={() =>
+                setSupportSectionOpen((current) => ({
+                  ...current,
+                  garminExport: !current.garminExport,
+                }))
+              }
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {supportSectionOpen.garminExport ? "Hide preview" : "Show preview"}
+            </button>
           </div>
         </div>
 
@@ -1889,14 +1935,16 @@ export default function WorkoutEditor({
           </p>
         ) : null}
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-          <pre
-            data-testid="workout-editor-garmin-export-preview"
-            className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
-          >
-            {garminReadyExportPreview}
-          </pre>
-        </div>
+        {supportSectionOpen.garminExport ? (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+            <pre
+              data-testid="workout-editor-garmin-export-preview"
+              className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
+            >
+              {garminReadyExportPreview}
+            </pre>
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -1935,6 +1983,20 @@ export default function WorkoutEditor({
             >
               Download .txt
             </button>
+            <button
+              type="button"
+              aria-expanded={supportSectionOpen.handoff}
+              data-testid="workout-editor-handoff-toggle"
+              onClick={() =>
+                setSupportSectionOpen((current) => ({
+                  ...current,
+                  handoff: !current.handoff,
+                }))
+              }
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {supportSectionOpen.handoff ? "Hide preview" : "Show preview"}
+            </button>
           </div>
         </div>
 
@@ -1953,14 +2015,16 @@ export default function WorkoutEditor({
           </p>
         ) : null}
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-          <pre
-            data-testid="workout-editor-handoff-preview"
-            className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
-          >
-            {handoffText}
-          </pre>
-        </div>
+        {supportSectionOpen.handoff ? (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+            <pre
+              data-testid="workout-editor-handoff-preview"
+              className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
+            >
+              {handoffText}
+            </pre>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -1994,25 +2058,9 @@ export default function WorkoutEditor({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h3 className="text-base font-semibold text-slate-900">Title suggestions</h3>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {draft.titleSuggestions.map((suggestion) => (
-            <button
-              key={suggestion}
-              type="button"
-              onClick={() => updateDraft("title", suggestion)}
-              className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 transition hover:bg-slate-100"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2">
         <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-          Draft title
+          Title
           <input
             type="text"
             value={draft.title}
@@ -2040,7 +2088,7 @@ export default function WorkoutEditor({
         </label>
 
         <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
-          Draft description
+          Description
           <textarea
             value={draft.description}
             onChange={(event) => updateDraft("description", event.target.value)}
