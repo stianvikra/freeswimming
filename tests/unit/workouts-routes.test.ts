@@ -12,6 +12,7 @@ import {
   DELETE as deleteWorkout,
   PATCH as patchWorkout,
 } from "@/app/api/my-library/workouts/[workoutId]/route";
+import { GET as getWorkoutPdf } from "@/app/api/my-library/workouts/[workoutId]/export/pdf/route";
 import { POST as postWorkout } from "@/app/api/my-library/workouts/route";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import type { Database } from "@/types/database";
@@ -155,6 +156,30 @@ describe("workouts routes", () => {
     expect(response.status).toBe(401);
   });
 
+  it("fails closed for unauthenticated workout pdf export", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+        },
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getWorkoutPdf(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111/export/pdf"
+      ),
+      {
+        params: Promise.resolve({
+          workoutId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+
+    expect(response.status).toBe(401);
+  });
+
   it("creates canonical workouts for the authenticated owner", async () => {
     const single = vi.fn().mockResolvedValue({
       data: buildWorkoutRow(),
@@ -202,6 +227,47 @@ describe("workouts routes", () => {
     expect(payload.ok).toBe(true);
     expect(payload.workout.id).toBe("11111111-1111-4111-8111-111111111111");
     expect(payload.summary.title).toBe("Threshold / CSS 25m Pool draft");
+  });
+
+  it("returns printable canonical workout pdf html for the authenticated owner", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: buildWorkoutRow({
+        title: "Poolside QA workout",
+      }),
+      error: null,
+    });
+    const eqId = vi.fn(() => ({ maybeSingle }));
+    const eqUser = vi.fn(() => ({ eq: eqId }));
+    const select = vi.fn(() => ({ eq: eqUser }));
+    const from = vi.fn().mockReturnValue({ select });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getWorkoutPdf(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111/export/pdf"
+      ),
+      {
+        params: Promise.resolve({
+          workoutId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    expect(body).toContain("Workout PDF print view");
+    expect(body).toContain("Poolside QA workout");
+    expect(body).toContain("Source: Canonical workout");
   });
 
   it("creates manual canonical workouts when the request source kind is manual", async () => {

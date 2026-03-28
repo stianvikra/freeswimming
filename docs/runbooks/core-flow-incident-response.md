@@ -53,8 +53,11 @@ Additional `My Library` sub-route checks:
   - confirm `/api/my-library/generator-intake` returns owner-scoped `200` or fail-closed `401`,
   - confirm `/api/my-library/generator/session-draft` returns owner-scoped `200` for session target, `401` for unauthenticated reads, and explicit `422` when program target is chosen in this slice,
   - confirm `/api/my-library/workouts` and `/api/my-library/workouts/[workoutId]` return owner-scoped `200`, fail-closed `401`, and `404` for missing canonical workout ids,
+  - confirm `/api/my-library/workouts/[workoutId]/export/pdf` returns owner-scoped printable `200`, fail-closed `401`, `404` for missing canonical workout ids, and `503` when the canonical workouts schema is not ready,
+  - confirm saved-workout row actions stay card-scoped (`Edit`, `Poolside PDF`, `Delete`) and do not open, print, or delete a different canonical workout than the one selected on that row,
   - confirm stale/missing block copy names the affected source area (`profile`, `goals`, `focus`),
   - confirm refresh does not mutate saved My Library records,
+  - confirm transient success notices clear on their own while error states stay visible until the owner resolves them,
   - confirm notes remain excluded from default intake prefill in v1,
   - confirm generated drafts stay local until explicit accept/save,
   - confirm accepted workouts reopen in the same generator editor without mutating another user's data.

@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
+import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import type {
   WorkoutEditorRecord,
@@ -121,6 +122,7 @@ describe("WorkoutBuilderHub", () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
@@ -800,6 +802,50 @@ describe("WorkoutBuilderHub", () => {
     );
   });
 
+  it("shows clearer kick and drill taxonomy guidance inside the step form", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+
+    expect(screen.getByText("Primary stroke")).toBeVisible();
+    expect(screen.getByText("Drill / kick / pull focus")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Use Primary stroke for the swim pattern. Add focus only when the step needs extra drill, kick, or pull notation."
+      )
+    ).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Category"), {
+      target: { value: "kick" },
+    });
+
+    expect(
+      screen.getByText(
+        "Kick category already marks this as kick work. Use Primary stroke for the stroke pattern this kick set supports, and use the focus field only when you want extra kick, pull, or drill notation."
+      )
+    ).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Category"), {
+      target: { value: "drill" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-stroke-0"), {
+      target: { value: "drill" },
+    });
+
+    expect(
+      screen.getByText(
+        "Use Drill shell when the step is built around a drill. Then use the focus field to clarify whether it is a general drill, kick drill, or pull drill."
+      )
+    ).toBeVisible();
+  });
+
   it("shows recovery guidance when the requested workout is missing", () => {
     render(
       <WorkoutBuilderHub
@@ -821,6 +867,42 @@ describe("WorkoutBuilderHub", () => {
       "href",
       "/my-library/workouts/workout-1"
     );
+    expect(screen.getByTestId("saved-workouts-print-workout-1")).toHaveAttribute(
+      "href",
+      "/api/my-library/workouts/workout-1/export/pdf"
+    );
+  });
+
+  it("auto-dismisses workout pdf notices after a short delay", async () => {
+    const printWindow = {
+      document: {
+        open: vi.fn(),
+        write: vi.fn(),
+        close: vi.fn(),
+      },
+      focus: vi.fn(),
+    };
+
+    vi.spyOn(window, "open").mockReturnValue(printWindow as unknown as Window);
+
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
+    expect(screen.getByTestId("workout-editor-pdf-notice")).toBeVisible();
+
+    act(() => {
+      vi.advanceTimersByTime(WORKOUT_NOTICE_AUTO_DISMISS_MS);
+    });
+
+    expect(screen.queryByTestId("workout-editor-pdf-notice")).not.toBeInTheDocument();
   });
 
   it("collapses saved workouts by default and deletes a non-current workout deterministically", async () => {

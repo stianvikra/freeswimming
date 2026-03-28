@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import SavedWorkoutsPanel from "@/components/my-library/workouts/SavedWorkoutsPanel";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
+import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
 import type {
   WorkoutDeleteApiResponse,
   WorkoutEditorRecord,
@@ -38,6 +39,8 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
+
+  useAutoDismissNotice(success, setSuccess);
 
   useEffect(() => {
     setClientReady(true);
@@ -204,8 +207,9 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
         <SavedWorkoutsPanel
           workouts={recentWorkouts}
           heading="Saved workouts"
-          description="Edit another saved workout here and delete old test sessions when they are no longer useful."
+          description="Edit, print, or delete another saved workout here when you need to clean up old test sessions."
           workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
+          workoutPdfHrefBuilder={(workoutId) => `/api/my-library/workouts/${workoutId}/export/pdf`}
           editLabel="Edit"
           testId="session-generator-recent-workouts"
           editButtonTestIdBuilder={(workoutId) =>
@@ -217,8 +221,6 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
           confirmDeleteButtonTestIdBuilder={(workoutId) =>
             `workout-builder-confirm-delete-workout-${workoutId}`
           }
-          currentWorkoutId={savedWorkout?.id ?? null}
-          onOpenCurrentWorkoutPdf={null}
           onRequestDeleteWorkout={(workout) => {
             setPendingDeleteWorkoutId(workout.id);
             setError("");

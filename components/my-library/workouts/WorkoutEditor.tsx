@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
@@ -197,6 +198,18 @@ function formatEditablePoolLength(value: number | null | undefined) {
 function formatEditableDistance(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
   return String(Math.round(value));
+}
+
+function buildStepStrokeGuidance(step: SessionDraftStep) {
+  if (step.category === "kick") {
+    return "Kick category already marks this as kick work. Use Primary stroke for the stroke pattern this kick set supports, and use the focus field only when you want extra kick, pull, or drill notation.";
+  }
+
+  if (step.category === "drill" || step.stroke === "drill") {
+    return "Use Drill shell when the step is built around a drill. Then use the focus field to clarify whether it is a general drill, kick drill, or pull drill.";
+  }
+
+  return "Use Primary stroke for the swim pattern. Add focus only when the step needs extra drill, kick, or pull notation.";
 }
 
 function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
@@ -517,6 +530,10 @@ export default function WorkoutEditor({
       ? "Handoff preview reflects unsaved local edits. Save first if you want the canonical workout and handoff to match."
       : "Handoff preview matches the saved canonical workout."
     : "Handoff preview reflects the current local draft before canonical save.";
+
+  useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
+  useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
+  useAutoDismissNotice(handoffNotice, setHandoffNotice);
 
   useEffect(() => {
     setPoolLengthInput(formatEditablePoolLength(draft.poolLengthM));
@@ -1270,7 +1287,7 @@ export default function WorkoutEditor({
             </label>
 
             <label className="text-sm text-slate-700">
-              Stroke
+              Primary stroke
               <select
                 value={step.stroke ?? "choice"}
                 onChange={(event) => {
@@ -1299,7 +1316,7 @@ export default function WorkoutEditor({
             </label>
 
             <label className="text-sm text-slate-700">
-              Drill focus
+              Drill / kick / pull focus
               <select
                 value={step.drillType ?? "none"}
                 onChange={(event) =>
@@ -1318,6 +1335,8 @@ export default function WorkoutEditor({
                 ))}
               </select>
             </label>
+
+            <p className="text-sm text-slate-500 md:col-span-2">{buildStepStrokeGuidance(step)}</p>
 
             <label className="text-sm text-slate-700">
               Equipment
