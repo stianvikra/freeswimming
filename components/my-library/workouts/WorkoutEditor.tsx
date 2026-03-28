@@ -502,7 +502,7 @@ export default function WorkoutEditor({
     draftState: handoffDraftState,
   });
   const workoutPdfHeadingLabel =
-    handoffDraftState === "canonical" ? "Saved workout PDF" : "Current draft PDF";
+    handoffDraftState === "canonical" ? "Saved session PDF" : "Current draft PDF";
   const workoutPdfStateLabel =
     handoffDraftState === "canonical" ? "Canonical workout PDF" : "Local draft workout PDF";
   const workoutPdfStateDescription = savedWorkout
@@ -515,7 +515,7 @@ export default function WorkoutEditor({
       ? "Open a print-ready workout sheet in a dedicated tab, then use your browser's Print / Save PDF flow for a poolside copy that matches the saved canonical workout."
       : "Open a print-ready workout sheet in a dedicated tab for the exact draft currently on screen, then use your browser's Print / Save PDF flow for a poolside copy before you save.";
   const workoutPdfButtonLabel =
-    handoffDraftState === "canonical" ? "Open saved Poolside PDF" : "Open current draft PDF";
+    handoffDraftState === "canonical" ? "Open saved PDF" : "Open current draft PDF";
   const garminExportStateLabel =
     handoffDraftState === "canonical"
       ? "Canonical Garmin-ready export"

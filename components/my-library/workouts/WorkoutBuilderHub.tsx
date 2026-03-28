@@ -46,6 +46,9 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
         title: savedWorkout.draft.title,
       })
     : null;
+  const alternateRecentWorkouts = savedWorkout
+    ? recentWorkouts.filter((summary) => summary.id !== savedWorkout.id)
+    : recentWorkouts;
 
   useAutoDismissNotice(success, setSuccess);
 
@@ -166,10 +169,11 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Workout builder</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
           <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-            Edit one accepted canonical workout in a dedicated route. This is the first step toward
-            the fuller manual builder flow.
+            Create or edit one canonical swim session in a dedicated route. Keep the editor as the
+            primary workspace, then open saved sessions only when you want to switch, print, or
+            clean up older work.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -221,15 +225,14 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Current saved workout
+                  Current swim session
                 </p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">
                   {savedWorkout.draft.title}
                 </p>
                 <p className="mt-1 max-w-[72ch] text-sm text-slate-600">
-                  Delete the workout you are editing here. Use the editor&apos;s Poolside PDF below
-                  when you want the current draft or saved workout print view, and open the saved
-                  workouts list when you want to clean up older sessions too.
+                  You are editing this saved session below. Delete it here only when you want to
+                  remove the session from My Library entirely.
                 </p>
               </div>
               <button
@@ -244,18 +247,18 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
                 data-testid="workout-builder-delete-current-workout"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete current workout"}
+                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete current session"}
               </button>
             </div>
 
             {pendingCurrentDelete ? (
               <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-3">
                 <p className="text-sm font-medium text-rose-900">
-                  Delete the workout you are editing right now?
+                  Delete the session you are editing right now?
                 </p>
                 <p className="mt-1 text-sm text-rose-900/90">
-                  This removes the canonical workout from My Library and discards any unsaved local
-                  builder edits tied to it.
+                  This removes the canonical swim session from My Library and discards any unsaved
+                  local builder edits tied to it.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
@@ -281,46 +284,17 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
           </div>
         ) : null}
 
-        <SavedWorkoutsPanel
-          workouts={recentWorkouts}
-          heading="Saved workouts"
-          description="Show edit, Poolside PDF, or delete actions for any saved workout here, including the one you are editing when you want older sessions in view."
-          workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
-          workoutPdfHrefBuilder={(workoutId) => `/api/my-library/workouts/${workoutId}/export/pdf`}
-          editLabel="Edit"
-          testId="session-generator-recent-workouts"
-          editButtonTestIdBuilder={(workoutId) =>
-            savedWorkout
-              ? `session-generator-open-workout-${workoutId}`
-              : `workout-builder-open-workout-${workoutId}`
-          }
-          deleteButtonTestIdBuilder={(workoutId) => `workout-builder-delete-workout-${workoutId}`}
-          confirmDeleteButtonTestIdBuilder={(workoutId) =>
-            `workout-builder-confirm-delete-workout-${workoutId}`
-          }
-          onRequestDeleteWorkout={(workout) => {
-            setPendingDeleteWorkoutId(workout.id);
-            setPendingCurrentDelete(false);
-            setError("");
-            setSuccess("");
-          }}
-          onCancelDeleteWorkout={() => setPendingDeleteWorkoutId(null)}
-          onConfirmDeleteWorkout={confirmDeleteWorkout}
-          pendingDeleteWorkoutId={pendingDeleteWorkoutId}
-          deletingWorkoutId={deletingWorkoutId}
-        />
-
         {!savedWorkout ? (
           <div className="space-y-5">
             <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
               <p className="text-sm font-medium text-amber-900">
                 {workoutLibrary.selectedWorkoutMissing
                   ? "That saved workout could not be found."
-                  : "No canonical workout is loaded in this route."}
+                  : "No saved swim session is loaded in this route."}
               </p>
               <p className="mt-2 text-sm text-amber-900/90">
-                Create a starter manual workout here, return to the generator for a brand-new AI
-                draft, or reopen another saved workout below.
+                Create a manual swim session here, return to the generator for a brand-new AI draft,
+                or reopen another saved swim session below.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {workoutLibrary.schemaReady ? (
@@ -370,6 +344,39 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
             />
           </div>
         ) : null}
+
+        <SavedWorkoutsPanel
+          workouts={alternateRecentWorkouts}
+          heading={savedWorkout ? "Other saved swim sessions" : "Saved swim sessions"}
+          description={
+            savedWorkout
+              ? "Open, print, or delete another saved session here only when you want to switch context or clean up older work."
+              : "Open, print, or delete a saved swim session here, or create a fresh manual session above."
+          }
+          workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
+          workoutPdfHrefBuilder={(workoutId) => `/api/my-library/workouts/${workoutId}/export/pdf`}
+          editLabel="Edit"
+          testId="session-generator-recent-workouts"
+          editButtonTestIdBuilder={(workoutId) =>
+            savedWorkout
+              ? `session-generator-open-workout-${workoutId}`
+              : `workout-builder-open-workout-${workoutId}`
+          }
+          deleteButtonTestIdBuilder={(workoutId) => `workout-builder-delete-workout-${workoutId}`}
+          confirmDeleteButtonTestIdBuilder={(workoutId) =>
+            `workout-builder-confirm-delete-workout-${workoutId}`
+          }
+          onRequestDeleteWorkout={(workout) => {
+            setPendingDeleteWorkoutId(workout.id);
+            setPendingCurrentDelete(false);
+            setError("");
+            setSuccess("");
+          }}
+          onCancelDeleteWorkout={() => setPendingDeleteWorkoutId(null)}
+          onConfirmDeleteWorkout={confirmDeleteWorkout}
+          pendingDeleteWorkoutId={pendingDeleteWorkoutId}
+          deletingWorkoutId={deletingWorkoutId}
+        />
       </div>
     </section>
   );

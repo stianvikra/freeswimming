@@ -13,8 +13,8 @@ type Props = {
 };
 
 export default function CreateManualWorkoutButton({
-  label = "Create manual workout",
-  pendingLabel = "Creating manual workout...",
+  label = "Create manual swim session",
+  pendingLabel = "Creating manual swim session...",
   className = "",
   testId = "create-manual-workout",
 }: Props) {

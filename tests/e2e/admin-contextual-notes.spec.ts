@@ -258,8 +258,15 @@ test.describe("admin contextual notes", () => {
     await expect(panel.getByTestId("admin-context-note-create-form")).toBeVisible();
     await expect(panel.getByTestId("admin-context-note-paste-image")).toBeVisible();
 
-    await createdItem.getByRole("button", { name: "Edit" }).click();
-    const editForm = createdItem.getByTestId("admin-context-note-edit-form");
+    const createdItemAfterToggle = panel
+      .getByTestId("admin-context-note-item")
+      .filter({ hasText: title })
+      .first();
+    await createdItemAfterToggle.scrollIntoViewIfNeeded();
+    const editButton = createdItemAfterToggle.getByRole("button", { name: "Edit" });
+    await expect(editButton).toBeVisible({ timeout: 10_000 });
+    await editButton.click();
+    const editForm = createdItemAfterToggle.getByTestId("admin-context-note-edit-form");
     await expect(editForm).toBeVisible();
     await editForm.getByLabel("Edit title").fill(updatedTitle);
     await editForm.getByLabel("Priority").selectOption("urgent");
