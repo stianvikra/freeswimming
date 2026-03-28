@@ -9,6 +9,7 @@ type Props = {
   workouts: WorkoutSummary[];
   description: string;
   workoutHrefBuilder: (workoutId: string) => string;
+  workoutPdfHrefBuilder?: ((workoutId: string) => string) | null;
   collapsedByDefault?: boolean;
   testId?: string;
   heading?: string;
@@ -21,8 +22,6 @@ type Props = {
   onConfirmDeleteWorkout?: ((workout: WorkoutSummary) => void) | null;
   pendingDeleteWorkoutId?: string | null;
   deletingWorkoutId?: string | null;
-  currentWorkoutId?: string | null;
-  onOpenCurrentWorkoutPdf?: (() => void) | null;
   printButtonTestIdBuilder?: (workoutId: string) => string;
 };
 
@@ -30,6 +29,7 @@ export default function SavedWorkoutsPanel({
   workouts,
   description,
   workoutHrefBuilder,
+  workoutPdfHrefBuilder = null,
   collapsedByDefault = true,
   testId = "session-generator-recent-workouts",
   heading = "Saved workouts",
@@ -42,8 +42,6 @@ export default function SavedWorkoutsPanel({
   onConfirmDeleteWorkout = null,
   pendingDeleteWorkoutId = null,
   deletingWorkoutId = null,
-  currentWorkoutId = null,
-  onOpenCurrentWorkoutPdf = null,
   printButtonTestIdBuilder = (workoutId) => `saved-workouts-print-${workoutId}`,
 }: Props) {
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
@@ -84,8 +82,7 @@ export default function SavedWorkoutsPanel({
           {workouts.map((workout) => {
             const deleting = deletingWorkoutId === workout.id;
             const pendingDelete = pendingDeleteWorkoutId === workout.id;
-            const canPrintCurrentWorkout =
-              currentWorkoutId === workout.id && typeof onOpenCurrentWorkoutPdf === "function";
+            const workoutPdfHref = workoutPdfHrefBuilder?.(workout.id) ?? null;
 
             return (
               <div
@@ -112,15 +109,16 @@ export default function SavedWorkoutsPanel({
                     >
                       {editLabel}
                     </Link>
-                    {canPrintCurrentWorkout ? (
-                      <button
-                        type="button"
-                        onClick={() => onOpenCurrentWorkoutPdf?.()}
+                    {workoutPdfHref ? (
+                      <Link
+                        href={workoutPdfHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         data-testid={printButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
                       >
                         Poolside PDF
-                      </button>
+                      </Link>
                     ) : null}
                     {typeof onRequestDeleteWorkout === "function" ? (
                       <button

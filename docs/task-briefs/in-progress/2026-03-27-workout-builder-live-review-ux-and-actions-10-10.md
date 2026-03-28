@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
-- `updated`: `2026-03-27`
+- `updated`: `2026-03-28`
 
 ## Goal
 
@@ -260,6 +260,10 @@ Critical target categories for `10/10` claim in this brief:
 - Required if this slice changes workout-builder labels, delete recovery language, print guidance, or My Library explanation copy:
   - update the relevant Help/Guide surface and any builder runbook/help copy in the same PR,
   - update at least one automated assertion if help contract text changes.
+- This slice still has no dedicated in-product My Library/workout-builder Help surface, so the contract is satisfied by:
+  - updating `docs/runbooks/core-flow-incident-response.md` for the new saved-workout and canonical PDF verification path,
+  - keeping automated regression coverage in `tests/e2e/my-library-workout-builder.spec.ts`,
+  - treating `AdminHelpCenter` as `N/A` for this owner-only builder slice because no admin workflow/help copy changed.
 
 ## Security, Privacy, and Compliance
 
@@ -317,3 +321,4 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-03-27 | planning | created a dedicated workout-builder live-review UX/actions brief to own the current production-note batch around delete/edit/print actions, calmer panel defaults, form copy cleanup, poolside PDF truthfulness, and My Library IA confusion before program-builder work resumes | next: review manual workout-builder usage against this brief, then pick the first narrow implementation slice`
+- `2026-03-28 | implementation | slice 2 on branch fix/workout-builder-pdf-notices-2026-03-28 adds row-level canonical Poolside PDF links for saved workouts, auto-dismisses transient builder success notices, and clarifies kick/drill authoring guidance without changing the canonical workout model; targeted typecheck, vitest, and desktop-chromium workout-builder e2e are green | next: update runbook coverage, then run npm run lint:briefs and npm run verify:pre-pr`
