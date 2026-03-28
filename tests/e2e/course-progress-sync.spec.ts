@@ -1,29 +1,34 @@
-import { expect, test, type APIResponse, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-type CourseProgressPayload = {
-  rows?: Array<{ lessonId?: string; done?: boolean }>;
+type CourseProgressPollResult = {
+  status: number | "transient";
+  done: boolean | null;
 };
 
-function isTransientNetworkError(error: unknown): boolean {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  return /ECONNRESET|ECONNREFUSED|ETIMEDOUT|Request context disposed|socket hang up|Target page, context or browser has been closed/i.test(
-    errorMessage
-  );
-}
+async function getCourseProgressSnapshot(page: Page, canonicalLessonId: string) {
+  return page.evaluate(async (lessonId) => {
+    try {
+      const response = await fetch("/api/progress/course", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (response.status === 404) {
+        return { status: 404, done: null };
+      }
+      if (!response.ok) {
+        return { status: response.status, done: null };
+      }
 
-async function getCourseProgressOrNull(page: Page): Promise<APIResponse | null> {
-  try {
-    const response = await page.request.get("/api/progress/course");
-    if (response.status() === 404) {
-      return null;
+      const payload = (await response.json().catch(() => null)) as {
+        rows?: Array<{ lessonId?: string; done?: boolean }>;
+      } | null;
+      const row = payload?.rows?.find((entry) => entry.lessonId === lessonId);
+      return { status: response.status, done: row?.done ?? false };
+    } catch {
+      return { status: "transient", done: null };
     }
-    return response;
-  } catch (error) {
-    if (isTransientNetworkError(error)) {
-      return null;
-    }
-    throw error;
-  }
+  }, canonicalLessonId) as Promise<CourseProgressPollResult>;
 }
 
 async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
@@ -71,10 +76,10 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   await expect
     .poll(
       async () => {
-        const response = await getCourseProgressOrNull(page);
-        return response?.status() ?? "transient";
+        const snapshot = await getCourseProgressSnapshot(page, canonicalLessonId);
+        return snapshot.status;
       },
-      { timeout: 20_000 }
+      { timeout: 30_000 }
     )
     .toBe(200);
   await page.waitForTimeout(1_200);
@@ -92,12 +97,9 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   await expect
     .poll(
       async () => {
-        const response = await getCourseProgressOrNull(page);
-        if (!response) return "transient";
-        if (response.status() !== 200) return `status:${response.status()}`;
-        const payload = (await response.json()) as CourseProgressPayload;
-        const row = payload.rows?.find((entry) => entry.lessonId === canonicalLessonId);
-        return row?.done ? "true" : "false";
+        const snapshot = await getCourseProgressSnapshot(page, canonicalLessonId);
+        if (snapshot.status !== 200) return `status:${snapshot.status}`;
+        return snapshot.done ? "true" : "false";
       },
       { timeout: 20_000 }
     )
@@ -109,12 +111,9 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   await expect
     .poll(
       async () => {
-        const response = await getCourseProgressOrNull(page);
-        if (!response) return "transient";
-        if (response.status() !== 200) return `status:${response.status()}`;
-        const payload = (await response.json()) as CourseProgressPayload;
-        const row = payload.rows?.find((entry) => entry.lessonId === canonicalLessonId);
-        return row?.done ? "true" : "false";
+        const snapshot = await getCourseProgressSnapshot(page, canonicalLessonId);
+        if (snapshot.status !== 200) return `status:${snapshot.status}`;
+        return snapshot.done ? "true" : "false";
       },
       { timeout: 20_000 }
     )

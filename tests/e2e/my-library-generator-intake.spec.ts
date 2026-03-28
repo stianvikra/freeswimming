@@ -150,6 +150,8 @@ test.describe("my library generator intake", () => {
       page.getByText("Notes stay out of default generator prefill in v1.", { exact: false })
     ).toBeVisible();
 
+    await expect(page.getByTestId("generator-intake-session-count")).toHaveCount(0);
+    await page.getByTestId("generator-intake-overrides-toggle").click();
     await page.getByTestId("generator-intake-target-program").check();
     await page.getByTestId("generator-intake-session-count").fill("4");
     await page.getByTestId("generator-intake-session-minutes").selectOption("45");
@@ -158,8 +160,9 @@ test.describe("my library generator intake", () => {
       .getByTestId("generator-intake-constraint-text")
       .fill("Keep the first week moderate.");
     await page.getByTestId("generator-intake-prepare").click();
+    await page.getByTestId("generator-intake-technical-toggle").click();
 
-    await expect(page.getByText("Generator handoff prepared for the next slice.")).toBeVisible();
+    await expect(page.getByText("Generator is ready for this run.")).toBeVisible();
     await expect(page.getByTestId("generator-intake-handoff-preview")).toContainText(
       '"targetType": "program"'
     );
@@ -181,6 +184,7 @@ test.describe("my library generator intake", () => {
     await expect(page).toHaveURL(/\/my-library\/generator$/);
     await waitForGeneratorIntakeClientReady(page);
 
+    await page.getByTestId("generator-intake-overrides-toggle").click();
     await page.getByTestId("generator-intake-target-session").check();
     await page.getByTestId("generator-intake-prepare").click();
     await prewarmSessionDraftRoute(page);

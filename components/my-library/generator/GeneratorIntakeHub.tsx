@@ -39,6 +39,8 @@ type StoredDraft = {
   overrides: GeneratorIntakeOverrides;
 };
 
+type GeneratorSectionKey = "source" | "overrides" | "technical";
+
 const STORAGE_KEY_PREFIX = "my-library-generator-intake-draft:";
 const BLOCK_COPY_ORDER = [...GENERATOR_INTAKE_BLOCK_KEYS];
 
@@ -124,6 +126,11 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
   const [isOnline, setIsOnline] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastPreparedSignature, setLastPreparedSignature] = useState<string | null>(null);
+  const [sectionOpen, setSectionOpen] = useState<Record<GeneratorSectionKey, boolean>>({
+    source: false,
+    overrides: false,
+    technical: false,
+  });
 
   const storageKey = getStorageKey(userId);
   const payload = buildGeneratorHandoffPayload(snapshot, selection, overrides, {
@@ -133,6 +140,21 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
   const payloadSignature = JSON.stringify(payload);
   const isPreparedCurrent = lastPreparedSignature === payloadSignature;
   const selectedBlockCount = payload.includedBlocks.length;
+  const sourceSummary =
+    selectedBlockCount > 0
+      ? `${selectedBlockCount} block${selectedBlockCount === 1 ? "" : "s"} included`
+      : "No saved blocks included";
+  const overrideSummary =
+    overrides.targetType === "program"
+      ? payload.effectiveDefaults.sessionCount
+        ? `${payload.effectiveDefaults.sessionCount} swim session${
+            payload.effectiveDefaults.sessionCount === 1 ? "" : "s"
+          } per week`
+        : "Multi-session program"
+      : "Single session";
+  const technicalSummary = isPreparedCurrent
+    ? "Prepared with current choices"
+    : "Hidden by default";
   const hasActiveOverrides =
     Boolean(payload.overrides.desiredSessionCount) ||
     Boolean(payload.overrides.desiredSessionMinutes) ||
@@ -289,6 +311,13 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
     setActionSuccess("");
   }
 
+  function toggleSection(section: GeneratorSectionKey) {
+    setSectionOpen((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  }
+
   function resetIntakeDraft() {
     clearDraft(storageKey);
     setSelection(getDefaultGeneratorIntakeSelection(snapshot));
@@ -302,7 +331,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
 
   function prepareHandoff() {
     setActionError("");
-    setActionSuccess("Generator handoff prepared for the next slice.");
+    setActionSuccess("Generator is ready for this run.");
     setLastPreparedSignature(payloadSignature);
     void sendClientAnalyticsEvent("generator_intake_handoff_prepared", {
       targetType: payload.overrides.targetType,
@@ -325,8 +354,8 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
           <div>
             <h2 className="text-base font-semibold text-slate-900">Before you continue</h2>
             <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              Include or remove saved My Library blocks here. Then add one-run generator overrides
-              below. Neither choice writes back into your saved records. Notes stay out of default
+              Review what to bring in from My Library, then choose any one-off settings for this
+              run. Nothing here writes back into your saved records. Notes stay out of default
               generator prefill in v1.
             </p>
           </div>
@@ -396,194 +425,242 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Saved My Library context</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Loaded from My Library</h2>
             <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              Available blocks default to included. Unavailable blocks stay visible so you can see
-              what is missing, still syncing, or needs a retry before later generation.
+              Read-only information for this run. Open it when you want to review what is coming
+              from your saved My Library data before generating anything.
             </p>
           </div>
-          <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-            {selectedBlockCount} included now
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+              {sourceSummary}
+            </p>
+            <button
+              type="button"
+              onClick={() => toggleSection("source")}
+              aria-expanded={sectionOpen.source}
+              data-testid="generator-intake-source-toggle"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {sectionOpen.source ? "Hide details" : "Show details"}
+            </button>
+          </div>
         </div>
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          {BLOCK_COPY_ORDER.map((blockKey) => {
-            const block = snapshot.blocks[blockKey];
-            const tone = buildBlockTone(block);
-            const checkboxId = `generator-intake-${blockKey}`;
+        {sectionOpen.source ? (
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            {BLOCK_COPY_ORDER.map((blockKey) => {
+              const block = snapshot.blocks[blockKey];
+              const tone = buildBlockTone(block);
+              const checkboxId = `generator-intake-${blockKey}`;
 
-            return (
-              <article key={block.key} className={`rounded-2xl border p-4 ${tone.container}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Saved source
-                    </p>
-                    <h3 className="mt-1 text-base font-semibold text-slate-900">{block.label}</h3>
-                    <p className="mt-2 text-sm text-slate-700">{block.description}</p>
+              return (
+                <article key={block.key} className={`rounded-2xl border p-4 ${tone.container}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        From My Library
+                      </p>
+                      <h3 className="mt-1 text-base font-semibold text-slate-900">{block.label}</h3>
+                      <p className="mt-2 text-sm text-slate-700">{block.description}</p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${tone.badge}`}
+                    >
+                      {tone.label}
+                    </span>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${tone.badge}`}
-                  >
-                    {tone.label}
-                  </span>
-                </div>
 
-                <p className="mt-4 text-sm text-slate-700">{block.summary}</p>
+                  <p className="mt-4 text-sm text-slate-700">{block.summary}</p>
 
-                {block.missingReason ? (
-                  <p className="mt-2 text-sm text-slate-600">{block.missingReason}</p>
-                ) : null}
+                  {block.missingReason ? (
+                    <p className="mt-2 text-sm text-slate-600">{block.missingReason}</p>
+                  ) : null}
 
-                {block.lastUpdatedAt ? (
-                  <p className="mt-2 text-xs text-slate-500">Last updated: {block.lastUpdatedAt}</p>
-                ) : null}
+                  {block.lastUpdatedAt ? (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Last updated: {block.lastUpdatedAt}
+                    </p>
+                  ) : null}
 
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <label
-                    htmlFor={checkboxId}
-                    className="inline-flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-900"
-                  >
-                    <input
-                      id={checkboxId}
-                      type="checkbox"
-                      checked={selection[blockKey]}
-                      disabled={!block.available}
-                      onChange={() => toggleBlock(blockKey)}
-                      data-testid={`generator-intake-include-${blockKey}`}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                    />
-                    Include {toBlockLabel(blockKey)} for this run
-                  </label>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <label
+                      htmlFor={checkboxId}
+                      className="inline-flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-900"
+                    >
+                      <input
+                        id={checkboxId}
+                        type="checkbox"
+                        checked={selection[blockKey]}
+                        disabled={!block.available}
+                        onChange={() => toggleBlock(blockKey)}
+                        data-testid={`generator-intake-include-${blockKey}`}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                      Include {toBlockLabel(blockKey)} for this run
+                    </label>
 
-                  <Link
-                    href={block.manageHref}
-                    className="text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
-                  >
-                    {block.manageLabel}
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                    <Link
+                      href={block.manageHref}
+                      className="text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+                    >
+                      {block.manageLabel}
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">One-run overrides</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Just this run</h2>
             <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              These settings change only this generator attempt. They never mutate saved My Library
-              source data.
+              These choices only affect this generator attempt. Use them when you want to steer this
+              run without editing your saved My Library information.
             </p>
           </div>
-          <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-            Local only
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+              {overrideSummary}
+            </p>
+            <button
+              type="button"
+              onClick={() => toggleSection("overrides")}
+              aria-expanded={sectionOpen.overrides}
+              data-testid="generator-intake-overrides-toggle"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {sectionOpen.overrides ? "Hide choices" : "Show choices"}
+            </button>
+          </div>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-            <legend className="px-1 text-sm font-semibold text-slate-900">Generator target</legend>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="generator-target-type"
-                  checked={overrides.targetType === "session"}
-                  onChange={() => updateOverride("targetType", "session")}
-                  data-testid="generator-intake-target-session"
-                />
-                Single session
+        {sectionOpen.overrides ? (
+          <>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                <legend className="px-1 text-sm font-semibold text-slate-900">
+                  What do you want to generate?
+                </legend>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="radio"
+                      name="generator-target-type"
+                      checked={overrides.targetType === "session"}
+                      onChange={() => updateOverride("targetType", "session")}
+                      data-testid="generator-intake-target-session"
+                    />
+                    Single session
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="radio"
+                      name="generator-target-type"
+                      checked={overrides.targetType === "program"}
+                      onChange={() => updateOverride("targetType", "program")}
+                      data-testid="generator-intake-target-program"
+                    />
+                    Multi-session program
+                  </label>
+                </div>
+              </fieldset>
+
+              {overrides.targetType === "program" ? (
+                <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+                  Swim sessions per week
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={overrides.desiredSessionCount}
+                    onChange={(event) => updateOverride("desiredSessionCount", event.target.value)}
+                    data-testid="generator-intake-session-count"
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    placeholder="Leave blank to use saved weekly preference later"
+                  />
+                </label>
+              ) : null}
+
+              <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+                Desired session length
+                <select
+                  value={overrides.desiredSessionMinutes}
+                  onChange={(event) => updateOverride("desiredSessionMinutes", event.target.value)}
+                  data-testid="generator-intake-session-minutes"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="">Use saved preference or leave open</option>
+                  {TRAINING_SESSION_DURATION_OPTIONS.map((option) => (
+                    <option key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+
+              <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+                Focus for this run
                 <input
-                  type="radio"
-                  name="generator-target-type"
-                  checked={overrides.targetType === "program"}
-                  onChange={() => updateOverride("targetType", "program")}
-                  data-testid="generator-intake-target-program"
+                  type="text"
+                  value={overrides.focusText}
+                  onChange={(event) => updateOverride("focusText", event.target.value)}
+                  data-testid="generator-intake-focus-text"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="Example: Breathing timing under fatigue"
                 />
-                Multi-session program
               </label>
             </div>
-          </fieldset>
 
-          <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-            Desired session count
-            <input
-              type="text"
-              inputMode="numeric"
-              value={overrides.desiredSessionCount}
-              onChange={(event) => updateOverride("desiredSessionCount", event.target.value)}
-              data-testid="generator-intake-session-count"
-              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              placeholder="Leave blank to keep later defaults"
-            />
-          </label>
-
-          <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-            Desired session length
-            <select
-              value={overrides.desiredSessionMinutes}
-              onChange={(event) => updateOverride("desiredSessionMinutes", event.target.value)}
-              data-testid="generator-intake-session-minutes"
-              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            >
-              <option value="">Use saved preference or leave open</option>
-              {TRAINING_SESSION_DURATION_OPTIONS.map((option) => (
-                <option key={option.value} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-            Focus for this run
-            <input
-              type="text"
-              value={overrides.focusText}
-              onChange={(event) => updateOverride("focusText", event.target.value)}
-              data-testid="generator-intake-focus-text"
-              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              placeholder="Example: Breathing timing under fatigue"
-            />
-          </label>
-        </div>
-
-        <label className="mt-4 block rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-          Constraints for this run
-          <textarea
-            value={overrides.constraintText}
-            onChange={(event) => updateOverride("constraintText", event.target.value)}
-            data-testid="generator-intake-constraint-text"
-            rows={4}
-            className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            placeholder="Example: Keep total volume moderate and avoid heavy kick work."
-          />
-        </label>
+            <label className="mt-4 block rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+              Constraints for this run
+              <textarea
+                value={overrides.constraintText}
+                onChange={(event) => updateOverride("constraintText", event.target.value)}
+                data-testid="generator-intake-constraint-text"
+                rows={4}
+                className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                placeholder="Example: Keep total volume moderate and avoid heavy kick work."
+              />
+            </label>
+          </>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Deterministic handoff</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Prepare the generator</h2>
             <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              This preview shows exactly what later generator slices would receive right now. It
-              uses canonical IDs and normalized values instead of only display labels.
+              Lock this run to the saved information and one-off choices you want to use. The raw
+              technical preview stays hidden unless you explicitly open it.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={prepareHandoff}
-            data-testid="generator-intake-prepare"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-          >
-            {isPreparedCurrent ? "Handoff prepared" : "Prepare generator handoff"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+              {technicalSummary}
+            </p>
+            <button
+              type="button"
+              onClick={() => toggleSection("technical")}
+              aria-expanded={sectionOpen.technical}
+              data-testid="generator-intake-technical-toggle"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {sectionOpen.technical ? "Hide technical preview" : "Show technical preview"}
+            </button>
+            <button
+              type="button"
+              onClick={prepareHandoff}
+              data-testid="generator-intake-prepare"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+            >
+              {isPreparedCurrent ? "Prepared for this run" : "Prepare generator"}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -618,19 +695,21 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
 
         {lastPreparedSignature && !isPreparedCurrent ? (
           <p className="mt-4 text-sm text-amber-800">
-            Intake choices changed after the last prepare action. Review the preview and prepare the
-            handoff again before moving downstream.
+            Intake choices changed after the last prepare action. Review them and prepare again
+            before moving downstream.
           </p>
         ) : null}
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-          <pre
-            data-testid="generator-intake-handoff-preview"
-            className="max-h-[420px] overflow-auto px-4 py-4 text-xs leading-relaxed text-slate-100"
-          >
-            {payloadPreview}
-          </pre>
-        </div>
+        {sectionOpen.technical ? (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+            <pre
+              data-testid="generator-intake-handoff-preview"
+              className="max-h-[420px] overflow-auto px-4 py-4 text-xs leading-relaxed text-slate-100"
+            >
+              {payloadPreview}
+            </pre>
+          </div>
+        ) : null}
       </section>
 
       <SessionGeneratorPanel

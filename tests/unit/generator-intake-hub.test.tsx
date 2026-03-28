@@ -214,11 +214,14 @@ describe("GeneratorIntakeHub", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Saved My Library context" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "One-run overrides" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Loaded from My Library" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Just this run" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Prepare the generator" })).toBeInTheDocument();
     expect(
       screen.getByText("Notes stay out of default generator prefill in v1.", { exact: false })
     ).toBeInTheDocument();
+    expect(screen.queryByTestId("generator-intake-session-count")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("generator-intake-handoff-preview")).not.toBeInTheDocument();
   });
 
   it("updates the handoff preview when blocks are excluded and overrides change", () => {
@@ -230,6 +233,7 @@ describe("GeneratorIntakeHub", () => {
       />
     );
 
+    fireEvent.click(screen.getByTestId("generator-intake-overrides-toggle"));
     fireEvent.click(screen.getByTestId("generator-intake-target-program"));
     fireEvent.change(screen.getByTestId("generator-intake-session-count"), {
       target: { value: "4" },
@@ -237,7 +241,9 @@ describe("GeneratorIntakeHub", () => {
     fireEvent.change(screen.getByTestId("generator-intake-focus-text"), {
       target: { value: "Race-pace breathing control" },
     });
+    fireEvent.click(screen.getByTestId("generator-intake-source-toggle"));
     fireEvent.click(screen.getByTestId("generator-intake-include-goals"));
+    fireEvent.click(screen.getByTestId("generator-intake-technical-toggle"));
 
     const preview = screen.getByTestId("generator-intake-handoff-preview").textContent ?? "";
     const parsed = JSON.parse(preview) as {
@@ -255,5 +261,28 @@ describe("GeneratorIntakeHub", () => {
     expect(parsed.overrides.targetType).toBe("program");
     expect(parsed.overrides.desiredSessionCount).toBe(4);
     expect(parsed.overrides.focusText).toBe("Race-pace breathing control");
+  });
+
+  it("shows swim sessions per week only for the multi-session program path", () => {
+    render(
+      <GeneratorIntakeHub
+        initialSnapshot={buildSnapshot()}
+        userId="user-1"
+        workoutLibrary={buildWorkoutLibrary()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("generator-intake-overrides-toggle"));
+
+    expect(screen.queryByTestId("generator-intake-session-count")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("generator-intake-target-program"));
+
+    expect(screen.getByText("Swim sessions per week")).toBeInTheDocument();
+    expect(screen.getByTestId("generator-intake-session-count")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("generator-intake-target-session"));
+
+    expect(screen.queryByTestId("generator-intake-session-count")).not.toBeInTheDocument();
   });
 });

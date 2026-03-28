@@ -105,38 +105,37 @@ const BLOCK_META: Record<
 > = {
   profile: {
     label: "Athlete profile",
-    description: "Stable swimmer context that should not change from one run override to another.",
+    description: "Name and swimmer profile details loaded from My Library.",
     manageHref: "/my-library/profile",
     manageLabel: "Edit athlete profile",
   },
   css: {
     label: "CSS pace",
-    description: "Trusted current CSS from My Library for pace-aware generation later.",
+    description: "Current CSS pace loaded from My Library.",
     manageHref: "/my-library/profile",
     manageLabel: "Edit CSS",
   },
   preferences: {
     label: "Training preferences",
-    description: "Pool length and practical scheduling defaults from My Library.",
+    description: "Pool length and training preferences loaded from My Library.",
     manageHref: "/my-library/profile",
     manageLabel: "Edit preferences",
   },
   personal_records: {
     label: "Personal records",
-    description: "Saved benchmark swims that can inform later generator difficulty and pacing.",
+    description: "Saved benchmark swims you may want this run to consider.",
     manageHref: "/my-library/profile",
     manageLabel: "Edit personal records",
   },
   goals: {
     label: "Open goals",
-    description: "Longer-horizon targets that can shape what later generator work aims toward.",
+    description: "Open goals that can shape what this run aims toward.",
     manageHref: "/my-library/goals",
     manageLabel: "Edit goals",
   },
   focus: {
     label: "Primary focus cue",
-    description:
-      "A single current swim cue for generator use when My Library has one clear primary focus.",
+    description: "Your current main swim focus from My Library.",
     manageHref: "/my-library/training",
     manageLabel: "Edit focuses",
   },
@@ -165,7 +164,8 @@ export function normalizeGeneratorIntakeOverrides(
 
   return {
     targetType,
-    desiredSessionCount: normalizeIntegerDraft(overrides.desiredSessionCount),
+    desiredSessionCount:
+      targetType === "program" ? normalizeIntegerDraft(overrides.desiredSessionCount) : "",
     desiredSessionMinutes: normalizeIntegerDraft(overrides.desiredSessionMinutes),
     focusText: normalizeFreeText(overrides.focusText, 120),
     constraintText: normalizeFreeText(overrides.constraintText, 280),

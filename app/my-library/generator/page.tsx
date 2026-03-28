@@ -66,9 +66,9 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Generator intake</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Review which saved My Library signals should prefill session generation, then apply
-                one-run overrides without editing your stored profile, records, goals, or primary
-                focus cue.
+                Choose what to bring in from My Library, add any one-off settings for this run, and
+                generate a swim session without editing your saved profile, records, goals, or
+                focus.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -92,29 +92,29 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                  Saved My Library data
+                  Loaded from My Library
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  Profile, CSS, preferences, records, goals, and the selected primary focus cue stay
-                  server-owned.
+                  Profile, CSS, preferences, records, goals, and focus stay saved in My Library.
+                  This page reads them without editing them.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                  This run only
+                  Just this run
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  Include or exclude blocks and set overrides that do not write back into My
+                  Choose what to include and add one-off settings that do not write back into My
                   Library.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                  Canonical workout save
+                  After you generate
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  This page can now accept one reviewed session into a canonical workout and hand it
-                  off into the dedicated workout builder route for later editing.
+                  Save one reviewed swim session into My Library, then reopen it in the dedicated
+                  builder route for later editing.
                 </p>
               </div>
             </div>
