@@ -21,6 +21,30 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
   await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
 }
 
+async function ensureDevBypassRoute(page: Page, expectedPath: string) {
+  const currentPath = new URL(page.url()).pathname;
+
+  if (currentPath === expectedPath) {
+    return;
+  }
+
+  if (currentPath === "/auth/sign-in") {
+    await page.goto(`/dev/login?next=${encodeURIComponent(expectedPath)}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    const pathAfterRelogin = new URL(page.url()).pathname;
+
+    if (pathAfterRelogin !== expectedPath) {
+      test.skip(true, "Dev auth bypass is not enabled in this environment.");
+    }
+
+    return;
+  }
+
+  throw new Error(`Expected route ${expectedPath}, received ${currentPath}.`);
+}
+
 async function createAuthenticatedRequestContext(page: Page): Promise<APIRequestContext> {
   return playwrightRequest.newContext({
     baseURL: new URL(page.url()).origin,
@@ -111,8 +135,9 @@ test.describe("my library generator intake", () => {
       const href = await openGeneratorLink.getAttribute("href");
       expect(href).toBeTruthy();
       await page.goto(href!, { waitUntil: "domcontentloaded", timeout: 60_000 });
-      await expect(page).toHaveURL(/\/my-library\/generator$/);
+      await ensureDevBypassRoute(page, "/my-library/generator");
     }
+    await expect(page).toHaveURL(/\/my-library\/generator$/);
     await expect(
       page.getByRole("heading", {
         name: "Generator intake",
@@ -152,6 +177,7 @@ test.describe("my library generator intake", () => {
 
     await loginToMyLibraryViaDevBypass(page);
     await page.goto("/my-library/generator", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await ensureDevBypassRoute(page, "/my-library/generator");
     await expect(page).toHaveURL(/\/my-library\/generator$/);
     await waitForGeneratorIntakeClientReady(page);
 

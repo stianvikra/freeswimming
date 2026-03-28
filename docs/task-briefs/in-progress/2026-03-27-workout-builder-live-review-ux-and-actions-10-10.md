@@ -222,6 +222,8 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-03-27` — moved to `in-progress` on branch `fix/workout-builder-live-review-actions-2026-03-27`; first implementation slice adds owner-scoped workout delete API/UI, calmer collapsed support panels, builder label cleanup, and My Library wording cleanup. Next step: finish targeted validation and run `npm run verify:pre-pr`.
+- `2026-03-28` — slice 3 implemented on branch `fix/workout-builder-current-actions-2026-03-28`; added current-workout action strip, clearer PDF state copy, bluer poolside PDF styling, and targeted generator-intake auth-redirect hardening after a confirmed `verify:pre-merge` auth/Supabase flake. Next step: rerun targeted generator-intake coverage, rerun `npm run verify:pre-merge`, then merge if green.
+- `2026-03-28` — local `verify:pre-merge` also exposed a macOS-specific `.next/.DS_Store` build flake (`ENOTEMPTY` while Next tried to remove `.next/server`). Added a pre-build sanitizer so local gates stop failing on Finder metadata rather than product code. Next step: rerun `npm run build`, then rerun `npm run verify:pre-merge` on the hardened build path.
 - Local validation runs from repo root.
 
 ## Manual QA Environments
