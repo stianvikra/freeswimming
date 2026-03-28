@@ -359,8 +359,8 @@ export default function SessionGeneratorPanel({
           className="mt-5 rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
         >
           <p className="text-sm text-blue-900">
-            Prepare the deterministic handoff above before generating a session draft, so this run
-            uses the exact saved profile, goal, and focus context you just reviewed.
+            Prepare the generator above before generating a session draft, so this run uses the
+            saved profile, goal, and focus context you just reviewed.
           </p>
         </div>
       ) : null}

@@ -73,6 +73,28 @@ Production admin notes reviewed against this brief on `2026-03-27`:
 - `7e075645-84e8-4fcb-a23e-518862ad03d5` `Ehy i smh library button here`
   - disposition: owned by this brief.
   - reason: My Library mode/button clarity belongs in the same IA clean-up wave as `Program shell`.
+- `f21f4a8d-7afa-4eeb-a572-53f1d5c85996` `Create manual workout`
+  - disposition: owned by this brief.
+  - reason: manual session entrypoint naming and whether the editor should dominate the page are part of the same builder IA/entry flow review.
+- `c54e1d72-3efb-47a7-ab7e-ef4f32d05d33` `Rename Workout builder`
+  - disposition: owned by this brief.
+  - reason: builder naming should stay coherent if workout/session/strength/stretch variants expand later.
+- `a1d2db16-2f21-4d38-add1-62a462cfa015` `PDF`
+  - disposition: owned by this brief.
+  - reason: PDF naming, compact poolside variant expectations, and focus-line content all belong to the same export-truthfulness wave.
+- `ac6ab21e-063c-4a60-a2e3-1d4878856eb0` `Delete current workout location UI and UX`
+  - disposition: owned by this brief.
+  - reason: current-workout delete placement and builder-entry visibility are still part of the same live-review action/IA cleanup.
+
+Triage update on `2026-03-28`:
+
+- closed as effectively shipped:
+  - `fed5e8b6-71a5-4b35-8549-2155a2cccdfe` `How do I delete workouts?`
+  - `f09ade9f-8301-49c3-980f-366675bdb46d` `Delete, edit, print buttons for the workouts`
+- split residual follow-up notes for partially shipped originals:
+  - `d76825bd-4b5c-4e7e-aa22-49e6c25350ba` `Saved workouts list density follow-up` from `af6ab360-04d1-454c-8824-090260f088e8`
+  - `9245eaba-e5fd-4bc2-83c1-2f53c7df100e` `Workout builder drill and kick taxonomy follow-up` from `3396b47c-4b78-4a72-bc55-b6806e0fc620`
+  - `854d3f39-9275-4d80-a624-a687e47db320` `Workout builder notice placement and audience follow-up` from `5b15cd93-813f-415b-a555-6f0bf6729bf7`
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -224,6 +246,7 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-27` — moved to `in-progress` on branch `fix/workout-builder-live-review-actions-2026-03-27`; first implementation slice adds owner-scoped workout delete API/UI, calmer collapsed support panels, builder label cleanup, and My Library wording cleanup. Next step: finish targeted validation and run `npm run verify:pre-pr`.
 - `2026-03-28` — slice 3 implemented on branch `fix/workout-builder-current-actions-2026-03-28`; added current-workout action strip, clearer PDF state copy, bluer poolside PDF styling, and targeted generator-intake auth-redirect hardening after a confirmed `verify:pre-merge` auth/Supabase flake. Next step: rerun targeted generator-intake coverage, rerun `npm run verify:pre-merge`, then merge if green.
 - `2026-03-28` — local `verify:pre-merge` also exposed a macOS-specific `.next/.DS_Store` build flake (`ENOTEMPTY` while Next tried to remove `.next/server`). Added a pre-build sanitizer so local gates stop failing on Finder metadata rather than product code. Next step: rerun `npm run build`, then rerun `npm run verify:pre-merge` on the hardened build path.
+- `2026-03-28` — post-merge prod triage added four newer builder/admin notes to this brief (`Create manual workout`, `Rename Workout builder`, `PDF`, and `Delete current workout location UI and UX`) and prepared residual follow-up splits for the parts of older notes that are no longer the primary ask after shipped slices. Next step: keep this brief open for the next workout-builder UX pass while generator-intake clarity is handled in its own child brief first.
 - Local validation runs from repo root.
 
 ## Manual QA Environments
