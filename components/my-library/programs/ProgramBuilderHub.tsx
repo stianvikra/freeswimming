@@ -391,10 +391,10 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Program shell</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Program planning</h2>
           <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-            Save a canonical program shell, place accepted workouts into week/day slots, and keep
-            one shared program surface ready for later planner and export work.
+            Save a canonical program, place accepted workouts into week/day slots, and keep one
+            shared planning surface ready for later planner and export work.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

@@ -7,7 +7,11 @@ import {
   buildWorkoutUpdate,
   WORKOUT_SELECT,
 } from "@/lib/workouts/server";
-import type { WorkoutSaveApiResponse, WorkoutSaveRequestBody } from "@/lib/workouts/shared";
+import type {
+  WorkoutDeleteApiResponse,
+  WorkoutSaveApiResponse,
+  WorkoutSaveRequestBody,
+} from "@/lib/workouts/shared";
 
 type RouteContext = {
   params: Promise<{
@@ -18,7 +22,7 @@ type RouteContext = {
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function noStoreJson(
-  body: WorkoutSaveApiResponse | Record<string, unknown>,
+  body: WorkoutSaveApiResponse | WorkoutDeleteApiResponse | Record<string, unknown>,
   init?: {
     status?: number;
   }
@@ -111,6 +115,64 @@ export async function PATCH(request: Request, context: RouteContext) {
       ok: true,
       workout,
       summary: buildWorkoutSummary(result.data),
+    })
+  );
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const { workoutId } = await context.params;
+  if (!UUID_PATTERN.test(workoutId)) {
+    return noStoreJson({ ok: false, error: "Invalid workout id." }, { status: 400 });
+  }
+
+  const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Unauthorized." }, { status: 401 })
+    );
+  }
+
+  const result = await supabase
+    .from("workouts")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("id", workoutId)
+    .select("id")
+    .maybeSingle();
+
+  if (isWorkoutSchemaMissing(result.error)) {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          error: "Canonical workout save is still syncing in this environment.",
+        },
+        { status: 503 }
+      )
+    );
+  }
+
+  if (result.error) {
+    console.error("[WorkoutsApi] Could not delete canonical workout", result.error);
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Could not delete workout right now." }, { status: 500 })
+    );
+  }
+
+  if (!result.data) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Workout not found." }, { status: 404 })
+    );
+  }
+
+  return applySupabaseCookies(
+    noStoreJson({
+      ok: true,
+      deletedWorkoutId: workoutId,
     })
   );
 }

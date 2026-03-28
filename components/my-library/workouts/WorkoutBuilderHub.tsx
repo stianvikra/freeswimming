@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
+import SavedWorkoutsPanel from "@/components/my-library/workouts/SavedWorkoutsPanel";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
 import type {
+  WorkoutDeleteApiResponse,
   WorkoutEditorRecord,
   WorkoutLibrarySnapshot,
   WorkoutSaveApiResponse,
@@ -22,6 +25,7 @@ function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSumm
 }
 
 export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
+  const router = useRouter();
   const [savedWorkout, setSavedWorkout] = useState<WorkoutEditorRecord | null>(
     workoutLibrary.selectedWorkout
   );
@@ -30,6 +34,8 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingDeleteWorkoutId, setPendingDeleteWorkoutId] = useState<string | null>(null);
+  const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
 
@@ -43,6 +49,8 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
     setRecentWorkouts(workoutLibrary.recentWorkouts);
     setError("");
     setSuccess("");
+    setPendingDeleteWorkoutId(null);
+    setDeletingWorkoutId(null);
   }, [
     workoutLibrary.recentWorkouts,
     workoutLibrary.selectedWorkout,
@@ -94,6 +102,48 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
     setDraft(savedWorkout.draft);
     setError("");
     setSuccess("Unsaved builder edits were reset to the last saved workout.");
+  }
+
+  async function confirmDeleteWorkout(workout: WorkoutSummary) {
+    setDeletingWorkoutId(workout.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(`/api/my-library/workouts/${workout.id}`, {
+        method: "DELETE",
+      });
+      const responseBody = (await response
+        .json()
+        .catch(() => null)) as WorkoutDeleteApiResponse | null;
+      const responseError =
+        responseBody && !responseBody.ok
+          ? responseBody.error
+          : "Could not delete workout right now.";
+
+      if (!response.ok || !responseBody?.ok) {
+        setError(responseError);
+        return;
+      }
+
+      setRecentWorkouts((current) => current.filter((summary) => summary.id !== workout.id));
+      setPendingDeleteWorkoutId(null);
+
+      if (savedWorkout?.id === workout.id) {
+        setSavedWorkout(null);
+        setDraft(null);
+        router.push("/my-library");
+        router.refresh();
+        return;
+      }
+
+      setSuccess(`Deleted ${workout.title}.`);
+      router.refresh();
+    } catch {
+      setError("Could not delete workout right now.");
+    } finally {
+      setDeletingWorkoutId(null);
+    }
   }
 
   return (
@@ -150,101 +200,97 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
         </div>
       ) : null}
 
-      {!savedWorkout ? (
-        <div className="mt-6 space-y-5">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-            <p className="text-sm font-medium text-amber-900">
-              {workoutLibrary.selectedWorkoutMissing
-                ? "That saved workout could not be found."
-                : "No canonical workout is loaded in this route."}
-            </p>
-            <p className="mt-2 text-sm text-amber-900/90">
-              Create a starter manual workout here, return to the generator for a brand-new AI
-              draft, or reopen another saved workout below.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {workoutLibrary.schemaReady ? (
-                <CreateManualWorkoutButton
-                  testId="workout-builder-empty-create-manual"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                />
-              ) : null}
-              <Link
-                href="/my-library/generator"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
-              >
-                Open generator
-              </Link>
-              <Link
-                href="/my-library"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                Back to My Library
-              </Link>
-            </div>
-          </div>
+      <div className="mt-6 space-y-5">
+        <SavedWorkoutsPanel
+          workouts={recentWorkouts}
+          heading="Saved workouts"
+          description="Edit another saved workout here and delete old test sessions when they are no longer useful."
+          workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
+          editLabel="Edit"
+          testId="session-generator-recent-workouts"
+          editButtonTestIdBuilder={(workoutId) =>
+            savedWorkout
+              ? `session-generator-open-workout-${workoutId}`
+              : `workout-builder-open-workout-${workoutId}`
+          }
+          deleteButtonTestIdBuilder={(workoutId) => `workout-builder-delete-workout-${workoutId}`}
+          confirmDeleteButtonTestIdBuilder={(workoutId) =>
+            `workout-builder-confirm-delete-workout-${workoutId}`
+          }
+          currentWorkoutId={savedWorkout?.id ?? null}
+          onOpenCurrentWorkoutPdf={null}
+          onRequestDeleteWorkout={(workout) => {
+            setPendingDeleteWorkoutId(workout.id);
+            setError("");
+            setSuccess("");
+          }}
+          onCancelDeleteWorkout={() => setPendingDeleteWorkoutId(null)}
+          onConfirmDeleteWorkout={confirmDeleteWorkout}
+          pendingDeleteWorkoutId={pendingDeleteWorkoutId}
+          deletingWorkoutId={deletingWorkoutId}
+        />
 
-          {recentWorkouts.length > 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-              <h3 className="text-sm font-semibold text-slate-900">Recent accepted workouts</h3>
-              <p className="mt-1 text-sm text-slate-600">
-                Reopen another saved canonical workout directly in this builder route.
+        {!savedWorkout ? (
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+              <p className="text-sm font-medium text-amber-900">
+                {workoutLibrary.selectedWorkoutMissing
+                  ? "That saved workout could not be found."
+                  : "No canonical workout is loaded in this route."}
               </p>
-              <div className="mt-4 grid gap-3">
-                {recentWorkouts.map((workout) => (
-                  <div
-                    key={workout.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {workout.totalDistanceM ? `${workout.totalDistanceM}m` : null}
-                        {workout.totalDistanceM && workout.estimatedDurationMin ? " · " : null}
-                        {workout.estimatedDurationMin
-                          ? `~${workout.estimatedDurationMin} min`
-                          : null}
-                      </p>
-                    </div>
-                    <Link
-                      href={`/my-library/workouts/${workout.id}`}
-                      data-testid={`workout-builder-open-workout-${workout.id}`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                    >
-                      Open
-                    </Link>
-                  </div>
-                ))}
+              <p className="mt-2 text-sm text-amber-900/90">
+                Create a starter manual workout here, return to the generator for a brand-new AI
+                draft, or reopen another saved workout below.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {workoutLibrary.schemaReady ? (
+                  <CreateManualWorkoutButton
+                    testId="workout-builder-empty-create-manual"
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  />
+                ) : null}
+                <Link
+                  href="/my-library/generator"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
+                >
+                  Open generator
+                </Link>
+                <Link
+                  href="/my-library"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                >
+                  Back to My Library
+                </Link>
               </div>
             </div>
-          ) : null}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
 
-      {draft && savedWorkout ? (
-        <div className="mt-6">
-          <WorkoutEditor
-            draft={draft}
-            savedWorkout={savedWorkout}
-            recentWorkouts={recentWorkouts}
-            canonicalSaveReady={workoutLibrary.schemaReady}
-            isSaving={isSaving}
-            onSave={saveWorkout}
-            hasUnsavedChanges={hasUnsavedChanges}
-            onDraftChange={(nextDraft) => {
-              setDraft(nextDraft);
-              setSuccess("");
-            }}
-            onResetToSaved={resetDraftToSavedWorkout}
-            startNewDraftHref="/my-library/generator"
-            startNewDraftLabel="Generate new draft"
-            showLoadedBanner={false}
-            recentWorkoutsDescription="Open another saved workout here, create a new manual workout from the header, or jump back to the generator when you want a brand-new AI draft."
-            workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
-            saveButtonTestId="workout-builder-save"
-          />
-        </div>
-      ) : null}
+        {draft && savedWorkout ? (
+          <div>
+            <WorkoutEditor
+              draft={draft}
+              savedWorkout={savedWorkout}
+              recentWorkouts={[]}
+              canonicalSaveReady={workoutLibrary.schemaReady}
+              isSaving={isSaving}
+              onSave={saveWorkout}
+              hasUnsavedChanges={hasUnsavedChanges}
+              onDraftChange={(nextDraft) => {
+                setDraft(nextDraft);
+                setSuccess("");
+              }}
+              onResetToSaved={resetDraftToSavedWorkout}
+              startNewDraftHref="/my-library/generator"
+              startNewDraftLabel="Generate new draft"
+              showLoadedBanner={false}
+              recentWorkoutsDescription="Open another saved workout here, create a new manual workout from the header, or jump back to the generator when you want a brand-new AI draft."
+              workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
+              saveButtonTestId="workout-builder-save"
+            />
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

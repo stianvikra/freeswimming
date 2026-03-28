@@ -8,7 +8,10 @@ vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
 }));
 
-import { PATCH as patchWorkout } from "@/app/api/my-library/workouts/[workoutId]/route";
+import {
+  DELETE as deleteWorkout,
+  PATCH as patchWorkout,
+} from "@/app/api/my-library/workouts/[workoutId]/route";
 import { POST as postWorkout } from "@/app/api/my-library/workouts/route";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import type { Database } from "@/types/database";
@@ -583,5 +586,82 @@ describe("workouts routes", () => {
 
     expect(response.status).toBe(404);
     expect(from).toHaveBeenCalledWith("workouts");
+  });
+
+  it("fails closed for unauthenticated workout delete", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+        },
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await deleteWorkout(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111",
+        {
+          method: "DELETE",
+        }
+      ),
+      {
+        params: Promise.resolve({
+          workoutId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it("deletes canonical workouts for the authenticated owner", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { id: "11111111-1111-4111-8111-111111111111" },
+      error: null,
+    });
+    const select = vi.fn(() => ({ maybeSingle }));
+    const eqWorkoutId = vi.fn(() => ({ select }));
+    const eqUserId = vi.fn(() => ({ eq: eqWorkoutId }));
+    const deleteRows = vi.fn(() => ({ eq: eqUserId }));
+    const from = vi.fn().mockReturnValue({ delete: deleteRows });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await deleteWorkout(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111",
+        {
+          method: "DELETE",
+        }
+      ),
+      {
+        params: Promise.resolve({
+          workoutId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as {
+      ok: boolean;
+      deletedWorkoutId: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(from).toHaveBeenCalledWith("workouts");
+    expect(eqUserId).toHaveBeenCalledWith("user_id", "user-1");
+    expect(eqWorkoutId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
+    expect(select).toHaveBeenCalledWith("id");
+    expect(payload).toEqual({
+      ok: true,
+      deletedWorkoutId: "11111111-1111-4111-8111-111111111111",
+    });
   });
 });

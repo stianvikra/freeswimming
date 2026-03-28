@@ -166,6 +166,8 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
       "Ready for the planned Garmin/export handoff."
     );
+    fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
+    fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeDisabled();
 
@@ -244,11 +246,14 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
       "Review 3 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
+    fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
     expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent("Pull");
     expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent("Fins");
     expect(screen.getByTestId("workout-editor-garmin-readiness-issue-2")).toHaveTextContent(
       "IM by round"
     );
+    fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
+    fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
     expect(screen.getByText(/Review the Garmin\/export notes above/i)).toBeVisible();
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
@@ -622,6 +627,9 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
+    fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
+
     expect(screen.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
       "data-handoff-state",
       "canonical"
@@ -808,9 +816,68 @@ describe("WorkoutBuilderHub", () => {
       "href",
       "/my-library/generator"
     );
+    fireEvent.click(screen.getByTestId("session-generator-recent-workouts-toggle"));
     expect(screen.getByTestId("workout-builder-open-workout-workout-1")).toHaveAttribute(
       "href",
       "/my-library/workouts/workout-1"
     );
+  });
+
+  it("collapses saved workouts by default and deletes a non-current workout deterministically", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        deletedWorkoutId: "workout-2",
+      }),
+    } as Response);
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          recentWorkouts: [
+            buildWorkoutSummary(),
+            buildWorkoutSummary({
+              id: "workout-2",
+              title: "Old QA cleanup workout",
+              totalDistanceM: 1600,
+              estimatedDurationMin: 37,
+            }),
+          ],
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.queryByTestId("saved-workout-card-workout-2")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("session-generator-recent-workouts-toggle"));
+
+    expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
+
+    expect(screen.getByText("Delete this saved workout from My Library?")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("workout-builder-confirm-delete-workout-workout-2"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith("/api/my-library/workouts/workout-2", {
+        method: "DELETE",
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("saved-workout-card-workout-2")).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Deleted Old QA cleanup workout.")).toBeVisible();
+    expect(navigationState.refresh).toHaveBeenCalledTimes(1);
   });
 });

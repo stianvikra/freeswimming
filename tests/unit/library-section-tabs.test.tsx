@@ -16,6 +16,9 @@ describe("LibrarySectionTabs", () => {
   it("tracks section-nav switches to library and explore", () => {
     render(<LibrarySectionTabs showExploreTab />);
 
+    expect(screen.getByText("Owned")).toBeVisible();
+    expect(screen.getByText("Explore")).toBeVisible();
+
     fireEvent.click(screen.getByRole("link", { name: "Jump to owned items" }));
     fireEvent.click(screen.getByRole("link", { name: "Jump to explore section" }));
 
@@ -33,6 +36,8 @@ describe("LibrarySectionTabs", () => {
     render(<LibrarySectionTabs showExploreTab={false} />);
 
     expect(screen.getByRole("link", { name: "Jump to owned items" })).toBeInTheDocument();
+    expect(screen.getByText("Owned")).toBeVisible();
+    expect(screen.queryByText("Explore")).toBeNull();
     expect(screen.queryByRole("link", { name: "Jump to explore section" })).toBeNull();
   });
 });

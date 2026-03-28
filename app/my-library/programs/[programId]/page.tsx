@@ -44,7 +44,7 @@ export default async function ProgramBuilderPage({ params }: Props) {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Program shell</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">Program planning</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
                 Open one saved program in its own route, place accepted workouts into week/day
                 slots, and export the saved canonical program without forking planner identity.
