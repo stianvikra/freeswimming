@@ -37,8 +37,15 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [pendingDeleteWorkoutId, setPendingDeleteWorkoutId] = useState<string | null>(null);
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
+  const [pendingCurrentDelete, setPendingCurrentDelete] = useState(false);
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
+  const currentWorkoutCardCopy = savedWorkout
+    ? (recentWorkouts.find((summary) => summary.id === savedWorkout.id) ?? {
+        id: savedWorkout.id,
+        title: savedWorkout.draft.title,
+      })
+    : null;
 
   useAutoDismissNotice(success, setSuccess);
 
@@ -54,6 +61,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
     setSuccess("");
     setPendingDeleteWorkoutId(null);
     setDeletingWorkoutId(null);
+    setPendingCurrentDelete(false);
   }, [
     workoutLibrary.recentWorkouts,
     workoutLibrary.selectedWorkout,
@@ -107,7 +115,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
     setSuccess("Unsaved builder edits were reset to the last saved workout.");
   }
 
-  async function confirmDeleteWorkout(workout: WorkoutSummary) {
+  async function confirmDeleteWorkout(workout: Pick<WorkoutSummary, "id" | "title">) {
     setDeletingWorkoutId(workout.id);
     setError("");
     setSuccess("");
@@ -133,6 +141,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
       setPendingDeleteWorkoutId(null);
 
       if (savedWorkout?.id === workout.id) {
+        setPendingCurrentDelete(false);
         setSavedWorkout(null);
         setDraft(null);
         router.push("/my-library");
@@ -204,10 +213,78 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
       ) : null}
 
       <div className="mt-6 space-y-5">
+        {savedWorkout && currentWorkoutCardCopy ? (
+          <div
+            data-testid="workout-builder-current-workout-actions"
+            className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Current saved workout
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {savedWorkout.draft.title}
+                </p>
+                <p className="mt-1 max-w-[72ch] text-sm text-slate-600">
+                  Delete the workout you are editing here. Use the editor&apos;s Poolside PDF below
+                  when you want the current draft or saved workout print view, and open the saved
+                  workouts list when you want to clean up older sessions too.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingCurrentDelete(true);
+                  setPendingDeleteWorkoutId(null);
+                  setError("");
+                  setSuccess("");
+                }}
+                disabled={deletingWorkoutId === savedWorkout.id}
+                data-testid="workout-builder-delete-current-workout"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete current workout"}
+              </button>
+            </div>
+
+            {pendingCurrentDelete ? (
+              <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-3">
+                <p className="text-sm font-medium text-rose-900">
+                  Delete the workout you are editing right now?
+                </p>
+                <p className="mt-1 text-sm text-rose-900/90">
+                  This removes the canonical workout from My Library and discards any unsaved local
+                  builder edits tied to it.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void confirmDeleteWorkout(currentWorkoutCardCopy)}
+                    disabled={deletingWorkoutId === savedWorkout.id}
+                    data-testid="workout-builder-confirm-delete-current-workout"
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete workout"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingCurrentDelete(false)}
+                    disabled={deletingWorkoutId === savedWorkout.id}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <SavedWorkoutsPanel
           workouts={recentWorkouts}
           heading="Saved workouts"
-          description="Edit, print, or delete another saved workout here when you need to clean up old test sessions."
+          description="Show edit, Poolside PDF, or delete actions for any saved workout here, including the one you are editing when you want older sessions in view."
           workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
           workoutPdfHrefBuilder={(workoutId) => `/api/my-library/workouts/${workoutId}/export/pdf`}
           editLabel="Edit"
@@ -223,6 +300,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
           }
           onRequestDeleteWorkout={(workout) => {
             setPendingDeleteWorkoutId(workout.id);
+            setPendingCurrentDelete(false);
             setError("");
             setSuccess("");
           }}

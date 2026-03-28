@@ -769,6 +769,7 @@ describe("WorkoutBuilderHub", () => {
       "data-pdf-state",
       "local_draft"
     );
+    expect(screen.getByRole("button", { name: "Open current draft PDF" })).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
 
@@ -782,6 +783,9 @@ describe("WorkoutBuilderHub", () => {
 
     expect(printWindow.document.write).toHaveBeenCalledWith(
       expect.stringContaining("Workout PDF print view")
+    );
+    expect(printWindow.document.write).toHaveBeenCalledWith(
+      expect.stringContaining("--accent: #1d4ed8;")
     );
     expect(printWindow.document.write).toHaveBeenCalledWith(
       expect.stringContaining("Source: Local draft")
@@ -800,6 +804,24 @@ describe("WorkoutBuilderHub", () => {
         { draftState: "local_draft" }
       )}. Use Print / Save PDF in that tab.`
     );
+  });
+
+  it("shows whole-workout guidance for the description field", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByText("Description")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching note that applies across the session."
+      )
+    ).toBeVisible();
   });
 
   it("shows clearer kick and drill taxonomy guidance inside the step form", async () => {
@@ -960,6 +982,45 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.getByText("Deleted Old QA cleanup workout.")).toBeVisible();
+    expect(navigationState.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets the owner delete the current workout without opening the saved-workouts list", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        deletedWorkoutId: "workout-1",
+      }),
+    } as Response);
+
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("workout-builder-current-workout-actions")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
+
+    expect(screen.getByText("Delete the workout you are editing right now?")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("workout-builder-confirm-delete-current-workout"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith("/api/my-library/workouts/workout-1", {
+        method: "DELETE",
+      });
+    });
+
+    await waitFor(() => {
+      expect(navigationState.push).toHaveBeenCalledWith("/my-library");
+    });
+
     expect(navigationState.refresh).toHaveBeenCalledTimes(1);
   });
 });

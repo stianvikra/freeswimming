@@ -823,15 +823,17 @@ export function buildWorkoutPdfHtmlDocument(
       :root {
         color-scheme: light;
         --ink: #172033;
-        --muted: #526079;
-        --line: #d7dce5;
-        --surface: #fffdf8;
-        --surface-soft: #f4efe6;
-        --accent: #0f766e;
-        --accent-soft: #dff5f2;
-        --warn: #92400e;
-        --warn-soft: #fff4d6;
-        --notice: #eef3ff;
+        --muted: #51607a;
+        --line: rgba(15, 23, 42, 0.12);
+        --page: #e8eef8;
+        --surface: #ffffff;
+        --surface-soft: #eff6ff;
+        --surface-muted: #f8fbff;
+        --accent: #1d4ed8;
+        --accent-soft: rgba(29, 78, 216, 0.1);
+        --warn: #9a3412;
+        --warn-soft: rgba(245, 158, 11, 0.14);
+        --notice: rgba(29, 78, 216, 0.08);
       }
 
       * {
@@ -842,9 +844,9 @@ export function buildWorkoutPdfHtmlDocument(
       body {
         margin: 0;
         padding: 0;
-        background: #e7e0d3;
+        background: var(--page);
         color: var(--ink);
-        font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       }
 
       body {
@@ -864,8 +866,9 @@ export function buildWorkoutPdfHtmlDocument(
         justify-content: space-between;
         gap: 12px;
         padding: 16px 20px;
-        background: rgba(23, 32, 51, 0.96);
-        color: #fff;
+        background: rgba(255, 255, 255, 0.94);
+        color: var(--ink);
+        border-bottom: 1px solid var(--line);
       }
 
       .toolbar-copy {
@@ -878,7 +881,7 @@ export function buildWorkoutPdfHtmlDocument(
         font-weight: 700;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.72);
+        color: var(--accent);
       }
 
       .toolbar-title {
@@ -893,18 +896,18 @@ export function buildWorkoutPdfHtmlDocument(
       }
 
       .toolbar-button {
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        background: transparent;
-        color: #fff;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
         border-radius: 999px;
         padding: 10px 16px;
         cursor: pointer;
       }
 
       .toolbar-button-primary {
-        background: #fff;
-        color: var(--ink);
-        border-color: #fff;
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
       }
 
       .shell {
@@ -923,9 +926,8 @@ export function buildWorkoutPdfHtmlDocument(
 
       .hero {
         padding: 32px;
-        background:
-          radial-gradient(circle at top right, rgba(15, 118, 110, 0.14), transparent 28%),
-          linear-gradient(135deg, #f3ede2 0%, #fffdf8 50%, #ebf7f5 100%);
+        background: linear-gradient(145deg, #eff6ff, #f8fbff 58%, #ffffff);
+        border-bottom: 1px solid rgba(23, 32, 51, 0.08);
       }
 
       .eyebrow {
@@ -941,13 +943,13 @@ export function buildWorkoutPdfHtmlDocument(
         display: inline-flex;
         margin: 14px 0 0;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.88);
         padding: 8px 14px;
         font-size: 12px;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--muted);
+        color: var(--accent);
       }
 
       h1 {
@@ -1101,7 +1103,7 @@ export function buildWorkoutPdfHtmlDocument(
         border: 1px solid rgba(23, 32, 51, 0.08);
         border-radius: 18px;
         padding: 14px 16px;
-        background: #fffdfa;
+        background: var(--surface-muted);
       }
 
       .detail-list,

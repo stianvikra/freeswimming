@@ -501,13 +501,21 @@ export default function WorkoutEditor({
   const workoutPdfHtml = buildWorkoutPdfHtmlDocument(draft, {
     draftState: handoffDraftState,
   });
+  const workoutPdfHeadingLabel =
+    handoffDraftState === "canonical" ? "Saved workout PDF" : "Current draft PDF";
   const workoutPdfStateLabel =
     handoffDraftState === "canonical" ? "Canonical workout PDF" : "Local draft workout PDF";
   const workoutPdfStateDescription = savedWorkout
     ? hasUnsavedChanges
-      ? "Print view reflects unsaved local edits. Save first if you want the canonical workout and PDF to match."
+      ? "This tab reflects your unsaved local edits. Save first if you want the canonical workout and this PDF to match exactly."
       : "Print view matches the saved canonical workout."
     : "Print view reflects the current local draft before canonical save.";
+  const workoutPdfBodyCopy =
+    handoffDraftState === "canonical"
+      ? "Open a print-ready workout sheet in a dedicated tab, then use your browser's Print / Save PDF flow for a poolside copy that matches the saved canonical workout."
+      : "Open a print-ready workout sheet in a dedicated tab for the exact draft currently on screen, then use your browser's Print / Save PDF flow for a poolside copy before you save.";
+  const workoutPdfButtonLabel =
+    handoffDraftState === "canonical" ? "Open saved Poolside PDF" : "Open current draft PDF";
   const garminExportStateLabel =
     handoffDraftState === "canonical"
       ? "Canonical Garmin-ready export"
@@ -1845,14 +1853,10 @@ export default function WorkoutEditor({
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-              Poolside PDF
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+              {workoutPdfHeadingLabel}
             </p>
-            <p className="mt-2 text-sm font-medium text-slate-900">
-              Open a print-ready workout sheet in a dedicated tab, then use your browser&apos;s
-              Print / Save PDF flow for a poolside copy that matches the current supported workout
-              contract.
-            </p>
+            <p className="mt-2 text-sm font-medium text-slate-900">{workoutPdfBodyCopy}</p>
             <p
               data-testid="workout-editor-pdf-source"
               data-pdf-state={handoffDraftState}
@@ -1869,7 +1873,7 @@ export default function WorkoutEditor({
               data-testid="workout-editor-pdf-open"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              Open poolside PDF
+              {workoutPdfButtonLabel}
             </button>
           </div>
         </div>
@@ -2108,6 +2112,10 @@ export default function WorkoutEditor({
 
         <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
           Description
+          <p className="mt-2 text-xs text-slate-500">
+            Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching
+            note that applies across the session.
+          </p>
           <textarea
             value={draft.description}
             onChange={(event) => updateDraft("description", event.target.value)}
