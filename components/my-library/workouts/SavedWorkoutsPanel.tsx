@@ -117,7 +117,7 @@ export default function SavedWorkoutsPanel({
                         data-testid={printButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
                       >
-                        Poolside PDF
+                        PDF
                       </Link>
                     ) : null}
                     {typeof onRequestDeleteWorkout === "function" ? (

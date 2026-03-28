@@ -35,7 +35,7 @@ describe("CreateManualWorkoutButton", () => {
 
     render(<CreateManualWorkoutButton />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Create manual workout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create manual swim session" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -65,7 +65,7 @@ describe("CreateManualWorkoutButton", () => {
 
     render(<CreateManualWorkoutButton />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Create manual workout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create manual swim session" }));
 
     await waitFor(() => {
       expect(screen.getByText("Could not create workout right now.")).toBeVisible();

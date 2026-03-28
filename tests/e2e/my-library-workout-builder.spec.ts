@@ -104,13 +104,8 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
-    await page.getByTestId("session-generator-recent-workouts-toggle").click();
-    const savedWorkoutCard = page
-      .locator('[data-testid^="saved-workout-card-"]')
-      .filter({ hasText: "Manual pool workout" })
-      .first();
     const savedWorkoutPdfPopupPromise = page.waitForEvent("popup");
-    await savedWorkoutCard.getByRole("link", { name: "Poolside PDF" }).click();
+    await page.getByRole("button", { name: "Open saved PDF" }).click();
     const savedWorkoutPdfPopup = await savedWorkoutPdfPopupPromise;
     await expect(
       savedWorkoutPdfPopup.locator('[data-testid="workout-pdf-print-view"]')
@@ -122,7 +117,6 @@ test.describe("my library workout builder", () => {
       "Manual pool workout"
     );
     await savedWorkoutPdfPopup.close();
-    await page.getByTestId("session-generator-recent-workouts-toggle").click();
 
     await page.getByTestId("session-draft-step-remove-0").click();
     await expect(page.getByTestId("workout-editor-removal-confirm")).toContainText(

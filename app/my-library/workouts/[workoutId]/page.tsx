@@ -44,10 +44,11 @@ export default async function WorkoutBuilderPage({ params }: Props) {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Workout builder</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">Swim session builder</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Open one accepted workout in its own route, edit the canonical step structure, and
-                keep the saved workout ready for richer builder follow-on slices.
+                Open one saved swim session in its own route, edit the canonical step structure, and
+                keep the current session front and center while secondary cleanup stays out of the
+                way.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

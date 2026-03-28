@@ -963,6 +963,7 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("session-generator-recent-workouts-toggle"));
 
+    expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
@@ -1007,7 +1008,7 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
-    expect(screen.getByText("Delete the workout you are editing right now?")).toBeVisible();
+    expect(screen.getByText("Delete the session you are editing right now?")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-builder-confirm-delete-current-workout"));
 
