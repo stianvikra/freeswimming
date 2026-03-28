@@ -224,6 +224,12 @@ test.describe("my library workout builder", () => {
       "data-pdf-state",
       "local_draft"
     );
+    await expect(page.getByRole("button", { name: "Open current draft PDF" })).toBeVisible();
+    await expect(
+      page.getByText(
+        "Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching note that applies across the session."
+      )
+    ).toBeVisible();
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     const pdfPopupPromise = page.waitForEvent("popup");
@@ -336,9 +342,8 @@ test.describe("my library workout builder", () => {
         response.request().method() === "DELETE"
     );
 
-    await page.getByTestId("session-generator-recent-workouts-toggle").click();
-    await page.getByTestId(`workout-builder-delete-workout-${workoutId}`).click();
-    await page.getByTestId(`workout-builder-confirm-delete-workout-${workoutId}`).click();
+    await page.getByTestId("workout-builder-delete-current-workout").click();
+    await page.getByTestId("workout-builder-confirm-delete-current-workout").click();
 
     const deleteResponse = await deleteResponsePromise;
     const deletePayload = (await deleteResponse.json().catch(() => null)) as {
