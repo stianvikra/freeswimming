@@ -264,22 +264,23 @@ export default async function MyLibraryPage() {
                           ]
                             .filter(Boolean)
                             .join(" · ")
-                        : "Saved swim sessions will appear here after you start your first manual session or accept a generated draft."}
+                        : "Saved swim sessions will appear here after you create your first manual session or accept a generated draft."}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {workoutLibrarySnapshot.recentWorkouts[0] ? (
                     <Link
-                      href={`/my-library/workouts/${workoutLibrarySnapshot.recentWorkouts[0].id}`}
+                      href={`/my-library/workouts/${workoutLibrarySnapshot.recentWorkouts[0].id}?savedSessions=open`}
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                     >
-                      Resume latest saved session
+                      View sessions
                     </Link>
                   ) : null}
                   {workoutLibrarySnapshot.schemaReady ? (
                     <CreateManualWorkoutButton
-                      label="Start manual swim session"
+                      label="Create session"
                       testId="my-library-create-manual-workout"
+                      latestSavedWorkout={workoutLibrarySnapshot.recentWorkouts[0] ?? null}
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                     />
                   ) : null}

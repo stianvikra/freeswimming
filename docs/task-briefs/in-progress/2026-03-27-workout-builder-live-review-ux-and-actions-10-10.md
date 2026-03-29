@@ -107,6 +107,13 @@ Triage update on `2026-03-29`:
   - `a73a376b-1912-457f-9df6-474ffaf48b4c` `What is this?`
   - `7e075645-84e8-4fcb-a23e-518862ad03d5` `Ehy i smh library button here`
 
+Triage update on `2026-03-29` for the current builder-entry follow-up:
+
+- `d487ac23-a1e0-4be9-938a-7407a3c35fe0` `Swim Session Builder`
+  - disposition: owned by this brief.
+  - reason: the production note is a direct continuation of the active builder-entry IA work and asks for a focused `View sessions` / `Create session` model, a truthful continue-vs-start-new choice, and a more form-first builder route.
+  - implementation constraint: there is still no separate cross-page unsaved local draft entity, so `continue draft` must be expressed truthfully as continuing the latest saved/current canonical session rather than implying a hidden draft store.
+
 ## Platform 10/10 Scorecard Mapping
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
@@ -192,6 +199,10 @@ Critical target categories for `10/10` claim in this brief:
   - delete workout,
   - consistent open/edit affordances,
   - truthful print/PDF affordances.
+- Make builder entry and resume choices easier to understand:
+  - `View sessions` for existing saved sessions,
+  - `Create session` for a new manual session,
+  - if a saved/current session already exists, offer a small continue-vs-start-new decision instead of silently creating another scaffold.
 - Rationalize builder/export entrypoints so redundant or misleading print controls are removed or merged into one clearer flow.
 - Make noisy builder support panels calmer by default:
   - Garmin JSON,
@@ -208,6 +219,9 @@ Critical target categories for `10/10` claim in this brief:
   - extra mode buttons such as `Explore mode` / redundant `My Library` controls,
   - whether those surfaces should be hidden, renamed, or explained.
 - Tune poolside/PDF output toward the observed real-world print use case without promising a broader document system than we actually support.
+- Keep the builder route form-first:
+  - when a session is being edited, the session form should remain the dominant surface,
+  - saved-session browsing should stay secondary behind an explicit action instead of always sharing equal visual weight.
 
 ## Out Of Scope
 
@@ -229,7 +243,9 @@ Critical target categories for `10/10` claim in this brief:
 7. My Library no longer shows unexplained `Program shell` or confusing mode buttons without an explicit IA decision.
 8. Poolside/PDF affordances are truthful to the actual supported output, and the preferred print flow is clearer than the current state.
 9. Relevant production admin notes listed above remain explicitly owned by this brief until shipped or intentionally split again.
-10. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
+10. Builder entry uses explicit `View sessions` and `Create session` actions, and creating a new manual session from an environment with existing saved work offers a truthful continue-vs-start-new choice.
+11. Starting a new manual session opens a clean scratch session shell rather than a multi-block starter set, while still preserving canonical save guarantees and clear session identity.
+12. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
 
 ## Validation
 
@@ -255,6 +271,7 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-03-29` — slice 5 implemented on branch `fix/workout-builder-ux-ia-cleanup-2026-03-29`; simplified My Library IA by removing the extra owned/explore jump controls, reframed the early program surface as an optional `Program builder preview`, made manual session entry language more direct, tightened current-session delete copy, and moved builder-route PDF access into the save/action bar instead of a separate support panel. Targeted `typecheck`, builder unit tests, `my-library-workout-builder` desktop Chromium, and `my-library-program-export` desktop Chromium (schema-gated skip after updated readiness detection) are green. Next step: run `npm run lint:briefs` and `npm run verify:pre-pr`, then open/update a PR if green.
+- `2026-03-29` — added production note `d487ac23-a1e0-4be9-938a-7407a3c35fe0` `Swim Session Builder` to this brief. The next slice will make entry actions explicit (`View sessions` / `Create session`), use a truthful continue-vs-start-new chooser when saved work already exists, switch manual create to a clean scratch session shell, and keep saved-session browsing secondary behind an explicit action so the builder route stays form-first.
 - `2026-03-28` — slice 4 implemented on branch `fix/workout-builder-focused-entry-2026-03-28`; renamed the workout-builder surface to `Swim session builder`, made the current saved session/editor the primary route focus, kept other saved sessions secondary instead of duplicating the active one, and simplified row-level PDF language from `Poolside PDF` to `PDF`. Targeted `vitest`, `typecheck`, and desktop-chromium generator/workout-builder e2e are green. Next step: run `npm run lint:briefs` and `npm run verify:pre-pr`, then open a PR if green.
 - `2026-03-27` — moved to `in-progress` on branch `fix/workout-builder-live-review-actions-2026-03-27`; first implementation slice adds owner-scoped workout delete API/UI, calmer collapsed support panels, builder label cleanup, and My Library wording cleanup. Next step: finish targeted validation and run `npm run verify:pre-pr`.
 - `2026-03-28` — slice 3 implemented on branch `fix/workout-builder-current-actions-2026-03-28`; added current-workout action strip, clearer PDF state copy, bluer poolside PDF styling, and targeted generator-intake auth-redirect hardening after a confirmed `verify:pre-merge` auth/Supabase flake. Next step: rerun targeted generator-intake coverage, rerun `npm run verify:pre-merge`, then merge if green.
@@ -358,6 +375,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-29 | implementation | slice 7 on branch fix/workout-builder-draft-first-entry-2026-03-29 makes builder entry explicit with `View sessions`and`Create session`, adds a truthful continue-vs-start-scratch chooser whenever saved work already exists, opens the builder route with saved sessions hidden unless explicitly requested, and switches manual create to a cleaner scratch session shell that still respects current workout persistence constraints; targeted unit + desktop-chromium builder e2e + desktop-chromium program-export e2e and full npm run verify:pre-pr are green | next: commit, push, open/update PR, then wait for CI before npm run verify:pre-merge`
 - `2026-03-29 | implementation | slice 6 on branch fix/workout-builder-pdf-poolside-v2-2026-03-29 splits the builder export into a richer full-session PDF and a real compact Poolside PDF, threads open training focuses into the poolside variant, makes one-line-per-interval poolside layout explicit, and surfaces both PDF actions consistently in the editor and saved-session list; targeted typecheck, workout PDF/shared vitest, workout route vitest, builder hub vitest, and desktop-chromium my-library workout-builder e2e are green | next: run npm run verify:pre-pr, then open/update a PR if the full gate stays green`
 - `2026-03-27 | planning | created a dedicated workout-builder live-review UX/actions brief to own the current production-note batch around delete/edit/print actions, calmer panel defaults, form copy cleanup, poolside PDF truthfulness, and My Library IA confusion before program-builder work resumes | next: review manual workout-builder usage against this brief, then pick the first narrow implementation slice`
 - `2026-03-28 | implementation | slice 2 on branch fix/workout-builder-pdf-notices-2026-03-28 adds row-level canonical Poolside PDF links for saved workouts, auto-dismisses transient builder success notices, and clarifies kick/drill authoring guidance without changing the canonical workout model; targeted typecheck, vitest, and desktop-chromium workout-builder e2e are green | next: update runbook coverage, then run npm run lint:briefs and npm run verify:pre-pr`

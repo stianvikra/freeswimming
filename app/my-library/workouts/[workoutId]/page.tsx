@@ -12,14 +12,19 @@ type Params = Promise<{
   workoutId: string;
 }>;
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 type Props = {
   params: Params;
+  searchParams: SearchParams;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export default async function WorkoutBuilderPage({ params }: Props) {
+export default async function WorkoutBuilderPage({ params, searchParams }: Props) {
   const { workoutId } = await params;
+  const resolvedSearchParams = await searchParams;
+  const savedSessionsOpenByDefault = resolvedSearchParams.savedSessions === "open";
 
   if (!UUID_PATTERN.test(workoutId)) {
     notFound();
@@ -54,9 +59,8 @@ export default async function WorkoutBuilderPage({ params }: Props) {
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Swim session builder</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Open one saved swim session in its own route, edit the canonical step structure, and
-                keep the current session front and center while secondary cleanup stays out of the
-                way.
+                Edit one saved swim session at a time, keep the form front and center, and open
+                saved sessions only when you want to switch, print, or clean up older work.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -78,6 +82,7 @@ export default async function WorkoutBuilderPage({ params }: Props) {
           <div className="mt-8">
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
+              savedSessionsOpenByDefault={savedSessionsOpenByDefault}
               trainingFocusTitles={trainingFocusTitles}
             />
           </div>

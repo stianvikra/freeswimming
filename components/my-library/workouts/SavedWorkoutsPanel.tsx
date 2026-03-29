@@ -25,6 +25,8 @@ type Props = {
   deletingWorkoutId?: string | null;
   printButtonTestIdBuilder?: (workoutId: string) => string;
   poolsidePdfButtonTestIdBuilder?: (workoutId: string) => string;
+  currentWorkoutId?: string | null;
+  showToggle?: boolean;
 };
 
 export default function SavedWorkoutsPanel({
@@ -47,6 +49,8 @@ export default function SavedWorkoutsPanel({
   deletingWorkoutId = null,
   printButtonTestIdBuilder = (workoutId) => `saved-workouts-print-${workoutId}`,
   poolsidePdfButtonTestIdBuilder = (workoutId) => `saved-workouts-poolside-${workoutId}`,
+  currentWorkoutId = null,
+  showToggle = true,
 }: Props) {
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
 
@@ -70,24 +74,27 @@ export default function SavedWorkoutsPanel({
             {workouts.length} saved session{workouts.length === 1 ? "" : "s"} ready to reopen
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setExpanded((current) => !current)}
-          aria-expanded={expanded}
-          data-testid={`${testId}-toggle`}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-        >
-          {expanded ? "Hide saved sessions" : "Show saved sessions"}
-        </button>
+        {showToggle ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((current) => !current)}
+            aria-expanded={expanded}
+            data-testid={`${testId}-toggle`}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+          >
+            {expanded ? "Hide saved sessions" : "Show saved sessions"}
+          </button>
+        ) : null}
       </div>
 
-      {expanded ? (
+      {!showToggle || expanded ? (
         <div className="mt-4 grid gap-3">
           {workouts.map((workout) => {
             const deleting = deletingWorkoutId === workout.id;
             const pendingDelete = pendingDeleteWorkoutId === workout.id;
             const workoutPdfHref = workoutPdfHrefBuilder?.(workout.id) ?? null;
             const workoutPoolsidePdfHref = workoutPoolsidePdfHrefBuilder?.(workout.id) ?? null;
+            const isCurrentWorkout = currentWorkoutId === workout.id;
 
             return (
               <div
@@ -97,7 +104,17 @@ export default function SavedWorkoutsPanel({
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
+                      {isCurrentWorkout ? (
+                        <span
+                          data-testid={`saved-workout-current-${workout.id}`}
+                          className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700"
+                        >
+                          Current
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="mt-1 text-sm text-slate-600">
                       {workout.totalDistanceM ? `${workout.totalDistanceM}m` : null}
                       {workout.totalDistanceM && workout.estimatedDurationMin ? " · " : null}
@@ -107,13 +124,15 @@ export default function SavedWorkoutsPanel({
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href={workoutHrefBuilder(workout.id)}
-                      data-testid={editButtonTestIdBuilder(workout.id)}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                    >
-                      {editLabel}
-                    </Link>
+                    {!isCurrentWorkout ? (
+                      <Link
+                        href={workoutHrefBuilder(workout.id)}
+                        data-testid={editButtonTestIdBuilder(workout.id)}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      >
+                        {editLabel}
+                      </Link>
+                    ) : null}
                     {workoutPdfHref ? (
                       <Link
                         href={workoutPdfHref}
@@ -136,7 +155,7 @@ export default function SavedWorkoutsPanel({
                         Poolside PDF
                       </Link>
                     ) : null}
-                    {typeof onRequestDeleteWorkout === "function" ? (
+                    {!isCurrentWorkout && typeof onRequestDeleteWorkout === "function" ? (
                       <button
                         type="button"
                         onClick={() => onRequestDeleteWorkout(workout)}

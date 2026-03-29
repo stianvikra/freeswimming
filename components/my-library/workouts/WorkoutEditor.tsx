@@ -2320,6 +2320,20 @@ export default function WorkoutEditor({
         </div>
 
         <div className="mt-4 space-y-4">
+          {stepGroups.length === 0 ? (
+            <div
+              data-testid="session-draft-empty-steps"
+              className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4"
+            >
+              <p className="text-sm font-medium text-slate-900">
+                Start from a clean empty session.
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                Add your first step or repeat block below when you are ready to build from scratch.
+              </p>
+            </div>
+          ) : null}
+
           {pendingRemoval ? (
             <div
               data-testid="workout-editor-removal-confirm"

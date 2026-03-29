@@ -91,6 +91,26 @@ function buildStarterSteps(seed: string): SessionDraftStep[] {
   ];
 }
 
+function buildCleanStarterSteps(seed: string): SessionDraftStep[] {
+  return [
+    {
+      id: buildStepId(seed, 0),
+      category: "main",
+      name: "First step",
+      stroke: "freestyle",
+      drillType: "none",
+      equipment: "none",
+      intensity: "moderate",
+      durationMode: "distance",
+      distanceM: 100,
+      timeMin: null,
+      targetMode: "none",
+      targetSummary: "",
+      notes: "",
+    },
+  ];
+}
+
 export function buildManualWorkoutStarterDraft(now = new Date()): SessionDraft {
   const createdAt = now.toISOString();
   const seed = createdAt.replace(/[^0-9]/g, "").slice(0, 14);
@@ -123,6 +143,47 @@ export function buildManualWorkoutStarterDraft(now = new Date()): SessionDraft {
     constraintText: null,
     warnings: [],
     steps,
+  };
+  const totals = computeSessionDraftDerivedTotals(baseDraft);
+
+  return {
+    ...baseDraft,
+    totalDistanceM: totals.totalDistanceM,
+    estimatedDurationMin: totals.estimatedDurationMin,
+  };
+}
+
+export function buildManualWorkoutEmptyDraft(now = new Date()): SessionDraft {
+  const createdAt = now.toISOString();
+  const seed = createdAt.replace(/[^0-9]/g, "").slice(0, 14);
+  const title = "Untitled swim session";
+  const baseDraft: SessionDraft = {
+    version: 1,
+    status: "draft",
+    generatorKind: "rule_engine_v1",
+    createdAt,
+    sourceFingerprint: `manual-empty-${seed}`,
+    title,
+    titleSuggestions: [title],
+    description: "",
+    environment: "pool",
+    poolLengthM: 25,
+    sessionType: "endurance",
+    effort: "moderate",
+    sizeMode: "distance",
+    targetDistanceM: null,
+    targetTimeMin: null,
+    totalDistanceM: null,
+    estimatedDurationMin: null,
+    basePaceSecondsPer100m: 120,
+    usedCssPaceLabel: null,
+    allowedStrokes: ["freestyle"],
+    equipmentAllowlist: [],
+    focusText: null,
+    goalTitle: null,
+    constraintText: null,
+    warnings: [],
+    steps: buildCleanStarterSteps(seed),
   };
   const totals = computeSessionDraftDerivedTotals(baseDraft);
 

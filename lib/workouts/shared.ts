@@ -1825,7 +1825,6 @@ export function normalizeSessionDraftForWorkoutPersistence(
     normalizedDraft.sizeMode === "estimated_time"
       ? (normalizedDraft.targetTimeMin ?? totals.estimatedDurationMin)
       : null;
-
   if (normalizedDraft.sizeMode === "distance" && targetDistanceM === null) {
     return { ok: false, error: "Distance-based workouts need a target distance before saving." };
   }
