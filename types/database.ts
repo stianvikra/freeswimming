@@ -1025,6 +1025,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      dryland_sessions: {
+        Row: {
+          actual_duration_seconds: number | null;
+          completed_at: string | null;
+          created_at: string;
+          description: string;
+          exercises: Json;
+          focus_text: string | null;
+          id: string;
+          session_kind: string;
+          source_kind: string;
+          started_at: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          actual_duration_seconds?: number | null;
+          completed_at?: string | null;
+          created_at?: string;
+          description?: string;
+          exercises?: Json;
+          focus_text?: string | null;
+          id?: string;
+          session_kind: string;
+          source_kind: string;
+          started_at?: string | null;
+          status: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          actual_duration_seconds?: number | null;
+          completed_at?: string | null;
+          created_at?: string;
+          description?: string;
+          exercises?: Json;
+          focus_text?: string | null;
+          id?: string;
+          session_kind?: string;
+          source_kind?: string;
+          started_at?: string | null;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       workouts: {
         Row: {
           accepted_at: string;

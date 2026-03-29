@@ -9,6 +9,7 @@ import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
+import CreateManualDrylandSessionButton from "@/components/my-library/dryland/CreateManualDrylandSessionButton";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
@@ -21,6 +22,7 @@ import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import { loadProgramLibrarySnapshot } from "@/lib/programs/server";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
+import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
 
 export const dynamic = "force-dynamic";
 
@@ -91,11 +93,13 @@ export default async function MyLibraryPage() {
     athleteProfileSnapshot,
     workoutLibrarySnapshot,
     programLibrarySnapshot,
+    drylandLibrarySnapshot,
   ] = await Promise.all([
     loadTrainingContextSnapshot(supabase, user.id),
     loadAthleteProfileSnapshot(supabase, user.id),
     loadWorkoutLibrarySnapshot(supabase, user.id, null),
     loadProgramLibrarySnapshot(supabase, user.id, null),
+    loadDrylandLibrarySnapshot(supabase, user.id, null),
   ]);
 
   const claimQuery = new URLSearchParams({ next: "/my-library" });
@@ -283,6 +287,57 @@ export default async function MyLibraryPage() {
                       latestSavedWorkout={workoutLibrarySnapshot.recentWorkouts[0] ?? null}
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                     />
+                  ) : null}
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Dryland builder</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {!drylandLibrarySnapshot.schemaReady
+                      ? "This dryland foundation is still syncing in this environment."
+                      : drylandLibrarySnapshot.recentSessions[0]
+                        ? [
+                            drylandLibrarySnapshot.recentSessions[0].title,
+                            drylandLibrarySnapshot.recentSessions[0].exerciseCount
+                              ? `${drylandLibrarySnapshot.recentSessions[0].exerciseCount} exercises`
+                              : null,
+                            drylandLibrarySnapshot.recentSessions[0].actualDurationSeconds
+                              ? `${Math.round(drylandLibrarySnapshot.recentSessions[0].actualDurationSeconds / 60)} min`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Build simple strength and stretching sessions with a small exercise bank, set chips, and optional start/stop timing."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {drylandLibrarySnapshot.recentSessions[0] ? (
+                    <Link
+                      href="/my-library/dryland"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      View dryland sessions
+                    </Link>
+                  ) : null}
+                  {drylandLibrarySnapshot.schemaReady ? (
+                    <>
+                      <CreateManualDrylandSessionButton
+                        sessionKind="strength"
+                        label="Create strength session"
+                        testId="my-library-create-strength-session"
+                        className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      />
+                      <CreateManualDrylandSessionButton
+                        sessionKind="stretching"
+                        label="Create stretching session"
+                        testId="my-library-create-stretching-session"
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                    </>
                   ) : null}
                 </div>
               </div>
