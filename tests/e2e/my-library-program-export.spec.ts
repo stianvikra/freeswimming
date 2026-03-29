@@ -59,6 +59,16 @@ async function ensureProgramSchemaReady(page: Page) {
   }
 }
 
+async function triggerCreateSession(page: Page, testId: string) {
+  await page.getByTestId(testId).click();
+  const startScratchButton = page.getByTestId(`${testId}-start-scratch`);
+  const chooserVisible = await startScratchButton.isVisible({ timeout: 1_500 }).catch(() => false);
+
+  if (chooserVisible) {
+    await startScratchButton.click();
+  }
+}
+
 test.describe("my library program export", () => {
   test("exports a saved canonical program as garmin-ready json and printable pdf", async ({
     page,
@@ -80,7 +90,7 @@ test.describe("my library program export", () => {
         response.status() === 200
     );
 
-    await page.getByTestId("my-library-create-manual-workout").click();
+    await triggerCreateSession(page, "my-library-create-manual-workout");
     await createWorkoutResponsePromise;
     await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/, {
       timeout: 20_000,

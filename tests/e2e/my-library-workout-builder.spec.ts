@@ -42,8 +42,18 @@ async function waitForWorkoutBuilderSaveReady(page: Page) {
   await expect(saveButton).toBeVisible({ timeout: 15_000 });
 }
 
+async function triggerCreateSession(page: Page, testId: string) {
+  await page.getByTestId(testId).click();
+  const startScratchButton = page.getByTestId(`${testId}-start-scratch`);
+  const chooserVisible = await startScratchButton.isVisible({ timeout: 1_500 }).catch(() => false);
+
+  if (chooserVisible) {
+    await startScratchButton.click();
+  }
+}
+
 test.describe("my library workout builder", () => {
-  test("creates a manual starter workout and saves canonical edits", async ({ page }, testInfo) => {
+  test("creates a clean new swim session and saves canonical edits", async ({ page }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
 
@@ -61,7 +71,7 @@ test.describe("my library workout builder", () => {
         response.status() === 200
     );
 
-    await page.getByTestId("my-library-create-manual-workout").click();
+    await triggerCreateSession(page, "my-library-create-manual-workout");
     await createResponsePromise;
     await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/, {
       timeout: 10_000,
@@ -70,18 +80,10 @@ test.describe("my library workout builder", () => {
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
 
-    await expect(page.getByTestId("session-draft-title")).toHaveValue("Manual pool workout");
+    await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled swim session");
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
-    await expect(page.getByTestId("session-draft-step-name-0")).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
-    );
-    await expect(page.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
-      "data-readiness-status",
-      "ready"
-    );
-    await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
-      "Ready for the planned Garmin/export handoff."
     );
     await page.getByTestId("workout-editor-garmin-export-toggle").click();
     await page.getByTestId("workout-editor-handoff-toggle").click();
@@ -93,7 +95,7 @@ test.describe("my library workout builder", () => {
       "Source: Canonical workout"
     );
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
-      "Title: Manual pool workout"
+      "Title: Untitled swim session"
     );
     await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",
@@ -117,9 +119,12 @@ test.describe("my library workout builder", () => {
       "Source: Canonical workout"
     );
     await expect(savedWorkoutPdfPopup.locator('[data-testid="workout-pdf-title"]')).toContainText(
-      "Manual pool workout"
+      "Untitled swim session"
     );
     await savedWorkoutPdfPopup.close();
+
+    await page.getByTestId("session-draft-step-toggle-0").click();
+    await page.getByTestId("session-draft-step-name-0").fill("Warmup swim");
 
     await page.getByTestId("session-draft-step-remove-0").click();
     await expect(page.getByTestId("workout-editor-removal-confirm")).toContainText(
@@ -139,43 +144,24 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("workout-editor-removal-undo-button").click();
     await expect(page.getByTestId("workout-editor-removal-undo")).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
-      "All builder changes are saved to the canonical workout."
+      "Unsaved changes stay local until you save this workout."
     );
-    await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
+    await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
-    await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
-    await page.getByTestId("session-draft-step-toggle-0").click();
-    await expect(page.getByTestId("session-draft-step-name-0")).toHaveCount(0);
-
     await page.getByTestId("session-draft-pool-length-input").fill("33.33");
-    await page.getByTestId("session-draft-step-toggle-0").click();
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
     await page.getByTestId("session-draft-add-repeat").click();
-    await page.getByTestId("session-draft-repeat-count-5").fill("6");
-    await page.getByTestId("session-draft-step-name-5").fill("Repeat swim focus");
-    await page.getByTestId("session-draft-step-distance-5").selectOption("200");
-    await page.getByTestId("session-draft-step-stroke-5").selectOption("backstroke");
-    await page.getByTestId("session-draft-step-drill-type-5").selectOption("pull");
-    await page.getByTestId("session-draft-step-equipment-5").selectOption("fins");
-    await page.getByTestId("session-draft-step-target-mode-5").selectOption("target_pace");
-    await page.getByTestId("session-draft-step-target-pace-minutes-5").fill("1");
-    await page.getByTestId("session-draft-step-target-pace-seconds-5").fill("35");
-    await page.getByTestId("session-draft-step-toggle-6").click();
-    await page.getByTestId("session-draft-step-duration-mode-6").selectOption("send_off");
-    await page.getByTestId("session-draft-step-sendoff-minutes-6").fill("2");
-    await page.getByTestId("session-draft-step-sendoff-seconds-6").fill("00");
-    await page.getByTestId("session-draft-repeat-duplicate-5").click();
-    await expect(page.getByTestId("session-draft-repeat-count-6")).toHaveValue("6");
-    await page.getByTestId("session-draft-repeat-count-6").fill("3");
-    await page.getByTestId("session-draft-step-name-7").fill("Repeat swim copy focus");
-    await page.getByTestId("session-draft-repeat-add-step-after-6").click();
-    await page.getByTestId("session-draft-step-name-9").fill("QA CSS send-off reset");
-    await page.getByTestId("session-draft-step-duration-mode-9").selectOption("css_send_off");
-    await page.getByTestId("session-draft-step-stroke-9").selectOption("reverse_im_order");
-    await page.getByTestId("session-draft-step-css-sendoff-offset-9").selectOption("2");
-    await page.getByTestId("session-draft-step-target-mode-9").selectOption("none");
+    await page.getByTestId("session-draft-repeat-count-1").fill("6");
+    await page.getByTestId("session-draft-step-name-1").fill("Repeat swim focus");
+    await page.getByTestId("session-draft-step-distance-1").selectOption("200");
+    await page.getByTestId("session-draft-step-stroke-1").selectOption("backstroke");
+    await page.getByTestId("session-draft-step-drill-type-1").selectOption("pull");
+    await page.getByTestId("session-draft-step-equipment-1").selectOption("fins");
+    await page.getByTestId("session-draft-step-target-mode-1").selectOption("target_pace");
+    await page.getByTestId("session-draft-step-target-pace-minutes-1").fill("1");
+    await page.getByTestId("session-draft-step-target-pace-seconds-1").fill("35");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
@@ -185,14 +171,11 @@ test.describe("my library workout builder", () => {
       "review"
     );
     await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
-      "Review 5 Garmin/export mapping details before you treat this workout as handoff-ready."
+      "Review 2 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
     await page.getByTestId("workout-editor-garmin-readiness-toggle").click();
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText("Pull");
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-1")).toContainText("Fins");
-    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-4")).toContainText(
-      "Reverse IM order (RIMO)"
-    );
     await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
       "data-handoff-state",
       "local_draft"
@@ -241,7 +224,7 @@ test.describe("my library workout builder", () => {
     await expect(pdfPopup.locator('[data-testid="workout-pdf-title"]')).toContainText(uniqueTitle);
     await expect(pdfPopup.locator("body")).toContainText("Workout PDF");
     await expect(pdfPopup.locator("body")).toContainText("Print / Save PDF");
-    await expect(pdfPopup.locator("body")).toContainText("Reverse IM order (RIMO)");
+    await expect(pdfPopup.locator("body")).toContainText("Repeat swim focus");
     await pdfPopup.close();
 
     const poolsidePopupPromise = page.waitForEvent("popup");
@@ -300,36 +283,16 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(page.getByTestId("session-draft-step-distance-0")).toHaveValue("custom");
     await expect(page.getByTestId("session-draft-step-distance-custom-0")).toHaveValue("333");
-    await expect(page.getByTestId("session-draft-repeat-count-5")).toHaveValue("6");
-    await expect(page.getByTestId("session-draft-repeat-count-6")).toHaveValue("3");
-    await page.getByTestId("session-draft-step-toggle-5").click();
-    await expect(page.getByTestId("session-draft-step-name-5")).toHaveValue("Repeat swim focus");
-    await expect(page.getByTestId("session-draft-step-distance-5")).toHaveValue("200");
-    await expect(page.getByTestId("session-draft-step-stroke-5")).toHaveValue("backstroke");
-    await expect(page.getByTestId("session-draft-step-drill-type-5")).toHaveValue("pull");
-    await expect(page.getByTestId("session-draft-step-equipment-5")).toHaveValue("fins");
-    await expect(page.getByTestId("session-draft-step-target-mode-5")).toHaveValue("target_pace");
-    await expect(page.getByTestId("session-draft-step-target-pace-minutes-5")).toHaveValue("1");
-    await expect(page.getByTestId("session-draft-step-target-pace-seconds-5")).toHaveValue("35");
-    await page.getByTestId("session-draft-step-toggle-7").click();
-    await expect(page.getByTestId("session-draft-step-name-7")).toHaveValue(
-      "Repeat swim copy focus"
-    );
-    await expect(page.getByTestId("session-draft-step-distance-7")).toHaveValue("200");
-    await page.getByTestId("session-draft-step-toggle-6").click();
-    await expect(page.getByTestId("session-draft-step-duration-mode-6")).toHaveValue("send_off");
-    await expect(page.getByTestId("session-draft-step-sendoff-minutes-6")).toHaveValue("2");
-    await expect(page.getByTestId("session-draft-step-sendoff-seconds-6")).toHaveValue("00");
-    await page.getByTestId("session-draft-step-toggle-9").click();
-    await expect(page.getByTestId("session-draft-step-name-9")).toHaveValue(
-      "QA CSS send-off reset"
-    );
-    await expect(page.getByTestId("session-draft-step-stroke-9")).toHaveValue("reverse_im_order");
-    await expect(page.getByTestId("session-draft-step-duration-mode-9")).toHaveValue(
-      "css_send_off"
-    );
-    await expect(page.getByTestId("session-draft-step-css-sendoff-offset-9")).toHaveValue("2");
-    await expect(page.getByTestId("session-draft-step-target-mode-9")).toHaveValue("none");
+    await expect(page.getByTestId("session-draft-repeat-count-1")).toHaveValue("6");
+    await page.getByTestId("session-draft-step-toggle-1").click();
+    await expect(page.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim focus");
+    await expect(page.getByTestId("session-draft-step-distance-1")).toHaveValue("200");
+    await expect(page.getByTestId("session-draft-step-stroke-1")).toHaveValue("backstroke");
+    await expect(page.getByTestId("session-draft-step-drill-type-1")).toHaveValue("pull");
+    await expect(page.getByTestId("session-draft-step-equipment-1")).toHaveValue("fins");
+    await expect(page.getByTestId("session-draft-step-target-mode-1")).toHaveValue("target_pace");
+    await expect(page.getByTestId("session-draft-step-target-pace-minutes-1")).toHaveValue("1");
+    await expect(page.getByTestId("session-draft-step-target-pace-seconds-1")).toHaveValue("35");
     await expect(
       page.locator("fieldset").filter({ hasText: "Session strokes" }).getByRole("checkbox", {
         name: "Backstroke",

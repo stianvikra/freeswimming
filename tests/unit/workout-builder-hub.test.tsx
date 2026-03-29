@@ -887,11 +887,12 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByText("That saved swim session could not be found.")).toBeVisible();
     expect(screen.getByTestId("workout-builder-empty-create-manual")).toBeVisible();
+    expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open generator" })).toHaveAttribute(
       "href",
       "/my-library/generator"
     );
-    fireEvent.click(screen.getByTestId("session-generator-recent-workouts-toggle"));
+    fireEvent.click(screen.getByTestId("workout-builder-empty-view-sessions"));
     expect(screen.getByTestId("workout-builder-open-workout-workout-1")).toHaveAttribute(
       "href",
       "/my-library/workouts/workout-1"
@@ -972,9 +973,10 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.queryByTestId("saved-workout-card-workout-2")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId("session-generator-recent-workouts-toggle"));
+    fireEvent.click(screen.getByTestId("workout-builder-view-sessions"));
 
-    expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("saved-workout-card-workout-1")).toBeVisible();
+    expect(screen.getByTestId("saved-workout-current-workout-1")).toBeVisible();
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
@@ -1015,7 +1017,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByTestId("workout-builder-current-workout-actions")).toBeVisible();
+    expect(screen.queryByTestId("workout-builder-current-workout-actions")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
@@ -1034,5 +1036,37 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(navigationState.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("can open saved sessions immediately when requested by the route", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          recentWorkouts: [
+            buildWorkoutSummary(),
+            buildWorkoutSummary({
+              id: "workout-2",
+              title: "Follow-up session",
+              totalDistanceM: 1800,
+              estimatedDurationMin: 40,
+            }),
+          ],
+        })}
+        savedSessionsOpenByDefault
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("saved-workout-card-workout-1")).toBeVisible();
+    expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
+    expect(
+      screen.queryByTestId("session-generator-recent-workouts-toggle")
+    ).not.toBeInTheDocument();
   });
 });

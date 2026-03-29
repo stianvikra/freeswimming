@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Database } from "@/types/database";
-import { buildManualWorkoutStarterDraft } from "@/lib/workouts/manual";
+import {
+  buildManualWorkoutEmptyDraft,
+  buildManualWorkoutStarterDraft,
+} from "@/lib/workouts/manual";
 import {
   buildWorkoutEditorRecord,
   buildWorkoutInsert,
@@ -137,6 +140,18 @@ describe("workouts server", () => {
     expect(Array.isArray(insert.steps)).toBe(true);
     expect(starter.steps.some((step) => step.category === "rest")).toBe(true);
     expect(starter.steps.some((step) => step.durationMode === "fixed_rest")).toBe(true);
+  });
+
+  it("supports manual source kind for clean scratch session scaffolds", () => {
+    const emptyDraft = buildManualWorkoutEmptyDraft(new Date("2026-03-22T12:00:00.000Z"));
+    const insert = buildWorkoutInsert("user-1", emptyDraft, "manual");
+
+    expect(insert.source_kind).toBe("manual");
+    expect(insert.title).toBe("Untitled swim session");
+    expect(Array.isArray(insert.steps)).toBe(true);
+    expect(insert.steps).toHaveLength(1);
+    expect(insert.total_distance_m).toBe(100);
+    expect(insert.estimated_duration_min).toBe(2);
   });
 
   it("persists and reloads custom pool lengths for manual builder workouts", () => {
