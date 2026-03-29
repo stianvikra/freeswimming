@@ -10,6 +10,7 @@ type Props = {
   description: string;
   workoutHrefBuilder: (workoutId: string) => string;
   workoutPdfHrefBuilder?: ((workoutId: string) => string) | null;
+  workoutPoolsidePdfHrefBuilder?: ((workoutId: string) => string) | null;
   collapsedByDefault?: boolean;
   testId?: string;
   heading?: string;
@@ -23,6 +24,7 @@ type Props = {
   pendingDeleteWorkoutId?: string | null;
   deletingWorkoutId?: string | null;
   printButtonTestIdBuilder?: (workoutId: string) => string;
+  poolsidePdfButtonTestIdBuilder?: (workoutId: string) => string;
 };
 
 export default function SavedWorkoutsPanel({
@@ -30,6 +32,7 @@ export default function SavedWorkoutsPanel({
   description,
   workoutHrefBuilder,
   workoutPdfHrefBuilder = null,
+  workoutPoolsidePdfHrefBuilder = null,
   collapsedByDefault = true,
   testId = "session-generator-recent-workouts",
   heading = "Saved workouts",
@@ -43,6 +46,7 @@ export default function SavedWorkoutsPanel({
   pendingDeleteWorkoutId = null,
   deletingWorkoutId = null,
   printButtonTestIdBuilder = (workoutId) => `saved-workouts-print-${workoutId}`,
+  poolsidePdfButtonTestIdBuilder = (workoutId) => `saved-workouts-poolside-${workoutId}`,
 }: Props) {
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
 
@@ -83,6 +87,7 @@ export default function SavedWorkoutsPanel({
             const deleting = deletingWorkoutId === workout.id;
             const pendingDelete = pendingDeleteWorkoutId === workout.id;
             const workoutPdfHref = workoutPdfHrefBuilder?.(workout.id) ?? null;
+            const workoutPoolsidePdfHref = workoutPoolsidePdfHrefBuilder?.(workout.id) ?? null;
 
             return (
               <div
@@ -118,6 +123,17 @@ export default function SavedWorkoutsPanel({
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
                       >
                         PDF
+                      </Link>
+                    ) : null}
+                    {workoutPoolsidePdfHref ? (
+                      <Link
+                        href={workoutPoolsidePdfHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid={poolsidePdfButtonTestIdBuilder(workout.id)}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+                      >
+                        Poolside PDF
                       </Link>
                     ) : null}
                     {typeof onRequestDeleteWorkout === "function" ? (

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
+import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import { buildWorkoutPdfHtmlDocument } from "@/lib/workouts/shared";
 import { buildWorkoutEditorRecord, WORKOUT_SELECT } from "@/lib/workouts/server";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
@@ -34,7 +35,9 @@ function noStoreText(body: string, status = 200) {
   });
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
+  const pdfVariant =
+    new URL(request.url).searchParams.get("variant") === "poolside" ? "poolside" : "standard";
   const { workoutId } = await context.params;
   if (!UUID_PATTERN.test(workoutId)) {
     return noStoreText("Invalid workout id.", 400);
@@ -72,7 +75,20 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const workout = buildWorkoutEditorRecord(result.data);
+  const trainingContextSnapshot =
+    pdfVariant === "poolside" ? await loadTrainingContextSnapshot(supabase, user.id) : null;
+  const focusPoints =
+    trainingContextSnapshot?.schemaReady && !trainingContextSnapshot.loadError
+      ? trainingContextSnapshot.openFocuses.map((focus) => focus.title)
+      : [];
+
   return applySupabaseCookies(
-    noStoreHtml(buildWorkoutPdfHtmlDocument(workout.draft, { draftState: "canonical" }))
+    noStoreHtml(
+      buildWorkoutPdfHtmlDocument(workout.draft, {
+        draftState: "canonical",
+        variant: pdfVariant,
+        focusPoints,
+      })
+    )
   );
 }

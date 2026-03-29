@@ -3,9 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { createRouteHandlerSupabaseClientMock } = vi.hoisted(() => ({
   createRouteHandlerSupabaseClientMock: vi.fn(),
 }));
+const { loadTrainingContextSnapshotMock } = vi.hoisted(() => ({
+  loadTrainingContextSnapshotMock: vi.fn(),
+}));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
+}));
+vi.mock("@/lib/training-context/server", () => ({
+  loadTrainingContextSnapshot: loadTrainingContextSnapshotMock,
 }));
 
 import {
@@ -127,6 +133,20 @@ function buildDraftBody(overrides?: Partial<{ sourceKind: "ai_session_v1" | "man
 describe("workouts routes", () => {
   beforeEach(() => {
     createRouteHandlerSupabaseClientMock.mockReset();
+    loadTrainingContextSnapshotMock.mockReset();
+    loadTrainingContextSnapshotMock.mockResolvedValue({
+      schemaReady: true,
+      loadError: null,
+      activeFocus: null,
+      primaryFocus: null,
+      openFocuses: [],
+      focusHistory: [],
+      focusNeedsPrimarySelection: false,
+      recentNotes: [],
+      unresolvedObservationCount: 0,
+      unansweredQuestionCount: 0,
+      goalOptions: [],
+    });
   });
 
   afterEach(() => {
@@ -265,9 +285,69 @@ describe("workouts routes", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
-    expect(body).toContain("Workout PDF print view");
+    expect(body).toContain("Workout PDF");
     expect(body).toContain("Poolside QA workout");
     expect(body).toContain("Source: Canonical workout");
+  });
+
+  it("returns a compact poolside pdf with focus points for the authenticated owner", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: buildWorkoutRow({
+        title: "Poolside QA workout",
+      }),
+      error: null,
+    });
+    const eqId = vi.fn(() => ({ maybeSingle }));
+    const eqUser = vi.fn(() => ({ eq: eqId }));
+    const select = vi.fn(() => ({ eq: eqUser }));
+    const from = vi.fn().mockReturnValue({ select });
+
+    loadTrainingContextSnapshotMock.mockResolvedValue({
+      schemaReady: true,
+      loadError: null,
+      activeFocus: null,
+      primaryFocus: null,
+      openFocuses: [
+        {
+          id: "focus-1",
+          title: "High elbow catch",
+        },
+      ],
+      focusHistory: [],
+      focusNeedsPrimarySelection: false,
+      recentNotes: [],
+      unresolvedObservationCount: 0,
+      unansweredQuestionCount: 0,
+      goalOptions: [],
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getWorkoutPdf(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111/export/pdf?variant=poolside"
+      ),
+      {
+        params: Promise.resolve({
+          workoutId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("Poolside PDF");
+    expect(body).toContain('data-pdf-variant="poolside"');
+    expect(body).toContain("High elbow catch");
+    expect(body).toContain("Breathing timing");
   });
 
   it("creates manual canonical workouts when the request source kind is manual", async () => {

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,14 @@ export default async function WorkoutBuilderPage({ params }: Props) {
     redirect(`/auth/sign-in?next=${encodeURIComponent(`/my-library/workouts/${workoutId}`)}`);
   }
 
-  const workoutLibrary = await loadWorkoutLibrarySnapshot(supabase, user.id, workoutId);
+  const [workoutLibrary, trainingContextSnapshot] = await Promise.all([
+    loadWorkoutLibrarySnapshot(supabase, user.id, workoutId),
+    loadTrainingContextSnapshot(supabase, user.id),
+  ]);
+  const trainingFocusTitles =
+    trainingContextSnapshot.schemaReady && !trainingContextSnapshot.loadError
+      ? trainingContextSnapshot.openFocuses.map((focus) => focus.title)
+      : [];
 
   return (
     <SiteChrome>
@@ -68,7 +76,10 @@ export default async function WorkoutBuilderPage({ params }: Props) {
           </div>
 
           <div className="mt-8">
-            <WorkoutBuilderHub workoutLibrary={workoutLibrary} />
+            <WorkoutBuilderHub
+              workoutLibrary={workoutLibrary}
+              trainingFocusTitles={trainingFocusTitles}
+            />
           </div>
         </div>
       </section>

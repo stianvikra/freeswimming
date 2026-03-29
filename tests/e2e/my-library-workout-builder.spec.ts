@@ -108,7 +108,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
     const savedWorkoutPdfPopupPromise = page.waitForEvent("popup");
-    await page.getByRole("button", { name: "Open PDF" }).click();
+    await page.getByTestId("workout-editor-pdf-open").click();
     const savedWorkoutPdfPopup = await savedWorkoutPdfPopupPromise;
     await expect(
       savedWorkoutPdfPopup.locator('[data-testid="workout-pdf-print-view"]')
@@ -221,7 +221,8 @@ test.describe("my library workout builder", () => {
       "data-pdf-state",
       "local_draft"
     );
-    await expect(page.getByRole("button", { name: "Open PDF" })).toBeVisible();
+    await expect(page.getByTestId("workout-editor-pdf-open")).toBeVisible();
+    await expect(page.getByTestId("workout-editor-poolside-pdf-open")).toBeVisible();
     await expect(
       page.getByText(
         "Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching note that applies across the session."
@@ -232,16 +233,27 @@ test.describe("my library workout builder", () => {
     const pdfPopupPromise = page.waitForEvent("popup");
     await page.getByTestId("workout-editor-pdf-open").click();
     const pdfPopup = await pdfPopupPromise;
-    await expect(page.getByTestId("workout-editor-pdf-notice")).toContainText("Opened print view");
+    await expect(page.getByTestId("workout-editor-pdf-notice")).toContainText("Opened PDF");
     await expect(pdfPopup.locator('[data-testid="workout-pdf-print-view"]')).toBeVisible();
     await expect(pdfPopup.locator('[data-testid="workout-pdf-source"]')).toContainText(
       "Source: Local draft"
     );
     await expect(pdfPopup.locator('[data-testid="workout-pdf-title"]')).toContainText(uniqueTitle);
-    await expect(pdfPopup.locator("body")).toContainText("Workout PDF print view");
+    await expect(pdfPopup.locator("body")).toContainText("Workout PDF");
     await expect(pdfPopup.locator("body")).toContainText("Print / Save PDF");
     await expect(pdfPopup.locator("body")).toContainText("Reverse IM order (RIMO)");
     await pdfPopup.close();
+
+    const poolsidePopupPromise = page.waitForEvent("popup");
+    await page.getByTestId("workout-editor-poolside-pdf-open").click();
+    const poolsidePopup = await poolsidePopupPromise;
+    await expect(poolsidePopup.locator('[data-testid="workout-pdf-print-view"]')).toHaveAttribute(
+      "data-pdf-variant",
+      "poolside"
+    );
+    await expect(poolsidePopup.locator("body")).toContainText("Poolside PDF");
+    await expect(poolsidePopup.locator("body")).toContainText("One line per interval");
+    await poolsidePopup.close();
 
     const patchResponsePromise = page.waitForResponse(
       (response) =>
