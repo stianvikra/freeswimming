@@ -18,6 +18,7 @@ import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 
 type Props = {
   workoutLibrary: WorkoutLibrarySnapshot;
+  trainingFocusTitles?: string[];
 };
 
 function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
@@ -25,7 +26,7 @@ function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSumm
   return [next, ...existing].slice(0, 6);
 }
 
-export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
+export default function WorkoutBuilderHub({ workoutLibrary, trainingFocusTitles = [] }: Props) {
   const router = useRouter();
   const [savedWorkout, setSavedWorkout] = useState<WorkoutEditorRecord | null>(
     workoutLibrary.selectedWorkout
@@ -325,6 +326,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
             <WorkoutEditor
               draft={draft}
               savedWorkout={savedWorkout}
+              trainingFocusTitles={trainingFocusTitles}
               recentWorkouts={[]}
               canonicalSaveReady={workoutLibrary.schemaReady}
               isSaving={isSaving}
@@ -356,6 +358,9 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
           }
           workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
           workoutPdfHrefBuilder={(workoutId) => `/api/my-library/workouts/${workoutId}/export/pdf`}
+          workoutPoolsidePdfHrefBuilder={(workoutId) =>
+            `/api/my-library/workouts/${workoutId}/export/pdf?variant=poolside`
+          }
           editLabel="Edit"
           testId="session-generator-recent-workouts"
           editButtonTestIdBuilder={(workoutId) =>

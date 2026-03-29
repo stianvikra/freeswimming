@@ -116,6 +116,7 @@ export type WorkoutGarminReadinessReport = {
 };
 
 export type WorkoutHandoffDraftState = "canonical" | "local_draft";
+export type WorkoutPdfVariant = "standard" | "poolside";
 
 export type WorkoutPdfModelStep = {
   label: string;
@@ -148,6 +149,7 @@ export type WorkoutPdfModelBlock =
 export type WorkoutPdfModel = {
   fileName: string;
   draftState: WorkoutHandoffDraftState;
+  variant: WorkoutPdfVariant;
   sourceLabel: string;
   title: string;
   sessionSummary: string;
@@ -157,6 +159,7 @@ export type WorkoutPdfModel = {
   description: string | null;
   goalTitle: string | null;
   focusText: string | null;
+  focusPoints: string[];
   constraintText: string | null;
   warnings: string[];
   readiness: WorkoutGarminReadinessReport;
@@ -352,13 +355,16 @@ export function buildWorkoutPdfFileName(
   draft: SessionDraft | null | undefined,
   options?: {
     draftState?: WorkoutHandoffDraftState;
+    variant?: WorkoutPdfVariant;
   }
 ) {
   const title = normalizeFileNamePart(draft?.title ?? "");
   const draftState = options?.draftState ?? "local_draft";
+  const variant = options?.variant ?? "standard";
   const suffix = draftState === "canonical" ? "" : "-draft";
+  const variantSuffix = variant === "poolside" ? "-poolside" : "";
 
-  return `freeswimming-${title || "workout"}-print${suffix}.pdf`;
+  return `freeswimming-${title || "workout"}${variantSuffix}${suffix}.pdf`;
 }
 
 export function buildWorkoutGarminReadyExport(
@@ -632,19 +638,24 @@ export function buildWorkoutPdfModel(
   draft: SessionDraft | null | undefined,
   options?: {
     draftState?: WorkoutHandoffDraftState;
+    variant?: WorkoutPdfVariant;
+    focusPoints?: string[];
   }
 ): WorkoutPdfModel {
   const draftState = options?.draftState ?? "local_draft";
-  const fileName = buildWorkoutPdfFileName(draft, { draftState });
+  const variant = options?.variant ?? "standard";
+  const fileName = buildWorkoutPdfFileName(draft, { draftState, variant });
   const sourceLabel = draftState === "canonical" ? "Canonical workout" : "Local draft";
+  const focusPoints = buildWorkoutPdfFocusPoints(draft, options?.focusPoints);
 
   if (!draft) {
     const readiness = buildWorkoutGarminReadinessReport(draft);
     return {
       fileName,
       draftState,
+      variant,
       sourceLabel,
-      title: "Workout PDF print view",
+      title: variant === "poolside" ? "Poolside PDF" : "Workout PDF",
       sessionSummary: "No workout draft is available yet.",
       environmentSummary: "Not set",
       sessionTypeLabel: "Not set",
@@ -652,6 +663,7 @@ export function buildWorkoutPdfModel(
       description: null,
       goalTitle: null,
       focusText: null,
+      focusPoints,
       constraintText: null,
       warnings: [],
       readiness,
@@ -720,6 +732,7 @@ export function buildWorkoutPdfModel(
   return {
     fileName,
     draftState,
+    variant,
     sourceLabel,
     title: draft.title,
     sessionSummary: buildSessionTargetSummary(normalizedDraft),
@@ -729,6 +742,7 @@ export function buildWorkoutPdfModel(
     description: draft.description || null,
     goalTitle: draft.goalTitle || null,
     focusText: draft.focusText || null,
+    focusPoints,
     constraintText: draft.constraintText || null,
     warnings: draft.warnings,
     readiness,
@@ -740,9 +754,19 @@ export function buildWorkoutPdfHtmlDocument(
   draft: SessionDraft | null | undefined,
   options?: {
     draftState?: WorkoutHandoffDraftState;
+    variant?: WorkoutPdfVariant;
+    focusPoints?: string[];
   }
 ) {
   const model = buildWorkoutPdfModel(draft, options);
+  if (model.variant === "poolside") {
+    return buildPoolsideWorkoutPdfHtmlDocument(model);
+  }
+
+  return buildStandardWorkoutPdfHtmlDocument(model);
+}
+
+function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
   const reviewDetailsHtml =
     model.readiness.issues.length > 0
       ? `
@@ -1185,7 +1209,7 @@ export function buildWorkoutPdfHtmlDocument(
     <div class="toolbar">
       <div class="toolbar-copy">
         <span class="toolbar-kicker">FreeSwimming</span>
-        <span class="toolbar-title">Workout PDF print view</span>
+        <span class="toolbar-title">Workout PDF</span>
       </div>
       <div class="toolbar-actions">
         <button class="toolbar-button toolbar-button-primary" type="button" onclick="window.print()">
@@ -1197,9 +1221,9 @@ export function buildWorkoutPdfHtmlDocument(
       </div>
     </div>
     <main class="shell">
-      <article class="page" data-testid="workout-pdf-print-view">
+      <article class="page" data-testid="workout-pdf-print-view" data-pdf-variant="standard">
         <header class="hero">
-          <p class="eyebrow">FreeSwimming workout PDF</p>
+          <p class="eyebrow">FreeSwimming PDF</p>
           <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
           <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
           <p class="lede">${escapeHtml(model.sessionSummary)}</p>
@@ -1227,7 +1251,415 @@ export function buildWorkoutPdfHtmlDocument(
           <p class="footer-note">
             This print view reflects the ${
               model.draftState === "canonical" ? "saved canonical workout" : "current local draft"
-            }. Use your browser&apos;s Print / Save PDF flow for a poolside-ready copy.
+            }. Use your browser&apos;s Print / Save PDF flow when you want the full session sheet.
+          </p>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>`;
+}
+
+function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
+  const poolsideWarningsHtml =
+    model.warnings.length > 0
+      ? `
+        <section class="callout">
+          <p class="callout-label">Workout notes</p>
+          <ul class="focus-list">
+            ${model.warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("")}
+          </ul>
+        </section>
+      `
+      : "";
+  const focusPointsHtml =
+    model.focusPoints.length > 0
+      ? `
+        <section class="callout">
+          <p class="callout-label">Focus points</p>
+          <ul class="focus-list" data-testid="workout-pdf-focus-points">
+            ${model.focusPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
+          </ul>
+        </section>
+      `
+      : "";
+  const reviewHtml =
+    model.readiness.issues.length > 0
+      ? `
+        <section class="review-note">
+          <p class="review-title">Review before export/send</p>
+          <p>${escapeHtml(model.readiness.summary)}</p>
+        </section>
+      `
+      : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(model.fileName)} - FreeSwimming</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #10213c;
+        --muted: #42506b;
+        --line: rgba(16, 33, 60, 0.14);
+        --page: #dbe8ff;
+        --surface: #ffffff;
+        --surface-soft: #eff5ff;
+        --accent: #1d4ed8;
+        --accent-strong: #163ea8;
+        --accent-soft: rgba(29, 78, 216, 0.12);
+        --warning: #92400e;
+        --warning-soft: rgba(245, 158, 11, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--page);
+        color: var(--ink);
+        font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.95);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .toolbar-copy {
+        display: grid;
+        gap: 2px;
+      }
+
+      .toolbar-kicker,
+      .section-kicker,
+      .callout-label {
+        margin: 0;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .toolbar-kicker,
+      .section-kicker,
+      .callout-label,
+      .session-pill {
+        color: var(--accent-strong);
+      }
+
+      .toolbar-title {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .toolbar-button {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .toolbar-button-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      .shell {
+        padding: 14px;
+      }
+
+      .page {
+        max-width: 420px;
+        margin: 0 auto;
+        border: 1px solid rgba(16, 33, 60, 0.08);
+        border-radius: 24px;
+        background: var(--surface);
+        box-shadow: 0 20px 48px rgba(16, 33, 60, 0.14);
+        overflow: hidden;
+      }
+
+      .hero {
+        padding: 18px 18px 16px;
+        background: linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%);
+        border-bottom: 1px solid rgba(16, 33, 60, 0.08);
+      }
+
+      .source-pill {
+        display: inline-flex;
+        margin-top: 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(29, 78, 216, 0.12);
+        background: rgba(255, 255, 255, 0.92);
+        padding: 6px 10px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent-strong);
+      }
+
+      h1 {
+        margin: 12px 0 0;
+        font-size: 22px;
+        line-height: 1.15;
+      }
+
+      .lede {
+        margin: 10px 0 0;
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+
+      .session-pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 12px;
+      }
+
+      .session-pill {
+        display: inline-flex;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        padding: 5px 9px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .body {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+      }
+
+      .callout,
+      .review-note {
+        border-radius: 16px;
+        padding: 10px 12px;
+      }
+
+      .callout {
+        border: 1px solid var(--line);
+        background: var(--surface-soft);
+      }
+
+      .review-note {
+        border: 1px solid rgba(146, 64, 14, 0.2);
+        background: var(--warning-soft);
+        color: var(--warning);
+      }
+
+      .review-title {
+        margin: 0 0 4px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .focus-list {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        display: grid;
+        gap: 4px;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .section-title {
+        margin: 2px 0 0;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .steps {
+        display: grid;
+        gap: 8px;
+      }
+
+      .step-group {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .step-group-head {
+        padding: 10px 12px;
+        background: var(--surface-soft);
+        border-bottom: 1px solid rgba(16, 33, 60, 0.08);
+      }
+
+      .step-group-title {
+        margin: 4px 0 0;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .step-group-summary {
+        margin: 4px 0 0;
+        font-size: 11px;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+
+      .poolside-line-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .poolside-line {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 10px;
+        padding: 10px 12px;
+        border-top: 1px solid rgba(16, 33, 60, 0.08);
+      }
+
+      .poolside-line:first-child {
+        border-top: none;
+      }
+
+      .poolside-line-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent-strong);
+      }
+
+      .poolside-line-main {
+        display: grid;
+        gap: 3px;
+      }
+
+      .poolside-line-title {
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .poolside-line-summary {
+        font-size: 11px;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+
+      .footer-note {
+        margin-top: 2px;
+        font-size: 10px;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+
+      @media print {
+        html,
+        body {
+          background: #fff;
+        }
+
+        .toolbar {
+          display: none;
+        }
+
+        .shell {
+          padding: 0;
+        }
+
+        .page {
+          max-width: none;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+        }
+      }
+
+      @page {
+        size: A6 portrait;
+        margin: 6mm;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <div class="toolbar-copy">
+        <span class="toolbar-kicker">FreeSwimming</span>
+        <span class="toolbar-title">Poolside PDF</span>
+      </div>
+      <div class="toolbar-actions">
+        <button class="toolbar-button toolbar-button-primary" type="button" onclick="window.print()">
+          Print / Save PDF
+        </button>
+        <button class="toolbar-button" type="button" onclick="window.close()">
+          Close
+        </button>
+      </div>
+    </div>
+    <main class="shell">
+      <article class="page" data-testid="workout-pdf-print-view" data-pdf-variant="poolside">
+        <header class="hero">
+          <p class="section-kicker">FreeSwimming poolside sheet</p>
+          <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
+          <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
+          <p class="lede">${escapeHtml(model.sessionSummary)}</p>
+          <div class="session-pill-row">
+            <span class="session-pill">${escapeHtml(model.environmentSummary)}</span>
+            <span class="session-pill">${escapeHtml(model.sessionTypeLabel)}</span>
+            <span class="session-pill">${escapeHtml(model.effortLabel)}</span>
+          </div>
+        </header>
+        <div class="body">
+          ${focusPointsHtml}
+          ${
+            model.description
+              ? `
+                <section class="callout">
+                  <p class="callout-label">Description</p>
+                  <p class="lede">${escapeHtml(model.description)}</p>
+                </section>
+              `
+              : ""
+          }
+          ${poolsideWarningsHtml}
+          ${reviewHtml}
+          <section>
+            <p class="section-kicker">Session</p>
+            <h2 class="section-title">One line per interval</h2>
+          </section>
+          <section class="steps">
+            ${model.blocks.map((block) => renderWorkoutPoolsideBlockHtml(block)).join("")}
+          </section>
+          <p class="footer-note">
+            Compact poolside sheet for the ${
+              model.draftState === "canonical" ? "saved canonical workout" : "current local draft"
+            }. Print at actual size on A6 or quarter-A4.
           </p>
         </div>
       </article>
@@ -1522,6 +1954,44 @@ function renderWorkoutPdfBlockHtml(block: WorkoutPdfModelBlock) {
   `;
 }
 
+function renderWorkoutPoolsideBlockHtml(block: WorkoutPdfModelBlock) {
+  if (block.kind === "single") {
+    return `
+      <article class="step-group">
+        <ol class="poolside-line-list">
+          ${renderWorkoutPoolsideLine(block.label, block.title, block.summary)}
+        </ol>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="step-group">
+      <div class="step-group-head">
+        <p class="section-kicker">${escapeHtml(block.label)} Repeat block</p>
+        <p class="step-group-summary">${escapeHtml(block.summary)}</p>
+      </div>
+      <ol class="poolside-line-list">
+        ${block.steps
+          .map((step) => renderWorkoutPoolsideLine(step.label, step.title, step.summary))
+          .join("")}
+      </ol>
+    </article>
+  `;
+}
+
+function renderWorkoutPoolsideLine(label: string, title: string, summary: string) {
+  return `
+    <li class="poolside-line">
+      <span class="poolside-line-label">${escapeHtml(label)}</span>
+      <span class="poolside-line-main">
+        <span class="poolside-line-title">${escapeHtml(title)}</span>
+        <span class="poolside-line-summary">${escapeHtml(summary)}</span>
+      </span>
+    </li>
+  `;
+}
+
 function renderWorkoutPdfDetailList(targetNotes: string | null, notes: string | null) {
   const items = [
     targetNotes ? `<li>Target notes: ${escapeHtml(targetNotes)}</li>` : "",
@@ -1543,6 +2013,33 @@ function renderWorkoutPdfReviewList(reviewDetails: string[]) {
   return `<ul class="review-list">${reviewDetails
     .map((detail) => `<li>${escapeHtml(detail)}</li>`)
     .join("")}</ul>`;
+}
+
+function buildWorkoutPdfFocusPoints(
+  draft: SessionDraft | null | undefined,
+  rawFocusPoints: string[] | null | undefined
+) {
+  const seen = new Set<string>();
+  const normalizedPoints: string[] = [];
+
+  const pushPoint = (value: string | null | undefined) => {
+    const normalized = normalizeNullableText(value, 120);
+    if (!normalized) return;
+
+    const dedupeKey = normalized.toLowerCase();
+    if (seen.has(dedupeKey)) return;
+
+    seen.add(dedupeKey);
+    normalizedPoints.push(normalized);
+  };
+
+  for (const point of rawFocusPoints ?? []) {
+    pushPoint(point);
+  }
+
+  pushPoint(draft?.focusText);
+
+  return normalizedPoints;
 }
 
 type WorkoutHandoffEntry = {

@@ -736,7 +736,7 @@ describe("WorkoutBuilderHub", () => {
     expect(revokeUrlSpy).toHaveBeenCalledTimes(0);
   });
 
-  it("opens a truthful workout PDF print view for the current draft state", async () => {
+  it("opens truthful PDF and poolside PDF views for the current draft state", async () => {
     const printWindow = {
       document: {
         open: vi.fn(),
@@ -769,7 +769,8 @@ describe("WorkoutBuilderHub", () => {
       "data-pdf-state",
       "local_draft"
     );
-    expect(screen.getByRole("button", { name: "Open PDF" })).toBeVisible();
+    expect(screen.getByTestId("workout-editor-pdf-open")).toBeVisible();
+    expect(screen.getByTestId("workout-editor-poolside-pdf-open")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
 
@@ -781,9 +782,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(printWindow.document.write).toHaveBeenCalledWith(
-      expect.stringContaining("Workout PDF print view")
-    );
+    expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Workout PDF"));
     expect(printWindow.document.write).toHaveBeenCalledWith(
       expect.stringContaining("--accent: #1d4ed8;")
     );
@@ -796,14 +795,22 @@ describe("WorkoutBuilderHub", () => {
     expect(printWindow.document.close).toHaveBeenCalledTimes(1);
     expect(printWindow.focus).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("workout-editor-pdf-notice")).toHaveTextContent(
-      `Opened print view for ${buildWorkoutPdfFileName(
+      `Opened PDF for ${buildWorkoutPdfFileName(
         {
           ...buildDraft(),
           title: "Local PDF workout",
         },
-        { draftState: "local_draft" }
+        { draftState: "local_draft", variant: "standard" }
       )}. Use Print / Save PDF in that tab.`
     );
+
+    fireEvent.click(screen.getByTestId("workout-editor-poolside-pdf-open"));
+
+    await waitFor(() => {
+      expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining('data-pdf-variant="poolside"')
+      );
+    });
   });
 
   it("shows whole-workout guidance for the description field", async () => {
@@ -892,6 +899,10 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("saved-workouts-print-workout-1")).toHaveAttribute(
       "href",
       "/api/my-library/workouts/workout-1/export/pdf"
+    );
+    expect(screen.getByTestId("saved-workouts-poolside-workout-1")).toHaveAttribute(
+      "href",
+      "/api/my-library/workouts/workout-1/export/pdf?variant=poolside"
     );
   });
 

@@ -120,11 +120,12 @@ describe("workouts shared readiness", () => {
     });
 
     expect(buildWorkoutPdfFileName(draft, { draftState: "canonical" })).toBe(
-      "freeswimming-garmin-readiness-draft-print.pdf"
+      "freeswimming-garmin-readiness-draft.pdf"
     );
     expect(model).toMatchObject({
-      fileName: "freeswimming-garmin-readiness-draft-print.pdf",
+      fileName: "freeswimming-garmin-readiness-draft.pdf",
       draftState: "canonical",
+      variant: "standard",
       sourceLabel: "Canonical workout",
       title: "Garmin readiness draft",
       sessionSummary: "400m · ~10 min · Moderate",
@@ -407,9 +408,9 @@ describe("workouts shared readiness", () => {
     });
 
     expect(buildWorkoutPdfFileName(draft, { draftState: "local_draft" })).toBe(
-      "freeswimming-review-print-draft-print-draft.pdf"
+      "freeswimming-review-print-draft-draft.pdf"
     );
-    expect(html).toContain("Workout PDF print view");
+    expect(html).toContain("Workout PDF");
     expect(html).toContain("Source: Local draft");
     expect(html).toContain("Review print draft");
     expect(html).toContain(
@@ -419,5 +420,23 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Repeat review swim");
     expect(html).toContain("Reverse IM order (RIMO)");
     expect(html).toContain("Print / Save PDF");
+  });
+
+  it("builds a compact poolside pdf html document with focus points and one-line intervals", () => {
+    const html = buildWorkoutPdfHtmlDocument(buildDraft(), {
+      draftState: "canonical",
+      variant: "poolside",
+      focusPoints: ["High elbow catch", "Calm exhale"],
+    });
+
+    expect(
+      buildWorkoutPdfFileName(buildDraft(), { draftState: "canonical", variant: "poolside" })
+    ).toBe("freeswimming-garmin-readiness-draft-poolside.pdf");
+    expect(html).toContain('data-pdf-variant="poolside"');
+    expect(html).toContain("Poolside PDF");
+    expect(html).toContain("One line per interval");
+    expect(html).toContain("High elbow catch");
+    expect(html).toContain("Calm exhale");
+    expect(html).toContain("Warmup swim");
   });
 });

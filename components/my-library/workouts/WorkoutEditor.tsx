@@ -65,6 +65,7 @@ import {
 type Props = {
   draft: SessionDraft;
   savedWorkout: WorkoutEditorRecord | null;
+  trainingFocusTitles?: string[];
   recentWorkouts: WorkoutSummary[];
   canonicalSaveReady: boolean;
   isSaving: boolean;
@@ -448,6 +449,7 @@ function buildStepRenderGroups(steps: SessionDraftStep[]): StepRenderGroup[] {
 export default function WorkoutEditor({
   draft,
   savedWorkout,
+  trainingFocusTitles = [],
   recentWorkouts,
   canonicalSaveReady,
   isSaving,
@@ -499,24 +501,37 @@ export default function WorkoutEditor({
   });
   const workoutPdfFileName = buildWorkoutPdfFileName(draft, {
     draftState: handoffDraftState,
+    variant: "standard",
+  });
+  const workoutPoolsidePdfFileName = buildWorkoutPdfFileName(draft, {
+    draftState: handoffDraftState,
+    variant: "poolside",
   });
   const workoutPdfHtml = buildWorkoutPdfHtmlDocument(draft, {
     draftState: handoffDraftState,
+    variant: "standard",
   });
-  const workoutPdfHeadingLabel =
-    handoffDraftState === "canonical" ? "Saved session PDF" : "Current draft PDF";
+  const workoutPoolsidePdfHtml = buildWorkoutPdfHtmlDocument(draft, {
+    draftState: handoffDraftState,
+    variant: "poolside",
+    focusPoints: trainingFocusTitles,
+  });
+  const workoutPdfHeadingLabel = "PDF";
   const workoutPdfStateLabel =
-    handoffDraftState === "canonical" ? "Canonical workout PDF" : "Local draft workout PDF";
+    handoffDraftState === "canonical"
+      ? "Canonical full-session PDF"
+      : "Local draft full-session PDF";
   const workoutPdfStateDescription = savedWorkout
     ? hasUnsavedChanges
-      ? "This tab reflects your unsaved local edits. Save first if you want the canonical workout and this PDF to match exactly."
-      : "Print view matches the saved canonical workout."
-    : "Print view reflects the current local draft before canonical save.";
+      ? "Full-session PDF reflects your unsaved local edits. Save first if you want the canonical workout and this PDF to match exactly."
+      : "Full-session PDF matches the saved canonical workout."
+    : "Full-session PDF reflects the current local draft before canonical save.";
   const workoutPdfBodyCopy =
     handoffDraftState === "canonical"
-      ? "PDF matches the saved canonical session."
-      : "PDF reflects the unsaved draft currently on screen.";
-  const workoutPdfButtonLabel = "Open PDF";
+      ? "Use PDF for the full-session sheet, or Poolside PDF for the compact quarter-A4 lane copy."
+      : "Both PDF views reflect the unsaved draft currently on screen.";
+  const workoutPdfButtonLabel = "PDF";
+  const workoutPoolsidePdfButtonLabel = "Poolside PDF";
   const garminExportStateLabel =
     handoffDraftState === "canonical"
       ? "Canonical Garmin-ready export"
@@ -581,7 +596,13 @@ export default function WorkoutEditor({
   useEffect(() => {
     setWorkoutPdfNotice("");
     setWorkoutPdfError("");
-  }, [workoutPdfHtml, handoffDraftState, savedWorkout?.id, savedWorkout?.updatedAt]);
+  }, [
+    workoutPdfHtml,
+    workoutPoolsidePdfHtml,
+    handoffDraftState,
+    savedWorkout?.id,
+    savedWorkout?.updatedAt,
+  ]);
 
   useEffect(() => {
     setGarminExportNotice("");
@@ -1108,7 +1129,7 @@ export default function WorkoutEditor({
     }
   }
 
-  function openWorkoutPdfPrintView() {
+  function openWorkoutPdfPrintView(variant: "standard" | "poolside" = "standard") {
     setWorkoutPdfNotice("");
     setWorkoutPdfError("");
 
@@ -1117,6 +1138,9 @@ export default function WorkoutEditor({
         throw new Error("Window unavailable.");
       }
 
+      const html = variant === "poolside" ? workoutPoolsidePdfHtml : workoutPdfHtml;
+      const fileName = variant === "poolside" ? workoutPoolsidePdfFileName : workoutPdfFileName;
+      const variantLabel = variant === "poolside" ? "Poolside PDF" : "PDF";
       const printWindow = window.open("", "_blank");
 
       if (!printWindow?.document) {
@@ -1124,15 +1148,15 @@ export default function WorkoutEditor({
       }
 
       printWindow.document.open();
-      printWindow.document.write(workoutPdfHtml);
+      printWindow.document.write(html);
       printWindow.document.close();
       printWindow.focus?.();
       setWorkoutPdfNotice(
-        `Opened print view for ${workoutPdfFileName}. Use Print / Save PDF in that tab.`
+        `Opened ${variantLabel} for ${fileName}. Use Print / Save PDF in that tab.`
       );
     } catch {
       setWorkoutPdfError(
-        "Could not open the workout PDF print view. Check whether pop-ups are blocked."
+        `Could not open the ${variant === "poolside" ? "poolside" : "full-session"} PDF. Check whether pop-ups are blocked.`
       );
     }
   }
@@ -1871,11 +1895,19 @@ export default function WorkoutEditor({
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={openWorkoutPdfPrintView}
+                onClick={() => openWorkoutPdfPrintView("standard")}
                 data-testid="workout-editor-pdf-open"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
                 {workoutPdfButtonLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => openWorkoutPdfPrintView("poolside")}
+                data-testid="workout-editor-poolside-pdf-open"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+              >
+                {workoutPoolsidePdfButtonLabel}
               </button>
             </div>
           </div>
@@ -2504,11 +2536,21 @@ export default function WorkoutEditor({
           {!showPdfPanel ? (
             <button
               type="button"
-              onClick={openWorkoutPdfPrintView}
+              onClick={() => openWorkoutPdfPrintView("standard")}
               data-testid="workout-editor-pdf-open"
               className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
               {workoutPdfButtonLabel}
+            </button>
+          ) : null}
+          {!showPdfPanel ? (
+            <button
+              type="button"
+              onClick={() => openWorkoutPdfPrintView("poolside")}
+              data-testid="workout-editor-poolside-pdf-open"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+            >
+              {workoutPoolsidePdfButtonLabel}
             </button>
           ) : null}
           {savedWorkout && onResetToSaved ? (
