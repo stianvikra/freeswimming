@@ -50,6 +50,9 @@ test.describe("my library workout builder", () => {
     const uniqueTitle = `QA manual workout ${Date.now()}`;
 
     await loginToMyLibraryViaDevBypass(page);
+    await expect(page.getByRole("link", { name: "Jump to owned items" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Jump to explore section" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Program builder preview" })).toBeVisible();
 
     const createResponsePromise = page.waitForResponse(
       (response) =>
@@ -105,7 +108,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
     const savedWorkoutPdfPopupPromise = page.waitForEvent("popup");
-    await page.getByRole("button", { name: "Open saved PDF" }).click();
+    await page.getByRole("button", { name: "Open PDF" }).click();
     const savedWorkoutPdfPopup = await savedWorkoutPdfPopupPromise;
     await expect(
       savedWorkoutPdfPopup.locator('[data-testid="workout-pdf-print-view"]')
@@ -218,7 +221,7 @@ test.describe("my library workout builder", () => {
       "data-pdf-state",
       "local_draft"
     );
-    await expect(page.getByRole("button", { name: "Open current draft PDF" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open PDF" })).toBeVisible();
     await expect(
       page.getByText(
         "Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching note that applies across the session."
