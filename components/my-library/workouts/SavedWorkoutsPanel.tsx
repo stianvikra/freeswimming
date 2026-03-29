@@ -27,6 +27,9 @@ type Props = {
   poolsidePdfButtonTestIdBuilder?: (workoutId: string) => string;
   currentWorkoutId?: string | null;
   showToggle?: boolean;
+  showInlinePreview?: boolean;
+  viewButtonTestIdBuilder?: (workoutId: string) => string;
+  previewTestIdBuilder?: (workoutId: string) => string;
 };
 
 export default function SavedWorkoutsPanel({
@@ -51,14 +54,30 @@ export default function SavedWorkoutsPanel({
   poolsidePdfButtonTestIdBuilder = (workoutId) => `saved-workouts-poolside-${workoutId}`,
   currentWorkoutId = null,
   showToggle = true,
+  showInlinePreview = false,
+  viewButtonTestIdBuilder = (workoutId) => `saved-workouts-view-${workoutId}`,
+  previewTestIdBuilder = (workoutId) => `saved-workouts-preview-${workoutId}`,
 }: Props) {
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
+  const [previewWorkoutId, setPreviewWorkoutId] = useState<string | null>(null);
 
   useEffect(() => {
     if (pendingDeleteWorkoutId) {
       setExpanded(true);
     }
   }, [pendingDeleteWorkoutId]);
+
+  useEffect(() => {
+    if (pendingDeleteWorkoutId) {
+      setPreviewWorkoutId(null);
+    }
+  }, [pendingDeleteWorkoutId]);
+
+  useEffect(() => {
+    if (previewWorkoutId && !workouts.some((workout) => workout.id === previewWorkoutId)) {
+      setPreviewWorkoutId(null);
+    }
+  }, [previewWorkoutId, workouts]);
 
   if (workouts.length === 0) {
     return null;
@@ -95,6 +114,7 @@ export default function SavedWorkoutsPanel({
             const workoutPdfHref = workoutPdfHrefBuilder?.(workout.id) ?? null;
             const workoutPoolsidePdfHref = workoutPoolsidePdfHrefBuilder?.(workout.id) ?? null;
             const isCurrentWorkout = currentWorkoutId === workout.id;
+            const previewOpen = previewWorkoutId === workout.id;
 
             return (
               <div
@@ -124,6 +144,20 @@ export default function SavedWorkoutsPanel({
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
+                    {showInlinePreview && workout.previewText ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPreviewWorkoutId((current) =>
+                            current === workout.id ? null : workout.id
+                          )
+                        }
+                        data-testid={viewButtonTestIdBuilder(workout.id)}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      >
+                        {previewOpen ? "Hide" : "View"}
+                      </button>
+                    ) : null}
                     {!isCurrentWorkout ? (
                       <Link
                         href={workoutHrefBuilder(workout.id)}
@@ -152,7 +186,7 @@ export default function SavedWorkoutsPanel({
                         data-testid={poolsidePdfButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
                       >
-                        Poolside PDF
+                        Poolside Note
                       </Link>
                     ) : null}
                     {!isCurrentWorkout && typeof onRequestDeleteWorkout === "function" ? (
@@ -168,6 +202,20 @@ export default function SavedWorkoutsPanel({
                     ) : null}
                   </div>
                 </div>
+
+                {previewOpen && workout.previewText ? (
+                  <div
+                    data-testid={previewTestIdBuilder(workout.id)}
+                    className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Session preview
+                    </p>
+                    <pre className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+                      {workout.previewText}
+                    </pre>
+                  </div>
+                ) : null}
 
                 {pendingDelete ? (
                   <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-3">

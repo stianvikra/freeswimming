@@ -528,10 +528,10 @@ export default function WorkoutEditor({
     : "Full-session PDF reflects the current local draft before canonical save.";
   const workoutPdfBodyCopy =
     handoffDraftState === "canonical"
-      ? "Use PDF for the full-session sheet, or Poolside PDF for the compact quarter-A4 lane copy."
+      ? "Use PDF for the full-session sheet, or Poolside Note for the compact lane-side note."
       : "Both PDF views reflect the unsaved draft currently on screen.";
   const workoutPdfButtonLabel = "PDF";
-  const workoutPoolsidePdfButtonLabel = "Poolside PDF";
+  const workoutPoolsidePdfButtonLabel = "Poolside Note";
   const garminExportStateLabel =
     handoffDraftState === "canonical"
       ? "Canonical Garmin-ready export"
@@ -1140,7 +1140,7 @@ export default function WorkoutEditor({
 
       const html = variant === "poolside" ? workoutPoolsidePdfHtml : workoutPdfHtml;
       const fileName = variant === "poolside" ? workoutPoolsidePdfFileName : workoutPdfFileName;
-      const variantLabel = variant === "poolside" ? "Poolside PDF" : "PDF";
+      const variantLabel = variant === "poolside" ? "Poolside Note" : "PDF";
       const printWindow = window.open("", "_blank");
 
       if (!printWindow?.document) {
@@ -1156,7 +1156,7 @@ export default function WorkoutEditor({
       );
     } catch {
       setWorkoutPdfError(
-        `Could not open the ${variant === "poolside" ? "poolside" : "full-session"} PDF. Check whether pop-ups are blocked.`
+        `Could not open the ${variant === "poolside" ? "poolside note" : "full-session"} PDF. Check whether pop-ups are blocked.`
       );
     }
   }

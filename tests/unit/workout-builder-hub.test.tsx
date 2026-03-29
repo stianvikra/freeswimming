@@ -81,6 +81,7 @@ function buildWorkoutSummary(overrides?: Partial<WorkoutSummary>): WorkoutSummar
     acceptedAt: "2026-03-20T12:18:00.000Z",
     sourceKind: "ai_session_v1",
     status: "accepted",
+    previewText: "400m · Freestyle · Easy\n\nTot: 2200m",
     ...overrides,
   };
 }
@@ -736,7 +737,7 @@ describe("WorkoutBuilderHub", () => {
     expect(revokeUrlSpy).toHaveBeenCalledTimes(0);
   });
 
-  it("opens truthful PDF and poolside PDF views for the current draft state", async () => {
+  it("opens truthful PDF and poolside note views for the current draft state", async () => {
     const printWindow = {
       document: {
         open: vi.fn(),
@@ -810,6 +811,10 @@ describe("WorkoutBuilderHub", () => {
       expect(printWindow.document.write).toHaveBeenCalledWith(
         expect.stringContaining('data-pdf-variant="poolside"')
       );
+      expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining("Poolside Note")
+      );
+      expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Tot:"));
     });
   });
 
@@ -892,18 +897,9 @@ describe("WorkoutBuilderHub", () => {
       "href",
       "/my-library/generator"
     );
-    fireEvent.click(screen.getByTestId("workout-builder-empty-view-sessions"));
-    expect(screen.getByTestId("workout-builder-open-workout-workout-1")).toHaveAttribute(
+    expect(screen.getByTestId("workout-builder-empty-view-sessions-link")).toHaveAttribute(
       "href",
-      "/my-library/workouts/workout-1"
-    );
-    expect(screen.getByTestId("saved-workouts-print-workout-1")).toHaveAttribute(
-      "href",
-      "/api/my-library/workouts/workout-1/export/pdf"
-    );
-    expect(screen.getByTestId("saved-workouts-poolside-workout-1")).toHaveAttribute(
-      "href",
-      "/api/my-library/workouts/workout-1/export/pdf?variant=poolside"
+      "/my-library/workouts"
     );
   });
 
@@ -939,7 +935,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("workout-editor-pdf-notice")).not.toBeInTheDocument();
   });
 
-  it("collapses saved workouts by default and deletes a non-current workout deterministically", async () => {
+  it("shows saved sessions in browse mode, supports inline preview, and deletes a non-current workout deterministically", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -951,6 +947,7 @@ describe("WorkoutBuilderHub", () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
           recentWorkouts: [
             buildWorkoutSummary(),
             buildWorkoutSummary({
@@ -958,9 +955,11 @@ describe("WorkoutBuilderHub", () => {
               title: "Old QA cleanup workout",
               totalDistanceM: 1600,
               estimatedDurationMin: 37,
+              previewText: "8 x 25m Kick · Easy\nP: 20 sec\n\nTot: 1600m",
             }),
           ],
         })}
+        browseOnly
       />
     );
 
@@ -971,13 +970,16 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.queryByTestId("saved-workout-card-workout-2")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("workout-builder-view-sessions"));
-
     expect(screen.getByTestId("saved-workout-card-workout-1")).toBeVisible();
-    expect(screen.getByTestId("saved-workout-current-workout-1")).toBeVisible();
+    expect(screen.queryByTestId("saved-workout-current-workout-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
+    expect(screen.getByTestId("saved-workouts-view-workout-2")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("saved-workouts-view-workout-2"));
+    expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent(
+      "8 x 25m Kick · Easy"
+    );
+    expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("P: 20 sec");
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
 
@@ -1038,10 +1040,11 @@ describe("WorkoutBuilderHub", () => {
     expect(navigationState.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it("can open saved sessions immediately when requested by the route", async () => {
+  it("renders the dedicated browse mode without the editor form", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
           recentWorkouts: [
             buildWorkoutSummary(),
             buildWorkoutSummary({
@@ -1052,7 +1055,7 @@ describe("WorkoutBuilderHub", () => {
             }),
           ],
         })}
-        savedSessionsOpenByDefault
+        browseOnly
       />
     );
 
@@ -1063,10 +1066,9 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    expect(screen.queryByTestId("session-draft-title")).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workout-card-workout-1")).toBeVisible();
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
-    expect(
-      screen.queryByTestId("session-generator-recent-workouts-toggle")
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-builder-view-sessions-link")).not.toBeInTheDocument();
   });
 });

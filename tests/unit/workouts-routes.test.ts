@@ -290,7 +290,7 @@ describe("workouts routes", () => {
     expect(body).toContain("Source: Canonical workout");
   });
 
-  it("returns a compact poolside pdf with focus points for the authenticated owner", async () => {
+  it("returns a compact poolside note with focus points for the authenticated owner", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: buildWorkoutRow({
         title: "Poolside QA workout",
@@ -344,7 +344,7 @@ describe("workouts routes", () => {
     const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toContain("Poolside PDF");
+    expect(body).toContain("Poolside Note");
     expect(body).toContain('data-pdf-variant="poolside"');
     expect(body).toContain("High elbow catch");
     expect(body).toContain("Breathing timing");

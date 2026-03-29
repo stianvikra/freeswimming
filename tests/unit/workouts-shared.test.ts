@@ -422,7 +422,7 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Print / Save PDF");
   });
 
-  it("builds a compact poolside pdf html document with focus points and one-line intervals", () => {
+  it("builds a compact poolside note html document with focus points and operational lines", () => {
     const html = buildWorkoutPdfHtmlDocument(buildDraft(), {
       draftState: "canonical",
       variant: "poolside",
@@ -431,12 +431,12 @@ describe("workouts shared readiness", () => {
 
     expect(
       buildWorkoutPdfFileName(buildDraft(), { draftState: "canonical", variant: "poolside" })
-    ).toBe("freeswimming-garmin-readiness-draft-poolside.pdf");
+    ).toBe("freeswimming-garmin-readiness-draft-poolside-note.pdf");
     expect(html).toContain('data-pdf-variant="poolside"');
-    expect(html).toContain("Poolside PDF");
-    expect(html).toContain("One line per interval");
+    expect(html).toContain("Poolside Note");
     expect(html).toContain("High elbow catch");
     expect(html).toContain("Calm exhale");
-    expect(html).toContain("Warmup swim");
+    expect(html).toContain("400m");
+    expect(html).toContain("Tot: 400m");
   });
 });

@@ -5,6 +5,7 @@ import {
 } from "@/lib/session-generator-v1/shared";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 import {
+  buildWorkoutSummaryPreviewText,
   normalizeSessionDraftForWorkoutPersistence,
   type WorkoutEditorRecord,
   type WorkoutLibrarySnapshot,
@@ -176,6 +177,8 @@ export function buildWorkoutEditorRecord(row: WorkoutRow): WorkoutEditorRecord {
 }
 
 export function buildWorkoutSummary(row: WorkoutRow): WorkoutSummary {
+  const draft = buildWorkoutEditorRecord(row).draft;
+
   return {
     id: row.id,
     title: row.title,
@@ -189,6 +192,7 @@ export function buildWorkoutSummary(row: WorkoutRow): WorkoutSummary {
     acceptedAt: row.accepted_at,
     sourceKind: row.source_kind as WorkoutSourceKind,
     status: row.status as WorkoutStatus,
+    previewText: buildWorkoutSummaryPreviewText(draft),
   };
 }
 

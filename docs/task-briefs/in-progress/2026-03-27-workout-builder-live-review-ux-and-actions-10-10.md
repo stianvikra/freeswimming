@@ -114,6 +114,17 @@ Triage update on `2026-03-29` for the current builder-entry follow-up:
   - reason: the production note is a direct continuation of the active builder-entry IA work and asks for a focused `View sessions` / `Create session` model, a truthful continue-vs-start-new choice, and a more form-first builder route.
   - implementation constraint: there is still no separate cross-page unsaved local draft entity, so `continue draft` must be expressed truthfully as continuing the latest saved/current canonical session rather than implying a hidden draft store.
 
+Triage update on `2026-03-29` for session-browse and poolside-export follow-up:
+
+- `a1d2db16-2f21-4d38-add1-62a462cfa015` `PDF`
+  - disposition: still owned by this brief.
+  - reason: the live note explicitly asks for a clearer split between the normal session PDF and the smaller operational lane-side output.
+- `db185e47-0794-4e84-b881-5507d526f911` `Poolside PDF`
+  - disposition: still owned by this brief.
+  - reason: the live note asks for quarter-A4 readability and stricter "only what is needed on deck" execution formatting.
+- no separate new production note was found for the just-discussed `View sessions` browse-mode request during the `2026-03-29` re-check of current open `/my-library` and `/my-library/workouts/*` notes.
+  - disposition: keep this UX change owned by the active brief because it is the direct next step of the same live-review builder IA wave and was requested during the same production review session.
+
 ## Platform 10/10 Scorecard Mapping
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
@@ -219,6 +230,19 @@ Critical target categories for `10/10` claim in this brief:
   - extra mode buttons such as `Explore mode` / redundant `My Library` controls,
   - whether those surfaces should be hidden, renamed, or explained.
 - Tune poolside/PDF output toward the observed real-world print use case without promising a broader document system than we actually support.
+- Add a dedicated saved-session browse mode that keeps `View sessions` list-first:
+  - existing saved sessions should be browsed in a dedicated list-first surface,
+  - that surface should still expose a direct `Create session` action,
+  - the editor route should stay focused on one session at a time.
+- Add a quick inline preview path in the saved-session list:
+  - a lightweight `View` disclosure should expand/collapse a plain-text preview for one session at a time without opening the editor.
+- Rename the compact lane-side output from `Poolside PDF` to `Poolside Note` wherever that improves truthfulness for real use.
+- Tighten `Poolside Note` content so it carries only operational essentials:
+  - one line per interval when possible,
+  - explicit pause lines using `P:` formatting when the workout model exposes a rest step,
+  - total distance,
+  - focus list,
+  - no extra diagnostic or coaching chrome beyond what is genuinely useful on deck.
 - Keep the builder route form-first:
   - when a session is being edited, the session form should remain the dominant surface,
   - saved-session browsing should stay secondary behind an explicit action instead of always sharing equal visual weight.
@@ -245,7 +269,11 @@ Critical target categories for `10/10` claim in this brief:
 9. Relevant production admin notes listed above remain explicitly owned by this brief until shipped or intentionally split again.
 10. Builder entry uses explicit `View sessions` and `Create session` actions, and creating a new manual session from an environment with existing saved work offers a truthful continue-vs-start-new choice.
 11. Starting a new manual session opens a clean scratch session shell rather than a multi-block starter set, while still preserving canonical save guarantees and clear session identity.
-12. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
+12. `View sessions` becomes a dedicated browse-first surface with the saved-session list as the main content and a direct `Create session` action available there.
+13. Saved-session rows expose a lightweight `View` disclosure that expands one plain-text session preview at a time without forcing the owner into edit mode.
+14. The compact lane-side output is labeled `Poolside Note` in product surfaces and is materially more operational than the full session PDF.
+15. `Poolside Note` formatting includes total distance, focus points, and explicit `P:` pause lines wherever the canonical workout model exposes rest/recovery entries that can be rendered truthfully.
+16. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
 
 ## Validation
 
@@ -375,6 +403,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-29 | implementation | slice 8 on branch fix/workouts-view-sessions-and-poolside-note-2026-03-29 splits saved-session browsing into a dedicated View sessions route, adds inline plain-text preview per saved session, renames the compact lane-side export from Poolside PDF to Poolside Note, and tightens the lane-side output to operational lines with explicit P: pauses, Tot total distance, and focus carry-through; targeted typecheck, workout-builder vitest, workouts shared/routes vitest, desktop-chromium my-library workout-builder e2e, and brief lint for the changed brief are green (full --all lint still only fails on older historical briefs outside this slice) | next: run npm run verify:pre-pr, then commit/push/open PR if the full gate stays green`
 - `2026-03-29 | implementation | slice 7 on branch fix/workout-builder-draft-first-entry-2026-03-29 makes builder entry explicit with `View sessions`and`Create session`, adds a truthful continue-vs-start-scratch chooser whenever saved work already exists, opens the builder route with saved sessions hidden unless explicitly requested, and switches manual create to a cleaner scratch session shell that still respects current workout persistence constraints; targeted unit + desktop-chromium builder e2e + desktop-chromium program-export e2e and full npm run verify:pre-pr are green | next: commit, push, open/update PR, then wait for CI before npm run verify:pre-merge`
 - `2026-03-29 | implementation | slice 6 on branch fix/workout-builder-pdf-poolside-v2-2026-03-29 splits the builder export into a richer full-session PDF and a real compact Poolside PDF, threads open training focuses into the poolside variant, makes one-line-per-interval poolside layout explicit, and surfaces both PDF actions consistently in the editor and saved-session list; targeted typecheck, workout PDF/shared vitest, workout route vitest, builder hub vitest, and desktop-chromium my-library workout-builder e2e are green | next: run npm run verify:pre-pr, then open/update a PR if the full gate stays green`
 - `2026-03-27 | planning | created a dedicated workout-builder live-review UX/actions brief to own the current production-note batch around delete/edit/print actions, calmer panel defaults, form copy cleanup, poolside PDF truthfulness, and My Library IA confusion before program-builder work resumes | next: review manual workout-builder usage against this brief, then pick the first narrow implementation slice`
