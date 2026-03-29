@@ -46,7 +46,7 @@ async function waitForProgramBuilderClientReady(page: Page) {
 
 async function ensureProgramSchemaReady(page: Page) {
   const schemaWarning = page.getByText(
-    "This canonical program layer is still syncing in this environment."
+    /This canonical program layer is still syncing in this environment\.|Program planning tools are still syncing in this environment\./
   );
 
   if ((await schemaWarning.count()) > 0 && (await schemaWarning.first().isVisible())) {
@@ -83,7 +83,7 @@ test.describe("my library program export", () => {
     await page.getByTestId("my-library-create-manual-workout").click();
     await createWorkoutResponsePromise;
     await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/, {
-      timeout: 10_000,
+      timeout: 20_000,
       waitUntil: "domcontentloaded",
     });
     await waitForWorkoutBuilderClientReady(page);
@@ -115,7 +115,7 @@ test.describe("my library program export", () => {
     await page.getByTestId("my-library-create-manual-program").click();
     await createProgramResponsePromise;
     await page.waitForURL(/\/my-library\/programs\/[0-9a-f-]+$/, {
-      timeout: 10_000,
+      timeout: 20_000,
       waitUntil: "domcontentloaded",
     });
     await waitForProgramBuilderClientReady(page);

@@ -63,7 +63,7 @@ export default function SavedWorkoutsPanel({
           <h3 className="text-sm font-semibold text-slate-900">{heading}</h3>
           <p className="mt-1 text-sm text-slate-600">{description}</p>
           <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {workouts.length} saved workout{workouts.length === 1 ? "" : "s"} ready for review
+            {workouts.length} saved session{workouts.length === 1 ? "" : "s"} ready to reopen
           </p>
         </div>
         <button
@@ -73,7 +73,7 @@ export default function SavedWorkoutsPanel({
           data-testid={`${testId}-toggle`}
           className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
         >
-          {expanded ? "Collapse workouts" : "Show workouts"}
+          {expanded ? "Hide saved sessions" : "Show saved sessions"}
         </button>
       </div>
 
@@ -137,11 +137,11 @@ export default function SavedWorkoutsPanel({
                 {pendingDelete ? (
                   <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-3">
                     <p className="text-sm font-medium text-rose-900">
-                      Delete this saved workout from My Library?
+                      Delete this saved session from My Library?
                     </p>
                     <p className="mt-1 text-sm text-rose-900/90">
-                      This removes the canonical workout and any unsaved local edits in this open
-                      builder view.
+                      This removes the saved canonical session and any unsaved local edits in this
+                      open builder view.
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
@@ -151,7 +151,7 @@ export default function SavedWorkoutsPanel({
                         data-testid={confirmDeleteButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {deleting ? "Deleting..." : "Delete workout"}
+                        {deleting ? "Deleting..." : "Delete saved session"}
                       </button>
                       <button
                         type="button"

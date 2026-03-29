@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
-- `updated`: `2026-03-28`
+- `updated`: `2026-03-29`
 
 ## Goal
 
@@ -95,6 +95,17 @@ Triage update on `2026-03-28`:
   - `d76825bd-4b5c-4e7e-aa22-49e6c25350ba` `Saved workouts list density follow-up` from `af6ab360-04d1-454c-8824-090260f088e8`
   - `9245eaba-e5fd-4bc2-83c1-2f53c7df100e` `Workout builder drill and kick taxonomy follow-up` from `3396b47c-4b78-4a72-bc55-b6806e0fc620`
   - `854d3f39-9275-4d80-a624-a687e47db320` `Workout builder notice placement and audience follow-up` from `5b15cd93-813f-415b-a555-6f0bf6729bf7`
+
+Triage update on `2026-03-29`:
+
+- closed as fully shipped:
+  - `c54e1d72-3efb-47a7-ab7e-ef4f32d05d33` `Rename Workout builder`
+- kept open for the current UX/IA cleanup slice:
+  - `f21f4a8d-7afa-4eeb-a572-53f1d5c85996` `Create manual workout`
+  - `ac6ab21e-063c-4a60-a2e3-1d4878856eb0` `Delete current workout location UI and UX`
+  - `fd9d4210-be56-4a02-855f-a347fcbfadeb` `Remove print, ref screenshot`
+  - `a73a376b-1912-457f-9df6-474ffaf48b4c` `What is this?`
+  - `7e075645-84e8-4fcb-a23e-518862ad03d5` `Ehy i smh library button here`
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -243,6 +254,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-29` — slice 5 implemented on branch `fix/workout-builder-ux-ia-cleanup-2026-03-29`; simplified My Library IA by removing the extra owned/explore jump controls, reframed the early program surface as an optional `Program builder preview`, made manual session entry language more direct, tightened current-session delete copy, and moved builder-route PDF access into the save/action bar instead of a separate support panel. Targeted `typecheck`, builder unit tests, `my-library-workout-builder` desktop Chromium, and `my-library-program-export` desktop Chromium (schema-gated skip after updated readiness detection) are green. Next step: run `npm run lint:briefs` and `npm run verify:pre-pr`, then open/update a PR if green.
 - `2026-03-28` — slice 4 implemented on branch `fix/workout-builder-focused-entry-2026-03-28`; renamed the workout-builder surface to `Swim session builder`, made the current saved session/editor the primary route focus, kept other saved sessions secondary instead of duplicating the active one, and simplified row-level PDF language from `Poolside PDF` to `PDF`. Targeted `vitest`, `typecheck`, and desktop-chromium generator/workout-builder e2e are green. Next step: run `npm run lint:briefs` and `npm run verify:pre-pr`, then open a PR if green.
 - `2026-03-27` — moved to `in-progress` on branch `fix/workout-builder-live-review-actions-2026-03-27`; first implementation slice adds owner-scoped workout delete API/UI, calmer collapsed support panels, builder label cleanup, and My Library wording cleanup. Next step: finish targeted validation and run `npm run verify:pre-pr`.
 - `2026-03-28` — slice 3 implemented on branch `fix/workout-builder-current-actions-2026-03-28`; added current-workout action strip, clearer PDF state copy, bluer poolside PDF styling, and targeted generator-intake auth-redirect hardening after a confirmed `verify:pre-merge` auth/Supabase flake. Next step: rerun targeted generator-intake coverage, rerun `npm run verify:pre-merge`, then merge if green.

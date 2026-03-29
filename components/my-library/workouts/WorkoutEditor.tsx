@@ -80,6 +80,7 @@ type Props = {
   recentWorkoutsDescription?: string;
   workoutHrefBuilder?: (workoutId: string) => string;
   saveButtonTestId?: string;
+  showPdfPanel?: boolean;
 };
 
 type StepRenderEntry = {
@@ -462,6 +463,7 @@ export default function WorkoutEditor({
   recentWorkoutsDescription = "Open another saved session here until the dedicated workout builder route grows into the full manual builder flow.",
   workoutHrefBuilder = (workoutId) => `/my-library/workouts/${workoutId}`,
   saveButtonTestId = "session-generator-save",
+  showPdfPanel = true,
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const garminReadiness = buildWorkoutGarminReadinessReport(draft);
@@ -512,10 +514,9 @@ export default function WorkoutEditor({
     : "Print view reflects the current local draft before canonical save.";
   const workoutPdfBodyCopy =
     handoffDraftState === "canonical"
-      ? "Open a print-ready workout sheet in a dedicated tab, then use your browser's Print / Save PDF flow for a poolside copy that matches the saved canonical workout."
-      : "Open a print-ready workout sheet in a dedicated tab for the exact draft currently on screen, then use your browser's Print / Save PDF flow for a poolside copy before you save.";
-  const workoutPdfButtonLabel =
-    handoffDraftState === "canonical" ? "Open saved PDF" : "Open current draft PDF";
+      ? "PDF matches the saved canonical session."
+      : "PDF reflects the unsaved draft currently on screen.";
+  const workoutPdfButtonLabel = "Open PDF";
   const garminExportStateLabel =
     handoffDraftState === "canonical"
       ? "Canonical Garmin-ready export"
@@ -1850,49 +1851,51 @@ export default function WorkoutEditor({
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-              {workoutPdfHeadingLabel}
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-900">{workoutPdfBodyCopy}</p>
+      {showPdfPanel ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                {workoutPdfHeadingLabel}
+              </p>
+              <p className="mt-2 text-sm font-medium text-slate-900">{workoutPdfBodyCopy}</p>
+              <p
+                data-testid="workout-editor-pdf-source"
+                data-pdf-state={handoffDraftState}
+                className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+              >
+                {workoutPdfStateLabel}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">{workoutPdfStateDescription}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={openWorkoutPdfPrintView}
+                data-testid="workout-editor-pdf-open"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              >
+                {workoutPdfButtonLabel}
+              </button>
+            </div>
+          </div>
+
+          {workoutPdfNotice ? (
             <p
-              data-testid="workout-editor-pdf-source"
-              data-pdf-state={handoffDraftState}
-              className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+              data-testid="workout-editor-pdf-notice"
+              className="mt-3 text-sm font-medium text-emerald-700"
             >
-              {workoutPdfStateLabel}
+              {workoutPdfNotice}
             </p>
-            <p className="mt-1 text-sm text-slate-600">{workoutPdfStateDescription}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={openWorkoutPdfPrintView}
-              data-testid="workout-editor-pdf-open"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              {workoutPdfButtonLabel}
-            </button>
-          </div>
+          ) : null}
+
+          {workoutPdfError ? (
+            <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
+              {workoutPdfError}
+            </p>
+          ) : null}
         </div>
-
-        {workoutPdfNotice ? (
-          <p
-            data-testid="workout-editor-pdf-notice"
-            className="mt-3 text-sm font-medium text-emerald-700"
-          >
-            {workoutPdfNotice}
-          </p>
-        ) : null}
-
-        {workoutPdfError ? (
-          <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
-            {workoutPdfError}
-          </p>
-        ) : null}
-      </div>
+      ) : null}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -2484,8 +2487,30 @@ export default function WorkoutEditor({
               Review the Garmin/export notes above before you treat this workout as handoff-ready.
             </p>
           ) : null}
+          {!showPdfPanel ? (
+            <>
+              <p
+                data-testid="workout-editor-pdf-source"
+                data-pdf-state={handoffDraftState}
+                className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >
+                {workoutPdfStateLabel}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">{workoutPdfBodyCopy}</p>
+            </>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {!showPdfPanel ? (
+            <button
+              type="button"
+              onClick={openWorkoutPdfPrintView}
+              data-testid="workout-editor-pdf-open"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {workoutPdfButtonLabel}
+            </button>
+          ) : null}
           {savedWorkout && onResetToSaved ? (
             <button
               type="button"
@@ -2521,6 +2546,21 @@ export default function WorkoutEditor({
           </button>
         </div>
       </div>
+
+      {!showPdfPanel && workoutPdfNotice ? (
+        <p
+          data-testid="workout-editor-pdf-notice"
+          className="mt-3 text-sm font-medium text-emerald-700"
+        >
+          {workoutPdfNotice}
+        </p>
+      ) : null}
+
+      {!showPdfPanel && workoutPdfError ? (
+        <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
+          {workoutPdfError}
+        </p>
+      ) : null}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
         <pre

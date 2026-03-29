@@ -9,7 +9,6 @@ import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
-import LibrarySectionTabs from "@/components/my-library/LibrarySectionTabs";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
@@ -104,6 +103,7 @@ export default async function MyLibraryPage() {
     claimQuery.set("email", user.email);
   }
   const claimHref = `/claim?${claimQuery.toString()}`;
+  const latestProgram = programLibrarySnapshot.recentPrograms[0] ?? null;
 
   return (
     <SiteChrome>
@@ -190,42 +190,6 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Program planning (early)</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {!programLibrarySnapshot.schemaReady
-                      ? "This canonical program layer is still syncing in this environment."
-                      : programLibrarySnapshot.recentPrograms[0]
-                        ? [
-                            programLibrarySnapshot.recentPrograms[0].title,
-                            `${programLibrarySnapshot.recentPrograms[0].weekCount} week${programLibrarySnapshot.recentPrograms[0].weekCount === 1 ? "" : "s"}`,
-                            `${programLibrarySnapshot.recentPrograms[0].assignmentCount} scheduled workout${programLibrarySnapshot.recentPrograms[0].assignmentCount === 1 ? "" : "s"}`,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")
-                        : "Create your first saved plan, place accepted workouts into week/day slots, and keep one early program surface ready for later planner work."}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {programLibrarySnapshot.recentPrograms[0] ? (
-                    <Link
-                      href={`/my-library/programs/${programLibrarySnapshot.recentPrograms[0].id}`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                    >
-                      Open saved plan
-                    </Link>
-                  ) : null}
-                  {programLibrarySnapshot.schemaReady ? (
-                    <CreateManualProgramButton
-                      testId="my-library-create-manual-program"
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                    />
-                  ) : null}
-                </div>
-              </div>
-            </section>
-            <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
                   <h2 className="text-lg font-semibold text-slate-900">Goals</h2>
                   <p className="mt-2 text-sm text-slate-600">
                     {(activeGoalCount ?? 0) > 0
@@ -300,7 +264,7 @@ export default async function MyLibraryPage() {
                           ]
                             .filter(Boolean)
                             .join(" · ")
-                        : "Saved swim sessions will appear here after you create or accept your first session draft."}
+                        : "Saved swim sessions will appear here after you start your first manual session or accept a generated draft."}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -309,11 +273,12 @@ export default async function MyLibraryPage() {
                       href={`/my-library/workouts/${workoutLibrarySnapshot.recentWorkouts[0].id}`}
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                     >
-                      Open swim session builder
+                      Resume latest saved session
                     </Link>
                   ) : null}
                   {workoutLibrarySnapshot.schemaReady ? (
                     <CreateManualWorkoutButton
+                      label="Start manual swim session"
                       testId="my-library-create-manual-workout"
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                     />
@@ -321,10 +286,54 @@ export default async function MyLibraryPage() {
                 </div>
               </div>
             </section>
-            <LibrarySectionTabs showExploreTab={sections.explore.length > 0} />
+
+            <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      Program builder preview
+                    </h2>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Optional
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {!programLibrarySnapshot.schemaReady
+                      ? "Program planning tools are still syncing in this environment."
+                      : latestProgram
+                        ? [
+                            latestProgram.title,
+                            `${latestProgram.weekCount} week${latestProgram.weekCount === 1 ? "" : "s"}`,
+                            `${latestProgram.assignmentCount} scheduled workout${latestProgram.assignmentCount === 1 ? "" : "s"}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Use this only when you want to place saved swim sessions into week/day slots. Ignore it during normal My Library and session-builder work."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {latestProgram ? (
+                    <Link
+                      href={`/my-library/programs/${latestProgram.id}`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      Open latest saved plan
+                    </Link>
+                  ) : null}
+                  {programLibrarySnapshot.schemaReady ? (
+                    <CreateManualProgramButton
+                      label={latestProgram ? "Create another plan" : "Create first plan"}
+                      testId="my-library-create-manual-program"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+                  ) : null}
+                </div>
+              </div>
+            </section>
 
             <div id="my-library-owned" className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-900">Owned</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Owned library items</h2>
 
               {sections.owned.length === 0 && sections.unknownOwnedProductIds.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-6">
@@ -407,7 +416,7 @@ export default async function MyLibraryPage() {
             </div>
 
             <div id="my-library-explore" className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-900">Explore More</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Explore available items</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {sections.explore.map((product) => (
                   <article

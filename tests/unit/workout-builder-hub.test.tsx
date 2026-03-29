@@ -769,7 +769,7 @@ describe("WorkoutBuilderHub", () => {
       "data-pdf-state",
       "local_draft"
     );
-    expect(screen.getByRole("button", { name: "Open current draft PDF" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Open PDF" })).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
 
@@ -878,7 +878,7 @@ describe("WorkoutBuilderHub", () => {
       />
     );
 
-    expect(screen.getByText("That saved workout could not be found.")).toBeVisible();
+    expect(screen.getByText("That saved swim session could not be found.")).toBeVisible();
     expect(screen.getByTestId("workout-builder-empty-create-manual")).toBeVisible();
     expect(screen.getByRole("link", { name: "Open generator" })).toHaveAttribute(
       "href",
@@ -968,7 +968,7 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
 
-    expect(screen.getByText("Delete this saved workout from My Library?")).toBeVisible();
+    expect(screen.getByText("Delete this saved session from My Library?")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-builder-confirm-delete-workout-workout-2"));
 
@@ -1008,7 +1008,7 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
-    expect(screen.getByText("Delete the session you are editing right now?")).toBeVisible();
+    expect(screen.getByText("Delete this saved session?")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-builder-confirm-delete-current-workout"));
 

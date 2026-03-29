@@ -179,12 +179,13 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           {workoutLibrary.schemaReady ? (
             <CreateManualWorkoutButton
+              label="Start manual swim session"
               testId="workout-builder-create-manual"
               className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             />
           ) : null}
           <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-            Canonical workout
+            Saved session workspace
           </p>
         </div>
       </div>
@@ -225,14 +226,14 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Current swim session
+                  Current saved session
                 </p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">
                   {savedWorkout.draft.title}
                 </p>
                 <p className="mt-1 max-w-[72ch] text-sm text-slate-600">
-                  You are editing this saved session below. Delete it here only when you want to
-                  remove the session from My Library entirely.
+                  Keep editing this saved session below. Delete it here only when you want to remove
+                  the session from My Library entirely.
                 </p>
               </div>
               <button
@@ -247,17 +248,15 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
                 data-testid="workout-builder-delete-current-workout"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete current session"}
+                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete saved session"}
               </button>
             </div>
 
             {pendingCurrentDelete ? (
               <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-3">
-                <p className="text-sm font-medium text-rose-900">
-                  Delete the session you are editing right now?
-                </p>
+                <p className="text-sm font-medium text-rose-900">Delete this saved session?</p>
                 <p className="mt-1 text-sm text-rose-900/90">
-                  This removes the canonical swim session from My Library and discards any unsaved
+                  This removes the saved canonical session from My Library and discards any unsaved
                   local builder edits tied to it.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -268,7 +267,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
                     data-testid="workout-builder-confirm-delete-current-workout"
                     className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete workout"}
+                    {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete saved session"}
                   </button>
                   <button
                     type="button"
@@ -289,16 +288,17 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
             <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
               <p className="text-sm font-medium text-amber-900">
                 {workoutLibrary.selectedWorkoutMissing
-                  ? "That saved workout could not be found."
-                  : "No saved swim session is loaded in this route."}
+                  ? "That saved swim session could not be found."
+                  : "No saved swim session is loaded in this route yet."}
               </p>
               <p className="mt-2 text-sm text-amber-900/90">
-                Create a manual swim session here, return to the generator for a brand-new AI draft,
-                or reopen another saved swim session below.
+                Start a manual swim session here, return to the generator for a brand-new AI draft,
+                or reopen another saved session below when you want to switch context.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {workoutLibrary.schemaReady ? (
                   <CreateManualWorkoutButton
+                    label="Start manual swim session"
                     testId="workout-builder-empty-create-manual"
                     className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                   />
@@ -338,7 +338,8 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
               startNewDraftHref="/my-library/generator"
               startNewDraftLabel="Generate new draft"
               showLoadedBanner={false}
-              recentWorkoutsDescription="Open another saved workout here, create a new manual workout from the header, or jump back to the generator when you want a brand-new AI draft."
+              showPdfPanel={false}
+              recentWorkoutsDescription="Open another saved session here, start a fresh manual session from the header, or jump back to the generator when you want a brand-new AI draft."
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
               saveButtonTestId="workout-builder-save"
             />
@@ -347,7 +348,7 @@ export default function WorkoutBuilderHub({ workoutLibrary }: Props) {
 
         <SavedWorkoutsPanel
           workouts={alternateRecentWorkouts}
-          heading={savedWorkout ? "Other saved swim sessions" : "Saved swim sessions"}
+          heading={savedWorkout ? "Open another saved session" : "Saved swim sessions"}
           description={
             savedWorkout
               ? "Open, print, or delete another saved session here only when you want to switch context or clean up older work."

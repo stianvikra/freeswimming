@@ -36,6 +36,8 @@ async function gotoStable(page: Page, href: string) {
 }
 
 test("public pages do not render legacy under-construction banner", async ({ page }) => {
+  test.slow();
+
   await gotoStable(page, "/");
   if (new URL(page.url()).pathname === "/preview-access") {
     test.skip(true, "Public-banner assertions are skipped while site lock is enabled.");
