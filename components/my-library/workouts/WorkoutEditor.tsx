@@ -1746,7 +1746,7 @@ export default function WorkoutEditor({
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Recent accepted workouts</h3>
+              <h3 className="text-sm font-semibold text-slate-900">My sessions</h3>
               <p className="mt-1 text-sm text-slate-600">{recentWorkoutsDescription}</p>
             </div>
           </div>

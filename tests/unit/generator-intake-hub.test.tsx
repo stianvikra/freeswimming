@@ -214,17 +214,13 @@ describe("GeneratorIntakeHub", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Loaded from My Library" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Just this run" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Prepare the generator" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Notes stay out of default generator prefill in v1.", { exact: false })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Before you generate" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "From My Library" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "This run only" })).toBeInTheDocument();
     expect(screen.queryByTestId("generator-intake-session-count")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("generator-intake-handoff-preview")).not.toBeInTheDocument();
   });
 
-  it("updates the handoff preview when blocks are excluded and overrides change", () => {
+  it("updates source and override summaries when blocks and one-time choices change", () => {
     render(
       <GeneratorIntakeHub
         initialSnapshot={buildSnapshot()}
@@ -243,24 +239,9 @@ describe("GeneratorIntakeHub", () => {
     });
     fireEvent.click(screen.getByTestId("generator-intake-source-toggle"));
     fireEvent.click(screen.getByTestId("generator-intake-include-goals"));
-    fireEvent.click(screen.getByTestId("generator-intake-technical-toggle"));
 
-    const preview = screen.getByTestId("generator-intake-handoff-preview").textContent ?? "";
-    const parsed = JSON.parse(preview) as {
-      includedBlocks: string[];
-      source: { openGoals: unknown[] };
-      overrides: {
-        targetType: string;
-        desiredSessionCount: number | null;
-        focusText: string | null;
-      };
-    };
-
-    expect(parsed.includedBlocks).not.toContain("goals");
-    expect(parsed.source.openGoals).toEqual([]);
-    expect(parsed.overrides.targetType).toBe("program");
-    expect(parsed.overrides.desiredSessionCount).toBe(4);
-    expect(parsed.overrides.focusText).toBe("Race-pace breathing control");
+    expect(screen.getByText("4 swim sessions per week")).toBeInTheDocument();
+    expect(screen.getByText("4 blocks included")).toBeInTheDocument();
   });
 
   it("shows swim sessions per week only for the multi-session program path", () => {

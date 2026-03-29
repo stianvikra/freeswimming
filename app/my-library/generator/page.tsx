@@ -64,19 +64,18 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Generator intake</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">AI session generator</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Choose what to bring in from My Library, add any one-off settings for this run, and
-                generate a swim session without editing your saved profile, records, goals, or
-                focus.
+                Use your athlete profile, saved My Library data, and one-time choices for this run
+                to generate a new swim-session draft.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
-                href="/my-library/profile"
+                href="/my-library/workouts"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
-                Review profile data
+                My sessions
               </Link>
               <Link
                 href="/my-library"
@@ -84,39 +83,6 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
               >
                 Back to My Library
               </Link>
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-            <h2 className="text-base font-semibold text-slate-900">How this intake works</h2>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                  Loaded from My Library
-                </p>
-                <p className="mt-2 text-sm text-slate-700">
-                  Profile, CSS, preferences, records, goals, and focus stay saved in My Library.
-                  This page reads them without editing them.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                  Just this run
-                </p>
-                <p className="mt-2 text-sm text-slate-700">
-                  Choose what to include and add one-off settings that do not write back into My
-                  Library.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                  After you generate
-                </p>
-                <p className="mt-2 text-sm text-slate-700">
-                  Save one reviewed swim session into My Library, then reopen it in the dedicated
-                  builder route for later editing.
-                </p>
-              </div>
             </div>
           </div>
 

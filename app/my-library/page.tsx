@@ -234,18 +234,17 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Generator intake</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">AI session generator</h2>
                   <p className="mt-2 text-sm text-slate-600">
-                    Review which saved My Library signals should prefill session generation, then
-                    generate, accept, and reopen one canonical workout without editing your saved
-                    profile, records, goals, or focus.
+                    Generate a new swim-session draft from your athlete profile and one-time choices
+                    without changing your saved My Library data.
                   </p>
                 </div>
                 <Link
                   href="/my-library/generator"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Open generator
+                  Generate with AI
                 </Link>
               </div>
             </section>
@@ -253,23 +252,11 @@ export default async function MyLibraryPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {!workoutLibrarySnapshot.schemaReady
-                      ? "This canonical workout layer is still syncing in this environment."
-                      : workoutLibrarySnapshot.recentWorkouts[0]
-                        ? [
-                            workoutLibrarySnapshot.recentWorkouts[0].title,
-                            workoutLibrarySnapshot.recentWorkouts[0].totalDistanceM
-                              ? `${workoutLibrarySnapshot.recentWorkouts[0].totalDistanceM}m`
-                              : null,
-                            workoutLibrarySnapshot.recentWorkouts[0].estimatedDurationMin
-                              ? `~${workoutLibrarySnapshot.recentWorkouts[0].estimatedDurationMin} min`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")
-                        : "Saved swim sessions will appear here after you create your first manual session or accept a generated draft."}
-                  </p>
+                  {!workoutLibrarySnapshot.schemaReady ? (
+                    <p className="mt-2 text-sm text-slate-600">
+                      This canonical workout layer is still syncing in this environment.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {workoutLibrarySnapshot.recentWorkouts[0] ? (
@@ -296,23 +283,11 @@ export default async function MyLibraryPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">Dryland builder</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {!drylandLibrarySnapshot.schemaReady
-                      ? "This dryland foundation is still syncing in this environment."
-                      : drylandLibrarySnapshot.recentSessions[0]
-                        ? [
-                            drylandLibrarySnapshot.recentSessions[0].title,
-                            drylandLibrarySnapshot.recentSessions[0].exerciseCount
-                              ? `${drylandLibrarySnapshot.recentSessions[0].exerciseCount} exercises`
-                              : null,
-                            drylandLibrarySnapshot.recentSessions[0].actualDurationSeconds
-                              ? `${Math.round(drylandLibrarySnapshot.recentSessions[0].actualDurationSeconds / 60)} min`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")
-                        : "Build simple strength and stretching sessions with a small exercise bank, set chips, and optional start/stop timing."}
-                  </p>
+                  {!drylandLibrarySnapshot.schemaReady ? (
+                    <p className="mt-2 text-sm text-slate-600">
+                      This dryland foundation is still syncing in this environment.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {drylandLibrarySnapshot.recentSessions[0] ? (

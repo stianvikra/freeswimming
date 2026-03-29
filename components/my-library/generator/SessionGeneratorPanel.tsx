@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
@@ -34,7 +33,6 @@ import type {
   WorkoutEditorRecord,
   WorkoutLibrarySnapshot,
   WorkoutSaveApiResponse,
-  WorkoutSummary,
 } from "@/lib/workouts/shared";
 import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 
@@ -42,7 +40,6 @@ type Props = {
   payload: GeneratorIntakeHandoffPayload;
   selection: GeneratorIntakeSelection;
   overrides: GeneratorIntakeOverrides;
-  handoffPrepared: boolean;
   workoutLibrary: WorkoutLibrarySnapshot;
 };
 
@@ -50,7 +47,6 @@ export default function SessionGeneratorPanel({
   payload,
   selection,
   overrides,
-  handoffPrepared,
   workoutLibrary,
 }: Props) {
   const [formState, setFormState] = useState<SessionGeneratorFormState>(() =>
@@ -59,9 +55,6 @@ export default function SessionGeneratorPanel({
   const [draft, setDraft] = useState<SessionDraft | null>(null);
   const [savedWorkout, setSavedWorkout] = useState<WorkoutEditorRecord | null>(
     workoutLibrary.selectedWorkout
-  );
-  const [recentWorkouts, setRecentWorkouts] = useState<WorkoutSummary[]>(
-    workoutLibrary.recentWorkouts
   );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -88,11 +81,7 @@ export default function SessionGeneratorPanel({
     setFormState(getDefaultSessionGeneratorFormState(payload));
   }, [payload, workoutLibrary.selectedWorkout]);
 
-  useEffect(() => {
-    setRecentWorkouts(workoutLibrary.recentWorkouts);
-  }, [workoutLibrary.recentWorkouts]);
-
-  const sessionReady = payload.overrides.targetType === "session" && handoffPrepared;
+  const sessionReady = payload.overrides.targetType === "session";
   const canonicalSaveReady = workoutLibrary.schemaReady;
   const hasLoadedCanonicalWorkout = Boolean(savedWorkout);
   const hasUnsavedChanges = savedWorkout
@@ -215,11 +204,8 @@ export default function SessionGeneratorPanel({
 
       setSavedWorkout(responseBody.workout);
       setDraft(responseBody.workout.draft);
-      setRecentWorkouts((current) => upsertRecentWorkoutSummary(current, responseBody.summary));
       setSuccess(
-        savedWorkout
-          ? "Workout changes saved to the canonical workout."
-          : "Workout accepted and saved as a canonical session."
+        savedWorkout ? "Session changes saved to My sessions." : "Session saved to My sessions."
       );
     } catch {
       setError("Could not save workout right now.");
@@ -236,27 +222,19 @@ export default function SessionGeneratorPanel({
     setSuccess("Unsaved builder edits were reset to the last saved workout.");
   }
 
-  function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
-    const existing = current.filter((summary) => summary.id !== next.id);
-    return [next, ...existing].slice(0, 6);
-  }
-
   return (
     <section
       data-testid="session-generator-panel"
       className="rounded-2xl border border-slate-200 bg-white p-5"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Session draft generator</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Generate swim session</h2>
           <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-            Build one Garmin-familiar swim-session draft from the prepared intake handoff, then edit
-            it fully before accepting it into the first canonical workout layer for later editing.
+            Use your athlete profile, saved My Library data, and this run&apos;s choices to draft
+            one swim session, then review it before saving it into My sessions.
           </p>
         </div>
-        <p className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-          Session only
-        </p>
       </div>
 
       {workoutLibrary.loadError ? (
@@ -268,8 +246,8 @@ export default function SessionGeneratorPanel({
       {workoutLibrary.selectedWorkoutMissing ? (
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
           <p className="text-sm text-amber-900">
-            That saved workout could not be found. You can start a fresh draft or open another
-            recent workout below.
+            That saved session could not be found. You can start a fresh AI draft or open My
+            sessions instead.
           </p>
         </div>
       ) : null}
@@ -295,49 +273,6 @@ export default function SessionGeneratorPanel({
         </div>
       ) : null}
 
-      {recentWorkouts.length > 0 ? (
-        <div
-          data-testid="session-generator-recent-workouts"
-          className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Recent accepted workouts</h3>
-              <p className="mt-1 text-sm text-slate-600">
-                Open one saved session in the dedicated workout builder route, or start a fresh
-                AI-generated draft below.
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 grid gap-3">
-            {recentWorkouts.map((workout) => (
-              <div
-                key={workout.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white p-3"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {workout.totalDistanceM ? `${workout.totalDistanceM}m` : null}
-                    {workout.totalDistanceM && workout.estimatedDurationMin ? " · " : null}
-                    {workout.estimatedDurationMin ? `~${workout.estimatedDurationMin} min` : null}
-                    {workout.totalDistanceM || workout.estimatedDurationMin ? " · " : null}
-                    {getSessionTypeLabel(workout.sessionType)}
-                  </p>
-                </div>
-                <Link
-                  href={`/my-library/workouts/${workout.id}`}
-                  data-testid={`session-generator-open-workout-${workout.id}`}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                >
-                  Open
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       {payload.overrides.targetType === "program" ? (
         <div
           data-testid="session-generator-program-deferred"
@@ -347,20 +282,6 @@ export default function SessionGeneratorPanel({
             Program generation stays deferred for now. Switch the generator target back to
             <span className="font-semibold"> Single session </span>
             to draft one workout in this slice.
-          </p>
-        </div>
-      ) : null}
-
-      {payload.overrides.targetType === "session" &&
-      !handoffPrepared &&
-      !hasLoadedCanonicalWorkout ? (
-        <div
-          data-testid="session-generator-prepare-needed"
-          className="mt-5 rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
-        >
-          <p className="text-sm text-blue-900">
-            Prepare the generator above before generating a session draft, so this run uses the
-            saved profile, goal, and focus context you just reviewed.
           </p>
         </div>
       ) : null}
@@ -601,7 +522,7 @@ export default function SessionGeneratorPanel({
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-600">
-              Drafts stay local until you explicitly accept one below as a canonical workout.
+              Drafts stay local until you explicitly save one into My sessions below.
             </p>
             <button
               type="button"

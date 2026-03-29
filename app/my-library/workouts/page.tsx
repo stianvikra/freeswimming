@@ -36,11 +36,7 @@ export default async function WorkoutSessionsPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">View sessions</h1>
-              <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Browse saved swim sessions here first, expand a plain-text preview when you only
-                need a quick scan, and open one session at a time when you want the focused builder.
-              </p>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">My sessions</h1>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link

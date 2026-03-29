@@ -39,7 +39,7 @@ type StoredDraft = {
   overrides: GeneratorIntakeOverrides;
 };
 
-type GeneratorSectionKey = "source" | "overrides" | "technical";
+type GeneratorSectionKey = "source" | "overrides";
 
 const STORAGE_KEY_PREFIX = "my-library-generator-intake-draft:";
 const BLOCK_COPY_ORDER = [...GENERATOR_INTAKE_BLOCK_KEYS];
@@ -125,20 +125,15 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
   const [actionSuccess, setActionSuccess] = useState("");
   const [isOnline, setIsOnline] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastPreparedSignature, setLastPreparedSignature] = useState<string | null>(null);
   const [sectionOpen, setSectionOpen] = useState<Record<GeneratorSectionKey, boolean>>({
     source: false,
     overrides: false,
-    technical: false,
   });
 
   const storageKey = getStorageKey(userId);
   const payload = buildGeneratorHandoffPayload(snapshot, selection, overrides, {
     createdAt: snapshot.loadedAt,
   });
-  const payloadPreview = JSON.stringify(payload, null, 2);
-  const payloadSignature = JSON.stringify(payload);
-  const isPreparedCurrent = lastPreparedSignature === payloadSignature;
   const selectedBlockCount = payload.includedBlocks.length;
   const sourceSummary =
     selectedBlockCount > 0
@@ -152,15 +147,6 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
           } per week`
         : "Multi-session program"
       : "Single session";
-  const technicalSummary = isPreparedCurrent
-    ? "Prepared with current choices"
-    : "Hidden by default";
-  const hasActiveOverrides =
-    Boolean(payload.overrides.desiredSessionCount) ||
-    Boolean(payload.overrides.desiredSessionMinutes) ||
-    Boolean(payload.overrides.focusText) ||
-    Boolean(payload.overrides.constraintText) ||
-    payload.overrides.targetType !== "session";
 
   useEffect(() => {
     setIsOnline(readNavigatorOnlineState());
@@ -265,7 +251,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
             : "Saved My Library context changed after refresh. Review included blocks before continuing."
           : ""
       );
-      setActionSuccess("Generator intake refreshed.");
+      setActionSuccess("Updated from My Library.");
       void sendClientAnalyticsEvent("generator_intake_refreshed", {
         availableBlockCount: Object.values(nextSnapshot.blocks).filter((block) => block.available)
           .length,
@@ -325,22 +311,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
     setDraftRecovered(false);
     setStaleSourceWarning("");
     setActionError("");
-    setActionSuccess("Generator intake draft reset.");
-    setLastPreparedSignature(null);
-  }
-
-  function prepareHandoff() {
-    setActionError("");
-    setActionSuccess("Generator is ready for this run.");
-    setLastPreparedSignature(payloadSignature);
-    void sendClientAnalyticsEvent("generator_intake_handoff_prepared", {
-      targetType: payload.overrides.targetType,
-      selectedBlockCount,
-      omittedBlockCount: payload.omittedBlocks.length,
-      hasOverrides: hasActiveOverrides,
-      hasConstraintText: Boolean(payload.overrides.constraintText),
-      hasFocusOverride: Boolean(payload.overrides.focusText),
-    });
+    setActionSuccess("Cleared one-time changes.");
   }
 
   return (
@@ -352,11 +323,10 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Before you continue</h2>
+            <h2 className="text-base font-semibold text-slate-900">Before you generate</h2>
             <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              Review what to bring in from My Library, then choose any one-off settings for this
-              run. Nothing here writes back into your saved records. Notes stay out of default
-              generator prefill in v1.
+              Choose what to use from My Library and add any one-time changes for this run. Nothing
+              here changes your saved records.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -367,7 +337,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
               data-testid="generator-intake-refresh"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isRefreshing ? "Refreshing..." : "Refresh intake"}
+              {isRefreshing ? "Updating..." : "Update from My Library"}
             </button>
             <button
               type="button"
@@ -375,7 +345,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
               data-testid="generator-intake-reset"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              Reset draft
+              Clear one-time changes
             </button>
           </div>
         </div>
@@ -393,7 +363,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       {draftRecovered ? (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
           <p className="text-sm text-emerald-900">
-            Unsaved generator-intake choices were restored on this device.
+            Unsaved AI generator choices were restored on this device.
           </p>
         </section>
       ) : null}
@@ -425,10 +395,10 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Loaded from My Library</h2>
+            <h2 className="text-lg font-semibold text-slate-900">From My Library</h2>
             <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              Read-only information for this run. Open it when you want to review what is coming
-              from your saved My Library data before generating anything.
+              Read-only information you can include in this AI-generated session. Open it when you
+              want to review what is coming from your saved My Library data.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -517,9 +487,9 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Just this run</h2>
+            <h2 className="text-lg font-semibold text-slate-900">This run only</h2>
             <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              These choices only affect this generator attempt. Use them when you want to steer this
+              Optional changes that only affect this AI draft. Use them when you want to steer this
               run without editing your saved My Library information.
             </p>
           </div>
@@ -630,93 +600,10 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Prepare the generator</h2>
-            <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              Lock this run to the saved information and one-off choices you want to use. The raw
-              technical preview stays hidden unless you explicitly open it.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-              {technicalSummary}
-            </p>
-            <button
-              type="button"
-              onClick={() => toggleSection("technical")}
-              aria-expanded={sectionOpen.technical}
-              data-testid="generator-intake-technical-toggle"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              {sectionOpen.technical ? "Hide technical preview" : "Show technical preview"}
-            </button>
-            <button
-              type="button"
-              onClick={prepareHandoff}
-              data-testid="generator-intake-prepare"
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-            >
-              {isPreparedCurrent ? "Prepared for this run" : "Prepare generator"}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Included blocks
-            </p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{selectedBlockCount}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Target type
-            </p>
-            <p className="mt-2 text-2xl font-semibold capitalize text-slate-900">
-              {payload.overrides.targetType}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Notes prefill
-            </p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">Excluded</p>
-          </div>
-        </div>
-
-        {!selectedBlockCount && !hasActiveOverrides ? (
-          <p className="mt-4 text-sm text-slate-600">
-            You can still prepare a near-empty handoff now, or go back and add saved profile, goals,
-            or focus data before later generation.
-          </p>
-        ) : null}
-
-        {lastPreparedSignature && !isPreparedCurrent ? (
-          <p className="mt-4 text-sm text-amber-800">
-            Intake choices changed after the last prepare action. Review them and prepare again
-            before moving downstream.
-          </p>
-        ) : null}
-
-        {sectionOpen.technical ? (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-            <pre
-              data-testid="generator-intake-handoff-preview"
-              className="max-h-[420px] overflow-auto px-4 py-4 text-xs leading-relaxed text-slate-100"
-            >
-              {payloadPreview}
-            </pre>
-          </div>
-        ) : null}
-      </section>
-
       <SessionGeneratorPanel
         payload={payload}
         selection={selection}
         overrides={overrides}
-        handoffPrepared={isPreparedCurrent}
         workoutLibrary={workoutLibrary}
       />
     </div>
