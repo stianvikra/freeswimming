@@ -270,7 +270,7 @@ export default async function MyLibraryPage() {
                 <div className="flex flex-wrap gap-2">
                   {workoutLibrarySnapshot.recentWorkouts[0] ? (
                     <Link
-                      href={`/my-library/workouts/${workoutLibrarySnapshot.recentWorkouts[0].id}?savedSessions=open`}
+                      href="/my-library/workouts"
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                     >
                       View sessions

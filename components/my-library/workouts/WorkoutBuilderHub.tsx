@@ -19,7 +19,7 @@ import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 type Props = {
   workoutLibrary: WorkoutLibrarySnapshot;
   trainingFocusTitles?: string[];
-  savedSessionsOpenByDefault?: boolean;
+  browseOnly?: boolean;
 };
 
 function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
@@ -30,7 +30,7 @@ function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSumm
 export default function WorkoutBuilderHub({
   workoutLibrary,
   trainingFocusTitles = [],
-  savedSessionsOpenByDefault = false,
+  browseOnly = false,
 }: Props) {
   const router = useRouter();
   const [savedWorkout, setSavedWorkout] = useState<WorkoutEditorRecord | null>(
@@ -44,7 +44,6 @@ export default function WorkoutBuilderHub({
   const [pendingDeleteWorkoutId, setPendingDeleteWorkoutId] = useState<string | null>(null);
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
   const [pendingCurrentDelete, setPendingCurrentDelete] = useState(false);
-  const [savedSessionsOpen, setSavedSessionsOpen] = useState(savedSessionsOpenByDefault);
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
   const latestSavedWorkout =
@@ -71,12 +70,10 @@ export default function WorkoutBuilderHub({
     setPendingDeleteWorkoutId(null);
     setDeletingWorkoutId(null);
     setPendingCurrentDelete(false);
-    setSavedSessionsOpen(savedSessionsOpenByDefault);
   }, [
     workoutLibrary.recentWorkouts,
     workoutLibrary.selectedWorkout,
     workoutLibrary.selectedWorkoutMissing,
-    savedSessionsOpenByDefault,
   ]);
 
   async function saveWorkout() {
@@ -177,28 +174,35 @@ export default function WorkoutBuilderHub({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
+          <h2 className="text-lg font-semibold text-slate-900">
+            {browseOnly ? "View sessions" : "Swim session builder"}
+          </h2>
           <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-            {savedWorkout
-              ? "Keep the session form front and center while you edit one saved swim session. Open saved sessions only when you want to switch, print, or clean up older work."
-              : "View saved sessions when you want to reopen existing work, or create a new empty swim session from scratch."}
+            {browseOnly
+              ? "Browse saved swim sessions here, expand a quick plain-text preview when you want to scan one, or open a session to edit it in the focused builder."
+              : savedWorkout
+                ? "Keep the session form front and center while you edit one saved swim session. Open saved sessions only when you want to switch, print, or clean up older work."
+                : "View saved sessions when you want to reopen existing work, or create a new empty swim session from scratch."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {recentWorkouts.length > 0 ? (
-            <button
-              type="button"
-              data-testid="workout-builder-view-sessions"
-              onClick={() => setSavedSessionsOpen((current) => !current)}
+          {!browseOnly && recentWorkouts.length > 0 ? (
+            <Link
+              href="/my-library/workouts"
+              data-testid="workout-builder-view-sessions-link"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              {savedSessionsOpen ? "Hide sessions" : "View sessions"}
-            </button>
+              View sessions
+            </Link>
           ) : null}
           {workoutLibrary.schemaReady ? (
             <CreateManualWorkoutButton
               label="Create session"
-              testId="workout-builder-create-manual"
+              testId={
+                browseOnly
+                  ? "workout-builder-browse-create-manual"
+                  : "workout-builder-create-manual"
+              }
               latestSavedWorkout={
                 savedWorkout
                   ? {
@@ -258,7 +262,7 @@ export default function WorkoutBuilderHub({
       ) : null}
 
       <div className="mt-6 space-y-5">
-        {savedWorkout && pendingCurrentDelete ? (
+        {!browseOnly && savedWorkout && pendingCurrentDelete ? (
           <div
             data-testid="workout-builder-current-workout-actions"
             className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4"
@@ -295,7 +299,51 @@ export default function WorkoutBuilderHub({
           </div>
         ) : null}
 
-        {!savedWorkout ? (
+        {browseOnly ? (
+          recentWorkouts.length > 0 ? (
+            <SavedWorkoutsPanel
+              workouts={recentWorkouts}
+              heading="Saved sessions"
+              description="Open one session to edit it, expand View for a plain-text scan, or open PDF / Poolside Note when you only need the output."
+              workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
+              workoutPdfHrefBuilder={(workoutId) =>
+                `/api/my-library/workouts/${workoutId}/export/pdf`
+              }
+              workoutPoolsidePdfHrefBuilder={(workoutId) =>
+                `/api/my-library/workouts/${workoutId}/export/pdf?variant=poolside`
+              }
+              editLabel="Edit"
+              testId="workout-builder-saved-sessions"
+              showToggle={false}
+              showInlinePreview
+              editButtonTestIdBuilder={(workoutId) => `workout-builder-edit-workout-${workoutId}`}
+              deleteButtonTestIdBuilder={(workoutId) =>
+                `workout-builder-delete-workout-${workoutId}`
+              }
+              confirmDeleteButtonTestIdBuilder={(workoutId) =>
+                `workout-builder-confirm-delete-workout-${workoutId}`
+              }
+              onRequestDeleteWorkout={(workout) => {
+                setPendingDeleteWorkoutId(workout.id);
+                setPendingCurrentDelete(false);
+                setError("");
+                setSuccess("");
+              }}
+              onCancelDeleteWorkout={() => setPendingDeleteWorkoutId(null)}
+              onConfirmDeleteWorkout={confirmDeleteWorkout}
+              pendingDeleteWorkoutId={pendingDeleteWorkoutId}
+              deletingWorkoutId={deletingWorkoutId}
+            />
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-sm font-medium text-slate-900">No saved sessions yet.</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Create your first manual swim session here, then come back to browse, preview, or
+                print future saved sessions in one list.
+              </p>
+            </div>
+          )
+        ) : !savedWorkout ? (
           <div className="space-y-5">
             <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
               <p className="text-sm font-medium text-amber-900">
@@ -309,14 +357,13 @@ export default function WorkoutBuilderHub({
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {recentWorkouts.length > 0 ? (
-                  <button
-                    type="button"
-                    data-testid="workout-builder-empty-view-sessions"
-                    onClick={() => setSavedSessionsOpen((current) => !current)}
+                  <Link
+                    href="/my-library/workouts"
+                    data-testid="workout-builder-empty-view-sessions-link"
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                   >
-                    {savedSessionsOpen ? "Hide sessions" : "View sessions"}
-                  </button>
+                    View sessions
+                  </Link>
                 ) : null}
                 {workoutLibrary.schemaReady ? (
                   <CreateManualWorkoutButton
@@ -368,48 +415,6 @@ export default function WorkoutBuilderHub({
               saveButtonTestId="workout-builder-save"
             />
           </div>
-        ) : null}
-
-        {savedSessionsOpen ? (
-          <SavedWorkoutsPanel
-            workouts={recentWorkouts}
-            heading="Saved sessions"
-            description={
-              savedWorkout
-                ? "Open another saved session, print the current one, or clean up older work without leaving the builder."
-                : "Open, print, or delete a saved swim session here, or create a fresh clean session above."
-            }
-            workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
-            workoutPdfHrefBuilder={(workoutId) =>
-              `/api/my-library/workouts/${workoutId}/export/pdf`
-            }
-            workoutPoolsidePdfHrefBuilder={(workoutId) =>
-              `/api/my-library/workouts/${workoutId}/export/pdf?variant=poolside`
-            }
-            editLabel="Open"
-            testId="session-generator-recent-workouts"
-            currentWorkoutId={savedWorkout?.id ?? null}
-            showToggle={false}
-            editButtonTestIdBuilder={(workoutId) =>
-              savedWorkout
-                ? `session-generator-open-workout-${workoutId}`
-                : `workout-builder-open-workout-${workoutId}`
-            }
-            deleteButtonTestIdBuilder={(workoutId) => `workout-builder-delete-workout-${workoutId}`}
-            confirmDeleteButtonTestIdBuilder={(workoutId) =>
-              `workout-builder-confirm-delete-workout-${workoutId}`
-            }
-            onRequestDeleteWorkout={(workout) => {
-              setPendingDeleteWorkoutId(workout.id);
-              setPendingCurrentDelete(false);
-              setError("");
-              setSuccess("");
-            }}
-            onCancelDeleteWorkout={() => setPendingDeleteWorkoutId(null)}
-            onConfirmDeleteWorkout={confirmDeleteWorkout}
-            pendingDeleteWorkoutId={pendingDeleteWorkoutId}
-            deletingWorkoutId={deletingWorkoutId}
-          />
         ) : null}
       </div>
     </section>

@@ -234,8 +234,9 @@ test.describe("my library workout builder", () => {
       "data-pdf-variant",
       "poolside"
     );
-    await expect(poolsidePopup.locator("body")).toContainText("Poolside PDF");
-    await expect(poolsidePopup.locator("body")).toContainText("One line per interval");
+    await expect(poolsidePopup.locator("body")).toContainText("Poolside Note");
+    await expect(poolsidePopup.locator("body")).toContainText("Tot:");
+    await expect(poolsidePopup.locator("body")).toContainText("P:");
     await poolsidePopup.close();
 
     const patchResponsePromise = page.waitForResponse(
@@ -307,6 +308,23 @@ test.describe("my library workout builder", () => {
     const workoutMatch = page.url().match(/\/my-library\/workouts\/([0-9a-f-]+)$/);
     expect(workoutMatch?.[1]).toBeTruthy();
     const workoutId = workoutMatch![1];
+
+    await page.getByTestId("workout-builder-view-sessions-link").click();
+    await page.waitForURL("/my-library/workouts", {
+      timeout: 10_000,
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByRole("heading", { level: 1, name: "View sessions" })).toBeVisible();
+    await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
+    await page.getByTestId(`saved-workouts-view-${workoutId}`).click();
+    await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("Tot:");
+    await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("P:");
+    await page.getByTestId(`workout-builder-edit-workout-${workoutId}`).click();
+    await page.waitForURL(new RegExp(`/my-library/workouts/${workoutId}$`), {
+      timeout: 10_000,
+      waitUntil: "domcontentloaded",
+    });
+    await waitForWorkoutBuilderClientReady(page);
 
     const deleteResponsePromise = page.waitForResponse(
       (response) =>

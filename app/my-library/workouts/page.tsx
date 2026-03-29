@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -8,34 +8,18 @@ import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
 
-type Params = Promise<{
-  workoutId: string;
-}>;
-
-type Props = {
-  params: Params;
-};
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-export default async function WorkoutBuilderPage({ params }: Props) {
-  const { workoutId } = await params;
-
-  if (!UUID_PATTERN.test(workoutId)) {
-    notFound();
-  }
-
+export default async function WorkoutSessionsPage() {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/auth/sign-in?next=${encodeURIComponent(`/my-library/workouts/${workoutId}`)}`);
+    redirect("/auth/sign-in?next=%2Fmy-library%2Fworkouts");
   }
 
   const [workoutLibrary, trainingContextSnapshot] = await Promise.all([
-    loadWorkoutLibrarySnapshot(supabase, user.id, workoutId),
+    loadWorkoutLibrarySnapshot(supabase, user.id, null),
     loadTrainingContextSnapshot(supabase, user.id),
   ]);
   const trainingFocusTitles =
@@ -52,19 +36,13 @@ export default async function WorkoutBuilderPage({ params }: Props) {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Swim session builder</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">View sessions</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Edit one saved swim session at a time, keep the form front and center, and open
-                saved sessions only when you want to switch, print, or clean up older work.
+                Browse saved swim sessions here first, expand a plain-text preview when you only
+                need a quick scan, and open one session at a time when you want the focused builder.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link
-                href="/my-library/generator"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                Open generator
-              </Link>
               <Link
                 href="/my-library"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
@@ -78,6 +56,7 @@ export default async function WorkoutBuilderPage({ params }: Props) {
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
               trainingFocusTitles={trainingFocusTitles}
+              browseOnly
             />
           </div>
         </div>
