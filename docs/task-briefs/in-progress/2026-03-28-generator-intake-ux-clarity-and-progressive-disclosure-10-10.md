@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-28`
-- `updated`: `2026-03-28`
+- `updated`: `2026-03-29`
 
 ## Goal
 
@@ -141,7 +141,10 @@ Critical target categories for `10/10` claim in this brief:
 - When target type is `program`, relabel that field clearly as `Swim sessions per week`.
 - Simplify the source-data section heading/copy so it reads as information loaded from My Library.
 - Simplify the overrides section heading/copy so it clearly means `this run only`.
-- Move the raw technical payload preview behind calmer progressive disclosure and reduce its prominence in the normal flow.
+- Rename the route and entrypoint so the experience reads as `AI session generator`, not a technical `generator intake`.
+- Remove the explicit `prepare` step from the normal user flow so current saved data plus this-run-only choices can generate immediately.
+- Remove the raw technical payload preview from the normal end-user flow.
+- Keep saved swim sessions in their dedicated browse surface instead of duplicating the same canonical-session list inside the generator.
 - Keep the current canonical handoff model, refresh/reset behavior, and session-generator compatibility intact.
 
 ## Out Of Scope
@@ -158,10 +161,13 @@ Critical target categories for `10/10` claim in this brief:
 2. When target type is `Multi-session program`, the same control is shown with a clear weekly-program label.
 3. The section previously labeled `Saved My Library context` is renamed and explained in plainer user-facing language.
 4. The section previously labeled `One-run overrides` is renamed and explained in plainer user-facing language.
-5. The raw handoff preview is visually de-emphasized behind an explicit disclosure control that defaults closed.
-6. The changed UX remains truthful to the canonical handoff model and does not alter the payload contract unintentionally.
-7. Relevant production admin notes listed above remain explicitly owned by this brief until shipped or intentionally split again.
-8. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
+5. The route and My Library entrypoint read as `AI session generator`, not an internal `generator intake` tool.
+6. The explicit `prepare` step is removed from the normal user flow, and generating uses current saved data plus this-run-only choices directly.
+7. The raw technical handoff preview is no longer exposed in the normal end-user flow.
+8. The generator route does not repeat a full saved-session list that already lives in `My sessions`; it uses lighter navigation to that dedicated browse surface instead.
+9. The changed UX remains truthful to the canonical handoff model and does not alter the payload contract unintentionally.
+10. Relevant production admin notes listed above remain explicitly owned by this brief until shipped or intentionally split again.
+11. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
 
 ## Validation
 
@@ -173,8 +179,7 @@ Critical target categories for `10/10` claim in this brief:
   - unchanged handoff payload serialization
 - targeted e2e for:
   - generator intake single-session path,
-  - generator intake program path,
-  - technical preview disclosure behavior
+  - generator intake program path
 - `npm run verify:pre-pr`
 - before merge recommendation: `npm run verify:pre-merge`
 
@@ -195,9 +200,9 @@ Critical target categories for `10/10` claim in this brief:
 ## Constraints
 
 - Keep the route consistent with existing My Library language.
-- Do not expose more technical JSON/ID detail in the default view than today.
+- Do not expose more technical JSON/ID detail in the normal end-user view.
 - Do not change the downstream handoff schema in this slice.
-- Prefer clearer progressive disclosure over adding more on-screen explanation text.
+- Prefer fewer steps and clearer language over extra explainer copy.
 
 ## 10/10 Quality Bar
 
@@ -209,7 +214,6 @@ Critical target categories for `10/10` claim in this brief:
   - `error`
   - `retry`
   - `success`
-  - collapsed/expanded advanced preview
   - session/program conditional override visibility
 - The page must preserve visual calm and avoid raw internal/debug language in primary view.
 - Business logic must stay deterministic and canonical under every disclosure state.
@@ -224,7 +228,7 @@ Critical target categories for `10/10` claim in this brief:
 ## Security, Privacy, and Compliance
 
 - `/my-library/generator` remains authenticated and owner-scoped.
-- The technical preview remains private and should become less casually visible, not more.
+- Technical payload detail remains private and should stay out of the normal end-user route.
 - No secret/env values or cross-user data may appear in disclosure copy or payload preview.
 
 ## Observability and KPI Contract
@@ -232,8 +236,8 @@ Critical target categories for `10/10` claim in this brief:
 - Existing analytics remain sufficient if they still truthfully capture:
   - refresh,
   - reset,
-  - handoff prepared,
-  - target type selected.
+  - target type selected,
+  - generator draft generated/saved when existing client events fire.
 - Success KPI for this slice:
   - a user can explain what each main section does without needing internal product vocabulary.
 
@@ -254,5 +258,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-29` — slice 2 completed on branch `fix/swim-sessions-and-generator-ia-cleanup-2026-03-29`; the route now reads as `AI session generator`, uses athlete-profile/My Library language instead of internal intake/debug language, removes the explicit prepare gate and technical-preview UI from the normal flow, and keeps canonical saved sessions in the dedicated `My sessions` route instead of duplicating the list inside generator work. Targeted generator/workout vitest and desktop-chromium generator-intake + workout-builder + dryland e2e are green. Next step: run `npm run lint:briefs` and `npm run verify:pre-pr`, then commit/push/open PR if the full gate stays green.`
+- `2026-03-29` — slice 2 started on branch `fix/swim-sessions-and-generator-ia-cleanup-2026-03-29`; live review showed the route still read like an internal tool, so this slice renames the surface to `AI session generator`, removes the explicit prepare gate and visible technical preview from the normal flow, and keeps saved sessions in the dedicated `My sessions` surface instead of duplicating the list inside generator work. Next step: finish the code cleanup, run targeted generator/workout validation, and then `npm run verify:pre-pr`.
 - `2026-03-28` — brief created directly in `in-progress` after live production-note triage confirmed the next highest-value generator work is IA/copy/progressive-disclosure cleanup, not new generator capability. Next step: update the generator route UI to hide program-only fields in the single-session path, simplify headings, and collapse the technical preview by default, then run targeted tests and `npm run verify:pre-pr`.
 - `2026-03-28` — implemented the first generator-intake UX cleanup slice: single-session hides the weekly session-count override, program mode relabels it to `Swim sessions per week`, source/override/technical sections now use calmer plain-language headings, and the technical payload preview is hidden behind explicit disclosure. Targeted generator unit/e2e, `npm run typecheck`, and full `npm run verify:pre-pr` passed. During verification, two unrelated full-suite flakes (`course-progress-sync` and `soft-launch-banner`) were hardened with more stable browser-context polling and retryable route navigation so the release gate reflects the generator slice instead of transient test races. Next step: stage the changed briefs so `npm run lint:briefs` evaluates them directly, then commit, push, and open the PR for review.

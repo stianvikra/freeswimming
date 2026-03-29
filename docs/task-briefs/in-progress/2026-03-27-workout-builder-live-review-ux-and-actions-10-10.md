@@ -234,6 +234,10 @@ Critical target categories for `10/10` claim in this brief:
   - existing saved sessions should be browsed in a dedicated list-first surface,
   - that surface should still expose a direct `Create session` action,
   - the editor route should stay focused on one session at a time.
+- Strip browse-mode chrome down to what the owner actually needs:
+  - `My sessions` should be the only page-level browse heading,
+  - duplicate instructional copy inside the browse surface should be removed,
+  - saved-session count should stay secondary and right-aligned instead of acting like explanatory copy.
 - Add a quick inline preview path in the saved-session list:
   - a lightweight `View` disclosure should expand/collapse a plain-text preview for one session at a time without opening the editor.
 - Rename the compact lane-side output from `Poolside PDF` to `Poolside Note` wherever that improves truthfulness for real use.
@@ -246,6 +250,8 @@ Critical target categories for `10/10` claim in this brief:
 - Keep the builder route form-first:
   - when a session is being edited, the session form should remain the dominant surface,
   - saved-session browsing should stay secondary behind an explicit action instead of always sharing equal visual weight.
+- Keep My Library entry cards calm and action-first:
+  - `Swim session builder` and `Dryland builder` should show titles and actions, not front-card preview metadata from the latest saved session.
 
 ## Out Of Scope
 
@@ -273,7 +279,9 @@ Critical target categories for `10/10` claim in this brief:
 13. Saved-session rows expose a lightweight `View` disclosure that expands one plain-text session preview at a time without forcing the owner into edit mode.
 14. The compact lane-side output is labeled `Poolside Note` in product surfaces and is materially more operational than the full session PDF.
 15. `Poolside Note` formatting includes total distance, focus points, and explicit `P:` pause lines wherever the canonical workout model exposes rest/recovery entries that can be rendered truthfully.
-16. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
+16. `My sessions` is the only browse-page heading, duplicate explanatory copy is removed, and saved-session count stays secondary instead of explaining the page twice.
+17. My Library session-entry cards keep only builder titles and relevant actions, without misplaced latest-session preview text on the card face.
+18. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
 
 ## Validation
 
@@ -298,6 +306,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-29` — slice 6 expanded on branch `fix/swim-sessions-and-generator-ia-cleanup-2026-03-29`; live review tightened the builder-owned IA again by removing latest-session preview text from the My Library swim/dryland cards, renaming the browse route to `My sessions`, and stripping duplicate browse-mode explainer copy so the saved-session list can do the work. Next step: finish the paired generator cleanup in the child generator brief, run targeted validation, and then `npm run verify:pre-pr`.
 - `2026-03-29` — slice 5 implemented on branch `fix/workout-builder-ux-ia-cleanup-2026-03-29`; simplified My Library IA by removing the extra owned/explore jump controls, reframed the early program surface as an optional `Program builder preview`, made manual session entry language more direct, tightened current-session delete copy, and moved builder-route PDF access into the save/action bar instead of a separate support panel. Targeted `typecheck`, builder unit tests, `my-library-workout-builder` desktop Chromium, and `my-library-program-export` desktop Chromium (schema-gated skip after updated readiness detection) are green. Next step: run `npm run lint:briefs` and `npm run verify:pre-pr`, then open/update a PR if green.
 - `2026-03-29` — added production note `d487ac23-a1e0-4be9-938a-7407a3c35fe0` `Swim Session Builder` to this brief. The next slice will make entry actions explicit (`View sessions` / `Create session`), use a truthful continue-vs-start-new chooser when saved work already exists, switch manual create to a clean scratch session shell, and keep saved-session browsing secondary behind an explicit action so the builder route stays form-first.
 - `2026-03-28` — slice 4 implemented on branch `fix/workout-builder-focused-entry-2026-03-28`; renamed the workout-builder surface to `Swim session builder`, made the current saved session/editor the primary route focus, kept other saved sessions secondary instead of duplicating the active one, and simplified row-level PDF language from `Poolside PDF` to `PDF`. Targeted `vitest`, `typecheck`, and desktop-chromium generator/workout-builder e2e are green. Next step: run `npm run lint:briefs` and `npm run verify:pre-pr`, then open a PR if green.
@@ -403,6 +412,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-29 | implementation | slice 9 on branch fix/swim-sessions-and-generator-ia-cleanup-2026-03-29 removes misleading current-session preview lines from the My Library swim and dryland entry cards, simplifies the dedicated swim browse route to a calmer `My sessions`surface with session count + create action only, and aligns reused canonical session-list language inside the focused builder to`My sessions`instead of`Recent accepted workouts`; targeted workout/generator vitest and desktop-chromium my-library workout-builder + generator-intake + dryland e2e are green | next: run npm run lint:briefs and npm run verify:pre-pr, then commit/push/open PR if the full gate stays green`
 - `2026-03-29 | implementation | slice 8 on branch fix/workouts-view-sessions-and-poolside-note-2026-03-29 splits saved-session browsing into a dedicated View sessions route, adds inline plain-text preview per saved session, renames the compact lane-side export from Poolside PDF to Poolside Note, and tightens the lane-side output to operational lines with explicit P: pauses, Tot total distance, and focus carry-through; targeted typecheck, workout-builder vitest, workouts shared/routes vitest, desktop-chromium my-library workout-builder e2e, and brief lint for the changed brief are green (full --all lint still only fails on older historical briefs outside this slice) | next: run npm run verify:pre-pr, then commit/push/open PR if the full gate stays green`
 - `2026-03-29 | implementation | slice 7 on branch fix/workout-builder-draft-first-entry-2026-03-29 makes builder entry explicit with `View sessions`and`Create session`, adds a truthful continue-vs-start-scratch chooser whenever saved work already exists, opens the builder route with saved sessions hidden unless explicitly requested, and switches manual create to a cleaner scratch session shell that still respects current workout persistence constraints; targeted unit + desktop-chromium builder e2e + desktop-chromium program-export e2e and full npm run verify:pre-pr are green | next: commit, push, open/update PR, then wait for CI before npm run verify:pre-merge`
 - `2026-03-29 | implementation | slice 6 on branch fix/workout-builder-pdf-poolside-v2-2026-03-29 splits the builder export into a richer full-session PDF and a real compact Poolside PDF, threads open training focuses into the poolside variant, makes one-line-per-interval poolside layout explicit, and surfaces both PDF actions consistently in the editor and saved-session list; targeted typecheck, workout PDF/shared vitest, workout route vitest, builder hub vitest, and desktop-chromium my-library workout-builder e2e are green | next: run npm run verify:pre-pr, then open/update a PR if the full gate stays green`

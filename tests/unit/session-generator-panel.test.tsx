@@ -261,7 +261,6 @@ describe("SessionGeneratorPanel", () => {
           focusText: "",
           constraintText: "",
         }}
-        handoffPrepared
         workoutLibrary={buildWorkoutLibrary()}
       />
     );
@@ -298,7 +297,6 @@ describe("SessionGeneratorPanel", () => {
           focusText: "",
           constraintText: "Keep the first half controlled.",
         }}
-        handoffPrepared
         workoutLibrary={buildWorkoutLibrary()}
       />
     );
@@ -390,7 +388,6 @@ describe("SessionGeneratorPanel", () => {
           focusText: "",
           constraintText: "Keep the first half controlled.",
         }}
-        handoffPrepared
         workoutLibrary={buildWorkoutLibrary()}
       />
     );
@@ -409,7 +406,7 @@ describe("SessionGeneratorPanel", () => {
     fireEvent.click(screen.getByTestId("session-generator-save"));
 
     await waitFor(() => {
-      expect(screen.getByText("Workout accepted and saved as a canonical session.")).toBeVisible();
+      expect(screen.getByText("Session saved to My sessions.")).toBeVisible();
     });
 
     expect(fetch).toHaveBeenNthCalledWith(
@@ -421,7 +418,7 @@ describe("SessionGeneratorPanel", () => {
     );
     expect(screen.getByText("Accepted workout loaded.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
-    expect(screen.getByText("Accepted threshold workout")).toBeVisible();
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
   });
 
   it("loads a previously accepted workout into the same editor", async () => {
@@ -443,7 +440,6 @@ describe("SessionGeneratorPanel", () => {
           focusText: "",
           constraintText: "Keep the first half controlled.",
         }}
-        handoffPrepared={false}
         workoutLibrary={buildWorkoutLibrary({
           selectedWorkout: buildWorkoutRecord({
             draft: {

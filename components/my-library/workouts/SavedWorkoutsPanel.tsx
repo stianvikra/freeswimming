@@ -7,7 +7,7 @@ import type { WorkoutSummary } from "@/lib/workouts/shared";
 
 type Props = {
   workouts: WorkoutSummary[];
-  description: string;
+  description?: string;
   workoutHrefBuilder: (workoutId: string) => string;
   workoutPdfHrefBuilder?: ((workoutId: string) => string) | null;
   workoutPoolsidePdfHrefBuilder?: ((workoutId: string) => string) | null;
@@ -30,6 +30,7 @@ type Props = {
   showInlinePreview?: boolean;
   viewButtonTestIdBuilder?: (workoutId: string) => string;
   previewTestIdBuilder?: (workoutId: string) => string;
+  showHeader?: boolean;
 };
 
 export default function SavedWorkoutsPanel({
@@ -41,7 +42,7 @@ export default function SavedWorkoutsPanel({
   collapsedByDefault = true,
   testId = "session-generator-recent-workouts",
   heading = "Saved workouts",
-  editLabel = "Edit",
+  editLabel = "Open",
   editButtonTestIdBuilder = (workoutId) => `saved-workouts-edit-${workoutId}`,
   deleteButtonTestIdBuilder = (workoutId) => `saved-workouts-delete-${workoutId}`,
   confirmDeleteButtonTestIdBuilder = (workoutId) => `saved-workouts-confirm-delete-${workoutId}`,
@@ -57,6 +58,7 @@ export default function SavedWorkoutsPanel({
   showInlinePreview = false,
   viewButtonTestIdBuilder = (workoutId) => `saved-workouts-view-${workoutId}`,
   previewTestIdBuilder = (workoutId) => `saved-workouts-preview-${workoutId}`,
+  showHeader = true,
 }: Props) {
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
   const [previewWorkoutId, setPreviewWorkoutId] = useState<string | null>(null);
@@ -85,29 +87,31 @@ export default function SavedWorkoutsPanel({
 
   return (
     <div data-testid={testId} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900">{heading}</h3>
-          <p className="mt-1 text-sm text-slate-600">{description}</p>
-          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {workouts.length} saved session{workouts.length === 1 ? "" : "s"} ready to reopen
-          </p>
+      {showHeader ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">{heading}</h3>
+            {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
+            <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {workouts.length} saved session{workouts.length === 1 ? "" : "s"} ready to reopen
+            </p>
+          </div>
+          {showToggle ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((current) => !current)}
+              aria-expanded={expanded}
+              data-testid={`${testId}-toggle`}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {expanded ? "Hide saved sessions" : "Show saved sessions"}
+            </button>
+          ) : null}
         </div>
-        {showToggle ? (
-          <button
-            type="button"
-            onClick={() => setExpanded((current) => !current)}
-            aria-expanded={expanded}
-            data-testid={`${testId}-toggle`}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-          >
-            {expanded ? "Hide saved sessions" : "Show saved sessions"}
-          </button>
-        ) : null}
-      </div>
+      ) : null}
 
       {!showToggle || expanded ? (
-        <div className="mt-4 grid gap-3">
+        <div className={`${showHeader ? "mt-4" : ""} grid gap-3`}>
           {workouts.map((workout) => {
             const deleting = deletingWorkoutId === workout.id;
             const pendingDelete = pendingDeleteWorkoutId === workout.id;

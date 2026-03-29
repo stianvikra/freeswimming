@@ -116,14 +116,14 @@ async function waitForWorkoutBuilderClientReady(page: Page) {
 }
 
 test.describe("my library generator intake", () => {
-  test("opens generator intake and prepares a deterministic handoff", async ({
+  test("opens the AI generator and shows program-only choices only when needed", async ({
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
 
     await loginToMyLibraryViaDevBypass(page);
-    const openGeneratorLink = page.getByRole("link", { name: "Open generator" });
+    const openGeneratorLink = page.getByRole("link", { name: "Generate with AI" });
     await expect(openGeneratorLink).toBeVisible();
     await expect(openGeneratorLink).toHaveAttribute("href", "/my-library/generator");
     await openGeneratorLink.click();
@@ -140,15 +140,11 @@ test.describe("my library generator intake", () => {
     await expect(page).toHaveURL(/\/my-library\/generator$/);
     await expect(
       page.getByRole("heading", {
-        name: "Generator intake",
+        name: "AI session generator",
         level: 1,
       })
     ).toBeVisible();
     await waitForGeneratorIntakeClientReady(page);
-
-    await expect(
-      page.getByText("Notes stay out of default generator prefill in v1.", { exact: false })
-    ).toBeVisible();
 
     await expect(page.getByTestId("generator-intake-session-count")).toHaveCount(0);
     await page.getByTestId("generator-intake-overrides-toggle").click();
@@ -159,16 +155,9 @@ test.describe("my library generator intake", () => {
     await page
       .getByTestId("generator-intake-constraint-text")
       .fill("Keep the first week moderate.");
-    await page.getByTestId("generator-intake-prepare").click();
-    await page.getByTestId("generator-intake-technical-toggle").click();
 
-    await expect(page.getByText("Generator is ready for this run.")).toBeVisible();
-    await expect(page.getByTestId("generator-intake-handoff-preview")).toContainText(
-      '"targetType": "program"'
-    );
-    await expect(page.getByTestId("generator-intake-handoff-preview")).toContainText(
-      '"notesIncluded": false'
-    );
+    await expect(page.getByTestId("generator-intake-session-count")).toBeVisible();
+    await expect(page.getByTestId("session-generator-program-deferred")).toBeVisible();
   });
 
   test("accepts one generated session draft and reopens it in the workout builder route", async ({
@@ -186,7 +175,6 @@ test.describe("my library generator intake", () => {
 
     await page.getByTestId("generator-intake-overrides-toggle").click();
     await page.getByTestId("generator-intake-target-session").check();
-    await page.getByTestId("generator-intake-prepare").click();
     await prewarmSessionDraftRoute(page);
 
     const generateResponsePromise = page.waitForResponse(
@@ -223,20 +211,17 @@ test.describe("my library generator intake", () => {
     await page.getByTestId("session-generator-save").click();
     await saveResponsePromise;
 
-    await expect(
-      page.getByText("Workout accepted and saved as a canonical session.")
-    ).toBeVisible();
-    await expect(page.getByText("Accepted workout loaded.")).toBeVisible();
+    await expect(page.getByText("Session saved to My sessions.")).toBeVisible();
 
-    await page.getByRole("link", { name: "Start new draft" }).click();
-    await page.waitForURL(/\/my-library\/generator$/);
-    await waitForGeneratorIntakeClientReady(page);
+    const openSessionsLink = page.getByRole("link", { name: "My sessions" });
+    await openSessionsLink.click();
+    await page.waitForURL(/\/my-library\/workouts$/);
+    await waitForWorkoutBuilderClientReady(page);
 
-    const recentWorkouts = page.getByTestId("session-generator-recent-workouts");
-    await expect(recentWorkouts).toContainText(uniqueTitle);
-    const targetWorkoutTitle = recentWorkouts.getByText(uniqueTitle, { exact: true });
-    await expect(targetWorkoutTitle).toBeVisible();
-    const targetWorkoutCard = targetWorkoutTitle.locator("..").locator("..");
+    const targetWorkoutCard = page.getByTestId(/saved-workout-card-/).filter({
+      has: page.getByText(uniqueTitle, { exact: true }),
+    });
+    await expect(targetWorkoutCard).toBeVisible();
     const openWorkoutLink = targetWorkoutCard.getByRole("link", { name: "Open" });
     await expect(openWorkoutLink).toBeVisible();
     const workoutHref = await openWorkoutLink.getAttribute("href");

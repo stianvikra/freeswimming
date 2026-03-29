@@ -893,7 +893,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("That saved swim session could not be found.")).toBeVisible();
     expect(screen.getByTestId("workout-builder-empty-create-manual")).toBeVisible();
     expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open generator" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Generate with AI" })).toHaveAttribute(
       "href",
       "/my-library/generator"
     );

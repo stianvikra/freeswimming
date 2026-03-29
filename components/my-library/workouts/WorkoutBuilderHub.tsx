@@ -172,67 +172,87 @@ export default function WorkoutBuilderHub({
       data-client-ready={clientReady ? "true" : "false"}
       className="rounded-2xl border border-slate-200 bg-white p-5"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">
-            {browseOnly ? "View sessions" : "Swim session builder"}
-          </h2>
-          <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-            {browseOnly
-              ? "Browse saved swim sessions here, expand a quick plain-text preview when you want to scan one, or open a session to edit it in the focused builder."
-              : savedWorkout
+      {browseOnly ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {workoutLibrary.schemaReady ? (
+              <CreateManualWorkoutButton
+                label="Create session"
+                testId="workout-builder-browse-create-manual"
+                latestSavedWorkout={
+                  savedWorkout
+                    ? {
+                        id: savedWorkout.id,
+                        title: savedWorkout.draft.title,
+                      }
+                    : latestSavedWorkout
+                }
+                currentWorkoutId={savedWorkout?.id ?? null}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              />
+            ) : null}
+          </div>
+          {recentWorkouts.length > 0 ? (
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {recentWorkouts.length} saved session{recentWorkouts.length === 1 ? "" : "s"}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
+            <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
+              {savedWorkout
                 ? "Keep the session form front and center while you edit one saved swim session. Open saved sessions only when you want to switch, print, or clean up older work."
                 : "View saved sessions when you want to reopen existing work, or create a new empty swim session from scratch."}
-          </p>
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {recentWorkouts.length > 0 ? (
+              <Link
+                href="/my-library/workouts"
+                data-testid="workout-builder-view-sessions-link"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              >
+                View sessions
+              </Link>
+            ) : null}
+            {workoutLibrary.schemaReady ? (
+              <CreateManualWorkoutButton
+                label="Create session"
+                testId="workout-builder-create-manual"
+                latestSavedWorkout={
+                  savedWorkout
+                    ? {
+                        id: savedWorkout.id,
+                        title: savedWorkout.draft.title,
+                      }
+                    : latestSavedWorkout
+                }
+                currentWorkoutId={savedWorkout?.id ?? null}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              />
+            ) : null}
+            {savedWorkout ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingCurrentDelete(true);
+                  setPendingDeleteWorkoutId(null);
+                  setError("");
+                  setSuccess("");
+                }}
+                disabled={deletingWorkoutId === savedWorkout.id}
+                data-testid="workout-builder-delete-current-workout"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete current session"}
+              </button>
+            ) : null}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {!browseOnly && recentWorkouts.length > 0 ? (
-            <Link
-              href="/my-library/workouts"
-              data-testid="workout-builder-view-sessions-link"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              View sessions
-            </Link>
-          ) : null}
-          {workoutLibrary.schemaReady ? (
-            <CreateManualWorkoutButton
-              label="Create session"
-              testId={
-                browseOnly
-                  ? "workout-builder-browse-create-manual"
-                  : "workout-builder-create-manual"
-              }
-              latestSavedWorkout={
-                savedWorkout
-                  ? {
-                      id: savedWorkout.id,
-                      title: savedWorkout.draft.title,
-                    }
-                  : latestSavedWorkout
-              }
-              currentWorkoutId={savedWorkout?.id ?? null}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-            />
-          ) : null}
-          {savedWorkout ? (
-            <button
-              type="button"
-              onClick={() => {
-                setPendingCurrentDelete(true);
-                setPendingDeleteWorkoutId(null);
-                setError("");
-                setSuccess("");
-              }}
-              disabled={deletingWorkoutId === savedWorkout.id}
-              data-testid="workout-builder-delete-current-workout"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete current session"}
-            </button>
-          ) : null}
-        </div>
-      </div>
+      )}
 
       {!workoutLibrary.schemaReady ? (
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
@@ -303,8 +323,7 @@ export default function WorkoutBuilderHub({
           recentWorkouts.length > 0 ? (
             <SavedWorkoutsPanel
               workouts={recentWorkouts}
-              heading="Saved sessions"
-              description="Open one session to edit it, expand View for a plain-text scan, or open PDF / Poolside Note when you only need the output."
+              heading="My sessions"
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
               workoutPdfHrefBuilder={(workoutId) =>
                 `/api/my-library/workouts/${workoutId}/export/pdf`
@@ -312,10 +331,11 @@ export default function WorkoutBuilderHub({
               workoutPoolsidePdfHrefBuilder={(workoutId) =>
                 `/api/my-library/workouts/${workoutId}/export/pdf?variant=poolside`
               }
-              editLabel="Edit"
+              editLabel="Open"
               testId="workout-builder-saved-sessions"
               showToggle={false}
               showInlinePreview
+              showHeader={false}
               editButtonTestIdBuilder={(workoutId) => `workout-builder-edit-workout-${workoutId}`}
               deleteButtonTestIdBuilder={(workoutId) =>
                 `workout-builder-delete-workout-${workoutId}`
@@ -377,7 +397,7 @@ export default function WorkoutBuilderHub({
                   href="/my-library/generator"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
                 >
-                  Open generator
+                  Generate with AI
                 </Link>
                 <Link
                   href="/my-library"
@@ -410,7 +430,7 @@ export default function WorkoutBuilderHub({
               startNewDraftLabel="Generate new draft"
               showLoadedBanner={false}
               showPdfPanel={false}
-              recentWorkoutsDescription="Use the header actions when you want to view saved sessions, create a clean new session, or jump back to the generator."
+              recentWorkoutsDescription="Open another saved session when you want to switch what you are editing."
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
               saveButtonTestId="workout-builder-save"
             />
