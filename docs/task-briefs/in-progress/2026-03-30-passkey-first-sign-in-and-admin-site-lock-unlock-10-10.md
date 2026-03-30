@@ -10,7 +10,7 @@
 
 ## Goal
 
-Define a deterministic 10/10 implementation contract for passkey-first sign-in and admin-only site-lock unlock, with cross-platform platform-authenticator support and safe recovery fallbacks.
+Define a deterministic 10/10 implementation contract for phased passkey rollout: email-code bootstrap now, passkey-backed future sign-ins on trusted devices, and admin-only site-lock unlock with safe recovery fallbacks.
 
 ## Why This Brief Exists
 
@@ -44,10 +44,11 @@ Production admin notes reviewed against this brief on `2026-03-30`:
 
 ## Scope
 
-- Define a passkey-first auth contract for `/auth/sign-in`:
-  - primary action becomes `Sign in with passkey` when the browser/device supports it,
-  - email magic link / one-time code stays available as bootstrap and recovery fallback,
+- Define the recommended current auth contract for `/auth/sign-in`:
+  - first sign-in remains email magic link / one-time code bootstrap,
+  - passkeys are presented as the recommended follow-up for faster future sign-ins on trusted devices,
   - copy uses platform-neutral `passkey` language rather than hardcoded `Face ID` / `Touch ID` labels.
+  - full unauthenticated `passkey-first` entry remains deferred until the provider/runtime stack supports it cleanly and safely.
 - Define passkey registration and management contract:
   - existing signed-in users can add a passkey after successful fallback sign-in,
   - passkey management lives in `My Library` under a dedicated `Account & Security` surface (or clearly separated security card inside profile), not mixed into athlete-performance data fields,
@@ -192,3 +193,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-30 | working tree | chose provider-native Supabase WebAuthn MFA as the first secure foundation: new My Library Account & Security surface, admin preview unlock route/card on /preview-access, analytics taxonomy, and site-lock runbook updates shipped locally while keeping email sign-in + shared preview password as explicit fallbacks; hardened sanitize-next-build-artifacts to clear stale .next/server output before build | validation: npm run typecheck, targeted vitest, isolated dryland Playwright rerun, npm run verify:pre-pr (green) | next: commit, push, open PR, and wait for CI before npm run verify:pre-merge`
 - `2026-03-30 | working tree | hardened the incidental dryland e2e save assertion discovered during passkey-slice verify by waiting on the PATCH response and stable saved-state badge instead of a transient toast; reran isolated dryland Playwright and full npm run verify:pre-pr successfully on the updated tree | next: commit the verify hardening, push the branch, and open/update the PR`
 - `2026-03-30 | working tree | confirmed current provider-native Supabase WebAuthn support in this stack is session-bound MFA/step-up, not a standalone unauthenticated passkey sign-in primitive; updated /auth/sign-in to a passkey-aware email-code flow with explicit device support status, less email-heavy copy, and honest recovery framing instead of a fake passkey button | validation: npm run typecheck, npx vitest run tests/unit/auth-passkey-readiness-card.test.tsx tests/unit/sign-in-ui-state.test.ts tests/unit/sign-in-request.test.ts, npx playwright test tests/e2e/auth-sign-in-ux.spec.ts --project=desktop-chromium | next: run npm run verify:pre-pr on this slice, then open PR if green`
+- `2026-03-30 | working tree | owner chose the recommended phased rollout over true passkey-first entry: keep email-code bootstrap, then guide newly signed-in users toward adding a passkey on the current device from My Library > Account & Security; next slice now owns My Library onboarding clarity and security-page setup guidance so the recommended path is obvious in-product | next: implement the onboarding card and setup callout, then rerun targeted tests + verify:pre-pr`
