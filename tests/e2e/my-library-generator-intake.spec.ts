@@ -116,7 +116,7 @@ async function waitForWorkoutBuilderClientReady(page: Page) {
 }
 
 test.describe("my library generator intake", () => {
-  test("opens the AI generator and shows program-only choices only when needed", async ({
+  test("opens the AI generator with saved-library context and session-only settings", async ({
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
@@ -146,18 +146,18 @@ test.describe("my library generator intake", () => {
     ).toBeVisible();
     await waitForGeneratorIntakeClientReady(page);
 
+    await expect(page.getByText("Information from My Library")).toBeVisible();
+    await expect(page.getByText("Session information")).toBeVisible();
     await expect(page.getByTestId("generator-intake-session-count")).toHaveCount(0);
-    await page.getByTestId("generator-intake-overrides-toggle").click();
-    await page.getByTestId("generator-intake-target-program").check();
-    await page.getByTestId("generator-intake-session-count").fill("4");
-    await page.getByTestId("generator-intake-session-minutes").selectOption("45");
-    await page.getByTestId("generator-intake-focus-text").fill("Race-pace breathing control");
+    await expect(page.getByTestId("generator-intake-target-program")).toHaveCount(0);
+    await page.getByTestId("session-generator-focus-text").fill("Race-pace breathing control");
     await page
-      .getByTestId("generator-intake-constraint-text")
+      .getByTestId("session-generator-constraint-text")
       .fill("Keep the first week moderate.");
+    await page.getByTestId("generator-intake-source-toggle").click();
 
-    await expect(page.getByTestId("generator-intake-session-count")).toBeVisible();
-    await expect(page.getByTestId("session-generator-program-deferred")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Athlete profile", level: 3 })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Edit athlete profile" })).toBeVisible();
   });
 
   test("accepts one generated session draft and reopens it in the workout builder route", async ({
@@ -173,8 +173,7 @@ test.describe("my library generator intake", () => {
     await expect(page).toHaveURL(/\/my-library\/generator$/);
     await waitForGeneratorIntakeClientReady(page);
 
-    await page.getByTestId("generator-intake-overrides-toggle").click();
-    await page.getByTestId("generator-intake-target-session").check();
+    await page.getByTestId("session-generator-focus-text").fill("Breathing timing under fatigue");
     await prewarmSessionDraftRoute(page);
 
     const generateResponsePromise = page.waitForResponse(

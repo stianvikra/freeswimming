@@ -123,13 +123,13 @@ const BLOCK_META: Record<
   },
   personal_records: {
     label: "Personal records",
-    description: "Saved benchmark swims you may want this run to consider.",
+    description: "Saved benchmark swims the generator can use as background.",
     manageHref: "/my-library/profile",
     manageLabel: "Edit personal records",
   },
   goals: {
     label: "Open goals",
-    description: "Open goals that can shape what this run aims toward.",
+    description: "Open goals that can shape what this session aims toward.",
     manageHref: "/my-library/goals",
     manageLabel: "Edit goals",
   },
