@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-30-my-library-training-focus-goals-notes-ia-simplification-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-30`
 - `updated`: `2026-03-30`
@@ -332,3 +332,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-30 | planning | created a dedicated training-route follow-up brief after production notes showed that /my-library/training still feels too verbose and action-dense even though the underlying goals/focus/notes model is sound; locked scope to calmer IA, collapsible composers, and primary-first focus presentation without schema change | next: implement route simplification, update tests/docs, and validate with verify:pre-pr`
 - `2026-03-30 | working tree | implementation started on branch \`feat/my-library-training-ia-simplification-2026-03-30\`; brief moved to in-progress and lifecycle-aligned with the already-merged auth cleanup so this slice can focus on calmer training IA, collapsible composers, and primary-first focus actions | next: ship the training route UI changes, update tests/runbook coverage, then run lint:briefs + verify:pre-pr before PR handoff`
 - `2026-03-30 | working tree | shipped calmer /my-library/training IA locally: shorter hero/bridge copy, collapsible Add focus/Add note composers with preserved drafts, primary-first focus grouping, and calmer non-primary action surfaces; updated incident-response runbook plus unit + targeted Playwright coverage, then passed \`npm run lint:briefs:all\`, \`npm run typecheck\`, \`npx vitest run tests/unit/training-context-hub.test.tsx\`, \`npx playwright test tests/e2e/my-library-training-context.spec.ts --project=desktop-chromium\`, and full \`npm run verify:pre-pr\` | next: commit, push branch, open PR, and monitor CI`
+- `2026-03-30 | 7150e11 | merged via PR #326 after local \`npm run verify:pre-merge\`, local manual QA on \`/my-library/training\`, and required CI checks all passed; brief now moves to done | next: treat this calmer training-route IA as the baseline for later admin-notes follow-up and any future goals/training bridge refinement`
