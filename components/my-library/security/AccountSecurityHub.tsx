@@ -187,9 +187,8 @@ export default function AccountSecurityHub({ email, isAdmin, siteLockEnabled }: 
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Sign-in & recovery</h2>
             <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-              Keep your login email as the fallback, then add passkeys on the devices you trust so
-              supported browsers can use Touch ID, Face ID, fingerprint, Windows Hello, or the
-              device unlock method the platform chooses.
+              Keep email code as your recovery path, then add passkeys on the devices you trust so
+              supported browsers can skip the inbox on later sign-ins.
             </p>
           </div>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -255,6 +254,20 @@ export default function AccountSecurityHub({ email, isAdmin, siteLockEnabled }: 
           </div>
         ) : (
           <>
+            {passkeys.length === 0 && !loading ? (
+              <div
+                data-testid="account-security-setup-callout"
+                className="mt-4 rounded-2xl border border-blue-200 bg-blue-50/70 p-4"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  Recommended next step on this device
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                  You already made it in with email code. Add a passkey here now so this device can
+                  use its own unlock method next time instead of waiting on another message.
+                </p>
+              </div>
+            ) : null}
             <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-slate-700">Device name</span>
@@ -274,7 +287,7 @@ export default function AccountSecurityHub({ email, isAdmin, siteLockEnabled }: 
                 disabled={loading || pendingAction !== null}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
               >
-                {pendingAction === "add" ? "Adding passkey..." : "Add passkey"}
+                {pendingAction === "add" ? "Adding passkey..." : "Add passkey on this device"}
               </button>
             </div>
 
@@ -282,7 +295,7 @@ export default function AccountSecurityHub({ email, isAdmin, siteLockEnabled }: 
               <p className="mt-4 text-sm text-slate-600">Checking saved passkeys...</p>
             ) : passkeys.length === 0 ? (
               <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-sm text-slate-600">
-                No passkeys added yet.
+                No passkeys added yet on this account.
               </div>
             ) : (
               <ul className="mt-4 space-y-3">

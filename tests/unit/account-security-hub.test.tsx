@@ -121,8 +121,11 @@ describe("AccountSecurityHub", () => {
     render(<AccountSecurityHub email="owner@example.com" isAdmin={true} siteLockEnabled={true} />);
 
     await waitFor(() => {
-      expect(screen.getByText("No passkeys added yet.")).toBeVisible();
+      expect(screen.getByText("No passkeys added yet on this account.")).toBeVisible();
     });
+    expect(screen.getByTestId("account-security-setup-callout")).toHaveTextContent(
+      "Recommended next step on this device"
+    );
 
     fireEvent.change(screen.getByTestId("account-security-passkey-name"), {
       target: { value: "Office Mac" },
