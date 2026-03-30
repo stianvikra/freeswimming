@@ -51,6 +51,20 @@ Run safe, auditable lock/unlock operations without manual Vercel env editing.
    - `lock_off`: expects `/api/progress/course` to not return `423` and no `/preview-access` redirect on home route
 9. Uploads operation artifact with summary + smoke headers + deploy output.
 
+## Admin Unlock During Private Mode
+
+- Public visitors stay on `/preview-access` until they have a valid site-lock cookie.
+- Signed-in admins can unlock the site from `/preview-access` with a verified passkey when their
+  account has WebAuthn/passkey MFA enrolled and the current auth session has been stepped up to
+  `aal2`.
+- The shared access password remains the explicit fallback path while passkey rollout is still in
+  progress.
+- If admin passkey unlock is not available:
+  1. sign in with the admin email first,
+  2. use the fallback password once if needed,
+  3. add/manage passkeys in `My Library -> Account & Security`,
+  4. retry `/preview-access`.
+
 ## Rollback
 
 - If last operation was `lock_on`, run `lock_off` on the same environment.

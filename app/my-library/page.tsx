@@ -16,6 +16,8 @@ import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
 import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
 import { buildLibrarySections } from "@/lib/commerce/library";
+import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
+import { isSiteLockEnabled } from "@/lib/site-lock/config";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
@@ -88,6 +90,10 @@ export default async function MyLibraryPage() {
     console.error("[MyLibrary] Could not load active goal count", activeGoalCountError);
   }
 
+  const adminRole = await resolveAdminRoleFromSupabase(supabase, user, {
+    allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
+  });
+
   const [
     trainingContextSnapshot,
     athleteProfileSnapshot,
@@ -151,6 +157,24 @@ export default async function MyLibraryPage() {
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
             <MyLibraryNewContentNotice userId={user.id} />
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Account & Security</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {adminRole && isSiteLockEnabled()
+                      ? "Manage passkeys, fallback sign-in, and admin preview unlock readiness without mixing security into training data."
+                      : "Manage sign-in, recovery, and passkeys in one place without mixing them into swimmer profile fields."}
+                  </p>
+                </div>
+                <Link
+                  href="/my-library/security"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  Open Account & Security
+                </Link>
+              </div>
+            </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>

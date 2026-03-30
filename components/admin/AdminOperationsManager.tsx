@@ -233,7 +233,7 @@ export default function AdminOperationsManager() {
               href="/preview-access?next=%2Fadmin"
               className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              Open password page
+              Open unlock page
             </a>
             <a
               href="/preview-access/clear?next=%2Fadmin"
@@ -252,6 +252,10 @@ export default function AdminOperationsManager() {
             >
               docs/runbooks/site-lock-operations.md
             </a>
+          </p>
+          <p className="mt-3 text-xs text-slate-500">
+            Signed-in admins can use a verified passkey on the unlock page when available; the
+            shared password remains the explicit fallback path.
           </p>
           <p className="mt-3 text-xs text-slate-500">
             To turn this off: set <code>SITE_LOCK_ENABLED=0</code> in hosting environment settings
