@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-30`
 - `updated`: `2026-03-30`
@@ -194,3 +194,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-03-30 | working tree | confirmed current provider-native Supabase WebAuthn support in this stack is session-bound MFA/step-up, not a standalone unauthenticated passkey sign-in primitive; updated /auth/sign-in to a passkey-aware email-code flow with explicit device support status, less email-heavy copy, and honest recovery framing instead of a fake passkey button | validation: npm run typecheck, npx vitest run tests/unit/auth-passkey-readiness-card.test.tsx tests/unit/sign-in-ui-state.test.ts tests/unit/sign-in-request.test.ts, npx playwright test tests/e2e/auth-sign-in-ux.spec.ts --project=desktop-chromium | next: run npm run verify:pre-pr on this slice, then open PR if green`
 - `2026-03-30 | working tree | owner chose the recommended phased rollout over true passkey-first entry: keep email-code bootstrap, then guide newly signed-in users toward adding a passkey on the current device from My Library > Account & Security; next slice now owns My Library onboarding clarity and security-page setup guidance so the recommended path is obvious in-product | next: implement the onboarding card and setup callout, then rerun targeted tests + verify:pre-pr`
 - `2026-03-30 | working tree | live iPhone validation exposed that current hosted Supabase auth does not support the promised passkey flow in this product path; cleanup slice now removes false passkey/setup promises, restores truthful email-code + preview-password guidance, and records real passkeys as a future architecture decision instead of an environment-toggle assumption | next: update tests/brief/runbooks to the honest contract, rerun targeted auth suites, then run full verify:pre-pr`
+- `2026-03-30 | 1db55c1 | merged via PR #325 after required CI checks passed; auth truthfulness cleanup is now on main and this brief moves to done | next: use the done auth contract as the baseline for later real-passkeys decision and rollout planning`

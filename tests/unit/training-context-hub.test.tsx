@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import TrainingContextHub from "@/components/my-library/training/TrainingContextHub";
 import type { TrainingContextSnapshot, TrainingFocusView } from "@/lib/training-context/server";
@@ -87,16 +87,14 @@ describe("TrainingContextHub", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders open focuses and notes as separate sections", () => {
+  it("renders calmer focus and notes sections", () => {
     render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
 
-    expect(screen.getByRole("heading", { name: "Open focuses" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Focus" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Notes" })).toBeInTheDocument();
-    expect(screen.getByTestId("training-focus-card-focus-1")).toHaveTextContent(
-      "Longer exhale in the water"
-    );
-    expect(screen.getByText(/Keep several current training cues open\./i)).toBeInTheDocument();
-    expect(screen.getByText("Primary focus")).toBeInTheDocument();
+    expect(screen.getByTestId("training-focus-card-focus-1")).toHaveTextContent("Primary");
+    expect(screen.getByText(/Keep the main cue clear/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Primary focus").length).toBeGreaterThan(0);
   });
 
   it("opens question editing with answer field", () => {
@@ -196,6 +194,13 @@ describe("TrainingContextHub", () => {
       "true"
     );
     expect(screen.getByTestId("training-note-intent-badge")).toBeInTheDocument();
+    expect(screen.queryByTestId("training-focus-form")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("training-focus-form-toggle"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("training-focus-goal-select")).toHaveValue("goal-1");
+    });
     expect(screen.getByTestId("training-focus-form")).toHaveAttribute(
       "data-goal-intent-highlight",
       "false"
@@ -256,6 +261,104 @@ describe("TrainingContextHub", () => {
       "Longer exhale in the water"
     );
     expect(screen.getByTestId("training-overview-card-notes")).toHaveTextContent("Latest note");
+  });
+
+  it("collapses and reopens focus and note drafts without losing text", async () => {
+    render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
+
+    expect(screen.queryByTestId("training-focus-form")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("training-note-form")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("training-focus-form-toggle"));
+    fireEvent.change(screen.getByPlaceholderText("Exhale calmly before turning to breathe"), {
+      target: { value: "Hold the line on every catch" },
+    });
+    fireEvent.click(screen.getByTestId("training-focus-form-toggle"));
+
+    expect(screen.queryByTestId("training-focus-form")).not.toBeInTheDocument();
+    expect(screen.getByText("Draft ready: Hold the line on every catch")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Resume draft",
+      })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("training-focus-form-toggle"));
+    expect(screen.getByDisplayValue("Hold the line on every catch")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("training-note-form-toggle"));
+    fireEvent.change(screen.getByPlaceholderText("What did you notice in the pool?"), {
+      target: { value: "Breathing felt calmer after the second 100." },
+    });
+    fireEvent.click(screen.getByTestId("training-note-form-toggle"));
+
+    expect(screen.queryByTestId("training-note-form")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Draft ready: Breathing felt calmer after the second 100.")
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("training-note-form-toggle"));
+    expect(
+      screen.getByDisplayValue("Breathing felt calmer after the second 100.")
+    ).toBeInTheDocument();
+  });
+
+  it("groups secondary focuses and keeps complete/archive behind edit for non-primary cards", () => {
+    const primary = buildFocus({
+      id: "focus-1",
+      title: "Longer exhale in the water",
+      isPrimary: true,
+    });
+    const secondary = buildFocus({
+      id: "focus-2",
+      title: "Patient catch timing",
+      isPrimary: false,
+      goalId: null,
+      goalTitle: null,
+    });
+
+    render(
+      <TrainingContextHub
+        initialSnapshot={buildSnapshot({
+          activeFocus: primary,
+          primaryFocus: primary,
+          openFocuses: [primary, secondary],
+        })}
+      />
+    );
+
+    expect(screen.getAllByText("Primary focus").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Other open focuses" })).toBeInTheDocument();
+    expect(screen.getByTestId("training-focus-card-focus-2")).toHaveTextContent(
+      "Patient catch timing"
+    );
+    expect(
+      within(screen.getByTestId("training-focus-card-focus-2")).queryByRole("button", {
+        name: "Mark completed",
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("training-focus-card-focus-2")).queryByRole("button", {
+        name: "Archive",
+      })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(screen.getByTestId("training-focus-card-focus-2")).getByRole("button", {
+        name: "Edit focus",
+      })
+    );
+
+    expect(
+      within(screen.getByTestId("training-focus-card-focus-2")).getByRole("button", {
+        name: "Mark completed",
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("training-focus-card-focus-2")).getByRole("button", {
+        name: "Archive",
+      })
+    ).toBeInTheDocument();
   });
 
   it("edits an open focus inline and saves the updated snapshot", async () => {

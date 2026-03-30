@@ -69,11 +69,8 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Focus & Notes</h1>
               <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
-                Keep multiple swim focuses open when needed, choose one primary cue when other My
-                Library surfaces need a single current focus, and capture what you notice in the
-                pool so you can come back with answers or clear next actions after the session.
-                Saved goals can prefill the next step here without becoming the same thing as your
-                focus or notes.
+                Keep today&apos;s cue clear, keep supporting focuses nearby, and save quick notes
+                from the pool without turning this page into a wall of setup text.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
