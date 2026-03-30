@@ -89,8 +89,22 @@ test.describe("my library dryland builder", () => {
     await page.getByTestId("dryland-draft-start-timer").click();
     await page.getByTestId("dryland-add-custom-exercise").click();
     await page.getByTestId("dryland-set-chip-0-0").click();
+    const saveResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/my-library/dryland/${createdSessionId}`) &&
+        response.request().method() === "PATCH" &&
+        response.status() === 200
+    );
+
     await page.getByTestId("dryland-builder-save").click();
-    await expect(page.getByText("Dryland session changes saved.")).toBeVisible();
+    const saveResponse = await saveResponsePromise;
+    const saveResponseBody = (await saveResponse.json()) as {
+      ok?: boolean;
+    };
+    expect(saveResponseBody.ok).toBe(true);
+    await expect(page.getByTestId("dryland-editor-save-state")).toHaveText(
+      "All dryland changes are saved"
+    );
 
     await page.getByTestId("dryland-delete-current-session").click();
     await page.getByTestId("dryland-confirm-delete-current-session").click();
