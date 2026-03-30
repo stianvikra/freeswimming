@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import AdminPreviewUnlockCard from "@/components/auth/AdminPreviewUnlockCard";
 import { requestPreviewAccess } from "@/app/preview-access/actions";
 import { getSafeNextPath } from "@/lib/auth/next-path";
+import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
 import { getSiteLockConfig, isSiteLockEnabled } from "@/lib/site-lock/config";
 import { isSiteLockSessionTokenValid } from "@/lib/site-lock/session";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -51,6 +54,17 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
 
   const errorCode = typeof params.error === "string" ? params.error : "";
   const errorMessage = errorCopy[errorCode] ?? null;
+  const previewReturnPath = `/preview-access?next=${encodeURIComponent(nextPath)}`;
+  const adminSignInHref = `/auth/sign-in?next=${encodeURIComponent(previewReturnPath)}`;
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const adminRole = user
+    ? await resolveAdminRoleFromSupabase(supabase, user, {
+        allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
+      })
+    : null;
 
   return (
     <section className="mx-auto flex min-h-screen w-full max-w-[720px] items-center px-6 py-16">
@@ -62,7 +76,8 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
           freeswimming.org is currently private
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
-          We are polishing content and flows before launch. Enter access password to continue.
+          We are polishing content and flows before launch. Public visitors stay locked out here,
+          while admins can sign in and unlock with passkey when their account is set up for it.
         </p>
 
         {errorMessage ? (
@@ -71,32 +86,45 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
           </p>
         ) : null}
 
-        <form action={requestPreviewAccess} className="mt-6 space-y-4">
-          <input type="hidden" name="next" value={nextPath} />
-          <div>
-            <label
-              htmlFor="preview-password"
-              className="mb-2 block text-sm font-medium text-slate-700"
+        <AdminPreviewUnlockCard
+          nextPath={nextPath}
+          signInHref={adminSignInHref}
+          signedInEmail={user?.email ?? null}
+          isAdmin={Boolean(adminRole)}
+        />
+
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+          <h2 className="text-lg font-semibold text-slate-900">Fallback access password</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            Keep this as the explicit operations fallback while admin passkey unlock rolls out.
+          </p>
+          <form action={requestPreviewAccess} className="mt-4 space-y-4">
+            <input type="hidden" name="next" value={nextPath} />
+            <div>
+              <label
+                htmlFor="preview-password"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
+                Access password
+              </label>
+              <input
+                id="preview-password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
+                placeholder="Enter password"
+              />
+            </div>
+            <button
+              type="submit"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
             >
-              Access password
-            </label>
-            <input
-              id="preview-password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
-              placeholder="Enter password"
-            />
-          </div>
-          <button
-            type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-          >
-            Open preview
-          </button>
-        </form>
+              Open preview
+            </button>
+          </form>
+        </div>
       </div>
     </section>
   );
