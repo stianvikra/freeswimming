@@ -17,9 +17,12 @@ test.describe("auth sign-in ux", () => {
     await page.goto(`/auth/sign-in?${params.toString()}`);
 
     await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
-      "Passkeys on this device"
+      "What works on this device"
     );
-    await expect(page.getByTestId("auth-passkey-readiness")).toContainText("Passkey-ready browser");
+    await expect(page.getByTestId("auth-passkey-readiness")).toContainText("Email code today");
+    await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
+      "Finish this email code sign-in below."
+    );
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "Sign-in code sent. Enter it below."
     );
@@ -66,7 +69,10 @@ test.describe("auth sign-in ux", () => {
 
     await expect(page.getByRole("heading", { name: "Email code sign-in" })).toBeVisible();
     await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
-      "Passkeys on this device"
+      "What works on this device"
+    );
+    await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
+      "Use email code sign-in on this device today."
     );
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "Enter a valid email address."

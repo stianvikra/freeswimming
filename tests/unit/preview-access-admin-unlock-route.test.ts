@@ -111,7 +111,7 @@ describe("/preview-access/admin-unlock route", () => {
 
     expect(response.status).toBe(403);
     expect(payload.ok).toBe(false);
-    expect(payload.error).toMatch(/verify your admin passkey/i);
+    expect(payload.error).toMatch(/stronger admin verification/i);
   });
 
   it("sets preview access cookie for aal2 admin sessions", async () => {

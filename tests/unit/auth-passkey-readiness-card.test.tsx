@@ -22,11 +22,14 @@ describe("AuthPasskeyReadinessCard", () => {
     render(<AuthPasskeyReadinessCard sent={false} />);
 
     expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent(
-      "Passkeys on this device"
+      "What works on this device"
     );
-    expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent("Passkey-ready browser");
+    expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent("Email code today");
     expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent(
-      "This browser can use passkeys after your first email sign-in."
+      "Use email code sign-in on this device today."
+    );
+    expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent(
+      "This browser supports passkeys in general, but freeswimming is not using them yet in the current auth stack."
     );
   });
 
@@ -38,9 +41,12 @@ describe("AuthPasskeyReadinessCard", () => {
 
     render(<AuthPasskeyReadinessCard sent={true} />);
 
-    expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent("Email code only here");
+    expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent("Email code today");
     expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent(
-      "Passkeys require a secure browser context."
+      "Finish this email code sign-in below."
+    );
+    expect(screen.getByTestId("auth-passkey-readiness")).toHaveTextContent(
+      "Passkeys require a secure browser context. Freeswimming uses email codes here today."
     );
   });
 });
