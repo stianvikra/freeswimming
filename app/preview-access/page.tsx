@@ -76,8 +76,8 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
           freeswimming.org is currently private
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
-          We are polishing content and flows before launch. Public visitors stay locked out here,
-          while admins can sign in and unlock with passkey when their account is set up for it.
+          We are polishing content and flows before launch. Public visitors stay locked out here.
+          Admins can sign in first, then use the shared preview password below.
         </p>
 
         {errorMessage ? (
@@ -96,7 +96,8 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
           <h2 className="text-lg font-semibold text-slate-900">Fallback access password</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Keep this as the explicit operations fallback while admin passkey unlock rolls out.
+            This is the current unlock method while stronger device-based admin sign-in remains
+            deferred.
           </p>
           <form action={requestPreviewAccess} className="mt-4 space-y-4">
             <input type="hidden" name="next" value={nextPath} />

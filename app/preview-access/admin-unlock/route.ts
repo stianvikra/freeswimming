@@ -22,7 +22,7 @@ function noStoreJson(
 }
 
 function getAalErrorMessage() {
-  return "Verify your admin passkey in this session before unlocking the preview.";
+  return "Complete stronger admin verification in this session before unlocking the preview.";
 }
 
 export async function POST(request: Request) {

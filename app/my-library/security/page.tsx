@@ -41,8 +41,8 @@ export default async function MyLibrarySecurityPage() {
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Account & Security</h1>
               <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
-                Keep sign-in, passkeys, and admin preview unlock separate from swimmer profile data
-                so security decisions stay easy to understand and easy to recover from.
+                Keep sign-in and private-preview access separate from swimmer profile data so
+                security decisions stay easy to understand and easy to recover from.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

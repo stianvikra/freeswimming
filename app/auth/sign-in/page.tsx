@@ -17,8 +17,7 @@ type Props = {
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description:
-    "Sign in with your email code, then add a passkey on supported devices for faster future access to My Library.",
+  description: "Sign in to My Library with a one-time email code.",
 };
 
 export default async function SignInPage({ searchParams }: Props) {
@@ -47,8 +46,8 @@ export default async function SignInPage({ searchParams }: Props) {
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Sign in to My Library</h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Use your email code below, then add a passkey in Account & Security on trusted devices
-            when you want faster future sign-ins and admin unlock.
+            Use your email code below. Device-based sign-in is not live in the current auth stack
+            yet, so we keep access and recovery simple here.
           </p>
 
           <AuthPasskeyReadinessCard sent={sent} />

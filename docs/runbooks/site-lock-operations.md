@@ -54,16 +54,14 @@ Run safe, auditable lock/unlock operations without manual Vercel env editing.
 ## Admin Unlock During Private Mode
 
 - Public visitors stay on `/preview-access` until they have a valid site-lock cookie.
-- Signed-in admins can unlock the site from `/preview-access` with a verified passkey when their
-  account has WebAuthn/passkey MFA enrolled and the current auth session has been stepped up to
-  `aal2`.
-- The shared access password remains the explicit fallback path while passkey rollout is still in
-  progress.
-- If admin passkey unlock is not available:
+- Signed-in admins currently unlock the site from `/preview-access` with the shared access
+  password after their admin email sign-in has established who they are.
+- Device-based admin unlock is deferred until a future auth stack supports it cleanly.
+- Current operator flow:
   1. sign in with the admin email first,
-  2. use the fallback password once if needed,
-  3. add/manage passkeys in `My Library -> Account & Security`,
-  4. retry `/preview-access`.
+  2. open `/preview-access`,
+  3. use the shared access password,
+  4. continue into the requested private route.
 
 ## Rollback
 

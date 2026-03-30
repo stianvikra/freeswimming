@@ -254,8 +254,8 @@ export default function AdminOperationsManager() {
             </a>
           </p>
           <p className="mt-3 text-xs text-slate-500">
-            Signed-in admins can use a verified passkey on the unlock page when available; the
-            shared password remains the explicit fallback path.
+            Signed-in admins should use the shared preview password on the unlock page today;
+            stronger device-based admin unlock remains deferred.
           </p>
           <p className="mt-3 text-xs text-slate-500">
             To turn this off: set <code>SITE_LOCK_ENABLED=0</code> in hosting environment settings
