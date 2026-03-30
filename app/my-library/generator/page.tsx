@@ -65,10 +65,6 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
                 My Library
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">AI session generator</h1>
-              <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Use your athlete profile, saved My Library data, and one-time choices for this run
-                to generate a new swim-session draft.
-              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link

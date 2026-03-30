@@ -205,7 +205,7 @@ describe("GeneratorIntakeHub", () => {
     vi.clearAllMocks();
   });
 
-  it("explains the boundary between saved data and one-run overrides", () => {
+  it("keeps the page focused on saved My Library info and session settings", () => {
     render(
       <GeneratorIntakeHub
         initialSnapshot={buildSnapshot()}
@@ -214,13 +214,17 @@ describe("GeneratorIntakeHub", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Before you generate" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "From My Library" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "This run only" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Information from My Library" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Session information" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Before you generate" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "This run only" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("generator-intake-session-count")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("generator-intake-target-program")).not.toBeInTheDocument();
   });
 
-  it("updates source and override summaries when blocks and one-time choices change", () => {
+  it("updates the saved-information summary when included blocks change", () => {
     render(
       <GeneratorIntakeHub
         initialSnapshot={buildSnapshot()}
@@ -229,22 +233,13 @@ describe("GeneratorIntakeHub", () => {
       />
     );
 
-    fireEvent.click(screen.getByTestId("generator-intake-overrides-toggle"));
-    fireEvent.click(screen.getByTestId("generator-intake-target-program"));
-    fireEvent.change(screen.getByTestId("generator-intake-session-count"), {
-      target: { value: "4" },
-    });
-    fireEvent.change(screen.getByTestId("generator-intake-focus-text"), {
-      target: { value: "Race-pace breathing control" },
-    });
     fireEvent.click(screen.getByTestId("generator-intake-source-toggle"));
     fireEvent.click(screen.getByTestId("generator-intake-include-goals"));
 
-    expect(screen.getByText("4 swim sessions per week")).toBeInTheDocument();
     expect(screen.getByText("4 blocks included")).toBeInTheDocument();
   });
 
-  it("shows swim sessions per week only for the multi-session program path", () => {
+  it("keeps the AI generator on the single-session path only", () => {
     render(
       <GeneratorIntakeHub
         initialSnapshot={buildSnapshot()}
@@ -253,17 +248,8 @@ describe("GeneratorIntakeHub", () => {
       />
     );
 
-    fireEvent.click(screen.getByTestId("generator-intake-overrides-toggle"));
-
     expect(screen.queryByTestId("generator-intake-session-count")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("generator-intake-target-program"));
-
-    expect(screen.getByText("Swim sessions per week")).toBeInTheDocument();
-    expect(screen.getByTestId("generator-intake-session-count")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("generator-intake-target-session"));
-
-    expect(screen.queryByTestId("generator-intake-session-count")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("generator-intake-target-program")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("generator-intake-target-session")).not.toBeInTheDocument();
   });
 });

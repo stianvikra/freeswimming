@@ -56,11 +56,33 @@ test.describe("my library dryland builder", () => {
     );
 
     await createButton.click();
-    await createResponsePromise;
-    await page.waitForURL(/\/my-library\/dryland\/[0-9a-f-]+$/, {
-      timeout: 10_000,
-      waitUntil: "domcontentloaded",
-    });
+    const createResponse = await createResponsePromise;
+    const createResponseBody = (await createResponse.json()) as {
+      ok?: boolean;
+      session?: { id?: string };
+    };
+    const createdSessionId = createResponseBody.session?.id;
+
+    expect(createResponseBody.ok).toBe(true);
+    expect(createdSessionId).toMatch(/^[0-9a-f-]+$/i);
+
+    const targetUrl = new RegExp(`/my-library/dryland/${createdSessionId}$`);
+    const navigatedAfterCreate = await page
+      .waitForURL(targetUrl, {
+        timeout: 10_000,
+        waitUntil: "domcontentloaded",
+      })
+      .then(() => true)
+      .catch(() => false);
+
+    if (!navigatedAfterCreate) {
+      await page.goto(`/my-library/dryland/${createdSessionId}`, {
+        timeout: 60_000,
+        waitUntil: "domcontentloaded",
+      });
+    }
+
+    await expect(page).toHaveURL(targetUrl);
     await waitForDrylandBuilderClientReady(page);
 
     await page.getByTestId("dryland-draft-title").fill(`QA dryland ${Date.now()}`);

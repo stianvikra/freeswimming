@@ -6,11 +6,11 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-28`
-- `updated`: `2026-03-29`
+- `updated`: `2026-03-30`
 
 ## Goal
 
-Make `/my-library/generator` understandable on first use by hiding program-only controls from the single-session path, simplifying language, and moving technical payload detail behind calmer progressive disclosure.
+Make `/my-library/generator` understandable on first use by treating it as a true single-session AI generator, simplifying language, and removing redundant setup layers that still read like an internal staging tool.
 
 ## Why This Brief Exists
 
@@ -21,6 +21,10 @@ Make `/my-library/generator` understandable on first use by hiding program-only 
   - `One-run overrides` is correct but not self-explanatory enough,
   - `Deterministic handoff` exposes raw payload/ID detail too aggressively in the normal flow.
 - These are primarily IA, copy, and progressive-disclosure problems, not missing data-contract problems.
+- Live review after slice 1 also showed a second-order UX issue:
+  - `Before you generate` and `This run only` still create too much explanatory overhead,
+  - single-session users still see concepts that belong to a later AI program generator,
+  - session-specific notes/settings feel split across two different areas.
 - The correct next step is a focused UX cleanup that keeps the existing canonical handoff model intact while making the page much easier to understand.
 
 ## Dependencies And Boundaries
@@ -137,10 +141,10 @@ Critical target categories for `10/10` claim in this brief:
 ## Scope
 
 - Rename and simplify the main generator intake copy so the page reads as a user-facing tool instead of an internal staging screen.
-- Hide the `desiredSessionCount` field when target type is `session`.
-- When target type is `program`, relabel that field clearly as `Swim sessions per week`.
-- Simplify the source-data section heading/copy so it reads as information loaded from My Library.
-- Simplify the overrides section heading/copy so it clearly means `this run only`.
+- Treat `/my-library/generator` as a single-session generator for now and hide program-generation controls from the normal flow.
+- Simplify the source-data section heading/copy so it reads as saved information from My Library.
+- Remove the separate `Before you generate` section and its refresh action from the normal user flow.
+- Move remaining one-time session notes into the actual generator panel so users do not have to understand two overlapping setup layers.
 - Rename the route and entrypoint so the experience reads as `AI session generator`, not a technical `generator intake`.
 - Remove the explicit `prepare` step from the normal user flow so current saved data plus this-run-only choices can generate immediately.
 - Remove the raw technical payload preview from the normal end-user flow.
@@ -157,17 +161,18 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Acceptance Criteria
 
-1. `Desired session count` is not shown when target type is `Single session`.
-2. When target type is `Multi-session program`, the same control is shown with a clear weekly-program label.
-3. The section previously labeled `Saved My Library context` is renamed and explained in plainer user-facing language.
-4. The section previously labeled `One-run overrides` is renamed and explained in plainer user-facing language.
-5. The route and My Library entrypoint read as `AI session generator`, not an internal `generator intake` tool.
-6. The explicit `prepare` step is removed from the normal user flow, and generating uses current saved data plus this-run-only choices directly.
-7. The raw technical handoff preview is no longer exposed in the normal end-user flow.
-8. The generator route does not repeat a full saved-session list that already lives in `My sessions`; it uses lighter navigation to that dedicated browse surface instead.
-9. The changed UX remains truthful to the canonical handoff model and does not alter the payload contract unintentionally.
-10. Relevant production admin notes listed above remain explicitly owned by this brief until shipped or intentionally split again.
-11. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
+1. `/my-library/generator` behaves as a single-session AI generator in the normal flow; program-generation controls are not shown.
+2. The first intro paragraph and the full `Before you generate` section are removed from the main route.
+3. The source-data section uses plainer, consistent language around saved My Library information.
+4. One-time session notes no longer live in a separate intake section; they are grouped with the generator panel where the session is actually configured.
+5. Session-length guidance in the single-session flow is clear and supports up to `180` minutes where time-based generation is used.
+6. The route and My Library entrypoint read as `AI session generator`, not an internal `generator intake` tool.
+7. The explicit `prepare` step is removed from the normal user flow, and generating uses current saved data plus this-run-only choices directly.
+8. The raw technical handoff preview is no longer exposed in the normal end-user flow.
+9. The generator route does not repeat a full saved-session list that already lives in `My sessions`; it uses lighter navigation to that dedicated browse surface instead.
+10. The changed UX remains truthful to the canonical handoff model and does not alter the payload contract unintentionally.
+11. Relevant production admin notes listed above remain explicitly owned by this brief until shipped or intentionally split again.
+12. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
 
 ## Validation
 
@@ -257,6 +262,12 @@ Critical target categories for `10/10` claim in this brief:
 - Commit + push after each validated generator-intake UX slice.
 
 ## Checkpoint Log
+
+- `2026-03-30` — Slice 3 live-review follow-up started on branch `fix/ai-session-generator-ux-clarity-2026-03-30`.
+  - remove the redundant `Before you generate` layer from the normal flow
+  - keep the route session-only for now and hide program-generation controls
+  - rename source context to calmer My Library language
+  - move one-time session notes into the generator panel to reduce overlap with `Generate session`
 
 - `2026-03-29` — slice 2 completed on branch `fix/swim-sessions-and-generator-ia-cleanup-2026-03-29`; the route now reads as `AI session generator`, uses athlete-profile/My Library language instead of internal intake/debug language, removes the explicit prepare gate and technical-preview UI from the normal flow, and keeps canonical saved sessions in the dedicated `My sessions` route instead of duplicating the list inside generator work. Targeted generator/workout vitest and desktop-chromium generator-intake + workout-builder + dryland e2e are green. Next step: run `npm run lint:briefs` and `npm run verify:pre-pr`, then commit/push/open PR if the full gate stays green.`
 - `2026-03-29` — slice 2 started on branch `fix/swim-sessions-and-generator-ia-cleanup-2026-03-29`; live review showed the route still read like an internal tool, so this slice renames the surface to `AI session generator`, removes the explicit prepare gate and visible technical preview from the normal flow, and keeps saved sessions in the dedicated `My sessions` surface instead of duplicating the list inside generator work. Next step: finish the code cleanup, run targeted generator/workout validation, and then `npm run verify:pre-pr`.

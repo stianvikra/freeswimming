@@ -40,6 +40,8 @@ type Props = {
   payload: GeneratorIntakeHandoffPayload;
   selection: GeneratorIntakeSelection;
   overrides: GeneratorIntakeOverrides;
+  onOverrideChange: (key: "focusText" | "constraintText", value: string) => void;
+  onResetOverrides: () => void;
   workoutLibrary: WorkoutLibrarySnapshot;
 };
 
@@ -47,6 +49,8 @@ export default function SessionGeneratorPanel({
   payload,
   selection,
   overrides,
+  onOverrideChange,
+  onResetOverrides,
   workoutLibrary,
 }: Props) {
   const [formState, setFormState] = useState<SessionGeneratorFormState>(() =>
@@ -87,6 +91,18 @@ export default function SessionGeneratorPanel({
   const hasUnsavedChanges = savedWorkout
     ? haveWorkoutDraftChanges(draft, savedWorkout.draft)
     : true;
+
+  function applyOverrideChange(key: "focusText" | "constraintText", value: string) {
+    setError("");
+    setSuccess("");
+    onOverrideChange(key, value);
+  }
+
+  function handleResetOverrides() {
+    setError("");
+    setSuccess("");
+    onResetOverrides();
+  }
 
   function updateFormState<K extends keyof SessionGeneratorFormState>(
     key: K,
@@ -229,11 +245,7 @@ export default function SessionGeneratorPanel({
     >
       <div>
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Generate swim session</h2>
-          <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-            Use your athlete profile, saved My Library data, and this run&apos;s choices to draft
-            one swim session, then review it before saving it into My sessions.
-          </p>
+          <h2 className="text-lg font-semibold text-slate-900">Generate session</h2>
         </div>
       </div>
 
@@ -273,21 +285,50 @@ export default function SessionGeneratorPanel({
         </div>
       ) : null}
 
-      {payload.overrides.targetType === "program" ? (
-        <div
-          data-testid="session-generator-program-deferred"
-          className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4"
-        >
-          <p className="text-sm text-amber-900">
-            Program generation stays deferred for now. Switch the generator target back to
-            <span className="font-semibold"> Single session </span>
-            to draft one workout in this slice.
-          </p>
-        </div>
-      ) : null}
-
       {!hasLoadedCanonicalWorkout && sessionReady ? (
         <>
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Session information</h3>
+              </div>
+              <button
+                type="button"
+                onClick={handleResetOverrides}
+                data-testid="session-generator-reset-overrides"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              >
+                Clear session notes
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:col-span-2">
+                Session focus
+                <input
+                  type="text"
+                  value={overrides.focusText}
+                  onChange={(event) => applyOverrideChange("focusText", event.target.value)}
+                  data-testid="session-generator-focus-text"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="Example: Breathing timing under fatigue"
+                />
+              </label>
+
+              <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:col-span-2">
+                Special instructions
+                <textarea
+                  value={overrides.constraintText}
+                  onChange={(event) => applyOverrideChange("constraintText", event.target.value)}
+                  data-testid="session-generator-constraint-text"
+                  rows={4}
+                  className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="Example: Keep total volume moderate and avoid heavy kick work."
+                />
+              </label>
+            </div>
+          </div>
+
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -438,7 +479,7 @@ export default function SessionGeneratorPanel({
                 </label>
               ) : (
                 <label className="mt-4 block text-sm text-slate-700">
-                  Estimated duration (min)
+                  Estimated duration (15-180 min)
                   <input
                     type="text"
                     inputMode="numeric"
@@ -531,11 +572,7 @@ export default function SessionGeneratorPanel({
               data-testid="session-generator-generate"
               className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isGenerating
-                ? "Generating..."
-                : draft
-                  ? "Regenerate draft"
-                  : "Generate session draft"}
+              {isGenerating ? "Generating..." : draft ? "Regenerate session" : "Generate session"}
             </button>
           </div>
         </>

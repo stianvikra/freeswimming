@@ -242,10 +242,13 @@ describe("SessionGeneratorPanel", () => {
     vi.clearAllMocks();
   });
 
-  it("keeps program generation deferred in the UI", () => {
+  it("shows session information controls and lets the user clear session notes", () => {
+    const onOverrideChange = vi.fn();
+    const onResetOverrides = vi.fn();
+
     render(
       <SessionGeneratorPanel
-        payload={buildPayload({ targetType: "program" })}
+        payload={buildPayload()}
         selection={{
           profile: true,
           css: true,
@@ -255,17 +258,30 @@ describe("SessionGeneratorPanel", () => {
           focus: true,
         }}
         overrides={{
-          targetType: "program",
+          targetType: "session",
           desiredSessionCount: "",
           desiredSessionMinutes: "45",
-          focusText: "",
-          constraintText: "",
+          focusText: "Breathing timing under fatigue",
+          constraintText: "Keep the first half controlled.",
         }}
+        onOverrideChange={onOverrideChange}
+        onResetOverrides={onResetOverrides}
         workoutLibrary={buildWorkoutLibrary()}
       />
     );
 
-    expect(screen.getByTestId("session-generator-program-deferred")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Session information" })).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("session-generator-focus-text"), {
+      target: { value: "Race-pace breathing control" },
+    });
+    fireEvent.change(screen.getByTestId("session-generator-constraint-text"), {
+      target: { value: "Keep kick work short." },
+    });
+    fireEvent.click(screen.getByTestId("session-generator-reset-overrides"));
+
+    expect(onOverrideChange).toHaveBeenNthCalledWith(1, "focusText", "Race-pace breathing control");
+    expect(onOverrideChange).toHaveBeenNthCalledWith(2, "constraintText", "Keep kick work short.");
+    expect(onResetOverrides).toHaveBeenCalledTimes(1);
   });
 
   it("generates and allows local editing of a draft session", async () => {
@@ -297,6 +313,8 @@ describe("SessionGeneratorPanel", () => {
           focusText: "",
           constraintText: "Keep the first half controlled.",
         }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
         workoutLibrary={buildWorkoutLibrary()}
       />
     );
@@ -388,6 +406,8 @@ describe("SessionGeneratorPanel", () => {
           focusText: "",
           constraintText: "Keep the first half controlled.",
         }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
         workoutLibrary={buildWorkoutLibrary()}
       />
     );
@@ -440,6 +460,8 @@ describe("SessionGeneratorPanel", () => {
           focusText: "",
           constraintText: "Keep the first half controlled.",
         }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
         workoutLibrary={buildWorkoutLibrary({
           selectedWorkout: buildWorkoutRecord({
             draft: {
