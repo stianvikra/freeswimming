@@ -221,11 +221,37 @@ State scope or `N/A` for each category during implementation and closeout:
 - `merge`: source -> target
 - `result`: short summary
 
-## Platform 10/10 Scorecard Linkage
+## Platform 10/10 Scorecard Mapping (Required)
 
-- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
-- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
-- Closeout must record achieved score (`0-5`) for each target category.
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                               | Evidence                                  |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Product goals and IA                          | `target`     | Public routes expose consistent metadata, structured data, and indexability rules with one coherent SEO model. | goal + acceptance criteria                |
+| UX flow clarity                               | `target`     | Admin SEO controls make title/description/canonical/indexing choices understandable before publish.            | scope + quality bar                       |
+| Visual design quality                         | `supporting` | Search/social preview controls stay readable and aligned with the existing admin visual language.              | quality bar                               |
+| Business logic correctness and data integrity | `target`     | Metadata, redirect, schema, and index/noindex rules remain deterministic and validation-backed.                | acceptance criteria + validation          |
+| Admin editor ergonomics                       | `target`     | Editors can manage SEO metadata, redirects, and previews without hidden dependencies on code deploys.          | scope + acceptance criteria               |
+| Accessibility (a11y)                          | `target`     | Admin SEO controls and preview surfaces preserve keyboard access, labels, and readable validation feedback.    | quality bar                               |
+| Performance (CWV + payloads)                  | `supporting` | SEO and structured-data hardening avoids material route-level performance regression.                          | constraints                               |
+| Data placement and sync boundaries            | `target`     | Persisted SEO fields remain canonical in admin data models and public rendering reads them deterministically.  | dependency boundary + acceptance criteria |
+| Caching and invalidation strategy             | `target`     | Published SEO metadata and redirects revalidate predictably without stale public rendering.                    | acceptance criteria                       |
+| Reliability and failure handling              | `target`     | Duplicate canonicals, broken links, looped redirects, and invalid schema are caught before release.            | validation + acceptance criteria          |
+| Security and authz                            | `target`     | SEO admin mutations are role-gated and redirect controls prevent unsafe destinations.                          | security contract                         |
+| Privacy and compliance                        | `target`     | Private/admin/gated URLs never leak through sitemap, robots, redirects, or AI-discoverability assets.          | constraints + security contract           |
+| Content governance                            | `target`     | Metadata fields, schema types, redirects, and discoverability assets follow documented source-of-truth rules.  | ownership split + scope                   |
+| Admin workflow and editability                | `target`     | Admin SEO workflow is complete enough for publish/preview/governance without fallback to manual HTML edits.    | scope + acceptance criteria               |
+| SEO and crawlability                          | `target`     | Indexable routes, sitemap, robots, canonicals, and structured data remain valid and internally consistent.     | acceptance criteria + validation          |
+| AI discoverability                            | `target`     | Entity naming, machine-readable summaries, and optional `llms.txt` strategy remain deliberate and safe.        | scope + acceptance criteria               |
+| Analytics and KPI observability               | `supporting` | SEO admin mutations and search-health outcomes remain measurable through explicit event/log definitions.       | observability and KPI contract            |
+| Commerce and revenue ops                      | `supporting` | Product and plans SEO surfaces support commercial discovery without changing checkout logic.                   | scope review                              |
+| Incident response and support operations      | `supporting` | Search-console/runbook/checklist guidance makes crawl/indexing regressions operationally diagnosable.          | scope + final closeout gate               |
+| Finance and reporting operations              | `N/A`        | N/A because this SEO/discoverability brief does not change billing, payouts, or finance reconciliation.        | explicit scope rationale                  |
+| i18n operational readiness                    | `supporting` | Metadata and schema controls remain structured enough for future multi-language rollout.                       | constraints + quality bar                 |
+| Stack-fit and dependency discipline           | `target`     | SEO foundation stays within the current Next.js/admin stack and only layers on bounded SEO controls.           | ownership split + constraints             |
+| Testing and QA automation                     | `target`     | Route-level metadata, sitemap/robots, redirect, and admin SEO regressions are protected by automated checks.   | validation + acceptance criteria          |
+| Scalability and cost efficiency               | `supporting` | SEO checks and discoverability assets remain lightweight enough for continuous use in normal delivery.         | constraints                               |
+| DevOps and rollback readiness                 | `target`     | SEO changes remain reversible through documented redirect/indexing and publish-control workflows.              | scope + final closeout gate               |
 
 ## Automation Execution Contract
 

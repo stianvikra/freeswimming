@@ -73,22 +73,33 @@ Admin can preview lesson/module content directly from admin rows in a new browse
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Mapping      | Target Threshold                                                                             | Evidence                 |
-| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------- | ------------------------ |
-| Product goals and IA                          | `target`     | Admin can open correct module/lesson preview from row action in <=2 clicks.                  | e2e + manual QA          |
-| UX flow clarity                               | `target`     | Preview mode state is always explicit with visible banner and clear status context.          | e2e + visual QA          |
-| Visual design quality                         | `target`     | Preview indicators and actions align with current admin/course design language.              | visual checklist         |
-| Business logic correctness and data integrity | `target`     | Public users only see `published`; admin preview sees selected mode deterministically.       | unit + integration tests |
-| Admin workflow and editability                | `target`     | Editor can verify draft/review/published behavior without leaving admin flow.                | e2e scenario             |
-| Security and authz                            | `target`     | Non-admin cannot access non-published modes (`401/403` fail-closed).                         | negative-path API/e2e    |
-| Privacy and compliance                        | `target`     | Preview pages and responses are non-indexable and do not expose sensitive data.              | header/meta tests        |
-| Data placement and sync boundaries            | `target`     | Preview state is isolated from learner progress state.                                       | unit + e2e assertions    |
-| Caching and invalidation strategy             | `target`     | Mode-aware responses avoid stale cross-mode leakage.                                         | integration tests        |
-| Reliability and failure handling              | `target`     | Invalid mode/auth errors are explicit and recoverable; no unexpected `500`.                  | negative-path tests      |
-| Performance (CWV + payloads)                  | `supporting` | Preview mode adds no material route regression for `/course`.                                | verify + route checks    |
-| SEO and crawlability                          | `target`     | Preview route rendering is noindex/nofollow and excluded from sitemap indexing expectations. | metadata/sitemap tests   |
-| Testing and QA automation                     | `target`     | Dedicated tests cover admin preview open, mode filtering, and non-admin deny paths.          | CI evidence              |
-| DevOps and rollback readiness                 | `supporting` | Feature can be toggled/rolled back cleanly with no learner-data corruption.                  | rollout note + tests     |
+| Category                                      | Mapping      | Target Threshold                                                                                       | Evidence                 |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------ | ------------------------ |
+| Product goals and IA                          | `target`     | Admin can open correct module/lesson preview from row action in <=2 clicks.                            | e2e + manual QA          |
+| UX flow clarity                               | `target`     | Preview mode state is always explicit with visible banner and clear status context.                    | e2e + visual QA          |
+| Visual design quality                         | `target`     | Preview indicators and actions align with current admin/course design language.                        | visual checklist         |
+| Business logic correctness and data integrity | `target`     | Public users only see `published`; admin preview sees selected mode deterministically.                 | unit + integration tests |
+| Admin editor ergonomics                       | `target`     | Preview actions let editors verify draft/review/published output without repetitive context switching. | e2e scenario             |
+| Accessibility (a11y)                          | `target`     | Preview banner, mode controls, and row actions remain keyboard-operable with explicit labels.          | e2e + manual QA          |
+| Content governance                            | `supporting` | Preview labels and mode semantics remain aligned with the canonical publish-state model.               | code review              |
+| Admin workflow and editability                | `target`     | Editor can verify draft/review/published behavior without leaving admin flow.                          | e2e scenario             |
+| Security and authz                            | `target`     | Non-admin cannot access non-published modes (`401/403` fail-closed).                                   | negative-path API/e2e    |
+| Privacy and compliance                        | `target`     | Preview pages and responses are non-indexable and do not expose sensitive data.                        | header/meta tests        |
+| Data placement and sync boundaries            | `target`     | Preview state is isolated from learner progress state.                                                 | unit + e2e assertions    |
+| Caching and invalidation strategy             | `target`     | Mode-aware responses avoid stale cross-mode leakage.                                                   | integration tests        |
+| Reliability and failure handling              | `target`     | Invalid mode/auth errors are explicit and recoverable; no unexpected `500`.                            | negative-path tests      |
+| Performance (CWV + payloads)                  | `supporting` | Preview mode adds no material route regression for `/course`.                                          | verify + route checks    |
+| SEO and crawlability                          | `target`     | Preview route rendering is noindex/nofollow and excluded from sitemap indexing expectations.           | metadata/sitemap tests   |
+| AI discoverability                            | `N/A`        | N/A                                                                                                    | N/A                      |
+| Analytics and KPI observability               | `supporting` | Preview mode behavior remains diagnosable through existing route/test instrumentation.                 | CI evidence              |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                    | N/A                      |
+| Incident response and support operations      | `supporting` | Admin preview guidance and mode-specific recovery remain supportable during QA or incident checks.     | checkpoint log           |
+| Finance and reporting operations              | `N/A`        | N/A because this preview-mode slice does not change billing, payouts, or finance reconciliation.       | explicit scope rationale |
+| i18n operational readiness                    | `supporting` | Preview labels remain concise and structurally ready for later localization.                           | code review              |
+| Stack-fit and dependency discipline           | `supporting` | Preview behavior stays inside current course/admin route architecture without extra platform layers.   | code review              |
+| Testing and QA automation                     | `target`     | Dedicated tests cover admin preview open, mode filtering, and non-admin deny paths.                    | CI evidence              |
+| Scalability and cost efficiency               | `supporting` | Mode-aware preview uses existing route/data foundations without adding expensive parallel paths.       | code review              |
+| DevOps and rollback readiness                 | `supporting` | Feature can be toggled/rolled back cleanly with no learner-data corruption.                            | rollout note + tests     |
 
 ## Acceptance Criteria
 

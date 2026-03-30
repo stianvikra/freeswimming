@@ -43,6 +43,38 @@ Analytics should be durable, queryable, and visible in an internal dashboard so 
   - KPI definitions,
   - metric caveats and interpretation rules.
 
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                               | Evidence                               |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| Product goals and IA                          | `target`     | Internal analytics surface groups funnel, reliability, library, and revenue-proxy signals into one clear view. | scope + goal                           |
+| UX flow clarity                               | `target`     | Admin can filter, inspect, and export metrics without ambiguous terminology or hidden dashboard states.        | acceptance criteria + manual QA        |
+| Visual design quality                         | `supporting` | Dashboard tables/charts remain readable and utilitarian rather than visually noisy.                            | quality bar                            |
+| Business logic correctness and data integrity | `target`     | Event ingestion, redaction, persistence, and aggregation remain deterministic and queryable.                   | acceptance criteria + validation       |
+| Admin editor ergonomics                       | `target`     | Admin can answer core product, UX, and reliability questions without dropping to raw SQL/log inspection.       | scope + manual QA                      |
+| Accessibility (a11y)                          | `supporting` | Filters, tables, and chart-adjacent controls remain keyboard/screen-reader usable.                             | quality bar                            |
+| Performance (CWV + payloads)                  | `target`     | Ingestion stays non-blocking and dashboard freshness remains within the defined update window.                 | constraints + acceptance criteria      |
+| Data placement and sync boundaries            | `target`     | Raw analytics events remain server-canonical while filters and dashboard view state remain local-only.         | scope + observability contract         |
+| Caching and invalidation strategy             | `target`     | Dashboard freshness and export behavior avoid stale or misleading metric views.                                | acceptance criteria + constraints      |
+| Reliability and failure handling              | `target`     | Event loss, rejected payloads, and dashboard query failures remain observable and recoverable.                 | acceptance criteria + observability    |
+| Security and authz                            | `target`     | Raw analytics data and admin dashboard access remain admin-only and fail closed.                               | security contract                      |
+| Privacy and compliance                        | `target`     | Sensitive fields are redacted before persistence and retention remains GDPR-aligned.                           | security contract + scope              |
+| Content governance                            | `target`     | Event taxonomy, KPI definitions, and metric caveats are documented as the source of truth.                     | scope                                  |
+| Admin workflow and editability                | `target`     | Admin dashboard and CSV export are usable as an operational analytics workflow rather than a prototype view.   | scope + manual QA                      |
+| SEO and crawlability                          | `N/A`        | N/A                                                                                                            | N/A                                    |
+| AI discoverability                            | `N/A`        | N/A                                                                                                            | N/A                                    |
+| Analytics and KPI observability               | `target`     | Durable metrics exist for funnel, library behavior, auth reliability, and revenue-proxy tracking.              | observability and KPI contract         |
+| Commerce and revenue ops                      | `supporting` | Revenue-proxy and entitlement-linked analytics remain visible without turning this slice into billing logic.   | scope                                  |
+| Incident response and support operations      | `target`     | Ingestion health, export failures, and dashboard anomalies are diagnosable through explicit logs/metrics.      | observability contract                 |
+| Finance and reporting operations              | `supporting` | CSV export and revenue-proxy reporting support internal reporting needs without replacing accounting systems.  | scope + acceptance criteria            |
+| i18n operational readiness                    | `N/A`        | N/A because this is an internal analytics/admin brief and should not block future localization architecture.   | explicit scope rationale               |
+| Stack-fit and dependency discipline           | `target`     | Persistence and dashboard work stay within the current Next.js/Supabase stack without vendor migration.        | constraints + out-of-scope             |
+| Testing and QA automation                     | `target`     | Schema, ingestion, dashboard aggregation, and admin analytics smoke coverage are required.                     | validation                             |
+| Scalability and cost efficiency               | `target`     | Indexed storage, retention rules, and non-blocking ingestion keep query and storage growth bounded.            | scope + constraints                    |
+| DevOps and rollback readiness                 | `target`     | Retention, observability, and deferred rollout remain explicit enough to ship in controlled slices later.      | git rhythm + completion record section |
+
 ## Out Of Scope
 
 - No third-party analytics vendor migration in this phase.

@@ -190,11 +190,37 @@ State scope or `N/A` for each category during implementation and closeout:
 - `merge`: source branch -> target branch
 - `result`: short outcome summary
 
-## Platform 10/10 Scorecard Linkage
+## Platform 10/10 Scorecard Mapping (Required)
 
-- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
-- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
-- Closeout must record achieved score (`0-5`) for each target category.
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                                  | Evidence                          |
+| --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Product goals and IA                          | `target`     | Offline and weak-network behavior is honest about what works now, what syncs later, and what still needs network. | goal + acceptance criteria        |
+| UX flow clarity                               | `target`     | Users always understand current connectivity, cached availability, and the next recovery action.                  | acceptance criteria + quality bar |
+| Visual design quality                         | `supporting` | Offline indicators and fallback states remain calm, confidence-building, and visually consistent.                 | constraints + quality bar         |
+| Business logic correctness and data integrity | `target`     | Write actions never claim durable success before server confirmation and sync rules remain deterministic.         | scope + acceptance criteria       |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                               | N/A                               |
+| Accessibility (a11y)                          | `target`     | Status, error, and retry messaging remain accessible across changed offline/online states.                        | quality bar                       |
+| Performance (CWV + payloads)                  | `target`     | Cache strategy and sync efficiency preserve normal online performance and avoid noisy background work.            | acceptance criteria + constraints |
+| Data placement and sync boundaries            | `target`     | Guest local progress, signed-in server durability, and parity between installed PWA and browser web are explicit. | scope + storage and sync contract |
+| Caching and invalidation strategy             | `target`     | Content buckets, versioning, and eviction behavior are deterministic and documented.                              | scope + required eviction QA      |
+| Reliability and failure handling              | `target`     | Cached, uncached, cleared-storage, and reconnect paths avoid blank screens and false-success states.              | acceptance criteria + validation  |
+| Security and authz                            | `supporting` | Sensitive/private responses are not cached by default and auth boundaries remain unchanged.                       | constraints                       |
+| Privacy and compliance                        | `supporting` | Offline support preserves server truth for durable account data and avoids unnecessary sensitive persistence.     | constraints + storage contract    |
+| Content governance                            | `supporting` | Availability messaging and backup prompts remain aligned with the actual sync model.                              | scope review                      |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                               | N/A                               |
+| SEO and crawlability                          | `supporting` | Offline fallback behavior does not alter public crawl/index semantics.                                            | scope review                      |
+| AI discoverability                            | `N/A`        | N/A                                                                                                               | N/A                               |
+| Analytics and KPI observability               | `supporting` | Sync success/failure and retry behavior remain measurable for tuning reliability vs cost.                         | server resource strategy          |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                               | N/A                               |
+| Incident response and support operations      | `supporting` | Offline failure and retry behavior remain diagnosable through explicit sync and fallback rules.                   | server resource strategy          |
+| Finance and reporting operations              | `N/A`        | N/A because this offline-resilience brief does not change billing, payouts, or finance reconciliation.            | explicit scope rationale          |
+| i18n operational readiness                    | `supporting` | Connectivity and retry language stays concise and structurally ready for later localization.                      | quality bar                       |
+| Stack-fit and dependency discipline           | `target`     | Offline strategy stays within current web/PWA architecture without introducing parallel product semantics.        | scope + constraints               |
+| Testing and QA automation                     | `target`     | Offline navigation, uncached fallback, reconnect, and cache-clear paths are protected by automated coverage.      | validation + required eviction QA |
+| Scalability and cost efficiency               | `target`     | Sync uses bounded batching/backoff rather than expensive polling or per-action chatter.                           | server resource strategy          |
+| DevOps and rollback readiness                 | `target`     | Cache versioning and rollout rules remain explicit enough for safe release and recovery.                          | scope + validation                |
 
 ## Automation Execution Contract
 

@@ -37,6 +37,38 @@ Desktop users should get clear, platform-aware install guidance and post-install
   - no regression for native install-capable browsers.
 - Update related docs/checklists if fallback behavior changes.
 
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                              | Evidence                            |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Product goals and IA                          | `target`     | Platform-specific install fallback presents one clear path for Mac Safari without disrupting existing routes. | scope + acceptance criteria         |
+| UX flow clarity                               | `target`     | Mac Safari, iOS Safari, native-prompt browsers, and unsupported browsers each show unambiguous next actions.  | state rules + manual QA matrix      |
+| Visual design quality                         | `target`     | Safari guidance and success states stay visually consistent with the existing install surfaces.               | scope + completion record           |
+| Business logic correctness and data integrity | `target`     | Platform detection and fallback branching remain deterministic across both install entry points.              | acceptance criteria + updated tests |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                           | N/A                                 |
+| Accessibility (a11y)                          | `target`     | Guidance, dismiss, and success states preserve focus order, labels, contrast, and keyboard access.            | acceptance criteria + manual QA     |
+| Performance (CWV + payloads)                  | `supporting` | Added platform guidance does not introduce measurable runtime overhead or layout instability.                 | constraints + validation            |
+| Data placement and sync boundaries            | `target`     | Entry-point behavior and installed-state feedback remain local UI concerns only.                              | state rules                         |
+| Caching and invalidation strategy             | `supporting` | Existing install-state and cooldown semantics remain unchanged by the Mac Safari fallback.                    | state rules + QA matrix             |
+| Reliability and failure handling              | `target`     | Safari users no longer hit a generic dead end when manual install is possible.                                | acceptance criteria + rollout notes |
+| Security and authz                            | `supporting` | No auth, entitlement, or admin boundary changes are introduced in this guidance-only slice.                   | out-of-scope + constraints          |
+| Privacy and compliance                        | `supporting` | No new personal data collection or sensitive payload persistence is introduced.                               | scope review                        |
+| Content governance                            | `supporting` | Final install strings remain consistent across both entry points and supported platforms.                     | UX copy contract                    |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                           | N/A                                 |
+| SEO and crawlability                          | `supporting` | Browser-specific install copy does not affect public crawl/index behavior.                                    | scope review                        |
+| AI discoverability                            | `N/A`        | N/A                                                                                                           | N/A                                 |
+| Analytics and KPI observability               | `supporting` | Install result buckets remain measurable when analytics hooks exist.                                          | event tracking section              |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                           | N/A                                 |
+| Incident response and support operations      | `supporting` | Rollback path preserves existing generic fallback if a platform-specific regression appears.                  | rollout and rollback                |
+| Finance and reporting operations              | `N/A`        | N/A because this guidance update does not change billing, payouts, or finance reconciliation.                 | explicit scope rationale            |
+| i18n operational readiness                    | `supporting` | Platform-aware copy stays concise and structurally ready for later localization.                              | UX copy contract                    |
+| Stack-fit and dependency discipline           | `target`     | Fix stays within current install-flow components and maintainable platform detection rules.                   | scope + delivered changes           |
+| Testing and QA automation                     | `target`     | Regression coverage protects Mac Safari fallback and existing iOS/native install flows.                       | completion record + test evidence   |
+| Scalability and cost efficiency               | `supporting` | Guidance changes avoid any meaningful new server or runtime cost.                                             | architecture review                 |
+| DevOps and rollback readiness                 | `supporting` | Existing feature controls keep the fallback behavior reversible.                                              | rollout and rollback                |
+
 ## UX Copy Contract (final strings)
 
 Use these exact messages unless implementation constraints require small wording adjustments:

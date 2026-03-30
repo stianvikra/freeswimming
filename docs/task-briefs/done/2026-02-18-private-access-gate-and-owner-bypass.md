@@ -35,6 +35,38 @@ freeswimming.org should be private during build, with safe access only for the o
   - e2e for blocked visitor, successful owner unlock, and cookie persistence.
 - Add runbook docs for enabling/disabling lock in local, preview, and production.
 
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                              | Evidence                          |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Product goals and IA                          | `target`     | Site-lock flow communicates one clear state: private by default, owner/tester access by explicit unlock path. | goal + acceptance criteria        |
+| UX flow clarity                               | `target`     | Blocked, unlock, unlocked, and expired-session states are understandable with no redirect-loop confusion.     | quality bar + manual QA           |
+| Visual design quality                         | `supporting` | Locked page and unlock flow stay consistent with current branded trust cues.                                  | scope + quality bar               |
+| Business logic correctness and data integrity | `target`     | Guard decisions, bypass session handling, and protected-route exemptions remain deterministic.                | unit + e2e tests                  |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                           | N/A                               |
+| Accessibility (a11y)                          | `target`     | Locked/unlock controls preserve labels, focus visibility, and keyboard access on desktop and mobile.          | quality bar + acceptance criteria |
+| Performance (CWV + payloads)                  | `supporting` | Edge/runtime lock checks remain low-latency and do not materially regress route delivery.                     | constraints                       |
+| Data placement and sync boundaries            | `target`     | Unlock session state lives in secure cookie/session storage and is never confused with app auth state.        | scope + security contract         |
+| Caching and invalidation strategy             | `target`     | Lock enable/disable and session expiry avoid stale public access or stale unlocked state.                     | acceptance criteria + tests       |
+| Reliability and failure handling              | `target`     | Invalid password/token, expired session, and blocked-visitor states remain explicit and recoverable.          | acceptance criteria + e2e         |
+| Security and authz                            | `target`     | Site lock, token/password checks, cookie policy, and protected-route handling remain fail-closed.             | security contract + tests         |
+| Privacy and compliance                        | `target`     | Unlock flows avoid logging secrets and preserve minimal, redacted operational logs.                           | security contract                 |
+| Content governance                            | `supporting` | Locked-state copy and runbook wording remain consistent with private-access policy.                           | runbook docs                      |
+| Admin workflow and editability                | `target`     | Owner/tester bypass is fast enough for real preview work without weakening the private gate.                  | acceptance criteria + manual QA   |
+| SEO and crawlability                          | `target`     | Locked mode preserves noindex/robots/sitemap-safe behavior and prevents accidental indexing.                  | acceptance criteria               |
+| AI discoverability                            | `N/A`        | N/A                                                                                                           | N/A                               |
+| Analytics and KPI observability               | `supporting` | Blocked/unlocked/failed-unlock states remain observable through structured logs/events.                       | observability contract            |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                           | N/A                               |
+| Incident response and support operations      | `target`     | Runbook docs make enable/disable, unlock failure recovery, and bypass diagnostics operationally usable.       | scope + runbook docs              |
+| Finance and reporting operations              | `N/A`        | N/A because this private-access gate does not change billing, payouts, or finance reconciliation.             | explicit scope rationale          |
+| i18n operational readiness                    | `supporting` | Locked-state guidance stays concise and structurally translatable later.                                      | quality bar                       |
+| Stack-fit and dependency discipline           | `target`     | Locking stays within current Next.js edge/runtime and cookie/session primitives.                              | scope + implementation notes      |
+| Testing and QA automation                     | `target`     | Unit and e2e coverage protect blocked visitor, successful unlock, and session persistence behavior.           | validation + checkpoint log       |
+| Scalability and cost efficiency               | `supporting` | Guard checks remain cheap enough for broad request coverage while private mode is enabled.                    | constraints                       |
+| DevOps and rollback readiness                 | `target`     | Env controls and runbook docs keep site-lock rollout and rollback executable without code churn.              | scope + runbook docs              |
+
 ## Out Of Scope
 
 - No redesign of core site content.

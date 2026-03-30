@@ -147,11 +147,37 @@ State scope or `N/A` for each category during implementation and closeout:
 - `merge`: source branch -> target branch
 - `result`: short outcome summary
 
-## Platform 10/10 Scorecard Linkage
+## Platform 10/10 Scorecard Mapping (Required)
 
-- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
-- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
-- Closeout must record achieved score (`0-5`) for each target category.
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                                | Evidence                                 |
+| --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Product goals and IA                          | `target`     | PWA release gate defines one repeatable source of truth for install/offline readiness and rollback readiness.   | goal + scope                             |
+| UX flow clarity                               | `target`     | QA and release evidence clearly show what must pass online, offline, cache-cleared, and reconnect scenarios.    | acceptance criteria + manual QA          |
+| Visual design quality                         | `supporting` | Release gating protects existing install/offline surfaces from visual regressions.                              | quality bar                              |
+| Business logic correctness and data integrity | `target`     | Release checklist catches broken install/offline/write-state behavior before merge or release.                  | acceptance criteria + validation         |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                             | N/A                                      |
+| Accessibility (a11y)                          | `target`     | Accessibility verification is an explicit part of the release gate for changed PWA surfaces.                    | scope + quality bar                      |
+| Performance (CWV + payloads)                  | `target`     | Release gate includes performance sanity checks for changed PWA surfaces and avoids hidden regressions.         | quality bar + validation                 |
+| Data placement and sync boundaries            | `supporting` | Release gating preserves explicit local-vs-server truth boundaries from the underlying PWA briefs.              | ownership split                          |
+| Caching and invalidation strategy             | `supporting` | Cache-clear and offline fallback checks validate the expected cache lifecycle without stale behavior surprises. | required scenario coverage               |
+| Reliability and failure handling              | `target`     | Release process explicitly covers offline, cache-miss, reconnect, and write-blocked recovery paths.             | acceptance criteria + required scenarios |
+| Security and authz                            | `supporting` | PWA release gate does not weaken existing security or auth boundaries while testing fallback behavior.          | ownership split                          |
+| Privacy and compliance                        | `supporting` | Observability hooks and evidence collection stay within existing privacy constraints.                           | out-of-scope + constraints               |
+| Content governance                            | `supporting` | QA evidence and runbooks become reproducible documentation instead of chat-only knowledge.                      | quality bar                              |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                             | N/A                                      |
+| SEO and crawlability                          | `supporting` | Release checks preserve stable public-route semantics while PWA features harden underneath.                     | scope review                             |
+| AI discoverability                            | `N/A`        | N/A                                                                                                             | N/A                                      |
+| Analytics and KPI observability               | `target`     | Install/offline/retry outcomes are measurable or explicitly deferred with a recorded reason.                    | acceptance criteria + scope              |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                             | N/A                                      |
+| Incident response and support operations      | `target`     | Release checklist and rollback steps are documented well enough for fast incident response.                     | scope + acceptance criteria              |
+| Finance and reporting operations              | `N/A`        | N/A because this release-gate brief does not change billing, payouts, or finance reconciliation.                | explicit scope rationale                 |
+| i18n operational readiness                    | `supporting` | QA evidence and release docs preserve room for future locale-specific PWA checks.                               | scope review                             |
+| Stack-fit and dependency discipline           | `target`     | Release safety is achieved through current CI/docs/runbook patterns instead of new platform complexity.         | scope + automation contract              |
+| Testing and QA automation                     | `target`     | CI and manual QA matrix together catch install/offline regressions before merge.                                | acceptance criteria + validation         |
+| Scalability and cost efficiency               | `supporting` | Gate design stays lightweight enough for frequent iteration and avoids expensive redundant QA steps.            | constraints                              |
+| DevOps and rollback readiness                 | `target`     | Rollback procedure is executable in minutes and documented before release.                                      | quality bar + scope                      |
 
 ## Automation Execution Contract
 

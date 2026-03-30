@@ -57,6 +57,38 @@ Users can start instantly in guest mode, buy optional paid products without acco
   - add/extend unit and e2e tests for purchase restore, entitlement gating, and resume flow.
   - add explicit UX state coverage for loading/empty/error/offline/retry for all new surfaces.
 
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                                         | Evidence                                 |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| Product goals and IA                          | `target`     | Guest browsing, optional account claim, paid purchase, and `My Library` ownership model remain coherent end to end.      | goal + scope                             |
+| UX flow clarity                               | `target`     | Users can buy, claim access, resume progress, and find owned vs not-owned items without ambiguous dead ends.             | acceptance criteria + UX contracts       |
+| Visual design quality                         | `target`     | `My Library`, `/plans`, and post-purchase surfaces feel consistent, trustworthy, and easy to scan.                       | UX/UI quality bar                        |
+| Business logic correctness and data integrity | `target`     | Entitlements, progress sync, goal limits, purchase restore, and account-attach rules remain deterministic.               | acceptance criteria + implementation log |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                                      | N/A                                      |
+| Accessibility (a11y)                          | `target`     | All new user-facing surfaces preserve accessible loading/empty/error/recovery states and semantic controls.              | acceptance criteria + quality bar        |
+| Performance (CWV + payloads)                  | `target`     | Changed routes meet the briefed Core Web Vitals goals without sacrificing fast local UX.                                 | acceptance criteria + validation         |
+| Data placement and sync boundaries            | `target`     | Guest progress stays local-first, signed-in progress/entitlements stay server-canonical, and reconciliation is explicit. | scope + architecture contract            |
+| Caching and invalidation strategy             | `target`     | Purchase fulfillment, library refresh, and progress reconciliation avoid stale ownership or stale resume state.          | acceptance criteria + implementation log |
+| Reliability and failure handling              | `target`     | Offline/error/retry states never imply false success for purchases, sync, or downloads.                                  | acceptance criteria + state matrix       |
+| Security and authz                            | `target`     | Claim, resend, export/delete, and entitlement gates fail closed and avoid account/email enumeration.                     | acceptance criteria + GDPR contract      |
+| Privacy and compliance                        | `target`     | GDPR export/delete, disclosures, and payment-data boundaries match actual feature behavior.                              | scope + GDPR contract                    |
+| Content governance                            | `supporting` | Product, library, goal, and support copy remain consistent with the actual ownership and progress model.                 | UX copy contract + goals MVP contract    |
+| Admin workflow and editability                | `supporting` | Support-oriented resend/export/delete flows remain operationally usable even though this is not an admin UI brief.       | scope + acceptance criteria              |
+| SEO and crawlability                          | `supporting` | Public `/plans` and related product surfaces preserve clear metadata and discoverable public semantics.                  | scope review                             |
+| AI discoverability                            | `supporting` | Public plan and guide surfaces remain machine-readable without leaking private `My Library` state.                       | scope review                             |
+| Analytics and KPI observability               | `target`     | Purchase, entitlement, resume, and upsell flows remain measurable through the defined KPI contract.                      | analytics and KPI contract               |
+| Commerce and revenue ops                      | `target`     | Stripe checkout, fulfillment, receipts, resend flows, and customer portal path work without stranding buyers.            | scope + acceptance criteria              |
+| Incident response and support operations      | `target`     | Support/data-rights workflows and purchase recovery rules are explicit enough for operational handling.                  | GDPR contract + external setup runbook   |
+| Finance and reporting operations              | `supporting` | Receipt history and Stripe portal support user-facing reporting needs without becoming a finance ledger system.          | scope + acceptance criteria              |
+| i18n operational readiness                    | `supporting` | Library, purchase, and goal labels stay structured enough for later localization.                                        | UX copy contract                         |
+| Stack-fit and dependency discipline           | `target`     | Delivery stays within the current Next.js/Supabase/Stripe stack with versioned SQL migrations in-repo.                   | acceptance criteria + constraints        |
+| Testing and QA automation                     | `target`     | Purchase restore, entitlement, progress sync, and library resume behavior are protected by unit and e2e coverage.        | validation + implementation log          |
+| Scalability and cost efficiency               | `target`     | Progress sync uses reconciliation and bounded writes instead of chatty high-frequency server traffic.                    | scale and cost guardrails                |
+| DevOps and rollback readiness                 | `target`     | Versioned migrations, phased delivery, and runbook-backed external setup keep rollout and rollback manageable.           | scope + implementation phases            |
+
 ## Out Of Scope
 
 - Garmin/Apple Health/third-party wearable integrations.

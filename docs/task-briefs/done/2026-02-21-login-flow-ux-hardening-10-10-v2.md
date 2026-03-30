@@ -60,11 +60,37 @@ Make sign-in request UX deterministic and clear on first click and repeated atte
 - No dead-end state after error.
 - Copy is short, concrete, and consistent with button labels.
 
-## Platform 10/10 Scorecard Linkage
+## Platform 10/10 Scorecard Mapping (Required)
 
-- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
-- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
-- Closeout must record achieved score (`0-5`) for each target category.
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                             | Evidence                        |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| Product goals and IA                          | `target`     | Sign-in flow exposes one coherent state machine with clear request, wait, resend, and retry meaning.         | scope + acceptance criteria     |
+| UX flow clarity                               | `target`     | First click, repeated click, cooldown, and failure states stay understandable across supported devices.      | validation + implementation log |
+| Visual design quality                         | `supporting` | Auth request states and CTA hierarchy remain visually consistent with the sign-in surface.                   | UX quality bar                  |
+| Business logic correctness and data integrity | `target`     | Request-state transitions are deterministic and do not produce contradictory messages or invalid CTA states. | scope + targeted tests          |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                          | N/A                             |
+| Accessibility (a11y)                          | `supporting` | Auth state messaging and CTA updates remain readable and operable on desktop and mobile.                     | UX quality bar                  |
+| Performance (CWV + payloads)                  | `supporting` | UX hardening adds no material route regression for `/auth/sign-in`.                                          | validation                      |
+| Data placement and sync boundaries            | `target`     | Request/cooldown UI state remains explicit and bounded to the current sign-in flow.                          | scope + implementation log      |
+| Caching and invalidation strategy             | `supporting` | Reload/cooldown behavior avoids stale contradictory auth UI.                                                 | scope review                    |
+| Reliability and failure handling              | `target`     | Error states remain actionable with no dead-end request loop or broken resend path.                          | acceptance criteria + e2e       |
+| Security and authz                            | `supporting` | Hardening preserves current provider/auth boundaries while keeping resend behavior explicit.                 | out-of-scope review             |
+| Privacy and compliance                        | `supporting` | No new sensitive payload exposure is introduced by the request-state UX changes.                             | scope review                    |
+| Content governance                            | `supporting` | Auth copy stays short, concrete, and aligned with button/state semantics.                                    | UX quality bar                  |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                          | N/A                             |
+| SEO and crawlability                          | `N/A`        | N/A                                                                                                          | N/A                             |
+| AI discoverability                            | `N/A`        | N/A                                                                                                          | N/A                             |
+| Analytics and KPI observability               | `target`     | Key failure and success states remain diagnosable through auth UX regression coverage and event hooks.       | scope + validation              |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                          | N/A                             |
+| Incident response and support operations      | `supporting` | Deterministic auth states make support/debugging easier during sign-in incidents.                            | implementation checkpoint       |
+| Finance and reporting operations              | `N/A`        | N/A because this auth UX hardening does not change billing, payouts, or finance reconciliation.              | explicit scope rationale        |
+| i18n operational readiness                    | `supporting` | State names and messages remain structurally translatable and not tied to fragile wording.                   | UX quality bar                  |
+| Stack-fit and dependency discipline           | `target`     | Hardening stays within the current auth stack and test surface rather than introducing a new auth subsystem. | scope + implementation log      |
+| Testing and QA automation                     | `target`     | Targeted unit and e2e coverage plus `verify:pre-pr` protect request-state regressions.                       | validation + implementation log |
+| Scalability and cost efficiency               | `supporting` | Clear resend/cooldown handling helps avoid unnecessary repeated auth requests.                               | business-logic review           |
+| DevOps and rollback readiness                 | `supporting` | State-machine UX hardening remains reversible without schema or provider rollback.                           | implementation log              |
 
 ## Implementation Checkpoint Log
 

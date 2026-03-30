@@ -42,33 +42,33 @@ Make `All Content` scope-first (one group at a time) so editors avoid long mixed
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Mapping      | Target Threshold                                                                          | Evidence                    |
-| --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------- | --------------------------- |
-| Product goals and IA                          | `target`     | `All Content` defaults to scoped view, with explicit `All content (audit)` mode.          | e2e assertions + manual QA  |
-| UX flow clarity                               | `target`     | Editors can switch scope in one click and avoid mixed-list overload by default.           | e2e + manual walkthrough    |
-| Visual design quality                         | `target`     | Scope controls + mirror active-state fit existing admin style without visual regressions. | visual QA                   |
-| Business logic correctness and data integrity | `supporting` | Filtering behavior is deterministic and does not mutate server data.                      | regression tests            |
-| Admin editor ergonomics                       | `target`     | Mirror cards and scope chips launch users directly into the intended content group.       | e2e + manual editorial flow |
-| Accessibility (a11y)                          | `target`     | Scope controls and mirror cards remain keyboard-operable with clear state.                | Playwright interactions     |
-| Performance (CWV + payloads)                  | `supporting` | N/A (UI/filter orchestration only).                                                       | N/A                         |
-| Data placement and sync boundaries            | `target`     | Scope preference is local-only and stable across reloads.                                 | code review + manual QA     |
-| Caching and invalidation strategy             | `supporting` | N/A                                                                                       | N/A                         |
-| Reliability and failure handling              | `target`     | Filter/focus/empty states remain coherent when scope changes.                             | e2e + manual QA             |
-| Security and authz                            | `supporting` | N/A                                                                                       | unchanged route guards      |
-| Privacy and compliance                        | `N/A`        | N/A                                                                                       | N/A                         |
-| Content governance                            | `supporting` | N/A                                                                                       | N/A                         |
-| Admin workflow and editability                | `target`     | Existing edit/create/publish actions remain available in scoped mode.                     | e2e regression              |
-| SEO and crawlability                          | `N/A`        | N/A                                                                                       | N/A                         |
-| AI discoverability                            | `N/A`        | N/A                                                                                       | N/A                         |
-| Analytics and KPI observability               | `supporting` | N/A                                                                                       | N/A                         |
-| Commerce and revenue ops                      | `N/A`        | N/A                                                                                       | N/A                         |
-| Incident response and support operations      | `supporting` | Help/Guide text stays aligned with updated scope behavior.                                | help-center test            |
-| Finance and reporting operations              | `N/A`        | N/A                                                                                       | N/A                         |
-| i18n operational readiness                    | `supporting` | Scope labels remain explicit constants and easy to localize later.                        | code review                 |
-| Stack-fit and dependency discipline           | `target`     | No new dependency added.                                                                  | dependency diff             |
-| Testing and QA automation                     | `target`     | Updated e2e contracts pass in `verify:pre-pr`.                                            | command evidence            |
-| Scalability and cost efficiency               | `supporting` | N/A                                                                                       | N/A                         |
-| DevOps and rollback readiness                 | `supporting` | UI-only rollback remains simple (single PR revert).                                       | PR diff review              |
+| Category                                      | Mapping      | Target Threshold                                                                                     | Evidence                    |
+| --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------- | --------------------------- |
+| Product goals and IA                          | `target`     | `All Content` defaults to scoped view, with explicit `All content (audit)` mode.                     | e2e assertions + manual QA  |
+| UX flow clarity                               | `target`     | Editors can switch scope in one click and avoid mixed-list overload by default.                      | e2e + manual walkthrough    |
+| Visual design quality                         | `target`     | Scope controls + mirror active-state fit existing admin style without visual regressions.            | visual QA                   |
+| Business logic correctness and data integrity | `supporting` | Filtering behavior is deterministic and does not mutate server data.                                 | regression tests            |
+| Admin editor ergonomics                       | `target`     | Mirror cards and scope chips launch users directly into the intended content group.                  | e2e + manual editorial flow |
+| Accessibility (a11y)                          | `target`     | Scope controls and mirror cards remain keyboard-operable with clear state.                           | Playwright interactions     |
+| Performance (CWV + payloads)                  | `supporting` | N/A (UI/filter orchestration only).                                                                  | N/A                         |
+| Data placement and sync boundaries            | `target`     | Scope preference is local-only and stable across reloads.                                            | code review + manual QA     |
+| Caching and invalidation strategy             | `supporting` | N/A                                                                                                  | N/A                         |
+| Reliability and failure handling              | `target`     | Filter/focus/empty states remain coherent when scope changes.                                        | e2e + manual QA             |
+| Security and authz                            | `supporting` | N/A                                                                                                  | unchanged route guards      |
+| Privacy and compliance                        | `N/A`        | N/A                                                                                                  | N/A                         |
+| Content governance                            | `supporting` | N/A                                                                                                  | N/A                         |
+| Admin workflow and editability                | `target`     | Existing edit/create/publish actions remain available in scoped mode.                                | e2e regression              |
+| SEO and crawlability                          | `N/A`        | N/A                                                                                                  | N/A                         |
+| AI discoverability                            | `N/A`        | N/A                                                                                                  | N/A                         |
+| Analytics and KPI observability               | `supporting` | N/A                                                                                                  | N/A                         |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                  | N/A                         |
+| Incident response and support operations      | `supporting` | Help/Guide text stays aligned with updated scope behavior.                                           | help-center test            |
+| Finance and reporting operations              | `N/A`        | N/A because this admin navigation slice does not change billing, payouts, or finance reconciliation. | explicit scope rationale    |
+| i18n operational readiness                    | `supporting` | Scope labels remain explicit constants and easy to localize later.                                   | code review                 |
+| Stack-fit and dependency discipline           | `target`     | No new dependency added.                                                                             | dependency diff             |
+| Testing and QA automation                     | `target`     | Updated e2e contracts pass in `verify:pre-pr`.                                                       | command evidence            |
+| Scalability and cost efficiency               | `supporting` | N/A                                                                                                  | N/A                         |
+| DevOps and rollback readiness                 | `supporting` | UI-only rollback remains simple (single PR revert).                                                  | PR diff review              |
 
 ## Scope
 

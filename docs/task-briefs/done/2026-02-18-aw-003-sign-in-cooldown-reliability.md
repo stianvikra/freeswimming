@@ -28,6 +28,38 @@ Make sign-in code request behavior predictable and trustworthy: first request co
 - No redesign outside sign-in scope.
 - No new analytics vendor.
 
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                             | Evidence                             |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| Product goals and IA                          | `target`     | Sign-in flow exposes a clear request-first then resend/cooldown progression without ambiguous state changes. | goal + acceptance criteria           |
+| UX flow clarity                               | `target`     | First send, resend, cooldown, and failure states remain understandable and actionable.                       | acceptance criteria                  |
+| Visual design quality                         | `supporting` | Auth messaging stays visually aligned with the existing sign-in surface.                                     | scope review                         |
+| Business logic correctness and data integrity | `target`     | Cooldown cadence and session scoping remain deterministic across resend attempts.                            | implementation checkpoint + tests    |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                          | N/A                                  |
+| Accessibility (a11y)                          | `supporting` | Status and resend messaging remain readable and operable on the auth surface.                                | acceptance criteria                  |
+| Performance (CWV + payloads)                  | `supporting` | Cooldown hardening adds no material route regression.                                                        | validation                           |
+| Data placement and sync boundaries            | `target`     | Cooldown state is scoped to the active email/session context instead of leaking across unrelated sessions.   | scope + implementation checkpoint    |
+| Caching and invalidation strategy             | `supporting` | Session-scoped resend behavior avoids stale browser-state contradictions.                                    | implementation checkpoint            |
+| Reliability and failure handling              | `target`     | Resend failures preserve code-entry mode and avoid dead-end resets.                                          | acceptance criteria + implementation |
+| Security and authz                            | `supporting` | Existing auth throttling and provider boundaries remain intact.                                              | out-of-scope review                  |
+| Privacy and compliance                        | `supporting` | Session scoping avoids exposing cross-device/cross-user resend behavior.                                     | scope review                         |
+| Content governance                            | `supporting` | Cooldown copy remains consistent with sign-in terminology.                                                   | acceptance criteria                  |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                          | N/A                                  |
+| SEO and crawlability                          | `N/A`        | N/A                                                                                                          | N/A                                  |
+| AI discoverability                            | `N/A`        | N/A                                                                                                          | N/A                                  |
+| Analytics and KPI observability               | `supporting` | Resend and cooldown behavior remains diagnosable through existing auth test/log surfaces.                    | implementation checkpoint            |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                          | N/A                                  |
+| Incident response and support operations      | `supporting` | Auth resend failures become easier to reproduce and support through deterministic state handling.            | implementation checkpoint            |
+| Finance and reporting operations              | `N/A`        | N/A because this auth UX hardening does not change billing, payouts, or finance reconciliation.              | explicit scope rationale             |
+| i18n operational readiness                    | `supporting` | Cooldown states are expressed as stable, translatable auth messages.                                         | acceptance criteria                  |
+| Stack-fit and dependency discipline           | `target`     | Hardening stays within the current auth stack and helper/test patterns.                                      | scope + implementation checkpoint    |
+| Testing and QA automation                     | `target`     | Unit coverage protects resend sequencing, session scoping, and resilient code-entry behavior.                | validation + checkpoint log          |
+| Scalability and cost efficiency               | `supporting` | Session-scoped cooldown logic avoids unnecessary repeated auth requests.                                     | implementation checkpoint            |
+| DevOps and rollback readiness                 | `supporting` | UX hardening remains reversible without schema or provider rollback.                                         | completion record                    |
+
 ## Acceptance Criteria
 
 - First request shows success (`sent`) if send succeeds.

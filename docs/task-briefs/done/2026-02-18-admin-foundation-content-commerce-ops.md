@@ -47,6 +47,38 @@ Owner should be able to manage lessons, guides, products, and operational states
   - rollback to previous content version,
   - emergency content disable.
 
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                                | Evidence                            |
+| --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Product goals and IA                          | `target`     | Admin area gives one coherent internal workspace for content, commerce metadata, and operational controls.      | goal + scope                        |
+| UX flow clarity                               | `target`     | Owner can find create/edit/publish/product-management actions without ambiguous routing or hidden state.        | acceptance criteria + manual QA     |
+| Visual design quality                         | `supporting` | Admin UI remains clear, fast, and consistent with the existing product design language.                         | constraints + quality bar           |
+| Business logic correctness and data integrity | `target`     | CRUD, publish state, ordering, and role-gated mutations remain deterministic and audit-friendly.                | acceptance criteria + validation    |
+| Admin editor ergonomics                       | `target`     | Editors can complete common content and product updates with low-friction list/detail workflows.                | scope + quality bar                 |
+| Accessibility (a11y)                          | `target`     | Admin forms, tables, and destructive confirmations preserve labels, focus order, and keyboard access.           | quality bar                         |
+| Performance (CWV + payloads)                  | `target`     | Admin list/detail flows and public publish propagation stay within the briefed cache and payload guardrails.    | performance guardrails + validation |
+| Data placement and sync boundaries            | `target`     | Content/product source of truth is server-canonical and optimistic UI never hides failed writes.                | scope + acceptance criteria         |
+| Caching and invalidation strategy             | `target`     | Public reads revalidate deterministically after publish and admin edits do not leave stale public content.      | scope + acceptance criteria         |
+| Reliability and failure handling              | `target`     | Save/publish failures remain explicit and recoverable with no unexpected `500` or hidden data loss.             | acceptance criteria + observability |
+| Security and authz                            | `target`     | Admin APIs are deny-by-default, role-gated, and protected by server-side authorization plus RLS.                | security contract + validation      |
+| Privacy and compliance                        | `target`     | Admin workflows minimize PII exposure and keep GDPR-safe handling for user-related views.                       | security contract                   |
+| Content governance                            | `target`     | Draft/publish/version metadata and rollback runbooks create explicit editorial source-of-truth rules.           | scope + docs/runbook                |
+| Admin workflow and editability                | `target`     | Internal admin workflows are usable enough to replace code-deploy edits for core content and product metadata.  | goal + acceptance criteria          |
+| SEO and crawlability                          | `supporting` | Public-site metadata and crawl behavior remain stable while runtime content reads move behind admin controls.   | constraints                         |
+| AI discoverability                            | `supporting` | Admin foundation preserves the ability to manage structured public content without introducing private leakage. | scope review                        |
+| Analytics and KPI observability               | `supporting` | Admin save/publish/product-update actions remain observable for operations and product follow-up.               | observability contract              |
+| Commerce and revenue ops                      | `target`     | Product metadata editing stays available without breaking downstream plan/library surfaces.                     | acceptance criteria                 |
+| Incident response and support operations      | `supporting` | Runbooks support admin role assignment, rollback, and emergency content disable workflows.                      | scope + docs/runbook                |
+| Finance and reporting operations              | `supporting` | Commerce metadata management supports product operations without becoming a finance reconciliation system.      | scope + out-of-scope                |
+| i18n operational readiness                    | `supporting` | Admin labels and content models remain structured enough for later localization work.                           | constraints + quality bar           |
+| Stack-fit and dependency discipline           | `target`     | Admin foundation stays inside the current Next.js + Supabase stack without unnecessary CMS/vendor expansion.    | constraints + out-of-scope          |
+| Testing and QA automation                     | `target`     | Permission, CRUD, and admin login/edit/publish flows are protected by unit, integration, and e2e coverage.      | validation + checkpoint log         |
+| Scalability and cost efficiency               | `supporting` | List endpoints, cache strategy, and payload trimming keep admin/public runtime costs bounded.                   | scope + constraints                 |
+| DevOps and rollback readiness                 | `target`     | Publish rollback, emergency disable, and admin foundation slices are documented and reversible.                 | docs/runbook + checkpoint log       |
+
 ## Out Of Scope
 
 - No Strapi migration in this phase.
