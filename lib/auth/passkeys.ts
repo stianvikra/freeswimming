@@ -28,6 +28,26 @@ type BrowserPasskeySupport = {
   detail: string;
 };
 
+const PASSKEY_SERVER_ONLY_SUPPORT: BrowserPasskeySupport = {
+  supported: false,
+  detail: "Passkeys can only be checked in a browser session.",
+};
+
+const PASSKEY_INSECURE_CONTEXT_SUPPORT: BrowserPasskeySupport = {
+  supported: false,
+  detail: "Passkeys require a secure browser context.",
+};
+
+const PASSKEY_BROWSER_UNSUPPORTED_SUPPORT: BrowserPasskeySupport = {
+  supported: false,
+  detail: "This browser does not expose WebAuthn/passkey support.",
+};
+
+const PASSKEY_BROWSER_SUPPORTED_SUPPORT: BrowserPasskeySupport = {
+  supported: true,
+  detail: "This browser can attempt passkey setup and verification.",
+};
+
 type FactorRow = {
   id: string;
   factor_type?: string | null;
@@ -39,30 +59,18 @@ type FactorRow = {
 
 export function getBrowserPasskeySupport(): BrowserPasskeySupport {
   if (typeof window === "undefined") {
-    return {
-      supported: false,
-      detail: "Passkeys can only be checked in a browser session.",
-    };
+    return PASSKEY_SERVER_ONLY_SUPPORT;
   }
 
   if (!window.isSecureContext) {
-    return {
-      supported: false,
-      detail: "Passkeys require a secure browser context.",
-    };
+    return PASSKEY_INSECURE_CONTEXT_SUPPORT;
   }
 
   if (typeof window.PublicKeyCredential === "undefined") {
-    return {
-      supported: false,
-      detail: "This browser does not expose WebAuthn/passkey support.",
-    };
+    return PASSKEY_BROWSER_UNSUPPORTED_SUPPORT;
   }
 
-  return {
-    supported: true,
-    detail: "This browser can attempt passkey setup and verification.",
-  };
+  return PASSKEY_BROWSER_SUPPORTED_SUPPORT;
 }
 
 export function buildDefaultPasskeyFriendlyName(): string {

@@ -16,12 +16,17 @@ test.describe("auth sign-in ux", () => {
     });
     await page.goto(`/auth/sign-in?${params.toString()}`);
 
+    await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
+      "Passkeys on this device"
+    );
+    await expect(page.getByTestId("auth-passkey-readiness")).toContainText("Passkey-ready browser");
     await expect(page.getByTestId("auth-request-status")).toContainText(
-      "Sign-in email sent. Enter the code below."
+      "Sign-in code sent. Enter it below."
     );
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "If you don't see it, check your spam/junk folder."
     );
+    await expect(page.getByRole("heading", { name: "Enter sign-in code" })).toBeVisible();
     await expect(page.getByLabel("Email")).toHaveValue("test@freeswimming.org");
     await expect(page.getByLabel("Sign-in code")).toBeVisible();
     await expect(page.getByTestId("auth-resend-button")).toBeVisible();
@@ -59,6 +64,10 @@ test.describe("auth sign-in ux", () => {
     });
     await page.goto(`/auth/sign-in?${params.toString()}`);
 
+    await expect(page.getByRole("heading", { name: "Email code sign-in" })).toBeVisible();
+    await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
+      "Passkeys on this device"
+    );
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "Enter a valid email address."
     );
