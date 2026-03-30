@@ -176,12 +176,12 @@ test.describe("my library training context", () => {
 
     await expect(page.getByTestId("training-context-selected-goal")).toContainText(goalTitle);
     await expect(page.getByTestId("training-focus-goal-select")).toHaveValue(goalId!);
-    await expect(page.getByTestId("training-note-goal-select")).toHaveValue(goalId!);
     await expect(page.getByTestId("training-focus-form")).toHaveAttribute(
       "data-goal-intent-highlight",
       "true"
     );
     await expect(page.getByTestId("training-focus-intent-badge")).toBeVisible();
+    await expect(page.getByTestId("training-note-form-toggle")).toBeVisible();
 
     await page.getByTestId(`training-goal-context-use-note-${goalId}`).click();
     await expect(page.getByTestId("training-note-goal-select")).toHaveValue(goalId!);
@@ -225,7 +225,6 @@ test.describe("my library training context", () => {
     await waitForTrainingContextClientReady(page);
 
     await expect(page.getByTestId("training-context-selected-goal")).toContainText(goalTitle);
-    await expect(page.getByTestId("training-focus-goal-select")).toHaveValue(goalId);
     await expect(page.getByTestId("training-note-goal-select")).toHaveValue(goalId);
     await expect(page.getByTestId("training-note-form")).toHaveAttribute(
       "data-goal-intent-highlight",
@@ -233,7 +232,54 @@ test.describe("my library training context", () => {
     );
     await expect(page.getByTestId("training-note-intent-badge")).toBeVisible();
     await expect(page.getByText(/was selected from Goals for your next note\./i)).toBeVisible();
+    if (
+      (await page.getByTestId("training-focus-form-toggle").getAttribute("aria-expanded")) !==
+      "true"
+    ) {
+      await page.getByTestId("training-focus-form-toggle").click();
+    }
+    await expect(page.getByTestId("training-focus-goal-select")).toHaveValue(goalId);
 
     await archiveCreatedGoalIfNeeded(page, createdGoalTitle, goalId);
+  });
+
+  test("keeps focus and note drafts when the composers are collapsed and reopened", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await loginToMyLibraryViaDevBypass(page);
+    await page.goto("/my-library/training", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await expect(page.getByRole("heading", { name: "Focus & Notes", level: 1 })).toBeVisible();
+    await waitForTrainingContextClientReady(page);
+
+    if (
+      (await page.getByTestId("training-focus-form-toggle").getAttribute("aria-expanded")) !==
+      "true"
+    ) {
+      await page.getByTestId("training-focus-form-toggle").click();
+    }
+    await page.getByLabel("Focus title").fill("Hold the line into the catch");
+    await page.getByTestId("training-focus-form-toggle").click();
+    await expect(page.getByText("Draft ready: Hold the line into the catch")).toBeVisible();
+    await page.getByTestId("training-focus-form-toggle").click();
+    await expect(page.getByLabel("Focus title")).toHaveValue("Hold the line into the catch");
+
+    if (
+      (await page.getByTestId("training-note-form-toggle").getAttribute("aria-expanded")) !== "true"
+    ) {
+      await page.getByTestId("training-note-form-toggle").click();
+    }
+    await page
+      .getByRole("textbox", { name: "Observation" })
+      .fill("Breathing stayed calmer after the second rep.");
+    await page.getByTestId("training-note-form-toggle").click();
+    await expect(
+      page.getByText("Draft ready: Breathing stayed calmer after the second rep.")
+    ).toBeVisible();
+    await page.getByTestId("training-note-form-toggle").click();
+    await expect(page.getByRole("textbox", { name: "Observation" })).toHaveValue(
+      "Breathing stayed calmer after the second rep."
+    );
   });
 });

@@ -82,12 +82,12 @@ Choose a production-safe path for real passkeys on freeswimming.org, with explic
 ## Admin Notes Triage Disposition
 
 - This is a planned decision brief, not a new implementation slice.
-- It inherits the same-day auth/security production-note review already recorded in [2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md): no open production admin note was found to directly own passkey, WebAuthn, sign-in, or site-lock auth scope at that review time.
+- It inherits the same-day auth/security production-note review already recorded in [2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md): no open production admin note was found to directly own passkey, WebAuthn, sign-in, or site-lock auth scope at that review time.
 - Before any implementation starts under this planned brief, production admin-note triage must be rerun against the live queue and recorded explicitly in the implementation brief.
 
 ## Dependencies And Boundaries
 
-- Current truthful auth copy and live UX remain owned by [2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md).
+- Current truthful auth copy and live UX baseline were established by [2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md).
 - This brief owns:
   - architecture comparison,
   - security/recovery/rollback decision criteria,

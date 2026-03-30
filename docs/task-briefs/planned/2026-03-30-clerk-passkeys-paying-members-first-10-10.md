@@ -35,7 +35,7 @@ Ship a production-safe first real passkey rollout using Clerk for paying subscri
 ## Dependencies And Boundaries
 
 - This brief depends on [2026-03-30-real-passkeys-architecture-decision-and-rollout-gate-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-03-30-real-passkeys-architecture-decision-and-rollout-gate-10-10.md) being explicitly accepted with `Clerk` still chosen.
-- Current truthful auth behavior remains owned by [2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md) until this rollout actually starts.
+- Current truthful auth behavior baseline was established by [2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-30-passkey-first-sign-in-and-admin-site-lock-unlock-10-10.md) and stays the live contract until this rollout actually starts.
 - This brief owns:
   - provider-specific member migration planning,
   - identity/entitlement linkage rules,
