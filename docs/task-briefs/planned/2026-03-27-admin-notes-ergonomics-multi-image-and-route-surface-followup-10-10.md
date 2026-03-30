@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
-- `updated`: `2026-03-27`
+- `updated`: `2026-03-30`
 
 ## Goal
 
@@ -17,6 +17,7 @@ Close the remaining operator-facing admin-notes ergonomics gaps after the quick-
 - Core notes workflows, quick capture, clipboard/image intake, and linking are already shipped, but real usage still exposes a smaller follow-up wave.
 - The current gaps are tightly related:
   - only one pre-save image in quick note/contextual add note,
+  - pasting or uploading another screenshot currently replaces the staged image instead of appending it,
   - uncertainty around what quick note should do after save,
   - incomplete route-surface rollout for quick capture,
   - attachment metadata/agent-readiness expectations not yet made explicit enough in operator flows.
@@ -41,7 +42,7 @@ Production admin notes reviewed against this brief on `2026-03-27`:
 
 - `0d1fa716-460e-406a-a68d-28c1aaae5b22` `Mulitple Screenshots`
   - disposition: owned by this brief.
-  - reason: pre-save multi-image evidence is the clearest remaining operator gap in quick note/contextual capture.
+  - reason: pre-save multi-image evidence is the clearest remaining operator gap in quick note/contextual capture, including repeated clipboard-paste or upload flows appending instead of replacing earlier staged screenshots.
 - `40b252d8-ee9f-41ed-89ca-0eb5af8bcc89` `Quick note`
   - disposition: owned by this brief.
   - reason: post-save reuse, top-of-page access expectations, and continued capture flow belong in the same ergonomics wave.
@@ -159,7 +160,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Acceptance Criteria
 
-1. Quick note and contextual `Add note` can stage more than one image before save with clear limit/error handling.
+1. Quick note and contextual `Add note` can stage more than one image before save with clear limit/error handling, including repeated clipboard-paste or upload actions appending to the staged list instead of replacing the earlier screenshot unless the operator explicitly removes it.
 2. After a quick note is saved, the next-step behavior is explicit and optimized for repeated capture rather than forcing the owner to rebuild the same flow manually.
 3. Quick capture route-surface availability is documented and implemented intentionally for the chosen surfaces.
 4. Attachment metadata shown to operators is rich enough that saved evidence remains understandable later without opening raw storage details.
@@ -283,4 +284,5 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-30 | working tree | refined the planned follow-up brief so repeated screenshot paste/upload append behavior is explicit in the problem statement, admin-note triage, and acceptance criteria while keeping the owned scope unchanged | next: keep this planned until the repeated-capture loop and route-surface matrix are chosen for implementation`
 - `2026-03-27 | planning | created a dedicated admin-notes ergonomics follow-up brief to own the remaining production-note batch around multi-image pre-save evidence, quick-note post-save reuse, route-surface rollout, and attachment metadata/agent-readiness expectations | next: confirm the desired repeated-capture workflow and route-surface matrix before implementation starts`

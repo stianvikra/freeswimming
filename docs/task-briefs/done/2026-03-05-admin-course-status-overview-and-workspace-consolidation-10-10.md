@@ -71,7 +71,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 | Analytics and KPI observability               | `supporting` | N/A                                                                                                        | N/A                                 |
 | Commerce and revenue ops                      | `N/A`        | N/A                                                                                                        | N/A                                 |
 | Incident response and support operations      | `supporting` | N/A                                                                                                        | help-center copy update             |
-| Finance and reporting operations              | `N/A`        | N/A                                                                                                        | N/A                                 |
+| Finance and reporting operations              | `N/A`        | N/A because this admin workspace/status slice does not change billing, payouts, or finance reconciliation. | explicit scope rationale            |
 | i18n operational readiness                    | `supporting` | New labels and status text remain i18n-safe (single-source constants, no logic coupling to raw copy).      | code review                         |
 | Stack-fit and dependency discipline           | `target`     | No new dependency added; implementation remains Next/React/Tailwind native.                                | dependency diff                     |
 | Testing and QA automation                     | `target`     | Existing admin workspace e2e tests updated and passing with new status/visibility behavior.                | `npm run verify:pre-pr` evidence    |

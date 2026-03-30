@@ -66,7 +66,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 | Analytics and KPI observability               | `supporting` | N/A                                                                                              | N/A                              |
 | Commerce and revenue ops                      | `N/A`        | N/A                                                                                              | N/A                              |
 | Incident response and support operations      | `supporting` | Help text remains aligned with actual UI controls after tab split.                               | help center e2e                  |
-| Finance and reporting operations              | `N/A`        | N/A                                                                                              | N/A                              |
+| Finance and reporting operations              | `N/A`        | N/A because this admin IA split does not change billing, payouts, or finance reconciliation.     | explicit scope rationale         |
 | i18n operational readiness                    | `supporting` | New labels use stable constants/text without coupling logic to free-form strings.                | code review                      |
 | Stack-fit and dependency discipline           | `target`     | No new dependency introduced.                                                                    | dependency diff                  |
 | Testing and QA automation                     | `target`     | Admin content e2e suite updated for tab flow and passes in pre-pr gate.                          | `npm run verify:pre-pr` evidence |

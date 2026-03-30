@@ -58,6 +58,38 @@ Engaged learners should get a high-quality, non-intrusive install experience tha
   - platform-specific fallback behavior,
   - basic accessibility semantics.
 
+## Platform 10/10 Scorecard Mapping (Required)
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                              | Evidence                              |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Product goals and IA                          | `target`     | Install UX provides one contextual entry point and one persistent manual entry point with no hidden path.     | scope + completion record             |
+| UX flow clarity                               | `target`     | Users can understand install, dismiss, and manual re-entry behavior in one scan on supported platforms.       | acceptance criteria + manual QA       |
+| Visual design quality                         | `target`     | Prompt and menu entry stay aligned with existing FreeSwimming hierarchy and mobile-first spacing.             | UX quality bar + delivered changes    |
+| Business logic correctness and data integrity | `target`     | Trigger, cooldown, installed-state, and dismissal rules remain deterministic across supported browsers.       | unit + e2e tests                      |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                           | N/A                                   |
+| Accessibility (a11y)                          | `target`     | Prompt and menu actions preserve labels, focus handling, keyboard access, and contrast requirements.          | acceptance criteria + test coverage   |
+| Performance (CWV + payloads)                  | `supporting` | Install UX adds no material regression to changed routes.                                                     | validation + post-merge notes         |
+| Data placement and sync boundaries            | `target`     | Install dismissal/install state remains browser-local and is never treated as canonical server data.          | scope + install rules                 |
+| Caching and invalidation strategy             | `supporting` | Manifest/service-worker behavior stays aligned with install eligibility and installed-state handling.         | delivered changes                     |
+| Reliability and failure handling              | `target`     | Prompt only appears in eligible states and degrades to clear fallback guidance when native prompt is missing. | acceptance criteria + e2e             |
+| Security and authz                            | `supporting` | No auth or admin boundary changes are introduced by the client-side install surfaces.                         | scope review                          |
+| Privacy and compliance                        | `supporting` | Install state persistence uses minimal browser storage and no new personal data collection.                   | scope + success metrics               |
+| Content governance                            | `supporting` | Install labels and guidance remain consistent across prompt and menu surfaces.                                | scope + delivered changes             |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                           | N/A                                   |
+| SEO and crawlability                          | `supporting` | Manifest/icon additions preserve existing public metadata behavior.                                           | delivered changes                     |
+| AI discoverability                            | `N/A`        | N/A                                                                                                           | N/A                                   |
+| Analytics and KPI observability               | `target`     | Install prompt interaction states remain measurable when analytics hooks exist.                               | success metrics                       |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                           | N/A                                   |
+| Incident response and support operations      | `supporting` | Kill-switch and rollback notes preserve a fast support path if prompt behavior regresses.                     | success metrics + post-merge notes    |
+| Finance and reporting operations              | `N/A`        | N/A because this install UX slice does not change billing, payouts, or finance reconciliation.                | explicit scope rationale              |
+| i18n operational readiness                    | `supporting` | Install copy stays short and platform-specific without coupling logic to one locale.                          | UX quality bar                        |
+| Stack-fit and dependency discipline           | `target`     | Install experience stays within current Next.js/PWA patterns without unnecessary dependency growth.           | delivered changes + dependency review |
+| Testing and QA automation                     | `target`     | Unit and e2e coverage protect trigger, cooldown, manual install, and installed-state behavior.                | testing and stability work            |
+| Scalability and cost efficiency               | `supporting` | Client-side install UX avoids meaningful new server load or runaway runtime cost.                             | architecture review                   |
+| DevOps and rollback readiness                 | `supporting` | Feature-flag and merge notes keep rollout and rollback reversible.                                            | success metrics + post-merge notes    |
+
 ## 10/10 UX/UI Quality Bar
 
 - The prompt must feel like a natural continuation of the existing FreeSwimming visual system.

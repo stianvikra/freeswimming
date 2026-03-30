@@ -154,10 +154,38 @@ FreeSwimming should have a production-grade PWA baseline: installable on support
 - `merge`: source branch -> target branch
 - `result`: short outcome summary
 
-## Platform 10/10 Scorecard Linkage
+## Platform 10/10 Scorecard Mapping (Required)
 
-- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
-- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                                | Evidence                                  |
+| --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Product goals and IA                          | `target`     | Install, installed-state, and offline fallback form one coherent PWA foundation with no hidden dependency path. | goal + scope                              |
+| UX flow clarity                               | `target`     | Users can understand install availability, installed-state, offline fallback, and recovery actions in one scan. | acceptance criteria + manual QA           |
+| Visual design quality                         | `target`     | Install and offline fallback surfaces stay branded, mobile-first, and aligned with the current design system.   | quality bar                               |
+| Business logic correctness and data integrity | `target`     | Install eligibility, installed-state suppression, and fallback routing remain deterministic.                    | acceptance criteria + validation          |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                             | N/A                                       |
+| Accessibility (a11y)                          | `target`     | Install and offline surfaces preserve focus, labels, keyboard access, and clear status messaging.               | quality bar + tests                       |
+| Performance (CWV + payloads)                  | `target`     | PWA baseline avoids measurable CWV regression while adding shell/offline support.                               | constraints + acceptance criteria         |
+| Data placement and sync boundaries            | `target`     | Local cache/install state remain support layers only; server state stays source of truth.                       | constraints + scope                       |
+| Caching and invalidation strategy             | `target`     | Versioned app-shell caching and outdated-cache cleanup remain explicit and safe.                                | scope                                     |
+| Reliability and failure handling              | `target`     | Network-fail plus cache-miss paths never strand users on blank or broken screens.                               | acceptance criteria + quality bar         |
+| Security and authz                            | `supporting` | PWA baseline does not weaken existing auth or sensitive-route protections.                                      | constraints                               |
+| Privacy and compliance                        | `supporting` | Baseline PWA support avoids new sensitive client persistence beyond install/cache needs.                        | constraints                               |
+| Content governance                            | `supporting` | Install/offline copy and labels remain consistent across entry points.                                          | scope                                     |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                             | N/A                                       |
+| SEO and crawlability                          | `supporting` | Manifest and offline surfaces preserve expected public-route metadata behavior.                                 | scope review                              |
+| AI discoverability                            | `N/A`        | N/A                                                                                                             | N/A                                       |
+| Analytics and KPI observability               | `supporting` | Install/offline state changes remain measurable when hooks exist.                                               | scope                                     |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                             | N/A                                       |
+| Incident response and support operations      | `supporting` | Fallback and rollback expectations stay explicit enough for operational support.                                | quality bar + automation contract         |
+| Finance and reporting operations              | `N/A`        | N/A because this PWA foundation brief does not change billing, payouts, or finance reconciliation.              | explicit scope rationale                  |
+| i18n operational readiness                    | `supporting` | Install/offline copy stays concise and structurally ready for later localization.                               | quality bar                               |
+| Stack-fit and dependency discipline           | `target`     | PWA baseline stays within current manifest/service-worker architecture without unnecessary dependency growth.   | scope + constraints                       |
+| Testing and QA automation                     | `target`     | Manifest, install, installed-state, and offline fallback behavior are protected by unit and e2e coverage.       | validation                                |
+| Scalability and cost efficiency               | `supporting` | Lightweight caching/service-worker rules avoid runaway client or server cost.                                   | constraints                               |
+| DevOps and rollback readiness                 | `target`     | PWA foundation includes explicit rollback-safe caching/versioning behavior and repeatable gate expectations.    | acceptance criteria + automation contract |
+
 - Closeout must record achieved score (`0-5`) for each target category.
 
 ## Automation Execution Contract

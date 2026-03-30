@@ -57,16 +57,33 @@ Improve `My Library` new-content notice UX so it stays visible until explicit di
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Mapping      | Target Threshold                                                                 | Evidence                 |
-| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------- | ------------------------ |
-| UX flow clarity                               | `target`     | Notice remains until explicit dismiss and actions are unambiguous.               | e2e + manual QA          |
-| Visual design quality                         | `target`     | List + controls stay readable and aligned with existing library visual language. | visual QA                |
-| Business logic correctness and data integrity | `target`     | Only truly new lessons are listed and linked; dismiss reliably persists seen.    | unit tests               |
-| Data placement and sync boundaries            | `target`     | Seen state remains local-only and server signal remains canonical.               | code review + tests      |
-| Reliability and failure handling              | `target`     | Error/retry states still keep library usable with no false dismiss behavior.     | unit + e2e negative path |
-| Security and authz                            | `supporting` | User-scoped behavior with no cross-user leakage.                                 | existing route tests     |
-| Analytics and KPI observability               | `target`     | Explicit analytics for shown/open/dismiss with updated payload semantics.        | unit assertions/logs     |
-| Testing and QA automation                     | `target`     | Unit + e2e cover sticky visibility and linked-list interactions.                 | CI/local evidence        |
+| Category                                      | Mapping      | Target Threshold                                                                                               | Evidence                 |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Product goals and IA                          | `target`     | Sticky notice plus direct lesson links make the library’s new-content affordance self-explanatory.             | acceptance criteria + QA |
+| UX flow clarity                               | `target`     | Notice remains until explicit dismiss and actions are unambiguous.                                             | e2e + manual QA          |
+| Visual design quality                         | `target`     | List + controls stay readable and aligned with existing library visual language.                               | visual QA                |
+| Business logic correctness and data integrity | `target`     | Only truly new lessons are listed and linked; dismiss reliably persists seen.                                  | unit tests               |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                            | N/A                      |
+| Accessibility (a11y)                          | `target`     | Sticky notice, list items, dismiss, and deep links remain keyboard and screen-reader friendly.                 | e2e + manual QA          |
+| Performance (CWV + payloads)                  | `supporting` | Sticky behavior and linked-list rendering avoid material `/my-library` regressions.                            | route checks             |
+| Data placement and sync boundaries            | `target`     | Seen state remains local-only and server signal remains canonical.                                             | code review + tests      |
+| Caching and invalidation strategy             | `target`     | Sticky visibility and lesson-list diff update deterministically when signal state changes.                     | unit + e2e tests         |
+| Reliability and failure handling              | `target`     | Error/retry states still keep library usable with no false dismiss behavior.                                   | unit + e2e negative path |
+| Security and authz                            | `supporting` | User-scoped behavior with no cross-user leakage.                                                               | existing route tests     |
+| Privacy and compliance                        | `supporting` | New-content signal and lesson metadata stay scoped to the signed-in learner.                                   | existing route tests     |
+| Content governance                            | `supporting` | Lesson-list labels stay aligned with the canonical published-lesson signal model.                              | code review              |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                            | N/A                      |
+| SEO and crawlability                          | `N/A`        | N/A                                                                                                            | N/A                      |
+| AI discoverability                            | `N/A`        | N/A                                                                                                            | N/A                      |
+| Analytics and KPI observability               | `target`     | Explicit analytics for shown/open/dismiss with updated payload semantics.                                      | unit assertions/logs     |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                            | N/A                      |
+| Incident response and support operations      | `supporting` | Sticky notice behavior remains supportable when users report missing or repeated freshness cues.               | checkpoint log           |
+| Finance and reporting operations              | `N/A`        | N/A because this private-library notice follow-up does not change billing, payouts, or finance reconciliation. | explicit scope rationale |
+| i18n operational readiness                    | `supporting` | Notice and lesson-link labels remain structurally ready for later localization.                                | code review              |
+| Stack-fit and dependency discipline           | `supporting` | Sticky behavior reuses the existing notice/signal model instead of adding new client infrastructure.           | code review              |
+| Testing and QA automation                     | `target`     | Unit + e2e cover sticky visibility and linked-list interactions.                                               | CI/local evidence        |
+| Scalability and cost efficiency               | `supporting` | Linked-list diff behavior stays lightweight and bounded to existing library data.                              | code review              |
+| DevOps and rollback readiness                 | `supporting` | UI-only follow-up remains reversible through normal PR rollback if needed.                                     | checkpoint log           |
 
 ## Acceptance Criteria
 

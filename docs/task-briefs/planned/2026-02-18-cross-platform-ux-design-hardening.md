@@ -199,11 +199,37 @@ State scope or `N/A` for each category during implementation and closeout:
 - `merge`: source -> target
 - `result`: short summary
 
-## Platform 10/10 Scorecard Linkage
+## Platform 10/10 Scorecard Mapping (Required)
 
-- Canonical reference: `docs/quality/platform-10-10-scorecard.md`.
-- This brief must mark scorecard categories as `target`/`supporting`/`N/A` and define measurable thresholds for each `target`.
-- Closeout must record achieved score (`0-5`) for each target category.
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+| Category                                      | Mapping      | Target Threshold                                                                                                 | Evidence                             |
+| --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Product goals and IA                          | `target`     | Core routes preserve one clear primary action and readable structure across the supported device/browser matrix. | goal + acceptance criteria           |
+| UX flow clarity                               | `target`     | Navigation, auth, checkout entry, guides, and library flows remain understandable on phone, tablet, and desktop. | scope + manual QA matrix             |
+| Visual design quality                         | `target`     | Typography, spacing, contrast, and component states remain polished and consistent at every breakpoint.          | scope + quality bar                  |
+| Business logic correctness and data integrity | `supporting` | UX hardening does not introduce hidden state changes or contradictory UI behavior.                               | acceptance criteria                  |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                              | N/A                                  |
+| Accessibility (a11y)                          | `target`     | Keyboard access, focus visibility, semantics, contrast, and tap-target quality stay intact across devices.       | scope + quality bar                  |
+| Performance (CWV + payloads)                  | `target`     | Cross-platform polish avoids measurable regression on changed core routes.                                       | constraints + validation             |
+| Data placement and sync boundaries            | `supporting` | UX fixes preserve existing local-vs-server ownership rather than introducing new data authority.                 | scope review                         |
+| Caching and invalidation strategy             | `supporting` | Responsive and device-specific fixes avoid stale or mode-specific rendering regressions.                         | regression guardrails                |
+| Reliability and failure handling              | `target`     | Changed routes keep coherent `loading`, `empty`, `error`, `offline`, and `retry` states across the full matrix.  | acceptance criteria + quality bar    |
+| Security and authz                            | `supporting` | UX changes do not weaken auth or payment boundaries.                                                             | security contract                    |
+| Privacy and compliance                        | `supporting` | Responsive/debug fixes do not leak private data in UI states or overlays.                                        | security contract                    |
+| Content governance                            | `supporting` | Cross-platform copy and structure remain consistent with canonical route intent.                                 | scope review                         |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                              | N/A                                  |
+| SEO and crawlability                          | `supporting` | Public-route UX hardening preserves existing crawlable structure and metadata output.                            | ownership split                      |
+| AI discoverability                            | `supporting` | Public-route clarity and readable structure support stable AI-consumable surface semantics.                      | ownership split                      |
+| Analytics and KPI observability               | `supporting` | Cross-platform regressions remain observable through UX health indicators and completion-rate signals.           | observability and KPI contract       |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                              | N/A                                  |
+| Incident response and support operations      | `supporting` | Device/browser QA checklist becomes repeatable enough for ongoing support and regression triage.                 | acceptance criteria + final closeout |
+| Finance and reporting operations              | `N/A`        | N/A because this cross-platform UX brief does not change billing, payouts, or finance reconciliation.            | explicit scope rationale             |
+| i18n operational readiness                    | `supporting` | Layout and hierarchy hardening preserve room for later localization across breakpoints.                          | scope + quality bar                  |
+| Stack-fit and dependency discipline           | `target`     | UX hardening relies on current stack patterns and avoids heavy new UI dependencies.                              | constraints                          |
+| Testing and QA automation                     | `target`     | Screenshot baselines, visual diffs, and e2e/manual matrix together protect cross-platform regressions.           | scope + validation                   |
+| Scalability and cost efficiency               | `supporting` | Visual/interaction hardening avoids introducing expensive client/runtime overhead.                               | constraints                          |
+| DevOps and rollback readiness                 | `supporting` | Changes remain sliceable and reversible without data or schema rollback.                                         | git rhythm + final closeout gate     |
 
 ## Automation Execution Contract
 

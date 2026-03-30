@@ -65,18 +65,33 @@ Logged-in learners get a clear, low-friction notice in `My Library` when new `pu
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Mapping      | Target Threshold                                                                 | Evidence                   |
-| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------- | -------------------------- |
-| UX flow clarity                               | `target`     | Notice is non-blocking, self-explanatory, and dismissible in one click.          | e2e + manual QA            |
-| Visual design quality                         | `target`     | Banner follows existing library visual language, hierarchy, and spacing.         | visual QA checklist        |
-| Business logic correctness and data integrity | `target`     | Banner appears only when signature mismatch exists; never for unchanged content. | unit tests                 |
-| Data placement and sync boundaries            | `target`     | Local seen state and server signature boundaries implemented exactly as briefed. | code review + tests        |
-| Reliability and failure handling              | `target`     | If signature fetch fails, page remains usable and no false-positive banner spam. | unit + e2e negative-path   |
-| Security and authz                            | `supporting` | Seen state is user-scoped; no cross-user leakage.                                | test assertions            |
-| Performance (CWV + payloads)                  | `supporting` | No measurable regression on `/my-library` route-level user timing.               | verify + profiler sample   |
-| Analytics and KPI observability               | `target`     | Events emitted for notice shown, CTA clicked, and mark-seen action.              | analytics tests/log review |
-| Testing and QA automation                     | `target`     | Unit + e2e coverage for show/hide/dismiss/new-content transitions.               | CI test evidence           |
-| DevOps and rollback readiness                 | `supporting` | Feature can be disabled safely behind runtime flag if needed.                    | code path review           |
+| Category                                      | Mapping      | Target Threshold                                                                                           | Evidence                   |
+| --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Product goals and IA                          | `target`     | `My Library` clearly communicates when fresh content is available without blocking normal resume behavior. | acceptance criteria + QA   |
+| UX flow clarity                               | `target`     | Notice is non-blocking, self-explanatory, and dismissible in one click.                                    | e2e + manual QA            |
+| Visual design quality                         | `target`     | Banner follows existing library visual language, hierarchy, and spacing.                                   | visual QA checklist        |
+| Business logic correctness and data integrity | `target`     | Banner appears only when signature mismatch exists; never for unchanged content.                           | unit tests                 |
+| Admin editor ergonomics                       | `N/A`        | N/A                                                                                                        | N/A                        |
+| Accessibility (a11y)                          | `target`     | Banner copy, CTA, and dismiss control remain keyboard-readable and screen-reader friendly.                 | e2e + visual QA            |
+| Data placement and sync boundaries            | `target`     | Local seen state and server signature boundaries implemented exactly as briefed.                           | code review + tests        |
+| Caching and invalidation strategy             | `target`     | Signature refresh and dismiss persistence avoid stale or false-positive notice states.                     | unit + e2e tests           |
+| Reliability and failure handling              | `target`     | If signature fetch fails, page remains usable and no false-positive banner spam.                           | unit + e2e negative-path   |
+| Security and authz                            | `supporting` | Seen state is user-scoped; no cross-user leakage.                                                          | test assertions            |
+| Privacy and compliance                        | `supporting` | Notice state and signature checks avoid exposing private lesson or user data across accounts.              | test assertions            |
+| Content governance                            | `supporting` | Notice wording stays aligned with the canonical new-content signal contract.                               | code review                |
+| Admin workflow and editability                | `N/A`        | N/A                                                                                                        | N/A                        |
+| SEO and crawlability                          | `N/A`        | N/A                                                                                                        | N/A                        |
+| AI discoverability                            | `N/A`        | N/A                                                                                                        | N/A                        |
+| Performance (CWV + payloads)                  | `supporting` | No measurable regression on `/my-library` route-level user timing.                                         | verify + profiler sample   |
+| Analytics and KPI observability               | `target`     | Events emitted for notice shown, CTA clicked, and mark-seen action.                                        | analytics tests/log review |
+| Commerce and revenue ops                      | `N/A`        | N/A                                                                                                        | N/A                        |
+| Incident response and support operations      | `supporting` | Notice behavior remains diagnosable for support when library freshness reports seem wrong.                 | checkpoint log             |
+| Finance and reporting operations              | `N/A`        | N/A because this private-library notice slice does not change billing, payouts, or finance reconciliation. | explicit scope rationale   |
+| i18n operational readiness                    | `supporting` | Notice labels remain concise and structurally localizable later.                                           | code review                |
+| Stack-fit and dependency discipline           | `supporting` | Signal and notice behavior reuse existing library/auth patterns without extra platform dependencies.       | code review                |
+| Testing and QA automation                     | `target`     | Unit + e2e coverage for show/hide/dismiss/new-content transitions.                                         | CI test evidence           |
+| Scalability and cost efficiency               | `supporting` | Signature-based notice checks stay lightweight and avoid heavy per-user computation.                       | code review                |
+| DevOps and rollback readiness                 | `supporting` | Feature can be disabled safely behind runtime flag if needed.                                              | code path review           |
 
 ## Acceptance Criteria
 
