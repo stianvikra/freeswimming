@@ -111,7 +111,7 @@ test.describe("admin help center", () => {
     await expect(page.getByText("Visible note ID:")).toBeVisible();
     await expect(page.getByText("Priority:")).toBeVisible();
     await expect(page.getByText("Add images / Delete image:")).toBeVisible();
-    await expect(page.getByText("Paste image from clipboard / Upload image:")).toBeVisible();
+    await expect(page.getByText("Paste image from clipboard / Upload images:")).toBeVisible();
     await expect(page.getByText("Link note / Remove link:")).toBeVisible();
     await expect(page.getByText("Open lock operations workflow:")).toBeVisible();
     await expect(page.getByText("Open password page:")).toBeVisible();
@@ -152,12 +152,22 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload image` if you already have the file."
+        "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload images` if you already have the files."
       )
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload image`."
+        "You can stage up to six pre-save images on create flows, and repeated paste/upload appends instead of replacing the earlier screenshots."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload images`."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "After a successful Quick note save, the panel stays open and ready for another note on the same locked context so you can keep capturing without reopening it."
       )
     ).toBeVisible();
     await expect(

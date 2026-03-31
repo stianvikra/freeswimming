@@ -298,10 +298,18 @@ test.describe("admin notes workflow", () => {
     await expect(
       createForm.getByRole("button", { name: "Paste image from clipboard" })
     ).toBeVisible();
-    await expect(createForm.getByLabel("Upload image")).toBeVisible();
+    await expect(createForm.getByLabel("Upload images")).toBeVisible();
     await expect(createForm.getByRole("button", { name: "Capture screenshot" })).toHaveCount(0);
     await createForm.getByRole("button", { name: "Paste image from clipboard" }).click();
-    await expect(createForm.getByText("Image ready to attach")).toBeVisible({ timeout: 10_000 });
+    await expect(createForm.getByText("1 image ready to attach")).toBeVisible({ timeout: 10_000 });
+    await createForm.getByLabel("Upload images").setInputFiles({
+      name: "uploaded-proof-2.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(TINY_PNG_BASE64, "base64"),
+    });
+    await expect(createForm.getByText("2 images ready to attach")).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(createForm.getByLabel("Category")).toHaveValue("Incident P1");
     await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Category").fill("Operations");
@@ -381,7 +389,7 @@ test.describe("admin notes workflow", () => {
       );
     }
 
-    await expect(page.getByText("Note saved with image attached.")).toBeVisible({
+    await expect(page.getByText("Note saved with images attached.")).toBeVisible({
       timeout: 5_000,
     });
 
@@ -391,7 +399,7 @@ test.describe("admin notes workflow", () => {
     await expect(createdItem).toContainText(body);
     await expect(createdItem).toContainText("High");
     await expect(createdItem).toContainText("Course Lesson:");
-    await expect(createdItem).toContainText("1 image");
+    await expect(createdItem).toContainText("2 images");
     const noteIdText = await createdItem.getByTestId("admin-note-id").textContent();
     const noteId = noteIdText?.replace("Note ID", "").trim() ?? "";
     expect(noteId.length).toBeGreaterThan(5);
@@ -522,7 +530,7 @@ test.describe("admin notes workflow", () => {
       test.skip(true, `Admin notes image upload is not ready in this environment (${reason}).`);
     }
 
-    await expect(updatedItem).toContainText("2 images");
+    await expect(updatedItem).toContainText("3 images");
 
     await attachmentsEditForm
       .getByTestId("admin-note-related-select")

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   extractAdminNoteClipboardImage,
   prepareAdminNoteImageFile,
+  prepareAdminNoteImageFiles,
   readAdminNoteClipboardImageFromNavigator,
 } from "@/lib/admin/note-compose";
 
@@ -115,6 +116,40 @@ describe("prepareAdminNoteImageFile", () => {
     expect(result).toEqual({
       ok: false,
       error: "Only PNG, JPEG, WEBP, and GIF images are allowed.",
+    });
+  });
+});
+
+describe("prepareAdminNoteImageFiles", () => {
+  it("prepares multiple uploaded images while preserving order", () => {
+    const result = prepareAdminNoteImageFiles({
+      files: [
+        new File(["png"], "first.png", { type: "image/png" }),
+        new File(["png"], "second.png", { type: "image/png" }),
+      ],
+      currentCount: 1,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error("Expected multiple image preparation to succeed.");
+    }
+
+    expect(result.files.map((file) => file.name)).toEqual(["first.png", "second.png"]);
+  });
+
+  it("rejects batches that would exceed the staged image cap", () => {
+    const result = prepareAdminNoteImageFiles({
+      files: [
+        new File(["png"], "first.png", { type: "image/png" }),
+        new File(["png"], "second.png", { type: "image/png" }),
+      ],
+      currentCount: 5,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "You can stage up to 6 images per note. Remove one before adding more.",
     });
   });
 });

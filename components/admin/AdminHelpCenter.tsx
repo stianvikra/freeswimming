@@ -391,12 +391,12 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Quick note",
         meaning:
-          "Opens the lightweight quick-capture utility panel so you can save a route-aware note, optionally paste one clipboard image or upload one image, and keep the page underneath interactive while you work.",
+          "Opens the lightweight quick-capture utility panel so you can save a route-aware note, stage up to six screenshots before save, and keep the page underneath interactive while you work.",
       },
       {
         label: "Collapse / Resume quick note",
         meaning:
-          "Temporarily slides the quick-note draft out to the right edge without discarding text or the staged image. Reopen it from the slim edge handle when you are ready to continue.",
+          "Temporarily slides the quick-note draft out to the right edge without discarding text or the staged images. Reopen it from the slim edge handle when you are ready to continue.",
       },
       {
         label: "Use P0 template / Use P1 template / Use P2 template",
@@ -424,9 +424,9 @@ const BUTTON_GUIDE: ActionGroup[] = [
           "Attach admin-only screenshots or other note images, or fall back here when clipboard paste is not the best fit. Delete must remove both note metadata and the underlying stored image.",
       },
       {
-        label: "Paste image from clipboard / Upload image",
+        label: "Paste image from clipboard / Upload images",
         meaning:
-          "Makes image entry explicit: either copy a screenshot/image first and paste it from clipboard, or upload a file directly without relying on hidden keyboard memory.",
+          "Makes image entry explicit: either copy a screenshot/image first and paste it from clipboard, or upload one or more files directly without relying on hidden keyboard memory.",
       },
       {
         label: "Link note / Remove link",
@@ -436,7 +436,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Save note / Save changes / Delete",
         meaning:
-          "Creates, updates, or removes task notes with route/content context. Contextual `Add note` stays at the top of the panel and collapses once notes exist so you can review first, then reopen compose only when needed. Create and Quick note can stage one pasted/uploaded image before first save; Edit can add/remove more images and related-note links later.",
+          "Creates, updates, or removes task notes with route/content context. Contextual `Add note` stays at the top of the panel and collapses once notes exist so you can review first, then reopen compose only when needed. Create and Quick note can stage up to six pasted/uploaded images before first save; successful Quick note saves stay ready for another note on the same locked context; Edit can add/remove more images and related-note links later.",
       },
       {
         label: "Save category / Delete",
@@ -571,8 +571,10 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "If you navigate to another supported admin/context surface before saving, the same draft can follow you, but it stays attached to the original locked context shown in the panel.",
       "Use the top `Add note` section when you want full fields in place; if notes already exist it stays collapsed until you expand it again.",
       "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
-      "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload image` if you already have the file.",
-      "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload image`.",
+      "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload images` if you already have the files.",
+      "You can stage up to six pre-save images on create flows, and repeated paste/upload appends instead of replacing the earlier screenshots.",
+      "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload images`.",
+      "After a successful Quick note save, the panel stays open and ready for another note on the same locked context so you can keep capturing without reopening it.",
       `If a note title starts with \`${ADMIN_NOTE_TEST_ARTIFACT_PREFIX}\`, it is automated test residue and should clear automatically; if it stays open, use the admin-notes recovery runbook before deleting anything manually.`,
       "On mobile, the two image actions stay visible so you do not need to remember hidden paste shortcuts.",
       "Link any follow-up note instead of pasting duplicate text.",
@@ -899,7 +901,7 @@ export default function AdminHelpCenter() {
             </p>
             <p className="mt-1 text-sm text-amber-800">
               Confirm the screenshot was copied first. If clipboard access is blocked or upload
-              still fails, keep the note ID, refresh Notes, and use Upload image or the admin-notes
+              still fails, keep the note ID, refresh Notes, and use Upload images or the admin-notes
               recovery runbook.
             </p>
           </article>
