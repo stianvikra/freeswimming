@@ -35,7 +35,10 @@ describe("AdminPreviewUnlockCard", () => {
 
     expect(screen.getByTestId("admin-preview-unlock-card")).toHaveTextContent("Admin signed in");
     expect(screen.getByTestId("admin-preview-unlock-card")).toHaveTextContent(
-      "Use the fallback password below to unlock preview access in this browser."
+      "Use the shared preview password below to unlock preview access in this browser."
+    );
+    expect(screen.getByTestId("admin-preview-unlock-card")).not.toHaveTextContent(
+      "Device-based admin unlock"
     );
     expect(screen.queryByRole("button", { name: /unlock with passkey/i })).not.toBeInTheDocument();
   });

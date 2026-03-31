@@ -94,10 +94,9 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
         />
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-          <h2 className="text-lg font-semibold text-slate-900">Fallback access password</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Shared preview password</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            This is the current unlock method while stronger device-based admin sign-in remains
-            deferred.
+            After admin sign-in, enter the shared preview password to unlock this browser.
           </p>
           <form action={requestPreviewAccess} className="mt-4 space-y-4">
             <input type="hidden" name="next" value={nextPath} />
