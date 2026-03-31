@@ -5,7 +5,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 ## Purpose
 
 - Recover safely when note state in UI looks stale after concurrent admin edits.
-- Keep note context links and status updates deterministic across `/admin`, `/course`, and `/plans`.
+- Keep note context links and status updates deterministic across `/admin`, supported public routes, and selected `My Library` hub routes.
 - Provide a short manual walkthrough note contract for AW-012 evidence.
 
 ## Triggers
@@ -26,6 +26,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 2. If the failure happened in `Quick note`, first search by the visible success state or intended title in `/admin?tab=notes` before retrying so you do not create duplicates.
 3. If you still need to inspect the page before saving, collapse the quick-note draft instead of closing it; the page underneath should remain interactive, and reopening from the docked right-edge handle should preserve the current text and staged images.
 4. If you navigated to another supported admin/context surface before saving, confirm the quick-note `Locked context` card still points to the original page/item you meant to annotate before you save.
+   Supported page-level quick-note hubs now include `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security` in addition to the existing supported public routes.
 5. After a successful quick-note save, confirm the panel is now ready for another note on the same locked context before you continue capturing follow-up issues.
 6. In `/admin?tab=notes`, keep the `Notes` tab active and click `Refresh` to reload server-canonical rows.
 7. If the row title starts with `[E2E Admin Note Artifact]`, treat it as automated test residue:
@@ -50,6 +51,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 - if a pasted image preview existed but note save failed, search by `Note ID` or title before retrying paste so you do not create duplicate notes,
 - repeated paste/upload on create flows appends until the six-image cap is reached; remove only the screenshots you no longer want instead of restarting the whole draft,
 - confirm the attachment list and image count in the note row,
+- confirm each saved image card still shows its structured evidence summary (`Image X`, file type, file size, upload date),
 - if delete failed, refresh once and verify whether the image is still present before retrying,
 - if upload failed after note save, retry only after confirming you are not looking at a stale duplicate preview,
 - if the staged images were removed locally, use clipboard paste again or fall back to `Upload images`.
@@ -61,7 +63,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 - remove and re-add the link only if the relationship is clearly wrong.
 
 12. Re-apply only the intended delta and click `Save changes`.
-13. Confirm success notice (`Note updated.` or attachment/link success notice) and verify the same row in its contextual surface (`/course` or `/plans`) when relevant.
+13. Confirm success notice (`Note updated.` or attachment/link success notice) and verify the same row in its contextual surface (`/course`, `/plans`, or the selected `My Library` hub route) when relevant.
 14. If update still fails, create one incident note (P1/P2) with owner + next action and link it by note ID in AW-012 checkpoint evidence.
 
 ## Pass Criteria

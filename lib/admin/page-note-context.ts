@@ -11,6 +11,12 @@ export const ADMIN_PAGE_CONTEXT_OPTIONS: AdminPageContextOption[] = [
   { ref: "/guides/poolside", label: "Poolside guide" },
   { ref: "/my-library", label: "My Library" },
   { ref: "/my-library/goals", label: "My Library goals" },
+  { ref: "/my-library/training", label: "My Library training" },
+  { ref: "/my-library/profile", label: "My Library profile" },
+  { ref: "/my-library/workouts", label: "My Library workouts" },
+  { ref: "/my-library/dryland", label: "My Library dryland" },
+  { ref: "/my-library/generator", label: "My Library generator" },
+  { ref: "/my-library/security", label: "My Library security" },
   { ref: "/plans", label: "Plans page" },
   { ref: "/analysis", label: "Analysis page" },
   { ref: "/programs", label: "Programs page" },
@@ -24,6 +30,17 @@ export const ADMIN_PAGE_CONTEXT_OPTIONS: AdminPageContextOption[] = [
 const PAGE_LABEL_BY_REF = Object.fromEntries(
   ADMIN_PAGE_CONTEXT_OPTIONS.map((item) => [item.ref, item.label])
 ) as Record<string, string>;
+
+const ADMIN_MY_LIBRARY_PAGE_NOTE_REFS = [
+  "/my-library",
+  "/my-library/goals",
+  "/my-library/training",
+  "/my-library/profile",
+  "/my-library/workouts",
+  "/my-library/dryland",
+  "/my-library/generator",
+  "/my-library/security",
+] as const;
 
 function trimTrailingSlash(path: string): string {
   if (path === "/") return path;
@@ -56,4 +73,32 @@ export function hasDedicatedContextNotesForPage(pathname: string): boolean {
   if (normalized === "/guides/poolside") return true;
   if (normalized.startsWith("/my-library/item/")) return true;
   return false;
+}
+
+export function supportsAdminPageNotesSurface(pathname: string): boolean {
+  const normalized = normalizeAdminPageContextRef(pathname);
+
+  if (normalized === "/admin" || normalized.startsWith("/admin/")) {
+    return false;
+  }
+
+  if (normalized === "/auth/sign-in" || normalized.startsWith("/auth/")) {
+    return false;
+  }
+
+  if (normalized === "/checkout/success" || normalized.startsWith("/checkout/")) {
+    return false;
+  }
+
+  if (hasDedicatedContextNotesForPage(normalized)) {
+    return false;
+  }
+
+  if (normalized.startsWith("/my-library")) {
+    return ADMIN_MY_LIBRARY_PAGE_NOTE_REFS.includes(
+      normalized as (typeof ADMIN_MY_LIBRARY_PAGE_NOTE_REFS)[number]
+    );
+  }
+
+  return true;
 }

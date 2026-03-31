@@ -147,6 +147,11 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
+        "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security`."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
         "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later."
       )
     ).toBeVisible();
@@ -168,6 +173,11 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText(
         "After a successful Quick note save, the panel stays open and ready for another note on the same locked context so you can keep capturing without reopening it."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Saved image cards now show a stable evidence summary: image order, file type, file size, and upload date, without exposing raw storage paths."
       )
     ).toBeVisible();
     await expect(

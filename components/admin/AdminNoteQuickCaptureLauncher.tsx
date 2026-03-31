@@ -32,6 +32,8 @@ import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 import {
   ADMIN_NOTE_ATTACHMENT_MAX_FILES,
   ADMIN_NOTE_PRIORITY_VALUES,
+  buildAdminNoteAttachmentEvidenceSummary,
+  buildAdminNoteAttachmentOrdinalLabel,
   type AdminNoteItem,
   type AdminNotePriority,
 } from "@/lib/admin/notes";
@@ -794,10 +796,20 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                                 />
                                 <div className="min-w-0 flex-1">
                                   <p className="text-xs font-semibold text-slate-900">
-                                    Image {index + 1}
+                                    {buildAdminNoteAttachmentOrdinalLabel(
+                                      index,
+                                      pendingImages.length
+                                    )}
                                   </p>
                                   <p className="mt-1 truncate text-[11px] text-slate-600">
                                     {image.file.name}
+                                  </p>
+                                  <p className="mt-1 text-[11px] text-slate-500">
+                                    {buildAdminNoteAttachmentEvidenceSummary({
+                                      mimeType: image.file.type,
+                                      sizeBytes: image.file.size,
+                                      locationLabel: "Staged locally",
+                                    })}
                                   </p>
                                 </div>
                               </div>

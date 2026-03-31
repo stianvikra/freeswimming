@@ -18,7 +18,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-03-25";
+const LAST_UPDATED = "2026-03-31";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -569,12 +569,14 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "Use `Quick note` when you want to capture the issue fast from the current surface without losing context.",
       "If you still need to scroll, click, or collect a screenshot before saving, collapse `Quick note`; the page stays interactive underneath and you can reopen the same draft from the docked edge handle on the right.",
       "If you navigate to another supported admin/context surface before saving, the same draft can follow you, but it stays attached to the original locked context shown in the panel.",
+      "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security`.",
       "Use the top `Add note` section when you want full fields in place; if notes already exist it stays collapsed until you expand it again.",
       "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
       "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload images` if you already have the files.",
       "You can stage up to six pre-save images on create flows, and repeated paste/upload appends instead of replacing the earlier screenshots.",
       "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload images`.",
       "After a successful Quick note save, the panel stays open and ready for another note on the same locked context so you can keep capturing without reopening it.",
+      "Saved image cards now show a stable evidence summary: image order, file type, file size, and upload date, without exposing raw storage paths.",
       `If a note title starts with \`${ADMIN_NOTE_TEST_ARTIFACT_PREFIX}\`, it is automated test residue and should clear automatically; if it stays open, use the admin-notes recovery runbook before deleting anything manually.`,
       "On mobile, the two image actions stay visible so you do not need to remember hidden paste shortcuts.",
       "Link any follow-up note instead of pasting duplicate text.",

@@ -40,6 +40,8 @@ import {
   ADMIN_NOTE_ATTACHMENT_MAX_FILES,
   ADMIN_NOTE_PRIORITY_VALUES,
   INCIDENT_NOTE_SEVERITIES,
+  buildAdminNoteAttachmentEvidenceSummary,
+  buildAdminNoteAttachmentOrdinalLabel,
   buildIncidentNoteBodyTemplate,
   sortAdminNotesByPriorityAndNewest,
   type AdminNoteItem,
@@ -233,13 +235,6 @@ function priorityBadgeClasses(priority: AdminNotePriority): string {
     default:
       return "border-slate-200 bg-slate-100 text-slate-700";
   }
-}
-
-function formatAttachmentSize(sizeBytes: number): string {
-  if (sizeBytes < 1024) return `${sizeBytes} B`;
-  const sizeKb = sizeBytes / 1024;
-  if (sizeKb < 1024) return `${sizeKb.toFixed(1)} KB`;
-  return `${(sizeKb / 1024).toFixed(1)} MB`;
 }
 
 function hasPartialContextSelection(contextType: string, contextRef: string): boolean {
@@ -1534,9 +1529,9 @@ export default function AdminNotesManager() {
 
                   {!isEditing && item.attachments.length > 0 ? (
                     <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-white/80 p-3">
-                      <p className="text-xs font-semibold text-slate-700">Images</p>
+                      <p className="text-xs font-semibold text-slate-700">Admin-only images</p>
                       <div className="flex flex-wrap gap-3">
-                        {item.attachments.map((attachment) => (
+                        {item.attachments.map((attachment, index) => (
                           <a
                             key={attachment.id}
                             href={attachment.signed_url ?? undefined}
@@ -1557,11 +1552,21 @@ export default function AdminNotesManager() {
                               </div>
                             )}
                             <div className="space-y-1">
+                              <p className="text-[11px] font-semibold text-slate-900">
+                                {buildAdminNoteAttachmentOrdinalLabel(
+                                  index,
+                                  item.attachments.length
+                                )}
+                              </p>
                               <p className="truncate text-[11px] font-medium text-slate-700">
                                 {attachment.file_name}
                               </p>
                               <p className="text-[10px] text-slate-500">
-                                {formatAttachmentSize(attachment.size_bytes)}
+                                {buildAdminNoteAttachmentEvidenceSummary({
+                                  mimeType: attachment.mime_type,
+                                  sizeBytes: attachment.size_bytes,
+                                  createdAt: attachment.created_at,
+                                })}
                               </p>
                             </div>
                           </a>
@@ -1882,7 +1887,7 @@ export default function AdminNotesManager() {
 
                         {item.attachments.length > 0 ? (
                           <ul className="space-y-2">
-                            {item.attachments.map((attachment) => {
+                            {item.attachments.map((attachment, index) => {
                               const isDeletingAttachment = deletingAttachmentId === attachment.id;
                               return (
                                 <li
@@ -1903,11 +1908,21 @@ export default function AdminNotesManager() {
                                       </div>
                                     )}
                                     <div className="min-w-0">
+                                      <p className="text-[11px] font-semibold text-slate-900">
+                                        {buildAdminNoteAttachmentOrdinalLabel(
+                                          index,
+                                          item.attachments.length
+                                        )}
+                                      </p>
                                       <p className="truncate text-xs font-medium text-slate-700">
                                         {attachment.file_name}
                                       </p>
                                       <p className="text-[11px] text-slate-500">
-                                        {formatAttachmentSize(attachment.size_bytes)}
+                                        {buildAdminNoteAttachmentEvidenceSummary({
+                                          mimeType: attachment.mime_type,
+                                          sizeBytes: attachment.size_bytes,
+                                          createdAt: attachment.created_at,
+                                        })}
                                       </p>
                                     </div>
                                   </div>
@@ -2308,9 +2323,21 @@ export default function AdminNotesManager() {
                           className="h-14 w-14 rounded-lg object-cover"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-slate-900">Image {index + 1}</p>
+                          <p className="text-xs font-semibold text-slate-900">
+                            {buildAdminNoteAttachmentOrdinalLabel(
+                              index,
+                              createPendingScreenshots.length
+                            )}
+                          </p>
                           <p className="mt-1 truncate text-[11px] text-slate-600">
                             {image.file.name}
+                          </p>
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            {buildAdminNoteAttachmentEvidenceSummary({
+                              mimeType: image.file.type,
+                              sizeBytes: image.file.size,
+                              locationLabel: "Staged locally",
+                            })}
                           </p>
                         </div>
                       </div>

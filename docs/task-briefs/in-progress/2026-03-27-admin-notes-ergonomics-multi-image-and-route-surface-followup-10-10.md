@@ -3,24 +3,22 @@
 ## Metadata
 
 - `id`: `2026-03-27-admin-notes-ergonomics-multi-image-and-route-surface-followup-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
-- `updated`: `2026-03-30`
+- `updated`: `2026-03-31`
 
 ## Goal
 
-Close the remaining operator-facing admin-notes ergonomics gaps after the quick-capture utility-panel rollout so notes are faster to capture, richer in evidence, and easier to keep using across real review sessions.
+Ship the remaining operator-facing admin-notes ergonomics gaps after the multi-image/save-again slice by making quick capture available on an explicit route matrix and by making saved image evidence easier to read later without changing the canonical attachment schema.
 
 ## Why This Brief Exists
 
-- Core notes workflows, quick capture, clipboard/image intake, and linking are already shipped, but real usage still exposes a smaller follow-up wave.
-- The current gaps are tightly related:
-  - only one pre-save image in quick note/contextual add note,
-  - pasting or uploading another screenshot currently replaces the staged image instead of appending it,
-  - uncertainty around what quick note should do after save,
-  - incomplete route-surface rollout for quick capture,
-  - attachment metadata/agent-readiness expectations not yet made explicit enough in operator flows.
+- Core notes workflows, quick capture, clipboard/image intake, linking, multi-image staging, and save-again behavior are now shipped, but real usage still exposes one smaller follow-up wave.
+- The remaining gaps are tightly related:
+  - quick capture/page-level notes are still missing from the intended `My Library` route matrix,
+  - saved attachment cards still underspecify evidence metadata for later human review,
+  - operator-visible evidence structure is not yet explicit enough for future agent-assisted reading even though the canonical attachment fields already exist.
 - These issues are real notes ergonomics work, but they should stay separated from the larger workout-builder UX/action batch.
 - This brief intentionally owns the operator-facing remainder so the broader admin-notes system is not reopened piecemeal without explicit scope.
 
@@ -30,10 +28,13 @@ Close the remaining operator-facing admin-notes ergonomics gaps after the quick-
   - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-21-admin-notes-workflow-v2-attachments-and-linking-10-10.md`
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-25-admin-notes-image-intake-simplification-and-clipboard-paste-button-10-10.md`
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-27-admin-notes-global-quick-capture-panel-and-manuscript-categories-10-10.md`
+  - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-31-admin-notes-multi-image-and-save-again-followup-10-10.md`
 - Recommended boundary decisions unless owner explicitly changes them:
   - quick note still creates a normal canonical admin note,
   - canonical note identity remains note ID + canonical route/content context,
   - quick-note draft can travel across supported surfaces, but original note context stays explicit and locked unless the user intentionally changes it,
+  - route-surface expansion in this slice is explicit and bounded to selected `My Library` hubs instead of every library/detail route,
+  - attachment metadata surfacing in this slice uses the existing canonical attachment row fields only; it does not add a new attachment schema,
   - this slice improves ergonomics and metadata clarity; it does not replace notes with a larger ticketing system.
 
 ## Admin Notes Triage Disposition
@@ -41,17 +42,17 @@ Close the remaining operator-facing admin-notes ergonomics gaps after the quick-
 Production admin notes reviewed against this brief on `2026-03-27`:
 
 - `0d1fa716-460e-406a-a68d-28c1aaae5b22` `Mulitple Screenshots`
-  - disposition: owned by this brief.
-  - reason: pre-save multi-image evidence is the clearest remaining operator gap in quick note/contextual capture, including repeated clipboard-paste or upload flows appending instead of replacing earlier staged screenshots.
+  - disposition: closed in `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-31-admin-notes-multi-image-and-save-again-followup-10-10.md`.
+  - reason: repeated pre-save image staging and append-not-replace behavior shipped in the prior slice.
 - `40b252d8-ee9f-41ed-89ca-0eb5af8bcc89` `Quick note`
-  - disposition: owned by this brief.
-  - reason: post-save reuse, top-of-page access expectations, and continued capture flow belong in the same ergonomics wave.
+  - disposition: closed in `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-31-admin-notes-multi-image-and-save-again-followup-10-10.md`.
+  - reason: quick-note save-again behavior shipped in the prior slice.
 - `881e222b-4c14-4a23-b677-60b0713e220f` `Admin notes quick capture route-surface expansion follow-up`
   - disposition: owned by this brief.
-  - reason: the route-surface rollout should now be handled as an explicit matrix instead of a vague future placeholder.
+  - reason: the remaining rollout should now be handled as an explicit selected-route matrix instead of a vague future placeholder.
 - `204913d0-5c97-41e8-b6f7-ab42de3bc84e` `Admin notes attachment metadata and agent-readiness follow-up`
   - disposition: owned by this brief.
-  - reason: remaining operator-visible attachment metadata and structured evidence expectations belong together with multi-image capture and route rollout so the note is not only partially covered.
+  - reason: remaining operator-visible attachment metadata and structured evidence expectations belong together with the final route rollout so the note system is not only partially covered.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -100,7 +101,7 @@ Critical target categories for `10/10` claim in this brief:
   - attachment metadata rows,
   - stored attachment object keys,
   - canonical route/content context,
-  - any persisted structured attachment metadata required for operator/agent readiness.
+  - existing attachment row fields already available for metadata surfacing (`file_name`, `mime_type`, `size_bytes`, `created_at`).
 - Local-only:
   - staged pre-save images,
   - draft title/text/priority/category inputs,
@@ -140,15 +141,24 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Scope
 
-- Add pre-save multi-image support to:
-  - quick note,
-  - contextual `Add note` panels,
-  - any directly related notes-entry surface chosen in this slice.
-- Decide and implement the intended post-save quick-note behavior:
-  - stay open and clear for another capture,
-  - or offer an equally fast repeat-capture loop that does not require rebuilding the same entry flow manually.
-- Expand quick-capture route availability through an explicit route-surface matrix instead of ad hoc surface additions.
-- Improve operator-visible attachment metadata and evidence structure so the saved note is clearer for later human review and future agent-assisted reading.
+- Keep the already shipped multi-image/save-again behavior unchanged while extending route-surface coverage intentionally.
+- Expand quick-capture/page-note availability through an explicit route-surface matrix:
+  - keep existing dedicated contextual note surfaces on `/course`, `/guides/0-1000m`, `/guides/poolside`, and `/my-library/item/[slug]`,
+  - add page-level notes + quick note through `SiteChrome` on selected `My Library` hub routes:
+    - `/my-library`
+    - `/my-library/goals`
+    - `/my-library/training`
+    - `/my-library/profile`
+    - `/my-library/workouts`
+    - `/my-library/dryland`
+    - `/my-library/generator`
+    - `/my-library/security`
+- Improve operator-visible saved attachment metadata and evidence structure using existing canonical fields:
+  - image order,
+  - file type,
+  - file size,
+  - upload date,
+  - clearer copy that the evidence remains admin-only.
 - Keep Help/Guide and recovery/runbook language aligned with the final behavior.
 
 ## Out Of Scope
@@ -156,16 +166,21 @@ Critical target categories for `10/10` claim in this brief:
 - Replacing admin notes with a full issue tracker or threaded comments system.
 - Public user uploads or public note attachments.
 - Non-image attachment types as a first-class system in this slice.
+- New schema/storage columns, OCR, caption authoring, or AI extraction for attachments.
+- Dynamic `My Library` detail routes in this wave:
+  - `/my-library/programs/[programId]`
+  - `/my-library/workouts/[workoutId]`
+  - `/my-library/dryland/[sessionId]`
 - Reopening unrelated builder or course-workspace work unless a shared bug is discovered.
 
 ## Acceptance Criteria
 
-1. Quick note and contextual `Add note` can stage more than one image before save with clear limit/error handling, including repeated clipboard-paste or upload actions appending to the staged list instead of replacing the earlier screenshot unless the operator explicitly removes it.
-2. After a quick note is saved, the next-step behavior is explicit and optimized for repeated capture rather than forcing the owner to rebuild the same flow manually.
-3. Quick capture route-surface availability is documented and implemented intentionally for the chosen surfaces.
-4. Attachment metadata shown to operators is rich enough that saved evidence remains understandable later without opening raw storage details.
-5. Quick note still saves a normal canonical admin note tied to an explicit context.
-6. Help/Guide and runbook content are updated in the same PR if labels, save/reuse behavior, or route availability change.
+1. Selected `My Library` hub routes show the same page-level admin-notes surface and `Quick note` entrypoint as the supported public page surfaces, without changing dedicated contextual surfaces that already exist elsewhere.
+2. Route-surface availability is documented as an explicit matrix for this slice instead of an open-ended rollout promise.
+3. Saved attachment cards show metadata rich enough that the evidence remains understandable later without exposing raw storage details.
+4. The richer attachment metadata comes from the existing canonical attachment fields and does not require a new schema or migration.
+5. Quick note still saves a normal canonical admin note tied to an explicit context, and locked-context behavior remains truthful when moving between supported surfaces.
+6. Help/Guide and runbook content are updated in the same PR for the chosen route matrix and metadata contract.
 7. Relevant production admin notes listed above remain explicitly owned by this brief until shipped or intentionally split again.
 8. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
 
@@ -174,14 +189,12 @@ Critical target categories for `10/10` claim in this brief:
 - `npm run lint:briefs`
 - `npm run typecheck`
 - targeted unit tests for:
-  - staged multi-image state,
-  - post-save reset/reuse behavior,
+  - page-route availability logic,
   - attachment metadata rendering,
-  - route-surface availability logic
+  - context label/metadata fallback behavior where relevant
 - targeted e2e for:
-  - quick note multi-image capture,
-  - contextual add-note multi-image capture,
-  - route-surface persistence/reopen behavior,
+  - quick note on a newly supported `My Library` hub route,
+  - route-surface persistence/reopen behavior on the selected matrix,
   - admin help-center/update assertions
 - `npm run verify:pre-pr`
 - before merge recommendation: `npm run verify:pre-merge`
@@ -195,17 +208,18 @@ Critical target categories for `10/10` claim in this brief:
 
 - Production review:
   - `https://freeswimming.org/admin`
-  - relevant admin note entry surfaces encountered during real review work
+  - selected `My Library` hub routes reached during real review work
 - Local iteration:
-  - `http://127.0.0.1:3000/admin`
+  - `http://127.0.0.1:3000/my-library`
+  - `http://127.0.0.1:3000/my-library/goals`
 - Preview:
   - PR Vercel preview URL for the implementation branch
 
 ## Constraints
 
 - Quick note must remain understandable as a note-capture utility, not a second separate notes system.
-- Multi-image support must be bounded and clear, not an unbounded drag-and-drop bucket.
 - Route-surface expansion should be explicit and support real review workflows, not chase every possible route in one wave.
+- This slice should prefer stable `My Library` hub routes over dynamic detail-route coverage.
 - Attachment metadata should help later reading without exposing raw storage implementation details.
 
 ## 10/10 Quality Bar
@@ -216,11 +230,12 @@ Critical target categories for `10/10` claim in this brief:
   - `empty`
   - `error`
   - `retry`
-  - `success`
-  - staged image pending
-  - per-image remove/failure state
+- `success`
+- staged image pending
+- per-image remove/failure state
 - Multi-image behavior must be obvious before save and predictable after save.
 - Route-surface expansion should improve coverage without making note context ambiguous.
+- Saved attachment cards should read like structured evidence, not anonymous thumbnails.
 
 ## Help/Guide And Operator Training Contract
 
@@ -284,5 +299,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-31 | working tree | shipped the remaining slice scope on branch `feat/admin-notes-route-surface-metadata-2026-03-31`: selected My Library hubs now expose page-level quick note through the shared SiteChrome surface, attachment cards/staged previews show stable evidence metadata from existing canonical fields, Help/Guide and recovery docs were updated, and `lint:briefs:all`, targeted unit/e2e, `typecheck`, and `verify:pre-pr` all passed locally | next: commit, push, open PR, and watch CI`
+- `2026-03-31 | working tree | moved the remaining admin-notes ergonomics follow-up into in-progress after the multi-image/save-again slice merged; narrowed this implementation wave to selected My Library route-surface expansion plus richer saved attachment metadata using the existing attachment contract | next: implement the route matrix in SiteChrome/page-note helpers, update attachment cards/copy/tests, and run targeted validation`
 - `2026-03-30 | working tree | refined the planned follow-up brief so repeated screenshot paste/upload append behavior is explicit in the problem statement, admin-note triage, and acceptance criteria while keeping the owned scope unchanged | next: keep this planned until the repeated-capture loop and route-surface matrix are chosen for implementation`
 - `2026-03-27 | planning | created a dedicated admin-notes ergonomics follow-up brief to own the remaining production-note batch around multi-image pre-save evidence, quick-note post-save reuse, route-surface rollout, and attachment metadata/agent-readiness expectations | next: confirm the desired repeated-capture workflow and route-surface matrix before implementation starts`

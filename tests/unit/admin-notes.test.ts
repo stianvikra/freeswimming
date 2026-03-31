@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
+  buildAdminNoteAttachmentEvidenceSummary,
+  buildAdminNoteAttachmentOrdinalLabel,
   buildAdminNoteAttachmentStoragePath,
   buildIncidentNoteBodyTemplate,
   canonicalizeAdminNoteLinkPair,
@@ -134,6 +136,25 @@ describe("admin note attachment validation", () => {
     });
 
     expect(validated.ok).toBe(false);
+  });
+
+  it("builds deterministic evidence labels for saved and staged images", () => {
+    expect(buildAdminNoteAttachmentOrdinalLabel(0, 3)).toBe("Image 1 of 3");
+    expect(buildAdminNoteAttachmentOrdinalLabel(0, 1)).toBe("Image 1");
+    expect(
+      buildAdminNoteAttachmentEvidenceSummary({
+        mimeType: "image/png",
+        sizeBytes: 2048,
+        createdAt: "2026-03-31T14:22:11.000Z",
+      })
+    ).toBe("PNG · 2.0 KB · Uploaded 2026-03-31");
+    expect(
+      buildAdminNoteAttachmentEvidenceSummary({
+        mimeType: "image/webp",
+        sizeBytes: 1536,
+        locationLabel: "Staged locally",
+      })
+    ).toBe("WEBP · 1.5 KB · Staged locally");
   });
 });
 
