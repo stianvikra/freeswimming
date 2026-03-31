@@ -162,6 +162,67 @@ export function compareAdminNotePriority(
   return rank[right] - rank[left];
 }
 
+export function buildAdminNoteAttachmentOrdinalLabel(index: number, total: number): string {
+  const safeIndex = Math.max(0, index) + 1;
+  const safeTotal = Math.max(1, total);
+  return safeTotal > 1 ? `Image ${safeIndex} of ${safeTotal}` : `Image ${safeIndex}`;
+}
+
+export function formatAdminNoteAttachmentSize(sizeBytes: number): string {
+  if (sizeBytes < 1024) return `${sizeBytes} B`;
+  const sizeKb = sizeBytes / 1024;
+  if (sizeKb < 1024) return `${sizeKb.toFixed(1)} KB`;
+  return `${(sizeKb / 1024).toFixed(1)} MB`;
+}
+
+export function formatAdminNoteAttachmentMimeLabel(mimeType: string): string {
+  const normalized = mimeType.trim().toLowerCase();
+  switch (normalized) {
+    case "image/png":
+      return "PNG";
+    case "image/jpeg":
+      return "JPEG";
+    case "image/webp":
+      return "WEBP";
+    case "image/gif":
+      return "GIF";
+    default: {
+      const subtype = normalized.split("/")[1] ?? normalized;
+      return subtype.toUpperCase() || "IMAGE";
+    }
+  }
+}
+
+export function formatAdminNoteAttachmentDate(createdAt: string): string {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return createdAt;
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+export function buildAdminNoteAttachmentEvidenceSummary(params: {
+  mimeType: string;
+  sizeBytes: number;
+  createdAt?: string | null;
+  locationLabel?: string | null;
+}): string {
+  const parts = [
+    formatAdminNoteAttachmentMimeLabel(params.mimeType),
+    formatAdminNoteAttachmentSize(params.sizeBytes),
+  ];
+
+  if (params.createdAt) {
+    parts.push(`Uploaded ${formatAdminNoteAttachmentDate(params.createdAt)}`);
+  }
+
+  if (params.locationLabel) {
+    parts.push(params.locationLabel);
+  }
+
+  return parts.join(" · ");
+}
+
 export function isUuid(value: string): boolean {
   return UUID_REGEX.test(value);
 }

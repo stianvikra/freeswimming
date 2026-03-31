@@ -14,8 +14,8 @@ import MobileSegmentedNav, {
 import { getMainMenuItems } from "@/components/navigation/mainMenuItems";
 import {
   getAdminPageContextLabel,
-  hasDedicatedContextNotesForPage,
   normalizeAdminPageContextRef,
+  supportsAdminPageNotesSurface,
 } from "@/lib/admin/page-note-context";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
@@ -126,17 +126,12 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const isAuthRoute = pathname === "/auth/sign-in" || pathname.startsWith("/auth/");
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isLibraryRoute = pathname === "/my-library" || pathname.startsWith("/my-library/");
-  const isCheckoutRoute =
-    pathname === "/checkout/success" || pathname.startsWith("/checkout/");
+  const isCheckoutRoute = pathname === "/checkout/success" || pathname.startsWith("/checkout/");
   const isPublicRoute = !isAuthRoute && !isLibraryRoute && !isCheckoutRoute;
   const normalizedPageContextRef = normalizeAdminPageContextRef(pathname ?? "/");
   const pageContextLabel = getAdminPageContextLabel(normalizedPageContextRef);
   const showAdminPageNotes =
-    dashboardVisible &&
-    !isAdminRoute &&
-    !isAuthRoute &&
-    !isCheckoutRoute &&
-    !hasDedicatedContextNotesForPage(normalizedPageContextRef);
+    dashboardVisible && supportsAdminPageNotesSurface(normalizedPageContextRef);
 
   const hasCustomBottomBar = Boolean(bottomBar);
   const authHref = signedInEmail ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
