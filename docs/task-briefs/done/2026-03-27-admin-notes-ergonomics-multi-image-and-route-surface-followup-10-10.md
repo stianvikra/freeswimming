@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-27-admin-notes-ergonomics-multi-image-and-route-surface-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
 - `updated`: `2026-03-31`
@@ -299,6 +299,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-03-31 | 43bf670 (main) | merged via PR #332 after local `verify:pre-pr`, green required GitHub checks, and local `verify:pre-merge`; selected My Library route-surface expansion plus attachment evidence metadata are now shipped on main | next: resume the next admin-notes follow-up only through a new scoped brief if additional work is needed`
 - `2026-03-31 | working tree | shipped the remaining slice scope on branch `feat/admin-notes-route-surface-metadata-2026-03-31`: selected My Library hubs now expose page-level quick note through the shared SiteChrome surface, attachment cards/staged previews show stable evidence metadata from existing canonical fields, Help/Guide and recovery docs were updated, and `lint:briefs:all`, targeted unit/e2e, `typecheck`, and `verify:pre-pr` all passed locally | next: commit, push, open PR, and watch CI`
 - `2026-03-31 | working tree | moved the remaining admin-notes ergonomics follow-up into in-progress after the multi-image/save-again slice merged; narrowed this implementation wave to selected My Library route-surface expansion plus richer saved attachment metadata using the existing attachment contract | next: implement the route matrix in SiteChrome/page-note helpers, update attachment cards/copy/tests, and run targeted validation`
 - `2026-03-30 | working tree | refined the planned follow-up brief so repeated screenshot paste/upload append behavior is explicit in the problem statement, admin-note triage, and acceptance criteria while keeping the owned scope unchanged | next: keep this planned until the repeated-capture loop and route-surface matrix are chosen for implementation`
