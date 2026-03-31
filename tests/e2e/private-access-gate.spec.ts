@@ -17,6 +17,9 @@ test.describe("private access gate", () => {
     await expect(
       page.getByRole("heading", { name: "freeswimming.org is currently private" })
     ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Shared preview password" })).toBeVisible();
+    await expect(page.getByText("Fallback access password")).toHaveCount(0);
+    await expect(page.getByText(/device-based admin sign-in remains deferred/i)).toHaveCount(0);
 
     // Automation default: bypass token path first for deterministic local/CI runs.
     if (previewBypassToken && !forcePasswordUnlock) {

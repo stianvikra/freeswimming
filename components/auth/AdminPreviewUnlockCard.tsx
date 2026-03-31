@@ -20,9 +20,8 @@ export default function AdminPreviewUnlockCard({ signInHref, signedInEmail, isAd
           </p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">Admin preview access</h2>
           <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
-            Sign in with your admin email so this page can recognize your role. Then use the shared
-            preview password below. Device-based admin unlock is not available in the current auth
-            setup yet.
+            Sign in with your admin email so this page can confirm your admin access. Then use the
+            shared preview password below.
           </p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -52,8 +51,8 @@ export default function AdminPreviewUnlockCard({ signInHref, signedInEmail, isAd
       ) : (
         <div className="mt-4 rounded-2xl border border-white/80 bg-white/80 p-4">
           <p className="text-sm text-slate-700">
-            Signed in as {signedInEmail}. Use the fallback password below to unlock preview access
-            in this browser.
+            Signed in as {signedInEmail}. Use the shared preview password below to unlock preview
+            access in this browser.
           </p>
         </div>
       )}
