@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-31-preview-access-copy-truthfulness-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-31`
 - `updated`: `2026-03-31`
@@ -227,3 +227,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-03-31 | working tree | created a dedicated preview-access copy follow-up brief so the locked-route cleanup can land separately from the planned real-passkeys architecture and admin-notes follow-up work | next: move brief to in-progress, update preview-access copy, and rerun targeted tests`
 - `2026-03-31 | working tree | removed future-looking fallback/device-unlock emphasis from /preview-access, updated route/card assertions, and validated the live contract with brief lint, targeted vitest, password-backed private-gate Playwright, and a full pre-PR gate rerun on isolated Playwright port 3102 after an existing long-running local dev server occupied port 3100; cleaned temporary verify artifacts and restored tsconfig after Next added temporary dist-type includes | validation: npm run lint:briefs:all; npx vitest run tests/unit/admin-preview-unlock-card.test.tsx; password-backed npx playwright test tests/e2e/private-access-gate.spec.ts --project=desktop-chromium; PW_PORT=3102 NEXT_DIST_DIR=.next-playwright-verify-prepr PW_OUTPUT_DIR=/tmp/freeswimming-playwright-results-verify-prepr npm run verify:pre-pr | next: commit, push, and open the PR for review`
+- `2026-03-31 | d39d888 (main) | merged via PR #328 after local password-backed private-gate coverage, local npm run verify:pre-pr, a clean local SITE_LOCK_ENABLED=1 PW_PORT=3104 npm run verify:pre-merge PASS, and all required GitHub checks green; achieved critical target categories Product goals and IA 5/5, UX flow clarity 5/5, Business logic correctness and data integrity 5/5, and Testing and QA automation 5/5, with supporting target categories also holding 5/5 for this slice | next: keep real passkeys deferred to the planned architecture briefs and take the admin-notes ergonomics follow-up as the next scoped production slice`
