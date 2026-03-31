@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-03-31-admin-notes-multi-image-and-save-again-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-31`
 - `updated`: `2026-03-31`
