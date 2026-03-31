@@ -364,8 +364,10 @@ test.describe("admin contextual notes", () => {
       test.skip(true, `Context notes create is not write-ready in this environment (${reason}).`);
     }
 
-    await expect(panel.getByText("Quick note saved.")).toBeVisible({ timeout: 10_000 });
-    await expect(panel.getByText("Quick note saved.")).toHaveCount(0, { timeout: 7_000 });
+    await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+    await expect(quickCaptureDialog.getByLabel("Title")).toHaveValue("");
+    await quickCaptureDialog.getByRole("button", { name: "Close panel" }).first().click();
+    await expect(quickCaptureDialog).toHaveCount(0);
 
     const toggle = panel.getByTestId("admin-context-notes-toggle");
     if ((await toggle.textContent())?.includes("Show")) {

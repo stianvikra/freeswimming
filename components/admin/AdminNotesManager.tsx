@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import {
@@ -8,8 +8,11 @@ import {
   type AdminNoteContextType,
 } from "@/lib/admin/note-context";
 import {
+  createAdminNoteStagedImages,
   extractAdminNoteClipboardImage,
-  prepareAdminNoteImageFile,
+  prepareAdminNoteImageFiles,
+  revokeAdminNoteStagedImages,
+  type AdminNoteStagedImage,
 } from "@/lib/admin/note-compose";
 import {
   buildAdminNoteContextCatalog,
@@ -34,6 +37,7 @@ import {
 import {
   ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
   ADMIN_INCIDENT_NOTE_CATEGORY_OPTIONS,
+  ADMIN_NOTE_ATTACHMENT_MAX_FILES,
   ADMIN_NOTE_PRIORITY_VALUES,
   INCIDENT_NOTE_SEVERITIES,
   buildIncidentNoteBodyTemplate,
@@ -136,10 +140,7 @@ type FormState = {
   contextModuleRef: string;
 };
 
-type PendingScreenshot = {
-  file: File;
-  previewUrl: string;
-};
+type PendingScreenshot = AdminNoteStagedImage;
 
 type CaptureRecovery = {
   id: string;
@@ -156,6 +157,10 @@ function todayDateLabel(): string {
     month: "short",
     day: "2-digit",
   }).format(new Date());
+}
+
+function formatImageCountLabel(count: number): string {
+  return `${count} image${count === 1 ? "" : "s"}`;
 }
 
 const INITIAL_FORM: FormState = {
@@ -286,18 +291,19 @@ export default function AdminNotesManager() {
   const [linkingNoteId, setLinkingNoteId] = useState<string | null>(null);
   const [unlinkingKey, setUnlinkingKey] = useState<string | null>(null);
   const [linkDrafts, setLinkDrafts] = useState<Record<string, string>>({});
-  const [createPendingScreenshot, setCreatePendingScreenshot] = useState<PendingScreenshot | null>(
-    null
-  );
+  const [createPendingScreenshots, setCreatePendingScreenshots] = useState<PendingScreenshot[]>([]);
   const [createCaptureRecovery, setCreateCaptureRecovery] = useState<CaptureRecovery | null>(null);
+  const createPendingScreenshotsRef = useRef<PendingScreenshot[]>([]);
+
+  useEffect(() => {
+    createPendingScreenshotsRef.current = createPendingScreenshots;
+  }, [createPendingScreenshots]);
 
   useEffect(() => {
     return () => {
-      if (createPendingScreenshot?.previewUrl) {
-        URL.revokeObjectURL(createPendingScreenshot.previewUrl);
-      }
+      revokeAdminNoteStagedImages(createPendingScreenshotsRef.current);
     };
-  }, [createPendingScreenshot]);
+  }, []);
 
   function sortNoteItems(nextItems: AdminNoteItem[]): AdminNoteItem[] {
     return [...nextItems].sort(sortAdminNotesByPriorityAndNewest);
@@ -558,25 +564,68 @@ export default function AdminNotesManager() {
     }));
   }
 
-  function setCreatePendingScreenshotFromFile(file: File) {
-    setCreatePendingScreenshot((current) => {
-      if (current?.previewUrl) {
-        URL.revokeObjectURL(current.previewUrl);
-      }
-      return {
-        file,
-        previewUrl: URL.createObjectURL(file),
-      };
+  function appendCreatePendingScreenshots(files: Iterable<Blob | File>) {
+    const prepared = prepareAdminNoteImageFiles({
+      files,
+      currentCount: createPendingScreenshots.length,
+    });
+
+    if (!prepared.ok) {
+      setActionError(prepared.error);
+      setActionNotice(null);
+      return;
+    }
+
+    if (prepared.files.length === 0) {
+      return;
+    }
+
+    setActionError(null);
+    setActionNotice(
+      `${formatImageCountLabel(createPendingScreenshots.length + prepared.files.length)} ready to attach on the next note save.`
+    );
+    setCreatePendingScreenshots((current) => [
+      ...current,
+      ...createAdminNoteStagedImages(prepared.files),
+    ]);
+  }
+
+  function clearCreatePendingScreenshots() {
+    setCreatePendingScreenshots((current) => {
+      revokeAdminNoteStagedImages(current);
+      return [];
     });
   }
 
-  function clearCreatePendingScreenshot() {
-    setCreatePendingScreenshot((current) => {
-      if (current?.previewUrl) {
-        URL.revokeObjectURL(current.previewUrl);
-      }
-      return null;
+  function removeCreatePendingScreenshot(imageId: string) {
+    let removedImage: PendingScreenshot | null = null;
+    let nextCount = 0;
+
+    setCreatePendingScreenshots((current) => {
+      const next = current.filter((image) => {
+        if (image.id === imageId) {
+          removedImage = image;
+          return false;
+        }
+        return true;
+      });
+      nextCount = next.length;
+      return next;
     });
+
+    if (removedImage) {
+      revokeAdminNoteStagedImages([removedImage]);
+    }
+
+    if (createCaptureRecovery && nextCount === 0) {
+      setCreateCaptureRecovery(null);
+      setActionError(null);
+      setActionNotice("Note saved without staged images. Use Edit to attach more later if needed.");
+    } else if (nextCount > 0) {
+      setActionNotice(`${formatImageCountLabel(nextCount)} still staged for the next save.`);
+    } else {
+      setActionNotice(null);
+    }
   }
 
   function handleCreateFormPaste(event: React.ClipboardEvent<HTMLFormElement>) {
@@ -597,56 +646,46 @@ export default function AdminNotesManager() {
     }
 
     setActionError(null);
-    setActionNotice("Image ready to attach on the next note save.");
-    setCreateCaptureRecovery(null);
-    setCreatePendingScreenshotFromFile(result.file);
+    appendCreatePendingScreenshots([result.file]);
   }
 
   function handleCreateImageSelection(files: FileList | null) {
-    const selectedFile = files?.[0];
-    if (!selectedFile) return;
-
-    const prepared = prepareAdminNoteImageFile({ file: selectedFile });
-    if (!prepared.ok) {
-      setActionError(prepared.error);
-      setActionNotice(null);
-      return;
-    }
-
-    setActionError(null);
-    setActionNotice("Image ready to attach on the next note save.");
-    setCreateCaptureRecovery(null);
-    setCreatePendingScreenshotFromFile(prepared.file);
+    if (!files || files.length === 0) return;
+    appendCreatePendingScreenshots(Array.from(files));
   }
 
-  async function uploadCreatePendingScreenshot(noteId: string) {
-    if (!createPendingScreenshot) {
-      throw new Error("No image is ready to upload.");
+  async function uploadCreatePendingScreenshots(noteId: string) {
+    if (createPendingScreenshots.length === 0) {
+      throw new Error("No images are ready to upload.");
     }
 
     return uploadAdminNoteFiles({
       noteId,
-      files: [createPendingScreenshot.file],
+      files: createPendingScreenshots.map((image) => image.file),
     });
   }
 
   async function retryCreatePendingScreenshotUpload() {
-    if (!createCaptureRecovery || !createPendingScreenshot || submitting) return;
+    if (!createCaptureRecovery || createPendingScreenshots.length === 0 || submitting) return;
 
     setSubmitting(true);
     setActionError(null);
     setActionNotice(null);
 
     try {
-      const updatedItem = await uploadCreatePendingScreenshot(createCaptureRecovery.id);
+      const updatedItem = await uploadCreatePendingScreenshots(createCaptureRecovery.id);
       setItems((prev) =>
         sortNoteItems(prev.map((entry) => (entry.id === updatedItem.id ? updatedItem : entry)))
       );
-      clearCreatePendingScreenshot();
+      clearCreatePendingScreenshots();
       setCreateCaptureRecovery(null);
-      setActionNotice("Image attached to the saved note.");
+      setActionNotice(
+        createPendingScreenshots.length === 1
+          ? "Image attached to the saved note."
+          : "Images attached to the saved note."
+      );
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Could not upload image.");
+      setActionError(error instanceof Error ? error.message : "Could not upload images.");
     } finally {
       setSubmitting(false);
     }
@@ -669,7 +708,7 @@ export default function AdminNotesManager() {
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (submitting) return;
+    if (submitting || createCaptureRecovery) return;
     setSubmitting(true);
     setActionError(null);
     setActionNotice(null);
@@ -692,16 +731,20 @@ export default function AdminNotesManager() {
         return;
       }
 
-      if (createPendingScreenshot) {
+      if (createPendingScreenshots.length > 0) {
         try {
-          const updatedItem = await uploadCreatePendingScreenshot(payload.item.id);
+          const updatedItem = await uploadCreatePendingScreenshots(payload.item.id);
           setItems((prev) =>
             sortNoteItems([...prev.filter((entry) => entry.id !== updatedItem.id), updatedItem])
           );
-          clearCreatePendingScreenshot();
+          clearCreatePendingScreenshots();
           setCreateCaptureRecovery(null);
           setFormState(INITIAL_FORM);
-          setActionNotice("Note saved with image attached.");
+          setActionNotice(
+            createPendingScreenshots.length === 1
+              ? "Note saved with image attached."
+              : "Note saved with images attached."
+          );
           return;
         } catch (uploadError) {
           setItems((prev) =>
@@ -714,8 +757,8 @@ export default function AdminNotesManager() {
           setFormState(INITIAL_FORM);
           setActionError(
             uploadError instanceof Error
-              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry upload below or use Edit to add the image later.`
-              : "Note saved, but image upload failed. Retry upload below or use Edit to add the image later."
+              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry upload below or remove staged images before creating another note.`
+              : "Note saved, but image upload failed. Retry upload below or remove staged images before creating another note."
           );
           return;
         }
@@ -2072,8 +2115,8 @@ export default function AdminNotesManager() {
           Store planning notes with category, priority, date, and completion tracking.
         </p>
         <p className="mt-2 text-xs text-slate-500">
-          Stage one image before save if needed, then use Edit to attach more images or link related
-          notes afterward.
+          Stage up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} images before save if needed, then use Edit
+          to attach more images or link related notes afterward.
         </p>
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs font-semibold text-amber-900">Incident quick templates</p>
@@ -2189,17 +2232,15 @@ export default function AdminNotesManager() {
               <div>
                 <p className="text-sm font-semibold text-slate-900">Image (optional)</p>
                 <p className="mt-1 text-xs text-slate-600">
-                  Copy a screenshot or image to clipboard, then paste it here, or upload one file
-                  before save.
+                  Copy a screenshot or image to clipboard, then paste it here, or upload up to{" "}
+                  {ADMIN_NOTE_ATTACHMENT_MAX_FILES} files before save.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <AdminNoteClipboardPasteButton
                   onPasteReady={async (file) => {
                     setActionError(null);
-                    setActionNotice("Image ready to attach on the next note save.");
-                    setCreateCaptureRecovery(null);
-                    setCreatePendingScreenshotFromFile(file);
+                    appendCreatePendingScreenshots([file]);
                   }}
                   onError={(message) => {
                     setActionError(message);
@@ -2208,9 +2249,10 @@ export default function AdminNotesManager() {
                   disabled={Boolean(submitting)}
                 />
                 <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
-                  <span>Upload image</span>
+                  <span>Upload images</span>
                   <input
                     type="file"
+                    multiple
                     accept="image/png,image/jpeg,image/webp,image/gif"
                     className="sr-only"
                     disabled={Boolean(submitting)}
@@ -2223,26 +2265,20 @@ export default function AdminNotesManager() {
               </div>
             </div>
 
-            {createPendingScreenshot ? (
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={createPendingScreenshot.previewUrl}
-                      alt="Pending image preview"
-                      className="h-14 w-14 rounded-lg object-cover"
-                    />
+            {createPendingScreenshots.length > 0 ? (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold text-slate-900">Image ready to attach</p>
+                      <p className="text-xs font-semibold text-slate-900">
+                        {formatImageCountLabel(createPendingScreenshots.length)} ready to attach
+                      </p>
                       <p className="mt-1 text-[11px] text-slate-600">
                         {createCaptureRecovery
-                          ? "The note is already saved. Retry upload or finish without the image."
-                          : "The image stays local until this note save finishes successfully."}
+                          ? `Saved note "${createCaptureRecovery.title}" is waiting on the remaining staged images. Retry upload or remove any images you no longer need.`
+                          : "These images stay local until this note save finishes successfully."}
                       </p>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
                     {createCaptureRecovery ? (
                       <button
                         type="button"
@@ -2255,27 +2291,45 @@ export default function AdminNotesManager() {
                         {submitting ? "Retrying…" : "Retry upload"}
                       </button>
                     ) : null}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        clearCreatePendingScreenshot();
-                        if (createCaptureRecovery) {
-                          setCreateCaptureRecovery(null);
-                          setActionError(null);
-                          setActionNotice(
-                            "Note saved without image. Use Edit to attach one later if needed."
-                          );
-                        }
-                      }}
-                      disabled={submitting}
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Remove image
-                    </button>
                   </div>
                 </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {createPendingScreenshots.map((image, index) => (
+                    <div
+                      key={image.id}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={image.previewUrl}
+                          alt={`Pending image preview ${index + 1}`}
+                          className="h-14 w-14 rounded-lg object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-slate-900">Image {index + 1}</p>
+                          <p className="mt-1 truncate text-[11px] text-slate-600">
+                            {image.file.name}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          removeCreatePendingScreenshot(image.id);
+                        }}
+                        disabled={submitting}
+                        className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Remove image {index + 1}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
                 {createCaptureRecovery ? (
-                  <p className="mt-3 text-[11px] text-slate-600">
+                  <p className="text-[11px] text-slate-600">
                     Saved note: {createCaptureRecovery.title}. Retry the upload here or use Edit
                     from the work queue later.
                   </p>

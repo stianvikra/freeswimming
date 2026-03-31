@@ -22,12 +22,15 @@ import {
 import { applyAdminTabToSearchParams } from "@/lib/admin/admin-workspace";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import {
+  createAdminNoteStagedImages,
   extractAdminNoteClipboardImage,
-  prepareAdminNoteImageFile,
+  prepareAdminNoteImageFiles,
+  revokeAdminNoteStagedImages,
 } from "@/lib/admin/note-compose";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 import {
+  ADMIN_NOTE_ATTACHMENT_MAX_FILES,
   ADMIN_NOTE_PRIORITY_VALUES,
   type AdminNoteItem,
   type AdminNotePriority,
@@ -75,6 +78,10 @@ function todayDateInputValue(): string {
 
 function formatPriorityLabel(priority: AdminNotePriority): string {
   return priority.charAt(0).toUpperCase() + priority.slice(1);
+}
+
+function formatImageCountLabel(count: number): string {
+  return `${count} image${count === 1 ? "" : "s"}`;
 }
 
 function buildAdminNotesHref(params: {
@@ -156,7 +163,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
   const [savedNotice, setSavedNotice] = useState<QuickCaptureSavedNotice | null>(null);
   const [createdCaptureRecovery, setCreatedCaptureRecovery] =
     useState<QuickCaptureSavedNotice | null>(null);
-  const [pendingImage, setPendingImage] = useState<QuickCapturePendingImage | null>(null);
+  const [pendingImages, setPendingImages] = useState<QuickCapturePendingImage[]>([]);
   const [focusTitleOnOpen, setFocusTitleOnOpen] = useState(false);
 
   const open = panelState === "open";
@@ -165,9 +172,9 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
   const hasDraftState = useMemo(
     () =>
       isQuickCaptureDraftDirty(formState, todayValue) ||
-      Boolean(pendingImage) ||
+      pendingImages.length > 0 ||
       Boolean(createdCaptureRecovery),
-    [createdCaptureRecovery, formState, pendingImage, todayValue]
+    [createdCaptureRecovery, formState, pendingImages.length, todayValue]
   );
   const currentSurfaceMatchesDraftContext =
     draftContext.contextType === contextType && draftContext.contextRef === contextRef;
@@ -216,7 +223,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
     setDraftContext(storedDraft.snapshot.context);
     setFormState(storedDraft.snapshot.formState);
     setCreatedCaptureRecovery(storedDraft.snapshot.createdCaptureRecovery);
-    setPendingImage(storedDraft.pendingImage);
+    setPendingImages(storedDraft.pendingImages);
     setPanelState(storedDraft.snapshot.panelState);
   }, [canCreateNotes, instanceId]);
 
@@ -317,7 +324,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
         createdCaptureRecovery,
         updatedAt: Date.now(),
       },
-      pendingImage,
+      pendingImages,
     });
   }, [
     createdCaptureRecovery,
@@ -327,7 +334,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
     instanceId,
     minimized,
     panelState,
-    pendingImage,
+    pendingImages,
   ]);
 
   useEffect(() => {
@@ -347,28 +354,62 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
     setError(null);
     setFocusTitleOnOpen(false);
     setDraftContext(buildCurrentContext(props));
-    clearPendingImage();
+    clearPendingImages();
   }
 
-  function setPendingImageFromFile(file: File) {
-    setPendingImage((current) => {
-      if (current?.previewUrl) {
-        URL.revokeObjectURL(current.previewUrl);
-      }
-      return {
-        file,
-        previewUrl: URL.createObjectURL(file),
-      };
+  function appendPendingImages(files: Iterable<Blob | File>) {
+    const prepared = prepareAdminNoteImageFiles({
+      files,
+      currentCount: pendingImages.length,
+    });
+
+    if (!prepared.ok) {
+      setError(prepared.error);
+      return;
+    }
+
+    if (prepared.files.length === 0) {
+      return;
+    }
+
+    setError(null);
+    setPendingImages((current) => [...current, ...createAdminNoteStagedImages(prepared.files)]);
+  }
+
+  function clearPendingImages() {
+    setPendingImages((current) => {
+      revokeAdminNoteStagedImages(current);
+      return [];
     });
   }
 
-  function clearPendingImage() {
-    setPendingImage((current) => {
-      if (current?.previewUrl) {
-        URL.revokeObjectURL(current.previewUrl);
-      }
-      return null;
+  function removePendingImage(imageId: string) {
+    let removedImage: QuickCapturePendingImage | null = null;
+    let nextCount = 0;
+
+    setPendingImages((current) => {
+      const next = current.filter((image) => {
+        if (image.id === imageId) {
+          removedImage = image;
+          return false;
+        }
+        return true;
+      });
+      nextCount = next.length;
+      return next;
     });
+
+    if (removedImage) {
+      revokeAdminNoteStagedImages([removedImage]);
+    }
+
+    if (createdCaptureRecovery && nextCount === 0) {
+      setSavedNotice(createdCaptureRecovery);
+      setCreatedCaptureRecovery(null);
+      setError(null);
+      setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
+      setFocusTitleOnOpen(true);
+    }
   }
 
   function notifySaved(item: AdminNoteItem) {
@@ -394,7 +435,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
       setDraftContext(storedDraft.snapshot.context);
       setFormState(storedDraft.snapshot.formState);
       setCreatedCaptureRecovery(storedDraft.snapshot.createdCaptureRecovery);
-      setPendingImage(storedDraft.pendingImage);
+      setPendingImages(storedDraft.pendingImages);
       setPanelState("open");
       return;
     }
@@ -437,56 +478,45 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
     }
 
     setError(null);
-    setCreatedCaptureRecovery(null);
-    setPendingImageFromFile(result.file);
+    appendPendingImages([result.file]);
   }
 
   function handlePendingImageSelection(files: FileList | null) {
-    const selectedFile = files?.[0];
-    if (!selectedFile) return;
-
-    const prepared = prepareAdminNoteImageFile({ file: selectedFile });
-    if (!prepared.ok) {
-      setError(prepared.error);
-      return;
-    }
-
-    setError(null);
-    setCreatedCaptureRecovery(null);
-    setPendingImageFromFile(prepared.file);
+    if (!files || files.length === 0) return;
+    appendPendingImages(Array.from(files));
   }
 
-  async function uploadPendingImage(noteId: string) {
-    if (!pendingImage) {
-      throw new Error("No image is ready to upload.");
+  async function uploadPendingImages(noteId: string) {
+    if (pendingImages.length === 0) {
+      throw new Error("No images are ready to upload.");
     }
 
     return uploadAdminNoteFiles({
       noteId,
-      files: [pendingImage.file],
+      files: pendingImages.map((image) => image.file),
     });
   }
 
   async function retryPendingImageUpload() {
-    if (!createdCaptureRecovery || !pendingImage || submitting) return;
+    if (!createdCaptureRecovery || pendingImages.length === 0 || submitting) return;
 
     setSubmitting(true);
     setError(null);
 
     try {
-      const updatedItem = await uploadPendingImage(createdCaptureRecovery.id);
+      const updatedItem = await uploadPendingImages(createdCaptureRecovery.id);
       setSavedNotice({
         id: updatedItem.id,
         title: updatedItem.title,
       });
       setCreatedCaptureRecovery(null);
-      clearPendingImage();
+      clearPendingImages();
       notifySaved(updatedItem);
-      setPanelState("closed");
       setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
-      setDraftContext(buildCurrentContext(props));
+      setPanelState("open");
+      setFocusTitleOnOpen(true);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Could not upload image.");
+      setError(uploadError instanceof Error ? uploadError.message : "Could not upload images.");
     } finally {
       setSubmitting(false);
     }
@@ -494,7 +524,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || createdCaptureRecovery) return;
 
     setSubmitting(true);
     setError(null);
@@ -519,19 +549,19 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
         return;
       }
 
-      if (pendingImage) {
+      if (pendingImages.length > 0) {
         try {
-          const updatedItem = await uploadPendingImage(payload.item.id);
+          const updatedItem = await uploadPendingImages(payload.item.id);
           setSavedNotice({
             id: updatedItem.id,
             title: updatedItem.title,
           });
-          clearPendingImage();
+          clearPendingImages();
           setCreatedCaptureRecovery(null);
           notifySaved(updatedItem);
-          setPanelState("closed");
           setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
-          setDraftContext(buildCurrentContext(props));
+          setPanelState("open");
+          setFocusTitleOnOpen(true);
           return;
         } catch (uploadError) {
           setCreatedCaptureRecovery({
@@ -542,8 +572,8 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
           notifySaved(payload.item);
           setError(
             uploadError instanceof Error
-              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry image upload or open the note in Notes.`
-              : "Note saved, but image upload failed. Retry image upload or open the note in Notes."
+              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry upload, remove staged images, or open the note in Notes.`
+              : "Note saved, but image upload failed. Retry upload, remove staged images, or open the note in Notes."
           );
           return;
         }
@@ -555,9 +585,9 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
       });
       setCreatedCaptureRecovery(null);
       notifySaved(payload.item);
-      setPanelState("closed");
       setFormState(createQuickCaptureInitialFormState(todayDateInputValue()));
-      setDraftContext(buildCurrentContext(props));
+      setPanelState("open");
+      setFocusTitleOnOpen(true);
     } catch {
       setError("Could not save note.");
     } finally {
@@ -627,6 +657,27 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                  {savedNotice ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                      <p className="font-semibold">Quick note saved.</p>
+                      <p className="mt-1">
+                        {savedNotice.title}
+                        {notesHref ? (
+                          <>
+                            {" "}
+                            <a
+                              href={notesHref}
+                              className="font-semibold underline underline-offset-2"
+                            >
+                              Open in Notes
+                            </a>
+                          </>
+                        ) : null}{" "}
+                        Ready for another note in the same locked context.
+                      </p>
+                    </div>
+                  ) : null}
+
                   <div className="rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                       Locked context
@@ -654,31 +705,34 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           Image evidence
                         </p>
                         <p className="mt-1 text-sm font-medium text-slate-900">
-                          Add one image if it helps explain the issue
+                          Add up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} images if they help explain
+                          the issue
                         </p>
                         <p className="mt-1 text-xs text-slate-600">
-                          Copy a screenshot or image to clipboard, then paste it here, or upload a
-                          file.
+                          Copy a screenshot or image to clipboard, then paste it here, or upload one
+                          or more files.
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <AdminNoteClipboardPasteButton
                           onPasteReady={async (file) => {
                             setError(null);
-                            setCreatedCaptureRecovery(null);
-                            setPendingImageFromFile(file);
+                            appendPendingImages([file]);
                           }}
                           onError={(message) => {
                             setError(message);
                           }}
+                          disabled={submitting}
                         />
                         <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
-                          <span>Upload image</span>
+                          <span>Upload images</span>
                           <input
-                            aria-label="Upload image"
+                            aria-label="Upload images"
                             type="file"
+                            multiple
                             accept="image/png,image/jpeg,image/webp,image/gif"
                             className="sr-only"
+                            disabled={submitting}
                             onChange={(event) => {
                               handlePendingImageSelection(event.target.files);
                               event.currentTarget.value = "";
@@ -688,35 +742,27 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                       </div>
                     </div>
 
-                    {!pendingImage ? (
+                    {pendingImages.length === 0 ? (
                       <p className="mt-3 text-xs text-slate-600">
-                        No image attached yet. Use the clipboard button after copying a screenshot,
-                        or upload an image file before save.
+                        No images attached yet. Use the clipboard button after copying a screenshot,
+                        or upload up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} image files before save.
                       </p>
                     ) : null}
 
-                    {pendingImage ? (
-                      <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={pendingImage.previewUrl}
-                              alt="Pending image preview"
-                              className="h-14 w-14 rounded-lg object-cover"
-                            />
+                    {pendingImages.length > 0 ? (
+                      <div className="mt-3 space-y-3">
+                        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                               <p className="text-xs font-semibold text-slate-900">
-                                Image ready to attach
+                                {formatImageCountLabel(pendingImages.length)} ready to attach
                               </p>
                               <p className="mt-1 text-[11px] text-slate-600">
                                 {createdCaptureRecovery
-                                  ? "The note is already saved. Retry the image upload or finish without it."
-                                  : "The next note save will upload this image as an admin-only attachment."}
+                                  ? `The saved note "${createdCaptureRecovery.title}" is waiting on the remaining staged images. Retry upload or remove any images you no longer need.`
+                                  : "The next note save will upload these images as admin-only attachments."}
                               </p>
                             </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
                             {createdCaptureRecovery ? (
                               <button
                                 type="button"
@@ -729,26 +775,44 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                                 {submitting ? "Retrying…" : "Retry upload"}
                               </button>
                             ) : null}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (createdCaptureRecovery) {
-                                  setSavedNotice(createdCaptureRecovery);
-                                  setCreatedCaptureRecovery(null);
-                                  setPanelState("closed");
-                                  setFormState(
-                                    createQuickCaptureInitialFormState(todayDateInputValue())
-                                  );
-                                  setDraftContext(buildCurrentContext(props));
-                                }
-                                clearPendingImage();
-                              }}
-                              disabled={submitting}
-                              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Remove image
-                            </button>
                           </div>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {pendingImages.map((image, index) => (
+                            <div
+                              key={image.id}
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-3"
+                              data-testid="admin-note-quick-capture-image-preview"
+                            >
+                              <div className="flex items-center gap-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={image.previewUrl}
+                                  alt={`Pending image preview ${index + 1}`}
+                                  className="h-14 w-14 rounded-lg object-cover"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold text-slate-900">
+                                    Image {index + 1}
+                                  </p>
+                                  <p className="mt-1 truncate text-[11px] text-slate-600">
+                                    {image.file.name}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  removePendingImage(image.id);
+                                }}
+                                disabled={submitting}
+                                className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Remove image {index + 1}
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ) : null}
@@ -762,7 +826,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                         >
                           Open in Notes
                         </a>{" "}
-                        if you want to finish without retrying the image upload.
+                        if you want to finish without retrying the remaining image upload.
                       </p>
                     ) : null}
                   </div>
@@ -888,7 +952,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                         {!createdCaptureRecovery ? (
                           <button
                             type="submit"
-                            disabled={submitting}
+                            disabled={submitting || Boolean(createdCaptureRecovery)}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
                           >
                             {submitting ? "Saving…" : "Save note"}
@@ -922,7 +986,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
         {triggerLabel}
       </button>
 
-      {savedNotice ? (
+      {!open && savedNotice ? (
         <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
           <p className="font-semibold">Quick note saved.</p>
           <p className="mt-1">

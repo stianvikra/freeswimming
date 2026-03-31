@@ -161,6 +161,11 @@ describe("AdminNoteQuickCaptureLauncher", () => {
 
     await screen.findByText("Quick note saved.");
     expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("admin-note-quick-capture-dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("");
+    expect(
+      screen.getByText("Ready for another note in the same locked context.", { exact: false })
+    ).toBeInTheDocument();
 
     const openLink = screen.getByRole("link", { name: "Open in Notes" });
     expect(openLink).toHaveAttribute(
@@ -225,6 +230,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save note" }));
 
     await screen.findByText("Quick note saved.");
+    expect(screen.getByTestId("admin-note-quick-capture-dialog")).toBeInTheDocument();
 
     await waitFor(
       () => {
@@ -234,7 +240,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     );
   }, 10_000);
 
-  it("saves a quick note and uploads a selected image attachment", async () => {
+  it("saves a quick note and uploads staged image attachments without forcing a reopen", async () => {
     const onSaved = vi.fn();
     const fetchMock = vi
       .fn()
@@ -297,6 +303,16 @@ describe("AdminNoteQuickCaptureLauncher", () => {
                 created_by: "admin-user",
                 signed_url: "https://example.com/captured-proof.png",
               },
+              {
+                id: "attachment-2",
+                note_id: "123e4567-e89b-42d3-a456-426614174099",
+                file_name: "captured-proof-2.png",
+                mime_type: "image/png",
+                size_bytes: 12,
+                created_at: "2026-03-22T12:01:30.000Z",
+                created_by: "admin-user",
+                signed_url: "https://example.com/captured-proof-2.png",
+              },
             ],
             related_notes: [],
           },
@@ -317,12 +333,20 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
     await screen.findByTestId("admin-note-quick-capture-dialog");
 
-    fireEvent.change(screen.getByLabelText("Upload image"), {
+    fireEvent.change(screen.getByLabelText("Upload images"), {
       target: {
         files: [new File(["png"], "captured-proof.png", { type: "image/png" })],
       },
     });
-    await screen.findByText("Image ready to attach");
+    await screen.findByText("1 image ready to attach");
+
+    fireEvent.change(screen.getByLabelText("Upload images"), {
+      target: {
+        files: [new File(["png"], "captured-proof-2.png", { type: "image/png" })],
+      },
+    });
+    await screen.findByText("2 images ready to attach");
+    expect(screen.getAllByTestId("admin-note-quick-capture-image-preview")).toHaveLength(2);
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Plans screenshot follow-up" },
@@ -340,8 +364,63 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain(
       "/api/admin/notes/123e4567-e89b-42d3-a456-426614174099/attachments"
     );
+    const uploadFormData = fetchMock.mock.calls[2]?.[1]?.body as FormData;
+    const uploadedFiles = uploadFormData.getAll("files") as File[];
+    expect(uploadedFiles).toHaveLength(2);
+    expect(uploadedFiles.map((file) => file.name)).toEqual([
+      "captured-proof.png",
+      "captured-proof-2.png",
+    ]);
     expect(onSaved).toHaveBeenCalledTimes(1);
     await screen.findByText("Quick note saved.");
+    expect(screen.getByTestId("admin-note-quick-capture-dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("");
+    expect(screen.queryByTestId("admin-note-quick-capture-image-preview")).not.toBeInTheDocument();
+  });
+
+  it("appends repeated staged images and lets one image be removed without clearing the rest", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        items: [{ id: "category-1", title: "Operations", is_active: true }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminNoteQuickCaptureLauncher
+        adminRole="editor"
+        contextType="page"
+        contextRef="/plans"
+        contextLabel="Plans page"
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
+    await screen.findByTestId("admin-note-quick-capture-dialog");
+
+    fireEvent.change(screen.getByLabelText("Upload images"), {
+      target: {
+        files: [new File(["png"], "captured-proof.png", { type: "image/png" })],
+      },
+    });
+    await screen.findByText("1 image ready to attach");
+
+    fireEvent.change(screen.getByLabelText("Upload images"), {
+      target: {
+        files: [new File(["png"], "captured-proof-2.png", { type: "image/png" })],
+      },
+    });
+    await screen.findByText("2 images ready to attach");
+    expect(screen.getAllByTestId("admin-note-quick-capture-image-preview")).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove image 1" }));
+
+    await screen.findByText("1 image ready to attach");
+    expect(screen.getAllByTestId("admin-note-quick-capture-image-preview")).toHaveLength(1);
+    expect(screen.queryByText("captured-proof.png")).not.toBeInTheDocument();
+    expect(screen.getByText("captured-proof-2.png")).toBeInTheDocument();
   });
 
   it("collapses and resumes a quick-note draft without losing staged image evidence", async () => {
@@ -366,12 +445,12 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
     await screen.findByTestId("admin-note-quick-capture-dialog");
 
-    fireEvent.change(screen.getByLabelText("Upload image"), {
+    fireEvent.change(screen.getByLabelText("Upload images"), {
       target: {
         files: [new File(["png"], "captured-proof.png", { type: "image/png" })],
       },
     });
-    await screen.findByText("Image ready to attach");
+    await screen.findByText("1 image ready to attach");
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Collapsed quick note" },
@@ -398,7 +477,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     await screen.findByTestId("admin-note-quick-capture-dialog");
     expect(screen.getByLabelText("Title")).toHaveValue("Collapsed quick note");
     expect(screen.getByLabelText("Text")).toHaveValue("Keep this draft while reviewing the page.");
-    expect(screen.getByText("Image ready to attach")).toBeInTheDocument();
+    expect(screen.getByText("1 image ready to attach")).toBeInTheDocument();
   });
 
   it("restores the same draft on another supported surface while keeping the original locked context", async () => {
@@ -516,12 +595,12 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
     await screen.findByTestId("admin-note-quick-capture-dialog");
 
-    fireEvent.change(screen.getByLabelText("Upload image"), {
+    fireEvent.change(screen.getByLabelText("Upload images"), {
       target: {
         files: [new File(["png"], "captured-proof.png", { type: "image/png" })],
       },
     });
-    await screen.findByText("Image ready to attach");
+    await screen.findByText("1 image ready to attach");
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Plans screenshot follow-up" },
@@ -630,7 +709,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     await screen.findByTestId("admin-note-quick-capture-form");
     fireEvent.click(screen.getByRole("button", { name: "Paste image from clipboard" }));
 
-    await screen.findByText("Image ready to attach");
+    await screen.findByText("1 image ready to attach");
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Clipboard note" },

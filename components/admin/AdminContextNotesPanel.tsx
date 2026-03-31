@@ -6,12 +6,16 @@ import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCapt
 import { hasRequiredAdminRole, type AdminRole } from "@/lib/admin/access";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import {
+  createAdminNoteStagedImages,
   extractAdminNoteClipboardImage,
-  prepareAdminNoteImageFile,
+  prepareAdminNoteImageFiles,
+  revokeAdminNoteStagedImages,
+  type AdminNoteStagedImage,
 } from "@/lib/admin/note-compose";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 import {
+  ADMIN_NOTE_ATTACHMENT_MAX_FILES,
   ADMIN_NOTE_PRIORITY_VALUES,
   type AdminNoteItem,
   type AdminNotePriority,
@@ -90,10 +94,7 @@ type FormState = {
   isDone: boolean;
 };
 
-type PendingImage = {
-  file: File;
-  previewUrl: string;
-};
+type PendingImage = AdminNoteStagedImage;
 
 type PendingImageRecovery = {
   noteId: string;
@@ -145,6 +146,10 @@ function formatPriorityLabel(priority: AdminNotePriority): string {
   return priority.charAt(0).toUpperCase() + priority.slice(1);
 }
 
+function formatImageCountLabel(count: number): string {
+  return `${count} image${count === 1 ? "" : "s"}`;
+}
+
 function normalizeContextRef(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -183,12 +188,13 @@ export default function AdminContextNotesPanel({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editState, setEditState] = useState<FormState | null>(null);
-  const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [pendingImageRecovery, setPendingImageRecovery] = useState<PendingImageRecovery | null>(
     null
   );
   const lastLoadedContextKeyRef = useRef<string | null>(null);
   const createDraftPresentRef = useRef(false);
+  const pendingImagesRef = useRef<PendingImage[]>([]);
 
   useEffect(() => {
     createDraftPresentRef.current =
@@ -198,9 +204,9 @@ export default function AdminContextNotesPanel({
       formState.noteDate !== INITIAL_FORM.noteDate ||
       formState.priority !== INITIAL_FORM.priority ||
       formState.isDone !== INITIAL_FORM.isDone ||
-      pendingImage !== null ||
+      pendingImages.length > 0 ||
       pendingImageRecovery !== null;
-  }, [formState, pendingImage, pendingImageRecovery]);
+  }, [formState, pendingImageRecovery, pendingImages.length]);
 
   useEffect(() => {
     const cachedDraft = contextualCreateDraftCache.get(contextKey);
@@ -241,7 +247,7 @@ export default function AdminContextNotesPanel({
       if (!preserveComposeDraft) {
         setFormState(INITIAL_FORM);
         setPendingImageRecovery(null);
-        clearPendingImage();
+        clearPendingImages();
       }
     }
 
@@ -324,12 +330,14 @@ export default function AdminContextNotesPanel({
   }, [loadNotes]);
 
   useEffect(() => {
+    pendingImagesRef.current = pendingImages;
+  }, [pendingImages]);
+
+  useEffect(() => {
     return () => {
-      if (pendingImage?.previewUrl) {
-        URL.revokeObjectURL(pendingImage.previewUrl);
-      }
+      revokeAdminNoteStagedImages(pendingImagesRef.current);
     };
-  }, [pendingImage]);
+  }, []);
 
   useEffect(() => {
     if (!actionNotice) return;
@@ -343,26 +351,58 @@ export default function AdminContextNotesPanel({
     };
   }, [actionNotice]);
 
-  function setPendingImageFromFile(file: File) {
-    setPendingImage((current) => {
-      if (current?.previewUrl) {
-        URL.revokeObjectURL(current.previewUrl);
-      }
+  function appendPendingImages(files: Iterable<Blob | File>) {
+    const prepared = prepareAdminNoteImageFiles({
+      files,
+      currentCount: pendingImages.length,
+    });
 
-      return {
-        file,
-        previewUrl: URL.createObjectURL(file),
-      };
+    if (!prepared.ok) {
+      setActionError(prepared.error);
+      return;
+    }
+
+    if (prepared.files.length === 0) {
+      return;
+    }
+
+    setActionError(null);
+    setPendingImages((current) => [...current, ...createAdminNoteStagedImages(prepared.files)]);
+  }
+
+  function clearPendingImages() {
+    setPendingImages((current) => {
+      revokeAdminNoteStagedImages(current);
+      return [];
     });
   }
 
-  function clearPendingImage() {
-    setPendingImage((current) => {
-      if (current?.previewUrl) {
-        URL.revokeObjectURL(current.previewUrl);
-      }
-      return null;
+  function removePendingImage(imageId: string) {
+    let removedImage: PendingImage | null = null;
+    let nextCount = 0;
+
+    setPendingImages((current) => {
+      const next = current.filter((image) => {
+        if (image.id === imageId) {
+          removedImage = image;
+          return false;
+        }
+        return true;
+      });
+      nextCount = next.length;
+      return next;
     });
+
+    if (removedImage) {
+      revokeAdminNoteStagedImages([removedImage]);
+    }
+
+    if (pendingImageRecovery && nextCount === 0) {
+      setPendingImageRecovery(null);
+      setActionError(null);
+      setActionNotice("Note saved without staged images.");
+      setCreateFormExpanded(false);
+    }
   }
 
   function handleCreateFormPaste(event: React.ClipboardEvent<HTMLFormElement>) {
@@ -382,55 +422,45 @@ export default function AdminContextNotesPanel({
     }
 
     setActionError(null);
-    setPendingImageRecovery(null);
-    setPendingImageFromFile(result.file);
+    appendPendingImages([result.file]);
   }
 
   function handlePendingImageSelection(files: FileList | null) {
-    const selectedFile = files?.[0];
-    if (!selectedFile) return;
-
-    const prepared = prepareAdminNoteImageFile({
-      file: selectedFile,
-    });
-
-    if (!prepared.ok) {
-      setActionError(prepared.error);
-      return;
-    }
-
-    setActionError(null);
-    setPendingImageRecovery(null);
-    setPendingImageFromFile(prepared.file);
+    if (!files || files.length === 0) return;
+    appendPendingImages(Array.from(files));
   }
 
-  async function uploadPendingImage(noteId: string) {
-    if (!pendingImage) {
-      throw new Error("No image is ready to upload.");
+  async function uploadPendingImages(noteId: string) {
+    if (pendingImages.length === 0) {
+      throw new Error("No images are ready to upload.");
     }
 
     return uploadAdminNoteFiles({
       noteId,
-      files: [pendingImage.file],
+      files: pendingImages.map((image) => image.file),
     });
   }
 
   async function retryPendingImageUpload() {
-    if (!pendingImageRecovery || !pendingImage || submitting) return;
+    if (!pendingImageRecovery || pendingImages.length === 0 || submitting) return;
 
     setSubmitting(true);
     setActionError(null);
 
     try {
-      const updatedItem = await uploadPendingImage(pendingImageRecovery.noteId);
+      const updatedItem = await uploadPendingImages(pendingImageRecovery.noteId);
       setItems((prev) => prev.map((entry) => (entry.id === updatedItem.id ? updatedItem : entry)));
       setPendingImageRecovery(null);
-      clearPendingImage();
+      clearPendingImages();
       setCreateFormExpanded(false);
-      setActionNotice("Note saved.");
+      setActionNotice(
+        pendingImages.length === 1
+          ? "Image attached to saved note."
+          : "Images attached to saved note."
+      );
     } catch (uploadError) {
       setActionError(
-        uploadError instanceof Error ? uploadError.message : "Could not upload image."
+        uploadError instanceof Error ? uploadError.message : "Could not upload images."
       );
     } finally {
       setSubmitting(false);
@@ -457,7 +487,7 @@ export default function AdminContextNotesPanel({
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (submitting) return;
+    if (submitting || pendingImageRecovery) return;
     setSubmitting(true);
     setActionError(null);
     setActionNotice(null);
@@ -484,12 +514,17 @@ export default function AdminContextNotesPanel({
         return;
       }
 
-      if (pendingImage) {
+      if (pendingImages.length > 0) {
         try {
-          const updatedItem = await uploadPendingImage(payload.item.id);
+          const updatedItem = await uploadPendingImages(payload.item.id);
           setItems((prev) => [updatedItem, ...prev.filter((entry) => entry.id !== updatedItem.id)]);
-          clearPendingImage();
+          clearPendingImages();
           setPendingImageRecovery(null);
+          setActionNotice(
+            pendingImages.length === 1
+              ? "Note saved with image attached."
+              : "Note saved with images attached."
+          );
         } catch (uploadError) {
           setItems((prev) => [
             payload.item,
@@ -502,21 +537,21 @@ export default function AdminContextNotesPanel({
           setCreateFormExpanded(true);
           setActionError(
             uploadError instanceof Error
-              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry image upload or remove the staged image.`
-              : "Note saved, but image upload failed. Retry image upload or remove the staged image."
+              ? `Note saved, but ${uploadError.message.toLowerCase()} Retry upload or remove the staged images.`
+              : "Note saved, but image upload failed. Retry upload or remove the staged images."
           );
           setFormState(INITIAL_FORM);
           return;
         }
       } else {
         setItems((prev) => [payload.item, ...prev.filter((entry) => entry.id !== payload.item.id)]);
+        setActionNotice("Note saved.");
       }
 
       setFormState(INITIAL_FORM);
       setPendingImageRecovery(null);
-      clearPendingImage();
+      clearPendingImages();
       setCreateFormExpanded(false);
-      setActionNotice("Note saved.");
     } catch {
       setActionError("Could not save note.");
     } finally {
@@ -818,7 +853,8 @@ export default function AdminContextNotesPanel({
                           Image evidence
                         </p>
                         <p className="mt-1 text-xs text-slate-600">
-                          Paste from clipboard or upload one image before save.
+                          Paste from clipboard or upload up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES}{" "}
+                          images before save.
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -826,19 +862,21 @@ export default function AdminContextNotesPanel({
                           buttonTestId="admin-context-note-paste-image"
                           onPasteReady={async (file) => {
                             setActionError(null);
-                            setPendingImageRecovery(null);
-                            setPendingImageFromFile(file);
+                            appendPendingImages([file]);
                           }}
                           onError={(message) => {
                             setActionError(message);
                           }}
+                          disabled={submitting}
                         />
                         <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
-                          <span>Upload image</span>
+                          <span>Upload images</span>
                           <input
                             type="file"
+                            multiple
                             accept="image/png,image/jpeg,image/webp,image/gif"
                             className="sr-only"
+                            disabled={submitting}
                             onChange={(event) => {
                               handlePendingImageSelection(event.target.files);
                               event.currentTarget.value = "";
@@ -848,36 +886,25 @@ export default function AdminContextNotesPanel({
                       </div>
                     </div>
 
-                    {!pendingImage ? (
+                    {pendingImages.length === 0 ? (
                       <p className="mt-3 text-xs text-slate-600">
-                        No image attached yet. Copy a screenshot first if you want to paste it from
-                        clipboard.
+                        No images attached yet. Copy a screenshot first if you want to paste it from
+                        clipboard, or upload up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} files.
                       </p>
                     ) : (
-                      <div
-                        className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
-                        data-testid="admin-context-note-image-preview"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={pendingImage.previewUrl}
-                              alt="Pending note image preview"
-                              className="h-14 w-14 rounded-lg object-cover"
-                            />
+                      <div className="mt-3 space-y-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                               <p className="text-xs font-semibold text-slate-900">
-                                Image ready to attach
+                                {formatImageCountLabel(pendingImages.length)} ready to attach
                               </p>
                               <p className="mt-1 text-[11px] text-slate-600">
                                 {pendingImageRecovery
-                                  ? `The note "${pendingImageRecovery.noteTitle}" is already saved. Retry the image upload or remove the staged image.`
-                                  : "The next note save will upload this image as an admin-only attachment."}
+                                  ? `The note "${pendingImageRecovery.noteTitle}" is already saved. Retry upload or remove any staged images you no longer need.`
+                                  : "The next note save will upload these images as admin-only attachments."}
                               </p>
                             </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
                             {pendingImageRecovery ? (
                               <button
                                 type="button"
@@ -890,18 +917,44 @@ export default function AdminContextNotesPanel({
                                 {submitting ? "Retrying…" : "Retry upload"}
                               </button>
                             ) : null}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPendingImageRecovery(null);
-                                clearPendingImage();
-                              }}
-                              disabled={submitting}
-                              className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Remove image
-                            </button>
                           </div>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {pendingImages.map((image, index) => (
+                            <div
+                              key={image.id}
+                              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
+                              data-testid="admin-context-note-image-preview"
+                            >
+                              <div className="flex items-center gap-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={image.previewUrl}
+                                  alt={`Pending note image preview ${index + 1}`}
+                                  className="h-14 w-14 rounded-lg object-cover"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold text-slate-900">
+                                    Image {index + 1}
+                                  </p>
+                                  <p className="mt-1 truncate text-[11px] text-slate-600">
+                                    {image.file.name}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  removePendingImage(image.id);
+                                }}
+                                disabled={submitting}
+                                className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Remove image {index + 1}
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -922,7 +975,7 @@ export default function AdminContextNotesPanel({
                   <div className="sm:col-span-2">
                     <button
                       type="submit"
-                      disabled={submitting || !schemaReady}
+                      disabled={submitting || !schemaReady || Boolean(pendingImageRecovery)}
                       className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
                     >
                       {submitting ? "Saving…" : "Save note"}

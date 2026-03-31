@@ -1,4 +1,4 @@
-import { validateAdminNoteAttachment } from "@/lib/admin/notes";
+import { ADMIN_NOTE_ATTACHMENT_MAX_FILES, validateAdminNoteAttachment } from "@/lib/admin/notes";
 
 type AdminNoteClipboardImageResult =
   | {
@@ -25,10 +25,28 @@ type AdminNotePreparedImageFileResult =
       file: File;
     };
 
+type AdminNotePreparedImageFilesResult =
+  | {
+      ok: false;
+      error: string;
+    }
+  | {
+      ok: true;
+      files: File[];
+    };
+
+export type AdminNoteStagedImage = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
+
 type ClipboardReadableItem = {
   types: readonly string[];
   getType: (type: string) => Promise<Blob>;
 };
+
+let stagedImageIdCounter = 0;
 
 function extensionForMimeType(mimeType: string): string {
   switch (mimeType) {
@@ -46,6 +64,27 @@ function extensionForMimeType(mimeType: string): string {
 
 function buildClipboardFallbackName(mimeType: string): string {
   return `pasted-image.${extensionForMimeType(mimeType)}`;
+}
+
+function buildAdminNoteImageLimitError(maxFiles: number): string {
+  return `You can stage up to ${maxFiles} images per note. Remove one before adding more.`;
+}
+
+function revokePreviewUrl(url: string | null | undefined) {
+  if (!url || typeof URL?.revokeObjectURL !== "function") {
+    return;
+  }
+
+  try {
+    URL.revokeObjectURL(url);
+  } catch {
+    // ignore cleanup fallback
+  }
+}
+
+function nextAdminNoteStagedImageId(): string {
+  stagedImageIdCounter += 1;
+  return `admin-note-staged-image-${stagedImageIdCounter}`;
 }
 
 export function prepareAdminNoteImageFile(params: {
@@ -86,6 +125,67 @@ export function prepareAdminNoteImageFile(params: {
           : Date.now(),
     }),
   };
+}
+
+export function prepareAdminNoteImageFiles(params: {
+  files: Iterable<Blob | File>;
+  currentCount?: number;
+  maxFiles?: number;
+}): AdminNotePreparedImageFilesResult {
+  const maxFiles = params.maxFiles ?? ADMIN_NOTE_ATTACHMENT_MAX_FILES;
+  const currentCount = Math.max(0, params.currentCount ?? 0);
+  const entries = Array.from(params.files);
+
+  if (entries.length === 0) {
+    return {
+      ok: true,
+      files: [],
+    };
+  }
+
+  if (currentCount + entries.length > maxFiles) {
+    return {
+      ok: false,
+      error: buildAdminNoteImageLimitError(maxFiles),
+    };
+  }
+
+  const preparedFiles: File[] = [];
+  for (const entry of entries) {
+    const prepared = prepareAdminNoteImageFile({
+      file: entry,
+      fileName: "name" in entry && typeof entry.name === "string" ? entry.name : undefined,
+    });
+    if (!prepared.ok) {
+      return prepared;
+    }
+    preparedFiles.push(prepared.file);
+  }
+
+  return {
+    ok: true,
+    files: preparedFiles,
+  };
+}
+
+export function createAdminNoteStagedImages(files: readonly File[]): AdminNoteStagedImage[] {
+  return files.map((file) => ({
+    id: nextAdminNoteStagedImageId(),
+    file,
+    previewUrl: URL.createObjectURL(file),
+  }));
+}
+
+export function revokeAdminNoteStagedImages(
+  images: Iterable<Pick<AdminNoteStagedImage, "previewUrl">> | null | undefined
+) {
+  if (!images) {
+    return;
+  }
+
+  for (const image of images) {
+    revokePreviewUrl(image.previewUrl);
+  }
 }
 
 export function extractAdminNoteClipboardImage(params: {

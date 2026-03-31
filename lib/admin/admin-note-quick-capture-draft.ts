@@ -1,4 +1,5 @@
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
+import { revokeAdminNoteStagedImages, type AdminNoteStagedImage } from "@/lib/admin/note-compose";
 import type { AdminNotePriority } from "@/lib/admin/notes";
 
 const QUICK_CAPTURE_STORAGE_KEY = "fs-admin-note-quick-capture-draft-v1";
@@ -17,10 +18,7 @@ export type QuickCaptureSavedNotice = {
   title: string;
 };
 
-export type QuickCapturePendingImage = {
-  file: File;
-  previewUrl: string;
-};
+export type QuickCapturePendingImage = AdminNoteStagedImage;
 
 export type QuickCaptureLockedContext = {
   contextType: AdminNoteContextType;
@@ -41,7 +39,7 @@ export type QuickCaptureDraftSnapshot = {
 
 export type QuickCaptureDraftStore = {
   snapshot: QuickCaptureDraftSnapshot;
-  pendingImage: QuickCapturePendingImage | null;
+  pendingImages: QuickCapturePendingImage[];
 };
 
 let memoryDraftStore: QuickCaptureDraftStore | null = null;
@@ -49,15 +47,6 @@ let memoryDraftOwnerId: string | null = null;
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
-}
-
-function revokePreviewUrl(url: string | null | undefined) {
-  if (!url || !isBrowser()) return;
-  try {
-    URL.revokeObjectURL(url);
-  } catch {
-    // safe cleanup fallback
-  }
 }
 
 function writeSnapshotToSessionStorage(snapshot: QuickCaptureDraftSnapshot | null) {
@@ -141,17 +130,19 @@ export function readQuickCaptureDraftStore(): QuickCaptureDraftStore | null {
 
   memoryDraftStore = {
     snapshot,
-    pendingImage: null,
+    pendingImages: [],
   };
   return memoryDraftStore;
 }
 
 export function writeQuickCaptureDraftStore(store: QuickCaptureDraftStore | null) {
-  const previousPreviewUrl = memoryDraftStore?.pendingImage?.previewUrl ?? null;
-  const nextPreviewUrl = store?.pendingImage?.previewUrl ?? null;
+  const nextPreviewUrls = new Set((store?.pendingImages ?? []).map((image) => image.previewUrl));
+  const removedImages = (memoryDraftStore?.pendingImages ?? []).filter(
+    (image) => !nextPreviewUrls.has(image.previewUrl)
+  );
 
-  if (previousPreviewUrl && previousPreviewUrl !== nextPreviewUrl) {
-    revokePreviewUrl(previousPreviewUrl);
+  if (removedImages.length > 0 && isBrowser()) {
+    revokeAdminNoteStagedImages(removedImages);
   }
 
   memoryDraftStore = store;
