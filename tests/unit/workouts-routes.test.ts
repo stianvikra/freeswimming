@@ -311,6 +311,12 @@ describe("workouts routes", () => {
         {
           id: "focus-1",
           title: "High elbow catch",
+          isPrimary: true,
+        },
+        {
+          id: "focus-2",
+          title: "Calm exhale",
+          isPrimary: false,
         },
       ],
       focusHistory: [],
@@ -333,7 +339,7 @@ describe("workouts routes", () => {
 
     const response = await getWorkoutPdf(
       new Request(
-        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111/export/pdf?variant=poolside"
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111/export/pdf?variant=poolside&printStyle=ink_saver&focusId=focus-2"
       ),
       {
         params: Promise.resolve({
@@ -346,8 +352,11 @@ describe("workouts routes", () => {
     expect(response.status).toBe(200);
     expect(body).toContain("Poolside Note");
     expect(body).toContain('data-pdf-variant="poolside"');
-    expect(body).toContain("High elbow catch");
+    expect(body).toContain('data-poolside-print-style="ink_saver"');
+    expect(body).toContain("Calm exhale");
+    expect(body).not.toContain("High elbow catch");
     expect(body).toContain("Breathing timing");
+    expect(body).toContain("logo_black_print.png");
   });
 
   it("creates manual canonical workouts when the request source kind is manual", async () => {

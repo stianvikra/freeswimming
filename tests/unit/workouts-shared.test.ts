@@ -4,11 +4,13 @@ import {
   buildWorkoutPdfFileName,
   buildWorkoutPdfHtmlDocument,
   buildWorkoutPdfModel,
+  getDefaultWorkoutPoolsideFocusIds,
   buildWorkoutGarminReadyExport,
   buildWorkoutGarminReadyExportFileName,
   buildWorkoutGarminReadinessReport,
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
+  selectWorkoutPoolsideFocusTitles,
 } from "@/lib/workouts/shared";
 
 function buildDraft(): SessionDraft {
@@ -427,16 +429,40 @@ describe("workouts shared readiness", () => {
       draftState: "canonical",
       variant: "poolside",
       focusPoints: ["High elbow catch", "Calm exhale"],
+      poolsidePrintStyle: "ink_saver",
+      logoUrl: "https://example.com/logo_black_print.png",
     });
 
     expect(
       buildWorkoutPdfFileName(buildDraft(), { draftState: "canonical", variant: "poolside" })
     ).toBe("freeswimming-garmin-readiness-draft-poolside-note.pdf");
     expect(html).toContain('data-pdf-variant="poolside"');
+    expect(html).toContain('data-poolside-print-style="ink_saver"');
     expect(html).toContain("Poolside Note");
     expect(html).toContain("High elbow catch");
     expect(html).toContain("Calm exhale");
     expect(html).toContain("400m");
     expect(html).toContain("Tot: 400m");
+    expect(html).toContain("logo_black_print.png");
+    expect(html).not.toContain("Compact lane-side note");
+  });
+
+  it("prefers the primary poolside focus by default and resolves titles from explicit ids", () => {
+    expect(
+      getDefaultWorkoutPoolsideFocusIds([
+        { id: "focus-1", title: "High elbow catch", isPrimary: true },
+        { id: "focus-2", title: "Calm exhale", isPrimary: false },
+      ])
+    ).toEqual(["focus-1"]);
+
+    expect(
+      selectWorkoutPoolsideFocusTitles(
+        [
+          { id: "focus-1", title: "High elbow catch", isPrimary: true },
+          { id: "focus-2", title: "Calm exhale", isPrimary: false },
+        ],
+        ["focus-2", "missing-focus", "focus-1"]
+      )
+    ).toEqual(["High elbow catch", "Calm exhale"]);
   });
 });

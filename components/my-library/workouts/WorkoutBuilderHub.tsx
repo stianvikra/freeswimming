@@ -11,6 +11,7 @@ import type {
   WorkoutDeleteApiResponse,
   WorkoutEditorRecord,
   WorkoutLibrarySnapshot,
+  WorkoutPoolsideFocusOption,
   WorkoutSaveApiResponse,
   WorkoutSummary,
 } from "@/lib/workouts/shared";
@@ -18,7 +19,7 @@ import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 
 type Props = {
   workoutLibrary: WorkoutLibrarySnapshot;
-  trainingFocusTitles?: string[];
+  trainingFocusOptions?: WorkoutPoolsideFocusOption[];
   browseOnly?: boolean;
 };
 
@@ -29,7 +30,7 @@ function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSumm
 
 export default function WorkoutBuilderHub({
   workoutLibrary,
-  trainingFocusTitles = [],
+  trainingFocusOptions = [],
   browseOnly = false,
 }: Props) {
   const router = useRouter();
@@ -415,7 +416,7 @@ export default function WorkoutBuilderHub({
             <WorkoutEditor
               draft={draft}
               savedWorkout={savedWorkout}
-              trainingFocusTitles={trainingFocusTitles}
+              trainingFocusOptions={trainingFocusOptions}
               recentWorkouts={[]}
               canonicalSaveReady={workoutLibrary.schemaReady}
               isSaving={isSaving}

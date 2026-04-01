@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
-import { buildWorkoutPdfHtmlDocument } from "@/lib/workouts/shared";
+import {
+  buildWorkoutPdfHtmlDocument,
+  normalizeWorkoutPoolsidePrintStyle,
+  selectWorkoutPoolsideFocusTitles,
+  type WorkoutPoolsideFocusOption,
+} from "@/lib/workouts/shared";
 import { buildWorkoutEditorRecord, WORKOUT_SELECT } from "@/lib/workouts/server";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 
@@ -36,8 +41,13 @@ function noStoreText(body: string, status = 200) {
 }
 
 export async function GET(request: Request, context: RouteContext) {
+  const requestUrl = new URL(request.url);
   const pdfVariant =
-    new URL(request.url).searchParams.get("variant") === "poolside" ? "poolside" : "standard";
+    requestUrl.searchParams.get("variant") === "poolside" ? "poolside" : "standard";
+  const requestedFocusIds = requestUrl.searchParams.getAll("focusId");
+  const poolsidePrintStyle = normalizeWorkoutPoolsidePrintStyle(
+    requestUrl.searchParams.get("printStyle")
+  );
   const { workoutId } = await context.params;
   if (!UUID_PATTERN.test(workoutId)) {
     return noStoreText("Invalid workout id.", 400);
@@ -77,10 +87,18 @@ export async function GET(request: Request, context: RouteContext) {
   const workout = buildWorkoutEditorRecord(result.data);
   const trainingContextSnapshot =
     pdfVariant === "poolside" ? await loadTrainingContextSnapshot(supabase, user.id) : null;
-  const focusPoints =
+  const focusOptions: WorkoutPoolsideFocusOption[] =
     trainingContextSnapshot?.schemaReady && !trainingContextSnapshot.loadError
-      ? trainingContextSnapshot.openFocuses.map((focus) => focus.title)
+      ? trainingContextSnapshot.openFocuses.map((focus) => ({
+          id: focus.id,
+          title: focus.title,
+          isPrimary: focus.isPrimary,
+        }))
       : [];
+  const focusPoints =
+    requestedFocusIds.length > 0
+      ? selectWorkoutPoolsideFocusTitles(focusOptions, requestedFocusIds)
+      : focusOptions.map((focus) => focus.title);
 
   return applySupabaseCookies(
     noStoreHtml(
@@ -88,6 +106,8 @@ export async function GET(request: Request, context: RouteContext) {
         draftState: "canonical",
         variant: pdfVariant,
         focusPoints,
+        poolsidePrintStyle,
+        logoUrl: new URL("/logos/logo_black_print.png", requestUrl).toString(),
       })
     )
   );

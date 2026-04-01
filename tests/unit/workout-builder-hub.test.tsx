@@ -116,6 +116,19 @@ function readPreviewDraft() {
   ) as SessionDraft;
 }
 
+function buildTrainingFocusOptions() {
+  return [
+    { id: "focus-1", title: "High elbow catch", isPrimary: true },
+    { id: "focus-2", title: "Calm exhale", isPrimary: false },
+  ];
+}
+
+function openWorkoutMetadataPanel() {
+  if (!screen.queryByTestId("workout-editor-metadata-toggle")) return;
+  if (screen.queryByTestId("session-draft-title")) return;
+  fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
+}
+
 describe("WorkoutBuilderHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -174,6 +187,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeDisabled();
 
+    openWorkoutMetadataPanel();
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "Builder edited workout" },
     });
@@ -318,6 +332,7 @@ describe("WorkoutBuilderHub", () => {
     expect(fetchBody.draft.allowedStrokes).toContain("backstroke");
     expect(fetchBody.draft.allowedStrokes).not.toContain("im_by_round");
     expect(fetchBody.draft.equipmentAllowlist).toContain("fins");
+    openWorkoutMetadataPanel();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Builder edited workout");
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
     expect(screen.getByTestId("session-draft-step-distance-0")).toHaveValue("custom");
@@ -343,6 +358,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    openWorkoutMetadataPanel();
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "Temporary builder title" },
     });
@@ -360,6 +376,7 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.getByText("Unsaved builder edits were reset to the last saved workout.")
     ).toBeVisible();
+    openWorkoutMetadataPanel();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
     expect(screen.getByTestId("session-draft-description")).toHaveValue(
       "Threshold session in pool mode."
@@ -654,6 +671,7 @@ describe("WorkoutBuilderHub", () => {
       '"draftState": "canonical"'
     );
 
+    openWorkoutMetadataPanel();
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "Local handoff workout" },
     });
@@ -749,7 +767,12 @@ describe("WorkoutBuilderHub", () => {
 
     const openSpy = vi.spyOn(window, "open").mockReturnValue(printWindow as unknown as Window);
 
-    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary()}
+        trainingFocusOptions={buildTrainingFocusOptions()}
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
@@ -758,6 +781,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    openWorkoutMetadataPanel();
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "Local PDF workout" },
     });
@@ -805,6 +829,8 @@ describe("WorkoutBuilderHub", () => {
       )}. Use Print / Save PDF in that tab.`
     );
 
+    fireEvent.click(screen.getByTestId("workout-editor-poolside-focus-focus-2"));
+    fireEvent.click(screen.getByTestId("workout-editor-poolside-style-ink-saver"));
     fireEvent.click(screen.getByTestId("workout-editor-poolside-pdf-open"));
 
     await waitFor(() => {
@@ -812,10 +838,50 @@ describe("WorkoutBuilderHub", () => {
         expect.stringContaining('data-pdf-variant="poolside"')
       );
       expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining('data-poolside-print-style="ink_saver"')
+      );
+      expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining("High elbow catch")
+      );
+      expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining("Calm exhale")
+      );
+      expect(printWindow.document.write).toHaveBeenCalledWith(
         expect.stringContaining("Poolside Note")
       );
       expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Tot:"));
+      expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining("logo_black_print.png")
+      );
     });
+  });
+
+  it("collapses the metadata panel by default for saved builder sessions and reopens on demand", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.queryByTestId("session-draft-title")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-editor-metadata-summary")).toHaveTextContent(
+      "400m · ~10 min · Moderate"
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
+
+    expect(screen.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
   });
 
   it("shows whole-workout guidance for the description field", async () => {
@@ -828,6 +894,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    openWorkoutMetadataPanel();
     expect(screen.getByText("Description")).toBeVisible();
     expect(
       screen.getByText(

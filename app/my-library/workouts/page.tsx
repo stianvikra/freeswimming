@@ -4,6 +4,7 @@ import SiteChrome from "@/components/SiteChrome";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
+import type { WorkoutPoolsideFocusOption } from "@/lib/workouts/shared";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
@@ -22,9 +23,13 @@ export default async function WorkoutSessionsPage() {
     loadWorkoutLibrarySnapshot(supabase, user.id, null),
     loadTrainingContextSnapshot(supabase, user.id),
   ]);
-  const trainingFocusTitles =
+  const trainingFocusOptions: WorkoutPoolsideFocusOption[] =
     trainingContextSnapshot.schemaReady && !trainingContextSnapshot.loadError
-      ? trainingContextSnapshot.openFocuses.map((focus) => focus.title)
+      ? trainingContextSnapshot.openFocuses.map((focus) => ({
+          id: focus.id,
+          title: focus.title,
+          isPrimary: focus.isPrimary,
+        }))
       : [];
 
   return (
@@ -51,7 +56,7 @@ export default async function WorkoutSessionsPage() {
           <div className="mt-8">
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
-              trainingFocusTitles={trainingFocusTitles}
+              trainingFocusOptions={trainingFocusOptions}
               browseOnly
             />
           </div>

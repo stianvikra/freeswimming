@@ -148,6 +148,20 @@ async function waitForGeneratorIntakeClientReady(page: Page) {
 
 async function waitForWorkoutBuilderClientReady(page: Page) {
   await expect(page.getByTestId("workout-builder-hub")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("workout-editor-metadata-toggle")).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
+async function ensureWorkoutMetadataOpen(page: Page) {
+  const metadataToggle = page.getByTestId("workout-editor-metadata-toggle");
+  await expect(metadataToggle).toBeVisible({ timeout: 15_000 });
+
+  if ((await metadataToggle.getAttribute("aria-expanded")) !== "true") {
+    await metadataToggle.click();
+  }
+
+  await expect(metadataToggle).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByTestId("session-draft-title")).toBeVisible({ timeout: 15_000 });
 }
 
@@ -299,6 +313,7 @@ test.describe("my library generator intake", () => {
     await expect(
       page.getByRole("heading", { name: "Swim session builder", level: 1 })
     ).toBeVisible();
+    await ensureWorkoutMetadataOpen(page);
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
 
     await page
