@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-28`
-- `updated`: `2026-03-30`
+- `updated`: `2026-04-01`
 
 ## Goal
 
@@ -263,6 +263,10 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-01` — stabilized the last two verify blockers and closed the full gate on branch `feat/generator-intake-clarity-2026-03-31`. `course-nav-contextual` now selects the last lesson through the real drawer button accessibility label and retries transient cold-route navigation errors, `my-library-generator-intake` now distinguishes the browse-only `My sessions` route from the dedicated workout editor route, and `eslint.config.mjs` now ignores `.next-debug-routes*` so generated local debug output no longer breaks lint. Fresh isolated blocker reruns and full `npm run verify:pre-pr` are green. Next step: stage the validated slice, commit, push, and open/update the PR.`
+- `2026-04-01` — generator slice still has clean implementation and the broad verify triage advanced, but the full gate is not green yet. Targeted `typecheck`, generator/workout Vitest, `lint:briefs:all`, isolated desktop-chromium generator-intake e2e (before the broader rerun work), and a newly split `api-security-negative-paths` e2e all passed. Follow-up hardening attempts on `course-nav-contextual` and fresh-server generator-intake reruns still hit dev-server / cold-route instability (`page.goto ... ERR_ABORTED`, mobile drawer instability, and intermittent `/dev/login` Supabase timeout on dev bypass). Next step: keep the generator code changes, keep the admin negative-path test split, and treat `course-nav-contextual` + fresh My Library route loading as the remaining verify blockers before push/PR.`
+- `2026-03-31` — full local gate still blocked after one fresh-port rerun: targeted `typecheck`, generator/workout Vitest, `lint:briefs:all`, and isolated desktop-chromium generator Playwright stayed green, but `npm run verify:pre-pr` failed in the broader Playwright matrix on unrelated legacy/full-suite paths (`api-security-negative-paths`, `course-nav-contextual`, `course-common-mistakes`, `course-progress-sync`, `drawer-focus-trap`, and other non-generator flows). One failed run also showed transient Supabase host resolution noise (`ENOTFOUND ...supabase.co`) before later resolving again. Next step: treat this slice as implementation-complete but hold push/PR until the broader verify blocker is triaged or a stable green rerun is obtained.`
+- `2026-03-31` — slice continued on branch `feat/generator-intake-clarity-2026-03-31`; tightened the remaining end-user copy and disclosure seams by renaming generator entrypoints to `Open AI session generator`, reframing saved-source language as `Saved My Library details`, renaming `Session information` to `Session notes and setup`, and giving the embedded generator editor its own user-facing copy so the normal flow no longer says `canonical workout layer`, `accept`, or `local draft only`. Targeted `npm run typecheck`, generator/workout Vitest, and isolated desktop-chromium generator-intake Playwright are green. Next step: clean generated local artifacts, run full `npm run verify:pre-pr`, and then stage/commit/push/open the PR if the full gate stays green.`
 - `2026-03-30` — Slice 3 live-review follow-up started on branch `fix/ai-session-generator-ux-clarity-2026-03-30`.
   - remove the redundant `Before you generate` layer from the normal flow
   - keep the route session-only for now and hide program-generation controls

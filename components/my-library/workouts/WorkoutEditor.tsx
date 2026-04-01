@@ -82,6 +82,7 @@ type Props = {
   workoutHrefBuilder?: (workoutId: string) => string;
   saveButtonTestId?: string;
   showPdfPanel?: boolean;
+  copyVariant?: "default" | "generator";
 };
 
 type StepRenderEntry = {
@@ -466,6 +467,7 @@ export default function WorkoutEditor({
   workoutHrefBuilder = (workoutId) => `/my-library/workouts/${workoutId}`,
   saveButtonTestId = "session-generator-save",
   showPdfPanel = true,
+  copyVariant = "default",
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const garminReadiness = buildWorkoutGarminReadinessReport(draft);
@@ -487,6 +489,35 @@ export default function WorkoutEditor({
     garminExport: false,
     handoff: false,
   });
+  const editorCopy =
+    copyVariant === "generator"
+      ? {
+          loadedDraftBanner:
+            "Saved session loaded: edit everything below, then save changes back to this same session.",
+          unsavedDraftBanner:
+            "Generated session ready: review and edit everything below, then save it to My sessions when you are happy with it.",
+          savedWorkoutDescription:
+            "Saving here updates this same saved session instead of creating a new copy.",
+          unsavedDraftDescription:
+            "Review the generated session below, then save it to My sessions when you are ready.",
+          savedWorkoutPendingState: "Unsaved changes stay local until you save this session.",
+          savedWorkoutSavedState: "All changes are saved to this session.",
+          unsavedDraftPendingState: "This generated session is not saved to My sessions yet.",
+        }
+      : {
+          loadedDraftBanner:
+            "Canonical workout loaded: edit everything below, then save changes back into the same owner-scoped workout.",
+          unsavedDraftBanner:
+            "Local draft only: review and edit everything below, then accept it into the canonical workout layer when you are ready.",
+          savedWorkoutDescription:
+            "This workout is canonical now. Saving here updates the same workout instead of creating a new copy.",
+          unsavedDraftDescription:
+            "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it.",
+          savedWorkoutPendingState: "Unsaved changes stay local until you save this workout.",
+          savedWorkoutSavedState: "All builder changes are saved to the canonical workout.",
+          unsavedDraftPendingState:
+            "This draft still needs to be accepted into the canonical workout layer.",
+        };
   const poolLengthUsesPreset =
     typeof draft.poolLengthM === "number" && isSessionDraftPoolLengthPreset(draft.poolLengthM);
   const handoffDraftState: WorkoutHandoffDraftState =
@@ -1781,9 +1812,7 @@ export default function WorkoutEditor({
 
       <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
         <p className="text-sm text-blue-900">
-          {savedWorkout
-            ? "Canonical workout loaded: edit everything below, then save changes back into the same owner-scoped workout."
-            : "Local draft only: review and edit everything below, then accept it into the canonical workout layer when you are ready."}
+          {savedWorkout ? editorCopy.loadedDraftBanner : editorCopy.unsavedDraftBanner}
         </p>
       </div>
 
@@ -2512,9 +2541,7 @@ export default function WorkoutEditor({
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
         <div>
           <p className="text-sm text-slate-600">
-            {savedWorkout
-              ? "This workout is canonical now. Saving here updates the same workout instead of creating a new copy."
-              : "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it."}
+            {savedWorkout ? editorCopy.savedWorkoutDescription : editorCopy.unsavedDraftDescription}
           </p>
           <p
             data-testid="workout-editor-save-state"
@@ -2524,9 +2551,9 @@ export default function WorkoutEditor({
           >
             {savedWorkout
               ? hasUnsavedChanges
-                ? "Unsaved changes stay local until you save this workout."
-                : "All builder changes are saved to the canonical workout."
-              : "This draft still needs to be accepted into the canonical workout layer."}
+                ? editorCopy.savedWorkoutPendingState
+                : editorCopy.savedWorkoutSavedState
+              : editorCopy.unsavedDraftPendingState}
           </p>
           {garminReadiness.status === "review" ? (
             <p className="mt-1 text-xs text-amber-700">

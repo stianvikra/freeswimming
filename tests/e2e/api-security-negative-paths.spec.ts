@@ -233,11 +233,12 @@ test.describe("api security negative paths", () => {
     );
   });
 
-  test("returns deterministic non-sensitive unauthorized responses for extended admin api set", async ({
+  test("returns deterministic non-sensitive unauthorized responses for admin content endpoints", async ({
     request,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    testInfo.setTimeout(120_000);
 
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/content"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
@@ -292,6 +293,14 @@ test.describe("api security negative paths", () => {
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.delete(`/api/admin/content/${dummyUuid}`)
     );
+  });
+
+  test("returns deterministic non-sensitive unauthorized responses for admin products, email, and flags", async ({
+    request,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+    testInfo.setTimeout(120_000);
 
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/products"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
@@ -339,6 +348,15 @@ test.describe("api security negative paths", () => {
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.get("/api/admin/operations/flags")
     );
+  });
+
+  test("returns deterministic non-sensitive unauthorized responses for admin notes and categories", async ({
+    request,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+    testInfo.setTimeout(120_000);
+
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/notes"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.post("/api/admin/notes", {
@@ -441,6 +459,14 @@ test.describe("api security negative paths", () => {
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.delete(`/api/admin/categories/content/${dummyUuid}`)
     );
+  });
+
+  test("returns deterministic non-sensitive unauthorized responses for admin qr link endpoints", async ({
+    request,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+    testInfo.setTimeout(120_000);
 
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/qr-links"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>

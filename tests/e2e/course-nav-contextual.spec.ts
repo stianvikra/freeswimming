@@ -2,6 +2,16 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_LESSON_ID } from "../../app/course/courseData";
 import { isMobileProject } from "./project-guards";
 
+type CourseLessonSummary = {
+  id: string;
+  title: string;
+  moduleTitle: string;
+};
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 async function waitForCoursePageToSettle(page: Page) {
   const compilingIndicator = page.getByText("Compiling", { exact: true });
 
@@ -21,55 +31,68 @@ async function waitForCoursePageToSettle(page: Page) {
   );
 }
 
-async function getCanonicalCourseLessonIds(page: Page): Promise<string[]> {
+async function getCanonicalCourseLessons(page: Page): Promise<CourseLessonSummary[]> {
   const response = await page.request.get("/api/course/content");
   expect(response.ok()).toBe(true);
 
   const payload = (await response.json()) as {
     modules?: Array<{
+      title?: string;
       lessons?: Array<{
         id?: string;
+        title?: string;
       }>;
     }>;
   };
 
-  const lessonIds =
+  const lessons =
     payload.modules?.flatMap((module) =>
       (module.lessons ?? [])
-        .map((lesson) => lesson.id)
-        .filter(
-          (lessonId): lessonId is string => typeof lessonId === "string" && lessonId.length > 0
+        .map((lesson) =>
+          typeof lesson.id === "string" && lesson.id.length > 0
+            ? {
+                id: lesson.id,
+                title:
+                  typeof lesson.title === "string" && lesson.title.trim().length > 0
+                    ? lesson.title.trim()
+                    : lesson.id,
+                moduleTitle:
+                  typeof module.title === "string" && module.title.trim().length > 0
+                    ? module.title.trim()
+                    : "Course module",
+              }
+            : null
         )
+        .filter((lesson): lesson is CourseLessonSummary => lesson !== null)
     ) ?? [];
 
-  return lessonIds.length > 0 ? lessonIds : [DEFAULT_LESSON_ID];
+  return lessons.length > 0
+    ? lessons
+    : [{ id: DEFAULT_LESSON_ID, title: DEFAULT_LESSON_ID, moduleTitle: "Course module" }];
 }
 
-async function advanceToNextLesson(page: Page) {
-  const currentUrl = page.url();
+async function gotoCourseLesson(page: Page, lessonId: string) {
+  const href = `/course?lesson=${encodeURIComponent(lessonId)}`;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const rightNav = page.getByTestId("course-nav-right");
-    await expect(rightNav).toHaveText("Next", { timeout: 15_000 });
-    await rightNav.scrollIntoViewIfNeeded();
-    await rightNav.click();
-
-    await expect
-      .poll(() => page.url(), { timeout: 5_000 })
-      .not.toBe(currentUrl)
-      .catch(() => {});
-
-    if (page.url() !== currentUrl) {
+    try {
+      await page.goto(href, {
+        waitUntil: "domcontentloaded",
+        timeout: attempt === 0 ? 90_000 : 60_000,
+      });
       await waitForCoursePageToSettle(page);
       return;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isTransientGotoError =
+        /ERR_ABORTED|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(errorMessage);
+      if (!isTransientGotoError || attempt === 1) {
+        throw error;
+      }
+
+      await page.waitForTimeout(1_000);
     }
-
-    await page.keyboard.press("Escape").catch(() => {});
-    await waitForCoursePageToSettle(page);
   }
-
-  await expect(page).not.toHaveURL(currentUrl, { timeout: 15_000 });
-  await waitForCoursePageToSettle(page);
 }
 
 test("course nav uses contextual actions on first and last lesson", async ({ page }, testInfo) => {
@@ -78,15 +101,18 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
     "Mobile nav behavior is validated only on mobile projects."
   );
   test.slow();
+  testInfo.setTimeout(150_000);
 
-  const canonicalLessonIds = await getCanonicalCourseLessonIds(page);
-  const firstLessonId = canonicalLessonIds[0] ?? DEFAULT_LESSON_ID;
+  const canonicalLessons = await getCanonicalCourseLessons(page);
+  test.skip(canonicalLessons.length < 2, "Contextual first/last nav needs at least two lessons.");
+  const firstLesson = canonicalLessons[0] ?? {
+    id: DEFAULT_LESSON_ID,
+    title: DEFAULT_LESSON_ID,
+    moduleTitle: "Course module",
+  };
+  const lastLesson = canonicalLessons[canonicalLessons.length - 1] ?? firstLesson;
 
-  await page.goto(`/course?lesson=${encodeURIComponent(firstLessonId)}`, {
-    waitUntil: "domcontentloaded",
-    timeout: 60_000,
-  });
-  await waitForCoursePageToSettle(page);
+  await gotoCourseLesson(page, firstLesson.id);
 
   const leftFirst = page.getByTestId("course-nav-left");
   const middleFirst = page.getByTestId("course-nav-lessons");
@@ -141,19 +167,24 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   await drawer.getByRole("button", { name: "Close menu" }).click();
   await expect(drawer).toBeHidden();
 
-  let navigationSteps = 0;
-  for (let step = 0; step < canonicalLessonIds.length + 2; step += 1) {
-    const rightNav = page.getByTestId("course-nav-right");
-    const rightLabel = (await rightNav.textContent())?.trim() ?? "";
-    if (rightLabel === "Programs") {
-      break;
-    }
-
-    await advanceToNextLesson(page);
-    navigationSteps += 1;
-  }
-
-  expect(navigationSteps).toBeGreaterThan(0);
+  await middleFirst.click();
+  await expect(drawer).toBeVisible();
+  const targetModuleButton = drawer
+    .getByRole("button", { name: new RegExp(lastLesson.moduleTitle, "i") })
+    .first();
+  await targetModuleButton.click();
+  const lastLessonButton = drawer
+    .getByRole("button", {
+      name: new RegExp(`^${escapeRegex(lastLesson.title)}(?:\\s|$)`, "i"),
+    })
+    .first();
+  await expect(lastLessonButton).toBeVisible({ timeout: 15_000 });
+  await lastLessonButton.click();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("lesson"), { timeout: 15_000 })
+    .toBe(lastLesson.id);
+  await expect(drawer).toBeHidden();
+  await waitForCoursePageToSettle(page);
 
   const leftLast = page.getByTestId("course-nav-left");
   const rightLast = page.getByTestId("course-nav-right");

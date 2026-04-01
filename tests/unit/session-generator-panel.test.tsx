@@ -270,7 +270,7 @@ describe("SessionGeneratorPanel", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Session information" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Session notes and setup" })).toBeInTheDocument();
     fireEvent.change(screen.getByTestId("session-generator-focus-text"), {
       target: { value: "Race-pace breathing control" },
     });
@@ -436,7 +436,7 @@ describe("SessionGeneratorPanel", () => {
         method: "POST",
       })
     );
-    expect(screen.getByText("Accepted workout loaded.")).toBeVisible();
+    expect(screen.getByText("Saved session loaded.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
   });
@@ -474,7 +474,7 @@ describe("SessionGeneratorPanel", () => {
       />
     );
 
-    expect(screen.getByText("Accepted workout loaded.")).toBeVisible();
+    expect(screen.getByText("Saved session loaded.")).toBeVisible();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Previously accepted workout");
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
     expect(screen.queryByTestId("session-generator-prepare-needed")).not.toBeInTheDocument();
