@@ -3,13 +3,13 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import MenuDrawer from "@/components/MenuDrawer";
 import PageIntro from "@/components/PageIntro";
+import BrandImage from "@/components/brand/BrandImage";
 import CourseOpenOnPhoneCard from "@/components/course/CourseOpenOnPhoneCard";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
@@ -24,6 +24,7 @@ import {
 import { cx } from "@/components/ui/cx";
 import { getMainMenuItems } from "@/components/navigation/mainMenuItems";
 import { useInstallContext } from "@/components/install/install-context";
+import { BRAND_USAGE } from "@/lib/brand";
 import {
   A2HS_AUTO_PROMPT_DELAY_MS,
   A2HS_DISMISSED_AT_KEY,
@@ -2789,15 +2790,12 @@ function CoursePageClient() {
                   <div className="relative flex h-full flex-col gap-3">
                     <div className="flex items-center justify-between gap-3">
                       <span className="flex min-w-0 items-center gap-2">
-                        <span className="relative h-8 w-8 shrink-0">
-                          <Image
-                            src="/logos/01_icon_transparent.png"
-                            alt=""
-                            fill
-                            sizes="32px"
-                            className="object-contain"
-                          />
-                        </span>
+                        <BrandImage
+                          asset={BRAND_USAGE.compactSymbol}
+                          decorative
+                          className="h-8 w-auto shrink-0"
+                          sizes="32px"
+                        />
                         <span className="bg-white/82 truncate rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 ring-1 ring-slate-200/70">
                           {overviewLabel.moduleName}
                         </span>

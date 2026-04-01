@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import {
@@ -107,7 +108,8 @@ export async function GET(request: Request, context: RouteContext) {
         variant: pdfVariant,
         focusPoints,
         poolsidePrintStyle,
-        logoUrl: new URL("/logos/logo_black_print.png", requestUrl).toString(),
+        logoUrl: new URL(BRAND_PDF_LOGO_PATH, requestUrl).toString(),
+        fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, requestUrl).toString(),
       })
     )
   );

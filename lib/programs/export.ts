@@ -9,6 +9,7 @@ import {
   type WorkoutEditorRecord,
   type WorkoutGarminReadyExport,
 } from "@/lib/workouts/shared";
+import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
 
 export type ProgramExportIssueCode =
   | "empty_program"
@@ -301,9 +302,43 @@ export function buildProgramPdfHtmlDocument(
   workoutsById: ReadonlyMap<string, WorkoutEditorRecord>,
   options?: {
     exportedAt?: string;
+    logoUrl?: string | null;
+    fontUrl?: string | null;
   }
 ) {
-  const model = buildProgramPdfModel(program, workoutsById, options);
+  const model = buildProgramPdfModel(program, workoutsById, {
+    exportedAt: options?.exportedAt,
+  });
+  const fontUrl = options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH;
+  const logoUrl = options?.logoUrl ?? BRAND_PDF_LOGO_PATH;
+  const fontFaceCss = fontUrl
+    ? `
+      @font-face {
+        font-family: "FreeSwimming Brand";
+        src: url("${escapeHtml(fontUrl)}") format("truetype");
+        font-weight: 200 800;
+        font-style: normal;
+        font-display: swap;
+      }
+    `
+    : "";
+  const brandLockupHtml = logoUrl
+    ? `
+      <div class="brand-mark" data-logo-state="image">
+        <img
+          class="brand-logo"
+          src="${escapeHtml(logoUrl)}"
+          alt="freeswimming.org"
+          onerror="this.parentElement.setAttribute('data-logo-state', 'fallback'); this.remove();"
+        />
+        <span class="brand-fallback">freeswimming.org</span>
+      </div>
+    `
+    : `
+      <div class="brand-mark" data-logo-state="fallback">
+        <span class="brand-fallback">freeswimming.org</span>
+      </div>
+    `;
   const readinessNoticeHtml =
     model.readiness.issueCount > 0
       ? `
@@ -346,6 +381,8 @@ export function buildProgramPdfHtmlDocument(
         --ready-soft: rgba(34, 197, 94, 0.14);
       }
 
+      ${fontFaceCss}
+
       * {
         box-sizing: border-box;
       }
@@ -355,7 +392,7 @@ export function buildProgramPdfHtmlDocument(
         margin: 0;
         background: var(--page);
         color: var(--text);
-        font-family: "SF Pro Display", "Segoe UI", sans-serif;
+        font-family: "FreeSwimming Brand", "SF Pro Display", "Segoe UI", sans-serif;
       }
 
       body {
@@ -435,6 +472,38 @@ export function buildProgramPdfHtmlDocument(
         border-bottom: 1px solid rgba(23, 32, 51, 0.08);
       }
 
+      .hero-brand {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .brand-mark {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .brand-logo {
+        display: block;
+        width: 176px;
+        max-width: min(48vw, 176px);
+        height: auto;
+      }
+
+      .brand-fallback {
+        display: none;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .brand-mark[data-logo-state="fallback"] .brand-fallback {
+        display: inline-flex;
+      }
+
       .eyebrow {
         margin: 0;
         font-size: 11px;
@@ -442,6 +511,14 @@ export function buildProgramPdfHtmlDocument(
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--accent);
+      }
+
+      .hero-tagline {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
       }
 
       .source-pill {
@@ -675,6 +752,11 @@ export function buildProgramPdfHtmlDocument(
       }
 
       @media (max-width: 820px) {
+        .hero-brand {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
         .meta-grid,
         .day-grid {
           grid-template-columns: 1fr;
@@ -744,7 +826,13 @@ export function buildProgramPdfHtmlDocument(
     <main class="shell">
       <article class="page" data-testid="program-pdf-print-view">
         <header class="hero">
-          <p class="eyebrow">FreeSwimming program PDF</p>
+          <div class="hero-brand">
+            ${brandLockupHtml}
+            <div>
+              <p class="eyebrow">freeswimming.org</p>
+              <p class="hero-tagline">Learn. Drill. Swim.</p>
+            </div>
+          </div>
           <p class="source-pill" data-testid="program-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
           <h1 data-testid="program-pdf-title">${escapeHtml(model.title)}</h1>
           <p class="lede">${escapeHtml(model.scheduleSummary)}</p>

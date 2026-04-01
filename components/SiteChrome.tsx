@@ -2,9 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
+import BrandImage from "@/components/brand/BrandImage";
 import MenuDrawer from "@/components/MenuDrawer";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
@@ -17,6 +17,7 @@ import {
   normalizeAdminPageContextRef,
   supportsAdminPageNotesSurface,
 } from "@/lib/admin/page-note-context";
+import { BRAND_USAGE } from "@/lib/brand";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 type CustomMenu = {
@@ -240,16 +241,13 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
             onClick={blurNow}
             onTouchEnd={blurNow}
           >
-            <span className="relative h-9 w-9">
-              <Image
-                src="/logos/01_icon_white_transparent.png"
-                alt="Freeswimming icon"
-                fill
-                className="object-contain"
-                sizes="36px"
-              />
-            </span>
-            <span className="font-semibold tracking-[0.01em] text-white">freeswimming.org</span>
+            <BrandImage
+              asset={BRAND_USAGE.headerLockup}
+              decorative
+              className="h-6 w-auto sm:h-7"
+              sizes="(max-width: 640px) 148px, 190px"
+              priority
+            />
           </PressLink>
 
           <div className="flex items-center gap-2">

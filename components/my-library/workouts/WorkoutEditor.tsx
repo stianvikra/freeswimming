@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
@@ -568,6 +569,14 @@ export default function WorkoutEditor({
   const workoutPdfHtml = buildWorkoutPdfHtmlDocument(draft, {
     draftState: handoffDraftState,
     variant: "standard",
+    fontUrl:
+      typeof window === "undefined"
+        ? BRAND_FONT_PUBLIC_PATH
+        : new URL(BRAND_FONT_PUBLIC_PATH, window.location.origin).toString(),
+    logoUrl:
+      typeof window === "undefined"
+        ? BRAND_PDF_LOGO_PATH
+        : new URL(BRAND_PDF_LOGO_PATH, window.location.origin).toString(),
   });
   const selectedPoolsideFocusTitles = selectWorkoutPoolsideFocusTitles(
     trainingFocusOptions,
@@ -1253,7 +1262,8 @@ export default function WorkoutEditor({
               variant: "poolside",
               focusPoints: selectedPoolsideFocusTitles,
               poolsidePrintStyle,
-              logoUrl: new URL("/logos/logo_black_print.png", window.location.origin).toString(),
+              logoUrl: new URL(BRAND_PDF_LOGO_PATH, window.location.origin).toString(),
+              fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, window.location.origin).toString(),
             })
           : workoutPdfHtml;
       const fileName = variant === "poolside" ? workoutPoolsidePdfFileName : workoutPdfFileName;

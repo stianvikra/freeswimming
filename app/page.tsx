@@ -1,8 +1,9 @@
-import Image from "next/image";
+import BrandImage from "@/components/brand/BrandImage";
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 import ActionButton from "@/components/ActionButton";
 import PressLink from "@/components/ui/PressLink";
+import { BRAND_USAGE } from "@/lib/brand";
 import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -27,46 +28,64 @@ export default async function HomePage() {
 
   return (
     <SiteChrome>
-      {/* Home = top level → no back button */}
       <PageTemplate showBack={false} withBottomSafeArea={false} topInset="compact">
-        <div className="relative overflow-hidden rounded-[22px] border border-blue-100/60 bg-[radial-gradient(560px_220px_at_16%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.78))] p-4 shadow-[0_12px_30px_rgba(15,23,42,0.07)] sm:p-5 [@media(max-height:820px)]:p-3 [@media(min-height:880px)]:p-3.5">
-          {/* Hero logo */}
-          <div className="flex justify-center">
-            <div className="relative h-[122px] w-[122px] sm:h-[142px] sm:w-[142px] [@media(max-height:820px)]:h-[106px] [@media(max-height:820px)]:w-[106px] [@media(min-height:880px)]:h-[112px] [@media(min-height:880px)]:w-[112px]">
-              <Image
-                src="/logos/01_icon_transparent.png"
-                alt="Freeswimming.org logo"
-                fill
+        <div className="relative overflow-hidden rounded-[24px] border border-blue-100/70 bg-[radial-gradient(760px_280px_at_12%_0%,rgba(87,125,255,0.16),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.94),rgba(255,255,255,0.82))] p-4 shadow-[0_16px_36px_rgba(15,23,42,0.08)] sm:p-6 [@media(max-height:820px)]:p-4 [@media(min-height:880px)]:p-5">
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 text-center sm:text-left">
+              <BrandImage
+                asset={BRAND_USAGE.heroLockup}
                 priority
-                className="object-contain"
-                sizes="(max-width: 640px) 132px, 150px"
+                className="mx-auto h-8 w-auto sm:mx-0 sm:h-10"
+                sizes="(max-width: 640px) 240px, 360px"
+              />
+
+              <div className="mt-4 [@media(max-height:820px)]:mt-3">
+                <p className="text-[15px] font-medium leading-6 text-slate-700 sm:text-[16px]">
+                  Olympic dreams?{" "}
+                  <span className="font-semibold text-slate-900">Wrong channel.</span>
+                </p>
+
+                <h1 className="mt-2.5 text-[28px] font-semibold leading-[1.05] tracking-[-0.03em] text-slate-900 sm:text-[34px] [@media(max-height:820px)]:mt-2">
+                  Adult learner?
+                </h1>
+
+                <p className="mt-2 max-w-[34ch] text-[16px] leading-7 text-slate-700 sm:text-[17px]">
+                  You&apos;re exactly where you should be.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-center sm:justify-end">
+              <BrandImage
+                asset={BRAND_USAGE.heroTagline}
+                decorative
+                className="h-24 w-auto sm:h-28"
+                sizes="(max-width: 640px) 140px, 180px"
               />
             </div>
           </div>
-
-          {/* Copy */}
-          <div className="mt-3 text-center [@media(max-height:820px)]:mt-2.5 [@media(min-height:880px)]:mt-2">
-            <p className="text-[16px] leading-6 text-slate-700">
-              Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
-            </p>
-
-            <h1 className="mt-2.5 text-[22px] font-semibold leading-7 tracking-tight text-slate-900 [@media(max-height:820px)]:mt-2">
-              Adult learner?
-            </h1>
-
-            <p className="mt-1.5 text-[16px] leading-6 text-slate-700 [@media(max-height:820px)]:mt-1">
-              You&apos;re exactly where you should be.
-            </p>
-          </div>
-
-          <div className="mt-3 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent [@media(max-height:820px)]:mt-2.5 [@media(min-height:880px)]:mt-2" />
-          <p className="mt-1.5 text-center text-[15px] font-medium tracking-[0.01em] text-slate-700">
-            Learn. Drill. Swim.
-          </p>
         </div>
 
-        {/* Actions (wrapped for premium consistency) */}
         <div className="mt-3 rounded-[24px] border border-blue-100/60 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),rgba(255,255,255,0.76)] p-3.5 shadow-[0_12px_30px_rgba(15,23,42,0.07)] sm:p-4 [@media(max-height:820px)]:mt-3 [@media(max-height:820px)]:p-3 [@media(min-height:880px)]:mt-2.5">
+          <div className="bg-white/78 rounded-[20px] border border-blue-100/70 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">
+                  Method
+                </p>
+                <BrandImage
+                  asset={BRAND_USAGE.methodLockup}
+                  decorative
+                  className="mt-2 h-5 w-auto sm:h-6"
+                  sizes="(max-width: 640px) 180px, 240px"
+                />
+              </div>
+              <p className="max-w-[34ch] text-sm leading-6 text-slate-600 sm:text-right">
+                Calm skill-building, clear practice structure, and no performance theater.
+              </p>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-3">
             <ActionButton
               title="FREE COURSE"

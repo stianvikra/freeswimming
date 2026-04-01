@@ -851,7 +851,7 @@ describe("WorkoutBuilderHub", () => {
       );
       expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Tot:"));
       expect(printWindow.document.write).toHaveBeenCalledWith(
-        expect.stringContaining("logo_black_print.png")
+        expect.stringContaining("lockup-domain-ink.png")
       );
     });
   });

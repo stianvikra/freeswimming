@@ -430,7 +430,7 @@ describe("workouts shared readiness", () => {
       variant: "poolside",
       focusPoints: ["High elbow catch", "Calm exhale"],
       poolsidePrintStyle: "ink_saver",
-      logoUrl: "https://example.com/logo_black_print.png",
+      logoUrl: "https://example.com/logos/brand/lockup-domain-ink.png",
     });
 
     expect(
@@ -443,7 +443,8 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Calm exhale");
     expect(html).toContain("400m");
     expect(html).toContain("Tot: 400m");
-    expect(html).toContain("logo_black_print.png");
+    expect(html).toContain("lockup-domain-ink.png");
+    expect(html).toContain("Learn. Drill. Swim.");
     expect(html).not.toContain("Compact lane-side note");
   });
 
