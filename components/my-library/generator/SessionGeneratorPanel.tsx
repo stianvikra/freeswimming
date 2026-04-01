@@ -173,7 +173,9 @@ export default function SessionGeneratorPanel({
 
       setDraft(responseBody.draft);
       setSavedWorkout(null);
-      setSuccess("Session draft generated. Review and edit it locally, then accept it below.");
+      setSuccess(
+        "Your session is ready. Review it below, make any edits you want, then save it to My sessions."
+      );
       void sendClientAnalyticsEvent("session_draft_generated", {
         sessionType: responseBody.draft.sessionType,
         environment: responseBody.draft.environment,
@@ -245,7 +247,11 @@ export default function SessionGeneratorPanel({
     >
       <div>
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Generate session</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Generate a swim session</h2>
+          <p className="mt-2 max-w-[62ch] text-sm text-slate-600">
+            Add one-time notes and session settings here. Your saved My Library details stay
+            read-only unless you edit them in their own hubs.
+          </p>
         </div>
       </div>
 
@@ -258,8 +264,8 @@ export default function SessionGeneratorPanel({
       {workoutLibrary.selectedWorkoutMissing ? (
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
           <p className="text-sm text-amber-900">
-            That saved session could not be found. You can start a fresh AI draft or open My
-            sessions instead.
+            That saved session could not be found. Start a fresh AI session here or open My sessions
+            instead.
           </p>
         </div>
       ) : null}
@@ -267,8 +273,8 @@ export default function SessionGeneratorPanel({
       {!canonicalSaveReady ? (
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
           <p className="text-sm text-amber-900">
-            Canonical workout save is still syncing in this environment. You can still generate and
-            edit local drafts, but accept/save is unavailable until the workouts table is live.
+            Saving to My sessions is still syncing in this environment. You can generate and review
+            a session here, but Save to My sessions stays unavailable until sync finishes.
           </p>
         </div>
       ) : null}
@@ -290,7 +296,7 @@ export default function SessionGeneratorPanel({
           <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h3 className="text-base font-semibold text-slate-900">Session information</h3>
+                <h3 className="text-base font-semibold text-slate-900">Session notes and setup</h3>
               </div>
               <button
                 type="button"
@@ -298,13 +304,13 @@ export default function SessionGeneratorPanel({
                 data-testid="session-generator-reset-overrides"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
-                Clear session notes
+                Clear notes
               </button>
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:col-span-2">
-                Session focus
+                Focus for this session
                 <input
                   type="text"
                   value={overrides.focusText}
@@ -316,7 +322,7 @@ export default function SessionGeneratorPanel({
               </label>
 
               <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:col-span-2">
-                Special instructions
+                Special instructions for this session
                 <textarea
                   value={overrides.constraintText}
                   onChange={(event) => applyOverrideChange("constraintText", event.target.value)}
@@ -332,7 +338,7 @@ export default function SessionGeneratorPanel({
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Goal context
+                Goal from My Library
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {payload.source.openGoals[0]?.title ?? "No goal included"}
@@ -340,7 +346,7 @@ export default function SessionGeneratorPanel({
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Focus cue
+                Focus for this session
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {payload.overrides.focusText ?? payload.source.activeFocus?.title ?? "No focus cue"}
@@ -348,7 +354,7 @@ export default function SessionGeneratorPanel({
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                CSS anchor
+                Pace anchor
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {payload.source.cssMetric?.paceLabel
@@ -563,7 +569,7 @@ export default function SessionGeneratorPanel({
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-600">
-              Drafts stay local until you explicitly save one into My sessions below.
+              Nothing changes in My sessions until you save this generated session.
             </p>
             <button
               type="button"
@@ -572,7 +578,7 @@ export default function SessionGeneratorPanel({
               data-testid="session-generator-generate"
               className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isGenerating ? "Generating..." : draft ? "Regenerate session" : "Generate session"}
+              {isGenerating ? "Generating..." : draft ? "Generate again" : "Generate session"}
             </button>
           </div>
         </>
@@ -593,7 +599,11 @@ export default function SessionGeneratorPanel({
               setSuccess("");
             }}
             onResetToSaved={resetDraftToSavedWorkout}
+            copyVariant="generator"
             startNewDraftHref="/my-library/generator"
+            startNewDraftLabel="Start a fresh AI session"
+            loadedBannerTitle="Saved session loaded."
+            loadedBannerDescription="Save changes below, or start a fresh session in the AI session generator when you want a brand-new version."
             recentWorkoutsDescription="Open another saved session in the dedicated workout builder route."
             workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
           />

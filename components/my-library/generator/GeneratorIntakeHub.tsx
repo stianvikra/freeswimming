@@ -121,8 +121,8 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
   const selectedBlockCount = payload.includedBlocks.length;
   const sourceSummary =
     selectedBlockCount > 0
-      ? `${selectedBlockCount} block${selectedBlockCount === 1 ? "" : "s"} included`
-      : "No saved blocks included";
+      ? `${selectedBlockCount} saved section${selectedBlockCount === 1 ? "" : "s"} included`
+      : "No saved sections included";
 
   // Restoring unsaved generator choices must happen after hydration because the
   // server render cannot read localStorage for this private My Library flow.
@@ -147,7 +147,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
     setDraftRecovered(restored);
     setStaleSourceWarning(
       storedDraft && storedDraft.sourceFingerprint !== initialSnapshot.sourceFingerprint
-        ? "Saved intake choices were restored from older My Library data. Review included blocks before continuing."
+        ? "Saved generator choices were restored from older My Library data. Review the included sections before you continue."
         : ""
     );
     setIsClientReady(true);
@@ -207,7 +207,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       {draftRecovered ? (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
           <p className="text-sm text-emerald-900">
-            Unsaved AI generator choices were restored on this device.
+            Your unsaved AI session generator choices were restored on this device.
           </p>
         </section>
       ) : null}
@@ -227,7 +227,11 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Information from My Library</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Saved My Library details</h2>
+            <p className="mt-2 max-w-[62ch] text-sm text-slate-600">
+              Choose which saved details this session should consider. Turning sections on or off
+              here does not change anything in My Library itself.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
@@ -240,7 +244,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
               data-testid="generator-intake-source-toggle"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              {sourceOpen ? "Hide details" : "Show details"}
+              {sourceOpen ? "Hide saved details" : "Review saved details"}
             </button>
           </div>
         </div>

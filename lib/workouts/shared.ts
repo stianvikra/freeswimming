@@ -118,6 +118,14 @@ export type WorkoutGarminReadinessReport = {
 
 export type WorkoutHandoffDraftState = "canonical" | "local_draft";
 export type WorkoutPdfVariant = "standard" | "poolside";
+export const WORKOUT_POOLSIDE_PRINT_STYLES = ["color", "ink_saver"] as const;
+
+export type WorkoutPoolsidePrintStyle = (typeof WORKOUT_POOLSIDE_PRINT_STYLES)[number];
+export type WorkoutPoolsideFocusOption = {
+  id: string;
+  title: string;
+  isPrimary?: boolean;
+};
 
 export type WorkoutPdfModelStep = {
   label: string;
@@ -151,6 +159,8 @@ export type WorkoutPdfModel = {
   fileName: string;
   draftState: WorkoutHandoffDraftState;
   variant: WorkoutPdfVariant;
+  poolsidePrintStyle: WorkoutPoolsidePrintStyle;
+  logoUrl: string | null;
   sourceLabel: string;
   title: string;
   sessionSummary: string;
@@ -648,10 +658,13 @@ export function buildWorkoutPdfModel(
     draftState?: WorkoutHandoffDraftState;
     variant?: WorkoutPdfVariant;
     focusPoints?: string[];
+    poolsidePrintStyle?: WorkoutPoolsidePrintStyle;
+    logoUrl?: string | null;
   }
 ): WorkoutPdfModel {
   const draftState = options?.draftState ?? "local_draft";
   const variant = options?.variant ?? "standard";
+  const poolsidePrintStyle = normalizeWorkoutPoolsidePrintStyle(options?.poolsidePrintStyle);
   const fileName = buildWorkoutPdfFileName(draft, { draftState, variant });
   const sourceLabel = draftState === "canonical" ? "Canonical workout" : "Local draft";
   const focusPoints = buildWorkoutPdfFocusPoints(draft, options?.focusPoints);
@@ -663,6 +676,8 @@ export function buildWorkoutPdfModel(
       fileName,
       draftState,
       variant,
+      poolsidePrintStyle,
+      logoUrl: options?.logoUrl ?? null,
       sourceLabel,
       title: variant === "poolside" ? "Poolside Note" : "Workout PDF",
       sessionSummary: "No workout draft is available yet.",
@@ -748,6 +763,8 @@ export function buildWorkoutPdfModel(
     fileName,
     draftState,
     variant,
+    poolsidePrintStyle,
+    logoUrl: options?.logoUrl ?? null,
     sourceLabel,
     title: draft.title,
     sessionSummary: buildSessionTargetSummary(normalizedDraft),
@@ -773,6 +790,8 @@ export function buildWorkoutPdfHtmlDocument(
     draftState?: WorkoutHandoffDraftState;
     variant?: WorkoutPdfVariant;
     focusPoints?: string[];
+    poolsidePrintStyle?: WorkoutPoolsidePrintStyle;
+    logoUrl?: string | null;
   }
 ) {
   const model = buildWorkoutPdfModel(draft, options);
@@ -1278,6 +1297,28 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
 }
 
 function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
+  const isInkSaver = model.poolsidePrintStyle === "ink_saver";
+  const printModeLabel = isInkSaver ? "Ink saver" : "Color mode";
+  const printModeDescription = isInkSaver
+    ? "Text-first print layout with white surfaces to save ink."
+    : "Color-first print layout. Turn on Print backgrounds in your browser if you want the blue fills.";
+  const logoHtml = model.logoUrl
+    ? `
+        <div class="brand-mark" data-logo-state="image">
+          <img
+            class="brand-logo"
+            src="${escapeHtml(model.logoUrl)}"
+            alt="FreeSwimming logo"
+            onerror="this.parentElement.setAttribute('data-logo-state', 'fallback'); this.remove();"
+          />
+          <span class="brand-fallback">FREESWIMMING</span>
+        </div>
+      `
+    : `
+        <div class="brand-mark" data-logo-state="fallback">
+          <span class="brand-fallback">FREESWIMMING</span>
+        </div>
+      `;
   const focusPointsHtml =
     model.focusPoints.length > 0
       ? `
@@ -1302,17 +1343,17 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
     <style>
       :root {
         color-scheme: light;
-        --ink: #10213c;
-        --muted: #42506b;
-        --line: rgba(16, 33, 60, 0.14);
-        --page: #dbe8ff;
+        --ink: ${isInkSaver ? "#111827" : "#10213c"};
+        --muted: ${isInkSaver ? "#475569" : "#42506b"};
+        --line: ${isInkSaver ? "rgba(15, 23, 42, 0.22)" : "rgba(16, 33, 60, 0.14)"};
+        --page: ${isInkSaver ? "#f8fafc" : "#dbe8ff"};
         --surface: #ffffff;
-        --surface-soft: #eff5ff;
-        --accent: #1d4ed8;
-        --accent-strong: #163ea8;
-        --accent-soft: rgba(29, 78, 216, 0.12);
+        --surface-soft: ${isInkSaver ? "#ffffff" : "#eff5ff"};
+        --accent: ${isInkSaver ? "#0f172a" : "#1d4ed8"};
+        --accent-strong: ${isInkSaver ? "#0f172a" : "#163ea8"};
+        --accent-soft: ${isInkSaver ? "rgba(15, 23, 42, 0.04)" : "rgba(29, 78, 216, 0.12)"};
         --warning: #92400e;
-        --warning-soft: rgba(245, 158, 11, 0.16);
+        --warning-soft: ${isInkSaver ? "#ffffff" : "rgba(245, 158, 11, 0.16)"};
       }
 
       * {
@@ -1326,6 +1367,10 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         background: var(--page);
         color: var(--ink);
         font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      body {
+        min-height: 100vh;
       }
 
       .toolbar {
@@ -1391,11 +1436,11 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
       }
 
       .shell {
-        padding: 14px;
+        padding: 18px 14px 28px;
       }
 
       .page {
-        max-width: 420px;
+        width: min(100%, 104mm);
         margin: 0 auto;
         border: 1px solid rgba(16, 33, 60, 0.08);
         border-radius: 24px;
@@ -1406,16 +1451,49 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
 
       .hero {
         padding: 18px 18px 16px;
-        background: linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%);
+        background: ${
+          isInkSaver ? "#ffffff" : "linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%)"
+        };
         border-bottom: 1px solid rgba(16, 33, 60, 0.08);
+      }
+
+      .hero-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        display: inline-flex;
+        min-height: 34px;
+        align-items: center;
+      }
+
+      .brand-logo {
+        display: block;
+        width: 44px;
+        height: auto;
+      }
+
+      .brand-fallback {
+        display: none;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent-strong);
+      }
+
+      .brand-mark[data-logo-state="fallback"] .brand-fallback {
+        display: inline-flex;
       }
 
       .source-pill {
         display: inline-flex;
         margin-top: 10px;
         border-radius: 999px;
-        border: 1px solid rgba(29, 78, 216, 0.12);
-        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid ${isInkSaver ? "rgba(15, 23, 42, 0.18)" : "rgba(29, 78, 216, 0.12)"};
+        background: ${isInkSaver ? "#ffffff" : "rgba(255, 255, 255, 0.92)"};
         padding: 6px 10px;
         font-size: 10px;
         font-weight: 700;
@@ -1425,7 +1503,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
       }
 
       h1 {
-        margin: 12px 0 0;
+        margin: 2px 0 0;
         font-size: 22px;
         line-height: 1.15;
       }
@@ -1453,6 +1531,10 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         font-weight: 700;
         letter-spacing: 0.05em;
         text-transform: uppercase;
+      }
+
+      .session-pill-neutral {
+        color: var(--muted);
       }
 
       .body {
@@ -1569,17 +1651,24 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         color: var(--ink);
       }
 
-      .footer-note {
-        margin-top: 12px;
-        font-size: 10px;
-        line-height: 1.4;
+      .print-style-note {
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-size: 11px;
+        line-height: 1.45;
         color: var(--muted);
+        background: ${isInkSaver ? "#ffffff" : "rgba(255, 255, 255, 0.8)"};
       }
 
       @media print {
         html,
         body {
           background: #fff;
+        }
+
+        body {
+          ${isInkSaver ? "" : "-webkit-print-color-adjust: exact; print-color-adjust: exact;"}
         }
 
         .toolbar {
@@ -1591,16 +1680,17 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         }
 
         .page {
-          max-width: none;
-          border: none;
-          border-radius: 0;
+          width: 96mm;
+          max-width: 96mm;
+          min-width: 96mm;
+          border-radius: 20px;
           box-shadow: none;
         }
       }
 
       @page {
-        size: A6 portrait;
-        margin: 6mm;
+        size: A4 portrait;
+        margin: 12mm;
       }
     </style>
   </head>
@@ -1620,13 +1710,28 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
       </div>
     </div>
     <main class="shell">
-      <article class="page" data-testid="workout-pdf-print-view" data-pdf-variant="poolside">
+      <article
+        class="page"
+        data-testid="workout-pdf-print-view"
+        data-pdf-variant="poolside"
+        data-poolside-print-style="${escapeHtml(model.poolsidePrintStyle)}"
+      >
         <header class="hero">
-          <p class="section-kicker">freeswimming.org</p>
-          <h1 data-testid="workout-pdf-title">Poolside Note</h1>
+          <div class="hero-top">
+            ${logoHtml}
+            <div>
+              <p class="section-kicker">FreeSwimming</p>
+              <h1 data-testid="workout-pdf-title">Poolside Note</h1>
+            </div>
+          </div>
           <p class="lede">${escapeHtml(model.title)}</p>
+          <div class="session-pill-row">
+            <span class="session-pill">${escapeHtml(model.sessionSummary)}</span>
+            <span class="session-pill session-pill-neutral">${escapeHtml(printModeLabel)}</span>
+          </div>
         </header>
         <div class="body">
+          <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
           <section>
             <ol class="poolside-line-list">
               ${model.poolsideLines
@@ -1641,10 +1746,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
           </section>
           ${totalDistanceHtml}
           ${focusPointsHtml}
-          <p class="footer-note">
-            Compact lane-side note for the ${
-              model.draftState === "canonical" ? "saved canonical workout" : "current local draft"
-            }. Print at actual size on A6 or quarter-A4.
+          <p class="print-style-note" data-testid="workout-pdf-print-style-note">
+            ${escapeHtml(printModeDescription)}
           </p>
         </div>
       </article>
@@ -1994,6 +2097,50 @@ function buildWorkoutPdfFocusPoints(
   pushPoint(draft?.focusText);
 
   return normalizedPoints;
+}
+
+export function normalizeWorkoutPoolsidePrintStyle(
+  value: string | null | undefined
+): WorkoutPoolsidePrintStyle {
+  return value === "ink_saver" ? "ink_saver" : "color";
+}
+
+export function getDefaultWorkoutPoolsideFocusIds(
+  focusOptions: WorkoutPoolsideFocusOption[]
+): string[] {
+  const normalizedOptions = focusOptions.filter(
+    (option, index, current) =>
+      normalizeRequiredText(option.id, 120) &&
+      current.findIndex((candidate) => candidate.id === option.id) === index
+  );
+  const primaryIds = normalizedOptions
+    .filter((option) => option.isPrimary)
+    .map((option) => option.id);
+
+  if (primaryIds.length > 0) {
+    return primaryIds;
+  }
+
+  if (normalizedOptions.length === 1) {
+    return [normalizedOptions[0].id];
+  }
+
+  return [];
+}
+
+export function selectWorkoutPoolsideFocusTitles(
+  focusOptions: WorkoutPoolsideFocusOption[],
+  selectedFocusIds: string[] | null | undefined
+): string[] {
+  const validIds = new Set(
+    (selectedFocusIds ?? []).map((value) => normalizeRequiredText(value, 120)).filter(Boolean)
+  );
+
+  if (validIds.size === 0) {
+    return [];
+  }
+
+  return focusOptions.filter((option) => validIds.has(option.id)).map((option) => option.title);
 }
 
 export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | undefined) {

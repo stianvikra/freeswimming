@@ -52,20 +52,25 @@ import {
 import {
   buildWorkoutPdfFileName,
   buildWorkoutPdfHtmlDocument,
+  getDefaultWorkoutPoolsideFocusIds,
   buildWorkoutGarminReadyExport,
   buildWorkoutGarminReadyExportFileName,
   buildWorkoutGarminReadinessReport,
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
+  normalizeWorkoutPoolsidePrintStyle,
+  selectWorkoutPoolsideFocusTitles,
   type WorkoutEditorRecord,
   type WorkoutHandoffDraftState,
+  type WorkoutPoolsideFocusOption,
+  type WorkoutPoolsidePrintStyle,
   type WorkoutSummary,
 } from "@/lib/workouts/shared";
 
 type Props = {
   draft: SessionDraft;
   savedWorkout: WorkoutEditorRecord | null;
-  trainingFocusTitles?: string[];
+  trainingFocusOptions?: WorkoutPoolsideFocusOption[];
   recentWorkouts: WorkoutSummary[];
   canonicalSaveReady: boolean;
   isSaving: boolean;
@@ -82,6 +87,7 @@ type Props = {
   workoutHrefBuilder?: (workoutId: string) => string;
   saveButtonTestId?: string;
   showPdfPanel?: boolean;
+  copyVariant?: "default" | "generator";
 };
 
 type StepRenderEntry = {
@@ -125,6 +131,7 @@ type LastRemovedBlock = {
 type SupportSectionKey = "readiness" | "garminExport" | "handoff";
 
 const CUSTOM_DISTANCE_VALUE = "custom";
+const EMPTY_WORKOUT_POOLSIDE_FOCUS_OPTIONS: WorkoutPoolsideFocusOption[] = [];
 
 function buildStepId(index: number) {
   return `step-${Date.now()}-${index}`;
@@ -200,6 +207,14 @@ function formatEditablePoolLength(value: number | null | undefined) {
 function formatEditableDistance(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
   return String(Math.round(value));
+}
+
+function parseSignatureValues(value: string) {
+  if (value.length === 0) {
+    return [];
+  }
+
+  return value.split("|");
 }
 
 function buildStepStrokeGuidance(step: SessionDraftStep) {
@@ -449,7 +464,7 @@ function buildStepRenderGroups(steps: SessionDraftStep[]): StepRenderGroup[] {
 export default function WorkoutEditor({
   draft,
   savedWorkout,
-  trainingFocusTitles = [],
+  trainingFocusOptions = EMPTY_WORKOUT_POOLSIDE_FOCUS_OPTIONS,
   recentWorkouts,
   canonicalSaveReady,
   isSaving,
@@ -466,6 +481,7 @@ export default function WorkoutEditor({
   workoutHrefBuilder = (workoutId) => `/my-library/workouts/${workoutId}`,
   saveButtonTestId = "session-generator-save",
   showPdfPanel = true,
+  copyVariant = "default",
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const garminReadiness = buildWorkoutGarminReadinessReport(draft);
@@ -482,11 +498,53 @@ export default function WorkoutEditor({
   const [garminExportError, setGarminExportError] = useState("");
   const [handoffNotice, setHandoffNotice] = useState("");
   const [handoffError, setHandoffError] = useState("");
+  const [metadataOpen, setMetadataOpen] = useState(
+    () => !(savedWorkout && copyVariant === "default")
+  );
+  const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
+  const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
+    getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions)
+  );
   const [supportSectionOpen, setSupportSectionOpen] = useState<Record<SupportSectionKey, boolean>>({
     readiness: false,
     garminExport: false,
     handoff: false,
   });
+  const showCalmBuilderLayout = copyVariant === "default";
+  const savedWorkoutId = savedWorkout?.id ?? null;
+  const trainingFocusIdSignature = trainingFocusOptions.map((focus) => focus.id).join("|");
+  const defaultPoolsideFocusIdSignature =
+    getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions).join("|");
+  const metadataStartsCollapsed = showCalmBuilderLayout && savedWorkoutId !== null;
+  const editorCopy =
+    copyVariant === "generator"
+      ? {
+          loadedDraftBanner:
+            "Saved session loaded: edit everything below, then save changes back to this same session.",
+          unsavedDraftBanner:
+            "Generated session ready: review and edit everything below, then save it to My sessions when you are happy with it.",
+          savedWorkoutDescription:
+            "Saving here updates this same saved session instead of creating a new copy.",
+          unsavedDraftDescription:
+            "Review the generated session below, then save it to My sessions when you are ready.",
+          savedWorkoutPendingState: "Unsaved changes stay local until you save this session.",
+          savedWorkoutSavedState: "All changes are saved to this session.",
+          unsavedDraftPendingState: "This generated session is not saved to My sessions yet.",
+        }
+      : {
+          loadedDraftBanner:
+            "Canonical workout loaded: edit everything below, then save changes back into the same owner-scoped workout.",
+          unsavedDraftBanner:
+            "Local draft only: review and edit everything below, then accept it into the canonical workout layer when you are ready.",
+          savedWorkoutDescription:
+            "This workout is canonical now. Saving here updates the same workout instead of creating a new copy.",
+          unsavedDraftDescription:
+            "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it.",
+          savedWorkoutPendingState: "Unsaved changes stay local until you save this workout.",
+          savedWorkoutSavedState: "All builder changes are saved to the canonical workout.",
+          unsavedDraftPendingState:
+            "This draft still needs to be accepted into the canonical workout layer.",
+        };
   const poolLengthUsesPreset =
     typeof draft.poolLengthM === "number" && isSessionDraftPoolLengthPreset(draft.poolLengthM);
   const handoffDraftState: WorkoutHandoffDraftState =
@@ -511,11 +569,32 @@ export default function WorkoutEditor({
     draftState: handoffDraftState,
     variant: "standard",
   });
-  const workoutPoolsidePdfHtml = buildWorkoutPdfHtmlDocument(draft, {
-    draftState: handoffDraftState,
-    variant: "poolside",
-    focusPoints: trainingFocusTitles,
+  const selectedPoolsideFocusTitles = selectWorkoutPoolsideFocusTitles(
+    trainingFocusOptions,
+    selectedPoolsideFocusIds
+  );
+  const selectedPoolsideFocusSignature = selectedPoolsideFocusTitles.join("|");
+  const metadataSummary = buildSessionTargetSummary({
+    ...draft,
+    totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
+    estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
   });
+  const poolsideFocusSummary =
+    trainingFocusOptions.length === 0
+      ? "No open focuses are available right now. The poolside note will print without a focus section."
+      : selectedPoolsideFocusTitles.length === 0
+        ? "No open focuses are selected. The poolside note will print without a focus section."
+        : `${selectedPoolsideFocusTitles.length} open focus${
+            selectedPoolsideFocusTitles.length === 1 ? "" : "es"
+          } will be included on the poolside note.`;
+  const poolsidePrintStyleLabel =
+    normalizeWorkoutPoolsidePrintStyle(poolsidePrintStyle) === "ink_saver"
+      ? "Ink saver"
+      : "Color mode";
+  const poolsidePrintStyleDescription =
+    normalizeWorkoutPoolsidePrintStyle(poolsidePrintStyle) === "ink_saver"
+      ? "Text-first output with white surfaces to save ink."
+      : "Color-first output. Turn on Print backgrounds in your browser if you want the blue fills.";
   const workoutPdfHeadingLabel = "PDF";
   const workoutPdfStateLabel =
     handoffDraftState === "canonical"
@@ -591,28 +670,49 @@ export default function WorkoutEditor({
   useEffect(() => {
     setPendingRemoval(null);
     setLastRemovedBlock(null);
-  }, [savedWorkout?.id, savedWorkout?.updatedAt]);
+  }, [savedWorkoutId, savedWorkout?.updatedAt]);
+
+  useEffect(() => {
+    setMetadataOpen(!metadataStartsCollapsed);
+    setPoolsidePrintStyle("color");
+    setSelectedPoolsideFocusIds(parseSignatureValues(defaultPoolsideFocusIdSignature));
+  }, [copyVariant, defaultPoolsideFocusIdSignature, metadataStartsCollapsed, savedWorkoutId]);
+
+  useEffect(() => {
+    const validFocusIds = new Set(parseSignatureValues(trainingFocusIdSignature));
+    const defaultSelectedFocusIds = parseSignatureValues(defaultPoolsideFocusIdSignature);
+    setSelectedPoolsideFocusIds((current) => {
+      const nextSelected = current.filter((focusId) => validFocusIds.has(focusId));
+
+      if (nextSelected.length > 0 || current.length > 0) {
+        return Array.from(new Set(nextSelected));
+      }
+
+      return defaultSelectedFocusIds;
+    });
+  }, [defaultPoolsideFocusIdSignature, trainingFocusIdSignature]);
 
   useEffect(() => {
     setWorkoutPdfNotice("");
     setWorkoutPdfError("");
   }, [
     workoutPdfHtml,
-    workoutPoolsidePdfHtml,
     handoffDraftState,
-    savedWorkout?.id,
+    savedWorkoutId,
     savedWorkout?.updatedAt,
+    poolsidePrintStyle,
+    selectedPoolsideFocusSignature,
   ]);
 
   useEffect(() => {
     setGarminExportNotice("");
     setGarminExportError("");
-  }, [garminReadyExportPreview, handoffDraftState, savedWorkout?.id, savedWorkout?.updatedAt]);
+  }, [garminReadyExportPreview, handoffDraftState, savedWorkoutId, savedWorkout?.updatedAt]);
 
   useEffect(() => {
     setHandoffNotice("");
     setHandoffError("");
-  }, [handoffText, handoffDraftState, savedWorkout?.id, savedWorkout?.updatedAt]);
+  }, [handoffText, handoffDraftState, savedWorkoutId, savedWorkout?.updatedAt]);
 
   useEffect(() => {
     setSupportSectionOpen({
@@ -620,7 +720,7 @@ export default function WorkoutEditor({
       garminExport: false,
       handoff: false,
     });
-  }, [savedWorkout?.id]);
+  }, [savedWorkoutId]);
 
   function syncDraftSelections(nextDraft: SessionDraft) {
     const requiredStrokes = Array.from(
@@ -1067,6 +1167,14 @@ export default function WorkoutEditor({
     updateDraft("poolLengthM", parsed);
   }
 
+  function togglePoolsideFocusSelection(focusId: string) {
+    setSelectedPoolsideFocusIds((current) =>
+      current.includes(focusId)
+        ? current.filter((value) => value !== focusId)
+        : [...current, focusId]
+    );
+  }
+
   async function copyWorkoutHandoff() {
     setHandoffNotice("");
     setHandoffError("");
@@ -1138,7 +1246,16 @@ export default function WorkoutEditor({
         throw new Error("Window unavailable.");
       }
 
-      const html = variant === "poolside" ? workoutPoolsidePdfHtml : workoutPdfHtml;
+      const html =
+        variant === "poolside"
+          ? buildWorkoutPdfHtmlDocument(draft, {
+              draftState: handoffDraftState,
+              variant: "poolside",
+              focusPoints: selectedPoolsideFocusTitles,
+              poolsidePrintStyle,
+              logoUrl: new URL("/logos/logo_black_print.png", window.location.origin).toString(),
+            })
+          : workoutPdfHtml;
       const fileName = variant === "poolside" ? workoutPoolsidePdfFileName : workoutPdfFileName;
       const variantLabel = variant === "poolside" ? "Poolside Note" : "PDF";
       const printWindow = window.open("", "_blank");
@@ -1720,73 +1837,188 @@ export default function WorkoutEditor({
     );
   }
 
-  return (
-    <div data-testid="workout-editor-panel" className="space-y-5">
-      {showLoadedBanner && savedWorkout ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
-          <div>
-            <p className="text-sm font-medium text-blue-900">{loadedBannerTitle}</p>
-            <p className="mt-1 text-sm text-blue-900/90">{loadedBannerDescription}</p>
-          </div>
-          {startNewDraftHref ? (
-            <Link
-              href={startNewDraftHref}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
-            >
-              {startNewDraftLabel}
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
+  const metadataFields = (
+    <div className="grid gap-4 md:grid-cols-2">
+      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+        Title
+        <input
+          type="text"
+          value={draft.title}
+          onChange={(event) => updateDraft("title", event.target.value)}
+          data-testid="session-draft-title"
+          className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+        />
+      </label>
 
-      {recentWorkouts.length > 0 ? (
-        <div
-          data-testid="session-generator-recent-workouts"
-          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+        Session type
+        <select
+          value={draft.sessionType}
+          onChange={(event) =>
+            updateDraft("sessionType", event.target.value as SessionDraft["sessionType"])
+          }
+          className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">My sessions</h3>
-              <p className="mt-1 text-sm text-slate-600">{recentWorkoutsDescription}</p>
-            </div>
-          </div>
-          <div className="mt-4 grid gap-3">
-            {recentWorkouts.map((workout) => (
-              <div
-                key={workout.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white p-3"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {workout.totalDistanceM ? `${workout.totalDistanceM}m` : null}
-                    {workout.totalDistanceM && workout.estimatedDurationMin ? " · " : null}
-                    {workout.estimatedDurationMin ? `~${workout.estimatedDurationMin} min` : null}
-                    {workout.totalDistanceM || workout.estimatedDurationMin ? " · " : null}
-                    {getSessionTypeLabel(workout.sessionType)}
-                  </p>
-                </div>
-                <Link
-                  href={workoutHrefBuilder(workout.id)}
-                  data-testid={`session-generator-open-workout-${workout.id}`}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+          {SESSION_GENERATOR_SESSION_TYPES.map((value) => (
+            <option key={value} value={value}>
+              {getSessionTypeLabel(value)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
+        Description
+        <p className="mt-2 text-xs text-slate-500">
+          Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching
+          note that applies across the session.
+        </p>
+        <textarea
+          value={draft.description}
+          onChange={(event) => updateDraft("description", event.target.value)}
+          data-testid="session-draft-description"
+          rows={4}
+          className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+        />
+      </label>
+
+      <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <legend className="px-1 text-sm font-semibold text-slate-900">Environment</legend>
+        <div className="mt-3 flex flex-wrap gap-3">
+          {SESSION_GENERATOR_ENVIRONMENTS.map((value) => (
+            <label key={value} className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="radio"
+                name="session-draft-environment"
+                checked={draft.environment === value}
+                onChange={() =>
+                  onDraftChange({
+                    ...draft,
+                    environment: value as SessionGeneratorEnvironment,
+                    poolLengthM:
+                      value === "pool"
+                        ? (draft.poolLengthM ?? SESSION_GENERATOR_POOL_LENGTHS[1])
+                        : null,
+                  })
+                }
+              />
+              {getSessionEnvironmentLabel(value)}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {draft.environment === "pool" ? (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
+          <p className="text-sm font-medium text-slate-900">Pool length</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Choose a common pool size or type the exact length when you build for a less common
+            setup.
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {SESSION_DRAFT_POOL_LENGTH_PRESETS.map((value) => {
+              const isSelected = draft.poolLengthM === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => updateDraft("poolLengthM", value)}
+                  className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
+                    isSelected
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                  }`}
                 >
-                  Open
-                </Link>
-              </div>
-            ))}
+                  {formatPoolLengthLabel(value)}
+                </button>
+              );
+            })}
           </div>
+
+          <label className="mt-4 block text-sm text-slate-700">
+            Exact pool length (m)
+            <input
+              type="text"
+              inputMode="decimal"
+              value={poolLengthInput}
+              onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
+              data-testid="session-draft-pool-length-input"
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:max-w-xs"
+            />
+          </label>
+
+          <p className="mt-2 text-xs text-slate-500">
+            Supported range: {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MIN)} to{" "}
+            {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}.{" "}
+            {poolLengthUsesPreset
+              ? "Preset selected."
+              : draft.poolLengthM
+                ? `Custom length saved as ${formatPoolLengthLabel(draft.poolLengthM)}.`
+                : "Enter a valid pool length before saving."}
+          </p>
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
-        <p className="text-sm text-blue-900">
-          {savedWorkout
-            ? "Canonical workout loaded: edit everything below, then save changes back into the same owner-scoped workout."
-            : "Local draft only: review and edit everything below, then accept it into the canonical workout layer when you are ready."}
-        </p>
-      </div>
+      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+        Effort
+        <select
+          value={draft.effort}
+          onChange={(event) => updateDraft("effort", event.target.value as SessionDraft["effort"])}
+          className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+        >
+          {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
+            <option key={value} value={value}>
+              {getSessionEffortLabel(value)}
+            </option>
+          ))}
+        </select>
+      </label>
 
+      <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:col-span-2">
+        <legend className="px-1 text-sm font-semibold text-slate-900">Session strokes</legend>
+        <div className="mt-3 flex flex-wrap gap-3">
+          {SESSION_GENERATOR_STROKES.map((stroke) => (
+            <label key={stroke} className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={draft.allowedStrokes.includes(stroke)}
+                onChange={() => toggleDraftStroke(stroke)}
+                disabled={stepUsesAllowedStroke(stroke)}
+              />
+              {getSessionStrokeLabel(stroke)}
+            </label>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Strokes already used on a step stay selected here until those steps change.
+        </p>
+      </fieldset>
+
+      <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:col-span-2">
+        <legend className="px-1 text-sm font-semibold text-slate-900">Equipment</legend>
+        <div className="mt-3 flex flex-wrap gap-3">
+          {SESSION_GENERATOR_EQUIPMENT.map((item) => (
+            <label key={item} className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={draft.equipmentAllowlist.includes(item)}
+                onChange={() => toggleDraftEquipment(item)}
+                disabled={stepUsesEquipment(item)}
+              />
+              {getSessionEquipmentLabel(item)}
+            </label>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Equipment used on a step stays selected here until those step details change.
+        </p>
+      </fieldset>
+    </div>
+  );
+
+  const supportStatusSections = (
+    <>
       {draft.warnings.length > 0 ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
           <ul className="space-y-2 text-sm text-amber-900">
@@ -2094,13 +2326,7 @@ export default function WorkoutEditor({
         </div>
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Session</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">
-            {buildSessionTargetSummary({
-              ...draft,
-              totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
-              estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
-            })}
-          </p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">{metadataSummary}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Context</p>
@@ -2115,186 +2341,227 @@ export default function WorkoutEditor({
           ) : null}
         </div>
       </div>
+    </>
+  );
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-          Title
-          <input
-            type="text"
-            value={draft.title}
-            onChange={(event) => updateDraft("title", event.target.value)}
-            data-testid="session-draft-title"
-            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          />
-        </label>
-
-        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-          Session type
-          <select
-            value={draft.sessionType}
-            onChange={(event) =>
-              updateDraft("sessionType", event.target.value as SessionDraft["sessionType"])
-            }
-            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          >
-            {SESSION_GENERATOR_SESSION_TYPES.map((value) => (
-              <option key={value} value={value}>
-                {getSessionTypeLabel(value)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
-          Description
-          <p className="mt-2 text-xs text-slate-500">
-            Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching
-            note that applies across the session.
+  const poolsideNotePanel = showCalmBuilderLayout ? (
+    <div
+      className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4"
+      data-testid="workout-editor-poolside-panel"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+            Poolside Note
           </p>
-          <textarea
-            value={draft.description}
-            onChange={(event) => updateDraft("description", event.target.value)}
-            data-testid="session-draft-description"
-            rows={4}
-            className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          />
-        </label>
+          <p className="mt-2 text-sm font-medium text-slate-900">
+            Choose the focus cues and print style before you open the compact lane-side note.
+          </p>
+          <p className="mt-1 text-sm text-slate-600">{poolsideFocusSummary}</p>
+          <p className="mt-1 text-sm text-slate-600">
+            {poolsidePrintStyleLabel}: {poolsidePrintStyleDescription}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => openWorkoutPdfPrintView("poolside")}
+            data-testid="workout-editor-poolside-pdf-open"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
+          >
+            Open Poolside Note
+          </button>
+        </div>
+      </div>
 
-        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-          <legend className="px-1 text-sm font-semibold text-slate-900">Environment</legend>
-          <div className="mt-3 flex flex-wrap gap-3">
-            {SESSION_GENERATOR_ENVIRONMENTS.map((value) => (
-              <label key={value} className="inline-flex items-center gap-2 text-sm text-slate-700">
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+        <div className="rounded-2xl border border-blue-100 bg-white/80 p-4">
+          <p className="text-sm font-semibold text-slate-900">Open focus cues</p>
+          {trainingFocusOptions.length > 0 ? (
+            <div className="mt-3 grid gap-3">
+              {trainingFocusOptions.map((focus) => (
+                <label
+                  key={focus.id}
+                  className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedPoolsideFocusIds.includes(focus.id)}
+                    onChange={() => togglePoolsideFocusSelection(focus.id)}
+                    data-testid={`workout-editor-poolside-focus-${focus.id}`}
+                  />
+                  <span>
+                    <span className="block font-medium text-slate-900">{focus.title}</span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      {focus.isPrimary ? "Primary focus" : "Optional focus"}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-600">
+              No open focuses are available, so the poolside note will only include the workout and
+              totals.
+            </p>
+          )}
+        </div>
+
+        <fieldset className="rounded-2xl border border-blue-100 bg-white/80 p-4">
+          <legend className="px-1 text-sm font-semibold text-slate-900">Print style</legend>
+          <div className="mt-3 grid gap-3">
+            <label className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+              <span className="flex items-start gap-3">
                 <input
                   type="radio"
-                  name="session-draft-environment"
-                  checked={draft.environment === value}
-                  onChange={() =>
-                    onDraftChange({
-                      ...draft,
-                      environment: value as SessionGeneratorEnvironment,
-                      poolLengthM:
-                        value === "pool"
-                          ? (draft.poolLengthM ?? SESSION_GENERATOR_POOL_LENGTHS[1])
-                          : null,
-                    })
-                  }
+                  name="workout-poolside-print-style"
+                  checked={poolsidePrintStyle === "color"}
+                  onChange={() => setPoolsidePrintStyle("color")}
+                  data-testid="workout-editor-poolside-style-color"
                 />
-                {getSessionEnvironmentLabel(value)}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        {draft.environment === "pool" ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
-            <p className="text-sm font-medium text-slate-900">Pool length</p>
-            <p className="mt-1 text-xs text-slate-500">
-              Choose a common pool size or type the exact length when you build for a less common
-              setup.
-            </p>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {SESSION_DRAFT_POOL_LENGTH_PRESETS.map((value) => {
-                const isSelected = draft.poolLengthM === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => updateDraft("poolLengthM", value)}
-                    className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
-                      isSelected
-                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                    }`}
-                  >
-                    {formatPoolLengthLabel(value)}
-                  </button>
-                );
-              })}
-            </div>
-
-            <label className="mt-4 block text-sm text-slate-700">
-              Exact pool length (m)
-              <input
-                type="text"
-                inputMode="decimal"
-                value={poolLengthInput}
-                onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
-                data-testid="session-draft-pool-length-input"
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:max-w-xs"
-              />
+                <span>
+                  <span className="block font-medium text-slate-900">Color mode</span>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    Keeps the blue surfaces when your browser prints backgrounds.
+                  </span>
+                </span>
+              </span>
             </label>
-
-            <p className="mt-2 text-xs text-slate-500">
-              Supported range: {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MIN)} to{" "}
-              {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}.{" "}
-              {poolLengthUsesPreset
-                ? "Preset selected."
-                : draft.poolLengthM
-                  ? `Custom length saved as ${formatPoolLengthLabel(draft.poolLengthM)}.`
-                  : "Enter a valid pool length before saving."}
-            </p>
-          </div>
-        ) : null}
-
-        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
-          Effort
-          <select
-            value={draft.effort}
-            onChange={(event) =>
-              updateDraft("effort", event.target.value as SessionDraft["effort"])
-            }
-            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          >
-            {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
-              <option key={value} value={value}>
-                {getSessionEffortLabel(value)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:col-span-2">
-          <legend className="px-1 text-sm font-semibold text-slate-900">Session strokes</legend>
-          <div className="mt-3 flex flex-wrap gap-3">
-            {SESSION_GENERATOR_STROKES.map((stroke) => (
-              <label key={stroke} className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <label className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+              <span className="flex items-start gap-3">
                 <input
-                  type="checkbox"
-                  checked={draft.allowedStrokes.includes(stroke)}
-                  onChange={() => toggleDraftStroke(stroke)}
-                  disabled={stepUsesAllowedStroke(stroke)}
+                  type="radio"
+                  name="workout-poolside-print-style"
+                  checked={poolsidePrintStyle === "ink_saver"}
+                  onChange={() => setPoolsidePrintStyle("ink_saver")}
+                  data-testid="workout-editor-poolside-style-ink-saver"
                 />
-                {getSessionStrokeLabel(stroke)}
-              </label>
-            ))}
+                <span>
+                  <span className="block font-medium text-slate-900">Ink saver</span>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    Uses white surfaces and strong outlines for cheaper printing.
+                  </span>
+                </span>
+              </span>
+            </label>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
-            Strokes already used on a step stay selected here until those steps change.
-          </p>
-        </fieldset>
-
-        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:col-span-2">
-          <legend className="px-1 text-sm font-semibold text-slate-900">Equipment</legend>
-          <div className="mt-3 flex flex-wrap gap-3">
-            {SESSION_GENERATOR_EQUIPMENT.map((item) => (
-              <label key={item} className="inline-flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={draft.equipmentAllowlist.includes(item)}
-                  onChange={() => toggleDraftEquipment(item)}
-                  disabled={stepUsesEquipment(item)}
-                />
-                {getSessionEquipmentLabel(item)}
-              </label>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-slate-500">
-            Equipment used on a step stays selected here until those step details change.
-          </p>
         </fieldset>
       </div>
+    </div>
+  ) : null;
+
+  return (
+    <div data-testid="workout-editor-panel" className="space-y-5">
+      {showLoadedBanner && savedWorkout ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
+          <div>
+            <p className="text-sm font-medium text-blue-900">{loadedBannerTitle}</p>
+            <p className="mt-1 text-sm text-blue-900/90">{loadedBannerDescription}</p>
+          </div>
+          {startNewDraftHref ? (
+            <Link
+              href={startNewDraftHref}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+            >
+              {startNewDraftLabel}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+
+      {recentWorkouts.length > 0 ? (
+        <div
+          data-testid="session-generator-recent-workouts"
+          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">My sessions</h3>
+              <p className="mt-1 text-sm text-slate-600">{recentWorkoutsDescription}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3">
+            {recentWorkouts.map((workout) => (
+              <div
+                key={workout.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white p-3"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {workout.totalDistanceM ? `${workout.totalDistanceM}m` : null}
+                    {workout.totalDistanceM && workout.estimatedDurationMin ? " · " : null}
+                    {workout.estimatedDurationMin ? `~${workout.estimatedDurationMin} min` : null}
+                    {workout.totalDistanceM || workout.estimatedDurationMin ? " · " : null}
+                    {getSessionTypeLabel(workout.sessionType)}
+                  </p>
+                </div>
+                <Link
+                  href={workoutHrefBuilder(workout.id)}
+                  data-testid={`session-generator-open-workout-${workout.id}`}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                >
+                  Open
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {!showCalmBuilderLayout ? (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
+          <p className="text-sm text-blue-900">
+            {savedWorkout ? editorCopy.loadedDraftBanner : editorCopy.unsavedDraftBanner}
+          </p>
+        </div>
+      ) : null}
+
+      {!showCalmBuilderLayout ? supportStatusSections : null}
+
+      {showCalmBuilderLayout ? (
+        <section
+          data-testid="workout-editor-metadata-panel"
+          className="rounded-2xl border border-slate-200 bg-white p-4"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Session details
+              </p>
+              <h3 className="mt-2 text-base font-semibold text-slate-900">
+                Title through equipment
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                {metadataOpen
+                  ? "Core session details stay here while the workout steps remain the primary editing surface."
+                  : "Collapsed while you work on the session itself. Open anytime to change title, environment, or equipment."}
+              </p>
+              {!metadataOpen ? (
+                <p
+                  data-testid="workout-editor-metadata-summary"
+                  className="mt-2 text-sm font-medium text-slate-900"
+                >
+                  {metadataSummary}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setMetadataOpen((current) => !current)}
+              aria-expanded={metadataOpen}
+              data-testid="workout-editor-metadata-toggle"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {metadataOpen ? "Hide details" : "Show details"}
+            </button>
+          </div>
+
+          {metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
+        </section>
+      ) : (
+        metadataFields
+      )}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2509,12 +2776,12 @@ export default function WorkoutEditor({
         </div>
       </div>
 
+      {poolsideNotePanel}
+
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
         <div>
           <p className="text-sm text-slate-600">
-            {savedWorkout
-              ? "This workout is canonical now. Saving here updates the same workout instead of creating a new copy."
-              : "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it."}
+            {savedWorkout ? editorCopy.savedWorkoutDescription : editorCopy.unsavedDraftDescription}
           </p>
           <p
             data-testid="workout-editor-save-state"
@@ -2524,9 +2791,9 @@ export default function WorkoutEditor({
           >
             {savedWorkout
               ? hasUnsavedChanges
-                ? "Unsaved changes stay local until you save this workout."
-                : "All builder changes are saved to the canonical workout."
-              : "This draft still needs to be accepted into the canonical workout layer."}
+                ? editorCopy.savedWorkoutPendingState
+                : editorCopy.savedWorkoutSavedState
+              : editorCopy.unsavedDraftPendingState}
           </p>
           {garminReadiness.status === "review" ? (
             <p className="mt-1 text-xs text-amber-700">
@@ -2557,7 +2824,7 @@ export default function WorkoutEditor({
               {workoutPdfButtonLabel}
             </button>
           ) : null}
-          {!showPdfPanel ? (
+          {!showPdfPanel && !showCalmBuilderLayout ? (
             <button
               type="button"
               onClick={() => openWorkoutPdfPrintView("poolside")}
@@ -2611,6 +2878,8 @@ export default function WorkoutEditor({
           {workoutPdfNotice}
         </p>
       ) : null}
+
+      {showCalmBuilderLayout ? supportStatusSections : null}
 
       {!showPdfPanel && workoutPdfError ? (
         <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">

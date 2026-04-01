@@ -80,7 +80,12 @@ test.describe("my library workout builder", () => {
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
 
-    await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled swim session");
+    await expect(page.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await expect(page.getByTestId("workout-editor-metadata-summary")).toBeVisible();
+    await expect(page.getByTestId("session-draft-title")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
@@ -148,6 +153,8 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
+    await page.getByTestId("workout-editor-metadata-toggle").click();
+    await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled swim session");
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
     await page.getByTestId("session-draft-pool-length-input").fill("33.33");
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
@@ -206,6 +213,7 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-editor-pdf-open")).toBeVisible();
     await expect(page.getByTestId("workout-editor-poolside-pdf-open")).toBeVisible();
+    await page.getByTestId("workout-editor-poolside-style-ink-saver").click();
     await expect(
       page.getByText(
         "Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching note that applies across the session."
@@ -234,7 +242,12 @@ test.describe("my library workout builder", () => {
       "data-pdf-variant",
       "poolside"
     );
+    await expect(poolsidePopup.locator('[data-testid="workout-pdf-print-view"]')).toHaveAttribute(
+      "data-poolside-print-style",
+      "ink_saver"
+    );
     await expect(poolsidePopup.locator("body")).toContainText("Poolside Note");
+    await expect(poolsidePopup.locator("body")).toContainText("Ink saver");
     await expect(poolsidePopup.locator("body")).toContainText("Tot:");
     await expect(poolsidePopup.locator("body")).toContainText("P:");
     await poolsidePopup.close();

@@ -238,15 +238,15 @@ export default async function MyLibraryPage() {
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">AI session generator</h2>
                   <p className="mt-2 text-sm text-slate-600">
-                    Generate a new swim-session draft from your athlete profile and one-time choices
-                    without changing your saved My Library data.
+                    Generate one new swim-session draft from your saved My Library details plus
+                    session-specific notes and settings, without changing your stored data.
                   </p>
                 </div>
                 <Link
                   href="/my-library/generator"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Generate with AI
+                  Open AI session generator
                 </Link>
               </div>
             </section>

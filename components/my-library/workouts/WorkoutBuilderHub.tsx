@@ -11,6 +11,7 @@ import type {
   WorkoutDeleteApiResponse,
   WorkoutEditorRecord,
   WorkoutLibrarySnapshot,
+  WorkoutPoolsideFocusOption,
   WorkoutSaveApiResponse,
   WorkoutSummary,
 } from "@/lib/workouts/shared";
@@ -18,7 +19,7 @@ import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 
 type Props = {
   workoutLibrary: WorkoutLibrarySnapshot;
-  trainingFocusTitles?: string[];
+  trainingFocusOptions?: WorkoutPoolsideFocusOption[];
   browseOnly?: boolean;
 };
 
@@ -29,7 +30,7 @@ function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSumm
 
 export default function WorkoutBuilderHub({
   workoutLibrary,
-  trainingFocusTitles = [],
+  trainingFocusOptions = [],
   browseOnly = false,
 }: Props) {
   const router = useRouter();
@@ -397,7 +398,7 @@ export default function WorkoutBuilderHub({
                   href="/my-library/generator"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
                 >
-                  Generate with AI
+                  Open AI session generator
                 </Link>
                 <Link
                   href="/my-library"
@@ -415,7 +416,7 @@ export default function WorkoutBuilderHub({
             <WorkoutEditor
               draft={draft}
               savedWorkout={savedWorkout}
-              trainingFocusTitles={trainingFocusTitles}
+              trainingFocusOptions={trainingFocusOptions}
               recentWorkouts={[]}
               canonicalSaveReady={workoutLibrary.schemaReady}
               isSaving={isSaving}

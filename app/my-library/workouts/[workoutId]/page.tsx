@@ -4,6 +4,7 @@ import SiteChrome from "@/components/SiteChrome";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
+import type { WorkoutPoolsideFocusOption } from "@/lib/workouts/shared";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
@@ -38,9 +39,13 @@ export default async function WorkoutBuilderPage({ params }: Props) {
     loadWorkoutLibrarySnapshot(supabase, user.id, workoutId),
     loadTrainingContextSnapshot(supabase, user.id),
   ]);
-  const trainingFocusTitles =
+  const trainingFocusOptions: WorkoutPoolsideFocusOption[] =
     trainingContextSnapshot.schemaReady && !trainingContextSnapshot.loadError
-      ? trainingContextSnapshot.openFocuses.map((focus) => focus.title)
+      ? trainingContextSnapshot.openFocuses.map((focus) => ({
+          id: focus.id,
+          title: focus.title,
+          isPrimary: focus.isPrimary,
+        }))
       : [];
 
   return (
@@ -63,7 +68,7 @@ export default async function WorkoutBuilderPage({ params }: Props) {
                 href="/my-library/generator"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
-                Generate with AI
+                Open AI session generator
               </Link>
               <Link
                 href="/my-library"
@@ -77,7 +82,7 @@ export default async function WorkoutBuilderPage({ params }: Props) {
           <div className="mt-8">
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
-              trainingFocusTitles={trainingFocusTitles}
+              trainingFocusOptions={trainingFocusOptions}
             />
           </div>
         </div>

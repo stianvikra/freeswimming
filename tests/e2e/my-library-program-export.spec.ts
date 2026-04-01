@@ -36,6 +36,18 @@ async function waitForWorkoutBuilderClientReady(page: Page) {
   );
 }
 
+async function ensureWorkoutMetadataOpen(page: Page) {
+  const metadataToggle = page.getByTestId("workout-editor-metadata-toggle");
+  await expect(metadataToggle).toBeVisible({ timeout: 15_000 });
+
+  if ((await metadataToggle.getAttribute("aria-expanded")) !== "true") {
+    await metadataToggle.click();
+  }
+
+  await expect(metadataToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByTestId("session-draft-title")).toBeVisible({ timeout: 15_000 });
+}
+
 async function waitForProgramBuilderClientReady(page: Page) {
   await expect(page.getByTestId("program-builder-hub")).toHaveAttribute(
     "data-client-ready",
@@ -97,6 +109,7 @@ test.describe("my library program export", () => {
       waitUntil: "domcontentloaded",
     });
     await waitForWorkoutBuilderClientReady(page);
+    await ensureWorkoutMetadataOpen(page);
 
     await page.getByTestId("session-draft-title").fill(uniqueWorkoutTitle);
 
