@@ -2,17 +2,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import Modal from "@/components/Modal";
 import { COURSE_MODULES, type CourseLesson, type CourseModule } from "@/app/course/courseData";
+import BrandImage from "@/components/brand/BrandImage";
 import { useInstallContext } from "@/components/install/install-context";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
 import MobileSegmentedNav, {
   type MobileSegmentedNavItem,
 } from "@/components/ui/MobileSegmentedNav";
+import { BRAND_USAGE } from "@/lib/brand";
 
 type MainItem = { href: string; title: string; subtitle?: string };
 
@@ -227,15 +228,12 @@ export default function MenuDrawer({
         <div className="px-5 pt-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <span className="relative mt-0.5 h-9 w-9 shrink-0">
-                <Image
-                  src="/logos/01_icon_transparent.png"
-                  alt="Freeswimming.org"
-                  fill
-                  className="object-contain"
-                  sizes="36px"
-                />
-              </span>
+              <BrandImage
+                asset={BRAND_USAGE.drawerLockup}
+                decorative
+                className="mt-0.5 h-8 w-auto shrink-0"
+                sizes="156px"
+              />
 
               <div>
                 <div className="text-[16px] font-semibold text-slate-900">{headerTitle}</div>

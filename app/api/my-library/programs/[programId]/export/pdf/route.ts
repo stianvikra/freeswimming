@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
 import { buildProgramPdfHtmlDocument } from "@/lib/programs/export";
 import { loadProgramExportSnapshot } from "@/lib/programs/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -33,7 +34,8 @@ function noStoreText(body: string, status = 200) {
   });
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
+  const requestUrl = new URL(request.url);
   const { programId } = await context.params;
   if (!UUID_PATTERN.test(programId)) {
     return noStoreText("Invalid program id.", 400);
@@ -54,6 +56,11 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   return applySupabaseCookies(
-    noStoreHtml(buildProgramPdfHtmlDocument(snapshot.value.program, snapshot.value.workoutsById))
+    noStoreHtml(
+      buildProgramPdfHtmlDocument(snapshot.value.program, snapshot.value.workoutsById, {
+        logoUrl: new URL(BRAND_PDF_LOGO_PATH, requestUrl).toString(),
+        fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, requestUrl).toString(),
+      })
+    )
   );
 }

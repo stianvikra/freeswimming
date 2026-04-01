@@ -32,6 +32,7 @@ import {
   type SessionGeneratorEnvironment,
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
+import { BRAND_FONT_PUBLIC_PATH } from "@/lib/brand";
 
 export const WORKOUT_SOURCE_KINDS = ["ai_session_v1", "manual"] as const;
 export const WORKOUT_STATUSES = ["accepted"] as const;
@@ -792,17 +793,56 @@ export function buildWorkoutPdfHtmlDocument(
     focusPoints?: string[];
     poolsidePrintStyle?: WorkoutPoolsidePrintStyle;
     logoUrl?: string | null;
+    fontUrl?: string | null;
   }
 ) {
   const model = buildWorkoutPdfModel(draft, options);
   if (model.variant === "poolside") {
-    return buildPoolsideWorkoutPdfHtmlDocument(model);
+    return buildPoolsideWorkoutPdfHtmlDocument(model, options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH);
   }
 
-  return buildStandardWorkoutPdfHtmlDocument(model);
+  return buildStandardWorkoutPdfHtmlDocument(model, options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH);
 }
 
-function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
+function buildPdfBrandFontFaceCss(fontUrl: string | null | undefined) {
+  if (!fontUrl) return "";
+
+  return `
+      @font-face {
+        font-family: "FreeSwimming Brand";
+        src: url("${escapeHtml(fontUrl)}") format("truetype");
+        font-weight: 200 800;
+        font-style: normal;
+        font-display: swap;
+      }
+    `;
+}
+
+function buildPdfBrandLockupHtml(logoUrl: string | null) {
+  if (logoUrl) {
+    return `
+        <div class="brand-mark" data-logo-state="image">
+          <img
+            class="brand-logo"
+            src="${escapeHtml(logoUrl)}"
+            alt="freeswimming.org"
+            onerror="this.parentElement.setAttribute('data-logo-state', 'fallback'); this.remove();"
+          />
+          <span class="brand-fallback">freeswimming.org</span>
+        </div>
+      `;
+  }
+
+  return `
+      <div class="brand-mark" data-logo-state="fallback">
+        <span class="brand-fallback">freeswimming.org</span>
+      </div>
+    `;
+}
+
+function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: string | null) {
+  const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
+  const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
   const reviewDetailsHtml =
     model.readiness.issues.length > 0
       ? `
@@ -896,6 +936,8 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         --notice: rgba(29, 78, 216, 0.08);
       }
 
+      ${fontFaceCss}
+
       * {
         box-sizing: border-box;
       }
@@ -906,7 +948,8 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         padding: 0;
         background: var(--page);
         color: var(--ink);
-        font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-family: "FreeSwimming Brand", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial,
+          sans-serif;
       }
 
       body {
@@ -990,6 +1033,38 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         border-bottom: 1px solid rgba(23, 32, 51, 0.08);
       }
 
+      .hero-brand {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .brand-mark {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .brand-logo {
+        display: block;
+        width: 176px;
+        max-width: min(52vw, 176px);
+        height: auto;
+      }
+
+      .brand-fallback {
+        display: none;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .brand-mark[data-logo-state="fallback"] .brand-fallback {
+        display: inline-flex;
+      }
+
       .eyebrow {
         margin: 0;
         font-size: 11px;
@@ -997,6 +1072,14 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         letter-spacing: 0.16em;
         text-transform: uppercase;
         color: var(--accent);
+      }
+
+      .hero-tagline {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
       }
 
       .source-pill {
@@ -1014,8 +1097,9 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
 
       h1 {
         margin: 18px 0 0;
-        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
         font-size: clamp(2rem, 5vw, 3.2rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
         line-height: 1.04;
       }
 
@@ -1196,6 +1280,11 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
           flex-direction: column;
         }
 
+        .hero-brand {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
         .meta-grid {
           grid-template-columns: 1fr;
         }
@@ -1259,7 +1348,13 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
     <main class="shell">
       <article class="page" data-testid="workout-pdf-print-view" data-pdf-variant="standard">
         <header class="hero">
-          <p class="eyebrow">FreeSwimming PDF</p>
+          <div class="hero-brand">
+            ${logoHtml}
+            <div>
+              <p class="eyebrow">freeswimming.org</p>
+              <p class="hero-tagline">Learn. Drill. Swim.</p>
+            </div>
+          </div>
           <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
           <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
           <p class="lede">${escapeHtml(model.sessionSummary)}</p>
@@ -1296,29 +1391,14 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
 </html>`;
 }
 
-function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
+function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: string | null) {
   const isInkSaver = model.poolsidePrintStyle === "ink_saver";
   const printModeLabel = isInkSaver ? "Ink saver" : "Color mode";
   const printModeDescription = isInkSaver
     ? "Text-first print layout with white surfaces to save ink."
     : "Color-first print layout. Turn on Print backgrounds in your browser if you want the blue fills.";
-  const logoHtml = model.logoUrl
-    ? `
-        <div class="brand-mark" data-logo-state="image">
-          <img
-            class="brand-logo"
-            src="${escapeHtml(model.logoUrl)}"
-            alt="FreeSwimming logo"
-            onerror="this.parentElement.setAttribute('data-logo-state', 'fallback'); this.remove();"
-          />
-          <span class="brand-fallback">FREESWIMMING</span>
-        </div>
-      `
-    : `
-        <div class="brand-mark" data-logo-state="fallback">
-          <span class="brand-fallback">FREESWIMMING</span>
-        </div>
-      `;
+  const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
+  const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
   const focusPointsHtml =
     model.focusPoints.length > 0
       ? `
@@ -1356,6 +1436,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         --warning-soft: ${isInkSaver ? "#ffffff" : "rgba(245, 158, 11, 0.16)"};
       }
 
+      ${fontFaceCss}
+
       * {
         box-sizing: border-box;
       }
@@ -1366,11 +1448,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         padding: 0;
         background: var(--page);
         color: var(--ink);
-        font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       }
 
       body {
         min-height: 100vh;
+        font-family: "FreeSwimming Brand", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial,
+          sans-serif;
       }
 
       .toolbar {
@@ -1457,21 +1540,15 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         border-bottom: 1px solid rgba(16, 33, 60, 0.08);
       }
 
-      .hero-top {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-      }
-
       .brand-mark {
         display: inline-flex;
-        min-height: 34px;
         align-items: center;
       }
 
       .brand-logo {
         display: block;
-        width: 44px;
+        width: 128px;
+        max-width: min(48vw, 128px);
         height: auto;
       }
 
@@ -1479,8 +1556,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
         display: none;
         font-size: 12px;
         font-weight: 800;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
+        letter-spacing: 0.1em;
         color: var(--accent-strong);
       }
 
@@ -1503,9 +1579,25 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
       }
 
       h1 {
-        margin: 2px 0 0;
+        margin: 4px 0 0;
         font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
         line-height: 1.15;
+      }
+
+      .hero-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-tagline {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
       }
 
       .lede {
@@ -1720,7 +1812,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel) {
           <div class="hero-top">
             ${logoHtml}
             <div>
-              <p class="section-kicker">FreeSwimming</p>
+              <p class="section-kicker">freeswimming.org</p>
+              <p class="brand-tagline">Learn. Drill. Swim.</p>
               <h1 data-testid="workout-pdf-title">Poolside Note</h1>
             </div>
           </div>

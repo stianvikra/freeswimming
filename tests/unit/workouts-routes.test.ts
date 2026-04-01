@@ -356,7 +356,7 @@ describe("workouts routes", () => {
     expect(body).toContain("Calm exhale");
     expect(body).not.toContain("High elbow catch");
     expect(body).toContain("Breathing timing");
-    expect(body).toContain("logo_black_print.png");
+    expect(body).toContain("lockup-domain-ink.png");
   });
 
   it("creates manual canonical workouts when the request source kind is manual", async () => {

@@ -1,7 +1,8 @@
 "use client";
 
-import Image from "next/image";
+import BrandImage from "@/components/brand/BrandImage";
 import { cx } from "@/components/ui/cx";
+import { BRAND_USAGE } from "@/lib/brand";
 
 type Props = {
   title: string;
@@ -36,11 +37,10 @@ export default function PageIntro({
           <div
             className={cx("relative shrink-0", compact ? "h-10 w-10 sm:h-11 sm:w-11" : "h-12 w-12")}
           >
-            <Image
-              src="/logos/01_icon_transparent.png"
-              alt="Freeswimming logo"
-              fill
-              className="object-contain"
+            <BrandImage
+              asset={BRAND_USAGE.pageIntroSymbol}
+              decorative
+              className="h-full w-auto"
               sizes={compact ? "44px" : "48px"}
             />
           </div>
@@ -48,7 +48,7 @@ export default function PageIntro({
           <div className="leading-tight">
             <h1
               className={cx(
-                "font-semibold tracking-tight text-slate-900",
+                "font-semibold tracking-[-0.02em] text-slate-900",
                 compact ? "text-[22px]" : "text-[23px]"
               )}
             >
@@ -56,7 +56,7 @@ export default function PageIntro({
             </h1>
             <p
               className={cx(
-                "mt-1 font-medium tracking-[0.01em] text-slate-700",
+                "mt-1 font-semibold tracking-[0.04em] text-slate-700",
                 compact ? "text-[14px]" : "text-[14px]"
               )}
             >

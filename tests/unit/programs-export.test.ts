@@ -216,6 +216,8 @@ describe("program exports", () => {
     expect(html).toContain("Print / Save PDF");
     expect(html).toContain("Printable race prep");
     expect(html).toContain("Canonical program");
+    expect(html).toContain("Learn. Drill. Swim.");
+    expect(html).toContain("freeswimming.org");
     expect(html).toContain("Week 1");
     expect(html).toContain("Monday");
     expect(html).toContain("Printable review workout");

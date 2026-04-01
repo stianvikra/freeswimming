@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { InstallProvider } from "@/components/install/install-context";
 import "./globals.css";
+
+const brandSans = localFont({
+  src: "./fonts/Manrope-VariableFont_wght.ttf",
+  variable: "--font-brand-sans",
+  display: "swap",
+  weight: "200 800",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://freeswimming.org"),
@@ -37,7 +45,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-transparent">
+      <body className={`${brandSans.variable} min-h-screen bg-transparent`}>
         <InstallProvider>{children}</InstallProvider>
       </body>
     </html>
