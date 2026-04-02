@@ -219,3 +219,4 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-04-02 | working tree | started the final Package B child slice after PR #339 merged; scope is narrowed to contextual note reference/open-in-notes/related-note parity so the remaining agent-readiness follow-up can close without reopening schema work | next: implement contextual panel reference/jump UI, update help copy, and run targeted validation`
+- `2026-04-02 | validation hardening | full local verify exposed an unrelated dryland current-delete navigation timeout on the deleted detail route; hardened the current-session delete path to `replace` back to `/my-library/dryland`, added a unit regression for that navigation contract, and confirmed the previously failing desktop-chromium dryland Playwright spec passes again | next: rerun verify:pre-pr on the current HEAD, then rerun verify:pre-merge before updating the PR`
