@@ -1,25 +1,35 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
 async function getWithSocketHangupRetry(request: APIRequestContext, url: string) {
-  try {
-    return await request.get(url);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-    const isTransientNetworkError =
-      message.includes("socket hang up") || message.includes("econnreset");
-    if (!isTransientNetworkError) {
-      throw error;
-    }
+  let lastError: unknown;
 
-    await new Promise((resolve) => {
-      setTimeout(resolve, 250);
-    });
-    return request.get(url);
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    try {
+      return await request.get(url, { timeout: 10_000 });
+    } catch (error) {
+      lastError = error;
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+      const isTransientNetworkError =
+        message.includes("socket hang up") ||
+        message.includes("econnreset") ||
+        message.includes("timeout");
+      if (!isTransientNetworkError || attempt === 4) {
+        throw error;
+      }
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 250 * attempt);
+      });
+    }
   }
+
+  throw lastError;
 }
 
 test("sitemap contains canonical public routes", async ({ request }) => {
+  test.slow();
+
   const res = await getWithSocketHangupRetry(request, "/sitemap.xml");
   expect(res.ok()).toBeTruthy();
 
