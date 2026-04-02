@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
-- `updated`: `2026-03-29`
+- `updated`: `2026-04-02`
 
 ## Goal
 
@@ -282,6 +282,7 @@ Critical target categories for `10/10` claim in this brief:
 16. `My sessions` is the only browse-page heading, duplicate explanatory copy is removed, and saved-session count stays secondary instead of explaining the page twice.
 17. My Library session-entry cards keep only builder titles and relevant actions, without misplaced latest-session preview text on the card face.
 18. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
+19. Existing manual `Swim session builder` form fields/input boxes remain available unless a separate owner-approved brief explicitly changes that contract.
 
 ## Validation
 
@@ -331,6 +332,7 @@ Critical target categories for `10/10` claim in this brief:
 - Do not hide unfinished surfaces in a misleading way; if `Program shell` remains visible, it must be explained truthfully.
 - Do not add destructive shortcuts without confirmation/recovery guidance.
 - Keep poolside/PDF claims narrower than the currently supported export contract.
+- Do not remove existing manual `Swim session builder` authoring fields/input boxes in this brief; labels, helper text, presets, notices, and IA may change, but field removal requires a new explicit owner decision.
 
 ## 10/10 Quality Bar
 
@@ -412,6 +414,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-02 | implementation | slice 10 on branch feat/swim-session-builder-flow-cleanup-2026-04-02 folds the AI generator entry into the same My Library swim-session flow, renames the browse/detail surfaces to My Swim Sessions/Edit, trims the detail-route intro copy, reduces manual pool-length presets to 12.5m/25m/50m while keeping exact-length input available, and enables page-level Quick note support on swim-session detail routes without removing any manual builder form fields; targeted vitest, targeted desktop-chromium my-library/admin/help playwright, and typecheck are green, with the new workout-detail admin-notes e2e currently environment-skipped on write readiness | next: run npm run verify:pre-pr, then commit/push/open PR if the full gate stays green`
 - `2026-03-29 | implementation | slice 9 on branch fix/swim-sessions-and-generator-ia-cleanup-2026-03-29 removes misleading current-session preview lines from the My Library swim and dryland entry cards, simplifies the dedicated swim browse route to a calmer `My sessions`surface with session count + create action only, and aligns reused canonical session-list language inside the focused builder to`My sessions`instead of`Recent accepted workouts`; targeted workout/generator vitest and desktop-chromium my-library workout-builder + generator-intake + dryland e2e are green | next: run npm run lint:briefs and npm run verify:pre-pr, then commit/push/open PR if the full gate stays green`
 - `2026-03-29 | implementation | slice 8 on branch fix/workouts-view-sessions-and-poolside-note-2026-03-29 splits saved-session browsing into a dedicated View sessions route, adds inline plain-text preview per saved session, renames the compact lane-side export from Poolside PDF to Poolside Note, and tightens the lane-side output to operational lines with explicit P: pauses, Tot total distance, and focus carry-through; targeted typecheck, workout-builder vitest, workouts shared/routes vitest, desktop-chromium my-library workout-builder e2e, and brief lint for the changed brief are green (full --all lint still only fails on older historical briefs outside this slice) | next: run npm run verify:pre-pr, then commit/push/open PR if the full gate stays green`
 - `2026-03-29 | implementation | slice 7 on branch fix/workout-builder-draft-first-entry-2026-03-29 makes builder entry explicit with `View sessions`and`Create session`, adds a truthful continue-vs-start-scratch chooser whenever saved work already exists, opens the builder route with saved sessions hidden unless explicitly requested, and switches manual create to a cleaner scratch session shell that still respects current workout persistence constraints; targeted unit + desktop-chromium builder e2e + desktop-chromium program-export e2e and full npm run verify:pre-pr are green | next: commit, push, open/update PR, then wait for CI before npm run verify:pre-merge`

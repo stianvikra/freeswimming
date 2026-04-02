@@ -426,7 +426,7 @@ describe("SessionGeneratorPanel", () => {
     fireEvent.click(screen.getByTestId("session-generator-save"));
 
     await waitFor(() => {
-      expect(screen.getByText("Session saved to My sessions.")).toBeVisible();
+      expect(screen.getByText("Session saved to My Swim Sessions.")).toBeVisible();
     });
 
     expect(fetch).toHaveBeenNthCalledWith(

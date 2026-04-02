@@ -478,7 +478,7 @@ export default function WorkoutEditor({
   showLoadedBanner = true,
   loadedBannerTitle = "Accepted workout loaded.",
   loadedBannerDescription = "Save changes below, or start a fresh draft from the prepared intake when you want a brand-new generated workout.",
-  recentWorkoutsDescription = "Open another saved session here until the dedicated workout builder route grows into the full manual builder flow.",
+  recentWorkoutsDescription = "Edit another saved session here when you want to switch what you are working on.",
   workoutHrefBuilder = (workoutId) => `/my-library/workouts/${workoutId}`,
   saveButtonTestId = "session-generator-save",
   showPdfPanel = true,
@@ -523,14 +523,14 @@ export default function WorkoutEditor({
           loadedDraftBanner:
             "Saved session loaded: edit everything below, then save changes back to this same session.",
           unsavedDraftBanner:
-            "Generated session ready: review and edit everything below, then save it to My sessions when you are happy with it.",
+            "Generated session ready: review and edit everything below, then save it to My Swim Sessions when you are happy with it.",
           savedWorkoutDescription:
             "Saving here updates this same saved session instead of creating a new copy.",
           unsavedDraftDescription:
-            "Review the generated session below, then save it to My sessions when you are ready.",
+            "Review the generated session below, then save it to My Swim Sessions when you are ready.",
           savedWorkoutPendingState: "Unsaved changes stay local until you save this session.",
           savedWorkoutSavedState: "All changes are saved to this session.",
-          unsavedDraftPendingState: "This generated session is not saved to My sessions yet.",
+          unsavedDraftPendingState: "This generated session is not saved to My Swim Sessions yet.",
         }
       : {
           loadedDraftBanner:
@@ -1922,7 +1922,7 @@ export default function WorkoutEditor({
         <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
           <p className="text-sm font-medium text-slate-900">Pool length</p>
           <p className="mt-1 text-xs text-slate-500">
-            Choose a common pool size or type the exact length when you build for a less common
+            Choose 12.5m, 25m, or 50m, or type the exact length when you build for a less common
             setup.
           </p>
 
@@ -2486,7 +2486,7 @@ export default function WorkoutEditor({
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">My sessions</h3>
+              <h3 className="text-sm font-semibold text-slate-900">My Swim Sessions</h3>
               <p className="mt-1 text-sm text-slate-600">{recentWorkoutsDescription}</p>
             </div>
           </div>
@@ -2511,7 +2511,7 @@ export default function WorkoutEditor({
                   data-testid={`session-generator-open-workout-${workout.id}`}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                 >
-                  Open
+                  Edit
                 </Link>
               </div>
             ))}

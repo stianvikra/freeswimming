@@ -88,9 +88,7 @@ export const SESSION_DRAFT_STEP_DISTANCE_PRESETS = [
 ] as const;
 export const SESSION_DRAFT_REPEAT_MIN = 2;
 export const SESSION_DRAFT_REPEAT_MAX = 20;
-export const SESSION_DRAFT_POOL_LENGTH_PRESETS = [
-  12.5, 25, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500,
-] as const;
+export const SESSION_DRAFT_POOL_LENGTH_PRESETS = [12.5, 25, 50] as const;
 export const SESSION_DRAFT_POOL_LENGTH_MIN = 12.5;
 export const SESSION_DRAFT_POOL_LENGTH_MAX = 500;
 

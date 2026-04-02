@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { buildAdminNoteTestArtifactTitle } from "@/lib/admin/admin-note-test-artifacts";
 import { resolveCanonicalCourseLessonRuntimeId } from "@/lib/course/runtime-id-manifest";
+import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
 import { cleanupAdminNoteTestArtifacts } from "@/tests/e2e/admin-note-test-artifact-cleanup";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
@@ -578,5 +579,155 @@ test.describe("admin contextual notes", () => {
     await expect(
       panel.getByTestId("admin-context-note-item").filter({ hasText: title })
     ).toHaveCount(0);
+  });
+
+  test("allowlisted admin can quick-capture page notes from swim-session detail route", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+
+    await loginAsAdminViaDevBypass(page, "/my-library");
+    expect(new URL(page.url()).pathname).toBe("/my-library");
+
+    const workoutCreateResponse = await page.request.post("/api/my-library/workouts", {
+      headers: {
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({
+        sourceKind: "manual",
+        draft: buildManualWorkoutEmptyDraft(),
+      }),
+    });
+
+    if (!workoutCreateResponse.ok()) {
+      test.skip(true, `Workout create API unavailable (${workoutCreateResponse.status()}).`);
+    }
+
+    const workoutCreatePayload = (await workoutCreateResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+      workout?: { id?: string };
+    } | null;
+
+    if (!workoutCreatePayload?.ok || typeof workoutCreatePayload.workout?.id !== "string") {
+      const reason =
+        typeof workoutCreatePayload?.error === "string"
+          ? workoutCreatePayload.error
+          : "missing workout id";
+      test.skip(true, `Workout detail setup is not write-ready in this environment (${reason}).`);
+    }
+
+    const workoutId = workoutCreatePayload?.workout?.id;
+    if (typeof workoutId !== "string") {
+      test.skip(true, "Workout detail setup did not return a stable workout id.");
+    }
+    const workoutPath = `/my-library/workouts/${workoutId}`;
+
+    try {
+      await loginAsAdminViaDevBypass(page, workoutPath);
+      expect(new URL(page.url()).pathname).toBe(workoutPath);
+
+      const probe = await page.request.get(
+        `/api/admin/notes?contextType=page&contextRef=${encodeURIComponent(workoutPath)}`
+      );
+      if (!probe.ok()) {
+        test.skip(true, `Context notes API unavailable (${probe.status()}).`);
+      }
+
+      const probePayload = (await probe.json()) as { ok?: boolean; schemaReady?: boolean };
+      if (probePayload.ok && probePayload.schemaReady === false) {
+        test.skip(true, "Admin notes schema is not ready in this environment.");
+      }
+
+      const panel = page.getByTestId("admin-context-notes-panel");
+      await expect(panel).toBeVisible({ timeout: 15_000 });
+      await expect
+        .poll(async () => await panel.getByText("Loading notes…").count(), { timeout: 15_000 })
+        .toBe(0);
+
+      const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const title = buildAdminNoteTestArtifactTitle({
+        scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
+        label: "Swim session detail quick capture",
+        unique,
+      });
+
+      await panel.getByRole("button", { name: "Quick note" }).click();
+      const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
+      await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+      const createForm = page.getByTestId("admin-note-quick-capture-form");
+      await createForm.getByLabel("Title").fill(title);
+      await createForm.getByLabel("Category").fill("Operations");
+      await createForm.getByLabel("Priority").selectOption("high");
+      await createForm.getByLabel("Text").fill("Page-level admin note for swim-session detail.");
+
+      let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+      try {
+        [createResponse] = await Promise.all([
+          page.waitForResponse(
+            (response) =>
+              response.url().includes("/api/admin/notes") && response.request().method() === "POST",
+            { timeout: 15_000 }
+          ),
+          createForm.getByRole("button", { name: "Save note" }).click(),
+        ]);
+      } catch {
+        test.skip(true, "Swim-session detail note create request timed out in this environment.");
+      }
+
+      if (!createResponse) {
+        return;
+      }
+
+      const createPayload = (await createResponse.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
+      if (!createResponse.ok() || createPayload?.ok === false) {
+        const reason =
+          typeof createPayload?.error === "string"
+            ? createPayload.error
+            : `status ${createResponse.status()}`;
+        test.skip(
+          true,
+          `Swim-session detail note create is not write-ready in this environment (${reason}).`
+        );
+      }
+
+      await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+      await expect(quickCaptureDialog.getByLabel("Title")).toHaveValue("");
+      await quickCaptureDialog.getByRole("button", { name: "Close panel" }).first().click();
+      await expect(quickCaptureDialog).toHaveCount(0);
+
+      const toggle = panel.getByTestId("admin-context-notes-toggle");
+      if ((await toggle.textContent())?.includes("Show")) {
+        await toggle.click();
+      }
+
+      const createdItem = panel
+        .getByTestId("admin-context-note-item")
+        .filter({ hasText: title })
+        .first();
+      await expect
+        .poll(
+          async () =>
+            await panel.getByTestId("admin-context-note-item").filter({ hasText: title }).count(),
+          { timeout: 15_000 }
+        )
+        .toBeGreaterThan(0);
+      await expect(createdItem).toBeVisible({ timeout: 15_000 });
+      await expect(createdItem).toContainText("High");
+
+      await toggleDoneAndWait(page, panel, title, "Note marked as done.");
+
+      page.once("dialog", (dialog) => dialog.accept());
+      await createdItem.getByRole("button", { name: "Delete" }).click();
+      await expect(
+        panel.getByTestId("admin-context-note-item").filter({ hasText: title })
+      ).toHaveCount(0);
+    } finally {
+      await page.request.delete(`/api/my-library/workouts/${workoutId}`).catch(() => null);
+    }
   });
 });

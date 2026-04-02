@@ -174,7 +174,7 @@ export default function SessionGeneratorPanel({
       setDraft(responseBody.draft);
       setSavedWorkout(null);
       setSuccess(
-        "Your session is ready. Review it below, make any edits you want, then save it to My sessions."
+        "Your session is ready. Review it below, make any edits you want, then save it to My Swim Sessions."
       );
       void sendClientAnalyticsEvent("session_draft_generated", {
         sessionType: responseBody.draft.sessionType,
@@ -223,7 +223,9 @@ export default function SessionGeneratorPanel({
       setSavedWorkout(responseBody.workout);
       setDraft(responseBody.workout.draft);
       setSuccess(
-        savedWorkout ? "Session changes saved to My sessions." : "Session saved to My sessions."
+        savedWorkout
+          ? "Session changes saved to My Swim Sessions."
+          : "Session saved to My Swim Sessions."
       );
     } catch {
       setError("Could not save workout right now.");
@@ -264,8 +266,8 @@ export default function SessionGeneratorPanel({
       {workoutLibrary.selectedWorkoutMissing ? (
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
           <p className="text-sm text-amber-900">
-            That saved session could not be found. Start a fresh AI session here or open My sessions
-            instead.
+            That saved session could not be found. Start a fresh AI session here or open My Swim
+            Sessions instead.
           </p>
         </div>
       ) : null}
@@ -273,8 +275,9 @@ export default function SessionGeneratorPanel({
       {!canonicalSaveReady ? (
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
           <p className="text-sm text-amber-900">
-            Saving to My sessions is still syncing in this environment. You can generate and review
-            a session here, but Save to My sessions stays unavailable until sync finishes.
+            Saving to My Swim Sessions is still syncing in this environment. You can generate and
+            review a session here, but Save to My Swim Sessions stays unavailable until sync
+            finishes.
           </p>
         </div>
       ) : null}
@@ -569,7 +572,7 @@ export default function SessionGeneratorPanel({
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-600">
-              Nothing changes in My sessions until you save this generated session.
+              Nothing changes in My Swim Sessions until you save this generated session.
             </p>
             <button
               type="button"
@@ -604,7 +607,7 @@ export default function SessionGeneratorPanel({
             startNewDraftLabel="Start a fresh AI session"
             loadedBannerTitle="Saved session loaded."
             loadedBannerDescription="Save changes below, or start a fresh session in the AI session generator when you want a brand-new version."
-            recentWorkoutsDescription="Open another saved session in the dedicated workout builder route."
+            recentWorkoutsDescription="Edit another saved session in the dedicated workout builder route."
             workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
           />
         </div>

@@ -21,6 +21,7 @@ type Props = {
   workoutLibrary: WorkoutLibrarySnapshot;
   trainingFocusOptions?: WorkoutPoolsideFocusOption[];
   browseOnly?: boolean;
+  hideShellIntro?: boolean;
 };
 
 function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
@@ -32,6 +33,7 @@ export default function WorkoutBuilderHub({
   workoutLibrary,
   trainingFocusOptions = [],
   browseOnly = false,
+  hideShellIntro = false,
 }: Props) {
   const router = useRouter();
   const [savedWorkout, setSavedWorkout] = useState<WorkoutEditorRecord | null>(
@@ -195,20 +197,22 @@ export default function WorkoutBuilderHub({
           </div>
           {recentWorkouts.length > 0 ? (
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {recentWorkouts.length} saved session{recentWorkouts.length === 1 ? "" : "s"}
+              {recentWorkouts.length} saved swim session{recentWorkouts.length === 1 ? "" : "s"}
             </p>
           ) : null}
         </div>
       ) : (
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
-            <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-              {savedWorkout
-                ? "Keep the session form front and center while you edit one saved swim session. Open saved sessions only when you want to switch, print, or clean up older work."
-                : "View saved sessions when you want to reopen existing work, or create a new empty swim session from scratch."}
-            </p>
-          </div>
+          {!hideShellIntro ? (
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
+              <p className="mt-2 max-w-[62ch] text-sm text-slate-600">
+                {savedWorkout
+                  ? "Edit one saved session here and only switch, print, or clean up older work when you need it."
+                  : "Open a saved session or create a fresh one from the same swim-session flow."}
+              </p>
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             {recentWorkouts.length > 0 ? (
               <Link
@@ -216,7 +220,7 @@ export default function WorkoutBuilderHub({
                 data-testid="workout-builder-view-sessions-link"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
-                View sessions
+                My Swim Sessions
               </Link>
             ) : null}
             {workoutLibrary.schemaReady ? (
@@ -324,7 +328,7 @@ export default function WorkoutBuilderHub({
           recentWorkouts.length > 0 ? (
             <SavedWorkoutsPanel
               workouts={recentWorkouts}
-              heading="My sessions"
+              heading="My Swim Sessions"
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
               workoutPdfHrefBuilder={(workoutId) =>
                 `/api/my-library/workouts/${workoutId}/export/pdf`
@@ -332,7 +336,7 @@ export default function WorkoutBuilderHub({
               workoutPoolsidePdfHrefBuilder={(workoutId) =>
                 `/api/my-library/workouts/${workoutId}/export/pdf?variant=poolside`
               }
-              editLabel="Open"
+              editLabel="Edit"
               testId="workout-builder-saved-sessions"
               showToggle={false}
               showInlinePreview
@@ -359,8 +363,8 @@ export default function WorkoutBuilderHub({
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
               <p className="text-sm font-medium text-slate-900">No saved sessions yet.</p>
               <p className="mt-2 text-sm text-slate-600">
-                Create your first manual swim session here, then come back to browse, preview, or
-                print future saved sessions in one list.
+                Create your first manual swim session here, then return to My Swim Sessions to
+                browse, preview, or print saved work in one list.
               </p>
             </div>
           )
@@ -373,8 +377,8 @@ export default function WorkoutBuilderHub({
                   : "No saved swim session is loaded in this route yet."}
               </p>
               <p className="mt-2 text-sm text-amber-900/90">
-                Open saved sessions only when you want to switch back to older work, or create a new
-                session from scratch when you want a clean shell.
+                Open My Swim Sessions when you want older work, or create a fresh session when you
+                want a clean shell.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {recentWorkouts.length > 0 ? (
@@ -383,7 +387,7 @@ export default function WorkoutBuilderHub({
                     data-testid="workout-builder-empty-view-sessions-link"
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                   >
-                    View sessions
+                    My Swim Sessions
                   </Link>
                 ) : null}
                 {workoutLibrary.schemaReady ? (
@@ -428,10 +432,10 @@ export default function WorkoutBuilderHub({
               }}
               onResetToSaved={resetDraftToSavedWorkout}
               startNewDraftHref="/my-library/generator"
-              startNewDraftLabel="Generate new draft"
+              startNewDraftLabel="Start from AI draft"
               showLoadedBanner={false}
               showPdfPanel={false}
-              recentWorkoutsDescription="Open another saved session when you want to switch what you are editing."
+              recentWorkoutsDescription="Edit another saved session when you want to switch what you are working on."
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
               saveButtonTestId="workout-builder-save"
             />
