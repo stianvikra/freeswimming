@@ -31,6 +31,7 @@ type Props = {
   viewButtonTestIdBuilder?: (workoutId: string) => string;
   previewTestIdBuilder?: (workoutId: string) => string;
   showHeader?: boolean;
+  initialVisibleCount?: number | null;
 };
 
 export default function SavedWorkoutsPanel({
@@ -59,13 +60,25 @@ export default function SavedWorkoutsPanel({
   viewButtonTestIdBuilder = (workoutId) => `saved-workouts-view-${workoutId}`,
   previewTestIdBuilder = (workoutId) => `saved-workouts-preview-${workoutId}`,
   showHeader = true,
+  initialVisibleCount = null,
 }: Props) {
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
   const [previewWorkoutId, setPreviewWorkoutId] = useState<string | null>(null);
+  const [showAllWorkouts, setShowAllWorkouts] = useState(() => initialVisibleCount == null);
+  const visibleLimit = initialVisibleCount ?? undefined;
+
+  const hasHiddenWorkouts =
+    visibleLimit != null && Number.isFinite(visibleLimit)
+      ? workouts.length > visibleLimit
+      : false;
+  const visibleWorkouts =
+    hasHiddenWorkouts && !showAllWorkouts ? workouts.slice(0, visibleLimit) : workouts;
+  const hiddenWorkoutCount = hasHiddenWorkouts ? workouts.length - visibleWorkouts.length : 0;
 
   useEffect(() => {
     if (pendingDeleteWorkoutId) {
       setExpanded(true);
+      setShowAllWorkouts(true);
     }
   }, [pendingDeleteWorkoutId]);
 
@@ -80,6 +93,12 @@ export default function SavedWorkoutsPanel({
       setPreviewWorkoutId(null);
     }
   }, [previewWorkoutId, workouts]);
+
+  useEffect(() => {
+    if (initialVisibleCount == null) {
+      setShowAllWorkouts(true);
+    }
+  }, [initialVisibleCount]);
 
   if (workouts.length === 0) {
     return null;
@@ -112,7 +131,7 @@ export default function SavedWorkoutsPanel({
 
       {!showToggle || expanded ? (
         <div className={`${showHeader ? "mt-4" : ""} grid gap-3`}>
-          {workouts.map((workout) => {
+          {visibleWorkouts.map((workout) => {
             const deleting = deletingWorkoutId === workout.id;
             const pendingDelete = pendingDeleteWorkoutId === workout.id;
             const workoutPdfHref = workoutPdfHrefBuilder?.(workout.id) ?? null;
@@ -254,6 +273,18 @@ export default function SavedWorkoutsPanel({
               </div>
             );
           })}
+          {hiddenWorkoutCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowAllWorkouts(true)}
+              data-testid={`${testId}-load-more`}
+              className="inline-flex h-10 items-center justify-center self-start rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              {hiddenWorkoutCount === 1
+                ? "Load 1 more session"
+                : `Load ${hiddenWorkoutCount} more sessions`}
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>

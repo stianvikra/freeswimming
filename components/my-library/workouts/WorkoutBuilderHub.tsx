@@ -341,6 +341,7 @@ export default function WorkoutBuilderHub({
               showToggle={false}
               showInlinePreview
               showHeader={false}
+              initialVisibleCount={3}
               editButtonTestIdBuilder={(workoutId) => `workout-builder-edit-workout-${workoutId}`}
               deleteButtonTestIdBuilder={(workoutId) =>
                 `workout-builder-delete-workout-${workoutId}`
