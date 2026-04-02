@@ -89,7 +89,7 @@ describe("AdminContextNotesPanel", () => {
           ok: true,
           json: async () => ({
             ok: true,
-            item: initialItem,
+            item: itemWithAttachment,
           }),
         } as Response;
       }

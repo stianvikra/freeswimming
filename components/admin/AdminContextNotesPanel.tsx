@@ -760,7 +760,12 @@ export default function AdminContextNotesPanel({
         return;
       }
 
-      applyMutatedItem(noteId, payload.item);
+      applyMutatedItem(noteId, {
+        ...payload.item,
+        attachments: payload.item.attachments.filter(
+          (attachment) => attachment.id !== attachmentId
+        ),
+      });
       setActionNotice("Image deleted.");
     } catch {
       setActionError("Could not delete image.");
