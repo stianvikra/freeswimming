@@ -440,6 +440,7 @@ Critical target categories for `10/10` claim in this umbrella:
 
 ## Checkpoint Log
 
+- `2026-04-02 | 2008230 | PR #338 merged the builder/my-library flow slice on main after PR #337 had already landed the existing-note images + quick-note calmness slice; remaining admin-notes system work is now narrowed to route-surface expansion plus later metadata/agent-readiness decisions | next: execute the detail-route expansion child slice for saved dryland/program routes`
 - `2026-04-02 | feat/swim-session-builder-flow-cleanup-2026-04-02 | child execution started under the umbrella through the builder/my-library slice covering swim-session flow consolidation, My Swim Sessions naming, Edit labels, reduced pool-length presets, calmer detail-route copy, and workout-detail Quick note route support without removing any manual builder input fields; targeted vitest + targeted desktop-chromium playwright are green, with the new workout-detail admin-notes e2e currently environment-skipped on write readiness | next: run npm run verify:pre-pr for this slice, then commit/push/open PR and keep the umbrella in-progress`
 - `2026-04-01 | working tree | re-triaged live production admin notes, closed 8 already-shipped notes, deleted 1 obsolete note by owner request, and created one umbrella brief for the remaining 23-note backlog | next: keep this planned until the first child execution slice is chosen`
 

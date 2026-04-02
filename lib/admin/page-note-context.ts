@@ -66,6 +66,12 @@ export function getAdminPageContextLabel(ref: string): string {
   if (normalized.startsWith("/my-library/workouts/")) {
     return "My Library swim session detail";
   }
+  if (normalized.startsWith("/my-library/dryland/")) {
+    return "My Library dryland session detail";
+  }
+  if (normalized.startsWith("/my-library/programs/")) {
+    return "My Library program detail";
+  }
   return `Page: ${normalized}`;
 }
 
@@ -98,6 +104,14 @@ export function supportsAdminPageNotesSurface(pathname: string): boolean {
   }
 
   if (normalized.startsWith("/my-library/workouts/")) {
+    return true;
+  }
+
+  if (normalized.startsWith("/my-library/dryland/")) {
+    return true;
+  }
+
+  if (normalized.startsWith("/my-library/programs/")) {
     return true;
   }
 

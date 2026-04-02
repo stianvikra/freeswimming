@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-01-admin-notes-existing-note-images-and-quick-note-copy-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-01`
 - `updated`: `2026-04-02`
@@ -285,3 +285,11 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-01 | working tree | created the first in-progress child slice under the production admin-notes umbrella, focused on contextual existing-note image recovery plus quick-note copy simplification | next: implement contextual attachment edit parity, update docs/tests, and run targeted validation`
 - `2026-04-02 | 1f960e4 | implemented contextual existing-note image upload/delete parity, simplified quick-note copy/actions, updated Help/Guide + recovery wording, and passed targeted desktop Chromium admin-notes coverage plus full npm run verify:pre-pr | next: commit the validated slice, push the worktree branch, and open/update the PR`
 - `2026-04-02 | 99ae6a3 | hardened contextual attachment delete state against stale hydrated responses, added a unit regression covering stale delete payloads, and passed isolated Playwright repros plus full npm run verify:pre-merge in a clean PR worktree | next: commit the regression fix, push the branch, and recheck PR status`
+- `2026-04-02 | a43722c | PR #337 merged to main; the slice shipped existing-note image recovery, calmer quick-note copy/actions, help/runbook updates, and delete-state hardening | next: move this brief to done and continue with the narrower route-surface expansion follow-up`
+
+## Completion Record
+
+- `PR`: `#337`
+- `merge`: `2026-04-02`
+- `merge_commit`: `a43722ceeb9391e632675cbf277815692d2937db`
+- `result`: `merged to main`

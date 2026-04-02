@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { buildAdminNoteTestArtifactTitle } from "@/lib/admin/admin-note-test-artifacts";
 import { resolveCanonicalCourseLessonRuntimeId } from "@/lib/course/runtime-id-manifest";
+import { buildManualDrylandStarterDraft } from "@/lib/dryland/manual";
 import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
 import { cleanupAdminNoteTestArtifacts } from "@/tests/e2e/admin-note-test-artifact-cleanup";
 
@@ -124,6 +125,100 @@ async function ensureContextCreateFormOpen(page: Page, panel: ReturnType<Page["g
   await expect(createForm.getByLabel("Category")).toBeVisible({ timeout: 15_000 });
 
   return createForm;
+}
+
+async function expectPageQuickCaptureFlow(
+  page: Page,
+  contextPath: string,
+  title: string,
+  body: string
+) {
+  const probe = await page.request.get(
+    `/api/admin/notes?contextType=page&contextRef=${encodeURIComponent(contextPath)}`
+  );
+  if (!probe.ok()) {
+    test.skip(true, `Context notes API unavailable (${probe.status()}).`);
+  }
+
+  const probePayload = (await probe.json()) as { ok?: boolean; schemaReady?: boolean };
+  if (probePayload.ok && probePayload.schemaReady === false) {
+    test.skip(true, "Admin notes schema is not ready in this environment.");
+  }
+
+  const panel = page.getByTestId("admin-context-notes-panel");
+  await expect(panel).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(async () => await panel.getByText("Loading notes…").count(), { timeout: 15_000 })
+    .toBe(0);
+
+  await panel.getByRole("button", { name: "Quick note" }).click();
+  const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
+  await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+  const createForm = page.getByTestId("admin-note-quick-capture-form");
+  await createForm.getByLabel("Title").fill(title);
+  await createForm.getByLabel("Category").fill("Operations");
+  await createForm.getByLabel("Priority").selectOption("high");
+  await createForm.getByLabel("Text").fill(body);
+
+  let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+  try {
+    [createResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/admin/notes") && response.request().method() === "POST",
+        { timeout: 15_000 }
+      ),
+      createForm.getByRole("button", { name: "Save note" }).click(),
+    ]);
+  } catch {
+    test.skip(true, "Page-level note create request timed out in this environment.");
+  }
+
+  if (!createResponse) {
+    return;
+  }
+
+  const createPayload = (await createResponse.json().catch(() => null)) as {
+    ok?: boolean;
+    error?: string;
+  } | null;
+  if (!createResponse.ok() || createPayload?.ok === false) {
+    const reason =
+      typeof createPayload?.error === "string"
+        ? createPayload.error
+        : `status ${createResponse.status()}`;
+    test.skip(
+      true,
+      `Page-level note create is not write-ready in this environment (${reason}).`
+    );
+  }
+
+  await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+  await expect(quickCaptureDialog.getByLabel("Title")).toHaveValue("");
+  await quickCaptureDialog.getByRole("button", { name: "Close panel" }).first().click();
+  await expect(quickCaptureDialog).toHaveCount(0);
+
+  const toggle = panel.getByTestId("admin-context-notes-toggle");
+  if ((await toggle.textContent())?.includes("Show")) {
+    await toggle.click();
+  }
+
+  const createdItem = panel.getByTestId("admin-context-note-item").filter({ hasText: title }).first();
+  await expect
+    .poll(
+      async () =>
+        await panel.getByTestId("admin-context-note-item").filter({ hasText: title }).count(),
+      { timeout: 15_000 }
+    )
+    .toBeGreaterThan(0);
+  await expect(createdItem).toBeVisible({ timeout: 15_000 });
+  await expect(createdItem).toContainText("High");
+
+  await toggleDoneAndWait(page, panel, title, "Note marked as done.");
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await createdItem.getByRole("button", { name: "Delete" }).click();
+  await expect(panel.getByTestId("admin-context-note-item").filter({ hasText: title })).toHaveCount(0);
 }
 
 test.describe("admin contextual notes", () => {
@@ -627,107 +722,144 @@ test.describe("admin contextual notes", () => {
     try {
       await loginAsAdminViaDevBypass(page, workoutPath);
       expect(new URL(page.url()).pathname).toBe(workoutPath);
-
-      const probe = await page.request.get(
-        `/api/admin/notes?contextType=page&contextRef=${encodeURIComponent(workoutPath)}`
-      );
-      if (!probe.ok()) {
-        test.skip(true, `Context notes API unavailable (${probe.status()}).`);
-      }
-
-      const probePayload = (await probe.json()) as { ok?: boolean; schemaReady?: boolean };
-      if (probePayload.ok && probePayload.schemaReady === false) {
-        test.skip(true, "Admin notes schema is not ready in this environment.");
-      }
-
-      const panel = page.getByTestId("admin-context-notes-panel");
-      await expect(panel).toBeVisible({ timeout: 15_000 });
-      await expect
-        .poll(async () => await panel.getByText("Loading notes…").count(), { timeout: 15_000 })
-        .toBe(0);
-
       const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const title = buildAdminNoteTestArtifactTitle({
         scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
         label: "Swim session detail quick capture",
         unique,
       });
-
-      await panel.getByRole("button", { name: "Quick note" }).click();
-      const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
-      await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
-      const createForm = page.getByTestId("admin-note-quick-capture-form");
-      await createForm.getByLabel("Title").fill(title);
-      await createForm.getByLabel("Category").fill("Operations");
-      await createForm.getByLabel("Priority").selectOption("high");
-      await createForm.getByLabel("Text").fill("Page-level admin note for swim-session detail.");
-
-      let createResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
-      try {
-        [createResponse] = await Promise.all([
-          page.waitForResponse(
-            (response) =>
-              response.url().includes("/api/admin/notes") && response.request().method() === "POST",
-            { timeout: 15_000 }
-          ),
-          createForm.getByRole("button", { name: "Save note" }).click(),
-        ]);
-      } catch {
-        test.skip(true, "Swim-session detail note create request timed out in this environment.");
-      }
-
-      if (!createResponse) {
-        return;
-      }
-
-      const createPayload = (await createResponse.json().catch(() => null)) as {
-        ok?: boolean;
-        error?: string;
-      } | null;
-      if (!createResponse.ok() || createPayload?.ok === false) {
-        const reason =
-          typeof createPayload?.error === "string"
-            ? createPayload.error
-            : `status ${createResponse.status()}`;
-        test.skip(
-          true,
-          `Swim-session detail note create is not write-ready in this environment (${reason}).`
-        );
-      }
-
-      await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
-      await expect(quickCaptureDialog.getByLabel("Title")).toHaveValue("");
-      await quickCaptureDialog.getByRole("button", { name: "Close panel" }).first().click();
-      await expect(quickCaptureDialog).toHaveCount(0);
-
-      const toggle = panel.getByTestId("admin-context-notes-toggle");
-      if ((await toggle.textContent())?.includes("Show")) {
-        await toggle.click();
-      }
-
-      const createdItem = panel
-        .getByTestId("admin-context-note-item")
-        .filter({ hasText: title })
-        .first();
-      await expect
-        .poll(
-          async () =>
-            await panel.getByTestId("admin-context-note-item").filter({ hasText: title }).count(),
-          { timeout: 15_000 }
-        )
-        .toBeGreaterThan(0);
-      await expect(createdItem).toBeVisible({ timeout: 15_000 });
-      await expect(createdItem).toContainText("High");
-
-      await toggleDoneAndWait(page, panel, title, "Note marked as done.");
-
-      page.once("dialog", (dialog) => dialog.accept());
-      await createdItem.getByRole("button", { name: "Delete" }).click();
-      await expect(
-        panel.getByTestId("admin-context-note-item").filter({ hasText: title })
-      ).toHaveCount(0);
+      await expectPageQuickCaptureFlow(
+        page,
+        workoutPath,
+        title,
+        "Page-level admin note for swim-session detail."
+      );
     } finally {
       await page.request.delete(`/api/my-library/workouts/${workoutId}`).catch(() => null);
     }
+  });
+
+  test("allowlisted admin can quick-capture page notes from dryland detail route", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+
+    await loginAsAdminViaDevBypass(page, "/my-library");
+    expect(new URL(page.url()).pathname).toBe("/my-library");
+
+    const drylandCreateResponse = await page.request.post("/api/my-library/dryland", {
+      headers: {
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({
+        sourceKind: "manual",
+        sessionKind: "strength",
+        draft: buildManualDrylandStarterDraft("strength"),
+      }),
+    });
+
+    if (!drylandCreateResponse.ok()) {
+      test.skip(true, `Dryland create API unavailable (${drylandCreateResponse.status()}).`);
+    }
+
+    const drylandCreatePayload = (await drylandCreateResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+      session?: { id?: string };
+    } | null;
+
+    if (!drylandCreatePayload?.ok || typeof drylandCreatePayload.session?.id !== "string") {
+      const reason =
+        typeof drylandCreatePayload?.error === "string"
+          ? drylandCreatePayload.error
+          : "missing dryland session id";
+      test.skip(true, `Dryland detail setup is not write-ready in this environment (${reason}).`);
+    }
+
+    const sessionId = drylandCreatePayload?.session?.id;
+    if (typeof sessionId !== "string") {
+      test.skip(true, "Dryland detail setup did not return a stable session id.");
+    }
+    const drylandPath = `/my-library/dryland/${sessionId}`;
+
+    try {
+      await loginAsAdminViaDevBypass(page, drylandPath);
+      expect(new URL(page.url()).pathname).toBe(drylandPath);
+
+      const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const title = buildAdminNoteTestArtifactTitle({
+        scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
+        label: "Dryland detail quick capture",
+        unique,
+      });
+
+      await expectPageQuickCaptureFlow(
+        page,
+        drylandPath,
+        title,
+        "Page-level admin note for dryland detail."
+      );
+    } finally {
+      await page.request.delete(`/api/my-library/dryland/${sessionId}`).catch(() => null);
+    }
+  });
+
+  test("allowlisted admin can quick-capture page notes from program detail route", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+
+    await loginAsAdminViaDevBypass(page, "/my-library");
+    expect(new URL(page.url()).pathname).toBe("/my-library");
+
+    const programCreateResponse = await page.request.post("/api/my-library/programs", {
+      headers: {
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({}),
+    });
+
+    if (!programCreateResponse.ok()) {
+      test.skip(true, `Program create API unavailable (${programCreateResponse.status()}).`);
+    }
+
+    const programCreatePayload = (await programCreateResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+      program?: { id?: string };
+    } | null;
+
+    if (!programCreatePayload?.ok || typeof programCreatePayload.program?.id !== "string") {
+      const reason =
+        typeof programCreatePayload?.error === "string"
+          ? programCreatePayload.error
+          : "missing program id";
+      test.skip(true, `Program detail setup is not write-ready in this environment (${reason}).`);
+    }
+
+    const programId = programCreatePayload?.program?.id;
+    if (typeof programId !== "string") {
+      test.skip(true, "Program detail setup did not return a stable program id.");
+    }
+    const programPath = `/my-library/programs/${programId}`;
+
+    await loginAsAdminViaDevBypass(page, programPath);
+    expect(new URL(page.url()).pathname).toBe(programPath);
+
+    const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const title = buildAdminNoteTestArtifactTitle({
+      scope: ADMIN_CONTEXTUAL_NOTES_ARTIFACT_SCOPE,
+      label: "Program detail quick capture",
+      unique,
+    });
+
+    await expectPageQuickCaptureFlow(
+      page,
+      programPath,
+      title,
+      "Page-level admin note for program detail."
+    );
   });
 });
