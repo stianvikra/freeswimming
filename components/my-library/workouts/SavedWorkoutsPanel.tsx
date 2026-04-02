@@ -41,8 +41,8 @@ export default function SavedWorkoutsPanel({
   workoutPoolsidePdfHrefBuilder = null,
   collapsedByDefault = true,
   testId = "session-generator-recent-workouts",
-  heading = "Saved workouts",
-  editLabel = "Open",
+  heading = "My Swim Sessions",
+  editLabel = "Edit",
   editButtonTestIdBuilder = (workoutId) => `saved-workouts-edit-${workoutId}`,
   deleteButtonTestIdBuilder = (workoutId) => `saved-workouts-delete-${workoutId}`,
   confirmDeleteButtonTestIdBuilder = (workoutId) => `saved-workouts-confirm-delete-${workoutId}`,
@@ -93,7 +93,7 @@ export default function SavedWorkoutsPanel({
             <h3 className="text-sm font-semibold text-slate-900">{heading}</h3>
             {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
             <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {workouts.length} saved session{workouts.length === 1 ? "" : "s"} ready to reopen
+              {workouts.length} saved swim session{workouts.length === 1 ? "" : "s"}
             </p>
           </div>
           {showToggle ? (
@@ -104,7 +104,7 @@ export default function SavedWorkoutsPanel({
               data-testid={`${testId}-toggle`}
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              {expanded ? "Hide saved sessions" : "Show saved sessions"}
+              {expanded ? "Hide swim sessions" : "Show swim sessions"}
             </button>
           ) : null}
         </div>

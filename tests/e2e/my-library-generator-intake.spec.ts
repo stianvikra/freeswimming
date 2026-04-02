@@ -169,7 +169,7 @@ async function waitForWorkoutLibraryBrowseReady(page: Page) {
   await expect(page.getByTestId("workout-builder-hub")).toBeVisible({ timeout: 15_000 });
   await expect(
     page.getByRole("heading", {
-      name: "My sessions",
+      name: "My Swim Sessions",
       level: 1,
     })
   ).toBeVisible({ timeout: 15_000 });
@@ -280,9 +280,9 @@ test.describe("my library generator intake", () => {
     await page.getByTestId("session-generator-save").click();
     await saveResponsePromise;
 
-    await expect(page.getByText("Session saved to My sessions.")).toBeVisible();
+    await expect(page.getByText("Session saved to My Swim Sessions.")).toBeVisible();
 
-    const openSessionsLink = page.getByRole("link", { name: "My sessions" });
+    const openSessionsLink = page.getByRole("link", { name: "My Swim Sessions" });
     await openSessionsLink.click();
     await page.waitForURL(/\/my-library\/workouts$/);
     await waitForWorkoutLibraryBrowseReady(page);
@@ -291,7 +291,7 @@ test.describe("my library generator intake", () => {
       has: page.getByText(uniqueTitle, { exact: true }),
     });
     await expect(targetWorkoutCard).toBeVisible();
-    const openWorkoutLink = targetWorkoutCard.getByRole("link", { name: "Open" });
+    const openWorkoutLink = targetWorkoutCard.getByRole("link", { name: "Edit" });
     await expect(openWorkoutLink).toBeVisible();
     const workoutHref = await openWorkoutLink.getAttribute("href");
     expect(workoutHref).toBeTruthy();

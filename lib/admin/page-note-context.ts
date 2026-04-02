@@ -63,6 +63,9 @@ export function getAdminPageContextLabel(ref: string): string {
   const normalized = normalizeAdminPageContextRef(ref);
   const knownLabel = PAGE_LABEL_BY_REF[normalized];
   if (knownLabel) return knownLabel;
+  if (normalized.startsWith("/my-library/workouts/")) {
+    return "My Library swim session detail";
+  }
   return `Page: ${normalized}`;
 }
 
@@ -92,6 +95,10 @@ export function supportsAdminPageNotesSurface(pathname: string): boolean {
 
   if (hasDedicatedContextNotesForPage(normalized)) {
     return false;
+  }
+
+  if (normalized.startsWith("/my-library/workouts/")) {
+    return true;
   }
 
   if (normalized.startsWith("/my-library")) {

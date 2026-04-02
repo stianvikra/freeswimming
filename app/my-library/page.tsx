@@ -236,29 +236,18 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">AI session generator</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Generate one new swim-session draft from your saved My Library details plus
-                    session-specific notes and settings, without changing your stored data.
-                  </p>
-                </div>
-                <Link
-                  href="/my-library/generator"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-                >
-                  Open AI session generator
-                </Link>
-              </div>
-            </section>
-            <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
                   <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
                   {!workoutLibrarySnapshot.schemaReady ? (
                     <p className="mt-2 text-sm text-slate-600">
-                      This canonical workout layer is still syncing in this environment.
+                      This canonical swim-session layer is still syncing in this environment.
                     </p>
-                  ) : null}
+                  ) : (
+                    <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
+                      {workoutLibrarySnapshot.recentWorkouts[0]
+                        ? "Manual and AI-created sessions both land in My Swim Sessions. Open saved work when you want to edit it, create a fresh manual session here, or use AI when you want a drafted starting point."
+                        : "Start with a fresh manual session here, or use AI when you want a drafted starting point before you finish the session in My Swim Sessions."}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {workoutLibrarySnapshot.recentWorkouts[0] ? (
@@ -266,7 +255,7 @@ export default async function MyLibraryPage() {
                       href="/my-library/workouts"
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                     >
-                      View sessions
+                      My Swim Sessions
                     </Link>
                   ) : null}
                   {workoutLibrarySnapshot.schemaReady ? (
@@ -277,8 +266,20 @@ export default async function MyLibraryPage() {
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                     />
                   ) : null}
+                  <Link
+                    href="/my-library/generator"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  >
+                    Open AI session generator
+                  </Link>
                 </div>
               </div>
+              {workoutLibrarySnapshot.schemaReady ? (
+                <p className="mt-3 text-xs text-slate-500">
+                  AI-created sessions stay in the same swim-session flow, so edits, saves, PDFs,
+                  and Poolside Note stay in one place.
+                </p>
+              ) : null}
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5">

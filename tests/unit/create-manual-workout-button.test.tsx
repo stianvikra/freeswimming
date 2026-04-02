@@ -87,6 +87,7 @@ describe("CreateManualWorkoutButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create session" }));
 
     expect(screen.getByTestId("create-manual-workout-chooser")).toBeVisible();
+    expect(screen.getByText("Edit your latest saved session or start a fresh one.")).toBeVisible();
     expect(screen.getByText("Latest saved session: Saved threshold session")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("create-manual-workout-continue"));

@@ -71,7 +71,7 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
                 href="/my-library/workouts"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
-                My sessions
+                My Swim Sessions
               </Link>
               <Link
                 href="/my-library"

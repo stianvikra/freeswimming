@@ -41,7 +41,7 @@ export default async function WorkoutSessionsPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">My sessions</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">My Swim Sessions</h1>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link

@@ -147,7 +147,7 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security`."
+        "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security`, plus saved swim-session detail pages under `/my-library/workouts/<id>`."
       )
     ).toBeVisible();
     await expect(

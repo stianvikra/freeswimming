@@ -59,8 +59,8 @@ export default async function WorkoutBuilderPage({ params }: Props) {
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Swim session builder</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Edit one saved swim session at a time, keep the form front and center, and open
-                saved sessions only when you want to switch, print, or clean up older work.
+                Edit one saved swim session at a time. Use the builder actions below when you want
+                to switch sessions, start fresh, print, or clean up older work.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -83,6 +83,7 @@ export default async function WorkoutBuilderPage({ params }: Props) {
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
               trainingFocusOptions={trainingFocusOptions}
+              hideShellIntro
             />
           </div>
         </div>

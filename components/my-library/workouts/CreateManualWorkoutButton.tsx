@@ -110,8 +110,8 @@ export default function CreateManualWorkoutButton({
         >
           <p className="text-sm font-semibold text-blue-950">
             {continuingCurrentSession
-              ? "Keep editing this current session, or start a clean new one from scratch."
-              : "You already have a saved session. Continue it, or start a clean new one from scratch."}
+              ? "Keep editing this session or start a fresh one."
+              : "Edit your latest saved session or start a fresh one."}
           </p>
           <p className="mt-1 text-sm text-blue-900/90">
             {continuingCurrentSession
@@ -126,8 +126,8 @@ export default function CreateManualWorkoutButton({
               className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-900 transition hover:bg-blue-100 active:bg-blue-200"
             >
               {continuingCurrentSession
-                ? "Keep editing current session"
-                : "Continue latest saved session"}
+                ? "Edit current session"
+                : "Edit latest saved session"}
             </button>
             <button
               type="button"
@@ -136,7 +136,7 @@ export default function CreateManualWorkoutButton({
               disabled={isCreating}
               className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
-              {isCreating ? pendingLabel : "Start from scratch"}
+              {isCreating ? pendingLabel : "Start fresh session"}
             </button>
             <button
               type="button"

@@ -327,7 +327,7 @@ test.describe("my library workout builder", () => {
       timeout: 10_000,
       waitUntil: "domcontentloaded",
     });
-    await expect(page.getByRole("heading", { level: 1, name: "My sessions" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
     await page.getByTestId(`saved-workouts-view-${workoutId}`).click();
     await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("Tot:");
