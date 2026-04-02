@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
-- `updated`: `2026-03-29`
+- `updated`: `2026-04-02`
 
 ## Goal
 
@@ -282,6 +282,7 @@ Critical target categories for `10/10` claim in this brief:
 16. `My sessions` is the only browse-page heading, duplicate explanatory copy is removed, and saved-session count stays secondary instead of explaining the page twice.
 17. My Library session-entry cards keep only builder titles and relevant actions, without misplaced latest-session preview text on the card face.
 18. `npm run lint:briefs`, targeted validation, and `npm run verify:pre-pr` pass before PR update.
+19. Existing manual `Swim session builder` form fields/input boxes remain available unless a separate owner-approved brief explicitly changes that contract.
 
 ## Validation
 
@@ -331,6 +332,7 @@ Critical target categories for `10/10` claim in this brief:
 - Do not hide unfinished surfaces in a misleading way; if `Program shell` remains visible, it must be explained truthfully.
 - Do not add destructive shortcuts without confirmation/recovery guidance.
 - Keep poolside/PDF claims narrower than the currently supported export contract.
+- Do not remove existing manual `Swim session builder` authoring fields/input boxes in this brief; labels, helper text, presets, notices, and IA may change, but field removal requires a new explicit owner decision.
 
 ## 10/10 Quality Bar
 
