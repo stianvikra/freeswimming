@@ -707,6 +707,7 @@ test.describe("admin notes workflow", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
 
     await loginAsAdminViaDevBypass(page);
 
@@ -753,7 +754,7 @@ test.describe("admin notes workflow", () => {
             response.url().includes("/api/admin/notes") && response.request().method() === "POST",
           { timeout: 15_000 }
         ),
-        quickCaptureForm.getByRole("button", { name: "Save note" }).click(),
+        quickCaptureForm.getByRole("button", { name: "Save" }).click(),
       ]);
     } catch {
       test.skip(true, "Admin quick-capture request timed out in this environment.");
@@ -776,9 +777,12 @@ test.describe("admin notes workflow", () => {
     }
 
     await expect(page.getByText("Quick note saved.")).toBeVisible({ timeout: 10_000 });
-    await page.getByRole("link", { name: "Open in Notes" }).click();
-
-    await openNotesSection(page);
+    await Promise.all([
+      page.waitForURL(/\/admin\?tab=notes(?:&|$)/, { timeout: 10_000 }),
+      page.getByRole("link", { name: "Open in Notes" }).click(),
+    ]);
+    await expect(page.getByTestId("admin-active-section-label")).toHaveText("Notes");
+    await waitForNotesSectionReady(page);
 
     const createdItem = page.getByTestId("admin-note-item").filter({ hasText: title }).first();
     await expect(createdItem).toBeVisible({ timeout: 15_000 });

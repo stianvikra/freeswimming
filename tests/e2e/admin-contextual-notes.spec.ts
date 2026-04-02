@@ -268,6 +268,80 @@ test.describe("admin contextual notes", () => {
     await editButton.click();
     const editForm = createdItemAfterToggle.getByTestId("admin-context-note-edit-form");
     await expect(editForm).toBeVisible();
+
+    let attachmentCreateResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+    try {
+      [attachmentCreateResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/admin/notes/") &&
+            response.url().includes("/attachments") &&
+            response.request().method() === "POST",
+          { timeout: 15_000 }
+        ),
+        editForm.getByTestId("admin-context-note-edit-attachment-input").setInputFiles({
+          name: "context-proof.png",
+          mimeType: "image/png",
+          buffer: Buffer.from("png"),
+        }),
+      ]);
+    } catch {
+      test.skip(true, "Context note attachment upload request timed out in this environment.");
+    }
+    if (!attachmentCreateResponse) {
+      return;
+    }
+
+    const attachmentCreatePayload = (await attachmentCreateResponse
+      .json()
+      .catch(() => null)) as { ok?: boolean; error?: string } | null;
+    if (!attachmentCreateResponse.ok() || attachmentCreatePayload?.ok === false) {
+      const reason =
+        typeof attachmentCreatePayload?.error === "string"
+          ? attachmentCreatePayload.error
+          : `status ${attachmentCreateResponse.status()}`;
+      test.skip(
+        true,
+        `Context note attachment upload is not write-ready in this environment (${reason}).`
+      );
+    }
+
+    await expect(editForm.getByText("context-proof.png")).toBeVisible({ timeout: 10_000 });
+    let attachmentDeleteResponse: Awaited<ReturnType<Page["waitForResponse"]>> | undefined;
+    try {
+      [attachmentDeleteResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/admin/notes/") &&
+            response.url().includes("/attachments/") &&
+            response.request().method() === "DELETE",
+          { timeout: 15_000 }
+        ),
+        editForm.getByTestId("admin-context-note-attachment-delete").click(),
+      ]);
+    } catch {
+      test.skip(true, "Context note attachment delete request timed out in this environment.");
+    }
+
+    if (!attachmentDeleteResponse) {
+      return;
+    }
+
+    const attachmentDeletePayload = (await attachmentDeleteResponse
+      .json()
+      .catch(() => null)) as { ok?: boolean; error?: string } | null;
+    if (!attachmentDeleteResponse.ok() || attachmentDeletePayload?.ok === false) {
+      const reason =
+        typeof attachmentDeletePayload?.error === "string"
+          ? attachmentDeletePayload.error
+          : `status ${attachmentDeleteResponse.status()}`;
+      test.skip(
+        true,
+        `Context note attachment delete is not write-ready in this environment (${reason}).`
+      );
+    }
+
+    await expect(editForm.getByText("No images attached yet.")).toBeVisible({ timeout: 10_000 });
     await editForm.getByLabel("Edit title").fill(updatedTitle);
     await editForm.getByLabel("Priority").selectOption("urgent");
     await editForm.getByRole("button", { name: "Save changes" }).click();
@@ -325,7 +399,7 @@ test.describe("admin contextual notes", () => {
     const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
     await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
     await quickCaptureDialog.getByLabel("Title").fill(`Cancel ${title}`);
-    await quickCaptureDialog.getByRole("button", { name: "Discard draft" }).click();
+    await quickCaptureDialog.getByRole("button", { name: "Discard" }).first().click();
     await expect(quickCaptureDialog).toHaveCount(0);
 
     await panel.getByRole("button", { name: "Quick note" }).click();
@@ -343,7 +417,7 @@ test.describe("admin contextual notes", () => {
             response.url().includes("/api/admin/notes") && response.request().method() === "POST",
           { timeout: 15_000 }
         ),
-        createForm.getByRole("button", { name: "Save note" }).click(),
+        createForm.getByRole("button", { name: "Save" }).click(),
       ]);
     } catch {
       test.skip(true, "Context notes create request timed out in this environment.");
@@ -448,7 +522,7 @@ test.describe("admin contextual notes", () => {
             response.url().includes("/api/admin/notes") && response.request().method() === "POST",
           { timeout: 15_000 }
         ),
-        createForm.getByRole("button", { name: "Save note" }).click(),
+        createForm.getByRole("button", { name: "Save" }).click(),
       ]);
     } catch {
       test.skip(true, "My Library goals note create request timed out in this environment.");

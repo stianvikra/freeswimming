@@ -85,6 +85,41 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(screen.getByRole("button", { name: "Collapse quick note" })).toBeInTheDocument();
   });
 
+  it("uses the simplified quick-note heading, copy, and primary actions", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        items: [{ id: "category-1", title: "Operations", is_active: true }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminNoteQuickCaptureLauncher
+        adminRole="editor"
+        contextType="page"
+        contextRef="/plans"
+        contextLabel="Plans page"
+      />
+    );
+
+    await user.click(screen.getByTestId("admin-note-quick-capture-trigger"));
+    await screen.findByTestId("admin-note-quick-capture-dialog");
+
+    expect(screen.getByRole("heading", { name: "Admin note" })).toBeInTheDocument();
+    expect(
+      screen.queryByText("Capture a context-aware admin note without leaving this surface.")
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Create note fast")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Title"), "Tighten copy");
+    expect(screen.getAllByRole("button", { name: "Discard" })).toHaveLength(2);
+    expect(screen.queryByText("Loading category suggestions…")).not.toBeInTheDocument();
+  });
+
   it("saves a quick note with canonical context and exposes the notes link", async () => {
     const onSaved = vi.fn();
     const fetchMock = vi
@@ -147,7 +182,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
       target: { value: "Remember to tighten copy." },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save note" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -227,7 +262,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
       target: { value: "Plans follow-up" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save note" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await screen.findByText("Quick note saved.");
     expect(screen.getByTestId("admin-note-quick-capture-dialog")).toBeInTheDocument();
@@ -355,7 +390,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
       target: { value: "Remember the visual change." },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save note" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -605,7 +640,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Plans screenshot follow-up" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save note" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await screen.findByText(/Note saved, but could not upload attachments/i);
     expect(screen.getByRole("button", { name: "Retry upload" })).toBeInTheDocument();
@@ -717,7 +752,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.change(screen.getByLabelText("Text"), {
       target: { value: "Pasted image note." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save note" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -752,7 +787,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Should not save" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Discard draft" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Discard" })[0]);
 
     await waitFor(() => {
       expect(screen.queryByTestId("admin-note-quick-capture-dialog")).not.toBeInTheDocument();

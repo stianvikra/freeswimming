@@ -44,6 +44,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 10. If screenshots are involved:
 
 - if contextual `Add note` is collapsed because notes already exist, expand it first before retrying image intake,
+- if the note is already saved in the contextual panel and the screenshot is missing, open `Edit` on that note and upload the image there instead of recreating the note,
 - if `Paste image from clipboard` says no image was found, confirm you copied the screenshot first and retry, or use `Upload images`,
 - if clipboard access was blocked, retry from the explicit paste button after granting browser permission, or use `Upload images`,
 - if you pasted an image from clipboard and no preview ever appeared, nothing was saved; retry paste or use `Upload images`,
