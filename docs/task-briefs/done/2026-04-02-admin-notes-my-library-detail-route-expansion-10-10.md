@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-02-admin-notes-my-library-detail-route-expansion-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-02`
 - `updated`: `2026-04-02`
@@ -259,5 +259,6 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-02 | e6c9ef8 | PR #339 merged on main after local verify:pre-merge PASS and required GitHub CI green; saved dryland/program detail-route Quick note support is now live on main and the follow-up Package B remainder is narrowed to contextual note reference/related-note parity for agent-readiness | next: move this brief to done and start the final Package B child slice`
 - `2026-04-02 | working tree | created the second admin-notes child slice under the production umbrella to finish My Library detail-route quick-note expansion for saved dryland/program routes after PRs #337 and #338 landed on main | next: implement route-label/allowlist updates, add targeted tests, and run targeted validation`
 - `2026-04-02 | working tree | implemented saved dryland/program detail-route support, added stable context labels, updated Help/Guide route documentation, moved the prior admin-notes child brief to done, and passed targeted vitest, targeted desktop Chromium Playwright, and full npm run verify:pre-pr (95 passed, 319 skipped, 0 failed) after replacing the local worktree node_modules symlink with a physical copy for Turbopack compatibility | next: stage tracked source/brief files only, commit, push, open PR, and monitor CI`

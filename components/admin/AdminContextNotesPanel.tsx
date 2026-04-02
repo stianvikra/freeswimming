@@ -6,6 +6,11 @@ import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCapt
 import { hasRequiredAdminRole, type AdminRole } from "@/lib/admin/access";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import {
+  ADMIN_NOTES_QUERY_KEYS,
+  buildAdminNoteReferenceLabel,
+  buildAdminNoteRelatedJumpFilterState,
+} from "@/lib/admin/notes-manager";
+import {
   createAdminNoteStagedImages,
   extractAdminNoteClipboardImage,
   prepareAdminNoteImageFiles,
@@ -154,6 +159,17 @@ function formatImageCountLabel(count: number): string {
 
 function normalizeContextRef(value: string): string {
   return value.trim().toLowerCase();
+}
+
+function buildAdminNotesQueueHref(noteId: string, isDone: boolean): string {
+  const filters = buildAdminNoteRelatedJumpFilterState({
+    noteId,
+    isDone,
+  });
+  const params = new URLSearchParams([["tab", "notes"]]);
+  params.set(ADMIN_NOTES_QUERY_KEYS.query, filters.query);
+  params.set(ADMIN_NOTES_QUERY_KEYS.status, filters.status);
+  return `/admin?${params.toString()}`;
 }
 
 export default function AdminContextNotesPanel({
@@ -1154,6 +1170,17 @@ export default function AdminContextNotesPanel({
                           {item.category} · {formatPriorityLabel(item.priority)} ·{" "}
                           {formatDateLabel(item.note_date)}
                         </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="font-medium text-slate-500">
+                            {buildAdminNoteReferenceLabel(item.id)}
+                          </span>
+                          <a
+                            href={buildAdminNotesQueueHref(item.id, item.is_done)}
+                            className="font-medium text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800"
+                          >
+                            Open in Notes
+                          </a>
+                        </div>
                         {contextType === "course_lesson" &&
                         item.context_type === "course_module" ? (
                           <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
@@ -1455,6 +1482,34 @@ export default function AdminContextNotesPanel({
                       <div className="mt-2 space-y-3">
                         {item.body ? (
                           <p className="whitespace-pre-wrap text-sm text-slate-700">{item.body}</p>
+                        ) : null}
+
+                        {item.related_notes.length > 0 ? (
+                          <div className="space-y-2 rounded-lg border border-slate-200 bg-white/80 p-3">
+                            <p className="text-xs font-semibold text-slate-700">Related notes</p>
+                            <ul className="space-y-2">
+                              {item.related_notes.map((relatedNote) => (
+                                <li
+                                  key={relatedNote.id}
+                                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                                >
+                                  <a
+                                    href={buildAdminNotesQueueHref(
+                                      relatedNote.id,
+                                      relatedNote.is_done
+                                    )}
+                                    className="text-xs font-medium text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800"
+                                  >
+                                    {relatedNote.title}
+                                  </a>
+                                  <p className="mt-1 text-[11px] text-slate-500">
+                                    {formatPriorityLabel(relatedNote.priority)} ·{" "}
+                                    {buildAdminNoteReferenceLabel(relatedNote.id)}
+                                  </p>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         ) : null}
 
                         {item.attachments.length > 0 ? (

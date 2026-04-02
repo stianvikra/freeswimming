@@ -108,7 +108,7 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Open / Done archive / All + Search + Context filters:")
     ).toBeVisible();
-    await expect(page.getByText("Visible note ID:")).toBeVisible();
+    await expect(page.getByText("Visible note ID / Open in Notes / Related note title:")).toBeVisible();
     await expect(page.getByText("Priority:")).toBeVisible();
     await expect(page.getByText("Add images / Delete image:")).toBeVisible();
     await expect(page.getByText("Paste image from clipboard / Upload images:")).toBeVisible();
@@ -157,7 +157,7 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later."
+        "Saved contextual notes now show the visible note ID, an `Open in Notes` jump, and related-note titles that jump into the full queue by stable note ID."
       )
     ).toBeVisible();
     await expect(
