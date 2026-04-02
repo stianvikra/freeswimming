@@ -132,7 +132,7 @@ test.describe("admin help center", () => {
     await expect(page.getByText("docs/runbooks/admin-email-template-governance.md")).toBeVisible();
     await expect(
       page.getByText(
-        "Use `Quick note` when you want to capture the issue fast from the current surface without losing context."
+        "Use `Quick note` when you want a lightweight admin note from the current surface without losing context."
       )
     ).toBeVisible();
     await expect(
@@ -148,6 +148,11 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText(
         "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security`."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "If the note is already saved and you forgot the screenshot, open `Edit` in the contextual notes panel and upload the image there instead of recreating the note."
       )
     ).toBeVisible();
     await expect(

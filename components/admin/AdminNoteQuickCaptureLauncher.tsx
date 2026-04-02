@@ -30,7 +30,6 @@ import {
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 import {
-  ADMIN_NOTE_ATTACHMENT_MAX_FILES,
   ADMIN_NOTE_PRIORITY_VALUES,
   buildAdminNoteAttachmentEvidenceSummary,
   buildAdminNoteAttachmentOrdinalLabel,
@@ -141,7 +140,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
     className = "",
     triggerLabel = "Quick note",
     triggerTestId = "admin-note-quick-capture-trigger",
-    description = "Capture a context-aware admin note without leaving this surface.",
+    description = "",
     onSaved,
   } = props;
 
@@ -199,7 +198,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
   const closeActionLabel = createdCaptureRecovery
     ? "Close panel"
     : hasDraftState
-      ? "Discard draft"
+      ? "Discard"
       : "Close panel";
 
   useEffect(() => {
@@ -636,8 +635,10 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                       Quick capture
                     </p>
-                    <h2 className="mt-1 text-lg font-semibold text-slate-900">Create note fast</h2>
-                    <p className="mt-1 text-sm text-slate-600">{description}</p>
+                    <h2 className="mt-1 text-lg font-semibold text-slate-900">Admin note</h2>
+                    {description.trim().length > 0 ? (
+                      <p className="mt-1 text-sm text-slate-600">{description}</p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -687,10 +688,6 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     <p className="mt-1 text-sm font-medium text-slate-900">
                       {draftContext.contextLabel}
                     </p>
-                    <p className="mt-1 text-xs text-slate-600">
-                      This note stays attached to the page/item where you started it, even if you
-                      browse somewhere else before saving.
-                    </p>
                   </div>
 
                   {!currentSurfaceMatchesDraftContext ? (
@@ -704,15 +701,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                          Image evidence
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-slate-900">
-                          Add up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} images if they help explain
-                          the issue
-                        </p>
-                        <p className="mt-1 text-xs text-slate-600">
-                          Copy a screenshot or image to clipboard, then paste it here, or upload one
-                          or more files.
+                          Images
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -743,13 +732,6 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                         </label>
                       </div>
                     </div>
-
-                    {pendingImages.length === 0 ? (
-                      <p className="mt-3 text-xs text-slate-600">
-                        No images attached yet. Use the clipboard button after copying a screenshot,
-                        or upload up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} image files before save.
-                      </p>
-                    ) : null}
 
                     {pendingImages.length > 0 ? (
                       <div className="mt-3 space-y-3">
@@ -945,13 +927,14 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     </label>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-                      <p className="text-xs text-slate-500">
-                        {createdCaptureRecovery
-                          ? "The note is already saved. Retry the image upload or close and reopen it from Notes."
-                          : loadingCategories
-                            ? "Loading category suggestions…"
-                            : "The draft stays local until you click Save note. Collapse hides the panel without discarding it."}
-                      </p>
+                      <div className="text-xs text-slate-500">
+                        {createdCaptureRecovery ? (
+                          <p>
+                            The note is already saved. Retry the image upload or close and reopen
+                            it from Notes.
+                          </p>
+                        ) : null}
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
@@ -967,7 +950,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                             disabled={submitting || Boolean(createdCaptureRecovery)}
                             className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
                           >
-                            {submitting ? "Saving…" : "Save note"}
+                            {submitting ? "Saving…" : "Save"}
                           </button>
                         ) : null}
                       </div>
