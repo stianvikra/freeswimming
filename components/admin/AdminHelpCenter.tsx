@@ -409,9 +409,9 @@ const BUTTON_GUIDE: ActionGroup[] = [
           "Turns Notes into a work queue so operators can find the right note by ID, text, category, priority, route, or attached content context.",
       },
       {
-        label: "Visible note ID",
+        label: "Visible note ID / Open in Notes / Related note title",
         meaning:
-          "Shows the stable canonical note identifier so follow-up work can reference a note without pasting the full body.",
+          "Shows the stable canonical note identifier and the queue jump path back into full Notes. Related note titles use the same stable-ID jump so follow-up work can continue without guessing search text.",
       },
       {
         label: "Priority",
@@ -572,7 +572,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security`, plus saved detail routes under `/my-library/workouts/<id>`, `/my-library/dryland/<id>`, and `/my-library/programs/<id>`.",
       "Use the top `Add note` section when you want full fields in place; if notes already exist it stays collapsed until you expand it again.",
       "If the note is already saved and you forgot the screenshot, open `Edit` in the contextual notes panel and upload the image there instead of recreating the note.",
-      "Create note with category, priority, and context link, then copy the visible note ID if you need to reference it later.",
+      "Saved contextual notes now show the visible note ID, an `Open in Notes` jump, and related-note titles that jump into the full queue by stable note ID.",
       "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload images` if you already have the files.",
       "You can stage up to six pre-save images on create flows, and repeated paste/upload appends instead of replacing the earlier screenshots.",
       "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload images`.",

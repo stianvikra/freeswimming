@@ -146,8 +146,7 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
       if (savedSession?.id === session.id) {
         setSavedSession(null);
         setDraft(null);
-        router.push("/my-library/dryland");
-        router.refresh();
+        router.replace("/my-library/dryland");
         return;
       }
 

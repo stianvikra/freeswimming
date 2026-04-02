@@ -23,6 +23,10 @@ Use one umbrella brief to take every still-open production admin note from the `
     - `ebbf4d26-2712-43e9-a96a-971e7d4425c3` `Swim sessions builder - Session Details`
 - Remaining work after cleanup:
   - `23` notes still open across workout-builder UX, admin notes, My Library UI/copy, learner/course polish, brand rollout, non-admin cleanup, pricing strategy, and operator/process clarity.
+- Since umbrella execution started, merged child slices have already reduced the live remainder:
+  - PR `#337`: existing-note screenshots + quick-note calmness
+  - PR `#338`: builder/my-library flow cleanup + workout-detail Quick note
+  - PR `#339`: saved dryland/program detail-route Quick note expansion
 - Several older briefs already mention parts of this remaining backlog, but the owner explicitly asked to take the rest "under one".
 - This brief becomes the single planning/orchestration source of truth for the remaining production-note backlog.
 - This brief does not authorize one giant implementation PR:
@@ -440,6 +444,7 @@ Critical target categories for `10/10` claim in this umbrella:
 
 ## Checkpoint Log
 
+- `2026-04-02 | e6c9ef8 | PR #339 merged the saved dryland/program detail-route Quick note expansion on main; Package B is now narrowed to the remaining contextual note reference/related-note parity needed to close the attachment-metadata + agent-readiness follow-up cleanly | next: start a final Package B child slice for contextual note reference/open-in-notes/related-note parity and move the route-expansion brief to done`
 - `2026-04-02 | 2008230 | PR #338 merged the builder/my-library flow slice on main after PR #337 had already landed the existing-note images + quick-note calmness slice; remaining admin-notes system work is now narrowed to route-surface expansion plus later metadata/agent-readiness decisions | next: execute the detail-route expansion child slice for saved dryland/program routes`
 - `2026-04-02 | feat/swim-session-builder-flow-cleanup-2026-04-02 | child execution started under the umbrella through the builder/my-library slice covering swim-session flow consolidation, My Swim Sessions naming, Edit labels, reduced pool-length presets, calmer detail-route copy, and workout-detail Quick note route support without removing any manual builder input fields; targeted vitest + targeted desktop-chromium playwright are green, with the new workout-detail admin-notes e2e currently environment-skipped on write readiness | next: run npm run verify:pre-pr for this slice, then commit/push/open PR and keep the umbrella in-progress`
 - `2026-04-01 | working tree | re-triaged live production admin notes, closed 8 already-shipped notes, deleted 1 obsolete note by owner request, and created one umbrella brief for the remaining 23-note backlog | next: keep this planned until the first child execution slice is chosen`

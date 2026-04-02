@@ -147,4 +147,72 @@ describe("AdminContextNotesPanel", () => {
     expect(await screen.findByText("Image deleted.")).toBeInTheDocument();
     expect(within(editForm).getByText("No images attached yet.")).toBeVisible();
   });
+
+  it("shows stable note references and full-notes jump links for contextual notes", async () => {
+    const initialItem = buildItem({
+      related_notes: [
+        {
+          id: "note-2",
+          title: "Follow-up note",
+          category: "Operations",
+          note_date: "2026-04-02",
+          is_done: true,
+          priority: "high",
+        },
+      ],
+    });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/admin/notes?")) {
+        return {
+          ok: true,
+          json: async () => ({
+            ok: true,
+            role: "editor",
+            items: [initialItem],
+            schemaReady: true,
+            warning: null,
+          }),
+        } as Response;
+      }
+
+      if (url === "/api/admin/categories/notes") {
+        return {
+          ok: true,
+          json: async () => ({
+            ok: true,
+            items: [{ id: "category-1", title: "Operations", is_active: true }],
+          }),
+        } as Response;
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminContextNotesPanel
+        contextType="page"
+        contextRef="/plans"
+        contextLabel="Plans page"
+        collapsedByDefault={false}
+      />
+    );
+
+    const item = await screen.findByTestId("admin-context-note-item");
+    expect(within(item).getByText("Note ID note-1")).toBeVisible();
+    expect(within(item).getByRole("link", { name: "Open in Notes" })).toHaveAttribute(
+      "href",
+      "/admin?tab=notes&notesQuery=note-1&notesStatus=open"
+    );
+    expect(within(item).getByText("Related notes")).toBeVisible();
+    expect(within(item).getByRole("link", { name: "Follow-up note" })).toHaveAttribute(
+      "href",
+      "/admin?tab=notes&notesQuery=note-2&notesStatus=done"
+    );
+    expect(within(item).getByText(/High\s+·\s+Note ID note-2/)).toBeVisible();
+  });
 });

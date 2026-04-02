@@ -10,6 +10,7 @@ import type {
 
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
+  replace: vi.fn(),
   refresh: vi.fn(),
 }));
 
@@ -213,5 +214,42 @@ describe("DrylandBuilderHub", () => {
         })
       );
     });
+  });
+
+  it("replaces back to the dryland list after deleting the current session", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        deletedSessionId: "11111111-1111-4111-8111-111111111111",
+      }),
+    } as Response);
+
+    render(<DrylandBuilderHub drylandLibrary={buildLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("dryland-delete-current-session"));
+    fireEvent.click(screen.getByTestId("dryland-confirm-delete-current-session"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/11111111-1111-4111-8111-111111111111",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "DELETE",
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(navigationState.replace).toHaveBeenCalledWith("/my-library/dryland");
+    });
+
+    expect(navigationState.refresh).not.toHaveBeenCalled();
   });
 });
