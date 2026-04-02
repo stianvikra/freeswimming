@@ -19,6 +19,12 @@ describe("page note context helpers", () => {
     expect(getAdminPageContextLabel("/my-library/workouts/workout-1")).toBe(
       "My Library swim session detail"
     );
+    expect(getAdminPageContextLabel("/my-library/dryland/session-1")).toBe(
+      "My Library dryland session detail"
+    );
+    expect(getAdminPageContextLabel("/my-library/programs/program-1")).toBe(
+      "My Library program detail"
+    );
     expect(getAdminPageContextLabel("/unknown-path")).toBe("Page: /unknown-path");
   });
 
@@ -29,13 +35,15 @@ describe("page note context helpers", () => {
     expect(hasDedicatedContextNotesForPage("/plans")).toBe(false);
   });
 
-  it("supports page-level notes on public routes and selected my-library hubs only", () => {
+  it("supports page-level notes on public routes, selected my-library hubs, and saved builder detail routes", () => {
     expect(supportsAdminPageNotesSurface("/plans")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/goals")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/profile")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/workouts")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/workouts/workout-1")).toBe(true);
+    expect(supportsAdminPageNotesSurface("/my-library/dryland/session-1")).toBe(true);
+    expect(supportsAdminPageNotesSurface("/my-library/programs/program-1")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/item/guide-poolside")).toBe(false);
     expect(supportsAdminPageNotesSurface("/auth/sign-in")).toBe(false);
     expect(supportsAdminPageNotesSurface("/admin")).toBe(false);
