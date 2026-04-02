@@ -1138,4 +1138,58 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
     expect(screen.queryByTestId("workout-builder-view-sessions-link")).not.toBeInTheDocument();
   });
+
+  it("shows only the first three saved sessions in browse mode until the owner loads the rest", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+          recentWorkouts: [
+            buildWorkoutSummary(),
+            buildWorkoutSummary({
+              id: "workout-2",
+              title: "Threshold follow-up",
+              totalDistanceM: 1800,
+              estimatedDurationMin: 39,
+            }),
+            buildWorkoutSummary({
+              id: "workout-3",
+              title: "Kick reset session",
+              totalDistanceM: 1500,
+              estimatedDurationMin: 34,
+            }),
+            buildWorkoutSummary({
+              id: "workout-4",
+              title: "Long aerobic session",
+              totalDistanceM: 2600,
+              estimatedDurationMin: 52,
+            }),
+          ],
+        })}
+        browseOnly
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("saved-workout-card-workout-1")).toBeVisible();
+    expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
+    expect(screen.getByTestId("saved-workout-card-workout-3")).toBeVisible();
+    expect(screen.queryByTestId("saved-workout-card-workout-4")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-builder-saved-sessions-load-more")).toHaveTextContent(
+      "Load 1 more session"
+    );
+
+    fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-load-more"));
+
+    expect(screen.getByTestId("saved-workout-card-workout-4")).toBeVisible();
+    expect(
+      screen.queryByTestId("workout-builder-saved-sessions-load-more")
+    ).not.toBeInTheDocument();
+  });
 });
