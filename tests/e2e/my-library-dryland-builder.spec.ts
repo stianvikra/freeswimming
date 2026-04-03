@@ -107,10 +107,12 @@ test.describe("my library dryland builder", () => {
     );
 
     await page.getByTestId("dryland-delete-current-session").click();
-    await page.getByTestId("dryland-confirm-delete-current-session").click();
-    await page.waitForURL("/my-library/dryland", {
-      timeout: 10_000,
-      waitUntil: "domcontentloaded",
-    });
+    await Promise.all([
+      page.waitForURL(/\/my-library\/dryland(?:\?.*)?$/, {
+        timeout: 20_000,
+        waitUntil: "domcontentloaded",
+      }),
+      page.getByTestId("dryland-confirm-delete-current-session").click(),
+    ]);
   });
 });

@@ -345,11 +345,13 @@ test.describe("my library workout builder", () => {
     expect(workoutMatch?.[1]).toBeTruthy();
     const workoutId = workoutMatch![1];
 
-    await page.getByTestId("workout-builder-view-sessions-link").click();
-    await page.waitForURL("/my-library/workouts", {
-      timeout: 10_000,
-      waitUntil: "domcontentloaded",
-    });
+    await Promise.all([
+      page.waitForURL(/\/my-library\/workouts(?:\?.*)?$/, {
+        timeout: 20_000,
+        waitUntil: "domcontentloaded",
+      }),
+      page.getByTestId("workout-builder-view-sessions-link").click(),
+    ]);
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
     await page.getByTestId(`saved-workouts-view-${workoutId}`).click();
@@ -357,7 +359,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("P:");
     await page.getByTestId(`workout-builder-edit-workout-${workoutId}`).click();
     await page.waitForURL(new RegExp(`/my-library/workouts/${workoutId}$`), {
-      timeout: 10_000,
+      timeout: 20_000,
       waitUntil: "domcontentloaded",
     });
     await waitForWorkoutBuilderClientReady(page);

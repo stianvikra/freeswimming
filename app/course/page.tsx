@@ -52,6 +52,12 @@ import {
   buildCanonicalCourseLessonIdMap,
   canonicalizeCourseLessonRuntimeId,
 } from "@/lib/course/runtime-identity";
+import {
+  buildCourseLessonProgressStatusMap,
+  getCourseLessonPassCriteria,
+  normalizeCourseLessonCriteriaChecks,
+  normalizeCourseLessonCriteriaCheckRecord,
+} from "@/lib/course/progress-status";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 import {
@@ -83,11 +89,6 @@ const COURSE_PROGRESS_SYNC_INTERVAL_MS = 10_000;
 const BACKUP_PROMPT_DISMISSED_AT_KEY = "fs_course_backup_prompt_dismissed_at";
 const BACKUP_PROMPT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 const BACKUP_PROMPT_MIN_DONE_LESSONS = 3;
-const DEFAULT_PASS_CRITERIA = [
-  "Complete 3 calm repetitions with the same cue.",
-  "Breathing stays controlled without rushing.",
-  "Body line stays stable from start to finish.",
-];
 const SUPPORT_ACTION_ORDER: CourseSupportActionId[] = [
   "videoAnalysis",
   "poolsideGuide",
@@ -272,6 +273,10 @@ function CoursePageClient() {
   const courseLessonsFlat = useMemo(
     () => courseModules.flatMap((module) => module.lessons),
     [courseModules]
+  );
+  const courseLessonById = useMemo(
+    () => new Map(courseLessonsFlat.map((lesson) => [lesson.id, lesson])),
+    [courseLessonsFlat]
   );
   const canonicalLessonIdByAlias = useMemo(
     () => buildCanonicalCourseLessonIdMap(courseModules),
@@ -767,6 +772,36 @@ function CoursePageClient() {
     } catch {}
     setCommonMistakesExpanded(true);
   }, [activeLesson.id]);
+
+  useEffect(() => {
+    setDoneGateChecksByLessonId((prev) => {
+      const normalized = normalizeCourseLessonCriteriaCheckRecord(prev, {
+        resolveLessonId: resolveCanonicalLessonId,
+        getLessonById: (lessonId) => courseLessonById.get(lessonId) ?? null,
+      });
+
+      const prevKeys = Object.keys(prev);
+      const normalizedKeys = Object.keys(normalized);
+      if (prevKeys.length !== normalizedKeys.length) {
+        return normalized;
+      }
+
+      for (const lessonId of prevKeys) {
+        const prevChecks = prev[lessonId] ?? [];
+        const normalizedChecks = normalized[lessonId] ?? [];
+        if (prevChecks.length !== normalizedChecks.length) {
+          return normalized;
+        }
+        for (let index = 0; index < prevChecks.length; index += 1) {
+          if (prevChecks[index] !== normalizedChecks[index]) {
+            return normalized;
+          }
+        }
+      }
+
+      return prev;
+    });
+  }, [courseLessonById, resolveCanonicalLessonId]);
 
   useEffect(() => {
     try {
@@ -1343,7 +1378,7 @@ function CoursePageClient() {
   function toggleDoneGateCriterion(criterion: string) {
     setDoneGateFeedback(null);
     setDoneGateChecksByLessonId((prev) => {
-      const existing = prev[activeLesson.id] ?? [];
+      const existing = normalizeCourseLessonCriteriaChecks(activeLesson, prev[activeLesson.id] ?? []);
       const nextSet = new Set(existing);
       if (nextSet.has(criterion)) {
         nextSet.delete(criterion);
@@ -1557,9 +1592,17 @@ function CoursePageClient() {
   }, [moduleInfo, activeLesson.estMinutes]);
 
   const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
+  const lessonProgressStatusById = useMemo(
+    () => buildCourseLessonProgressStatusMap(courseLessonsFlat, doneLessonIdSet, doneGateChecksByLessonId),
+    [courseLessonsFlat, doneGateChecksByLessonId, doneLessonIdSet]
+  );
   const doneLessonsCount = useMemo(
     () => courseLessonsFlat.filter((lesson) => doneLessonIdSet.has(lesson.id)).length,
     [courseLessonsFlat, doneLessonIdSet]
+  );
+  const inProgressLessonsCount = useMemo(
+    () => Object.values(lessonProgressStatusById).filter((status) => status === "in_progress").length,
+    [lessonProgressStatusById]
   );
   const totalLessons = Math.max(1, moduleInfo.totalLessons);
   const donePct = useMemo(() => {
@@ -1613,18 +1656,32 @@ function CoursePageClient() {
   const drillBadgeLabel =
     activeLesson.drillLabel?.trim() ||
     (lessonType === "learn" ? "Learn" : lessonType === "swim" ? "Swim" : "Drill");
-  const passCriteria = activeLesson.passCriteria?.length
-    ? activeLesson.passCriteria
-    : DEFAULT_PASS_CRITERIA;
+  const passCriteria = getCourseLessonPassCriteria(activeLesson);
   const doneGateChecks = useMemo(
-    () => doneGateChecksByLessonId[activeLesson.id] ?? [],
-    [activeLesson.id, doneGateChecksByLessonId]
+    () => normalizeCourseLessonCriteriaChecks(activeLesson, doneGateChecksByLessonId[activeLesson.id] ?? []),
+    [activeLesson, doneGateChecksByLessonId]
   );
   const doneGateChecksSet = useMemo(() => new Set(doneGateChecks), [doneGateChecks]);
   const doneGateRequired = showPassCriteria && !isLessonDone;
   const doneGateSatisfied =
     !doneGateRequired || passCriteria.every((criterion) => doneGateChecksSet.has(criterion));
   const markDoneBlockedByGate = !isLessonDone && !doneGateSatisfied;
+  const activeLessonProgressStatus = lessonProgressStatusById[activeLesson.id] ?? "not_started";
+  const activeLessonStatusMeta =
+    activeLessonProgressStatus === "done"
+      ? {
+          label: "Done",
+          className: "bg-emerald-50 text-emerald-700 ring-emerald-200/75",
+        }
+      : activeLessonProgressStatus === "in_progress"
+        ? {
+            label: "In progress",
+            className: "bg-amber-50 text-amber-700 ring-amber-200/75",
+          }
+        : {
+            label: "Ready to start",
+            className: "bg-slate-50 text-slate-700 ring-slate-200/75",
+          };
   const doneConfirmedAt = doneConfirmationByLessonId[activeLesson.id] ?? null;
   const doneConfirmedLabel = useMemo(() => {
     if (!doneConfirmedAt) return null;
@@ -2476,6 +2533,16 @@ function CoursePageClient() {
                     <span>{overviewLabel.lesson}</span>
                     <span className="text-slate-300">•</span>
                     <span>{overviewLabel.module}</span>
+                    <span className="text-slate-300">•</span>
+                    <span
+                      data-testid="course-lesson-status-chip"
+                      className={cx(
+                        "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
+                        activeLessonStatusMeta.className
+                      )}
+                    >
+                      {activeLessonStatusMeta.label}
+                    </span>
                   </div>
                   <PressButton
                     tier="nav"
@@ -2581,12 +2648,14 @@ function CoursePageClient() {
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={donePct}
-                aria-valuetext={`${doneLessonsCount} of ${totalLessons} lessons marked done (${donePct}%). Current: ${overviewLabel.lesson}.`}
+                aria-valuetext={`${doneLessonsCount} of ${totalLessons} lessons marked done (${donePct}%), ${inProgressLessonsCount} in progress. Current: ${overviewLabel.lesson}.`}
               >
                 <div className="flex h-[10px] w-full overflow-hidden rounded-full bg-slate-200/95">
                   {courseLessonsFlat.map((lesson, index) => {
                     const isCurrentSegment = index === currentLessonIndex;
-                    const isDoneSegment = doneLessonIdSet.has(lesson.id);
+                    const lessonProgressStatus = lessonProgressStatusById[lesson.id] ?? "not_started";
+                    const isDoneSegment = lessonProgressStatus === "done";
+                    const isInProgressSegment = lessonProgressStatus === "in_progress";
                     const isFirstSegment = index === 0;
                     const isLastSegment = index === totalLessons - 1;
 
@@ -2603,6 +2672,8 @@ function CoursePageClient() {
                             ? "bg-white shadow-[inset_0_0_0_1px_rgba(147,197,253,0.95)]"
                             : isDoneSegment
                               ? "bg-blue-500"
+                              : isInProgressSegment
+                                ? "bg-amber-400/90"
                               : "bg-slate-300/78"
                         )}
                       />
@@ -2652,8 +2723,10 @@ function CoursePageClient() {
                             "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 transition-all duration-150",
                             previewLessonMeta.lesson.id === activeLesson.id
                               ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                              : doneLessonIdSet.has(previewLessonMeta.lesson.id)
+                              : lessonProgressStatusById[previewLessonMeta.lesson.id] === "done"
                                 ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
+                                : lessonProgressStatusById[previewLessonMeta.lesson.id] === "in_progress"
+                                  ? "bg-amber-50 text-amber-700 ring-amber-200/80"
                                 : "bg-white text-slate-700 ring-slate-200/75",
                             isOverviewJumpDragging &&
                               "scale-[1.03] shadow-[0_8px_20px_rgba(37,99,235,0.16)]"
@@ -3034,7 +3107,9 @@ function CoursePageClient() {
                       {showPassCriteria ? (
                         <p className="border-slate-200/72 mt-2 border-t pt-2 text-[12px] font-medium leading-5 text-slate-500">
                           {doneGateRequired
-                            ? "Check all items to unlock Mark as done."
+                            ? activeLessonProgressStatus === "in_progress"
+                              ? "Keep checking off what feels true. When all items are true, mark the lesson done."
+                              : "Check off what feels true. When all items are true, mark the lesson done."
                             : doneConfirmedLabel
                               ? `Marked done after criteria check on ${doneConfirmedLabel}.`
                               : "When these are met, mark lesson as done here or in overview."}
@@ -3112,6 +3187,8 @@ function CoursePageClient() {
               activeLessonId: activeLesson.id,
               onSelectLesson: goToLesson,
               doneLessonIds,
+              doneGateChecksByLessonId,
+              lessonProgressStatusById,
               modules: courseModules,
             }}
             titleMain="Main menu"
