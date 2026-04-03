@@ -1,7 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import TrainingContextHub from "@/components/my-library/training/TrainingContextHub";
-import type { TrainingContextSnapshot, TrainingFocusView } from "@/lib/training-context/server";
+import type {
+  TrainingContextSnapshot,
+  TrainingFocusView,
+  TrainingNoteView,
+} from "@/lib/training-context/server";
 
 vi.mock("@/lib/analytics/client", () => ({
   sendClientAnalyticsEvent: vi.fn(),
@@ -27,6 +31,29 @@ function buildFocus(overrides?: Partial<TrainingFocusView>): TrainingFocusView {
   };
 }
 
+function buildNote(overrides?: Partial<TrainingNoteView>): TrainingNoteView {
+  return {
+    id: "note-1",
+    noteType: "question",
+    noteTypeLabel: "Question",
+    status: "unanswered",
+    statusLabel: "Unanswered",
+    body: "Am I lifting my head before the breath?",
+    answer: null,
+    goalId: "goal-1",
+    goalTitle: "Swim 400m calmly",
+    focusId: "focus-1",
+    focusTitle: "Longer exhale in the water",
+    contextType: null,
+    contextRef: null,
+    isResolved: false,
+    createdAt: "2026-03-19T10:00:00.000Z",
+    updatedAt: "2026-03-19T10:00:00.000Z",
+    resolvedAt: null,
+    ...overrides,
+  };
+}
+
 function buildSnapshot(overrides?: Partial<TrainingContextSnapshot>): TrainingContextSnapshot {
   const primaryFocus = buildFocus();
 
@@ -38,27 +65,7 @@ function buildSnapshot(overrides?: Partial<TrainingContextSnapshot>): TrainingCo
     openFocuses: [primaryFocus],
     focusHistory: [],
     focusNeedsPrimarySelection: false,
-    recentNotes: [
-      {
-        id: "note-1",
-        noteType: "question",
-        noteTypeLabel: "Question",
-        status: "unanswered",
-        statusLabel: "Unanswered",
-        body: "Am I lifting my head before the breath?",
-        answer: null,
-        goalId: "goal-1",
-        goalTitle: "Swim 400m calmly",
-        focusId: "focus-1",
-        focusTitle: "Longer exhale in the water",
-        contextType: null,
-        contextRef: null,
-        isResolved: false,
-        createdAt: "2026-03-19T10:00:00.000Z",
-        updatedAt: "2026-03-19T10:00:00.000Z",
-        resolvedAt: null,
-      },
-    ],
+    recentNotes: [buildNote()],
     unresolvedObservationCount: 0,
     unansweredQuestionCount: 1,
     goalOptions: [
@@ -104,6 +111,65 @@ describe("TrainingContextHub", () => {
 
     expect(screen.getByLabelText("Answer")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Unanswered")).toBeInTheDocument();
+  });
+
+  it("shows note timestamps and lets the user filter the notes list", () => {
+    render(
+      <TrainingContextHub
+        initialSnapshot={buildSnapshot({
+          recentNotes: [
+            buildNote(),
+            buildNote({
+              id: "note-2",
+              noteType: "observation",
+              noteTypeLabel: "Observation",
+              status: "open",
+              statusLabel: "Open",
+              body: "Breathing stayed calmer after the second rep.",
+              answer: null,
+              createdAt: "2026-03-20T11:00:00.000Z",
+              updatedAt: "2026-03-21T12:15:00.000Z",
+            }),
+          ],
+          unresolvedObservationCount: 1,
+          unansweredQuestionCount: 1,
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("training-note-card-note-2")).toHaveTextContent(
+      "Logged Mar 20, 2026, 11:00 AM UTC"
+    );
+    expect(screen.getByTestId("training-note-card-note-2")).toHaveTextContent(
+      "Last edited Mar 21, 2026, 12:15 PM UTC"
+    );
+
+    fireEvent.change(screen.getByTestId("training-note-search-input"), {
+      target: { value: "calmer" },
+    });
+
+    expect(screen.getByTestId("training-note-card-note-2")).toBeInTheDocument();
+    expect(screen.queryByTestId("training-note-card-note-1")).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 2 notes.")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("training-note-search-input"), {
+      target: { value: "" },
+    });
+    fireEvent.change(screen.getByTestId("training-note-type-filter"), {
+      target: { value: "question" },
+    });
+    fireEvent.change(screen.getByTestId("training-note-from-date-filter"), {
+      target: { value: "2026-03-20" },
+    });
+
+    expect(screen.queryByTestId("training-note-card-note-1")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("training-note-card-note-2")).not.toBeInTheDocument();
+    expect(screen.getByText(/No notes match the current filters/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(screen.getByTestId("training-note-card-note-1")).toBeInTheDocument();
+    expect(screen.getByTestId("training-note-card-note-2")).toBeInTheDocument();
   });
 
   it("applies goal prefill while preserving existing local draft text", async () => {

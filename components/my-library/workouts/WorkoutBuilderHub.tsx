@@ -155,8 +155,7 @@ export default function WorkoutBuilderHub({
         setPendingCurrentDelete(false);
         setSavedWorkout(null);
         setDraft(null);
-        router.push("/my-library");
-        router.refresh();
+        router.replace("/my-library");
         return;
       }
 
