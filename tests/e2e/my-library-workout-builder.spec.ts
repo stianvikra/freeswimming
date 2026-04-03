@@ -42,6 +42,18 @@ async function waitForWorkoutBuilderSaveReady(page: Page) {
   await expect(saveButton).toBeVisible({ timeout: 15_000 });
 }
 
+async function openSupportToolsPanel(page: Page) {
+  const toggle = page.getByTestId("workout-editor-support-tools-toggle");
+
+  if ((await toggle.count()) === 0) {
+    return;
+  }
+
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await toggle.click();
+  }
+}
+
 async function triggerCreateSession(page: Page, testId: string) {
   await page.getByTestId(testId).click();
   const startScratchButton = page.getByTestId(`${testId}-start-scratch`);
@@ -90,6 +102,12 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
     );
+    await expect(page.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await expect(page.getByTestId("workout-editor-support-tools-status")).toHaveText("Ready");
+    await openSupportToolsPanel(page);
     await page.getByTestId("workout-editor-garmin-export-toggle").click();
     await page.getByTestId("workout-editor-handoff-toggle").click();
     await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
@@ -173,6 +191,10 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
     );
+    await expect(page.getByTestId("workout-editor-support-tools-status")).toHaveText(
+      "2 review items"
+    );
+    await openSupportToolsPanel(page);
     await expect(page.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
       "data-readiness-status",
       "review"
@@ -266,6 +288,7 @@ test.describe("my library workout builder", () => {
     expect(patchPayload?.ok).toBe(true);
 
     await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
+    await openSupportToolsPanel(page);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
     );

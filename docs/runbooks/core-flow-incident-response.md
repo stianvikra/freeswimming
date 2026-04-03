@@ -60,6 +60,8 @@ Additional `My Library` sub-route checks:
   - confirm the current-workout action strip can delete the workout in view without requiring the saved-workouts panel to be opened first,
   - confirm saved-workout row actions stay card-scoped (`View`, `Edit`, `PDF`, `Poolside Note`, `Delete`) and do not open, preview, print, or delete a different canonical workout than the one selected on that row,
   - confirm workout-editor PDF copy makes it obvious whether the opened tab reflects the saved canonical workout or the current unsaved local draft,
+  - confirm `PDF` / `Poolside Note` stay as primary actions in the save/action strip while secondary Garmin/handoff support lives behind the calm `Export and handoff support` disclosure,
+  - confirm opening or downloading Garmin/handoff support output does not save, publish, or otherwise mutate the current session,
   - confirm stale/missing block copy names the affected source area (`profile`, `goals`, `focus`),
   - confirm refresh does not mutate saved My Library records,
   - confirm transient success notices clear on their own while error states stay visible until the owner resolves them,
