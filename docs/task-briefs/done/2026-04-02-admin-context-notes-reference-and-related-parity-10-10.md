@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-02-admin-context-notes-reference-and-related-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-02`
-- `updated`: `2026-04-02`
+- `updated`: `2026-04-03`
 
 ## Goal
 
@@ -33,7 +33,7 @@ Make saved contextual admin notes easier to reference and continue in the full N
   - `tests/unit/admin-context-notes-panel.test.tsx`
   - `tests/e2e/admin-help-center.spec.ts`
 - Parent umbrella owner:
-  - `docs/task-briefs/in-progress/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
+  - `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Already-shipped lineage to consume rather than reopen:
   - `docs/task-briefs/done/2026-04-01-admin-notes-existing-note-images-and-quick-note-copy-10-10.md`
   - `docs/task-briefs/done/2026-04-02-admin-notes-my-library-detail-route-expansion-10-10.md`

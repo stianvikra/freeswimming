@@ -34,7 +34,7 @@ Allowlisted admins can use page-level `Quick note` on the remaining saved My Lib
   - `tests/e2e/admin-contextual-notes.spec.ts`
   - `tests/unit/page-note-context.test.ts`
 - Parent umbrella owner:
-  - `docs/task-briefs/in-progress/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
+  - `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Already-shipped child lineage to consume rather than reopen:
   - `docs/task-briefs/done/2026-04-01-admin-notes-existing-note-images-and-quick-note-copy-10-10.md`
 - This slice owns:

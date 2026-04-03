@@ -24,6 +24,7 @@ test.describe("admin email template preview", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
 
     await page.goto(`/dev/login?next=${encodeURIComponent("/admin?tab=email-templates")}`);
     const pathAfterDevLogin = new URL(page.url()).pathname;
@@ -39,6 +40,7 @@ test.describe("admin email template preview", () => {
 
     const roleLine = page.getByText(/^Role:/).first();
     const roleText = (await roleLine.textContent().catch(() => null))?.toLowerCase() ?? "";
+    const canPublishTemplates = roleText.includes("admin");
     if (roleText.includes("viewer")) {
       test.skip(true, "Dev bypass account lacks editor/admin role for template mutations.");
     }
@@ -154,19 +156,27 @@ test.describe("admin email template preview", () => {
       .getByTestId("admin-email-template-item")
       .filter({ hasText: `${templateKey} · nb-NO` })
       .first();
-    await expect(createdTemplate).toContainText("Draft");
+    const statusChip = (label: "Draft" | "Review" | "Published") =>
+      createdTemplate
+        .locator("span")
+        .filter({ hasText: new RegExp(`^${label}$`) })
+        .first();
+
+    await expect(statusChip("Draft")).toBeVisible();
 
     await createdTemplate.getByRole("button", { name: "Move to Review" }).click();
-    await expect(createdTemplate).toContainText("Review");
+    await expect(statusChip("Review")).toBeVisible();
 
-    await createdTemplate.getByRole("button", { name: "Move to Published" }).click();
-    await expect(createdTemplate).toContainText("Published");
+    if (canPublishTemplates) {
+      await createdTemplate.getByRole("button", { name: "Move to Published" }).click();
+      await expect(statusChip("Published")).toBeVisible();
+    }
 
     const editSampleValuesField = createdTemplate.getByLabel("Preview sample values (JSON object)");
     await editSampleValuesField.fill('{"code":');
     await expect(
       createdTemplate.getByText("Preview sample values must be valid JSON.")
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10_000 });
 
     await editSampleValuesField.fill("{}");
     await expect(

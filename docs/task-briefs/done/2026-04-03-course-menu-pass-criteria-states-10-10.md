@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-03-course-menu-pass-criteria-states-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-03`
 - `updated`: `2026-04-03`
@@ -23,7 +23,7 @@ Make course pass criteria feel intentionally coached by default, and expose a tr
 ## Dependencies And Boundaries
 
 - Parent umbrella:
-  - `docs/task-briefs/in-progress/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
+  - `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Main surfaces in scope:
   - `app/course/page.tsx`
   - `components/MenuDrawer.tsx`

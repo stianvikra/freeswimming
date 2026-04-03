@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-03-my-library-new-content-notice-calmness-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-03`
 - `updated`: `2026-04-03`
@@ -34,7 +34,7 @@ Make the My Library `New content` notice feel calmer by default through a compac
 ## Dependencies And Boundaries
 
 - Parent umbrella:
-  - `docs/task-briefs/in-progress/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
+  - `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Main surfaces in scope:
   - `components/my-library/MyLibraryNewContentNotice.tsx`
   - `app/my-library/page.tsx`
