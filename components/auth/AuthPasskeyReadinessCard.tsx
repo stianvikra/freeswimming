@@ -18,12 +18,12 @@ export default function AuthPasskeyReadinessCard({ sent }: Props) {
   );
 
   const message = sent
-    ? "Finish this email code sign-in below. Device-based sign-in is not enabled in the current auth stack yet."
-    : "Use email code sign-in on this device today. Device-based sign-in is not enabled in the current auth stack yet.";
+    ? "Check your email, then enter the code below."
+    : "Email code sign-in works on this device today.";
 
   const detail = support.supported
-    ? "This browser supports passkeys in general, but freeswimming is not using them yet in the current auth stack."
-    : `${support.detail} Freeswimming uses email codes here today.`;
+    ? "This browser supports passkeys, but freeswimming still uses email codes today."
+    : `${support.detail} Email codes still work here today.`;
 
   return (
     <section

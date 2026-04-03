@@ -21,18 +21,19 @@ test.describe("auth sign-in ux", () => {
     );
     await expect(page.getByTestId("auth-passkey-readiness")).toContainText("Email code today");
     await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
-      "Finish this email code sign-in below."
+      "Check your email, then enter the code below."
     );
     await expect(page.getByTestId("auth-request-status")).toContainText(
-      "Sign-in code sent. Enter it below."
+      "Code sent. Check your email, then enter it below."
     );
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "If you don't see it, check your spam/junk folder."
     );
-    await expect(page.getByRole("heading", { name: "Enter sign-in code" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Enter code" })).toBeVisible();
     await expect(page.getByLabel("Email")).toHaveValue("test@freeswimming.org");
-    await expect(page.getByLabel("Sign-in code")).toBeVisible();
-    await expect(page.getByTestId("auth-resend-button")).toBeVisible();
+    await expect(page.getByLabel("Code")).toBeVisible();
+    await expect(page.getByTestId("auth-submit-code")).toContainText("Sign in");
+    await expect(page.getByTestId("auth-resend-button")).toContainText("Resend code");
   });
 
   test("shows cooldown guidance and disables resend while cooldown is active", async ({
@@ -55,7 +56,7 @@ test.describe("auth sign-in ux", () => {
 
     const resendButton = page.getByTestId("auth-resend-button");
     await expect(resendButton).toBeDisabled();
-    await expect(resendButton).toContainText(/Request new login code in \d+s/);
+    await expect(resendButton).toContainText(/Resend in \d+s/);
   });
 
   test("shows actionable error when no sent state exists", async ({ page }, testInfo) => {
@@ -67,16 +68,16 @@ test.describe("auth sign-in ux", () => {
     });
     await page.goto(`/auth/sign-in?${params.toString()}`);
 
-    await expect(page.getByRole("heading", { name: "Email code sign-in" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Get a code" })).toBeVisible();
     await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
       "What works on this device"
     );
     await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
-      "Use email code sign-in on this device today."
+      "Email code sign-in works on this device today."
     );
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "Enter a valid email address."
     );
-    await expect(page.getByTestId("auth-submit-request")).toBeVisible();
+    await expect(page.getByTestId("auth-submit-request")).toContainText("Send code");
   });
 });

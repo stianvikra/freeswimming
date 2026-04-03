@@ -17,7 +17,7 @@ type Props = {
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description: "Sign in to My Library with a one-time email code.",
+  description: "Sign in to My Library with an email code.",
 };
 
 export default async function SignInPage({ searchParams }: Props) {
@@ -46,8 +46,7 @@ export default async function SignInPage({ searchParams }: Props) {
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Sign in to My Library</h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Use your email code below. Device-based sign-in is not live in the current auth stack
-            yet, so we keep access and recovery simple here.
+            Enter your email and we&apos;ll send a one-time code. No password needed.
           </p>
 
           <AuthPasskeyReadinessCard sent={sent} />
@@ -56,12 +55,12 @@ export default async function SignInPage({ searchParams }: Props) {
           <section className="mt-6 rounded-2xl border border-blue-100 bg-blue-50/35 p-5">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {tokenMode ? "Enter sign-in code" : "Email code sign-in"}
+                {tokenMode ? "Enter code" : "Get a code"}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
                 {tokenMode
-                  ? "Use the code from your email to continue into My Library."
-                  : "We'll email a one-time code so you can sign in without a password."}
+                  ? "Check your email, then enter the code to open My Library."
+                  : "We'll email a one-time code to sign you in."}
               </p>
             </div>
 
@@ -93,7 +92,7 @@ export default async function SignInPage({ searchParams }: Props) {
                         htmlFor="code"
                         className="mb-2 block text-sm font-medium text-slate-700"
                       >
-                        Sign-in code
+                        Code
                       </label>
                       <input
                         id="code"
@@ -108,7 +107,7 @@ export default async function SignInPage({ searchParams }: Props) {
                       />
                     </div>
                     <AuthSubmitButton
-                      idleLabel="Continue with code"
+                      idleLabel="Sign in"
                       pendingLabel="Signing in..."
                       testId="auth-submit-code"
                       className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
@@ -142,8 +141,8 @@ export default async function SignInPage({ searchParams }: Props) {
                   />
                 </div>
                 <AuthSubmitButton
-                  idleLabel="Email me a sign-in code"
-                  pendingLabel="Sending sign-in code..."
+                  idleLabel="Send code"
+                  pendingLabel="Sending..."
                   testId="auth-submit-request"
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 />
