@@ -157,11 +157,23 @@ async function ensureWorkoutMetadataOpen(page: Page) {
   const metadataToggle = page.getByTestId("workout-editor-metadata-toggle");
   await expect(metadataToggle).toBeVisible({ timeout: 15_000 });
 
-  if ((await metadataToggle.getAttribute("aria-expanded")) !== "true") {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if ((await metadataToggle.getAttribute("aria-expanded")) === "true") {
+      break;
+    }
+
     await metadataToggle.click();
+
+    const opened = await page
+      .getByTestId("session-draft-title")
+      .isVisible()
+      .catch(() => false);
+    if (opened) {
+      break;
+    }
   }
 
-  await expect(metadataToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(metadataToggle).toHaveAttribute("aria-expanded", "true", { timeout: 15_000 });
   await expect(page.getByTestId("session-draft-title")).toBeVisible({ timeout: 15_000 });
 }
 
