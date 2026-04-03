@@ -31,10 +31,10 @@ export default function AuthResendButton({ cooldownUntilMs }: Props) {
   const hasCooldown = remainingSeconds > 0;
   const disabled = pending || hasCooldown;
   const label = pending
-    ? "Requesting new login code..."
+    ? "Resending..."
     : hasCooldown
-      ? `Request new login code in ${remainingSeconds}s`
-      : "Request new login code";
+      ? `Resend in ${remainingSeconds}s`
+      : "Resend code";
 
   return (
     <button
