@@ -139,7 +139,7 @@ Score gate policy:
 - Remove the footer/helper copy:
   - `Compact lane-side note for the saved canonical workout. Print at actual size on A6 or quarter-A4.`
 - Add a print-ready brand mark using a derived asset from:
-  - `public/logos/logo_black.psd`
+  - `docs/design/source-assets/logo_black.psd`
   - required deliverable: `public/logos/logo_black_print.png` as a committed transparent print-safe PNG derived from the PSD, so runtime can embed it directly without reading PSD at runtime.
 - Add pre-print focus selection so the user can choose which open focuses appear on the Poolside Note.
 - Add a pre-print style choice so the user can choose:
@@ -164,7 +164,7 @@ Score gate policy:
 3. Secondary non-core surfaces above the workout are removed, moved lower, or collapsed so the builder no longer feels overloaded before the actual workout.
 4. Poolside Note print preview no longer scales into a full-bleed A4-style sheet at default `100%` print settings; it remains intentionally compact and layout-stable in Safari preview and saved PDF.
 5. The footer text `Compact lane-side...` is removed from the Poolside Note.
-6. Poolside Note uses `public/logos/logo_black_print.png`, derived from `public/logos/logo_black.psd`, as the committed print-safe logo asset.
+6. Poolside Note uses `public/logos/logo_black_print.png`, derived from `docs/design/source-assets/logo_black.psd`, as the committed print-safe logo asset.
 7. Users can choose which open focuses appear on the Poolside Note before opening print/PDF output.
 8. If there are no open focuses, the UI explains that clearly and still allows a valid Poolside Note without a focus block.
 9. Users can choose between a color-preserving print mode and an ink-saver mode before print, and the chosen mode is reflected in preview/output.

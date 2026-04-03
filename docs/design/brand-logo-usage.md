@@ -8,6 +8,14 @@
 - Generated asset pack: `/Users/stianvikra/freeswimming/public/logos/brand/`
 - Apparel-ready exports: `/Users/stianvikra/freeswimming/public/logos/brand/apparel/`
 - Generated manifest: `/Users/stianvikra/freeswimming/public/logos/brand/manifest.json`
+- Non-public editable source assets: `/Users/stianvikra/freeswimming/docs/design/source-assets/`
+- Current editable print-source file: `/Users/stianvikra/freeswimming/docs/design/source-assets/logo_black.psd`
+
+## Source Asset Rule
+
+- Files in `docs/design/source-assets/` are non-public working files only.
+- Runtime surfaces, emails, PDFs, and website code must never reference files from `docs/design/source-assets/`.
+- Only derived exports that are explicitly approved for runtime/public delivery belong under `public/`.
 
 ## Chosen Direction
 
