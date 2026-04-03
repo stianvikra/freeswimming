@@ -129,6 +129,14 @@ function openWorkoutMetadataPanel() {
   fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
 }
 
+function openSupportToolsPanel() {
+  const toggle = screen.queryByTestId("workout-editor-support-tools-toggle");
+  if (!toggle) return;
+  if (toggle.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(toggle);
+  }
+}
+
 describe("WorkoutBuilderHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -139,6 +147,38 @@ describe("WorkoutBuilderHub", () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
+  });
+
+  it("keeps export and handoff support collapsed by default in the calm builder layout", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent("Ready");
+    expect(
+      screen.getByText(
+        "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface."
+      )
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Opening or downloading anything here does not send or publish anything. It only opens or downloads support output for this saved session."
+      )
+    ).toBeVisible();
+    expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
+
+    openSupportToolsPanel();
+
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toBeVisible();
   });
 
   it("loads an accepted workout and saves canonical edits back to the same workout", async () => {
@@ -175,6 +215,11 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "All builder changes are saved to the canonical workout."
     );
+    expect(screen.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    openSupportToolsPanel();
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
       "data-readiness-status",
       "ready"
@@ -256,6 +301,10 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "Unsaved changes stay local until you save this workout."
     );
+    expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
+      "3 review items"
+    );
+    openSupportToolsPanel();
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
       "data-readiness-status",
       "review"
@@ -271,7 +320,6 @@ describe("WorkoutBuilderHub", () => {
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
     fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
-    expect(screen.getByText(/Review the Garmin\/export notes above/i)).toBeVisible();
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
 
@@ -289,6 +337,7 @@ describe("WorkoutBuilderHub", () => {
     await waitFor(() => {
       expect(screen.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
     });
+    openSupportToolsPanel();
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "All builder changes are saved to the canonical workout."
     );
@@ -647,6 +696,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    openSupportToolsPanel();
     fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
     fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
 

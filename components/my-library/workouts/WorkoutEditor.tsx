@@ -570,6 +570,7 @@ export default function WorkoutEditor({
     handoff: false,
   });
   const showCalmBuilderLayout = copyVariant === "default";
+  const [supportToolsOpen, setSupportToolsOpen] = useState(() => copyVariant !== "default");
   const savedWorkoutId = savedWorkout?.id ?? null;
   const trainingFocusIdSignature = trainingFocusOptions.map((focus) => focus.id).join("|");
   const defaultPoolsideFocusIdSignature =
@@ -700,6 +701,29 @@ export default function WorkoutEditor({
       ? "Handoff preview reflects unsaved local edits. Save first if you want the canonical workout and handoff to match."
       : "Handoff preview matches the saved canonical workout."
     : "Handoff preview reflects the current local draft before canonical save.";
+  const supportToolsAudienceDescription =
+    "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface.";
+  const supportToolsDraftStateDescription =
+    handoffDraftState === "canonical"
+      ? "These support tools currently reflect the saved session."
+      : "These support tools currently reflect the unsaved draft on screen.";
+  const supportToolsPersistenceDescription = savedWorkout
+    ? hasUnsavedChanges
+      ? "Opening or downloading anything here does not save changes. Save first if you want these support outputs to match the canonical session."
+      : "Opening or downloading anything here does not send or publish anything. It only opens or downloads support output for this saved session."
+    : "Opening or downloading anything here does not accept or save this draft. It only opens or downloads support output for the current draft on screen.";
+  const supportToolsWarningSummary =
+    draft.warnings.length > 0
+      ? `${draft.warnings.length} builder warning${
+          draft.warnings.length === 1 ? "" : "s"
+        } also stay inside this section.`
+      : null;
+  const supportToolsStatusLabel =
+    garminReadiness.status === "ready"
+      ? "Ready"
+      : `${garminReadiness.issues.length} review ${
+          garminReadiness.issues.length === 1 ? "item" : "items"
+        }`;
 
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
@@ -714,6 +738,10 @@ export default function WorkoutEditor({
       setOpenStepId(null);
     }
   }, [draft.steps, openStepId]);
+
+  useEffect(() => {
+    setSupportToolsOpen(!showCalmBuilderLayout);
+  }, [savedWorkoutId, showCalmBuilderLayout]);
 
   useEffect(() => {
     if (!pendingRemoval) return;
@@ -2127,7 +2155,7 @@ export default function WorkoutEditor({
             >
               {garminReadiness.status === "ready"
                 ? "This workout stays inside the current Garmin-ready builder contract."
-                : "Builder save still works, but these are handoff warnings that should be reviewed before export or later Garmin delivery."}
+                : "Editing and saving still work, but these support tools should be treated as secondary until the mapping details below are resolved."}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -2233,9 +2261,9 @@ export default function WorkoutEditor({
               Garmin-ready JSON
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
-              Download the current workout as the truthful FreeSwimming `garmin-ready` adapter
-              output. This is not a live Garmin payload yet; it preserves current mapping warnings
-              so later provider delivery can stay explicit and deterministic.
+              Optional support export for manual review or later Garmin delivery work. Downloading
+              this JSON does not save or send anything; it only packages the workout exactly as the
+              current `garmin-ready` adapter sees it.
             </p>
             <p
               data-testid="workout-editor-garmin-export-source"
@@ -2309,8 +2337,8 @@ export default function WorkoutEditor({
               Workout handoff
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
-              Copy or download the current workout as structured text for manual Garmin Connect
-              entry, coach review, or poolside notes until direct provider delivery exists.
+              Optional text handoff for manual Garmin Connect entry, coach review, or lane-side
+              notes. Copying or downloading it does not save or send the workout.
             </p>
             <p
               data-testid="workout-editor-handoff-source"
@@ -2514,6 +2542,60 @@ export default function WorkoutEditor({
       </div>
     </div>
   ) : null;
+  const supportStatusSectionList = <div className="space-y-4">{supportStatusSections}</div>;
+  const supportToolsPanel = showCalmBuilderLayout ? (
+    <section
+      data-testid="workout-editor-support-tools-panel"
+      className={`rounded-2xl border p-4 ${
+        garminReadiness.status === "ready"
+          ? "border-emerald-200 bg-emerald-50/60"
+          : "border-amber-200 bg-amber-50/60"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p
+            className={`text-xs font-semibold uppercase tracking-wide ${
+              garminReadiness.status === "ready" ? "text-emerald-700" : "text-amber-700"
+            }`}
+          >
+            Export and handoff support
+          </p>
+          <p className="mt-2 text-sm font-medium text-slate-900">
+            {supportToolsAudienceDescription}
+          </p>
+          <p className="mt-1 text-sm text-slate-700">{supportToolsDraftStateDescription}</p>
+          <p className="mt-1 text-sm text-slate-600">{supportToolsPersistenceDescription}</p>
+          {supportToolsWarningSummary ? (
+            <p className="mt-1 text-sm text-slate-600">{supportToolsWarningSummary}</p>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p
+            data-testid="workout-editor-support-tools-status"
+            className={`rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+              garminReadiness.status === "ready" ? "text-emerald-700" : "text-amber-700"
+            }`}
+          >
+            {supportToolsStatusLabel}
+          </p>
+          <button
+            type="button"
+            aria-expanded={supportToolsOpen}
+            data-testid="workout-editor-support-tools-toggle"
+            onClick={() => setSupportToolsOpen((current) => !current)}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-white bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-white/80 active:bg-white/70"
+          >
+            {supportToolsOpen ? "Hide support details" : "Show support details"}
+          </button>
+        </div>
+      </div>
+
+      {supportToolsOpen ? <div className="mt-4">{supportStatusSectionList}</div> : null}
+    </section>
+  ) : (
+    supportStatusSectionList
+  );
 
   return (
     <div data-testid="workout-editor-panel" className="space-y-5">
@@ -2582,7 +2664,7 @@ export default function WorkoutEditor({
         </div>
       ) : null}
 
-      {!showCalmBuilderLayout ? supportStatusSections : null}
+      {!showCalmBuilderLayout ? supportToolsPanel : null}
 
       {showCalmBuilderLayout ? (
         <section
@@ -2860,11 +2942,6 @@ export default function WorkoutEditor({
                 : editorCopy.savedWorkoutSavedState
               : editorCopy.unsavedDraftPendingState}
           </p>
-          {garminReadiness.status === "review" ? (
-            <p className="mt-1 text-xs text-amber-700">
-              Review the Garmin/export notes above before you treat this workout as handoff-ready.
-            </p>
-          ) : null}
           {!showPdfPanel ? (
             <>
               <p
@@ -2944,7 +3021,7 @@ export default function WorkoutEditor({
         </p>
       ) : null}
 
-      {showCalmBuilderLayout ? supportStatusSections : null}
+      {showCalmBuilderLayout ? supportToolsPanel : null}
 
       {!showPdfPanel && workoutPdfError ? (
         <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
