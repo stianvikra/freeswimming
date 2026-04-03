@@ -219,15 +219,67 @@ function parseSignatureValues(value: string) {
 }
 
 function buildStepStrokeGuidance(step: SessionDraftStep) {
+  const recommendedFocus = getRecommendedStepFocus(step);
+
   if (step.category === "kick") {
-    return "Kick category already marks this as kick work. Use Primary stroke for the stroke pattern this kick set supports, and use the focus field only when you want extra kick, pull, or drill notation.";
+    return "Kick category already tags this as kick work. Use Stroke pattern for the movement pattern this set supports, and change Focus tag only when you need extra kick, pull, or drill notation.";
   }
 
   if (step.category === "drill" || step.stroke === "drill") {
-    return "Use Drill shell when the step is built around a drill. Then use the focus field to clarify whether it is a general drill, kick drill, or pull drill.";
+    return "Drill shell is active. Use Stroke pattern for the base movement, and use Focus tag to clarify whether the drill is general, kick, or pull.";
   }
 
-  return "Use Primary stroke for the swim pattern. Add focus only when the step needs extra drill, kick, or pull notation.";
+  return recommendedFocus
+    ? `This step already suggests the ${getSessionStepDrillTypeLabel(recommendedFocus)} focus tag. Keep it unless you need a different drill, kick, or pull note.`
+    : "Use Stroke pattern for the swim pattern. Add Focus tag only when the step needs extra drill, kick, or pull notation.";
+}
+
+function buildStepFocusGuidance(step: SessionDraftStep) {
+  const recommendedFocus = getRecommendedStepFocus(step);
+  if (recommendedFocus === "kick") {
+    return "Recommended Focus tag: Kick. Change it only when this kick set needs a more specific drill or pull note.";
+  }
+
+  if (recommendedFocus === "drill") {
+    return "Recommended Focus tag: Drill. Switch it to Kick or Pull only when this drill set needs that extra label.";
+  }
+
+  return "Optional. Leave Focus tag on None unless the step needs extra drill, kick, or pull notation.";
+}
+
+function getRecommendedStepFocus(
+  step: Pick<SessionDraftStep, "category" | "stroke">
+): Exclude<NonNullable<SessionDraftStep["drillType"]>, "none"> | null {
+  if (step.category === "kick") {
+    return "kick";
+  }
+
+  if (step.category === "drill" || step.stroke === "drill") {
+    return "drill";
+  }
+
+  return null;
+}
+
+function applyRecommendedStepFocus(
+  step: SessionDraftStep,
+  overrides: Partial<SessionDraftStep>
+): SessionDraftStep {
+  const nextStep = {
+    ...step,
+    ...overrides,
+  };
+
+  if (Object.prototype.hasOwnProperty.call(overrides, "drillType")) {
+    return nextStep;
+  }
+
+  const recommendedFocus = getRecommendedStepFocus(nextStep);
+  if ((!step.drillType || step.drillType === "none") && recommendedFocus) {
+    nextStep.drillType = recommendedFocus;
+  }
+
+  return nextStep;
 }
 
 function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
@@ -342,7 +394,13 @@ function buildStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number
 
   if (step.drillType && step.drillType !== "none") {
     const drillLabel = getSessionStepDrillTypeLabel(step.drillType);
-    if (!(step.stroke === "drill" && drillLabel === "Drill")) {
+    if (
+      !(
+        (step.stroke === "drill" && drillLabel === "Drill") ||
+        (step.category === "drill" && drillLabel === "Drill") ||
+        (step.category === "kick" && drillLabel === "Kick")
+      )
+    ) {
       contextParts.push(drillLabel);
     }
   }
@@ -1431,10 +1489,11 @@ export default function WorkoutEditor({
               <select
                 value={step.category}
                 onChange={(event) =>
-                  updateDraftStep(step.id, (current) => ({
-                    ...current,
-                    category: event.target.value as SessionDraftStepCategory,
-                  }))
+                  updateDraftStep(step.id, (current) =>
+                    applyRecommendedStepFocus(current, {
+                      category: event.target.value as SessionDraftStepCategory,
+                    })
+                  )
                 }
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
@@ -1447,22 +1506,17 @@ export default function WorkoutEditor({
             </label>
 
             <label className="text-sm text-slate-700">
-              Primary stroke
+              Stroke pattern
               <select
                 value={step.stroke ?? "choice"}
                 onChange={(event) => {
                   const nextStroke = event.target.value as SessionDraftStep["stroke"];
 
-                  updateDraftStep(step.id, (current) => ({
-                    ...current,
-                    stroke: nextStroke,
-                    drillType:
-                      nextStroke === "drill"
-                        ? current.drillType && current.drillType !== "none"
-                          ? current.drillType
-                          : "drill"
-                        : (current.drillType ?? "none"),
-                  }));
+                  updateDraftStep(step.id, (current) =>
+                    applyRecommendedStepFocus(current, {
+                      stroke: nextStroke,
+                    })
+                  );
                 }}
                 data-testid={`session-draft-step-stroke-${index}`}
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -1476,7 +1530,7 @@ export default function WorkoutEditor({
             </label>
 
             <label className="text-sm text-slate-700">
-              Drill / kick / pull focus
+              Focus tag
               <select
                 value={step.drillType ?? "none"}
                 onChange={(event) =>
@@ -1497,6 +1551,7 @@ export default function WorkoutEditor({
             </label>
 
             <p className="text-sm text-slate-500 md:col-span-2">{buildStepStrokeGuidance(step)}</p>
+            <p className="text-sm text-slate-500 md:col-span-2">{buildStepFocusGuidance(step)}</p>
 
             <label className="text-sm text-slate-700">
               Equipment

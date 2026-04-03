@@ -915,11 +915,16 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
 
-    expect(screen.getByText("Primary stroke")).toBeVisible();
-    expect(screen.getByText("Drill / kick / pull focus")).toBeVisible();
+    expect(screen.getByText("Stroke pattern")).toBeVisible();
+    expect(screen.getByText("Focus tag")).toBeVisible();
     expect(
       screen.getByText(
-        "Use Primary stroke for the swim pattern. Add focus only when the step needs extra drill, kick, or pull notation."
+        "Use Stroke pattern for the swim pattern. Add Focus tag only when the step needs extra drill, kick, or pull notation."
+      )
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Optional. Leave Focus tag on None unless the step needs extra drill, kick, or pull notation."
       )
     ).toBeVisible();
 
@@ -927,22 +932,37 @@ describe("WorkoutBuilderHub", () => {
       target: { value: "kick" },
     });
 
+    expect(screen.getByTestId("session-draft-step-drill-type-0")).toHaveValue("kick");
     expect(
       screen.getByText(
-        "Kick category already marks this as kick work. Use Primary stroke for the stroke pattern this kick set supports, and use the focus field only when you want extra kick, pull, or drill notation."
+        "Kick category already tags this as kick work. Use Stroke pattern for the movement pattern this set supports, and change Focus tag only when you need extra kick, pull, or drill notation."
+      )
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Recommended Focus tag: Kick. Change it only when this kick set needs a more specific drill or pull note."
       )
     ).toBeVisible();
 
     fireEvent.change(screen.getByLabelText("Category"), {
       target: { value: "drill" },
     });
+    fireEvent.change(screen.getByTestId("session-draft-step-drill-type-0"), {
+      target: { value: "none" },
+    });
     fireEvent.change(screen.getByTestId("session-draft-step-stroke-0"), {
       target: { value: "drill" },
     });
 
+    expect(screen.getByTestId("session-draft-step-drill-type-0")).toHaveValue("drill");
     expect(
       screen.getByText(
-        "Use Drill shell when the step is built around a drill. Then use the focus field to clarify whether it is a general drill, kick drill, or pull drill."
+        "Drill shell is active. Use Stroke pattern for the base movement, and use Focus tag to clarify whether the drill is general, kick, or pull."
+      )
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Recommended Focus tag: Drill. Switch it to Kick or Pull only when this drill set needs that extra label."
       )
     ).toBeVisible();
   });
