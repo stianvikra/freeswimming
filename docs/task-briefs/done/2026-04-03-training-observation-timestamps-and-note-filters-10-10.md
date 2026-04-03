@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-03-training-observation-timestamps-and-note-filters-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-03`
 - `updated`: `2026-04-03`
@@ -15,7 +15,7 @@ Make the notes list in `/my-library/training` easier to review by showing when e
 ## Parent And Source Note
 
 - Parent umbrella:
-  - [2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md](/private/tmp/freeswimming-training-observations-timestamps-2026-04-03/docs/task-briefs/in-progress/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md)
+- `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Production admin note:
   - `99a18e5f-3b91-42d4-96d8-1d5f1343b05c` `Observations should have a date, also last edited.`
 - Owner-requested scope extension for this slice:

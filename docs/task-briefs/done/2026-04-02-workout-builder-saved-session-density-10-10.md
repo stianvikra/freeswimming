@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-02-workout-builder-saved-session-density-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-02`
-- `updated`: `2026-04-02`
+- `updated`: `2026-04-03`
 
 ## Goal
 
@@ -26,7 +26,7 @@ Keep the dedicated `My sessions` browse route calmer by showing only the first `
 ## Dependencies And Boundaries
 
 - Parent umbrella:
-  - `docs/task-briefs/in-progress/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
+  - `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Parent builder brief:
   - `docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Main product surfaces in scope:

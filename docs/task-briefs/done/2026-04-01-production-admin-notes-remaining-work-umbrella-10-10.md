@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-01-production-admin-notes-remaining-work-umbrella-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-01`
 - `updated`: `2026-04-03`
@@ -132,6 +132,47 @@ Remaining open notes grouped for execution:
   - clean up non-admin QA/test artifacts and define the prevention rule for future leakage.
 - `e27aae0e-0eb1-4830-8cde-daf8fe63a995` `Subscription prices - Thoughs`
   - turn pricing/offer thoughts into an explicit product-offer decision and only then implement any resulting copy or entitlement changes.
+
+## 2026-04-03 Reconciliation Status
+
+Repo state was reconciled against `main` on `2026-04-03` after PRs `#340` through `#348` landed.
+
+Notes now clearly shipped on `main`:
+
+- `947639ce-cc2e-4da3-aeb1-f0c11705ad41` `Website brand updates`
+  - shipped through PR `#336` (`feat(brand): ship logo system and typography pack`)
+- `204913d0-5c97-41e8-b6f7-ab42de3bc84e` `Admin notes attachment metadata and agent-readiness follow-up`
+  - shipped through PR `#340`
+- `d76825bd-4b5c-4e7e-aa22-49e6c25350ba` `Saved workouts list density follow-up`
+  - shipped through PR `#341`
+- `9245eaba-e5fd-4bc2-83c1-2f53c7df100e` `Workout builder drill and kick taxonomy follow-up`
+  - shipped through PR `#342`
+- `854d3f39-9275-4d80-a624-a687e47db320` `Workout builder notice placement and audience follow-up`
+  - shipped through PR `#343`
+- `3aa25b37-d7b4-4059-9a2f-05de2563f9f7` `Login Screen`
+  - shipped through PR `#344`
+- `99a18e5f-3b91-42d4-96d8-1d5f1343b05c` `Observations should have a date, also last edited.`
+  - shipped through PR `#345`
+- `2580d437-c1f3-47c4-80e9-70865a259d46` `New content`
+  - shipped through PR `#346`
+- `3b7783ba-6a98-46f9-9259-909a1a90ac9e` `NEW CONTENT NOTIFICATION`
+  - shipped through PR `#347`
+- `23a95fce-3589-4e5c-9efd-1830502df768` `Course menu and pass criteria`
+  - shipped through PR `#348`
+
+Residual non-product or disposition-only notes:
+
+- `67e2ab65-5f56-475d-842d-459ad6b56c32` `Rettigheter`
+  - resolved in-repo as operator/agent guidance through `AGENTS.md` and `docs/runbooks/codex-sandbox-approval-cadence.md`
+- `f96e7d7c-3477-417d-b96f-f2c8f876e2ab` `Non-admin test data cleanup follow-up`
+  - explicit disposition: previously narrowed by [2026-03-24-admin-notes-e2e-artifact-cleanup-and-isolation-10-10.md](/private/tmp/freeswimming-admin-notes-umbrella-reconcile-2026-04-03/docs/task-briefs/done/2026-03-24-admin-notes-e2e-artifact-cleanup-and-isolation-10-10.md) and kept as residual non-note cleanup outside this umbrella's product slices
+- `e27aae0e-0eb1-4830-8cde-daf8fe63a995` `Subscription prices - Thoughs`
+  - explicit disposition: decision-only commercial note already classified as out of scope for learner/content implementation in [2026-03-26-course-content-live-review-and-learner-surface-polish-10-10.md](/private/tmp/freeswimming-admin-notes-umbrella-reconcile-2026-04-03/docs/task-briefs/done/2026-03-26-course-content-live-review-and-learner-surface-polish-10-10.md)
+
+Residual repo-side implementation count after reconciliation:
+
+- `0` undispatched product-code notes remain in this umbrella.
+- Remaining live admin-note closure is now an operations/disposition-sync task, not an unresolved implementation backlog.
 
 ## Recommended Execution Order
 
@@ -444,6 +485,8 @@ Critical target categories for `10/10` claim in this umbrella:
 
 ## Checkpoint Log
 
+- `2026-04-03 | working tree | reran full npm run verify:pre-pr in the docs reconciliation worktree after restoring local .env access; the closeout slice is fully green (680 unit tests, perf budgets pass, Playwright 95 passed / 319 skipped / 0 failed), the umbrella remainder is now fully dispositioned, and the umbrella brief itself is being moved to done with updated child-parent references | next: commit/push/open the docs reconciliation PR and merge the closeout slice`
+- `2026-04-03 | working tree | reconciled umbrella state against main after PRs #336 and #340-#348: moved already-merged child briefs to done, documented shipped note ownership for brand/admin-notes/builder/login/new-content/course work, added sandbox approval guidance to resolve note 67e2ab65, and narrowed the repo-side remainder to live admin-note disposition sync only | next: run npm run lint:briefs:all, then commit/push/open a docs closeout PR`
 - `2026-04-03 | working tree | child slice 2026-04-03-course-menu-pass-criteria-states-10-10 now has full npm run verify:pre-pr green after stabilizing the course pass-criteria e2e around canonical lesson-id redirect + published-content hydration and after hardening nearby generator/dryland/workout route waits uncovered during the gate; scope for note 23a95fce remains clearer default pass criteria plus truthful partial/done lesson state in /course and the course drawer | next: commit/push/open the PR and take this slice through CI + pre-merge`
 - `2026-04-03 | working tree | started child slice 2026-04-03-course-menu-pass-criteria-states-10-10 for note 23a95fce and landed the first implementation pass: fallback pass criteria is centralized, /course now exposes a truthful lesson status chip, and MenuDrawer now distinguishes not-started / in-progress / done from canonical checklist + done state; targeted vitest, npm run typecheck, and targeted desktop-chromium Playwright are green | next: run npm run lint:briefs:all, then full npm run verify:pre-pr and take the slice through the normal PR gate if it stays green`
 - `2026-04-03 | working tree | child slice 2026-04-03-my-library-new-content-profile-freshness-10-10 now ships the remaining Package C freshness-truth rule for note 3b7783ba, filtering NEW CONTENT by canonical lesson `published_at` against learner/profile baseline timestamps; npm run lint:briefs:all, targeted vitest, npm run typecheck, and full npm run verify:pre-pr are green (95 passed / 319 skipped) | next: commit/push/open the PR and take the slice through CI + pre-merge`
@@ -464,7 +507,7 @@ Critical target categories for `10/10` claim in this umbrella:
 
 - `PR`: `TBD`
 - `merge`: `TBD`
-- `result`: `TBD`
+- `result`: `All targeted production admin notes in scope are now explicitly shipped, disposed, or reclassified into operator/process guidance; no undispatched product-code notes remain under this umbrella.`
 
 ## Merge Handoff
 
@@ -475,4 +518,4 @@ Critical target categories for `10/10` claim in this umbrella:
   - preview QA is done,
   - all targeted production notes in scope have explicit dispositions.
 - `assistant_rule`:
-  - do not recommend umbrella closeout until the remaining production-note count for this brief is effectively zero or every residual item has a narrower explicit owner.
+  - recommend umbrella closeout once this docs reconciliation PR merges, because the remaining production-note count for this brief is effectively zero and residual items are already explicitly dispositioned.

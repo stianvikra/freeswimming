@@ -109,6 +109,24 @@ This file defines how coding agents should collaborate in this repository.
     - `npm run dev`
   - if owner is prompted for command approval, recommend one-time scoped approvals (`Yes, and don't ask again`) for recurring safe prefixes to reduce repeated interruptions.
 
+## Sandbox Approval Reality
+
+- Repo docs can record recommended approval habits, but they cannot auto-persist Codex sandbox approvals across chats or machines.
+- The only durable reduction in repeated prompts comes from the local tool approval UI when the owner chooses a scoped recurring approval such as `Yes, and don't ask again`.
+- Prefer narrow recurring approvals for safe high-frequency prefixes in this repo:
+  - `git pull`, `git push`, `git fetch`, `git checkout`, `git worktree add/remove/prune`, `git branch -d/-D`
+  - `gh pr checks/view/create/edit/merge`
+  - `gh run view/watch/rerun`
+  - `npm run verify:pre-pr`, `npm run verify:pre-merge`, `npm run build`, `npm run typecheck`
+  - `npx playwright test`, `npx vitest run`
+- Expect occasional new prompts anyway when:
+  - a command shape has not been approved before,
+  - the tool needs elevated access to `.git` refs or protected filesystem paths,
+  - the command is destructive or otherwise safety-sensitive.
+- Never treat a repo file such as `AGENTS.md` as a substitute for local sandbox consent.
+- Operational guidance for this repo lives in:
+  - `docs/runbooks/codex-sandbox-approval-cadence.md`
+
 ## Automation-First Delivery Contract (Required)
 
 - For normal feature slices, assistant owns end-to-end execution by default:

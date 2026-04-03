@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-03-workout-builder-notice-placement-and-audience-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-03`
 - `updated`: `2026-04-03`
@@ -28,7 +28,7 @@ Keep the manual `Swim session builder` form primary while moving export/handoff 
 ## Dependencies And Boundaries
 
 - Parent umbrella:
-  - `docs/task-briefs/in-progress/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
+  - `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Parent builder brief:
   - `docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Main product surfaces in scope:

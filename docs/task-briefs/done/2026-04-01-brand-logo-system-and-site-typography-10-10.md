@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-01-brand-logo-system-and-site-typography-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-01`
-- `updated`: `2026-04-01`
+- `updated`: `2026-04-03`
 
 ## Goal
 
