@@ -444,6 +444,7 @@ Critical target categories for `10/10` claim in this umbrella:
 
 ## Checkpoint Log
 
+- `2026-04-03 | a535de3 | training observations child slice now ships logged/last-edited note metadata plus client-side note search/type/status/date filters and sort controls on /my-library/training; targeted vitest, npm run typecheck, npm run lint:briefs:all, and full npm run verify:pre-pr are green | next: push/open the PR and take note 99a18e5f through CI + pre-merge`
 - `2026-04-03 | working tree | started child slice 2026-04-03-training-observation-timestamps-and-note-filters-10-10 for admin note 99a18e5f; scope is logged/last-edited note timestamps plus lightweight client-side note search, type/status/date filters, and sort controls in /my-library/training | next: finish UI + targeted tests, then run verify:pre-pr and open the PR`
 - `2026-04-03 | working tree | login-screen child slice for note 3aa25b37 now has the shorter /auth/sign-in copy and CTA contract in place, with targeted auth tests, npm run typecheck, and full npm run verify:pre-pr green on branch feat/login-screen-copy-cleanup-2026-04-03 | next: commit/push/open the PR and take it through CI + pre-merge`
 - `2026-04-03 | working tree | started the next umbrella child slice on branch feat/login-screen-copy-cleanup-2026-04-03 for admin note 3aa25b37, scoped to simplifying /auth/sign-in copy and CTA labels without changing auth mechanics | next: land the tighter sign-in copy, update auth UX tests, and run targeted validation + verify:pre-pr`

@@ -164,6 +164,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-03 | a535de3 | implemented logged/last-edited note metadata plus note-list search, type/status/date filters, and sort controls in TrainingContextHub; targeted vitest, npm run typecheck, npm run lint:briefs:all, and full npm run verify:pre-pr are green | next: push branch, open PR, and take the slice through CI + pre-merge`
 - `2026-04-03 | working tree | scoped child slice for admin note 99a18e5f to add logged/last-edited note timestamps plus lightweight note-list search/filter controls in TrainingContextHub | next: implement the UI, add targeted tests, and run validation`
 
 ## Completion Record
