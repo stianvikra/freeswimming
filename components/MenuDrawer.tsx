@@ -14,6 +14,10 @@ import MobileSegmentedNav, {
   type MobileSegmentedNavItem,
 } from "@/components/ui/MobileSegmentedNav";
 import { BRAND_USAGE } from "@/lib/brand";
+import {
+  buildCourseLessonProgressStatusMap,
+  type CourseLessonProgressStatus,
+} from "@/lib/course/progress-status";
 
 type MainItem = { href: string; title: string; subtitle?: string };
 
@@ -35,6 +39,8 @@ type Props = {
     activeLessonId: string;
     onSelectLesson: (lessonId: string) => void;
     doneLessonIds?: string[];
+    doneGateChecksByLessonId?: Record<string, string[]>;
+    lessonProgressStatusById?: Record<string, CourseLessonProgressStatus>;
     modules?: CourseModule[];
   };
 
@@ -258,6 +264,8 @@ export default function MenuDrawer({
               setOpenModuleId={setOpenModuleId}
               activeLessonId={course!.activeLessonId}
               doneLessonIds={course!.doneLessonIds ?? []}
+              doneGateChecksByLessonId={course!.doneGateChecksByLessonId ?? {}}
+              lessonProgressStatusById={course!.lessonProgressStatusById}
               onSelectLesson={course!.onSelectLesson}
             />
           ) : (
@@ -441,6 +449,8 @@ function CourseView({
   setOpenModuleId,
   activeLessonId,
   doneLessonIds,
+  doneGateChecksByLessonId,
+  lessonProgressStatusById,
   onSelectLesson,
 }: {
   modules: CourseModule[];
@@ -448,9 +458,21 @@ function CourseView({
   setOpenModuleId: (id: string) => void;
   activeLessonId: string;
   doneLessonIds: string[];
+  doneGateChecksByLessonId: Record<string, string[]>;
+  lessonProgressStatusById?: Record<string, CourseLessonProgressStatus>;
   onSelectLesson: (lessonId: string) => void;
 }) {
   const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
+  const resolvedLessonProgressStatusById = useMemo(
+    () =>
+      lessonProgressStatusById ??
+      buildCourseLessonProgressStatusMap(
+        modules.flatMap((module) => module.lessons),
+        doneLessonIdSet,
+        doneGateChecksByLessonId
+      ),
+    [doneGateChecksByLessonId, doneLessonIdSet, lessonProgressStatusById, modules]
+  );
   const totalModules = modules.length;
   const totalLessons = useMemo(
     () => modules.reduce((sum, mod) => sum + mod.lessons.length, 0),
@@ -458,19 +480,23 @@ function CourseView({
   );
   const completedLessons = useMemo(
     () =>
-      modules.reduce(
-        (sum, mod) => sum + mod.lessons.filter((lesson) => doneLessonIdSet.has(lesson.id)).length,
-        0
-      ),
-    [doneLessonIdSet, modules]
+      Object.values(resolvedLessonProgressStatusById).filter((status) => status === "done").length,
+    [resolvedLessonProgressStatusById]
+  );
+  const inProgressLessons = useMemo(
+    () =>
+      Object.values(resolvedLessonProgressStatusById).filter((status) => status === "in_progress")
+        .length,
+    [resolvedLessonProgressStatusById]
   );
   const completedModules = useMemo(
     () =>
       modules.filter(
         (mod) =>
-          mod.lessons.length > 0 && mod.lessons.every((lesson) => doneLessonIdSet.has(lesson.id))
+          mod.lessons.length > 0 &&
+          mod.lessons.every((lesson) => resolvedLessonProgressStatusById[lesson.id] === "done")
       ).length,
-    [doneLessonIdSet, modules]
+    [modules, resolvedLessonProgressStatusById]
   );
   const completedPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
@@ -485,7 +511,15 @@ function CourseView({
             <p className="mt-1 text-[13px] font-semibold leading-5 text-slate-700">
               Modules {completedModules} of {totalModules}
               <span className="px-1 text-slate-300">•</span>
-              Lessons {completedLessons} of {totalLessons}
+              Lessons {completedLessons} done
+              {inProgressLessons > 0 ? (
+                <>
+                  <span className="px-1 text-slate-300">•</span>
+                  {inProgressLessons} in progress
+                </>
+              ) : null}
+              <span className="px-1 text-slate-300">•</span>
+              {totalLessons} total
             </p>
           </div>
 
@@ -501,7 +535,7 @@ function CourseView({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={completedPct}
-          aria-valuetext={`Progress: modules ${completedModules} of ${totalModules}, lessons ${completedLessons} of ${totalLessons}.`}
+          aria-valuetext={`Progress: modules ${completedModules} of ${totalModules}, lessons ${completedLessons} done, ${inProgressLessons} in progress, ${totalLessons} total.`}
         >
           <div className="bg-slate-200/86 h-2.5 overflow-hidden rounded-full ring-1 ring-slate-200/75">
             <div
@@ -516,10 +550,21 @@ function CourseView({
         const isOpen = openModuleId === mod.id;
         const isActiveModule = mod.lessons.some((l) => l.id === activeLessonId);
         const moduleLessonCount = mod.lessons.length;
-        const doneCount = mod.lessons.filter((lesson) => doneLessonIdSet.has(lesson.id)).length;
+        const lessonStatuses = mod.lessons.map(
+          (lesson) => resolvedLessonProgressStatusById[lesson.id] ?? "not_started"
+        );
+        const doneCount = lessonStatuses.filter((status) => status === "done").length;
+        const inProgressCount = lessonStatuses.filter((status) => status === "in_progress").length;
         const isDoneModule = moduleLessonCount > 0 && doneCount === moduleLessonCount;
-        const isInProgressModule = doneCount > 0 && doneCount < moduleLessonCount;
-        const doneSummary = `Module progress: ${doneCount} of ${moduleLessonCount}`;
+        const isInProgressModule =
+          !isDoneModule && (doneCount > 0 || inProgressCount > 0 || isActiveModule);
+        const doneSummary = isDoneModule
+          ? `All ${moduleLessonCount} lessons done`
+          : isInProgressModule
+            ? `Module progress: ${doneCount} done${
+                inProgressCount > 0 ? ` • ${inProgressCount} in progress` : ""
+              }`
+            : `${moduleLessonCount} lessons ready to start`;
         const panelId = `course-module-panel-${mod.id}`;
 
         const wrapperClass = [
@@ -536,6 +581,8 @@ function CourseView({
             ? "bg-gradient-to-b from-blue-400 to-blue-600"
             : isDoneModule
               ? "bg-gradient-to-b from-emerald-300 to-emerald-500"
+              : isInProgressModule
+                ? "bg-gradient-to-b from-amber-300 to-amber-500"
               : isOpen
                 ? "bg-slate-300/80"
                 : "bg-slate-200/70",
@@ -581,7 +628,7 @@ function CourseView({
                       Module completed
                     </span>
                   ) : isInProgressModule ? (
-                    <span className="bg-blue-50/78 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-200/60">
+                    <span className="inline-flex rounded-full bg-amber-50/82 px-3 py-1 text-[12px] font-semibold text-amber-700 ring-1 ring-amber-200/70">
                       In progress
                     </span>
                   ) : null}
@@ -598,7 +645,7 @@ function CourseView({
                     isDoneModule
                       ? "text-emerald-700"
                       : isInProgressModule || isActiveModule
-                        ? "text-blue-600"
+                        ? "text-amber-700"
                         : "text-slate-500",
                   ].join(" ")}
                 >
@@ -625,7 +672,7 @@ function CourseView({
                 <SmartLessonList
                   lessons={mod.lessons}
                   activeLessonId={activeLessonId}
-                  doneLessonIdSet={doneLessonIdSet}
+                  progressStatusByLessonId={resolvedLessonProgressStatusById}
                   onSelectLesson={onSelectLesson}
                 />
               </div>
@@ -640,12 +687,12 @@ function CourseView({
 function SmartLessonList({
   lessons,
   activeLessonId,
-  doneLessonIdSet,
+  progressStatusByLessonId,
   onSelectLesson,
 }: {
   lessons: CourseLesson[];
   activeLessonId: string;
-  doneLessonIdSet: Set<string>;
+  progressStatusByLessonId: Record<string, CourseLessonProgressStatus>;
   onSelectLesson: (lessonId: string) => void;
 }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -704,7 +751,9 @@ function SmartLessonList({
         <div className="space-y-1.5">
           {lessons.map((l, i) => {
             const active = l.id === activeLessonId;
-            const done = doneLessonIdSet.has(l.id);
+            const progressStatus = progressStatusByLessonId[l.id] ?? "not_started";
+            const done = progressStatus === "done";
+            const inProgress = progressStatus === "in_progress";
             const activeAndDone = active && done;
 
             return (
@@ -712,12 +761,16 @@ function SmartLessonList({
                 tier="card"
                 key={l.id}
                 onClick={() => onSelectLesson(l.id)}
+                data-testid={`course-menu-lesson-${l.id}`}
+                data-progress-state={progressStatus}
                 className={[
                   "relative w-full rounded-[16px] px-4 py-3 text-left transition-colors",
                   activeAndDone
                     ? "ring-blue-400/82 bg-emerald-50/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_0_0_1px_rgba(59,130,246,0.35)] ring-2"
                     : active
                       ? "bg-blue-50/82 ring-blue-300/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] ring-1"
+                      : inProgress
+                        ? "bg-amber-50/88 ring-amber-200/80 ring-1"
                       : done
                         ? "ring-emerald-200/78 bg-emerald-50/85 ring-1"
                         : "bg-white/78 ring-1 ring-slate-200/65",
@@ -732,17 +785,19 @@ function SmartLessonList({
                   <div className="text-[14px] font-semibold text-slate-900">{l.title}</div>
 
                   <div className="flex items-center gap-2">
-                    {active && done ? (
-                      <span className="rounded-full bg-emerald-50/85 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200/75">
-                        Done
-                      </span>
-                    ) : active ? (
+                    {active && !activeAndDone ? (
                       <span className="bg-blue-100/68 rounded-full px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/70">
                         Current
                       </span>
                     ) : null}
 
-                    {done && !active ? (
+                    {inProgress ? (
+                      <span className="rounded-full bg-amber-50/85 px-2 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200/75">
+                        In progress
+                      </span>
+                    ) : null}
+
+                    {done ? (
                       <span className="rounded-full bg-emerald-50/75 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200/70">
                         Done
                       </span>
@@ -752,7 +807,7 @@ function SmartLessonList({
                       <span
                         className={[
                           "shrink-0 text-[12px] font-semibold",
-                          done ? "text-slate-500" : "text-slate-700",
+                          done ? "text-slate-500" : inProgress ? "text-amber-700" : "text-slate-700",
                         ].join(" ")}
                       >
                         {i + 1} of {total}

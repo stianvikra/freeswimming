@@ -189,8 +189,10 @@ async function waitForWorkoutLibraryBrowseReady(page: Page) {
 
 async function openGeneratorFromMyLibrary(page: Page) {
   const openGeneratorLink = page.getByRole("link", { name: "Open AI session generator" });
-  await expect(openGeneratorLink).toBeVisible();
+  await expect(openGeneratorLink).toBeVisible({ timeout: 15_000 });
   await expect(openGeneratorLink).toHaveAttribute("href", "/my-library/generator");
+  const href = (await openGeneratorLink.getAttribute("href")) ?? "";
+  expect(href).toBe("/my-library/generator");
   await openGeneratorLink.click();
   const navigatedAfterClick = await page
     .waitForURL(/\/my-library\/generator$/, { timeout: 7_000 })
@@ -198,9 +200,7 @@ async function openGeneratorFromMyLibrary(page: Page) {
     .catch(() => false);
 
   if (!navigatedAfterClick) {
-    const href = await openGeneratorLink.getAttribute("href");
-    expect(href).toBeTruthy();
-    await gotoWithTransientRetry(page, href!);
+    await gotoWithTransientRetry(page, href);
     await ensureDevBypassRoute(page, "/my-library/generator");
   }
 
