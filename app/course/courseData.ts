@@ -18,6 +18,7 @@ export type CourseLesson = {
   id: string; // used in URL: /course?lesson=<id>
   legacyIds?: string[];
   title: string;
+  publishedAt?: string | null;
   youtubeId: string; // ONLY the video id, not full URL
   estMinutes?: number;
   lessonType?: "learn" | "drill" | "swim";
@@ -53,6 +54,7 @@ export type CourseModule = {
   legacyIds?: string[];
   title: string;
   subtitle?: string;
+  publishedAt?: string | null;
   lessons: CourseLesson[];
 };
 

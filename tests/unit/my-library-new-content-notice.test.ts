@@ -6,6 +6,7 @@ import {
   buildMyLibrarySeenStorageKey,
   parseMyLibrarySeenState,
   resolveNewContentDecision,
+  resolveMyLibraryViewerSince,
 } from "@/lib/my-library/new-content-notice";
 
 function buildModules(lessonIds: string[]): CourseModule[] {
@@ -16,6 +17,7 @@ function buildModules(lessonIds: string[]): CourseModule[] {
       lessons: lessonIds.map((lessonId, index) => ({
         id: lessonId,
         title: `Lesson ${index + 1}`,
+        publishedAt: `2026-04-0${index + 1}T08:00:00.000Z`,
         youtubeId: "abc123",
         goal: "Goal",
         cues: ["Cue"],
@@ -39,6 +41,33 @@ describe("my-library new content notice helpers", () => {
     expect(signal.lessonTokens).toHaveLength(2);
     expect(signal.lessons.map((lesson) => lesson.lessonId)).toEqual(["mod1-l2", "mod1-l1"]);
     expect(signal.lessonTokens[0]).not.toBe("mod1-l2");
+    expect(signal.lessons[0]?.publishedAt).toBe("2026-04-01T08:00:00.000Z");
+  });
+
+  it("filters out lessons that predate the viewer baseline", () => {
+    const signal = buildMyLibraryCourseSignal(buildModules(["mod1-l1", "mod1-l2", "mod1-l3"]), {
+      viewerSince: "2026-04-02T12:00:00.000Z",
+    });
+
+    expect(signal.lessonCount).toBe(1);
+    expect(signal.lessons.map((lesson) => lesson.lessonId)).toEqual(["mod1-l3"]);
+  });
+
+  it("falls back to auth-user creation when profile creation is unavailable", () => {
+    expect(
+      resolveMyLibraryViewerSince({
+        userCreatedAt: "2026-03-10T08:00:00.000Z",
+      })
+    ).toBe("2026-03-10T08:00:00.000Z");
+  });
+
+  it("prefers athlete-profile creation when both baselines exist", () => {
+    expect(
+      resolveMyLibraryViewerSince({
+        profileCreatedAt: "2026-03-12T08:00:00.000Z",
+        userCreatedAt: "2026-03-10T08:00:00.000Z",
+      })
+    ).toBe("2026-03-12T08:00:00.000Z");
   });
 
   it("creates a user-scoped storage key", () => {
