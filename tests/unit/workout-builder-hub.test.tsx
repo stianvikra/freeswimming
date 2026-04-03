@@ -16,6 +16,7 @@ import {
 
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
+  replace: vi.fn(),
   refresh: vi.fn(),
 }));
 
@@ -1171,10 +1172,10 @@ describe("WorkoutBuilderHub", () => {
     });
 
     await waitFor(() => {
-      expect(navigationState.push).toHaveBeenCalledWith("/my-library");
+      expect(navigationState.replace).toHaveBeenCalledWith("/my-library");
     });
 
-    expect(navigationState.refresh).toHaveBeenCalledTimes(1);
+    expect(navigationState.refresh).not.toHaveBeenCalled();
   });
 
   it("renders the dedicated browse mode without the editor form", async () => {

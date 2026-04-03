@@ -88,6 +88,7 @@ Critical target categories for `10/10` claim in this brief:
 - `/my-library/training` note-list presentation in `TrainingContextHub`.
 - Logged and last-edited timestamp labels on each rendered note card.
 - Client-side search/filter/sort controls for the existing note list.
+- Shared validation blocker fix in `WorkoutBuilderHub` so deleting the currently open swim session exits the stale detail route reliably.
 - Targeted regression coverage for timestamps and filters.
 - Umbrella brief checkpoint updates for this slice.
 
@@ -106,13 +107,16 @@ Critical target categories for `10/10` claim in this brief:
 4. Users can sort the list by newest, oldest, or recently edited.
 5. Filtered empty states are explicit and recoverable through a clear reset action.
 6. No new fetch path, schema change, or persisted preference is required for the filters to work.
-7. The slice ships with targeted regression coverage plus full `npm run verify:pre-pr`.
+7. Deleting the currently open swim session leaves the user on `/my-library` instead of a stale empty detail route.
+8. The slice ships with targeted regression coverage plus full `npm run verify:pre-pr`.
 
 ## Validation
 
 - `npm run lint:briefs`
 - `npm run typecheck`
 - `npx vitest run tests/unit/training-context-hub.test.tsx`
+- `npx vitest run tests/unit/workout-builder-hub.test.tsx`
+- `npx playwright test tests/e2e/my-library-workout-builder.spec.ts --project=desktop-chromium`
 - `npm run verify:pre-pr`
 - before merge recommendation: `npm run verify:pre-merge`
 
@@ -164,6 +168,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-03 | working tree | while rerunning verify:pre-pr, found that deleting the currently open swim session could leave the browser on an emptied detail route; switched the current-workout delete flow to use a direct replace navigation and revalidated with targeted workout-builder unit + desktop-chromium e2e coverage | next: rerun full npm run verify:pre-pr on the updated HEAD, then push/open the PR`
 - `2026-04-03 | a535de3 | implemented logged/last-edited note metadata plus note-list search, type/status/date filters, and sort controls in TrainingContextHub; targeted vitest, npm run typecheck, npm run lint:briefs:all, and full npm run verify:pre-pr are green | next: push branch, open PR, and take the slice through CI + pre-merge`
 - `2026-04-03 | working tree | scoped child slice for admin note 99a18e5f to add logged/last-edited note timestamps plus lightweight note-list search/filter controls in TrainingContextHub | next: implement the UI, add targeted tests, and run validation`
 
