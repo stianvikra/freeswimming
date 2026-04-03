@@ -18,15 +18,34 @@ vi.mock("@/lib/supabase/route-handler", () => ({
 import { GET } from "@/app/api/my-library/new-content-signal/route";
 
 function buildSupabaseClient(userId: string | null) {
+  const maybeSingle = vi.fn().mockResolvedValue({
+    data: null,
+    error: null,
+  });
+  const eq = vi.fn(() => ({
+    maybeSingle,
+  }));
+  const select = vi.fn(() => ({
+    eq,
+  }));
+
   return {
     auth: {
       getUser: vi.fn().mockResolvedValue({
         data: {
-          user: userId ? { id: userId } : null,
+          user: userId ? { id: userId, created_at: "2026-03-01T08:00:00.000Z" } : null,
         },
         error: null,
       }),
     },
+    from: vi.fn((table: string) => {
+      if (table !== "athlete_profiles") {
+        throw new Error(`Unexpected table lookup: ${table}`);
+      }
+      return {
+        select,
+      };
+    }),
   };
 }
 
@@ -79,6 +98,57 @@ describe("/api/my-library/new-content-signal route", () => {
   });
 
   it("returns published-course signal for authenticated user", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: {
+        ...buildSupabaseClient("user-1"),
+        from: vi.fn(() => ({
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { created_at: "2026-04-02T08:00:00.000Z" },
+                error: null,
+              }),
+            })),
+          })),
+        })),
+      },
+      applySupabaseCookies: <T>(response: T) => response,
+    });
+    loadCourseModulesByStatusMock.mockResolvedValueOnce([
+      {
+        id: "mod1",
+        title: "Intro",
+        lessons: [
+          {
+            id: "mod1-l1",
+            title: "Lesson 1",
+            publishedAt: "2026-04-01T08:00:00.000Z",
+            youtubeId: "abc123",
+            goal: "Goal",
+            cues: ["Cue"],
+            drill: {
+              title: "Drill",
+              steps: ["Step"],
+            },
+            nextStep: "Next",
+          },
+          {
+            id: "mod1-l2",
+            title: "Lesson 2",
+            publishedAt: "2026-04-03T08:00:00.000Z",
+            youtubeId: "abc123",
+            goal: "Goal",
+            cues: ["Cue"],
+            drill: {
+              title: "Drill",
+              steps: ["Step"],
+            },
+            nextStep: "Next",
+          },
+        ],
+      },
+    ]);
+
     const response = await GET();
     const payload = (await response.json()) as {
       ok?: boolean;
@@ -99,20 +169,72 @@ describe("/api/my-library/new-content-signal route", () => {
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
     expect(payload.signal?.lessonCount).toBe(1);
-    expect(payload.signal?.firstLessonId).toBe("mod1-l1");
+    expect(payload.signal?.firstLessonId).toBe("mod1-l2");
     expect(payload.signal?.signature?.startsWith("v1:")).toBe(true);
     expect(payload.signal?.lessons).toHaveLength(1);
     expect(payload.signal?.lessons?.[0]).toMatchObject({
-      lessonId: "mod1-l1",
-      lessonTitle: "Lesson 1",
+      lessonId: "mod1-l2",
+      lessonTitle: "Lesson 2",
       moduleId: "mod1",
       moduleTitle: "Intro",
+      publishedAt: "2026-04-03T08:00:00.000Z",
     });
     expect(payload.signal?.lessons?.[0]?.lessonToken).toMatch(/^[0-9a-f]{16}$/);
     expect(loadCourseModulesByStatusMock).toHaveBeenCalledWith({
       statuses: ["published"],
       fallback: [],
       autoSeedWhenEmpty: true,
+    });
+  });
+
+  it("falls back to auth-user creation when athlete profile is missing", async () => {
+    loadCourseModulesByStatusMock.mockResolvedValueOnce([
+      {
+        id: "mod1",
+        title: "Intro",
+        lessons: [
+          {
+            id: "mod1-l1",
+            title: "Lesson 1",
+            publishedAt: "2026-02-27T08:00:00.000Z",
+            youtubeId: "abc123",
+            goal: "Goal",
+            cues: ["Cue"],
+            drill: {
+              title: "Drill",
+              steps: ["Step"],
+            },
+            nextStep: "Next",
+          },
+          {
+            id: "mod1-l2",
+            title: "Lesson 2",
+            publishedAt: "2026-03-03T08:00:00.000Z",
+            youtubeId: "abc123",
+            goal: "Goal",
+            cues: ["Cue"],
+            drill: {
+              title: "Drill",
+              steps: ["Step"],
+            },
+            nextStep: "Next",
+          },
+        ],
+      },
+    ]);
+
+    const response = await GET();
+    const payload = (await response.json()) as {
+      signal?: {
+        lessonCount?: number;
+        firstLessonId?: string | null;
+      };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.signal).toMatchObject({
+      lessonCount: 1,
+      firstLessonId: "mod1-l2",
     });
   });
 

@@ -22,11 +22,15 @@ type AdminContentRow = Database["public"]["Tables"]["admin_content_items"]["Row"
 type CourseModuleContentRow = Pick<
   AdminContentRow,
   "id" | "slug" | "title" | "summary" | "sort_order" | "body"
->;
+> & {
+  published_at?: string | null;
+};
 type CourseLessonContentRow = Pick<
   AdminContentRow,
   "id" | "parent_id" | "slug" | "title" | "summary" | "sort_order" | "body"
->;
+> & {
+  published_at?: string | null;
+};
 
 const SUPPORT_ACTION_IDS: CourseSupportActionId[] = [
   "videoAnalysis",
@@ -188,6 +192,7 @@ export function toPublishedCourseModules(
         legacyIds: legacyIds.length > 0 ? legacyIds : undefined,
         title: row.title,
         subtitle,
+        publishedAt: row.published_at,
         lessons: [] as CourseLesson[],
       },
     };
@@ -247,6 +252,7 @@ export function toPublishedCourseModules(
       id: lessonId,
       legacyIds: legacyIds.length > 0 ? legacyIds : undefined,
       title: row.title,
+      publishedAt: row.published_at,
       youtubeId: getString(body.youtubeId) ?? "Xh6OblO06LY",
       estMinutes: getNumber(body.estMinutes),
       lessonType: normalizeLessonType(body.lessonType),
@@ -320,7 +326,7 @@ export async function loadCourseModulesByStatus(
     const readRows = async () => {
       const modulesQuery = supabase
         .from("admin_content_items")
-        .select("id, slug, title, summary, sort_order, body, created_at")
+        .select("id, slug, title, summary, sort_order, body, published_at, created_at")
         .eq("content_type", "course_module")
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });
@@ -342,7 +348,7 @@ export async function loadCourseModulesByStatus(
 
       const lessonsQuery = supabase
         .from("admin_content_items")
-        .select("id, parent_id, slug, title, summary, sort_order, body, created_at")
+        .select("id, parent_id, slug, title, summary, sort_order, body, published_at, created_at")
         .eq("content_type", "course_lesson")
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });

@@ -16,6 +16,7 @@ export type MyLibrarySignalLesson = {
   moduleId: string;
   moduleTitle: string;
   lessonToken: string;
+  publishedAt: string | null;
 };
 
 export type MyLibrarySeenState = {
@@ -62,16 +63,44 @@ function normalizeLessonId(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
-export function buildMyLibraryCourseSignal(modules: CourseModule[]): MyLibraryCourseSignal {
+function normalizeIsoTimestamp(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  if (normalized.length === 0) return null;
+  const parsed = Date.parse(normalized);
+  if (!Number.isFinite(parsed)) return null;
+  return new Date(parsed).toISOString();
+}
+
+export function resolveMyLibraryViewerSince(input: {
+  profileCreatedAt?: string | null;
+  userCreatedAt?: string | null;
+}): string | null {
+  return normalizeIsoTimestamp(input.profileCreatedAt) ?? normalizeIsoTimestamp(input.userCreatedAt);
+}
+
+export function buildMyLibraryCourseSignal(
+  modules: CourseModule[],
+  options?: {
+    viewerSince?: string | null;
+  }
+): MyLibraryCourseSignal {
   const seenLessonIds = new Set<string>();
   const lessons: MyLibrarySignalLesson[] = [];
+  const viewerSince = normalizeIsoTimestamp(options?.viewerSince ?? null);
 
   for (const courseModule of modules) {
     const moduleId = normalizeLessonId(courseModule.id) ?? "module";
     const moduleTitle = courseModule.title.trim().length > 0 ? courseModule.title.trim() : moduleId;
+    const modulePublishedAt = normalizeIsoTimestamp(courseModule.publishedAt ?? null);
     for (const lesson of courseModule.lessons) {
       const lessonId = normalizeLessonId(lesson.id);
       if (!lessonId || seenLessonIds.has(lessonId)) continue;
+      const lessonPublishedAt =
+        normalizeIsoTimestamp(lesson.publishedAt ?? null) ?? modulePublishedAt;
+      if (viewerSince && (!lessonPublishedAt || lessonPublishedAt <= viewerSince)) {
+        continue;
+      }
       seenLessonIds.add(lessonId);
       const lessonTitle = lesson.title.trim().length > 0 ? lesson.title.trim() : lessonId;
       const lessonToken = stableHash(`lesson:${lessonId}`);
@@ -81,6 +110,7 @@ export function buildMyLibraryCourseSignal(modules: CourseModule[]): MyLibraryCo
         moduleId,
         moduleTitle,
         lessonToken,
+        publishedAt: lessonPublishedAt,
       });
     }
   }
