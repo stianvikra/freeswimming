@@ -128,6 +128,17 @@ test.describe("my library new content notice", () => {
     const banner = page.getByTestId("my-library-new-content-notice");
     await expect(banner).toBeVisible();
     await expect(banner).toContainText(/\+\d+ nye leksjoner i Free Course/);
+    await expect(page.getByTestId("my-library-new-content-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await expect(page.getByTestId("my-library-new-content-list")).toHaveCount(0);
+
+    await page.getByTestId("my-library-new-content-toggle").click();
+    await expect(page.getByTestId("my-library-new-content-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
     await expect(page.getByTestId("my-library-new-content-list")).toBeVisible();
 
     await openFirstNewLessonFromNotice(page);
@@ -164,6 +175,7 @@ test.describe("my library new content notice", () => {
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
     await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
+    await page.getByTestId("my-library-new-content-toggle").click();
     await expect(page.getByTestId("my-library-new-content-item-mod1-l1")).toBeVisible();
     await openFirstNewLessonFromNotice(page);
   });

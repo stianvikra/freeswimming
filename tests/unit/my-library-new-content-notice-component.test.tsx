@@ -86,9 +86,23 @@ describe("MyLibraryNewContentNotice", () => {
       expect(screen.getByTestId("my-library-new-content-notice")).toBeInTheDocument();
     });
     expect(screen.getByText("+2 nye leksjoner i Free Course")).toBeInTheDocument();
-    expect(screen.getByTestId("my-library-new-content-list")).toBeInTheDocument();
+    expect(screen.queryByTestId("my-library-new-content-list")).not.toBeInTheDocument();
+    expect(screen.getByTestId("my-library-new-content-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+    fireEvent.click(screen.getByTestId("my-library-new-content-toggle"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("my-library-new-content-list")).toBeInTheDocument();
+    });
     expect(screen.getByTestId("my-library-new-content-item-mod1-l1")).toBeInTheDocument();
     expect(screen.getByTestId("my-library-new-content-item-mod1-l2")).toBeInTheDocument();
+    expect(screen.getByTestId("my-library-new-content-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
 
     fireEvent.click(screen.getByTestId("my-library-new-content-dismiss"));
 
@@ -145,8 +159,8 @@ describe("MyLibraryNewContentNotice", () => {
       expect(screen.getByTestId("my-library-new-content-notice")).toBeInTheDocument();
     });
     expect(screen.getByText("+2 nye leksjoner i Free Course")).toBeInTheDocument();
-    expect(screen.getByTestId("my-library-new-content-item-mod1-l2")).toBeInTheDocument();
-    expect(screen.getByTestId("my-library-new-content-item-mod1-l3")).toBeInTheDocument();
+    expect(screen.queryByTestId("my-library-new-content-item-mod1-l2")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("my-library-new-content-item-mod1-l3")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("my-library-new-content-open"));
 
@@ -163,6 +177,11 @@ describe("MyLibraryNewContentNotice", () => {
       signature: signal.signature,
       source: "open_first",
       lessonId: "mod1-l2",
+    });
+
+    fireEvent.click(screen.getByTestId("my-library-new-content-toggle"));
+    await waitFor(() => {
+      expect(screen.getByTestId("my-library-new-content-item-mod1-l3")).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByTestId("my-library-new-content-item-mod1-l3"));
