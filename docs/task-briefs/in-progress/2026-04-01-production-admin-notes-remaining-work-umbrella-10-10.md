@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-01`
-- `updated`: `2026-04-02`
+- `updated`: `2026-04-03`
 
 ## Goal
 
@@ -113,7 +113,7 @@ Remaining open notes grouped for execution:
 - `2580d437-c1f3-47c4-80e9-70865a259d46` `New content`
   - make the new-content message collapsible and turn it into a calmer 10/10 UI.
 - `99a18e5f-3b91-42d4-96d8-1d5f1343b05c` `Observations should have a date, also last edited.`
-  - show observation dates and last-edited information.
+  - show observation dates and last-edited information, plus the owner-requested note-list search/filter helpers that make older observations easier to recover.
 - `3b7783ba-6a98-46f9-9259-909a1a90ac9e` `NEW CONTENT NOTIFICATION`
   - only show `NEW CONTENT` for content created after the user created their profile.
 
@@ -444,6 +444,7 @@ Critical target categories for `10/10` claim in this umbrella:
 
 ## Checkpoint Log
 
+- `2026-04-03 | working tree | started child slice 2026-04-03-training-observation-timestamps-and-note-filters-10-10 for admin note 99a18e5f; scope is logged/last-edited note timestamps plus lightweight client-side note search, type/status/date filters, and sort controls in /my-library/training | next: finish UI + targeted tests, then run verify:pre-pr and open the PR`
 - `2026-04-03 | working tree | login-screen child slice for note 3aa25b37 now has the shorter /auth/sign-in copy and CTA contract in place, with targeted auth tests, npm run typecheck, and full npm run verify:pre-pr green on branch feat/login-screen-copy-cleanup-2026-04-03 | next: commit/push/open the PR and take it through CI + pre-merge`
 - `2026-04-03 | working tree | started the next umbrella child slice on branch feat/login-screen-copy-cleanup-2026-04-03 for admin note 3aa25b37, scoped to simplifying /auth/sign-in copy and CTA labels without changing auth mechanics | next: land the tighter sign-in copy, update auth UX tests, and run targeted validation + verify:pre-pr`
 - `2026-04-02 | e6c9ef8 | PR #339 merged the saved dryland/program detail-route Quick note expansion on main; Package B is now narrowed to the remaining contextual note reference/related-note parity needed to close the attachment-metadata + agent-readiness follow-up cleanly | next: start a final Package B child slice for contextual note reference/open-in-notes/related-note parity and move the route-expansion brief to done`

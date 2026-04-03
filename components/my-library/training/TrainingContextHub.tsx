@@ -6,6 +6,7 @@ import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import {
   getTrainingNoteStatusLabel,
   getTrainingNoteTypeLabel,
+  TRAINING_NOTE_STATUS_VALUES,
   type TrainingNoteStatus,
 } from "@/lib/training-context/mvp";
 import type {
@@ -58,8 +59,27 @@ type FocusEditState = {
   goalId: string;
 };
 
+type NoteListSort = "newest" | "oldest" | "recently_edited";
+
+type NoteListFilters = {
+  search: string;
+  noteType: "all" | TrainingNoteView["noteType"];
+  status: "all" | TrainingNoteStatus;
+  fromDate: string;
+  toDate: string;
+  sort: NoteListSort;
+};
+
 const FOCUS_DRAFT_STORAGE_KEY = "training-context-focus-draft";
 const NOTE_DRAFT_STORAGE_KEY = "training-context-note-draft";
+const DEFAULT_NOTE_LIST_FILTERS: NoteListFilters = {
+  search: "",
+  noteType: "all",
+  status: "all",
+  fromDate: "",
+  toDate: "",
+  sort: "newest",
+};
 
 function getDefaultFocusDraft(): FocusDraft {
   return {
@@ -196,6 +216,32 @@ function getNoteComposerSummary(
   return "Open when you want to save an observation or question.";
 }
 
+function formatTrainingNoteTimestamp(value: string) {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return "Unknown date";
+  return `${new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(timestamp))} UTC`;
+}
+
+function buildTrainingNoteSearchText(note: TrainingNoteView) {
+  return [
+    note.noteTypeLabel,
+    note.statusLabel,
+    note.body,
+    note.answer ?? "",
+    note.goalTitle ?? "",
+    note.focusTitle ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
 export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill }: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [isOnline, setIsOnline] = useState(true);
@@ -222,6 +268,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
   const [pendingNoteSaveId, setPendingNoteSaveId] = useState<string | null>(null);
   const [showFocusComposer, setShowFocusComposer] = useState(true);
   const [showNoteComposer, setShowNoteComposer] = useState(true);
+  const [noteListFilters, setNoteListFilters] = useState<NoteListFilters>(DEFAULT_NOTE_LIST_FILTERS);
 
   useEffect(() => {
     setIsOnline(readNavigatorOnlineState());
@@ -725,6 +772,61 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
       ? (focusOptions.find((focus) => focus.id === noteDraft.focusId)?.title ?? null)
       : null
   );
+  const availableNoteStatuses = useMemo(
+    () =>
+      TRAINING_NOTE_STATUS_VALUES.filter((status) =>
+        snapshot.recentNotes.some((note) => note.status === status)
+      ),
+    [snapshot.recentNotes]
+  );
+  const hasActiveNoteFilters =
+    noteListFilters.search.trim().length > 0 ||
+    noteListFilters.noteType !== "all" ||
+    noteListFilters.status !== "all" ||
+    noteListFilters.fromDate.length > 0 ||
+    noteListFilters.toDate.length > 0 ||
+    noteListFilters.sort !== "newest";
+  const filteredRecentNotes = useMemo(() => {
+    const search = noteListFilters.search.trim().toLowerCase();
+
+    return [...snapshot.recentNotes]
+      .filter((note) => {
+        if (noteListFilters.noteType !== "all" && note.noteType !== noteListFilters.noteType) {
+          return false;
+        }
+
+        if (noteListFilters.status !== "all" && note.status !== noteListFilters.status) {
+          return false;
+        }
+
+        const noteCreatedDate = note.createdAt.slice(0, 10);
+        if (noteListFilters.fromDate && noteCreatedDate < noteListFilters.fromDate) {
+          return false;
+        }
+        if (noteListFilters.toDate && noteCreatedDate > noteListFilters.toDate) {
+          return false;
+        }
+
+        if (search.length > 0 && !buildTrainingNoteSearchText(note).includes(search)) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (noteListFilters.sort === "oldest") {
+          return a.createdAt.localeCompare(b.createdAt);
+        }
+
+        if (noteListFilters.sort === "recently_edited") {
+          const updatedComparison = b.updatedAt.localeCompare(a.updatedAt);
+          if (updatedComparison !== 0) return updatedComparison;
+          return b.createdAt.localeCompare(a.createdAt);
+        }
+
+        return b.createdAt.localeCompare(a.createdAt);
+      });
+  }, [noteListFilters, snapshot.recentNotes]);
 
   function renderFocusCard(focus: TrainingFocusView, options?: { featured?: boolean }) {
     const isEditing = editingFocusId === focus.id && focusEditState !== null;
@@ -1591,14 +1693,156 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
           </div>
         ) : (
           <div className="mt-5 space-y-4">
-            {snapshot.recentNotes.map((note) => {
+            <div
+              data-testid="training-note-filters"
+              className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Find a note faster</h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Search by keyword or narrow the list by type, status, date, and sort order.
+                  </p>
+                </div>
+                {hasActiveNoteFilters ? (
+                  <button
+                    type="button"
+                    onClick={() => setNoteListFilters(DEFAULT_NOTE_LIST_FILTERS)}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Clear filters
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+                <label className="block xl:col-span-2">
+                  <span className="text-sm font-medium text-slate-700">Search notes</span>
+                  <input
+                    type="search"
+                    data-testid="training-note-search-input"
+                    value={noteListFilters.search}
+                    onChange={(e) =>
+                      setNoteListFilters((prev) => ({ ...prev, search: e.target.value }))
+                    }
+                    placeholder="Search text, answers, goals, or focus"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-slate-700">Type</span>
+                  <select
+                    data-testid="training-note-type-filter"
+                    value={noteListFilters.noteType}
+                    onChange={(e) =>
+                      setNoteListFilters((prev) => ({
+                        ...prev,
+                        noteType: e.target.value as NoteListFilters["noteType"],
+                      }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                  >
+                    <option value="all">All types</option>
+                    <option value="observation">Observations</option>
+                    <option value="question">Questions</option>
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-slate-700">Status</span>
+                  <select
+                    data-testid="training-note-status-filter"
+                    value={noteListFilters.status}
+                    onChange={(e) =>
+                      setNoteListFilters((prev) => ({
+                        ...prev,
+                        status: e.target.value as NoteListFilters["status"],
+                      }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                  >
+                    <option value="all">All statuses</option>
+                    {availableNoteStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {getTrainingNoteStatusLabel(status)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-slate-700">From date</span>
+                  <input
+                    type="date"
+                    data-testid="training-note-from-date-filter"
+                    value={noteListFilters.fromDate}
+                    onChange={(e) =>
+                      setNoteListFilters((prev) => ({ ...prev, fromDate: e.target.value }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-slate-700">To date</span>
+                  <input
+                    type="date"
+                    data-testid="training-note-to-date-filter"
+                    value={noteListFilters.toDate}
+                    onChange={(e) =>
+                      setNoteListFilters((prev) => ({ ...prev, toDate: e.target.value }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-slate-700">Sort</span>
+                  <select
+                    data-testid="training-note-sort-filter"
+                    value={noteListFilters.sort}
+                    onChange={(e) =>
+                      setNoteListFilters((prev) => ({
+                        ...prev,
+                        sort: e.target.value as NoteListSort,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                  >
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="recently_edited">Recently edited</option>
+                  </select>
+                </label>
+              </div>
+
+              <p className="mt-3 text-sm text-slate-600">
+                Showing {filteredRecentNotes.length} of {snapshot.recentNotes.length} notes.
+              </p>
+            </div>
+
+            {filteredRecentNotes.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-6">
+                <p className="text-sm text-slate-600">
+                  No notes match the current filters. Clear or widen them to bring notes back into
+                  view.
+                </p>
+              </div>
+            ) : null}
+
+            {filteredRecentNotes.map((note) => {
               const isEditing = editingNoteId === note.id && noteEditState !== null;
               const currentStatusLabel = isEditing
                 ? getTrainingNoteStatusLabel(noteEditState.status)
                 : note.statusLabel;
 
               return (
-                <article key={note.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+                <article
+                  key={note.id}
+                  data-testid={`training-note-card-${note.id}`}
+                  className="rounded-2xl border border-slate-200 bg-white p-5"
+                >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
                       {note.noteTypeLabel}
@@ -1606,6 +1850,10 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                     <span className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
                       {currentStatusLabel}
                     </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
+                    <span>Logged {formatTrainingNoteTimestamp(note.createdAt)}</span>
+                    <span>Last edited {formatTrainingNoteTimestamp(note.updatedAt)}</span>
                   </div>
 
                   {isEditing ? (
