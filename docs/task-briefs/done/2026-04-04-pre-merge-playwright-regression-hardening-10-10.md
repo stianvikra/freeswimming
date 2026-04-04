@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-04-pre-merge-playwright-regression-hardening`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-04`
 - `updated`: `2026-04-04`
