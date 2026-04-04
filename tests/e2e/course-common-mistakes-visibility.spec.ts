@@ -42,12 +42,17 @@ async function gotoCourseLesson(page: Page, lessonId: string) {
   await page.goto(`/course?lesson=${lessonId}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
   await courseContentResponse;
   await waitForCoursePageToSettle(page);
+  await expect(page.getByTestId("course-page")).toHaveAttribute("data-course-content-state", "success");
   await page.waitForTimeout(300);
 }
 
 async function findLessonWithVisibleCommonMistakes(page: Page, lessonIds: readonly string[]) {
   for (const lessonId of lessonIds) {
     await gotoCourseLesson(page, lessonId);
+    const activeLessonId = await page.getByTestId("course-page").getAttribute("data-active-lesson-id");
+    if (activeLessonId !== lessonId) {
+      continue;
+    }
     const toggle = page.getByRole("button", { name: /Common mistakes/i }).first();
     if (await toggle.isVisible().catch(() => false)) {
       return { lessonId, toggle };
@@ -58,6 +63,7 @@ async function findLessonWithVisibleCommonMistakes(page: Page, lessonIds: readon
 }
 
 async function waitForCollapsedCommonMistakes(page: Page, lessonId: string) {
+  await expect(page.getByTestId("course-page")).toHaveAttribute("data-active-lesson-id", lessonId);
   const toggle = page.getByRole("button", { name: /Common mistakes/i }).first();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByText("Expand to review common errors for this lesson.")).toBeVisible();

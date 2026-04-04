@@ -147,7 +147,9 @@ async function waitForGeneratorIntakeClientReady(page: Page) {
 }
 
 async function waitForWorkoutBuilderClientReady(page: Page) {
-  await expect(page.getByTestId("workout-builder-hub")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute("data-client-ready", "true", {
+    timeout: 15_000,
+  });
   await expect(page.getByTestId("workout-editor-metadata-toggle")).toBeVisible({
     timeout: 15_000,
   });
@@ -156,6 +158,8 @@ async function waitForWorkoutBuilderClientReady(page: Page) {
 async function ensureWorkoutMetadataOpen(page: Page) {
   const metadataToggle = page.getByTestId("workout-editor-metadata-toggle");
   await expect(metadataToggle).toBeVisible({ timeout: 15_000 });
+  await expect(metadataToggle).toBeEnabled({ timeout: 15_000 });
+  await metadataToggle.scrollIntoViewIfNeeded();
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if ((await metadataToggle.getAttribute("aria-expanded")) === "true") {
@@ -163,6 +167,7 @@ async function ensureWorkoutMetadataOpen(page: Page) {
     }
 
     await metadataToggle.click();
+    await page.waitForTimeout(250);
 
     const opened = await page
       .getByTestId("session-draft-title")
