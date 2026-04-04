@@ -6,6 +6,7 @@ import {
   countSatisfiedCourseLessonCriteria,
   getCourseLessonPassCriteria,
   getCourseLessonProgressStatus,
+  getStrongestCourseLessonProgressStatus,
   normalizeCourseLessonCriteriaChecks,
   normalizeCourseLessonCriteriaCheckRecord,
 } from "@/lib/course/progress-status";
@@ -109,6 +110,16 @@ describe("course progress status helpers", () => {
       "lesson-partial": "in_progress",
       "lesson-fresh": "not_started",
     });
+  });
+
+  it("prefers the strongest progress state when reconciling stale and computed snapshots", () => {
+    expect(
+      getStrongestCourseLessonProgressStatus("not_started", "in_progress")
+    ).toBe("in_progress");
+    expect(getStrongestCourseLessonProgressStatus("in_progress", "done")).toBe("done");
+    expect(getStrongestCourseLessonProgressStatus(undefined, null, "not_started")).toBe(
+      "not_started"
+    );
   });
 
   it("rekeys checklist records onto canonical lesson ids when runtime aliases hydrate", () => {

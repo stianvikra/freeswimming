@@ -16,6 +16,7 @@ import MobileSegmentedNav, {
 import { BRAND_USAGE } from "@/lib/brand";
 import {
   buildCourseLessonProgressStatusMap,
+  getStrongestCourseLessonProgressStatus,
   type CourseLessonProgressStatus,
 } from "@/lib/course/progress-status";
 
@@ -463,15 +464,34 @@ function CourseView({
   onSelectLesson: (lessonId: string) => void;
 }) {
   const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
-  const resolvedLessonProgressStatusById = useMemo(
+  const computedLessonProgressStatusById = useMemo(
     () =>
-      lessonProgressStatusById ??
       buildCourseLessonProgressStatusMap(
         modules.flatMap((module) => module.lessons),
         doneLessonIdSet,
         doneGateChecksByLessonId
       ),
-    [doneGateChecksByLessonId, doneLessonIdSet, lessonProgressStatusById, modules]
+    [doneGateChecksByLessonId, doneLessonIdSet, modules]
+  );
+  const resolvedLessonProgressStatusById = useMemo(
+    () => {
+      if (!lessonProgressStatusById) {
+        return computedLessonProgressStatusById;
+      }
+
+      const next = { ...computedLessonProgressStatusById };
+      for (const courseModule of modules) {
+        for (const lesson of courseModule.lessons) {
+          next[lesson.id] = getStrongestCourseLessonProgressStatus(
+            computedLessonProgressStatusById[lesson.id],
+            lessonProgressStatusById[lesson.id]
+          );
+        }
+      }
+
+      return next;
+    },
+    [computedLessonProgressStatusById, lessonProgressStatusById, modules]
   );
   const totalModules = modules.length;
   const totalLessons = useMemo(

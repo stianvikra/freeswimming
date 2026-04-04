@@ -2,6 +2,12 @@ import type { CourseLesson } from "@/app/course/courseData";
 
 export type CourseLessonProgressStatus = "not_started" | "in_progress" | "done";
 
+const COURSE_LESSON_PROGRESS_STATUS_PRIORITY: Record<CourseLessonProgressStatus, number> = {
+  not_started: 0,
+  in_progress: 1,
+  done: 2,
+};
+
 const LEGACY_DEFAULT_PASS_CRITERIA = [
   "Complete 3 calm repetitions with the same cue.",
   "Breathing stays controlled without rushing.",
@@ -148,6 +154,22 @@ export function getCourseLessonProgressStatus(
     return "in_progress";
   }
   return "not_started";
+}
+
+export function getStrongestCourseLessonProgressStatus(
+  ...candidates: Array<CourseLessonProgressStatus | null | undefined>
+): CourseLessonProgressStatus {
+  let strongest: CourseLessonProgressStatus = "not_started";
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    if (COURSE_LESSON_PROGRESS_STATUS_PRIORITY[candidate] >
+      COURSE_LESSON_PROGRESS_STATUS_PRIORITY[strongest]) {
+      strongest = candidate;
+    }
+  }
+
+  return strongest;
 }
 
 export function buildCourseLessonProgressStatusMap(
