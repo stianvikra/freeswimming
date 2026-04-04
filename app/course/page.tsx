@@ -1653,6 +1653,7 @@ function CoursePageClient() {
   );
   const showLessonPrimaryColumn = showGoalSection || showCuesSection || showCommonMistakesSection;
   const showLessonSecondaryColumn = showDrillSection || showPassOrNextCard || showExtraHelpCard;
+  const lessonContentReady = courseContentLoadState !== "loading";
   const drillBadgeLabel =
     activeLesson.drillLabel?.trim() ||
     (lessonType === "learn" ? "Learn" : lessonType === "swim" ? "Swim" : "Drill");
@@ -1665,7 +1666,7 @@ function CoursePageClient() {
   const doneGateRequired = showPassCriteria && !isLessonDone;
   const doneGateSatisfied =
     !doneGateRequired || passCriteria.every((criterion) => doneGateChecksSet.has(criterion));
-  const markDoneBlockedByGate = !isLessonDone && !doneGateSatisfied;
+  const markDoneBlockedByGate = !lessonContentReady || (!isLessonDone && !doneGateSatisfied);
   const activeLessonProgressStatus = lessonProgressStatusById[activeLesson.id] ?? "not_started";
   const activeLessonStatusMeta =
     activeLessonProgressStatus === "done"
@@ -2569,7 +2570,14 @@ function CoursePageClient() {
                     {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
                   </div>
                 ) : null}
-                {markDoneBlockedByGate ? (
+                {!lessonContentReady ? (
+                  <p
+                    id="course-done-gate-feedback"
+                    className="mt-1 text-[12px] font-medium text-slate-600"
+                  >
+                    Loading lesson details...
+                  </p>
+                ) : markDoneBlockedByGate ? (
                   <p
                     id="course-done-gate-feedback"
                     className="mt-1 text-[12px] font-medium text-amber-700"
@@ -3065,7 +3073,11 @@ function CoursePageClient() {
                         ) : null}
                       </div>
                       {showPassCriteria ? (
-                        doneGateRequired ? (
+                        !lessonContentReady ? (
+                          <p className="mt-2 text-[13px] leading-6 text-slate-600">
+                            Loading pass criteria...
+                          </p>
+                        ) : doneGateRequired ? (
                           <ul
                             data-testid="course-done-gate-checklist"
                             className="mt-2 space-y-2 text-[13px] leading-6 text-slate-800"
