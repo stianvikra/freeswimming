@@ -2494,6 +2494,10 @@ function CoursePageClient() {
     >
       <PageTemplate size="wide" showBack={false}>
         <div
+          data-testid="course-page"
+          data-course-content-state={courseContentLoadState}
+          data-active-lesson-id={activeLesson.id}
+          data-has-resolved-requested-lesson={hasResolvedRequestedLesson ? "true" : "false"}
           className="touch-pan-y"
           onTouchStart={handleSwipeStart}
           onTouchMove={handleSwipeMove}
