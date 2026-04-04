@@ -766,9 +766,11 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
-      "Workout handoff copied."
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
+        "Workout handoff copied."
+      );
+    });
 
     fireEvent.click(screen.getByTestId("workout-editor-handoff-download"));
 
@@ -777,15 +779,17 @@ describe("WorkoutBuilderHub", () => {
       expect(clickSpy).toHaveBeenCalledTimes(1);
     });
 
-    expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
-      `Downloaded ${buildWorkoutHandoffFileName(
-        {
-          ...buildDraft(),
-          title: "Local handoff workout",
-        },
-        { draftState: "local_draft" }
-      )}.`
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
+        `Downloaded ${buildWorkoutHandoffFileName(
+          {
+            ...buildDraft(),
+            title: "Local handoff workout",
+          },
+          { draftState: "local_draft" }
+        )}.`
+      );
+    });
 
     fireEvent.click(screen.getByTestId("workout-editor-garmin-export-download"));
 
@@ -794,15 +798,17 @@ describe("WorkoutBuilderHub", () => {
       expect(clickSpy).toHaveBeenCalledTimes(2);
     });
 
-    expect(screen.getByTestId("workout-editor-garmin-export-notice")).toHaveTextContent(
-      `Downloaded ${buildWorkoutGarminReadyExportFileName(
-        {
-          ...buildDraft(),
-          title: "Local handoff workout",
-        },
-        { draftState: "local_draft" }
-      )}.`
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-editor-garmin-export-notice")).toHaveTextContent(
+        `Downloaded ${buildWorkoutGarminReadyExportFileName(
+          {
+            ...buildDraft(),
+            title: "Local handoff workout",
+          },
+          { draftState: "local_draft" }
+        )}.`
+      );
+    });
     expect(revokeUrlSpy).toHaveBeenCalledTimes(0);
   });
 
