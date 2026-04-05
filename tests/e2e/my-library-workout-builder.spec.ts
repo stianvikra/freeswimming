@@ -54,6 +54,13 @@ async function openSupportToolsPanel(page: Page) {
   }
 }
 
+async function openMetadataPanelIfCollapsed(page: Page) {
+  const toggle = page.getByTestId("workout-editor-metadata-toggle");
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await toggle.click();
+  }
+}
+
 async function triggerCreateSession(page: Page, testId: string) {
   await page.getByTestId(testId).click();
   const startScratchButton = page.getByTestId(`${testId}-start-scratch`);
@@ -85,19 +92,23 @@ test.describe("my library workout builder", () => {
 
     await triggerCreateSession(page, "my-library-create-manual-workout");
     await createResponsePromise;
-    await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/, {
-      timeout: 10_000,
-      waitUntil: "domcontentloaded",
+    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-create)?$/, {
+      timeout: 20_000,
     });
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
 
     await expect(page.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
       "aria-expanded",
-      "false"
+      "true"
     );
-    await expect(page.getByTestId("workout-editor-metadata-summary")).toBeVisible();
-    await expect(page.getByTestId("session-draft-title")).toHaveCount(0);
+    await expect(page.getByTestId("workout-builder-delete-current-workout")).toHaveText(
+      "Delete session"
+    );
+    await expect(page.getByRole("link", { name: "My Swim Sessions" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "AI-generated session" })).toHaveCount(0);
+    await expect(page.getByTestId("workout-builder-create-manual")).toHaveCount(0);
+    await expect(page.getByTestId("session-draft-title")).toBeVisible();
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
@@ -171,7 +182,7 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
-    await page.getByTestId("workout-editor-metadata-toggle").click();
+    await openMetadataPanelIfCollapsed(page);
     await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled swim session");
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
     await page.getByTestId("session-draft-pool-length-input").fill("33.33");
@@ -341,7 +352,9 @@ test.describe("my library workout builder", () => {
       })
     ).toBeChecked();
 
-    const workoutMatch = page.url().match(/\/my-library\/workouts\/([0-9a-f-]+)$/);
+    const workoutMatch = new URL(page.url()).pathname.match(
+      /\/my-library\/workouts\/([0-9a-f-]+)$/
+    );
     expect(workoutMatch?.[1]).toBeTruthy();
     const workoutId = workoutMatch![1];
 

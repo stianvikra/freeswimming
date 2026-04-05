@@ -1037,7 +1037,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("That saved swim session could not be found.")).toBeVisible();
     expect(screen.getByTestId("workout-builder-empty-create-manual")).toBeVisible();
     expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open AI session generator" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "AI-generated session" })).toHaveAttribute(
       "href",
       "/my-library/generator"
     );
@@ -1164,6 +1164,7 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.queryByTestId("workout-builder-current-workout-actions")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-builder-create-manual")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
@@ -1182,6 +1183,50 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(navigationState.refresh).not.toHaveBeenCalled();
+  });
+
+  it("shows manual and AI entry actions in browse mode", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+        })}
+        browseOnly
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByRole("button", { name: "Build manual session" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "AI-generated session" })).toHaveAttribute(
+      "href",
+      "/my-library/generator"
+    );
+  });
+
+  it("can force session details open for a fresh manual-entry route", async () => {
+    render(
+      <WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} preferExpandedDetailsOnLoad />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(screen.getByTestId("session-draft-title")).toBeVisible();
+    expect(screen.queryByTestId("workout-editor-metadata-summary")).not.toBeInTheDocument();
   });
 
   it("renders the dedicated browse mode without the editor form", async () => {

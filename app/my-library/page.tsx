@@ -241,16 +241,10 @@ export default async function MyLibraryPage() {
                     <p className="mt-2 text-sm text-slate-600">
                       This canonical swim-session layer is still syncing in this environment.
                     </p>
-                  ) : (
-                    <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                      {workoutLibrarySnapshot.recentWorkouts[0]
-                        ? "Manual and AI-created sessions both land in My Swim Sessions. Open saved work when you want to edit it, create a fresh manual session here, or use AI when you want a drafted starting point."
-                        : "Start with a fresh manual session here, or use AI when you want a drafted starting point before you finish the session in My Swim Sessions."}
-                    </p>
-                  )}
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {workoutLibrarySnapshot.recentWorkouts[0] ? (
+                  {workoutLibrarySnapshot.schemaReady ? (
                     <Link
                       href="/my-library/workouts"
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
@@ -260,9 +254,8 @@ export default async function MyLibraryPage() {
                   ) : null}
                   {workoutLibrarySnapshot.schemaReady ? (
                     <CreateManualWorkoutButton
-                      label="Create session"
+                      label="Build manual session"
                       testId="my-library-create-manual-workout"
-                      latestSavedWorkout={workoutLibrarySnapshot.recentWorkouts[0] ?? null}
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                     />
                   ) : null}
@@ -270,16 +263,10 @@ export default async function MyLibraryPage() {
                     href="/my-library/generator"
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                   >
-                    Open AI session generator
+                    AI-generated session
                   </Link>
                 </div>
               </div>
-              {workoutLibrarySnapshot.schemaReady ? (
-                <p className="mt-3 text-xs text-slate-500">
-                  AI-created sessions stay in the same swim-session flow, so edits, saves, PDFs,
-                  and Poolside Note stay in one place.
-                </p>
-              ) : null}
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
