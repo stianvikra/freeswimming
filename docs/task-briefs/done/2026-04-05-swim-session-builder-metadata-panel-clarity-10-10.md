@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-05-swim-session-builder-metadata-panel-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-05`
 - `updated`: `2026-04-05`
@@ -209,4 +209,5 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-05 | planning | created a dedicated follow-up brief after the create-vs-edit builder slice shipped; closed prod notes 0655d28e and f271ea91 as covered, kept 2d2cb8af open for its metadata-panel residual, and grouped that residual with new prod note 172c63c6 so the next slice can focus only on manual-builder metadata labels, field visibility, and truthfulness | next: implement the metadata-panel cleanup, then decide with code/test evidence whether Session type, Description, and Effort should stay visible in the manual builder`
 - `2026-04-05 | in-progress | started implementation in a clean worktree from origin/main; confirmed Session type and Effort are still part of the canonical handoff/PDF/export contract, so this slice will simplify the manual-builder presentation without removing those fields from the stored workout model | next: land the metadata-panel UI/test changes, then run lint:briefs, targeted tests, and verify:pre-pr`
-- `2026-04-05 | in-progress | implementation + local validation complete in feature worktree: manual-builder metadata now uses calmer copy, the Description field is presented as Session note, manual sessions keep Session type + Effort behind a secondary Training profile toggle, and user-visible handoff/PDF output matches the renamed note label; passed lint:briefs:all, targeted vitest, targeted Playwright for /my-library/workouts create flow, typecheck, and full npm run verify:pre-pr (95 passed / 319 skipped) | next: commit, push, open PR, and wait for CI before merge`
+- `2026-04-05 | implementation + local validation | manual-builder metadata now uses calmer copy, the Description field is presented as Session note, manual sessions keep Session type + Effort behind a secondary Training profile toggle, and user-visible handoff/PDF output matches the renamed note label; passed lint:briefs:all, targeted vitest, targeted Playwright for /my-library/workouts create flow, typecheck, and full npm run verify:pre-pr (95 passed / 319 skipped) | next: commit, push, open PR, and wait for CI before merge`
+- `2026-04-05 | brief closeout staged for merge | moved this child brief from in-progress to done after PR #357 reached all-green required checks and local npm run verify:pre-merge passed for the metadata-panel slice | next: merge PR #357 to main, then close the remaining admin notes owned by this brief`
