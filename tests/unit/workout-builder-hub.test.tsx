@@ -941,7 +941,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
   });
 
-  it("shows whole-workout guidance for the description field", async () => {
+  it("shows calmer session-note guidance in the metadata panel", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
     await waitFor(() => {
@@ -952,12 +952,66 @@ describe("WorkoutBuilderHub", () => {
     });
 
     openWorkoutMetadataPanel();
-    expect(screen.getByText("Description")).toBeVisible();
+    expect(screen.getByText("Session note")).toBeVisible();
     expect(
       screen.getByText(
-        "Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching note that applies across the session."
+        "Optional. Use this for the whole-session purpose or one short coaching note that applies across the session."
       )
     ).toBeVisible();
+  });
+
+  it("keeps training profile fields secondary for manual builder workouts", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByText("Build your swim session")).toBeVisible();
+    expect(screen.getByText("Session note")).toBeVisible();
+    expect(screen.getByTestId("workout-editor-metadata-profile-summary")).toHaveTextContent(
+      "Threshold / CSS · Moderate"
+    );
+    expect(screen.queryByRole("combobox", { name: "Session type" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Effort" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("workout-editor-metadata-profile-toggle"));
+
+    expect(screen.getByTestId("workout-editor-metadata-profile-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(screen.getByText("Session type")).toBeVisible();
+    expect(screen.getByText("Effort")).toBeVisible();
+  });
+
+  it("keeps training profile fields visible for AI-origin workouts", async () => {
+    render(
+      <WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} preferExpandedDetailsOnLoad />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByText("Build your swim session")).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Session type" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Effort" })).toBeVisible();
+    expect(screen.queryByTestId("workout-editor-metadata-profile-toggle")).not.toBeInTheDocument();
   });
 
   it("shows clearer kick and drill taxonomy guidance inside the step form", async () => {
