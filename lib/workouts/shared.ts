@@ -578,7 +578,7 @@ export function buildWorkoutHandoffText(
   }
 
   if (draft.description) {
-    lines.push(`- Description: ${draft.description}`);
+    lines.push(`- Session note: ${draft.description}`);
   }
 
   if (draft.warnings.length > 0) {
@@ -1367,7 +1367,7 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
             model.description
               ? `
                 <section class="notice notice-neutral">
-                  <h2>Description</h2>
+                  <h2>Session note</h2>
                   <p>${escapeHtml(model.description)}</p>
                 </section>
               `

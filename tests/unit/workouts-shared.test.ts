@@ -111,6 +111,7 @@ describe("workouts shared readiness", () => {
     expect(text).toContain("Title: Garmin readiness draft");
     expect(text).toContain("Garmin/export readiness: Ready");
     expect(text).toContain("Session type: Threshold / CSS");
+    expect(text).toContain("Session note: Readiness coverage for workout builder handoff.");
     expect(text).toContain("1. Warmup swim");
     expect(text).toContain("Warmup · 400m · Freestyle · Easy");
   });
@@ -142,6 +143,16 @@ describe("workouts shared readiness", () => {
       title: "Warmup swim",
       summary: "Warmup · 400m · Freestyle · Easy",
     });
+  });
+
+  it("renders the session note label in printable workout PDF html", () => {
+    const html = buildWorkoutPdfHtmlDocument(buildDraft(), {
+      draftState: "canonical",
+      variant: "standard",
+    });
+
+    expect(html).toContain("<h2>Session note</h2>");
+    expect(html).toContain("Readiness coverage for workout builder handoff.");
   });
 
   it("builds a canonical garmin-ready export payload with deterministic workout metadata", () => {

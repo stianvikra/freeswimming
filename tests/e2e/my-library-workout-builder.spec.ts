@@ -109,6 +109,20 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("link", { name: "AI-generated session" })).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-create-manual")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toBeVisible();
+    await expect(page.getByText("Build your swim session")).toBeVisible();
+    await expect(page.getByText("Session note")).toBeVisible();
+    await expect(page.getByTestId("workout-editor-metadata-profile-summary")).toHaveText(
+      "Endurance · Moderate"
+    );
+    await expect(page.getByRole("combobox", { name: "Session type" })).toHaveCount(0);
+    await expect(page.getByRole("combobox", { name: "Effort" })).toHaveCount(0);
+    await page.getByTestId("workout-editor-metadata-profile-toggle").click();
+    await expect(page.getByTestId("workout-editor-metadata-profile-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    await expect(page.getByRole("combobox", { name: "Session type" })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Effort" })).toBeVisible();
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
@@ -249,7 +263,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("workout-editor-poolside-style-ink-saver").click();
     await expect(
       page.getByText(
-        "Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching note that applies across the session."
+        "Optional. Use this for the whole-session purpose or one short coaching note that applies across the session."
       )
     ).toBeVisible();
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
