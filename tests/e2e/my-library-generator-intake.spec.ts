@@ -147,9 +147,13 @@ async function waitForGeneratorIntakeClientReady(page: Page) {
 }
 
 async function waitForWorkoutBuilderClientReady(page: Page) {
-  await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute("data-client-ready", "true", {
-    timeout: 15_000,
-  });
+  await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(
+    "data-client-ready",
+    "true",
+    {
+      timeout: 15_000,
+    }
+  );
   await expect(page.getByTestId("workout-editor-metadata-toggle")).toBeVisible({
     timeout: 15_000,
   });
@@ -193,7 +197,7 @@ async function waitForWorkoutLibraryBrowseReady(page: Page) {
 }
 
 async function openGeneratorFromMyLibrary(page: Page) {
-  const openGeneratorLink = page.getByRole("link", { name: "Open AI session generator" });
+  const openGeneratorLink = page.getByRole("link", { name: "AI-generated session" });
   await expect(openGeneratorLink).toBeVisible({ timeout: 15_000 });
   await expect(openGeneratorLink).toHaveAttribute("href", "/my-library/generator");
   const href = (await openGeneratorLink.getAttribute("href")) ?? "";

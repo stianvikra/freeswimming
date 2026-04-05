@@ -13,14 +13,28 @@ type Params = Promise<{
   workoutId: string;
 }>;
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 type Props = {
   params: Params;
+  searchParams: SearchParams;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export default async function WorkoutBuilderPage({ params }: Props) {
+function readSearchParamValue(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string
+): string {
+  const raw = searchParams[key];
+  return Array.isArray(raw) ? (raw[0] ?? "") : (raw ?? "");
+}
+
+export default async function WorkoutBuilderPage({ params, searchParams }: Props) {
   const { workoutId } = await params;
+  const resolvedSearchParams = await searchParams;
+  const entryMode = readSearchParamValue(resolvedSearchParams, "entry");
+  const preferExpandedDetailsOnLoad = entryMode === "manual-create";
 
   if (!UUID_PATTERN.test(workoutId)) {
     notFound();
@@ -58,18 +72,8 @@ export default async function WorkoutBuilderPage({ params }: Props) {
                 My Library
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Swim session builder</h1>
-              <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Edit one saved swim session at a time. Use the builder actions below when you want
-                to switch sessions, start fresh, print, or clean up older work.
-              </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link
-                href="/my-library/generator"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                Open AI session generator
-              </Link>
               <Link
                 href="/my-library"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
@@ -84,6 +88,7 @@ export default async function WorkoutBuilderPage({ params }: Props) {
               workoutLibrary={workoutLibrary}
               trainingFocusOptions={trainingFocusOptions}
               hideShellIntro
+              preferExpandedDetailsOnLoad={preferExpandedDetailsOnLoad}
             />
           </div>
         </div>

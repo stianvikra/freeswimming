@@ -22,6 +22,7 @@ type Props = {
   trainingFocusOptions?: WorkoutPoolsideFocusOption[];
   browseOnly?: boolean;
   hideShellIntro?: boolean;
+  preferExpandedDetailsOnLoad?: boolean;
 };
 
 function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
@@ -34,6 +35,7 @@ export default function WorkoutBuilderHub({
   trainingFocusOptions = [],
   browseOnly = false,
   hideShellIntro = false,
+  preferExpandedDetailsOnLoad = false,
 }: Props) {
   const router = useRouter();
   const [savedWorkout, setSavedWorkout] = useState<WorkoutEditorRecord | null>(
@@ -49,14 +51,6 @@ export default function WorkoutBuilderHub({
   const [pendingCurrentDelete, setPendingCurrentDelete] = useState(false);
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
-  const latestSavedWorkout =
-    recentWorkouts[0] ??
-    (savedWorkout
-      ? {
-          id: savedWorkout.id,
-          title: savedWorkout.draft.title,
-        }
-      : null);
 
   useAutoDismissNotice(success, setSuccess);
 
@@ -179,20 +173,17 @@ export default function WorkoutBuilderHub({
           <div className="flex flex-wrap items-center gap-2">
             {workoutLibrary.schemaReady ? (
               <CreateManualWorkoutButton
-                label="Create session"
+                label="Build manual session"
                 testId="workout-builder-browse-create-manual"
-                latestSavedWorkout={
-                  savedWorkout
-                    ? {
-                        id: savedWorkout.id,
-                        title: savedWorkout.draft.title,
-                      }
-                    : latestSavedWorkout
-                }
-                currentWorkoutId={savedWorkout?.id ?? null}
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
               />
             ) : null}
+            <Link
+              href="/my-library/generator"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              AI-generated session
+            </Link>
           </div>
           {recentWorkouts.length > 0 ? (
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -205,11 +196,6 @@ export default function WorkoutBuilderHub({
           {!hideShellIntro ? (
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
-              <p className="mt-2 max-w-[62ch] text-sm text-slate-600">
-                {savedWorkout
-                  ? "Edit one saved session here and only switch, print, or clean up older work when you need it."
-                  : "Open a saved session or create a fresh one from the same swim-session flow."}
-              </p>
             </div>
           ) : null}
           <div className="flex flex-wrap items-center gap-2">
@@ -221,22 +207,6 @@ export default function WorkoutBuilderHub({
               >
                 My Swim Sessions
               </Link>
-            ) : null}
-            {workoutLibrary.schemaReady ? (
-              <CreateManualWorkoutButton
-                label="Create session"
-                testId="workout-builder-create-manual"
-                latestSavedWorkout={
-                  savedWorkout
-                    ? {
-                        id: savedWorkout.id,
-                        title: savedWorkout.draft.title,
-                      }
-                    : latestSavedWorkout
-                }
-                currentWorkoutId={savedWorkout?.id ?? null}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-              />
             ) : null}
             {savedWorkout ? (
               <button
@@ -251,7 +221,7 @@ export default function WorkoutBuilderHub({
                 data-testid="workout-builder-delete-current-workout"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete current session"}
+                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete session"}
               </button>
             ) : null}
           </div>
@@ -309,7 +279,7 @@ export default function WorkoutBuilderHub({
                 data-testid="workout-builder-confirm-delete-current-workout"
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete current session"}
+                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete session"}
               </button>
               <button
                 type="button"
@@ -392,9 +362,8 @@ export default function WorkoutBuilderHub({
                 ) : null}
                 {workoutLibrary.schemaReady ? (
                   <CreateManualWorkoutButton
-                    label="Create session"
+                    label="Build manual session"
                     testId="workout-builder-empty-create-manual"
-                    latestSavedWorkout={latestSavedWorkout}
                     className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                   />
                 ) : null}
@@ -402,7 +371,7 @@ export default function WorkoutBuilderHub({
                   href="/my-library/generator"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
                 >
-                  Open AI session generator
+                  AI-generated session
                 </Link>
                 <Link
                   href="/my-library"
@@ -431,10 +400,10 @@ export default function WorkoutBuilderHub({
                 setSuccess("");
               }}
               onResetToSaved={resetDraftToSavedWorkout}
-              startNewDraftHref="/my-library/generator"
-              startNewDraftLabel="Start from AI draft"
+              startNewDraftHref={null}
               showLoadedBanner={false}
               showPdfPanel={false}
+              forceMetadataOpenOnLoad={preferExpandedDetailsOnLoad}
               recentWorkoutsDescription="Edit another saved session when you want to switch what you are working on."
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
               saveButtonTestId="workout-builder-save"

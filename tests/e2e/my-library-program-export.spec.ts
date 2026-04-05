@@ -104,9 +104,8 @@ test.describe("my library program export", () => {
 
     await triggerCreateSession(page, "my-library-create-manual-workout");
     await createWorkoutResponsePromise;
-    await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/, {
+    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-create)?$/, {
       timeout: 20_000,
-      waitUntil: "domcontentloaded",
     });
     await waitForWorkoutBuilderClientReady(page);
     await ensureWorkoutMetadataOpen(page);

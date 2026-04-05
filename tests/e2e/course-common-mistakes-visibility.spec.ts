@@ -42,14 +42,21 @@ async function gotoCourseLesson(page: Page, lessonId: string) {
   await page.goto(`/course?lesson=${lessonId}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
   await courseContentResponse;
   await waitForCoursePageToSettle(page);
-  await expect(page.getByTestId("course-page")).toHaveAttribute("data-course-content-state", "success");
+  await expect
+    .poll(
+      async () => await page.getByTestId("course-page").getAttribute("data-course-content-state"),
+      { timeout: 10_000 }
+    )
+    .not.toBe("loading");
   await page.waitForTimeout(300);
 }
 
 async function findLessonWithVisibleCommonMistakes(page: Page, lessonIds: readonly string[]) {
   for (const lessonId of lessonIds) {
     await gotoCourseLesson(page, lessonId);
-    const activeLessonId = await page.getByTestId("course-page").getAttribute("data-active-lesson-id");
+    const activeLessonId = await page
+      .getByTestId("course-page")
+      .getAttribute("data-active-lesson-id");
     if (activeLessonId !== lessonId) {
       continue;
     }

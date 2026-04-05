@@ -35,7 +35,7 @@ describe("CreateManualWorkoutButton", () => {
 
     render(<CreateManualWorkoutButton />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Create session" }));
+    fireEvent.click(screen.getByRole("button", { name: "Build manual session" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -49,7 +49,7 @@ describe("CreateManualWorkoutButton", () => {
 
     await waitFor(() => {
       expect(navigationState.push).toHaveBeenCalledWith(
-        "/my-library/workouts/11111111-1111-4111-8111-111111111111"
+        "/my-library/workouts/11111111-1111-4111-8111-111111111111?entry=manual-create"
       );
     });
     expect(navigationState.refresh).toHaveBeenCalled();
@@ -66,7 +66,7 @@ describe("CreateManualWorkoutButton", () => {
 
     render(<CreateManualWorkoutButton />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Create session" }));
+    fireEvent.click(screen.getByRole("button", { name: "Build manual session" }));
 
     await waitFor(() => {
       expect(screen.getByText("Could not create workout right now.")).toBeVisible();
@@ -74,32 +74,7 @@ describe("CreateManualWorkoutButton", () => {
     expect(navigationState.push).not.toHaveBeenCalled();
   });
 
-  it("offers continue-or-start-new when a saved session already exists", async () => {
-    render(
-      <CreateManualWorkoutButton
-        latestSavedWorkout={{
-          id: "22222222-2222-4222-8222-222222222222",
-          title: "Saved threshold session",
-        }}
-      />
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Create session" }));
-
-    expect(screen.getByTestId("create-manual-workout-chooser")).toBeVisible();
-    expect(screen.getByText("Edit your latest saved session or start a fresh one.")).toBeVisible();
-    expect(screen.getByText("Latest saved session: Saved threshold session")).toBeVisible();
-
-    fireEvent.click(screen.getByTestId("create-manual-workout-continue"));
-
-    expect(navigationState.push).toHaveBeenCalledWith(
-      "/my-library/workouts/22222222-2222-4222-8222-222222222222"
-    );
-    expect(navigationState.refresh).toHaveBeenCalled();
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it("can start a clean new session from the chooser", async () => {
+  it("supports a custom href builder for fresh manual entry", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -112,15 +87,11 @@ describe("CreateManualWorkoutButton", () => {
 
     render(
       <CreateManualWorkoutButton
-        latestSavedWorkout={{
-          id: "22222222-2222-4222-8222-222222222222",
-          title: "Saved threshold session",
-        }}
+        createdWorkoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}?from=overview`}
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Create session" }));
-    fireEvent.click(screen.getByTestId("create-manual-workout-start-scratch"));
+    fireEvent.click(screen.getByRole("button", { name: "Build manual session" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -133,7 +104,7 @@ describe("CreateManualWorkoutButton", () => {
     });
     await waitFor(() => {
       expect(navigationState.push).toHaveBeenCalledWith(
-        "/my-library/workouts/33333333-3333-4333-8333-333333333333"
+        "/my-library/workouts/33333333-3333-4333-8333-333333333333?from=overview"
       );
     });
   });

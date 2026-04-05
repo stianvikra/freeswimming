@@ -89,6 +89,7 @@ type Props = {
   saveButtonTestId?: string;
   showPdfPanel?: boolean;
   copyVariant?: "default" | "generator";
+  forceMetadataOpenOnLoad?: boolean;
 };
 
 type StepRenderEntry = {
@@ -541,6 +542,7 @@ export default function WorkoutEditor({
   saveButtonTestId = "session-generator-save",
   showPdfPanel = true,
   copyVariant = "default",
+  forceMetadataOpenOnLoad = false,
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const garminReadiness = buildWorkoutGarminReadinessReport(draft);
@@ -558,7 +560,7 @@ export default function WorkoutEditor({
   const [handoffNotice, setHandoffNotice] = useState("");
   const [handoffError, setHandoffError] = useState("");
   const [metadataOpen, setMetadataOpen] = useState(
-    () => !(savedWorkout && copyVariant === "default")
+    () => forceMetadataOpenOnLoad || !(savedWorkout && copyVariant === "default")
   );
   const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
@@ -575,7 +577,8 @@ export default function WorkoutEditor({
   const trainingFocusIdSignature = trainingFocusOptions.map((focus) => focus.id).join("|");
   const defaultPoolsideFocusIdSignature =
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions).join("|");
-  const metadataStartsCollapsed = showCalmBuilderLayout && savedWorkoutId !== null;
+  const metadataStartsCollapsed =
+    showCalmBuilderLayout && savedWorkoutId !== null && !forceMetadataOpenOnLoad;
   const editorCopy =
     copyVariant === "generator"
       ? {
@@ -768,10 +771,16 @@ export default function WorkoutEditor({
   }, [savedWorkoutId, savedWorkout?.updatedAt]);
 
   useEffect(() => {
-    setMetadataOpen(!metadataStartsCollapsed);
+    setMetadataOpen(forceMetadataOpenOnLoad || !metadataStartsCollapsed);
     setPoolsidePrintStyle("color");
     setSelectedPoolsideFocusIds(parseSignatureValues(defaultPoolsideFocusIdSignature));
-  }, [copyVariant, defaultPoolsideFocusIdSignature, metadataStartsCollapsed, savedWorkoutId]);
+  }, [
+    copyVariant,
+    defaultPoolsideFocusIdSignature,
+    forceMetadataOpenOnLoad,
+    metadataStartsCollapsed,
+    savedWorkoutId,
+  ]);
 
   useEffect(() => {
     const validFocusIds = new Set(parseSignatureValues(trainingFocusIdSignature));

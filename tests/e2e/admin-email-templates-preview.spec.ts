@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -17,6 +17,28 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Admin e2e is desktop-only.");
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
+}
+
+async function moveTemplateStatusAndWait(
+  page: Page,
+  templateItem: Locator,
+  label: "Review" | "Published"
+) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      /\/api\/admin\/email-templates\/[0-9a-f-]+$/i.test(response.url()) &&
+      response.request().method() === "PATCH" &&
+      response.status() === 200
+  );
+
+  await templateItem.getByRole("button", { name: `Move to ${label}` }).click();
+  await responsePromise;
+  await expect(
+    templateItem
+      .locator("span")
+      .filter({ hasText: new RegExp(`^${label}$`) })
+      .first()
+  ).toBeVisible({ timeout: 10_000 });
 }
 
 test.describe("admin email template preview", () => {
@@ -164,12 +186,10 @@ test.describe("admin email template preview", () => {
 
     await expect(statusChip("Draft")).toBeVisible();
 
-    await createdTemplate.getByRole("button", { name: "Move to Review" }).click();
-    await expect(statusChip("Review")).toBeVisible();
+    await moveTemplateStatusAndWait(page, createdTemplate, "Review");
 
     if (canPublishTemplates) {
-      await createdTemplate.getByRole("button", { name: "Move to Published" }).click();
-      await expect(statusChip("Published")).toBeVisible();
+      await moveTemplateStatusAndWait(page, createdTemplate, "Published");
     }
 
     const editSampleValuesField = createdTemplate.getByLabel("Preview sample values (JSON object)");
