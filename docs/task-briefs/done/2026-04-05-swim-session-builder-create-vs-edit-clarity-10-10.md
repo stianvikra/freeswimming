@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-05-swim-session-builder-create-vs-edit-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-05`
 - `updated`: `2026-04-05`
@@ -226,3 +226,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-05 | planning + implementation start | created child brief under the active builder parent after the owner chose the simpler three-action overview model (`My Swim Sessions`, `Build manual session`, `AI-generated session`) and asked to implement it end-to-end without further approval prompts | next: remove chooser logic, simplify overview/detail action surfaces, open fresh manual entry with details expanded, and update targeted coverage`
 - `2026-04-05 | implementation + targeted validation | removed the latest-saved chooser, switched the overview to the owner-chosen three-action model, calmed the manual detail route, opened fresh manual entry with details expanded, updated the core-flow incident runbook to match the new labels, and got typecheck + targeted vitest + targeted desktop-chromium generator/workout playwright green | next: finish the running \`npm run verify:pre-pr\`, then stage only the builder/runbook files for commit so unrelated admin-note workflow edits stay separate`
 - `2026-04-05 | verify hardening + release gate green | hardened the admin email-template preview e2e to wait for status-transition PATCH responses, relaxed the course common-mistakes e2e to tolerate unresolved lesson candidates while still checking the actual common-mistakes behavior on resolved lessons, and got a final full \`npm run verify:pre-pr\` green on branch \`feat/swim-session-builder-overview-manual-ai-2026-04-05\` | next: commit the staged builder/runbook/test set, push, and open the PR`
+- `2026-04-05 | brief closeout completed after merge | PR #355 merged to \`main\` after local \`npm run verify:pre-merge\` passed and required CI checks were green; this brief metadata was then aligned so the file path, status, and checkpoint log all reflect the completed lifecycle | next: none`
