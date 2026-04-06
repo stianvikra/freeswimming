@@ -18,7 +18,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-04-02";
+const LAST_UPDATED = "2026-04-06";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -421,7 +421,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Add images / Delete image",
         meaning:
-          "Attach admin-only screenshots or other note images, or fall back here when clipboard paste is not the best fit. Delete must remove both note metadata and the underlying stored image.",
+          "Attach admin-only screenshots or other note images, or fall back here when clipboard paste is not the best fit. If a screenshot only exists in Codex chat, save the real file under `/.tmp/admin-note-imports/` and give Codex the note ID + file path for assistant-led attachment import. Delete must remove both note metadata and the underlying stored image.",
       },
       {
         label: "Paste image from clipboard / Upload images",
@@ -574,8 +574,11 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "If the note is already saved and you forgot the screenshot, open `Edit` in the contextual notes panel and upload the image there instead of recreating the note.",
       "Saved contextual notes now show the visible note ID, an `Open in Notes` jump, and related-note titles that jump into the full queue by stable note ID.",
       "If the issue is visual, copy the screenshot or image to your clipboard first, then use `Paste image from clipboard`, or choose `Upload images` if you already have the files.",
+      "Fastest screenshot path is often: let Codex create the note first, open the direct note link, then paste or upload the screenshot yourself in Notes.",
       "You can stage up to six pre-save images on create flows, and repeated paste/upload appends instead of replacing the earlier screenshots.",
       "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload images`.",
+      "If you need Codex to perform the attachment step, the chat image is discussion-only; save the real file under `/.tmp/admin-note-imports/` and give Codex the canonical note ID plus that staged file path.",
+      "Codex-led staged imports should delete the local staging file after confirmed success and keep it in place if upload fails so recovery stays explicit.",
       "After a successful Quick note save, the panel stays open and ready for another note on the same locked context so you can keep capturing without reopening it.",
       "Saved image cards now show a stable evidence summary: image order, file type, file size, and upload date, without exposing raw storage paths.",
       `If a note title starts with \`${ADMIN_NOTE_TEST_ARTIFACT_PREFIX}\`, it is automated test residue and should clear automatically; if it stays open, use the admin-notes recovery runbook before deleting anything manually.`,
@@ -900,12 +903,14 @@ export default function AdminHelpCenter() {
           </article>
           <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
             <p className="text-sm font-semibold text-amber-900">
-              Clipboard paste is blocked or image upload fails
+              Clipboard paste is blocked, chat image is not enough, or image upload fails
             </p>
             <p className="mt-1 text-sm text-amber-800">
               Confirm the screenshot was copied first. If clipboard access is blocked or upload
-              still fails, keep the note ID, refresh Notes, and use Upload images or the admin-notes
-              recovery runbook.
+              still fails, keep the note ID, refresh Notes, and use Upload images. If the image
+              only exists in Codex chat, save the real file under `/.tmp/admin-note-imports/` and
+              give Codex the note ID + file path. Use the admin-notes recovery runbook if the
+              state is still unclear.
             </p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">

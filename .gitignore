@@ -18,6 +18,7 @@
 .husky/_
 /artifacts/test-runs
 /artifacts/finance-reconciliation
+/.tmp/admin-note-imports/
 
 # next.js
 /.next/

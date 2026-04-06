@@ -33,6 +33,7 @@
     "test:e2e:extended": "playwright test --project=tablet-ipad-pro-11 --project=desktop-chromium --project=desktop-webkit --project=desktop-firefox",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
+    "admin:notes:import-staged": "node ./scripts/import-admin-note-staged-attachment.mjs",
     "finance:reconcile": "node ./scripts/reconcile-finance-entitlements.mjs",
     "verify:open": "SITE_LOCK_ENABLED=0 npm run verify",
     "verify:public": "SITE_LOCK_ENABLED=0 npm run verify",

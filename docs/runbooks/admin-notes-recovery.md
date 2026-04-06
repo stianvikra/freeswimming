@@ -14,6 +14,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 - Quick capture save fails or closes unexpectedly and you need to confirm whether a note was actually created.
 - Clipboard image paste is blocked, empty, or never stages a preview and you need to finish the note safely.
 - A pasted clipboard image never reaches preview, disappears before save, or you are unsure whether it uploaded after note save.
+- A screenshot was only shared in Codex chat and you need a real admin-note attachment without guessing whether chat or local file is canonical.
 - A contextual note panel shows outdated title/body/status after recent edits in admin.
 - You suspect duplicate/overlapping edits on the same note.
 - Image upload/delete returns an error and you are unsure whether the stored image was fully removed.
@@ -45,12 +46,17 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 
 - if contextual `Add note` is collapsed because notes already exist, expand it first before retrying image intake,
 - if the note is already saved in the contextual panel and the screenshot is missing, open `Edit` on that note and upload the image there instead of recreating the note,
+- if Codex already created the note and returned a direct `/admin?tab=notes...` link, open that exact note and paste/upload the screenshot there before creating anything new,
 - if `Paste image from clipboard` says no image was found, confirm you copied the screenshot first and retry, or use `Upload images`,
 - if clipboard access was blocked, retry from the explicit paste button after granting browser permission, or use `Upload images`,
 - if you pasted an image from clipboard and no preview ever appeared, nothing was saved; retry paste or use `Upload images`,
 - if preview existed but note save failed, search by `Note ID` or title before retrying image staging so you do not create duplicate notes,
 - if a pasted image preview existed but note save failed, search by `Note ID` or title before retrying paste so you do not create duplicate notes,
 - repeated paste/upload on create flows appends until the six-image cap is reached; remove only the screenshots you no longer want instead of restarting the whole draft,
+- if the screenshot only exists in Codex chat, that chat image is discussion-only and cannot be uploaded directly; save the real file under `/.tmp/admin-note-imports/` first if you want Codex to perform the attachment import,
+- for Codex-assisted staged imports, give Codex the canonical note ID plus the staged file path and verify the returned direct note link after import,
+- if Codex-assisted staged import reports upload failure, keep the staged file in place and retry only after confirming the target note and current attachment list,
+- if Codex-assisted staged import reports cleanup failure after upload success, do not re-import the same screenshot blindly; verify the note attachment first, then delete the staged file manually if needed,
 - confirm the attachment list and image count in the note row,
 - confirm each saved image card still shows its structured evidence summary (`Image X`, file type, file size, upload date),
 - if delete failed, refresh once and verify whether the image is still present before retrying,
