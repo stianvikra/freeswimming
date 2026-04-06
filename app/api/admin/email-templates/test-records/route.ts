@@ -19,6 +19,9 @@ function noStoreJson(
 }
 
 const MAX_BULK_QA_TEST_TEMPLATE_DELETE = 500;
+const MAX_BULK_QA_TEST_REVISION_DELETE = 2_000;
+const QA_TEST_TEMPLATE_KEY_FILTER =
+  "template_key.ilike.e2e_admin_email_template_%,template_key.ilike.aw012_publish_fallback_%";
 
 export async function POST() {
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
@@ -36,7 +39,7 @@ export async function POST() {
   const candidateResult = await supabase
     .from("admin_email_templates")
     .select("id, template_key, locale", { count: "exact" })
-    .or("template_key.ilike.e2e_admin_email_template_%,template_key.ilike.aw012_publish_fallback_%")
+    .or(QA_TEST_TEMPLATE_KEY_FILTER)
     .order("created_at", { ascending: false });
 
   if (candidateResult.error) {
@@ -66,14 +69,51 @@ export async function POST() {
   }
 
   const candidates = (candidateResult.data ?? []).filter(isAdminEmailTemplateQaTestRecord);
+  const revisionCandidateResult = await supabase
+    .from("admin_email_template_revisions")
+    .select("id, template_id, template_key, locale", { count: "exact" })
+    .or(QA_TEST_TEMPLATE_KEY_FILTER)
+    .order("created_at", { ascending: false });
 
-  if (candidates.length === 0) {
+  if (revisionCandidateResult.error) {
+    if (isAdminEmailTemplatesSchemaMissing(revisionCandidateResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("emailTemplates"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
+    console.error(
+      "[AdminEmailTemplates] Could not load QA/test cleanup revision candidates",
+      revisionCandidateResult.error
+    );
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Could not load QA/test email template revision records." },
+        { status: 500 }
+      )
+    );
+  }
+
+  const revisionCandidates = (revisionCandidateResult.data ?? []).filter((item) =>
+    isAdminEmailTemplateQaTestRecord(item)
+  );
+
+  if (candidates.length === 0 && revisionCandidates.length === 0) {
     return applySupabaseCookies(
       noStoreJson({
         ok: true,
         deletedCount: 0,
         deletedIds: [],
         deletedTemplateKeys: [],
+        deletedRevisionCount: 0,
+        deletedRevisionIds: [],
       })
     );
   }
@@ -91,12 +131,62 @@ export async function POST() {
     );
   }
 
+  if (revisionCandidates.length > MAX_BULK_QA_TEST_REVISION_DELETE) {
+    return applySupabaseCookies(
+      noStoreJson(
+        {
+          ok: false,
+          error: "Refusing revision cleanup because candidate count exceeds the safety limit.",
+          candidateCount: revisionCandidates.length,
+        },
+        { status: 409 }
+      )
+    );
+  }
+
   const candidateIds = candidates.map((item) => item.id);
-  const deleteResult = await supabase
-    .from("admin_email_templates")
-    .delete()
-    .in("id", candidateIds)
-    .select("id, template_key, locale");
+  const revisionCandidateIds = revisionCandidates.map((item) => item.id);
+  const deleteRevisionResult = revisionCandidateIds.length
+    ? await supabase
+        .from("admin_email_template_revisions")
+        .delete()
+        .in("id", revisionCandidateIds)
+        .select("id, template_id, template_key, locale")
+    : { data: [], error: null };
+
+  if (deleteRevisionResult.error) {
+    if (isAdminEmailTemplatesSchemaMissing(deleteRevisionResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("emailTemplates"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
+    console.error(
+      "[AdminEmailTemplates] Could not delete pre-existing QA/test revision records",
+      deleteRevisionResult.error
+    );
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Could not delete QA/test email template revisions right now." },
+        { status: 500 }
+      )
+    );
+  }
+
+  const deleteResult = candidateIds.length
+    ? await supabase
+        .from("admin_email_templates")
+        .delete()
+        .in("id", candidateIds)
+        .select("id, template_key, locale")
+    : { data: [], error: null };
 
   if (deleteResult.error) {
     if (isAdminEmailTemplatesSchemaMissing(deleteResult.error)) {
@@ -125,12 +215,56 @@ export async function POST() {
   }
 
   const deletedRows = deleteResult.data ?? [];
+  const deletedTemplateIds = deletedRows.map((item) => item.id);
+  const deletePostTemplateRevisionResult = deletedTemplateIds.length
+    ? await supabase
+        .from("admin_email_template_revisions")
+        .delete()
+        .in("template_id", deletedTemplateIds)
+        .select("id, template_id, template_key, locale")
+    : { data: [], error: null };
+
+  if (deletePostTemplateRevisionResult.error) {
+    if (isAdminEmailTemplatesSchemaMissing(deletePostTemplateRevisionResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          {
+            ok: false,
+            error: getAdminSchemaSetupMessage("emailTemplates"),
+            code: "ADMIN_SCHEMA_NOT_READY",
+          },
+          { status: 503 }
+        )
+      );
+    }
+
+    console.error(
+      "[AdminEmailTemplates] Could not delete post-delete QA/test revision records",
+      deletePostTemplateRevisionResult.error
+    );
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Could not finalize QA/test email template revision cleanup." },
+        { status: 500 }
+      )
+    );
+  }
+
+  const deletedRevisionRows = [
+    ...(deleteRevisionResult.data ?? []),
+    ...(deletePostTemplateRevisionResult.data ?? []),
+  ].filter(
+    (item, index, array) => array.findIndex((candidate) => candidate.id === item.id) === index
+  );
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
       deletedCount: deletedRows.length,
       deletedIds: deletedRows.map((item) => item.id),
       deletedTemplateKeys: deletedRows.map((item) => item.template_key),
+      deletedRevisionCount: deletedRevisionRows.length,
+      deletedRevisionIds: deletedRevisionRows.map((item) => item.id),
     })
   );
 }

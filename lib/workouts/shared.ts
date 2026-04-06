@@ -1861,8 +1861,9 @@ export function normalizeSessionDraftForWorkoutPersistence(
     return { ok: false, error: "Add a workout title before saving." };
   }
 
-  const description = normalizeText(input.description, 600);
-  if (input.description.trim().length > 600) {
+  const rawDescription = typeof input.description === "string" ? input.description : "";
+  const description = normalizeText(rawDescription, 600);
+  if (rawDescription.trim().length > 600) {
     return { ok: false, error: "Workout description must stay under 600 characters." };
   }
 

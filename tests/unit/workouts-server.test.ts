@@ -403,6 +403,33 @@ describe("workouts server", () => {
     expect(summary.totalDistanceM).toBe(2200);
   });
 
+  it("tolerates legacy persisted workout rows without a description", () => {
+    const row = buildWorkoutRow({
+      description: undefined as unknown as WorkoutRow["description"],
+    });
+
+    const editorRecord = buildWorkoutEditorRecord(row);
+    const summary = buildWorkoutSummary(row);
+
+    expect(editorRecord.draft.description).toBe("");
+    expect(summary.title).toBe("Threshold / CSS 25m Pool draft");
+  });
+
+  it("infers distance size mode for legacy persisted workout rows missing size_mode", () => {
+    const row = buildWorkoutRow({
+      size_mode: undefined as unknown as WorkoutRow["size_mode"],
+      target_distance_m: 2200,
+      target_time_min: null,
+    });
+
+    const editorRecord = buildWorkoutEditorRecord(row);
+    const summary = buildWorkoutSummary(row);
+
+    expect(editorRecord.draft.sizeMode).toBe("distance");
+    expect(editorRecord.draft.targetDistanceM).toBe(2200);
+    expect(summary.totalDistanceM).toBe(2200);
+  });
+
   it("marks selected workouts as missing when the id is not found", async () => {
     const recentLimit = vi.fn().mockResolvedValue({
       data: [buildWorkoutRow()],
@@ -439,5 +466,34 @@ describe("workouts server", () => {
     expect(snapshot.selectedWorkout).toBeNull();
     expect(snapshot.selectedWorkoutMissing).toBe(true);
     expect(snapshot.recentWorkouts).toHaveLength(1);
+  });
+
+  it("skips invalid legacy recent workouts instead of crashing the library snapshot", async () => {
+    const recentLimit = vi.fn().mockResolvedValue({
+      data: [
+        buildWorkoutRow(),
+        buildWorkoutRow({
+          id: "legacy-invalid",
+          size_mode: undefined as unknown as WorkoutRow["size_mode"],
+          steps: null as unknown as WorkoutRow["steps"],
+        }),
+      ],
+      error: null,
+    });
+    const recentOrder = vi.fn(() => ({ limit: recentLimit }));
+    const recentEq = vi.fn(() => ({ order: recentOrder }));
+
+    const supabase = {
+      from: vi.fn().mockReturnValueOnce({
+        select: vi.fn(() => ({ eq: recentEq })),
+      }),
+    };
+
+    const snapshot = await loadWorkoutLibrarySnapshot(supabase as never, "user-1", null);
+
+    expect(snapshot.schemaReady).toBe(true);
+    expect(snapshot.loadError).toBeNull();
+    expect(snapshot.recentWorkouts).toHaveLength(1);
+    expect(snapshot.recentWorkouts[0]?.id).toBe("workout-1");
   });
 });

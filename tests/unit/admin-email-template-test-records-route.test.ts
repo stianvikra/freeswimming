@@ -57,10 +57,25 @@ describe("/api/admin/email-templates/test-records route", () => {
   });
 
   it("returns zero deleted rows when no qa/test templates are present", async () => {
-    const orderMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
-    const orMock = vi.fn().mockReturnValue({ order: orderMock });
-    const selectMock = vi.fn().mockReturnValue({ or: orMock });
-    const from = vi.fn().mockReturnValue({ select: selectMock });
+    const templateOrderMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
+    const templateOrMock = vi.fn().mockReturnValue({ order: templateOrderMock });
+    const templateSelectMock = vi.fn().mockReturnValue({ or: templateOrMock });
+
+    const revisionOrderMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
+    const revisionOrMock = vi.fn().mockReturnValue({ order: revisionOrderMock });
+    const revisionSelectMock = vi.fn().mockReturnValue({ or: revisionOrMock });
+
+    const from = vi.fn((table: string) => {
+      if (table === "admin_email_templates") {
+        return { select: templateSelectMock };
+      }
+
+      if (table === "admin_email_template_revisions") {
+        return { select: revisionSelectMock };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
 
     createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
       supabase: {
@@ -75,6 +90,8 @@ describe("/api/admin/email-templates/test-records route", () => {
       deletedCount?: number;
       deletedIds?: string[];
       deletedTemplateKeys?: string[];
+      deletedRevisionCount?: number;
+      deletedRevisionIds?: string[];
     };
 
     expect(response.status).toBe(200);
@@ -83,8 +100,13 @@ describe("/api/admin/email-templates/test-records route", () => {
       deletedCount: 0,
       deletedIds: [],
       deletedTemplateKeys: [],
+      deletedRevisionCount: 0,
+      deletedRevisionIds: [],
     });
-    expect(orMock).toHaveBeenCalledWith(
+    expect(templateOrMock).toHaveBeenCalledWith(
+      "template_key.ilike.e2e_admin_email_template_%,template_key.ilike.aw012_publish_fallback_%"
+    );
+    expect(revisionOrMock).toHaveBeenCalledWith(
       "template_key.ilike.e2e_admin_email_template_%,template_key.ilike.aw012_publish_fallback_%"
     );
     expect(requireAdminRoleFromSupabaseMock).toHaveBeenCalledWith(
@@ -94,6 +116,44 @@ describe("/api/admin/email-templates/test-records route", () => {
   });
 
   it("deletes explicit qa/test template rows and returns deleted metadata", async () => {
+    const deleteRevisionRows = [
+      {
+        id: "rev-1",
+        template_id: "tmpl-1",
+        template_key: "aw012_publish_fallback_1775443500161",
+        locale: "nb-NO",
+      },
+      {
+        id: "rev-2",
+        template_id: "tmpl-2",
+        template_key: "e2e_admin_email_template_preview_1775443500161",
+        locale: "nb-NO",
+      },
+    ];
+    const postDeleteRevisionRows = [
+      {
+        id: "rev-3",
+        template_id: "tmpl-1",
+        template_key: "aw012_publish_fallback_1775443500161",
+        locale: "nb-NO",
+      },
+      {
+        id: "rev-4",
+        template_id: "tmpl-2",
+        template_key: "e2e_admin_email_template_preview_1775443500161",
+        locale: "nb-NO",
+      },
+    ];
+    const deleteRevisionSelectMock = vi
+      .fn()
+      .mockResolvedValueOnce({ data: deleteRevisionRows, error: null })
+      .mockResolvedValueOnce({ data: postDeleteRevisionRows, error: null });
+    const deleteRevisionInMock = vi
+      .fn()
+      .mockReturnValueOnce({ select: deleteRevisionSelectMock })
+      .mockReturnValueOnce({ select: deleteRevisionSelectMock });
+    const deleteRevisionMock = vi.fn().mockReturnValue({ in: deleteRevisionInMock });
+
     const deleteSelectMock = vi.fn().mockResolvedValue({
       data: [
         {
@@ -111,7 +171,7 @@ describe("/api/admin/email-templates/test-records route", () => {
     });
     const inMock = vi.fn().mockReturnValue({ select: deleteSelectMock });
     const deleteMock = vi.fn().mockReturnValue({ in: inMock });
-    const orderMock = vi.fn().mockResolvedValue({
+    const templateOrderMock = vi.fn().mockResolvedValue({
       data: [
         {
           id: "tmpl-1",
@@ -127,12 +187,34 @@ describe("/api/admin/email-templates/test-records route", () => {
       error: null,
       count: 2,
     });
-    const orMock = vi.fn().mockReturnValue({ order: orderMock });
-    const selectMock = vi.fn().mockReturnValue({ or: orMock });
-    const from = vi
-      .fn()
-      .mockReturnValueOnce({ select: selectMock })
-      .mockReturnValueOnce({ delete: deleteMock });
+    const templateOrMock = vi.fn().mockReturnValue({ order: templateOrderMock });
+    const templateSelectMock = vi.fn().mockReturnValue({ or: templateOrMock });
+
+    const revisionOrderMock = vi.fn().mockResolvedValue({
+      data: deleteRevisionRows,
+      error: null,
+      count: 2,
+    });
+    const revisionOrMock = vi.fn().mockReturnValue({ order: revisionOrderMock });
+    const revisionSelectMock = vi.fn().mockReturnValue({ or: revisionOrMock });
+
+    const from = vi.fn((table: string) => {
+      if (table === "admin_email_templates") {
+        return {
+          select: templateSelectMock,
+          delete: deleteMock,
+        };
+      }
+
+      if (table === "admin_email_template_revisions") {
+        return {
+          select: revisionSelectMock,
+          delete: deleteRevisionMock,
+        };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
 
     createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
       supabase: {
@@ -147,6 +229,8 @@ describe("/api/admin/email-templates/test-records route", () => {
       deletedCount?: number;
       deletedIds?: string[];
       deletedTemplateKeys?: string[];
+      deletedRevisionCount?: number;
+      deletedRevisionIds?: string[];
     };
 
     expect(response.status).toBe(200);
@@ -158,12 +242,95 @@ describe("/api/admin/email-templates/test-records route", () => {
         "aw012_publish_fallback_1775443500161",
         "e2e_admin_email_template_preview_1775443500161",
       ],
+      deletedRevisionCount: 4,
+      deletedRevisionIds: ["rev-1", "rev-2", "rev-3", "rev-4"],
     });
     expect(inMock).toHaveBeenCalledWith("id", ["tmpl-1", "tmpl-2"]);
+    expect(deleteRevisionInMock).toHaveBeenNthCalledWith(1, "id", ["rev-1", "rev-2"]);
+    expect(deleteRevisionInMock).toHaveBeenNthCalledWith(2, "template_id", [
+      "tmpl-1",
+      "tmpl-2",
+    ]);
+  });
+
+  it("deletes orphaned qa/test revisions even when no live templates remain", async () => {
+    const templateOrderMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
+    const templateOrMock = vi.fn().mockReturnValue({ order: templateOrderMock });
+    const templateSelectMock = vi.fn().mockReturnValue({ or: templateOrMock });
+    const deleteTemplateMock = vi.fn();
+
+    const revisionDeleteRows = [
+      {
+        id: "rev-orphan-1",
+        template_id: "tmpl-orphan-1",
+        template_key: "aw012_publish_fallback_1775443500161",
+        locale: "nb-NO",
+      },
+    ];
+    const revisionOrderMock = vi.fn().mockResolvedValue({
+      data: revisionDeleteRows,
+      error: null,
+      count: 1,
+    });
+    const revisionOrMock = vi.fn().mockReturnValue({ order: revisionOrderMock });
+    const revisionSelectMock = vi.fn().mockReturnValue({ or: revisionOrMock });
+    const revisionDeleteSelectMock = vi.fn().mockResolvedValue({
+      data: revisionDeleteRows,
+      error: null,
+    });
+    const revisionDeleteInMock = vi.fn().mockReturnValue({ select: revisionDeleteSelectMock });
+    const revisionDeleteMock = vi.fn().mockReturnValue({ in: revisionDeleteInMock });
+
+    const from = vi.fn((table: string) => {
+      if (table === "admin_email_templates") {
+        return {
+          select: templateSelectMock,
+          delete: deleteTemplateMock,
+        };
+      }
+
+      if (table === "admin_email_template_revisions") {
+        return {
+          select: revisionSelectMock,
+          delete: revisionDeleteMock,
+        };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: {
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await POST();
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      deletedCount?: number;
+      deletedIds?: string[];
+      deletedTemplateKeys?: string[];
+      deletedRevisionCount?: number;
+      deletedRevisionIds?: string[];
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({
+      ok: true,
+      deletedCount: 0,
+      deletedIds: [],
+      deletedTemplateKeys: [],
+      deletedRevisionCount: 1,
+      deletedRevisionIds: ["rev-orphan-1"],
+    });
+    expect(deleteTemplateMock).not.toHaveBeenCalled();
+    expect(revisionDeleteInMock).toHaveBeenCalledWith("id", ["rev-orphan-1"]);
   });
 
   it("refuses cleanup when candidate count exceeds the safety limit", async () => {
-    const orderMock = vi.fn().mockResolvedValue({
+    const templateOrderMock = vi.fn().mockResolvedValue({
       data: Array.from({ length: 501 }, (_, index) => ({
         id: `tmpl-${index}`,
         template_key: `aw012_publish_fallback_${index}`,
@@ -172,9 +339,24 @@ describe("/api/admin/email-templates/test-records route", () => {
       error: null,
       count: 501,
     });
-    const orMock = vi.fn().mockReturnValue({ order: orderMock });
-    const selectMock = vi.fn().mockReturnValue({ or: orMock });
-    const from = vi.fn().mockReturnValue({ select: selectMock });
+    const templateOrMock = vi.fn().mockReturnValue({ order: templateOrderMock });
+    const templateSelectMock = vi.fn().mockReturnValue({ or: templateOrMock });
+
+    const revisionOrderMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
+    const revisionOrMock = vi.fn().mockReturnValue({ order: revisionOrderMock });
+    const revisionSelectMock = vi.fn().mockReturnValue({ or: revisionOrMock });
+
+    const from = vi.fn((table: string) => {
+      if (table === "admin_email_templates") {
+        return { select: templateSelectMock };
+      }
+
+      if (table === "admin_email_template_revisions") {
+        return { select: revisionSelectMock };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
 
     createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
       supabase: {
