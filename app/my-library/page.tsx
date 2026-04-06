@@ -254,9 +254,17 @@ export default async function MyLibraryPage() {
                   ) : null}
                   {workoutLibrarySnapshot.schemaReady ? (
                     <CreateManualWorkoutButton
-                      label="Build manual session"
-                      testId="my-library-create-manual-workout"
+                      label="Build pool session"
+                      testId="my-library-create-pool-workout"
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    />
+                  ) : null}
+                  {workoutLibrarySnapshot.schemaReady ? (
+                    <CreateManualWorkoutButton
+                      label="Build open water session"
+                      testId="my-library-create-open-water-workout"
+                      builderMode="open_water"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                     />
                   ) : null}
                   <Link

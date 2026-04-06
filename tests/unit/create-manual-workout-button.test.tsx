@@ -35,21 +35,21 @@ describe("CreateManualWorkoutButton", () => {
 
     render(<CreateManualWorkoutButton />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Build manual session" }));
+    fireEvent.click(screen.getByRole("button", { name: "Build pool session" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
         "/api/my-library/workouts",
         expect.objectContaining<Record<string, unknown>>({
           method: "POST",
-          body: expect.stringContaining('"title":"Untitled swim session"'),
+          body: expect.stringContaining('"title":"Untitled pool session"'),
         })
       );
     });
 
     await waitFor(() => {
       expect(navigationState.push).toHaveBeenCalledWith(
-        "/my-library/workouts/11111111-1111-4111-8111-111111111111?entry=manual-create"
+        "/my-library/workouts/11111111-1111-4111-8111-111111111111?entry=manual-pool"
       );
     });
     expect(navigationState.refresh).toHaveBeenCalled();
@@ -66,7 +66,7 @@ describe("CreateManualWorkoutButton", () => {
 
     render(<CreateManualWorkoutButton />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Build manual session" }));
+    fireEvent.click(screen.getByRole("button", { name: "Build pool session" }));
 
     await waitFor(() => {
       expect(screen.getByText("Could not create workout right now.")).toBeVisible();
@@ -91,20 +91,52 @@ describe("CreateManualWorkoutButton", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Build manual session" }));
+    fireEvent.click(screen.getByRole("button", { name: "Build pool session" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
         "/api/my-library/workouts",
         expect.objectContaining<Record<string, unknown>>({
           method: "POST",
-          body: expect.stringContaining('"title":"Untitled swim session"'),
+          body: expect.stringContaining('"title":"Untitled pool session"'),
         })
       );
     });
     await waitFor(() => {
       expect(navigationState.push).toHaveBeenCalledWith(
         "/my-library/workouts/33333333-3333-4333-8333-333333333333?from=overview"
+      );
+    });
+  });
+
+  it("creates an open water workout from the dedicated open-water entry", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        workout: {
+          id: "44444444-4444-4444-8444-444444444444",
+        },
+      }),
+    } as Response);
+
+    render(<CreateManualWorkoutButton builderMode="open_water" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Build open water session" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/workouts",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "POST",
+          body: expect.stringContaining('"title":"Untitled open water session"'),
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(navigationState.push).toHaveBeenCalledWith(
+        "/my-library/workouts/44444444-4444-4444-8444-444444444444?entry=manual-open-water"
       );
     });
   });
