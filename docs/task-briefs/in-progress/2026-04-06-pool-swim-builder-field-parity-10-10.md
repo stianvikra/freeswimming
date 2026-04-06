@@ -107,7 +107,7 @@ Critical target categories for `10/10` claim in this brief:
 | Admin editor ergonomics                       | `supporting` | Supporting only: the owner can still inspect and repeatedly edit canonical pool workouts without missing critical authoring controls.                                  | manual QA                                 |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: pool field cleanup does not materially regress `/my-library` or workout-detail responsiveness.                                                        | targeted review + verify                  |
 | Data placement and sync boundaries            | `target`     | The slice continues to write through the existing canonical workout contract and treats `poolLengthM: null` as an intentional server-canonical state for pool mode.   | brief contract + code review              |
-| Caching and invalidation strategy             | `supporting` | Supporting only: pool field cleanup keeps existing `router.refresh` and canonical save flows intact.                                                                   | code review                               |
+| Caching and invalidation strategy             | `supporting` | Supporting only: pool field cleanup preserves canonical route transitions and save invalidation without requiring an extra create-time refresh that can race navigation. | code review + targeted e2e                |
 | Reliability and failure handling              | `target`     | Invalid custom pool size input fails clearly, while `Unspecified` remains a deliberate valid state instead of looking like missing data or a broken save.             | negative-path tests + manual QA           |
 | Security and authz                            | `supporting` | Supporting only: no changed route or API weakens authenticated owner-only workout access.                                                                              | existing auth boundaries + scope review   |
 | Privacy and compliance                        | `N/A`        | N/A because this slice changes private workout-builder labels and field visibility only, not personal-data handling or public disclosure.                              | explicit scope rationale                  |
@@ -143,7 +143,8 @@ Critical target categories for `10/10` claim in this brief:
   - no new sensitive data class is added
   - this slice changes authoring semantics only
 - Cache/invalidation:
-  - existing navigation, refresh, and canonical save boundaries remain authoritative
+  - existing canonical save boundaries remain authoritative
+  - create-time entry now relies on route transition instead of an immediate extra refresh so navigation cannot be raced back to `/my-library`
 
 ## Identity And Rename Contract
 
@@ -245,3 +246,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-06 | in progress | created follow-up pool parity brief for field/wording cleanup after PR #370/#371 closed the entry split and moved it to in-progress | next: implement pool-only field parity and validate locally`
 - `2026-04-06 | implementation + targeted validation | manual pool builder now presents Pool Swim / Pool Size with explicit Unspecified handling, hides non-parity top-level pool metadata, uses Garmin-style pool step wording, and keeps shared summaries truthful for unspecified pool size; passed npm run typecheck, targeted vitest, targeted desktop-chromium Playwright, and npm run lint:briefs:all | next: commit this slice, rerun npm run verify:pre-pr on the committed diff, then open the PR`
+- `2026-04-06 | checkpoint 5dd1922 + full gate | follow-up race fix removed create-time refresh from the manual workout entry so full-matrix Playwright no longer stalls on /my-library after a successful create; passed npm run verify:pre-pr with 96 passed / 318 skipped | next: push branch, open PR, and monitor CI`
