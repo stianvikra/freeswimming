@@ -1873,10 +1873,6 @@ export function normalizeSessionDraftForWorkoutPersistence(
 
   const poolLengthM = input.environment === "pool" ? normalizePoolLength(input.poolLengthM) : null;
 
-  if (input.environment === "pool" && poolLengthM === null) {
-    return { ok: false, error: "Choose a supported pool length before saving." };
-  }
-
   if (!SESSION_GENERATOR_SESSION_TYPES.includes(input.sessionType)) {
     return { ok: false, error: "Choose a supported session type before saving." };
   }
@@ -2427,6 +2423,10 @@ type WorkoutHandoffGroup =
 function buildWorkoutEnvironmentSummary(draft: SessionDraft) {
   if (draft.environment !== "pool") {
     return getSessionEnvironmentLabel(draft.environment);
+  }
+
+  if (draft.poolLengthM === null) {
+    return `${getSessionEnvironmentLabel(draft.environment)} (Unspecified)`;
   }
 
   const poolLength =

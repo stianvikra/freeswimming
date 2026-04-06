@@ -110,23 +110,27 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-builder-create-pool")).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-create-open-water")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toBeVisible();
-    await expect(page.getByText("Build your pool session")).toBeVisible();
+    await expect(page.getByText("Pool Swim")).toBeVisible();
     await expect(page.getByText("Session note")).toBeVisible();
-    await expect(page.getByText("Pool length", { exact: true })).toBeVisible();
+    await expect(page.getByText("Pool Size", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Unspecified" })).toBeVisible();
     await expect(page.getByRole("group", { name: "Environment" })).toHaveCount(0);
-    await expect(page.getByTestId("workout-editor-metadata-profile-summary")).toHaveText(
-      "Endurance · Moderate"
-    );
+    await expect(page.getByText("Training profile")).toHaveCount(0);
+    await expect(page.locator("fieldset").filter({ hasText: "Session strokes" })).toHaveCount(0);
+    await expect(page.locator("fieldset").filter({ hasText: "Equipment" })).toHaveCount(0);
     await expect(page.getByRole("combobox", { name: "Session type" })).toHaveCount(0);
     await expect(page.getByRole("combobox", { name: "Effort" })).toHaveCount(0);
-    await page.getByTestId("workout-editor-metadata-profile-toggle").click();
-    await expect(page.getByTestId("workout-editor-metadata-profile-toggle")).toHaveAttribute(
-      "aria-expanded",
-      "true"
-    );
-    await expect(page.getByRole("combobox", { name: "Session type" })).toBeVisible();
-    await expect(page.getByRole("combobox", { name: "Effort" })).toBeVisible();
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
+    await page.getByTestId("session-draft-step-toggle-0").click();
+    await expect(page.getByLabel("Step type")).toBeVisible();
+    await expect(page.getByLabel("Drill type")).toBeVisible();
+    await expect(page.getByLabel("Step note")).toBeVisible();
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
+      "Open swim"
+    );
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
+      "Rest time"
+    );
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
     );
@@ -174,7 +178,6 @@ test.describe("my library workout builder", () => {
     );
     await savedWorkoutPdfPopup.close();
 
-    await page.getByTestId("session-draft-step-toggle-0").click();
     await page.getByTestId("session-draft-step-name-0").fill("Warmup swim");
 
     await page.getByTestId("session-draft-step-remove-0").click();
@@ -358,16 +361,8 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-target-mode-1")).toHaveValue("target_pace");
     await expect(page.getByTestId("session-draft-step-target-pace-minutes-1")).toHaveValue("1");
     await expect(page.getByTestId("session-draft-step-target-pace-seconds-1")).toHaveValue("35");
-    await expect(
-      page.locator("fieldset").filter({ hasText: "Session strokes" }).getByRole("checkbox", {
-        name: "Backstroke",
-      })
-    ).toBeChecked();
-    await expect(
-      page.locator("fieldset").filter({ hasText: "Equipment" }).getByRole("checkbox", {
-        name: "Fins",
-      })
-    ).toBeChecked();
+    await expect(page.locator("fieldset").filter({ hasText: "Session strokes" })).toHaveCount(0);
+    await expect(page.locator("fieldset").filter({ hasText: "Equipment" })).toHaveCount(0);
 
     const workoutMatch = new URL(page.url()).pathname.match(
       /\/my-library\/workouts\/([0-9a-f-]+)$/

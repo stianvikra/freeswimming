@@ -961,7 +961,7 @@ describe("WorkoutBuilderHub", () => {
     ).toBeVisible();
   });
 
-  it("keeps training profile fields secondary for manual builder workouts", async () => {
+  it("uses pool-swim field parity for manual builder workouts", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
@@ -979,24 +979,18 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByText("Build your pool session")).toBeVisible();
+    expect(screen.getByText("Pool Swim")).toBeVisible();
     expect(screen.getByText("Session note")).toBeVisible();
     expect(screen.queryByText("Environment")).not.toBeInTheDocument();
-    expect(screen.getByText("Pool length")).toBeVisible();
-    expect(screen.getByTestId("workout-editor-metadata-profile-summary")).toHaveTextContent(
-      "Threshold / CSS · Moderate"
-    );
+    expect(screen.getByText("Pool Size")).toBeVisible();
+    expect(screen.getByRole("button", { name: "25m" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "50m" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Unspecified" })).toBeVisible();
     expect(screen.queryByRole("combobox", { name: "Session type" })).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Effort" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("workout-editor-metadata-profile-toggle"));
-
-    expect(screen.getByTestId("workout-editor-metadata-profile-toggle")).toHaveAttribute(
-      "aria-expanded",
-      "true"
-    );
-    expect(screen.getByText("Session type")).toBeVisible();
-    expect(screen.getByText("Effort")).toBeVisible();
+    expect(screen.queryByText("Training profile")).not.toBeInTheDocument();
+    expect(screen.queryByText("Session strokes")).not.toBeInTheDocument();
+    expect(screen.queryByText("Equipment")).not.toBeInTheDocument();
   });
 
   it("locks open-water manual workouts to the open-water builder surface", async () => {
@@ -1117,6 +1111,77 @@ describe("WorkoutBuilderHub", () => {
         "Recommended Focus tag: Drill. Switch it to Kick or Pull only when this drill set needs that extra label."
       )
     ).toBeVisible();
+  });
+
+  it("uses Garmin-style pool step wording inside the manual pool builder", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+
+    expect(screen.getByLabelText("Step type")).toBeVisible();
+    expect(screen.getByLabelText("Drill type")).toBeVisible();
+    expect(screen.getByLabelText("Step note")).toBeVisible();
+    expect(screen.getByRole("option", { name: "Open swim" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Rest time" })).toBeVisible();
+    expect(
+      screen.getByText(
+        "Use Stroke pattern for the swim pattern. Add Drill type only when the step needs extra drill, kick, or pull notation."
+      )
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Optional. Leave Drill type on None unless the step needs extra drill, kick, or pull notation."
+      )
+    ).toBeVisible();
+  });
+
+  it("treats unspecified pool size as valid while invalid custom input still blocks save", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    const saveButton = screen.getByRole("button", { name: "Save changes" });
+    fireEvent.change(screen.getByLabelText("Exact pool size (m)"), {
+      target: { value: "3" },
+    });
+
+    expect(screen.getByTestId("workout-editor-panel")).toHaveTextContent(
+      "Enter a valid pool size between 12.5m and 500m, or choose Unspecified."
+    );
+    expect(saveButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Unspecified" }));
+
+    expect(screen.getByTestId("workout-editor-panel")).toHaveTextContent("Unspecified selected.");
+    expect(saveButton).toBeEnabled();
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {

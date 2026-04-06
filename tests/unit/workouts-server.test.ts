@@ -177,6 +177,29 @@ describe("workouts server", () => {
     expect(summary.poolLengthM).toBe(33.33);
   });
 
+  it("persists and reloads unspecified pool size for manual builder workouts", () => {
+    const unspecifiedPoolDraft: SessionDraft = {
+      ...buildDraft(),
+      title: "Unspecified pool workout",
+      titleSuggestions: ["Unspecified pool workout"],
+      poolLengthM: null,
+    };
+
+    const insert = buildWorkoutInsert("user-1", unspecifiedPoolDraft, "manual");
+    const storedRow = buildWorkoutRow({
+      source_kind: "manual",
+      title: "Unspecified pool workout",
+      title_suggestions: ["Unspecified pool workout"],
+      pool_length_m: null,
+    });
+    const editorRecord = buildWorkoutEditorRecord(storedRow);
+    const summary = buildWorkoutSummary(storedRow);
+
+    expect(insert.pool_length_m).toBeNull();
+    expect(editorRecord.draft.poolLengthM).toBeNull();
+    expect(summary.poolLengthM).toBeNull();
+  });
+
   it("persists repeat metadata and multiplies totals from grouped repeat steps", () => {
     const repeatDraft: SessionDraft = {
       ...buildDraft(),
