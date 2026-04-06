@@ -121,6 +121,9 @@ export type WorkoutGarminReadinessReport = {
   issues: WorkoutGarminReadinessIssue[];
 };
 
+const WORKOUT_GARMIN_POOL_MAX_STEP_COUNT = 100;
+const WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID = "__draft__";
+
 export type WorkoutHandoffDraftState = "canonical" | "local_draft";
 export type WorkoutPdfVariant = "standard" | "poolside";
 export const WORKOUT_POOLSIDE_PRINT_STYLES = ["color", "ink_saver"] as const;
@@ -329,9 +332,12 @@ export function buildWorkoutGarminReadinessReport(
     };
   }
 
-  const issues = draft.steps.flatMap((step, index) =>
-    buildWorkoutGarminReadinessIssues(step, index)
-  );
+  const issues = [
+    ...buildWorkoutGarminAggregateReadinessIssues(draft),
+    ...draft.steps.flatMap((step, index) =>
+      buildWorkoutGarminReadinessIssues(step, index, draft.steps, draft.environment)
+    ),
+  ];
 
   if (issues.length === 0) {
     return {
@@ -2058,10 +2064,24 @@ export function normalizeSessionDraftForWorkoutPersistence(
 
 function buildWorkoutGarminReadinessIssues(
   step: SessionDraftStep,
-  index: number
+  index: number,
+  steps: SessionDraftStep[],
+  environment: SessionGeneratorEnvironment
 ): WorkoutGarminReadinessIssue[] {
   const issues: WorkoutGarminReadinessIssue[] = [];
   const stepLabel = buildWorkoutStepReadinessLabel(step, index);
+
+  if (environment === "pool") {
+    const sendOffCompatibilityIssue = buildWorkoutGarminSendOffCompatibilityIssue(
+      step,
+      index,
+      steps
+    );
+
+    if (sendOffCompatibilityIssue) {
+      issues.push(sendOffCompatibilityIssue);
+    }
+  }
 
   if (step.stroke === "im_by_round") {
     issues.push({
@@ -2104,6 +2124,72 @@ function buildWorkoutGarminReadinessIssues(
   }
 
   return issues;
+}
+
+function buildWorkoutGarminAggregateReadinessIssues(
+  draft: SessionDraft
+): WorkoutGarminReadinessIssue[] {
+  if (draft.environment !== "pool" || draft.steps.length <= WORKOUT_GARMIN_POOL_MAX_STEP_COUNT) {
+    return [];
+  }
+
+  return [
+    {
+      id: "draft-pool-step-cap",
+      stepId: WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID,
+      stepIndex: -1,
+      detail: `This Pool Swim draft currently has ${draft.steps.length} authored steps. Garmin pool workouts top out at ${WORKOUT_GARMIN_POOL_MAX_STEP_COUNT} workout steps, so consolidate the set before Garmin/export handoff.`,
+    },
+  ];
+}
+
+function buildWorkoutGarminSendOffCompatibilityIssue(
+  step: SessionDraftStep,
+  index: number,
+  steps: SessionDraftStep[]
+): WorkoutGarminReadinessIssue | null {
+  if (step.durationMode !== "send_off" && step.durationMode !== "css_send_off") {
+    return null;
+  }
+
+  const previousStep = index > 0 ? steps[index - 1] ?? null : null;
+
+  if (step.category === "rest" && previousStep && isWorkoutGarminDistanceBasedSwimStep(previousStep)) {
+    return null;
+  }
+
+  const stepLabel = buildWorkoutStepReadinessLabel(step, index);
+  const durationLabel =
+    step.durationMode === "css_send_off" ? "CSS send-off" : "Send-off Time";
+  const reasons: string[] = [];
+
+  if (step.category !== "rest") {
+    reasons.push("it is not authored as a rest step");
+  }
+
+  if (!previousStep) {
+    reasons.push("there is no previous distance-based swim step");
+  } else if (!isWorkoutGarminDistanceBasedSwimStep(previousStep)) {
+    reasons.push(
+      `${buildWorkoutStepReadinessLabel(previousStep, index - 1)} is not a distance-based swim step`
+    );
+  }
+
+  const reasonSummary =
+    reasons.length === 1
+      ? reasons[0]
+      : `${reasons.slice(0, -1).join(", ")}, and ${reasons[reasons.length - 1]}`;
+
+  return {
+    id: `${step.id}-send-off-compatibility`,
+    stepId: step.id,
+    stepIndex: index,
+    detail: `${stepLabel} uses ${durationLabel}, but Garmin pool workouts keep ${durationLabel} as a rest choice after a distance-based swim step. Because ${reasonSummary}, device handoff may behave like open rest instead.`,
+  };
+}
+
+function isWorkoutGarminDistanceBasedSwimStep(step: SessionDraftStep) {
+  return step.category !== "rest" && step.durationMode === "distance";
 }
 
 function buildWorkoutStepReadinessLabel(step: SessionDraftStep, index: number) {
