@@ -100,6 +100,6 @@ describe("programs server", () => {
     expect(snapshot.schemaReady).toBe(true);
     expect(snapshot.loadError).toBeNull();
     expect(snapshot.availableWorkouts).toHaveLength(1);
-    expect(snapshot.availableWorkouts[0]?.title).toBe("Untitled swim session");
+    expect(snapshot.availableWorkouts[0]?.title).toBe("Untitled pool session");
   });
 });

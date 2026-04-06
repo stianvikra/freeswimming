@@ -24,7 +24,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => navigationState,
 }));
 
-function buildDraft(): SessionDraft {
+function buildDraft(overrides?: Partial<SessionDraft>): SessionDraft {
   return {
     version: 1,
     status: "draft",
@@ -65,6 +65,7 @@ function buildDraft(): SessionDraft {
         notes: "Start smooth.",
       },
     ],
+    ...overrides,
   };
 }
 
@@ -978,8 +979,10 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByText("Build your swim session")).toBeVisible();
+    expect(screen.getByText("Build your pool session")).toBeVisible();
     expect(screen.getByText("Session note")).toBeVisible();
+    expect(screen.queryByText("Environment")).not.toBeInTheDocument();
+    expect(screen.getByText("Pool length")).toBeVisible();
     expect(screen.getByTestId("workout-editor-metadata-profile-summary")).toHaveTextContent(
       "Threshold / CSS · Moderate"
     );
@@ -994,6 +997,44 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByText("Session type")).toBeVisible();
     expect(screen.getByText("Effort")).toBeVisible();
+  });
+
+  it("locks open-water manual workouts to the open-water builder surface", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({
+              environment: "open_water",
+              poolLengthM: null,
+              description: "Long aerobic open water work.",
+            }),
+          }),
+          recentWorkouts: [
+            buildWorkoutSummary({
+              sourceKind: "manual",
+              environment: "open_water",
+              poolLengthM: null,
+              previewText: "Open water aerobic session\n\nTot: ~45 min",
+            }),
+          ],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByText("Build your open water session")).toBeVisible();
+    expect(screen.getByText("Session note")).toBeVisible();
+    expect(screen.queryByText("Environment")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pool length")).not.toBeInTheDocument();
   });
 
   it("keeps training profile fields visible for AI-origin workouts", async () => {
@@ -1089,7 +1130,8 @@ describe("WorkoutBuilderHub", () => {
     );
 
     expect(screen.getByText("That saved swim session could not be found.")).toBeVisible();
-    expect(screen.getByTestId("workout-builder-empty-create-manual")).toBeVisible();
+    expect(screen.getByTestId("workout-builder-empty-create-pool")).toBeVisible();
+    expect(screen.getByTestId("workout-builder-empty-create-open-water")).toBeVisible();
     expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "AI-generated session" })).toHaveAttribute(
       "href",
@@ -1218,7 +1260,8 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.queryByTestId("workout-builder-current-workout-actions")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("workout-builder-create-manual")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-builder-create-pool")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-builder-create-open-water")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
@@ -1239,7 +1282,7 @@ describe("WorkoutBuilderHub", () => {
     expect(navigationState.refresh).not.toHaveBeenCalled();
   });
 
-  it("shows manual and AI entry actions in browse mode", async () => {
+  it("shows pool, open-water, and AI entry actions in browse mode", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
@@ -1256,7 +1299,8 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByRole("button", { name: "Build manual session" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Build pool session" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Build open water session" })).toBeVisible();
     expect(screen.getByRole("link", { name: "AI-generated session" })).toHaveAttribute(
       "href",
       "/my-library/generator"

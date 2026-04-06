@@ -549,6 +549,13 @@ export default function WorkoutEditor({
   const stepGroups = buildStepRenderGroups(draft.steps);
   const showCalmBuilderLayout = copyVariant === "default";
   const isManualMetadataMode = showCalmBuilderLayout && savedWorkout?.sourceKind === "manual";
+  const manualBuilderMode = isManualMetadataMode
+    ? draft.environment === "open_water"
+      ? "open_water"
+      : "pool"
+    : null;
+  const isManualPoolMode = manualBuilderMode === "pool";
+  const isManualOpenWaterMode = manualBuilderMode === "open_water";
   const [openStepId, setOpenStepId] = useState<string | null>(null);
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
     formatEditablePoolLength(draft.poolLengthM)
@@ -653,6 +660,16 @@ export default function WorkoutEditor({
     estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
   });
   const manualMetadataProfileSummary = `${getSessionTypeLabel(draft.sessionType)} · ${getSessionEffortLabel(draft.effort)}`;
+  const metadataHeading = isManualPoolMode
+    ? "Build your pool session"
+    : isManualOpenWaterMode
+      ? "Build your open water session"
+      : "Build your swim session";
+  const collapsedMetadataCopy = isManualPoolMode
+    ? "Open when you want to change the title, session note, pool size, strokes, or equipment."
+    : isManualOpenWaterMode
+      ? "Open when you want to change the title, session note, strokes, or equipment."
+      : "Open when you want to change the title, session note, environment, strokes, or equipment.";
   const poolsideFocusSummary =
     trainingFocusOptions.length === 0
       ? "No open focuses are available right now. The poolside note will print without a focus section."
@@ -2050,31 +2067,36 @@ export default function WorkoutEditor({
         />
       </label>
 
-      <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-        <legend className="px-1 text-sm font-semibold text-slate-900">Environment</legend>
-        <div className="mt-3 flex flex-wrap gap-3">
-          {SESSION_GENERATOR_ENVIRONMENTS.map((value) => (
-            <label key={value} className="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="radio"
-                name="session-draft-environment"
-                checked={draft.environment === value}
-                onChange={() =>
-                  onDraftChange({
-                    ...draft,
-                    environment: value as SessionGeneratorEnvironment,
-                    poolLengthM:
-                      value === "pool"
-                        ? (draft.poolLengthM ?? SESSION_GENERATOR_POOL_LENGTHS[1])
-                        : null,
-                  })
-                }
-              />
-              {getSessionEnvironmentLabel(value)}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      {manualBuilderMode ? null : (
+        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+          <legend className="px-1 text-sm font-semibold text-slate-900">Environment</legend>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {SESSION_GENERATOR_ENVIRONMENTS.map((value) => (
+              <label
+                key={value}
+                className="inline-flex items-center gap-2 text-sm text-slate-700"
+              >
+                <input
+                  type="radio"
+                  name="session-draft-environment"
+                  checked={draft.environment === value}
+                  onChange={() =>
+                    onDraftChange({
+                      ...draft,
+                      environment: value as SessionGeneratorEnvironment,
+                      poolLengthM:
+                        value === "pool"
+                          ? (draft.poolLengthM ?? SESSION_GENERATOR_POOL_LENGTHS[1])
+                          : null,
+                    })
+                  }
+                />
+                {getSessionEnvironmentLabel(value)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       {draft.environment === "pool" ? (
         <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
@@ -2738,13 +2760,11 @@ export default function WorkoutEditor({
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Session details
               </p>
-              <h3 className="mt-2 text-base font-semibold text-slate-900">
-                Build your swim session
-              </h3>
+              <h3 className="mt-2 text-base font-semibold text-slate-900">{metadataHeading}</h3>
               <p className="mt-1 text-sm text-slate-600">
                 {metadataOpen
                   ? "Keep the top-level setup here while you shape the workout steps below."
-                  : "Open when you want to change the title, session note, environment, strokes, or equipment."}
+                  : collapsedMetadataCopy}
               </p>
               {!metadataOpen ? (
                 <p

@@ -90,9 +90,9 @@ test.describe("my library workout builder", () => {
         response.status() === 200
     );
 
-    await triggerCreateSession(page, "my-library-create-manual-workout");
+    await triggerCreateSession(page, "my-library-create-pool-workout");
     await createResponsePromise;
-    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-create)?$/, {
+    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
       timeout: 20_000,
     });
     await waitForWorkoutBuilderClientReady(page);
@@ -107,10 +107,13 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByRole("link", { name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByRole("link", { name: "AI-generated session" })).toHaveCount(0);
-    await expect(page.getByTestId("workout-builder-create-manual")).toHaveCount(0);
+    await expect(page.getByTestId("workout-builder-create-pool")).toHaveCount(0);
+    await expect(page.getByTestId("workout-builder-create-open-water")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toBeVisible();
-    await expect(page.getByText("Build your swim session")).toBeVisible();
+    await expect(page.getByText("Build your pool session")).toBeVisible();
     await expect(page.getByText("Session note")).toBeVisible();
+    await expect(page.getByText("Pool length", { exact: true })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Environment" })).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-metadata-profile-summary")).toHaveText(
       "Endurance · Moderate"
     );
@@ -143,7 +146,7 @@ test.describe("my library workout builder", () => {
       "Source: Canonical workout"
     );
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
-      "Title: Untitled swim session"
+      "Title: Untitled pool session"
     );
     await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",
@@ -167,7 +170,7 @@ test.describe("my library workout builder", () => {
       "Source: Canonical workout"
     );
     await expect(savedWorkoutPdfPopup.locator('[data-testid="workout-pdf-title"]')).toContainText(
-      "Untitled swim session"
+      "Untitled pool session"
     );
     await savedWorkoutPdfPopup.close();
 
@@ -197,7 +200,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     await openMetadataPanelIfCollapsed(page);
-    await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled swim session");
+    await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled pool session");
     await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
     await page.getByTestId("session-draft-pool-length-input").fill("33.33");
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");

@@ -34,7 +34,10 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
   const { workoutId } = await params;
   const resolvedSearchParams = await searchParams;
   const entryMode = readSearchParamValue(resolvedSearchParams, "entry");
-  const preferExpandedDetailsOnLoad = entryMode === "manual-create";
+  const preferExpandedDetailsOnLoad =
+    entryMode === "manual-create" ||
+    entryMode === "manual-pool" ||
+    entryMode === "manual-open-water";
 
   if (!UUID_PATTERN.test(workoutId)) {
     notFound();

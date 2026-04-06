@@ -173,9 +173,17 @@ export default function WorkoutBuilderHub({
           <div className="flex flex-wrap items-center gap-2">
             {workoutLibrary.schemaReady ? (
               <CreateManualWorkoutButton
-                label="Build manual session"
-                testId="workout-builder-browse-create-manual"
+                label="Build pool session"
+                testId="workout-builder-browse-create-pool"
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              />
+            ) : null}
+            {workoutLibrary.schemaReady ? (
+              <CreateManualWorkoutButton
+                label="Build open water session"
+                builderMode="open_water"
+                testId="workout-builder-browse-create-open-water"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
               />
             ) : null}
             <Link
@@ -333,8 +341,8 @@ export default function WorkoutBuilderHub({
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
               <p className="text-sm font-medium text-slate-900">No saved sessions yet.</p>
               <p className="mt-2 text-sm text-slate-600">
-                Create your first manual swim session here, then return to My Swim Sessions to
-                browse, preview, or print saved work in one list.
+                Create your first pool or open water session here, then return to My Swim Sessions
+                to browse, preview, or print saved work in one list.
               </p>
             </div>
           )
@@ -362,9 +370,17 @@ export default function WorkoutBuilderHub({
                 ) : null}
                 {workoutLibrary.schemaReady ? (
                   <CreateManualWorkoutButton
-                    label="Build manual session"
-                    testId="workout-builder-empty-create-manual"
+                    label="Build pool session"
+                    testId="workout-builder-empty-create-pool"
                     className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  />
+                ) : null}
+                {workoutLibrary.schemaReady ? (
+                  <CreateManualWorkoutButton
+                    label="Build open water session"
+                    builderMode="open_water"
+                    testId="workout-builder-empty-create-open-water"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 ) : null}
                 <Link

@@ -116,9 +116,9 @@ test.describe("my library program export", () => {
         response.status() === 200
     );
 
-    await triggerCreateSession(page, "my-library-create-manual-workout");
+    await triggerCreateSession(page, "my-library-create-pool-workout");
     await createWorkoutResponsePromise;
-    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-create)?$/, {
+    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
       timeout: 20_000,
     });
     const workoutId = page.url().match(/\/my-library\/workouts\/([0-9a-f-]+)/i)?.[1];

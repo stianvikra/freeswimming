@@ -4,6 +4,8 @@ import {
   type SessionDraftStep,
 } from "@/lib/session-generator-v1/shared";
 
+export type ManualWorkoutBuilderMode = "pool" | "open_water";
+
 function buildStepId(seed: string, index: number) {
   return `manual-step-${seed}-${index + 1}`;
 }
@@ -153,21 +155,24 @@ export function buildManualWorkoutStarterDraft(now = new Date()): SessionDraft {
   };
 }
 
-export function buildManualWorkoutEmptyDraft(now = new Date()): SessionDraft {
+function buildManualWorkoutEmptyDraftForMode(
+  mode: ManualWorkoutBuilderMode,
+  now = new Date()
+): SessionDraft {
   const createdAt = now.toISOString();
   const seed = createdAt.replace(/[^0-9]/g, "").slice(0, 14);
-  const title = "Untitled swim session";
+  const title = mode === "pool" ? "Untitled pool session" : "Untitled open water session";
   const baseDraft: SessionDraft = {
     version: 1,
     status: "draft",
     generatorKind: "rule_engine_v1",
     createdAt,
-    sourceFingerprint: `manual-empty-${seed}`,
+    sourceFingerprint: `manual-empty-${mode}-${seed}`,
     title,
     titleSuggestions: [title],
     description: "",
-    environment: "pool",
-    poolLengthM: 25,
+    environment: mode,
+    poolLengthM: mode === "pool" ? 25 : null,
     sessionType: "endurance",
     effort: "moderate",
     sizeMode: "distance",
@@ -192,4 +197,16 @@ export function buildManualWorkoutEmptyDraft(now = new Date()): SessionDraft {
     totalDistanceM: totals.totalDistanceM,
     estimatedDurationMin: totals.estimatedDurationMin,
   };
+}
+
+export function buildManualPoolWorkoutEmptyDraft(now = new Date()): SessionDraft {
+  return buildManualWorkoutEmptyDraftForMode("pool", now);
+}
+
+export function buildManualOpenWaterWorkoutEmptyDraft(now = new Date()): SessionDraft {
+  return buildManualWorkoutEmptyDraftForMode("open_water", now);
+}
+
+export function buildManualWorkoutEmptyDraft(now = new Date()): SessionDraft {
+  return buildManualPoolWorkoutEmptyDraft(now);
 }

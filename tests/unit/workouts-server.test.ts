@@ -147,7 +147,7 @@ describe("workouts server", () => {
     const insert = buildWorkoutInsert("user-1", emptyDraft, "manual");
 
     expect(insert.source_kind).toBe("manual");
-    expect(insert.title).toBe("Untitled swim session");
+    expect(insert.title).toBe("Untitled pool session");
     expect(Array.isArray(insert.steps)).toBe(true);
     expect(insert.steps).toHaveLength(1);
     expect(insert.total_distance_m).toBe(100);
