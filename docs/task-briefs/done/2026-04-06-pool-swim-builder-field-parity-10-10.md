@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-06-pool-swim-builder-field-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-06`
 - `updated`: `2026-04-06`
@@ -197,6 +197,7 @@ Critical target categories for `10/10` claim in this brief:
 - targeted `vitest` for workout builder/shared contracts
 - targeted Playwright for `/my-library/workouts`
 - `npm run verify:pre-pr`
+- `npm run verify:pre-merge`
 
 ## Local Tooling Prerequisite
 
@@ -247,3 +248,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-06 | in progress | created follow-up pool parity brief for field/wording cleanup after PR #370/#371 closed the entry split and moved it to in-progress | next: implement pool-only field parity and validate locally`
 - `2026-04-06 | implementation + targeted validation | manual pool builder now presents Pool Swim / Pool Size with explicit Unspecified handling, hides non-parity top-level pool metadata, uses Garmin-style pool step wording, and keeps shared summaries truthful for unspecified pool size; passed npm run typecheck, targeted vitest, targeted desktop-chromium Playwright, and npm run lint:briefs:all | next: commit this slice, rerun npm run verify:pre-pr on the committed diff, then open the PR`
 - `2026-04-06 | checkpoint 5dd1922 + full gate | follow-up race fix removed create-time refresh from the manual workout entry so full-matrix Playwright no longer stalls on /my-library after a successful create; passed npm run verify:pre-pr with 96 passed / 318 skipped | next: push branch, open PR, and monitor CI`
+- `2026-04-06 | merged ac66aa3 via PR #372 | GitHub required checks were green, local npm run verify:pre-merge passed with 95 passed / 319 skipped and private-gate step correctly skipped because SITE_LOCK_ENABLED!=1, and the slice is now closed out in done | next: continue with the next pool Garmin-parity slice`
