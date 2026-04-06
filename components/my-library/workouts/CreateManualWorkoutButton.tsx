@@ -74,7 +74,6 @@ export default function CreateManualWorkoutButton({
       }
 
       router.push(buildWorkoutHref(responseBody.workout.id));
-      router.refresh();
     } catch {
       setError(
         builderMode === "pool"

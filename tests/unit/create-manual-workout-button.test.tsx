@@ -4,7 +4,6 @@ import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateMa
 
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
-  refresh: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -52,7 +51,6 @@ describe("CreateManualWorkoutButton", () => {
         "/my-library/workouts/11111111-1111-4111-8111-111111111111?entry=manual-pool"
       );
     });
-    expect(navigationState.refresh).toHaveBeenCalled();
   });
 
   it("shows an inline error when manual creation fails", async () => {
