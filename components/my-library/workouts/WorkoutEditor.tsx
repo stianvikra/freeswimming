@@ -16,6 +16,7 @@ import {
   SESSION_DRAFT_STEP_EQUIPMENT,
   SESSION_DRAFT_REPEAT_MAX,
   SESSION_DRAFT_REPEAT_MIN,
+  SESSION_DRAFT_REPEAT_ENDING_REST_MODES,
   SESSION_DRAFT_STEP_STROKES,
   SESSION_DRAFT_STEP_TARGET_MODES,
   SESSION_GENERATOR_ENVIRONMENTS,
@@ -30,6 +31,7 @@ import {
   formatDistanceMetersLabel,
   formatPaceSecondsPer100m,
   formatPoolLengthLabel,
+  getSessionDraftRepeatEndingRestModeLabel,
   getSessionEffortLabel,
   getSessionEnvironmentLabel,
   getSessionEquipmentLabel,
@@ -41,9 +43,12 @@ import {
   getSessionStepTargetModeLabel,
   getSessionStrokeLabel,
   getSessionTypeLabel,
+  isSessionDraftRepeatEndingRestStep,
   isSessionDraftPoolLengthPreset,
   isSessionDraftStepDistancePreset,
+  resolveSessionDraftRepeatEndingRestMode,
   type SessionDraft,
+  type SessionDraftRepeatEndingRestMode,
   type SessionDraftStep,
   type SessionDraftStepCategory,
   type SessionDraftStepDurationMode,
@@ -106,6 +111,7 @@ type StepRenderGroup =
       kind: "repeat";
       repeatGroupId: string;
       repeatCount: number | null;
+      repeatEndingRestMode: SessionDraftRepeatEndingRestMode;
       entries: StepRenderEntry[];
     };
 
@@ -169,6 +175,7 @@ function buildBlankStep(
     notes: "",
     repeatGroupId: null,
     repeatCount: null,
+    repeatEndingRestMode: null,
     ...overrides,
   };
 }
@@ -324,6 +331,7 @@ function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
       notes: "Edit this into the exact repeat you want to hold.",
       repeatGroupId: groupId,
       repeatCount: 4,
+      repeatEndingRestMode: "use_last_rest",
     }),
     buildBlankStep(index + 1, {
       id: `${groupId}-step-2`,
@@ -339,13 +347,15 @@ function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
       notes: "Adjust or remove this recovery once the set is dialed in.",
       repeatGroupId: groupId,
       repeatCount: 4,
+      repeatEndingRestMode: "use_last_rest",
     }),
   ];
 }
 
 function buildRepeatInsertedStep(
   repeatGroupId: string,
-  repeatCount: number | null
+  repeatCount: number | null,
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode | null
 ): Partial<SessionDraftStep> {
   return {
     name: "Repeat step",
@@ -354,6 +364,7 @@ function buildRepeatInsertedStep(
     notes: "",
     repeatGroupId,
     repeatCount,
+    repeatEndingRestMode,
   };
 }
 
@@ -444,7 +455,8 @@ function buildStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number
 function buildRepeatSummary(
   entries: StepRenderEntry[],
   repeatCount: number | null,
-  basePaceSecondsPer100m: number
+  basePaceSecondsPer100m: number,
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
 ) {
   if (repeatCount === null) {
     return "Set a repeat count to keep this block valid.";
@@ -482,6 +494,17 @@ function buildRepeatSummary(
   }
   if (roundDistanceM > 0) {
     parts.push(`${roundDistanceM * repeatCount}m repeated distance`);
+  }
+
+  const lastEntry = entries[entries.length - 1];
+
+  if (
+    repeatEndingRestMode === "skip_last_rest" &&
+    repeatCount > 1 &&
+    lastEntry &&
+    isSessionDraftRepeatEndingRestStep(lastEntry.step)
+  ) {
+    parts.push("Final rest skipped");
   }
 
   return parts.join(" · ");
@@ -535,6 +558,9 @@ function buildStepRenderGroups(steps: SessionDraftStep[]): StepRenderGroup[] {
       kind: "repeat",
       repeatGroupId: step.repeatGroupId,
       repeatCount: step.repeatCount ?? null,
+      repeatEndingRestMode: resolveSessionDraftRepeatEndingRestMode(
+        step.repeatEndingRestMode ?? null
+      ),
       entries,
     });
     index = nextIndex - 1;
@@ -1020,7 +1046,11 @@ export default function WorkoutEditor({
     insertStepAt(
       sourceIndex + 1,
       sourceStep.repeatGroupId
-        ? buildRepeatInsertedStep(sourceStep.repeatGroupId, sourceStep.repeatCount ?? null)
+        ? buildRepeatInsertedStep(
+            sourceStep.repeatGroupId,
+            sourceStep.repeatCount ?? null,
+            resolveSessionDraftRepeatEndingRestMode(sourceStep.repeatEndingRestMode ?? null)
+          )
         : {}
     );
   }
@@ -1218,6 +1248,25 @@ export default function WorkoutEditor({
             ? {
                 ...step,
                 repeatCount: nextRepeatCount,
+              }
+            : step
+        ),
+      })
+    );
+  }
+
+  function updateRepeatGroupEndingRestMode(
+    repeatGroupId: string,
+    value: SessionDraftRepeatEndingRestMode
+  ) {
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        steps: draft.steps.map((step) =>
+          step.repeatGroupId === repeatGroupId
+            ? {
+                ...step,
+                repeatEndingRestMode: value,
               }
             : step
         ),
@@ -3006,7 +3055,8 @@ export default function WorkoutEditor({
                       {buildRepeatSummary(
                         group.entries,
                         group.repeatCount,
-                        draft.basePaceSecondsPer100m
+                        draft.basePaceSecondsPer100m,
+                        group.repeatEndingRestMode
                       )}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
@@ -3033,6 +3083,34 @@ export default function WorkoutEditor({
                         className="mt-2 block h-11 w-28 rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                       />
                     </label>
+                    {draft.environment === "pool" &&
+                    (() => {
+                      const lastEntry = group.entries[group.entries.length - 1];
+                      return Boolean(
+                        lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step)
+                      );
+                    })() ? (
+                      <label className="text-sm text-slate-700">
+                        Last rest interval
+                        <select
+                          value={group.repeatEndingRestMode}
+                          onChange={(event) =>
+                            updateRepeatGroupEndingRestMode(
+                              group.repeatGroupId,
+                              event.target.value as SessionDraftRepeatEndingRestMode
+                            )
+                          }
+                          data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
+                          className="mt-2 block h-11 min-w-[15rem] rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        >
+                          {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
+                            <option key={mode} value={mode}>
+                              {getSessionDraftRepeatEndingRestModeLabel(mode)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => moveDraftGroup(groupIndex, -1)}

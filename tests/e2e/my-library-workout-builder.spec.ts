@@ -210,6 +210,9 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
     await page.getByTestId("session-draft-add-repeat").click();
     await page.getByTestId("session-draft-repeat-count-1").fill("6");
+    await page
+      .getByTestId("session-draft-repeat-ending-rest-mode-1")
+      .selectOption("skip_last_rest");
     await page.getByTestId("session-draft-step-name-1").fill("Repeat swim focus");
     await page.getByTestId("session-draft-step-distance-1").selectOption("200");
     await page.getByTestId("session-draft-step-stroke-1").selectOption("backstroke");
@@ -247,12 +250,18 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
       "Review before export/send"
     );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
+      "Final rest skipped"
+    );
     await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",
       "local_draft"
     );
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
       '"draftState": "local_draft"'
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      '"repeatEndingRestMode": "skip_last_rest"'
     );
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
       `"title": "${uniqueTitle}"`

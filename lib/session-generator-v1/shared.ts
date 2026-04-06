@@ -88,6 +88,10 @@ export const SESSION_DRAFT_STEP_DISTANCE_PRESETS = [
 ] as const;
 export const SESSION_DRAFT_REPEAT_MIN = 2;
 export const SESSION_DRAFT_REPEAT_MAX = 20;
+export const SESSION_DRAFT_REPEAT_ENDING_REST_MODES = [
+  "use_last_rest",
+  "skip_last_rest",
+] as const;
 export const SESSION_DRAFT_POOL_LENGTH_PRESETS = [12.5, 25, 50] as const;
 export const SESSION_DRAFT_POOL_LENGTH_MIN = 12.5;
 export const SESSION_DRAFT_POOL_LENGTH_MAX = 500;
@@ -107,6 +111,8 @@ export type SessionDraftStepCategory = (typeof SESSION_DRAFT_STEP_CATEGORIES)[nu
 export type SessionDraftStepDurationMode = (typeof SESSION_DRAFT_STEP_DURATION_MODES)[number];
 export type SessionDraftStepTargetMode = (typeof SESSION_DRAFT_STEP_TARGET_MODES)[number];
 export type SessionDraftStepDistancePreset = (typeof SESSION_DRAFT_STEP_DISTANCE_PRESETS)[number];
+export type SessionDraftRepeatEndingRestMode =
+  (typeof SESSION_DRAFT_REPEAT_ENDING_REST_MODES)[number];
 export type SessionDraftPoolLength = number;
 
 export type SessionGeneratorFormState = {
@@ -163,6 +169,7 @@ export type SessionDraftStep = {
   notes: string;
   repeatGroupId?: string | null;
   repeatCount?: number | null;
+  repeatEndingRestMode?: SessionDraftRepeatEndingRestMode | null;
 };
 
 export type SessionDraft = {
@@ -300,6 +307,11 @@ const STEP_TARGET_MODE_LABELS: Record<SessionDraftStepTargetMode, string> = {
   css_target_pace: "CSS-based target pace",
 };
 
+const REPEAT_ENDING_REST_MODE_LABELS: Record<SessionDraftRepeatEndingRestMode, string> = {
+  use_last_rest: "Use last rest interval",
+  skip_last_rest: "Skip last rest interval",
+};
+
 export function getSessionEnvironmentLabel(value: SessionGeneratorEnvironment) {
   return ENVIRONMENT_LABELS[value];
 }
@@ -345,6 +357,10 @@ export function getSessionStepTargetModeLabel(value: SessionDraftStepTargetMode)
   return STEP_TARGET_MODE_LABELS[value];
 }
 
+export function getSessionDraftRepeatEndingRestModeLabel(value: SessionDraftRepeatEndingRestMode) {
+  return REPEAT_ENDING_REST_MODE_LABELS[value];
+}
+
 export function formatPoolLengthLabel(value: number) {
   return `${value.toFixed(2).replace(/\.?0+$/, "")}m`;
 }
@@ -388,6 +404,20 @@ export function formatPaceSecondsPer100m(value: number) {
 export function resolveSessionStepTargetMode(step: SessionDraftStep): SessionDraftStepTargetMode {
   const candidate = step.targetMode ?? "none";
   return SESSION_DRAFT_STEP_TARGET_MODES.includes(candidate) ? candidate : "none";
+}
+
+export function resolveSessionDraftRepeatEndingRestMode(
+  value: SessionDraftStep["repeatEndingRestMode"]
+): SessionDraftRepeatEndingRestMode {
+  return SESSION_DRAFT_REPEAT_ENDING_REST_MODES.includes(
+    value as SessionDraftRepeatEndingRestMode
+  )
+    ? (value as SessionDraftRepeatEndingRestMode)
+    : "use_last_rest";
+}
+
+export function isSessionDraftRepeatEndingRestStep(step: SessionDraftStep) {
+  return step.category === "rest";
 }
 
 export function buildSessionStepStructuredTargetLabel(
@@ -552,32 +582,80 @@ export function computeSessionDraftDerivedTotals(draft: SessionDraft): {
   let totalDistanceM = 0;
   let estimatedMinutes = 0;
 
-  for (const step of draft.steps) {
-    const durationMode = resolveStepDurationMode(step);
-    const repeatMultiplier =
+  for (let index = 0; index < draft.steps.length; index += 1) {
+    const step = draft.steps[index];
+
+    if (!step) continue;
+
+    const repeatCount =
       step.repeatGroupId && step.repeatCount && step.repeatCount >= SESSION_DRAFT_REPEAT_MIN
         ? step.repeatCount
         : 1;
+    const isRepeatGroupStart =
+      Boolean(step.repeatGroupId) &&
+      (index === 0 || draft.steps[index - 1]?.repeatGroupId !== step.repeatGroupId);
 
-    if (durationMode === "distance" && step.distanceM) {
-      totalDistanceM += step.distanceM * repeatMultiplier;
-      estimatedMinutes +=
-        (((step.distanceM * repeatMultiplier) / 100) * resolveStepPaceSecondsPer100m(draft, step)) /
-        60;
+    if (step.repeatGroupId && !isRepeatGroupStart) {
+      continue;
     }
 
-    if (
-      (durationMode === "time" || durationMode === "fixed_rest" || durationMode === "send_off") &&
-      step.timeMin
-    ) {
-      estimatedMinutes += step.timeMin * repeatMultiplier;
+    const groupSteps: SessionDraftStep[] = [step];
+    if (step.repeatGroupId) {
+      let nextIndex = index + 1;
+      while (draft.steps[nextIndex]?.repeatGroupId === step.repeatGroupId) {
+        const nextStep = draft.steps[nextIndex];
+        if (!nextStep) break;
+        groupSteps.push(nextStep);
+        nextIndex += 1;
+      }
+      index = nextIndex - 1;
     }
 
-    if (durationMode === "css_send_off" && typeof step.cssSendOffOffsetSeconds === "number") {
-      estimatedMinutes +=
-        (Math.max(1, draft.basePaceSecondsPer100m + Math.round(step.cssSendOffOffsetSeconds)) *
-          repeatMultiplier) /
-        60;
+    const repeatEndingRestMode = resolveSessionDraftRepeatEndingRestMode(
+      step.repeatEndingRestMode ?? null
+    );
+    const lastGroupStep = groupSteps[groupSteps.length - 1] ?? null;
+    const shouldSkipLastRest =
+      repeatCount > 1 &&
+      repeatEndingRestMode === "skip_last_rest" &&
+      Boolean(lastGroupStep && isSessionDraftRepeatEndingRestStep(lastGroupStep));
+
+    for (const [groupStepIndex, groupStep] of groupSteps.entries()) {
+      const durationMode = resolveStepDurationMode(groupStep);
+      const repeatMultiplier =
+        shouldSkipLastRest && groupStepIndex === groupSteps.length - 1
+          ? Math.max(0, repeatCount - 1)
+          : repeatCount;
+
+      if (durationMode === "distance" && groupStep.distanceM) {
+        totalDistanceM += groupStep.distanceM * repeatMultiplier;
+        estimatedMinutes +=
+          (((groupStep.distanceM * repeatMultiplier) / 100) *
+            resolveStepPaceSecondsPer100m(draft, groupStep)) /
+          60;
+      }
+
+      if (
+        (durationMode === "time" ||
+          durationMode === "fixed_rest" ||
+          durationMode === "send_off") &&
+        groupStep.timeMin
+      ) {
+        estimatedMinutes += groupStep.timeMin * repeatMultiplier;
+      }
+
+      if (
+        durationMode === "css_send_off" &&
+        typeof groupStep.cssSendOffOffsetSeconds === "number"
+      ) {
+        estimatedMinutes +=
+          (Math.max(
+            1,
+            draft.basePaceSecondsPer100m + Math.round(groupStep.cssSendOffOffsetSeconds)
+          ) *
+            repeatMultiplier) /
+          60;
+      }
     }
   }
 

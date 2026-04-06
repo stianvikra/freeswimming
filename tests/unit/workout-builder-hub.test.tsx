@@ -527,6 +527,9 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-add-repeat-after-0"));
 
     expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
+    expect(screen.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
+      "use_last_rest"
+    );
     expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim");
 
     const previewDraft = readPreviewDraft();
@@ -535,8 +538,35 @@ describe("WorkoutBuilderHub", () => {
     expect(previewDraft.steps).toHaveLength(3);
     expect(repeatSteps).toHaveLength(2);
     expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
+    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "use_last_rest")).toBe(true);
     expect(previewDraft.steps[0]?.repeatGroupId ?? null).toBeNull();
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
+  });
+
+  it("can switch a pool repeat block to skip the final rest interval", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    fireEvent.change(screen.getByTestId("session-draft-repeat-ending-rest-mode-1"), {
+      target: { value: "skip_last_rest" },
+    });
+
+    expect(screen.getByText(/Final rest skipped/)).toBeVisible();
+
+    const previewDraft = readPreviewDraft();
+    const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
+
+    expect(repeatSteps).toHaveLength(2);
+    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(
+      true
+    );
   });
 
   it("supports confirm and undo when removing a repeat block", async () => {

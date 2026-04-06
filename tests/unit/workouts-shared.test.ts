@@ -392,6 +392,75 @@ describe("workouts shared readiness", () => {
     });
   });
 
+  it("surfaces skipped final rest semantics across handoff, pdf, and garmin-ready export output", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      title: "Skip final rest draft",
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Repeat review swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "Hold the line.",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Repeat review rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "send_off",
+          distanceM: null,
+          timeMin: 2,
+          targetSummary: "Reset before the next round.",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+      ],
+    };
+
+    const handoffText = buildWorkoutHandoffText(draft, {
+      draftState: "canonical",
+    });
+    const pdfModel = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+    });
+    const exportPayload = buildWorkoutGarminReadyExport(draft, {
+      draftState: "canonical",
+      workoutId: "workout-3",
+    });
+
+    expect(handoffText).toContain("4 rounds · 100m + 2:00 per round · Final rest skipped");
+    expect(pdfModel.blocks[0]).toMatchObject({
+      kind: "repeat",
+      summary: "4 rounds · 100m + 2:00 per round · Final rest skipped",
+    });
+    expect(pdfModel.poolsideLines).toContain("P: 2:00 between rounds (final rest skipped)");
+
+    if (exportPayload.blocks[0]?.kind !== "repeat") {
+      throw new Error("Expected repeat block export.");
+    }
+
+    expect(exportPayload.blocks[0]).toMatchObject({
+      repeatEndingRestMode: "skip_last_rest",
+      roundSummary: "4 rounds · 100m + 2:00 per round · Final rest skipped",
+    });
+    expect(exportPayload.blocks[0].steps[0]?.repeatEndingRestMode).toBe("skip_last_rest");
+    expect(exportPayload.blocks[0].steps[1]?.repeatEndingRestMode).toBe("skip_last_rest");
+  });
+
   it("builds a printable workout PDF html document for local drafts with repeat review details", () => {
     const draft: SessionDraft = {
       ...buildDraft(),

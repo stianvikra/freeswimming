@@ -274,6 +274,72 @@ describe("workouts server", () => {
     expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
   });
 
+  it("skips the final rest interval in repeat totals when the repeat block opts out", () => {
+    const useLastRestDraft: SessionDraft = {
+      ...buildDraft(),
+      title: "Use last rest workout",
+      titleSuggestions: ["Use last rest workout"],
+      targetDistanceM: 400,
+      totalDistanceM: 400,
+      estimatedDurationMin: 12,
+      steps: [
+        {
+          id: "repeat-1-step-1",
+          category: "main",
+          name: "Repeat swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "Hold steady pace.",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "repeat-1-step-2",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "time",
+          distanceM: null,
+          timeMin: 1,
+          targetSummary: "Short reset.",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "use_last_rest",
+        },
+      ],
+    };
+    const skipLastRestDraft: SessionDraft = {
+      ...useLastRestDraft,
+      title: "Skip last rest workout",
+      titleSuggestions: ["Skip last rest workout"],
+      steps: useLastRestDraft.steps.map((step) => ({
+        ...step,
+        repeatEndingRestMode: "skip_last_rest",
+      })),
+    };
+
+    const useInsert = buildWorkoutInsert("user-1", useLastRestDraft, "manual");
+    const skipInsert = buildWorkoutInsert("user-1", skipLastRestDraft, "manual");
+    const skippedRepeatSteps = (skipInsert.steps as unknown as SessionDraft["steps"]).filter(
+      (step) => step.repeatGroupId === "repeat-1"
+    );
+
+    expect(useInsert.total_distance_m).toBe(400);
+    expect(skipInsert.total_distance_m).toBe(400);
+    expect(useInsert.estimated_duration_min).toBe(13);
+    expect(skipInsert.estimated_duration_min).toBe(12);
+    expect(skippedRepeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(
+      true
+    );
+  });
+
   it("uses structured pace targets and fixed rest when computing workout totals", () => {
     const targetDraft: SessionDraft = {
       ...buildDraft(),
