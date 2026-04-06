@@ -344,6 +344,9 @@ test.describe("api security negative paths", () => {
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.get(`/api/admin/email-templates/${dummyUuid}/revisions`)
     );
+    await expectUnauthorizedNoLeakWithTransientRetry(() =>
+      request.post("/api/admin/email-templates/test-records")
+    );
 
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
       request.get("/api/admin/operations/flags")

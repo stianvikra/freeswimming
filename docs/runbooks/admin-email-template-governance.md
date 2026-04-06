@@ -58,6 +58,20 @@ Run safe, auditable template copy changes without ad-hoc edits in code or provid
 3. Re-run preview/send verification.
 4. Record rollback reason and follow-up owner.
 
+## QA/Test Artifact Hygiene
+
+- Automated QA/template-preview runs must use explicit test keys only:
+  - canonical prefix: `e2e_admin_email_template_*`
+- Legacy residue from older preview coverage may still appear as:
+  - `aw012_publish_fallback_*`
+- These keys are test artifacts, not operator-owned templates.
+- Cleanup rule:
+  - only purge rows that match the explicit QA/test key contract,
+  - never delete normal operator keys such as `auth_login_code`.
+- Recovery expectation:
+  - the protected QA cleanup path should be run before/after automated preview coverage,
+  - if old legacy QA rows are found in production, purge only those explicit keys and re-check the template list afterward.
+
 ## Incident Support Checklist (<=5 min target)
 
 1. Identify affected `templateKey`.
