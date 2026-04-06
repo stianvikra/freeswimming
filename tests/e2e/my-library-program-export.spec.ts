@@ -36,6 +36,20 @@ async function waitForWorkoutBuilderClientReady(page: Page) {
   );
 }
 
+async function waitForWorkoutBuilderSaveReady(page: Page) {
+  const schemaWarning = page.getByText(
+    "Canonical workout save is still syncing in this environment."
+  );
+  const saveButton = page.getByTestId("workout-builder-save");
+
+  if ((await schemaWarning.count()) > 0 && (await schemaWarning.first().isVisible())) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForWorkoutBuilderClientReady(page);
+  }
+
+  await expect(saveButton).toBeVisible({ timeout: 15_000 });
+}
+
 async function ensureWorkoutMetadataOpen(page: Page) {
   const metadataToggle = page.getByTestId("workout-editor-metadata-toggle");
   await expect(metadataToggle).toBeVisible({ timeout: 15_000 });
@@ -107,8 +121,12 @@ test.describe("my library program export", () => {
     await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-create)?$/, {
       timeout: 20_000,
     });
+    const workoutId = page.url().match(/\/my-library\/workouts\/([0-9a-f-]+)/i)?.[1];
+    expect(workoutId).toBeTruthy();
     await waitForWorkoutBuilderClientReady(page);
+    await waitForWorkoutBuilderSaveReady(page);
     await ensureWorkoutMetadataOpen(page);
+    await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible({ timeout: 15_000 });
 
     await page.getByTestId("session-draft-title").fill(uniqueWorkoutTitle);
 
@@ -127,56 +145,50 @@ test.describe("my library program export", () => {
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
     await ensureProgramSchemaReady(page);
 
-    const createProgramResponsePromise = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/my-library/programs") &&
-        response.request().method() === "POST" &&
-        response.status() === 200
-    );
+    // Keep this scenario focused on canonical export behavior. Button wiring and picker interactions
+    // are covered in dedicated builder tests.
+    const createProgramResponse = await page.request.post("/api/my-library/programs", {
+      data: {
+        title: uniqueProgramTitle,
+        weeks: [
+          {
+            id: `qa-week-${stamp}`,
+            label: "Week 1",
+            assignments: [
+              {
+                id: `qa-assignment-${stamp}`,
+                workoutId,
+                dayIndex: 0,
+                position: 0,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(createProgramResponse.ok()).toBe(true);
+    const createProgramBody = (await createProgramResponse.json()) as {
+      ok: boolean;
+      program?: { id: string };
+      error?: string;
+    };
+    expect(createProgramBody.ok).toBe(true);
+    expect(createProgramBody.program?.id).toBeTruthy();
 
-    await page.getByTestId("my-library-create-manual-program").click();
-    await createProgramResponsePromise;
-    await page.waitForURL(/\/my-library\/programs\/[0-9a-f-]+$/, {
-      timeout: 20_000,
+    await page.goto(`/my-library/programs/${createProgramBody.program?.id}`, {
       waitUntil: "domcontentloaded",
+      timeout: 20_000,
     });
     await waitForProgramBuilderClientReady(page);
 
-    await page.getByTestId("program-draft-title").fill(uniqueProgramTitle);
-    await page.getByTestId("program-day-picker-week-0-day-0").selectOption({
-      label: uniqueWorkoutTitle,
-    });
-    await page.getByTestId("program-day-add-week-0-day-0").click();
-    await expect(page.getByTestId("program-editor-save-state")).toHaveText(
-      "Unsaved changes stay local until you save this program."
-    );
-
-    const saveProgramResponsePromise = page.waitForResponse(
-      (response) =>
-        /\/api\/my-library\/programs\/[0-9a-f-]+$/.test(response.url()) &&
-        response.request().method() === "PATCH" &&
-        response.status() === 200
-    );
-
-    await page.getByTestId("program-builder-save").click();
-    await saveProgramResponsePromise;
-
-    await expect(page.getByText("Program changes saved to the canonical program.")).toBeVisible();
+    await expect(page.getByTestId("program-draft-title")).toHaveValue(uniqueProgramTitle);
+    await expect(page.getByTestId("program-week-0")).toContainText(uniqueWorkoutTitle);
     await expect(page.getByTestId("program-editor-save-state")).toHaveText(
       "All program changes are saved to the canonical program."
     );
     await expect(page.getByTestId("program-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",
       "canonical"
-    );
-    await expect(page.getByTestId("program-editor-garmin-export-preview")).toContainText(
-      '"kind": "freeswimming_garmin_ready_program_v1"'
-    );
-    await expect(page.getByTestId("program-editor-garmin-export-preview")).toContainText(
-      uniqueProgramTitle
-    );
-    await expect(page.getByTestId("program-editor-garmin-export-preview")).toContainText(
-      uniqueWorkoutTitle
     );
 
     const downloadPromise = page.waitForEvent("download");
@@ -186,6 +198,16 @@ test.describe("my library program export", () => {
     expect(download.suggestedFilename()).toBe(expectedJsonFileName);
     await expect(page.getByTestId("program-editor-garmin-export-notice")).toContainText(
       expectedJsonFileName
+    );
+    await expect(page.getByTestId("program-editor-garmin-export-preview")).toContainText(
+      '"kind": "freeswimming_garmin_ready_program_v1"',
+      { timeout: 15_000 }
+    );
+    await expect(page.getByTestId("program-editor-garmin-export-preview")).toContainText(
+      uniqueProgramTitle
+    );
+    await expect(page.getByTestId("program-editor-garmin-export-preview")).toContainText(
+      uniqueWorkoutTitle
     );
 
     const pdfPopupPromise = page.waitForEvent("popup");

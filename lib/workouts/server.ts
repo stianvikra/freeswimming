@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  SESSION_GENERATOR_EFFORT_PRESETS,
+  SESSION_GENERATOR_ENVIRONMENTS,
+  SESSION_GENERATOR_SESSION_TYPES,
+  SESSION_GENERATOR_SIZE_MODES,
   normalizeSessionDraftPoolLength,
   type SessionDraft,
 } from "@/lib/session-generator-v1/shared";
@@ -129,28 +133,54 @@ export function buildWorkoutUpdate(draft: SessionDraft | null | undefined): Work
   };
 }
 
-export function buildWorkoutEditorRecord(row: WorkoutRow): WorkoutEditorRecord {
-  const draft = normalizeSessionDraftForWorkoutPersistence({
+function inferStoredWorkoutSizeMode(row: WorkoutRow): SessionDraft["sizeMode"] {
+  if (SESSION_GENERATOR_SIZE_MODES.includes(row.size_mode as SessionDraft["sizeMode"])) {
+    return row.size_mode as SessionDraft["sizeMode"];
+  }
+
+  if (typeof row.target_time_min === "number" && row.target_time_min > 0) {
+    return "estimated_time";
+  }
+
+  return "distance";
+}
+
+function buildStoredWorkoutDraftInput(row: WorkoutRow): SessionDraft {
+  const titleSuggestions = normalizeTextArray(row.title_suggestions);
+  const allowedStrokes = normalizeTextArray(row.allowed_strokes) as SessionDraft["allowedStrokes"];
+  const sizeMode = inferStoredWorkoutSizeMode(row);
+
+  return {
     version: 1,
     status: "draft",
-    generatorKind: row.generator_kind as SessionDraft["generatorKind"],
-    createdAt: row.generated_at,
-    sourceFingerprint: row.source_fingerprint,
+    generatorKind: "rule_engine_v1",
+    createdAt: row.generated_at ?? row.accepted_at ?? row.created_at ?? row.updated_at,
+    sourceFingerprint: row.source_fingerprint ?? `legacy-${row.id}`,
     title: row.title,
-    titleSuggestions: normalizeTextArray(row.title_suggestions),
-    description: row.description,
-    environment: row.environment as SessionDraft["environment"],
+    titleSuggestions: titleSuggestions.length > 0 ? titleSuggestions : [row.title],
+    description: row.description ?? "",
+    environment: SESSION_GENERATOR_ENVIRONMENTS.includes(
+      row.environment as SessionDraft["environment"]
+    )
+      ? (row.environment as SessionDraft["environment"])
+      : "pool",
     poolLengthM: normalizePoolLength(row.pool_length_m),
-    sessionType: row.session_type as SessionDraft["sessionType"],
-    effort: row.effort as SessionDraft["effort"],
-    sizeMode: row.size_mode as SessionDraft["sizeMode"],
-    targetDistanceM: row.target_distance_m,
-    targetTimeMin: row.target_time_min,
+    sessionType: SESSION_GENERATOR_SESSION_TYPES.includes(row.session_type as SessionDraft["sessionType"])
+      ? (row.session_type as SessionDraft["sessionType"])
+      : "endurance",
+    effort: SESSION_GENERATOR_EFFORT_PRESETS.includes(row.effort as SessionDraft["effort"])
+      ? (row.effort as SessionDraft["effort"])
+      : "moderate",
+    sizeMode,
+    targetDistanceM:
+      sizeMode === "distance" ? (row.target_distance_m ?? row.total_distance_m) : null,
+    targetTimeMin:
+      sizeMode === "estimated_time" ? (row.target_time_min ?? row.estimated_duration_min) : null,
     totalDistanceM: row.total_distance_m,
     estimatedDurationMin: row.estimated_duration_min,
-    basePaceSecondsPer100m: row.base_pace_seconds_per_100,
+    basePaceSecondsPer100m: row.base_pace_seconds_per_100 ?? 120,
     usedCssPaceLabel: row.used_css_pace_label,
-    allowedStrokes: normalizeTextArray(row.allowed_strokes) as SessionDraft["allowedStrokes"],
+    allowedStrokes: allowedStrokes.length > 0 ? allowedStrokes : ["freestyle"],
     equipmentAllowlist: normalizeTextArray(
       row.equipment_allowlist
     ) as SessionDraft["equipmentAllowlist"],
@@ -159,7 +189,11 @@ export function buildWorkoutEditorRecord(row: WorkoutRow): WorkoutEditorRecord {
     constraintText: row.constraint_text,
     warnings: normalizeTextArray(row.warnings),
     steps: Array.isArray(row.steps) ? (row.steps as SessionDraft["steps"]) : [],
-  });
+  };
+}
+
+export function buildWorkoutEditorRecord(row: WorkoutRow): WorkoutEditorRecord {
+  const draft = normalizeSessionDraftForWorkoutPersistence(buildStoredWorkoutDraftInput(row));
 
   if (!draft.ok) {
     throw new Error(`Stored workout ${row.id} is invalid: ${draft.error}`);
@@ -181,19 +215,49 @@ export function buildWorkoutSummary(row: WorkoutRow): WorkoutSummary {
 
   return {
     id: row.id,
-    title: row.title,
-    environment: row.environment as SessionDraft["environment"],
-    poolLengthM: normalizePoolLength(row.pool_length_m),
-    sessionType: row.session_type as SessionDraft["sessionType"],
-    effort: row.effort as SessionDraft["effort"],
-    totalDistanceM: row.total_distance_m,
-    estimatedDurationMin: row.estimated_duration_min,
+    title: draft.title,
+    environment: draft.environment,
+    poolLengthM: draft.poolLengthM,
+    sessionType: draft.sessionType,
+    effort: draft.effort,
+    totalDistanceM: draft.totalDistanceM,
+    estimatedDurationMin: draft.estimatedDurationMin,
     updatedAt: row.updated_at,
     acceptedAt: row.accepted_at,
     sourceKind: row.source_kind as WorkoutSourceKind,
     status: row.status as WorkoutStatus,
     previewText: buildWorkoutSummaryPreviewText(draft),
   };
+}
+
+export function tryBuildWorkoutSummary(
+  row: WorkoutRow,
+  contextLabel: string
+): WorkoutSummary | null {
+  try {
+    return buildWorkoutSummary(row);
+  } catch (error) {
+    console.error(`[Workouts] Skipping invalid stored workout summary in ${contextLabel}`, {
+      workoutId: row.id,
+      error: error instanceof Error ? error.message : error,
+    });
+    return null;
+  }
+}
+
+function tryBuildWorkoutEditorRecord(
+  row: WorkoutRow,
+  contextLabel: string
+): WorkoutEditorRecord | null {
+  try {
+    return buildWorkoutEditorRecord(row);
+  } catch (error) {
+    console.error(`[Workouts] Stored workout payload is invalid in ${contextLabel}`, {
+      workoutId: row.id,
+      error: error instanceof Error ? error.message : error,
+    });
+    return null;
+  }
 }
 
 export async function loadWorkoutLibrarySnapshot(
@@ -241,22 +305,35 @@ export async function loadWorkoutLibrarySnapshot(
 
   if (selectedResult.error) {
     console.error("[Workouts] Could not load selected workout", selectedResult.error);
+    const recentWorkouts = (recentResult.data ?? [])
+      .map((row) => tryBuildWorkoutSummary(row as WorkoutRow, "workout-library recent list"))
+      .filter((workout): workout is WorkoutSummary => Boolean(workout));
     return {
       schemaReady: true,
       loadError: "Could not open that saved workout right now.",
       selectedWorkout: null,
       selectedWorkoutMissing: false,
-      recentWorkouts: recentResult.data.map(buildWorkoutSummary),
+      recentWorkouts,
     };
   }
 
   try {
+    const recentWorkouts = (recentResult.data ?? [])
+      .map((row) => tryBuildWorkoutSummary(row as WorkoutRow, "workout-library recent list"))
+      .filter((workout): workout is WorkoutSummary => Boolean(workout));
+    const selectedWorkout = selectedResult.data
+      ? tryBuildWorkoutEditorRecord(selectedResult.data, "selected workout")
+      : null;
+    const invalidSelectedWorkout = Boolean(selectedResult.data && !selectedWorkout);
+
     return {
       schemaReady: true,
-      loadError: null,
-      selectedWorkout: selectedResult.data ? buildWorkoutEditorRecord(selectedResult.data) : null,
-      selectedWorkoutMissing: Boolean(selectedWorkoutId && !selectedResult.data),
-      recentWorkouts: recentResult.data.map(buildWorkoutSummary),
+      loadError: invalidSelectedWorkout
+        ? "This saved workout could not be opened because its stored data is invalid."
+        : null,
+      selectedWorkout,
+      selectedWorkoutMissing: Boolean(selectedWorkoutId && (!selectedResult.data || invalidSelectedWorkout)),
+      recentWorkouts,
     };
   } catch (error) {
     console.error("[Workouts] Stored workout payload is invalid", error);

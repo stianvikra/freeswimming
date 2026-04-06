@@ -15,7 +15,7 @@ import {
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 import {
   buildWorkoutEditorRecord,
-  buildWorkoutSummary,
+  tryBuildWorkoutSummary,
   WORKOUT_SELECT,
 } from "@/lib/workouts/server";
 import type { WorkoutEditorRecord, WorkoutSummary } from "@/lib/workouts/shared";
@@ -26,21 +26,6 @@ type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
 type ProgramInsert = Database["public"]["Tables"]["programs"]["Insert"];
 type ProgramUpdate = Database["public"]["Tables"]["programs"]["Update"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
-
-const WORKOUT_SUMMARY_SELECT = `
-  id,
-  source_kind,
-  status,
-  title,
-  environment,
-  pool_length_m,
-  session_type,
-  effort,
-  total_distance_m,
-  estimated_duration_min,
-  accepted_at,
-  updated_at
-`;
 
 export const PROGRAM_SELECT = `
   id,
@@ -205,7 +190,7 @@ export async function loadProgramLibrarySnapshot(
       : Promise.resolve({ data: null, error: null }),
     supabase
       .from("workouts")
-      .select(WORKOUT_SUMMARY_SELECT)
+      .select(WORKOUT_SELECT)
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
       .limit(12),
@@ -229,7 +214,9 @@ export async function loadProgramLibrarySnapshot(
   const recentWorkouts =
     isWorkoutSchemaMissing(recentWorkoutsResult.error) || recentWorkoutsResult.error
       ? []
-      : (recentWorkoutsResult.data ?? []).map((row) => buildWorkoutSummary(row as WorkoutRow));
+      : (recentWorkoutsResult.data ?? [])
+          .map((row) => tryBuildWorkoutSummary(row as WorkoutRow, "program-library recent list"))
+          .filter((workout): workout is WorkoutSummary => Boolean(workout));
 
   if (recentProgramsResult.error) {
     console.error("[Programs] Could not load program summaries", recentProgramsResult.error);
@@ -276,14 +263,16 @@ export async function loadProgramLibrarySnapshot(
     if (missingFromRecent.length > 0) {
       const result = await supabase
         .from("workouts")
-        .select(WORKOUT_SUMMARY_SELECT)
+        .select(WORKOUT_SELECT)
         .eq("user_id", userId)
         .in("id", missingFromRecent);
 
       if (!result.error) {
-        referencedWorkouts = (result.data ?? []).map((row) =>
-          buildWorkoutSummary(row as WorkoutRow)
-        );
+        referencedWorkouts = (result.data ?? [])
+          .map((row) =>
+            tryBuildWorkoutSummary(row as WorkoutRow, "program-library referenced workouts")
+          )
+          .filter((workout): workout is WorkoutSummary => Boolean(workout));
       }
     }
 
