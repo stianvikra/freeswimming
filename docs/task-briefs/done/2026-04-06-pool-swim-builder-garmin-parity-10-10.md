@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-06-pool-swim-builder-garmin-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-06`
 - `updated`: `2026-04-06`
@@ -300,3 +300,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-06 | planning | created a dedicated pool-parity brief after manual review showed the current swim builder is Garmin-familiar but not Garmin-parity; locked the next direction as separate `pool` and `open water` manual entry paths, with `pool` owning the parity target and `open water` explicitly scoped out into a separate temporary flow | next: turn the initial parity matrix into the first implementation slice, starting with entry split plus audited field/wording decisions for the pool builder`
 - `2026-04-06 | implementation start | created a clean worktree from origin/main, split manual entry into separate pool/open-water create actions, locked manual workout metadata to the chosen environment surface, and started updating unit/e2e coverage to the new entry contract | next: finish targeted test alignment, run brief lint plus targeted validation, then execute `verify:pre-pr` before opening the PR`
 - `2026-04-06 | targeted validation complete | updated the My Library overview and workout browse surfaces to expose separate pool/open-water manual entry, added environment-specific empty drafts plus metadata locking in the manual builder, refreshed runbook text, and passed targeted unit + desktop Playwright coverage for the changed workout/program flows | next: commit the first slice, rerun full `npm run verify:pre-pr`, then open the PR with the generated body on current branch state`
+- `2026-04-06 | merged as f494a55 via PR #370 | shipped the first pool-parity slice: `Build pool session` and `Build open water session` now create separate manual entry paths, manual workouts open in environment-locked builder surfaces, runbook language was updated, `npm run verify:pre-pr` passed locally, required CI checks passed, and `npm run verify:pre-merge` passed locally before merge | next: continue the pool parity brief with field/wording parity and Garmin-specific repeat/rest semantics in a follow-up slice`
