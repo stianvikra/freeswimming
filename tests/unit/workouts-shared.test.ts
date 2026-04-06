@@ -145,6 +145,20 @@ describe("workouts shared readiness", () => {
     });
   });
 
+  it("surfaces unspecified pool size clearly in shared workout summaries", () => {
+    const model = buildWorkoutPdfModel(
+      {
+        ...buildDraft(),
+        poolLengthM: null,
+      },
+      {
+        draftState: "canonical",
+      }
+    );
+
+    expect(model.environmentSummary).toBe("Pool (Unspecified)");
+  });
+
   it("renders the session note label in printable workout PDF html", () => {
     const html = buildWorkoutPdfHtmlDocument(buildDraft(), {
       draftState: "canonical",
