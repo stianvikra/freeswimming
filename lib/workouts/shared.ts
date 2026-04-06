@@ -1,4 +1,5 @@
 import {
+  SESSION_DRAFT_REPEAT_ENDING_REST_MODES,
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
   SESSION_DRAFT_STEP_DRILL_TYPES,
@@ -26,8 +27,11 @@ import {
   getSessionStepDurationModeLabel,
   getSessionStepTargetModeLabel,
   getSessionTypeLabel,
+  isSessionDraftRepeatEndingRestStep,
   normalizeSessionDraftPoolLength,
+  resolveSessionDraftRepeatEndingRestMode,
   type SessionDraft,
+  type SessionDraftRepeatEndingRestMode,
   type SessionDraftStep,
   type SessionGeneratorEnvironment,
   type SessionGeneratorStroke,
@@ -227,6 +231,7 @@ export type WorkoutGarminReadyExportStep = {
   notes: string | null;
   repeatGroupId: string | null;
   repeatCount: number | null;
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode | null;
 };
 
 export type WorkoutGarminReadyExportBlock =
@@ -242,6 +247,7 @@ export type WorkoutGarminReadyExportBlock =
       position: number;
       repeatGroupId: string;
       repeatCount: number | null;
+      repeatEndingRestMode: SessionDraftRepeatEndingRestMode;
       mappingStatus: "ready" | "review";
       reviewIssueIds: string[];
       roundSummary: string;
@@ -461,12 +467,14 @@ export function buildWorkoutGarminReadyExport(
       position: index + 1,
       repeatGroupId: group.repeatGroupId,
       repeatCount: group.repeatCount,
+      repeatEndingRestMode: group.repeatEndingRestMode,
       mappingStatus: reviewIssueIds.length > 0 ? ("review" as const) : ("ready" as const),
       reviewIssueIds,
       roundSummary: buildWorkoutHandoffRepeatSummary(
         group.entries,
         group.repeatCount,
-        draft.basePaceSecondsPer100m
+        draft.basePaceSecondsPer100m,
+        group.repeatEndingRestMode
       ),
       roundDistanceM: roundMetrics.roundDistanceM,
       roundDurationSeconds: roundMetrics.roundDurationSeconds,
@@ -627,7 +635,8 @@ export function buildWorkoutHandoffText(
       `${groupLabel} Repeat block · ${buildWorkoutHandoffRepeatSummary(
         group.entries,
         group.repeatCount,
-        draft.basePaceSecondsPer100m
+        draft.basePaceSecondsPer100m,
+        group.repeatEndingRestMode
       )}`
     );
 
@@ -753,7 +762,8 @@ export function buildWorkoutPdfModel(
       summary: buildWorkoutHandoffRepeatSummary(
         group.entries,
         group.repeatCount,
-        draft.basePaceSecondsPer100m
+        draft.basePaceSecondsPer100m,
+        group.repeatEndingRestMode
       ),
       reviewDetails: Array.from(new Set(steps.flatMap((step) => step.reviewDetails))),
       steps,
@@ -1927,7 +1937,14 @@ export function normalizeSessionDraftForWorkoutPersistence(
     new Set([...equipmentAllowlist, ...requiredEquipment])
   );
 
-  const repeatGroups = new Map<string, { repeatCount: number; lastIndex: number }>();
+  const repeatGroups = new Map<
+    string,
+    {
+      repeatCount: number;
+      repeatEndingRestMode: SessionDraftRepeatEndingRestMode;
+      lastIndex: number;
+    }
+  >();
 
   for (const [index, step] of normalizedSteps.entries()) {
     if (!step.repeatGroupId || step.repeatCount == null) continue;
@@ -1936,6 +1953,9 @@ export function normalizeSessionDraftForWorkoutPersistence(
     if (!existing) {
       repeatGroups.set(step.repeatGroupId, {
         repeatCount: step.repeatCount,
+        repeatEndingRestMode: resolveSessionDraftRepeatEndingRestMode(
+          step.repeatEndingRestMode ?? null
+        ),
         lastIndex: index,
       });
       continue;
@@ -1945,6 +1965,16 @@ export function normalizeSessionDraftForWorkoutPersistence(
       return {
         ok: false,
         error: `Repeat block ${step.repeatGroupId} must use the same repeat count on every step.`,
+      };
+    }
+
+    if (
+      existing.repeatEndingRestMode !==
+      resolveSessionDraftRepeatEndingRestMode(step.repeatEndingRestMode ?? null)
+    ) {
+      return {
+        ok: false,
+        error: `Repeat block ${step.repeatGroupId} must use the same last-rest rule on every step.`,
       };
     }
 
@@ -2253,12 +2283,18 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
 
   const lineItems = buildWorkoutHandoffGroups(draft.steps).flatMap((group) => {
     if (group.kind === "single") {
-      return buildWorkoutPoolsideLineItems(group.entries, null, draft.basePaceSecondsPer100m);
+      return buildWorkoutPoolsideLineItems(
+        group.entries,
+        null,
+        "use_last_rest",
+        draft.basePaceSecondsPer100m
+      );
     }
 
     return buildWorkoutPoolsideLineItems(
       group.entries,
       group.repeatCount,
+      group.repeatEndingRestMode,
       draft.basePaceSecondsPer100m
     );
   });
@@ -2269,17 +2305,26 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
 function buildWorkoutPoolsideLineItems(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
   basePaceSecondsPer100m: number
 ) {
   const lineItems: WorkoutPoolsideLineItem[] = [];
 
-  for (const entry of entries) {
+  for (const [entryIndex, entry] of entries.entries()) {
     const step = entry.step;
 
     if (isWorkoutPoolsidePauseStep(step)) {
+      const skipFinalRestNote =
+        shouldSkipWorkoutRepeatEndingRest(entries, repeatCount, repeatEndingRestMode) &&
+        entryIndex === entries.length - 1
+          ? " between rounds (final rest skipped)"
+          : "";
       lineItems.push({
         kind: "pause",
-        text: `P: ${buildWorkoutPoolsidePauseLabel(step, basePaceSecondsPer100m)}`,
+        text: `P: ${buildWorkoutPoolsidePauseLabel(
+          step,
+          basePaceSecondsPer100m
+        )}${skipFinalRestNote}`,
       });
       continue;
     }
@@ -2417,6 +2462,7 @@ type WorkoutHandoffGroup =
       kind: "repeat";
       repeatGroupId: string;
       repeatCount: number | null;
+      repeatEndingRestMode: SessionDraftRepeatEndingRestMode;
       entries: WorkoutHandoffEntry[];
     };
 
@@ -2467,6 +2513,9 @@ function buildWorkoutHandoffGroups(steps: SessionDraftStep[]): WorkoutHandoffGro
       kind: "repeat",
       repeatGroupId: step.repeatGroupId,
       repeatCount: step.repeatCount ?? null,
+      repeatEndingRestMode: resolveSessionDraftRepeatEndingRestMode(
+        step.repeatEndingRestMode ?? null
+      ),
       entries,
     });
     index = nextIndex - 1;
@@ -2475,16 +2524,33 @@ function buildWorkoutHandoffGroups(steps: SessionDraftStep[]): WorkoutHandoffGro
   return groups;
 }
 
+function shouldSkipWorkoutRepeatEndingRest(
+  entries: WorkoutHandoffEntry[],
+  repeatCount: number | null,
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
+) {
+  if (repeatEndingRestMode !== "skip_last_rest" || !repeatCount || repeatCount <= 1) {
+    return false;
+  }
+
+  const lastEntry = entries[entries.length - 1];
+  return Boolean(lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step));
+}
+
 function buildWorkoutHandoffRepeatSummary(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
-  basePaceSecondsPer100m: number
+  basePaceSecondsPer100m: number,
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
 ) {
   if (repeatCount === null) {
     return "repeat count not set";
   }
 
-  const roundMetrics = buildWorkoutRepeatRoundMetrics(entries, basePaceSecondsPer100m);
+  const roundMetrics = buildWorkoutRepeatRoundMetrics(
+    entries,
+    basePaceSecondsPer100m
+  );
 
   const parts = [`${repeatCount} rounds`];
 
@@ -2500,6 +2566,10 @@ function buildWorkoutHandoffRepeatSummary(
     }
 
     parts.push(`${roundParts.join(" + ")} per round`);
+  }
+
+  if (shouldSkipWorkoutRepeatEndingRest(entries, repeatCount, repeatEndingRestMode)) {
+    parts.push("Final rest skipped");
   }
 
   return parts.join(" · ");
@@ -2603,6 +2673,9 @@ function buildWorkoutGarminReadyExportStep(
     notes: step.notes || null,
     repeatGroupId: step.repeatGroupId ?? null,
     repeatCount: step.repeatCount ?? null,
+    repeatEndingRestMode: step.repeatGroupId
+      ? resolveSessionDraftRepeatEndingRestMode(step.repeatEndingRestMode ?? null)
+      : null,
   };
 }
 
@@ -2741,6 +2814,7 @@ function normalizeStep(
   const id = normalizeRequiredText(input.id, 80) ?? `step-${index + 1}`;
   const repeatGroupId = normalizeNullableText(input.repeatGroupId, 80);
   const repeatCount = normalizeNullableInteger(input.repeatCount);
+  const repeatEndingRestMode = normalizeRepeatEndingRestMode(input.repeatEndingRestMode);
   const drillType = normalizeStepDrillType(input.drillType);
   const equipment = normalizeStepEquipment(input.equipment);
   const targetMode = normalizeTargetMode(input.targetMode);
@@ -2758,6 +2832,20 @@ function normalizeStep(
     return {
       ok: false,
       error: `Step ${index + 1} must include both repeat metadata fields or neither.`,
+    };
+  }
+
+  if (repeatEndingRestMode === "invalid") {
+    return {
+      ok: false,
+      error: `Step ${index + 1} uses an unsupported repeat ending-rest mode.`,
+    };
+  }
+
+  if (!repeatGroupId && repeatEndingRestMode !== null) {
+    return {
+      ok: false,
+      error: `Step ${index + 1} can only set last-rest behavior inside a repeat block.`,
     };
   }
 
@@ -2828,6 +2916,7 @@ function normalizeStep(
         notes,
         repeatGroupId,
         repeatCount,
+        repeatEndingRestMode,
       },
     };
   }
@@ -2855,6 +2944,7 @@ function normalizeStep(
         notes,
         repeatGroupId,
         repeatCount,
+        repeatEndingRestMode,
       },
     };
   }
@@ -2882,6 +2972,7 @@ function normalizeStep(
         notes,
         repeatGroupId,
         repeatCount,
+        repeatEndingRestMode,
       },
     };
   }
@@ -2918,6 +3009,7 @@ function normalizeStep(
       notes,
       repeatGroupId,
       repeatCount,
+      repeatEndingRestMode,
     },
   };
 }
@@ -2949,6 +3041,18 @@ function normalizeNullableInteger(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   const normalized = Math.round(value);
   return normalized > 0 ? normalized : null;
+}
+
+function normalizeRepeatEndingRestMode(
+  value: unknown
+): SessionDraftRepeatEndingRestMode | null | "invalid" {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  return SESSION_DRAFT_REPEAT_ENDING_REST_MODES.includes(value as SessionDraftRepeatEndingRestMode)
+    ? (value as SessionDraftRepeatEndingRestMode)
+    : "invalid";
 }
 
 function normalizePositiveNumber(value: unknown) {
