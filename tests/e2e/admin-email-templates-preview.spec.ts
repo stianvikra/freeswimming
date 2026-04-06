@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { buildAdminEmailTemplateQaTestKey } from "@/lib/admin/email-template-test-records";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -7,6 +8,18 @@ type AdminEmailTemplatesProbeResponse =
       ok: true;
       schemaReady?: boolean;
       warning?: string | null;
+    }
+  | {
+      ok: false;
+      error?: string;
+    };
+
+type AdminEmailTemplateCleanupResponse =
+  | {
+      ok: true;
+      deletedCount: number;
+      deletedIds: string[];
+      deletedTemplateKeys: string[];
     }
   | {
       ok: false;
@@ -39,6 +52,15 @@ async function moveTemplateStatusAndWait(
       .filter({ hasText: new RegExp(`^${label}$`) })
       .first()
   ).toBeVisible({ timeout: 10_000 });
+}
+
+async function cleanupAdminEmailTemplateTestRecords(page: Page) {
+  const response = await page.request.post("/api/admin/email-templates/test-records");
+  const parsed = (await response.json().catch(() => null)) as AdminEmailTemplateCleanupResponse | null;
+  expect(response.ok(), parsed && "ok" in parsed && !parsed.ok ? parsed.error : "Expected successful email-template QA cleanup.").toBe(true);
+  if (!parsed?.ok) {
+    throw new Error(parsed?.error ?? "Email-template QA cleanup failed.");
+  }
 }
 
 test.describe("admin email template preview", () => {
@@ -162,52 +184,64 @@ test.describe("admin email template preview", () => {
     await expect(fallbackLine).toContainText("support_email");
     await expect(missingLine).toContainText("custom_token");
 
-    const templateKey = `aw012_publish_fallback_${Date.now()}`;
-    await createForm.getByLabel("Template key").fill(templateKey);
-    await createForm.getByLabel("Locale").fill("nb-NO");
-    await createForm.getByLabel("Status").selectOption("draft");
-    await createForm.getByLabel("Subject").fill("Varsel {{code}} i {{app_name}}");
-    await createForm.getByLabel("Body").fill("Kontakt {{support_email}} hvis lenke feiler.");
-    await createForm.getByLabel("Required placeholders").fill("code");
-    await createForm.getByLabel("Optional placeholders").fill("app_name, support_email");
-    await sampleValuesField.fill("{}");
+    await cleanupAdminEmailTemplateTestRecords(page);
 
-    await createForm.getByRole("button", { name: "Create template" }).click();
+    const templateKey = buildAdminEmailTemplateQaTestKey({
+      scope: "preview",
+      unique: `${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    });
 
-    const createdTemplate = page
-      .getByTestId("admin-email-template-item")
-      .filter({ hasText: `${templateKey} · nb-NO` })
-      .first();
-    const statusChip = (label: "Draft" | "Review" | "Published") =>
-      createdTemplate
-        .locator("span")
-        .filter({ hasText: new RegExp(`^${label}$`) })
+    try {
+      await createForm.getByLabel("Template key").fill(templateKey);
+      await createForm.getByLabel("Locale").fill("nb-NO");
+      await createForm.getByLabel("Status").selectOption("draft");
+      await createForm.getByLabel("Subject").fill("Varsel {{code}} i {{app_name}}");
+      await createForm.getByLabel("Body").fill("Kontakt {{support_email}} hvis lenke feiler.");
+      await createForm.getByLabel("Required placeholders").fill("code");
+      await createForm.getByLabel("Optional placeholders").fill("app_name, support_email");
+      await sampleValuesField.fill("{}");
+
+      await createForm.getByRole("button", { name: "Create template" }).click();
+
+      const createdTemplate = page
+        .getByTestId("admin-email-template-item")
+        .filter({ hasText: `${templateKey} · nb-NO` })
         .first();
+      const statusChip = (label: "Draft" | "Review" | "Published") =>
+        createdTemplate
+          .locator("span")
+          .filter({ hasText: new RegExp(`^${label}$`) })
+          .first();
 
-    await expect(statusChip("Draft")).toBeVisible();
+      await expect(statusChip("Draft")).toBeVisible();
 
-    await moveTemplateStatusAndWait(page, createdTemplate, "Review");
+      await moveTemplateStatusAndWait(page, createdTemplate, "Review");
 
-    if (canPublishTemplates) {
-      await moveTemplateStatusAndWait(page, createdTemplate, "Published");
+      if (canPublishTemplates) {
+        await moveTemplateStatusAndWait(page, createdTemplate, "Published");
+      }
+
+      const editSampleValuesField = createdTemplate.getByLabel(
+        "Preview sample values (JSON object)"
+      );
+      await editSampleValuesField.fill('{"code":');
+      await expect(
+        createdTemplate.getByText("Preview sample values must be valid JSON.")
+      ).toBeVisible({ timeout: 10_000 });
+
+      await editSampleValuesField.fill("{}");
+      await expect(
+        createdTemplate.getByText("Preview sample values must be valid JSON.")
+      ).toHaveCount(0);
+
+      const publishedFallbackLine = createdTemplate
+        .locator("p")
+        .filter({ hasText: "Fallback defaults used:" })
+        .last();
+      await expect(publishedFallbackLine).toContainText("app_name");
+      await expect(publishedFallbackLine).toContainText("support_email");
+    } finally {
+      await cleanupAdminEmailTemplateTestRecords(page);
     }
-
-    const editSampleValuesField = createdTemplate.getByLabel("Preview sample values (JSON object)");
-    await editSampleValuesField.fill('{"code":');
-    await expect(
-      createdTemplate.getByText("Preview sample values must be valid JSON.")
-    ).toBeVisible({ timeout: 10_000 });
-
-    await editSampleValuesField.fill("{}");
-    await expect(
-      createdTemplate.getByText("Preview sample values must be valid JSON.")
-    ).toHaveCount(0);
-
-    const publishedFallbackLine = createdTemplate
-      .locator("p")
-      .filter({ hasText: "Fallback defaults used:" })
-      .last();
-    await expect(publishedFallbackLine).toContainText("app_name");
-    await expect(publishedFallbackLine).toContainText("support_email");
   });
 });
