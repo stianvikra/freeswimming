@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-05-admin-notes-chat-screenshot-staging-import-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-05`
 - `updated`: `2026-04-06`
@@ -262,3 +262,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-06 | in-progress | reopened the slice after the swim-session builder wave closed, verified the remaining open admin notes, and chose note 4120fac6 as the next actionable implementation because it already has a narrow, dependency-light workflow contract | next: land the staging-path protection, staged-file import helper, tests, and operator docs in one small pass`
 - `2026-04-06 | implementation | shipped the first supported staged-screenshot workflow: gitignored /.tmp/admin-note-imports/, a CLI helper for note-id + file-path imports with deterministic cleanup semantics, Help/Guide + recovery wording that separates chat interpretation from file upload, and targeted regression coverage for the new helper/docs contract | next: keep the tree clean, commit, push, open PR, and carry the slice through merge if CI stays green`
 - `2026-04-06 | validation | targeted unit/type/help checks are green, lint:briefs:all passed, the new CLI prints stable usage, and full npm run verify:pre-pr passed (95 passed / 319 skipped) in the clean worktree | next: commit, push, open PR in Safari, and monitor required CI`
+- `2026-04-06 | merged | PR #358 merged to main as 5d74964 after local npm run verify:pre-pr PASS, local npm run verify:pre-merge PASS (private-gate step skipped because SITE_LOCK_ENABLED!=1), and required CI green; follow-up brief move lands immediately after merge so lifecycle state matches shipped reality | next: close note 4120fac6 and continue with remaining open admin notes`
