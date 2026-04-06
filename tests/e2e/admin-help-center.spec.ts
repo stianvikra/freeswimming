@@ -167,12 +167,27 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
+        "Fastest screenshot path is often: let Codex create the note first, open the direct note link, then paste or upload the screenshot yourself in Notes."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
         "You can stage up to six pre-save images on create flows, and repeated paste/upload appends instead of replacing the earlier screenshots."
       )
     ).toBeVisible();
     await expect(
       page.getByText(
         "Remember that pasted or uploaded pre-save images stay local until note save and attachment upload both succeed; if clipboard access is blocked or no image is found, fall back to `Upload images`."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "If you need Codex to perform the attachment step, the chat image is discussion-only; save the real file under `/.tmp/admin-note-imports/` and give Codex the canonical note ID plus that staged file path."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Codex-led staged imports should delete the local staging file after confirmed success and keep it in place if upload fails so recovery stays explicit."
       )
     ).toBeVisible();
     await expect(
@@ -195,6 +210,8 @@ test.describe("admin help center", () => {
         "On mobile, the two image actions stay visible so you do not need to remember hidden paste shortcuts."
       )
     ).toBeVisible();
-    await expect(page.getByText("Clipboard paste is blocked or image upload fails")).toBeVisible();
+    await expect(
+      page.getByText("Clipboard paste is blocked, chat image is not enough, or image upload fails")
+    ).toBeVisible();
   });
 });
