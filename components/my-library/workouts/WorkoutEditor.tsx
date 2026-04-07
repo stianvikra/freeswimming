@@ -231,18 +231,19 @@ function parseSignatureValues(value: string) {
 function buildStepStrokeGuidance(step: SessionDraftStep, isManualPoolMode: boolean) {
   const recommendedFocus = getRecommendedStepFocus(step);
   const drillTypeLabel = isManualPoolMode ? "Drill type" : "Focus tag";
+  const strokeLabel = isManualPoolMode ? "Stroke" : "Stroke pattern";
 
   if (step.category === "kick") {
-    return `Kick category already tags this as kick work. Use Stroke pattern for the movement pattern this set supports, and change ${drillTypeLabel} only when you need extra kick, pull, or drill notation.`;
+    return `Kick category already tags this as kick work. Use ${strokeLabel} for the movement pattern this set supports, and change ${drillTypeLabel} only when you need extra kick, pull, or drill notation.`;
   }
 
   if (step.category === "drill" || step.stroke === "drill") {
-    return `Drill shell is active. Use Stroke pattern for the base movement, and use ${drillTypeLabel} to clarify whether the drill is general, kick, or pull.`;
+    return `Drill shell is active. Use ${strokeLabel} for the base movement, and use ${drillTypeLabel} to clarify whether the drill is general, kick, or pull.`;
   }
 
   return recommendedFocus
     ? `This step already suggests the ${getSessionStepDrillTypeLabel(recommendedFocus)} ${drillTypeLabel.toLowerCase()}. Keep it unless you need a different drill, kick, or pull note.`
-    : `Use Stroke pattern for the swim pattern. Add ${drillTypeLabel} only when the step needs extra drill, kick, or pull notation.`;
+    : `Use ${strokeLabel} for the swim pattern. Add ${drillTypeLabel} only when the step needs extra drill, kick, or pull notation.`;
 }
 
 function buildStepFocusGuidance(step: SessionDraftStep, isManualPoolMode: boolean) {
@@ -268,12 +269,36 @@ function getStepDurationModeEditorLabel(
   }
 
   switch (value) {
+    case "distance":
+      return "Distance swim";
+    case "time":
+      return "Time-based swim";
     case "fixed_rest":
       return "Rest time";
     case "lap_button":
       return "Open swim";
+    case "css_send_off":
+      return "CSS send-off";
     default:
       return getSessionStepDurationModeLabel(value);
+  }
+}
+
+function getStepTargetModeEditorLabel(
+  value: NonNullable<SessionDraftStep["targetMode"]>,
+  isManualPoolMode: boolean
+) {
+  if (!isManualPoolMode) {
+    return getSessionStepTargetModeLabel(value);
+  }
+
+  switch (value) {
+    case "effort":
+      return "Effort cue";
+    case "css_target_pace":
+      return "CSS target pace";
+    default:
+      return getSessionStepTargetModeLabel(value);
   }
 }
 
@@ -1669,7 +1694,7 @@ export default function WorkoutEditor({
             </label>
 
             <label className="text-sm text-slate-700">
-              Stroke pattern
+              {isManualPoolMode ? "Stroke" : "Stroke pattern"}
               <select
                 value={step.stroke ?? "choice"}
                 onChange={(event) => {
@@ -1762,7 +1787,7 @@ export default function WorkoutEditor({
             </label>
 
             <label className="text-sm text-slate-700">
-              Duration mode
+              {isManualPoolMode ? "Step timing" : "Duration mode"}
               <select
                 value={step.durationMode}
                 onChange={(event) =>
@@ -1833,7 +1858,11 @@ export default function WorkoutEditor({
               </div>
             ) : step.durationMode === "time" || step.durationMode === "fixed_rest" ? (
               <label className="text-sm text-slate-700">
-                {step.durationMode === "fixed_rest" ? "Rest time (min)" : "Time (min)"}
+                {step.durationMode === "fixed_rest"
+                  ? "Rest time (min)"
+                  : isManualPoolMode
+                    ? "Swim time (min)"
+                    : "Time (min)"}
                 <input
                   type="text"
                   inputMode="numeric"
@@ -1917,7 +1946,7 @@ export default function WorkoutEditor({
             )}
 
             <label className="text-sm text-slate-700">
-              Target mode
+              {isManualPoolMode ? "Target" : "Target mode"}
               <select
                 value={step.targetMode ?? "none"}
                 onChange={(event) =>
@@ -1943,7 +1972,7 @@ export default function WorkoutEditor({
               >
                 {SESSION_DRAFT_STEP_TARGET_MODES.map((value) => (
                   <option key={value} value={value}>
-                    {getSessionStepTargetModeLabel(value)}
+                    {getStepTargetModeEditorLabel(value, isManualPoolMode)}
                   </option>
                 ))}
               </select>
@@ -2037,9 +2066,10 @@ export default function WorkoutEditor({
             ) : null}
 
             <label className="text-sm text-slate-700 md:col-span-2">
-              Target notes
+              {isManualPoolMode ? "Target summary" : "Target notes"}
               <input
                 type="text"
+                aria-label={isManualPoolMode ? "Target summary" : "Target notes"}
                 value={step.targetSummary}
                 onChange={(event) =>
                   updateDraftStep(step.id, (current) => ({
@@ -2049,11 +2079,18 @@ export default function WorkoutEditor({
                 }
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
+              {isManualPoolMode ? (
+                <p className="mt-2 text-xs text-slate-500">
+                  Optional short cue for the interval summary. Use Step note for the Garmin-style
+                  step note.
+                </p>
+              ) : null}
             </label>
 
             <label className="text-sm text-slate-700 md:col-span-2">
               {isManualPoolMode ? "Step note" : "Notes"}
               <textarea
+                aria-label={isManualPoolMode ? "Step note" : "Notes"}
                 value={step.notes}
                 onChange={(event) =>
                   updateDraftStep(step.id, (current) => ({
@@ -2064,6 +2101,11 @@ export default function WorkoutEditor({
                 rows={3}
                 className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
+              {isManualPoolMode ? (
+                <p className="mt-2 text-xs text-slate-500">
+                  Closest match to Garmin Add Step Note for this pool step.
+                </p>
+              ) : null}
             </label>
           </div>
         ) : null}

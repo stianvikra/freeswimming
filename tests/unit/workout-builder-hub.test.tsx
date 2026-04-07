@@ -1169,19 +1169,35 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
 
     expect(screen.getByLabelText("Step type")).toBeVisible();
+    expect(screen.getByLabelText("Stroke")).toBeVisible();
     expect(screen.getByLabelText("Drill type")).toBeVisible();
+    expect(screen.getByLabelText("Step timing")).toBeVisible();
+    expect(screen.getByLabelText("Target")).toBeVisible();
+    expect(screen.getByLabelText("Target summary")).toBeVisible();
     expect(screen.getByLabelText("Step note")).toBeVisible();
+    expect(screen.getByRole("option", { name: "Distance swim" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Time-based swim" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Open swim" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Rest time" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Send-off time" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "CSS send-off" })).toBeVisible();
     expect(
       screen.getByText(
-        "Use Stroke pattern for the swim pattern. Add Drill type only when the step needs extra drill, kick, or pull notation."
+        "Use Stroke for the swim pattern. Add Drill type only when the step needs extra drill, kick, or pull notation."
       )
     ).toBeVisible();
     expect(
       screen.getByText(
         "Optional. Leave Drill type on None unless the step needs extra drill, kick, or pull notation."
       )
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Optional short cue for the interval summary. Use Step note for the Garmin-style step note."
+      )
+    ).toBeVisible();
+    expect(
+      screen.getByText("Closest match to Garmin Add Step Note for this pool step.")
     ).toBeVisible();
   });
 
