@@ -186,6 +186,9 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
       '"draftState": "canonical"'
     );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      '"label": "Distance swim"'
+    );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
     const savedWorkoutPdfPopupPromise = page.waitForEvent("popup");
@@ -245,6 +248,8 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-target-mode-1").selectOption("target_pace");
     await page.getByTestId("session-draft-step-target-pace-minutes-1").fill("1");
     await page.getByTestId("session-draft-step-target-pace-seconds-1").fill("35");
+    await page.getByLabel("Target summary").fill("Hold 1:35 and leave on the red top.");
+    await page.getByLabel("Step note").fill("Leave on the top and count strokes.");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
@@ -280,6 +285,12 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
       "Final rest skipped"
     );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
+      "Target summary: Hold 1:35 and leave on the red top."
+    );
+    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
+      "Step note: Leave on the top and count strokes."
+    );
     await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",
       "local_draft"
@@ -292,6 +303,9 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
       `"title": "${uniqueTitle}"`
+    );
+    await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
+      '"label": "Rest time"'
     );
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
       '"reviewIssueIds": ['
@@ -338,7 +352,7 @@ test.describe("my library workout builder", () => {
     await expect(poolsidePopup.locator("body")).toContainText("Poolside Note");
     await expect(poolsidePopup.locator("body")).toContainText("Ink saver");
     await expect(poolsidePopup.locator("body")).toContainText("Tot:");
-    await expect(poolsidePopup.locator("body")).toContainText("P:");
+    await expect(poolsidePopup.locator("body")).toContainText("P: Rest time 1:00");
     await poolsidePopup.close();
 
     const patchResponsePromise = page.waitForResponse(

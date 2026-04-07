@@ -56,6 +56,7 @@ import {
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
 import {
+  buildWorkoutStepDurationOutputSummary,
   buildWorkoutPdfFileName,
   buildWorkoutPdfHtmlDocument,
   getDefaultWorkoutPoolsideFocusIds,
@@ -393,10 +394,6 @@ function buildRepeatInsertedStep(
   };
 }
 
-function formatMinutesLabel(value: number) {
-  return `${Number.isInteger(value) ? value : value.toFixed(1).replace(/\.0$/, "")} min`;
-}
-
 function getClockTotalSeconds(valueMinutes: number | null | undefined) {
   if (!valueMinutes || valueMinutes <= 0) return 0;
   return Math.max(0, Math.round(valueMinutes * 60));
@@ -419,37 +416,16 @@ function buildStepRemovalLabel(step: SessionDraftStep, fallbackIndex: number) {
   );
 }
 
-function buildDurationSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
-  switch (step.durationMode) {
-    case "distance":
-      return step.distanceM ? `${step.distanceM}m` : "Distance not set";
-    case "time":
-      return step.timeMin ? formatMinutesLabel(step.timeMin) : "Time not set";
-    case "fixed_rest":
-      return step.timeMin
-        ? `Fixed rest ${formatClockDurationLabel(step.timeMin)}`
-        : "Fixed rest not set";
-    case "send_off":
-      return step.timeMin
-        ? `Send-off ${formatClockDurationLabel(step.timeMin)}`
-        : "Send-off not set";
-    case "css_send_off":
-      if (typeof step.cssSendOffOffsetSeconds !== "number") {
-        return "CSS send-off not set";
-      }
-      return `CSS ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s send-off (${formatClockDurationLabelFromSeconds(
-        basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
-      )})`;
-    case "lap_button":
-      return "Lap button press";
-    default:
-      return getSessionStepDurationModeLabel(step.durationMode);
-  }
-}
-
-function buildStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
+function buildStepSummary(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment
+) {
   const structuredTarget = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
-  const contextParts = [getSessionStepStrokeLabel(step.stroke)];
+  const contextParts =
+    environment === "pool" && step.category === "rest"
+      ? []
+      : [getSessionStepStrokeLabel(step.stroke)];
 
   if (step.drillType && step.drillType !== "none") {
     const drillLabel = getSessionStepDrillTypeLabel(step.drillType);
@@ -469,7 +445,9 @@ function buildStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number
   }
 
   return [
-    buildDurationSummary(step, basePaceSecondsPer100m),
+    buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+      environment,
+    }),
     contextParts.join(" · "),
     structuredTarget ?? getSessionEffortLabel(step.intensity),
   ]
@@ -1573,7 +1551,7 @@ export default function WorkoutEditor({
               {getSessionStepCategoryLabel(step.category)}
             </p>
             <p className="mt-2 text-xs text-slate-600">
-              {buildStepSummary(step, draft.basePaceSecondsPer100m)}
+              {buildStepSummary(step, draft.basePaceSecondsPer100m, draft.environment)}
             </p>
             {step.targetSummary ? (
               <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>

@@ -192,6 +192,11 @@ type WorkoutPoolsideLineItem = {
   text: string;
 };
 
+type WorkoutStepDetailLabels = {
+  targetSummary: string;
+  stepNote: string;
+};
+
 type WorkoutGarminReadyExportLabeledValue<T extends string> = {
   value: T;
   label: string;
@@ -448,7 +453,8 @@ export function buildWorkoutGarminReadyExport(
         entry.step,
         entry.index,
         draft.basePaceSecondsPer100m,
-        reviewIssueIds
+        reviewIssueIds,
+        draft.environment
       );
 
       return {
@@ -489,7 +495,8 @@ export function buildWorkoutGarminReadyExport(
           entry.step,
           entry.index,
           draft.basePaceSecondsPer100m,
-          issueIdsByStepId.get(entry.step.id) ?? []
+          issueIdsByStepId.get(entry.step.id) ?? [],
+          draft.environment
         )
       ),
     };
@@ -563,6 +570,7 @@ export function buildWorkoutHandoffText(
   };
   const readiness = buildWorkoutGarminReadinessReport(draft);
   const stepGroups = buildWorkoutHandoffGroups(draft.steps);
+  const detailLabels = getWorkoutStepDetailLabels(draft.environment);
   const lines = [
     "FreeSwimming workout handoff",
     `Source: ${draftState === "canonical" ? "Canonical workout" : "Local draft"}`,
@@ -622,16 +630,17 @@ export function buildWorkoutHandoffText(
       lines.push(
         `   - ${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
           entry.step,
-          draft.basePaceSecondsPer100m
+          draft.basePaceSecondsPer100m,
+          draft.environment
         )}`
       );
 
       if (entry.step.targetSummary) {
-        lines.push(`   - Target notes: ${entry.step.targetSummary}`);
+        lines.push(`   - ${detailLabels.targetSummary}: ${entry.step.targetSummary}`);
       }
 
       if (entry.step.notes) {
-        lines.push(`   - Notes: ${entry.step.notes}`);
+        lines.push(`   - ${detailLabels.stepNote}: ${entry.step.notes}`);
       }
 
       return;
@@ -651,16 +660,17 @@ export function buildWorkoutHandoffText(
       lines.push(
         `      - ${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
           entry.step,
-          draft.basePaceSecondsPer100m
+          draft.basePaceSecondsPer100m,
+          draft.environment
         )}`
       );
 
       if (entry.step.targetSummary) {
-        lines.push(`      - Target notes: ${entry.step.targetSummary}`);
+        lines.push(`      - ${detailLabels.targetSummary}: ${entry.step.targetSummary}`);
       }
 
       if (entry.step.notes) {
-        lines.push(`      - Notes: ${entry.step.notes}`);
+        lines.push(`      - ${detailLabels.stepNote}: ${entry.step.notes}`);
       }
     });
   });
@@ -741,7 +751,8 @@ export function buildWorkoutPdfModel(
         title: entry.step.name,
         summary: `${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
           entry.step,
-          draft.basePaceSecondsPer100m
+          draft.basePaceSecondsPer100m,
+          draft.environment
         )}`,
         targetNotes: entry.step.targetSummary || null,
         notes: entry.step.notes || null,
@@ -754,7 +765,8 @@ export function buildWorkoutPdfModel(
       title: entry.step.name,
       summary: `${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
         entry.step,
-        draft.basePaceSecondsPer100m
+        draft.basePaceSecondsPer100m,
+        draft.environment
       )}`,
       targetNotes: entry.step.targetSummary || null,
       notes: entry.step.notes || null,
@@ -817,7 +829,11 @@ export function buildWorkoutPdfHtmlDocument(
     return buildPoolsideWorkoutPdfHtmlDocument(model, options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH);
   }
 
-  return buildStandardWorkoutPdfHtmlDocument(model, options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH);
+  return buildStandardWorkoutPdfHtmlDocument(
+    model,
+    options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH,
+    getWorkoutStepDetailLabels(draft?.environment)
+  );
 }
 
 function buildPdfBrandFontFaceCss(fontUrl: string | null | undefined) {
@@ -856,7 +872,11 @@ function buildPdfBrandLockupHtml(logoUrl: string | null) {
     `;
 }
 
-function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: string | null) {
+function buildStandardWorkoutPdfHtmlDocument(
+  model: WorkoutPdfModel,
+  fontUrl: string | null,
+  detailLabels: WorkoutStepDetailLabels
+) {
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
   const reviewDetailsHtml =
@@ -1393,7 +1413,7 @@ function buildStandardWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
           ${reviewDetailsHtml}
           <h2 class="section-title">Steps</h2>
           <section class="steps">
-            ${model.blocks.map((block) => renderWorkoutPdfBlockHtml(block)).join("")}
+            ${model.blocks.map((block) => renderWorkoutPdfBlockHtml(block, detailLabels)).join("")}
           </section>
           <p class="footer-note">
             This print view reflects the ${
@@ -2207,7 +2227,155 @@ function buildWorkoutStepReadinessLabel(step: SessionDraftStep, index: number) {
   return name ? `Step ${index + 1} (${name})` : `Step ${index + 1}`;
 }
 
-function renderWorkoutPdfBlockHtml(block: WorkoutPdfModelBlock) {
+function isPoolWorkoutEnvironment(environment: SessionGeneratorEnvironment | null | undefined) {
+  return environment === "pool";
+}
+
+function getWorkoutStepDetailLabels(
+  environment: SessionGeneratorEnvironment | null | undefined
+): WorkoutStepDetailLabels {
+  if (isPoolWorkoutEnvironment(environment)) {
+    return {
+      targetSummary: "Target summary",
+      stepNote: "Step note",
+    };
+  }
+
+  return {
+    targetSummary: "Target notes",
+    stepNote: "Notes",
+  };
+}
+
+export function getWorkoutStepDurationModeOutputLabel(
+  value: SessionDraftStep["durationMode"],
+  options?: {
+    environment?: SessionGeneratorEnvironment | null;
+    category?: SessionDraftStep["category"] | null;
+  }
+) {
+  if (!isPoolWorkoutEnvironment(options?.environment)) {
+    return getSessionStepDurationModeLabel(value);
+  }
+
+  switch (value) {
+    case "distance":
+      return "Distance swim";
+    case "time":
+      return "Time-based swim";
+    case "fixed_rest":
+      return "Rest time";
+    case "lap_button":
+      return options?.category === "rest" ? "Open rest" : "Open swim";
+    case "send_off":
+      return "Send-off Time";
+    case "css_send_off":
+      return "CSS send-off";
+    default:
+      return getSessionStepDurationModeLabel(value);
+  }
+}
+
+export function getWorkoutStepTargetModeOutputLabel(
+  value: SessionDraftStep["targetMode"],
+  options?: {
+    environment?: SessionGeneratorEnvironment | null;
+  }
+) {
+  const targetMode = value ?? "none";
+
+  if (!isPoolWorkoutEnvironment(options?.environment)) {
+    return getSessionStepTargetModeLabel(targetMode);
+  }
+
+  switch (targetMode) {
+    case "effort":
+      return "Effort cue";
+    case "css_target_pace":
+      return "CSS target pace";
+    default:
+      return getSessionStepTargetModeLabel(targetMode);
+  }
+}
+
+export function buildWorkoutStepDurationOutputSummary(
+  step: Pick<
+    SessionDraftStep,
+    "category" | "durationMode" | "distanceM" | "timeMin" | "cssSendOffOffsetSeconds"
+  >,
+  basePaceSecondsPer100m: number,
+  options?: {
+    environment?: SessionGeneratorEnvironment | null;
+  }
+) {
+  const environment = options?.environment;
+
+  if (!isPoolWorkoutEnvironment(environment)) {
+    switch (step.durationMode) {
+      case "distance":
+        return step.distanceM ? `${step.distanceM}m` : "Distance not set";
+      case "time":
+        return step.timeMin ? formatMinutesLabel(step.timeMin) : "Time not set";
+      case "fixed_rest":
+        return step.timeMin
+          ? `Fixed rest ${formatClockDurationLabel(step.timeMin)}`
+          : "Fixed rest not set";
+      case "send_off":
+        return step.timeMin
+          ? `Send-off ${formatClockDurationLabel(step.timeMin)}`
+          : "Send-off not set";
+      case "css_send_off":
+        if (typeof step.cssSendOffOffsetSeconds !== "number") {
+          return "CSS send-off not set";
+        }
+
+        return `CSS ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s send-off (${formatClockDurationLabelFromSeconds(
+          basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
+        )})`;
+      case "lap_button":
+        return "Lap button press";
+      default:
+        return getSessionStepDurationModeLabel(step.durationMode);
+    }
+  }
+
+  switch (step.durationMode) {
+    case "distance":
+      return step.distanceM ? `${step.distanceM}m` : "Distance swim not set";
+    case "time":
+      return step.timeMin
+        ? `Time-based swim ${formatMinutesLabel(step.timeMin)}`
+        : "Time-based swim not set";
+    case "fixed_rest":
+      return step.timeMin
+        ? `Rest time ${formatClockDurationLabel(step.timeMin)}`
+        : "Rest time not set";
+    case "send_off":
+      return step.timeMin
+        ? `Send-off Time ${formatClockDurationLabel(step.timeMin)}`
+        : "Send-off Time not set";
+    case "css_send_off":
+      if (typeof step.cssSendOffOffsetSeconds !== "number") {
+        return "CSS send-off not set";
+      }
+
+      return `CSS send-off ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s (${formatClockDurationLabelFromSeconds(
+        basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
+      )})`;
+    case "lap_button":
+      return getWorkoutStepDurationModeOutputLabel(step.durationMode, {
+        environment,
+        category: step.category,
+      });
+    default:
+      return getSessionStepDurationModeLabel(step.durationMode);
+  }
+}
+
+function renderWorkoutPdfBlockHtml(
+  block: WorkoutPdfModelBlock,
+  detailLabels: WorkoutStepDetailLabels
+) {
   if (block.kind === "single") {
     return `
       <article class="step-block">
@@ -2219,7 +2387,7 @@ function renderWorkoutPdfBlockHtml(block: WorkoutPdfModelBlock) {
           </div>
         </div>
         <div class="step-body">
-          ${renderWorkoutPdfDetailList(block.targetNotes, block.notes)}
+          ${renderWorkoutPdfDetailList(block.targetNotes, block.notes, detailLabels)}
           ${renderWorkoutPdfReviewList(block.reviewDetails)}
         </div>
       </article>
@@ -2245,7 +2413,7 @@ function renderWorkoutPdfBlockHtml(block: WorkoutPdfModelBlock) {
                   <p class="step-kicker">${escapeHtml(step.label)}</p>
                   <h4 class="step-title">${escapeHtml(step.title)}</h4>
                   <p class="step-summary">${escapeHtml(step.summary)}</p>
-                  ${renderWorkoutPdfDetailList(step.targetNotes, step.notes)}
+                  ${renderWorkoutPdfDetailList(step.targetNotes, step.notes, detailLabels)}
                   ${renderWorkoutPdfReviewList(step.reviewDetails)}
                 </section>
               `
@@ -2265,10 +2433,16 @@ function renderWorkoutPoolsideLineHtml(line: WorkoutPoolsideLineItem) {
   `;
 }
 
-function renderWorkoutPdfDetailList(targetNotes: string | null, notes: string | null) {
+function renderWorkoutPdfDetailList(
+  targetNotes: string | null,
+  notes: string | null,
+  detailLabels: WorkoutStepDetailLabels
+) {
   const items = [
-    targetNotes ? `<li>Target notes: ${escapeHtml(targetNotes)}</li>` : "",
-    notes ? `<li>Notes: ${escapeHtml(notes)}</li>` : "",
+    targetNotes
+      ? `<li>${escapeHtml(detailLabels.targetSummary)}: ${escapeHtml(targetNotes)}</li>`
+      : "",
+    notes ? `<li>${escapeHtml(detailLabels.stepNote)}: ${escapeHtml(notes)}</li>` : "",
   ].filter(Boolean);
 
   if (items.length === 0) {
@@ -2383,7 +2557,8 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
         group.entries,
         null,
         "use_last_rest",
-        draft.basePaceSecondsPer100m
+        draft.basePaceSecondsPer100m,
+        draft.environment
       );
     }
 
@@ -2391,7 +2566,8 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
       group.entries,
       group.repeatCount,
       group.repeatEndingRestMode,
-      draft.basePaceSecondsPer100m
+      draft.basePaceSecondsPer100m,
+      draft.environment
     );
   });
 
@@ -2402,14 +2578,15 @@ function buildWorkoutPoolsideLineItems(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
   repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
-  basePaceSecondsPer100m: number
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment
 ) {
   const lineItems: WorkoutPoolsideLineItem[] = [];
 
   for (const [entryIndex, entry] of entries.entries()) {
     const step = entry.step;
 
-    if (isWorkoutPoolsidePauseStep(step)) {
+    if (isWorkoutPoolsidePauseStep(step, environment)) {
       const skipFinalRestNote =
         shouldSkipWorkoutRepeatEndingRest(entries, repeatCount, repeatEndingRestMode) &&
         entryIndex === entries.length - 1
@@ -2419,7 +2596,8 @@ function buildWorkoutPoolsideLineItems(
         kind: "pause",
         text: `P: ${buildWorkoutPoolsidePauseLabel(
           step,
-          basePaceSecondsPer100m
+          basePaceSecondsPer100m,
+          environment
         )}${skipFinalRestNote}`,
       });
       continue;
@@ -2428,14 +2606,25 @@ function buildWorkoutPoolsideLineItems(
     const prefix = repeatCount ? `${repeatCount} x ` : "";
     lineItems.push({
       kind: "interval",
-      text: `${prefix}${buildWorkoutPoolsideIntervalLabel(step, basePaceSecondsPer100m)}`,
+      text: `${prefix}${buildWorkoutPoolsideIntervalLabel(
+        step,
+        basePaceSecondsPer100m,
+        environment
+      )}`,
     });
   }
 
   return lineItems;
 }
 
-function isWorkoutPoolsidePauseStep(step: SessionDraftStep) {
+function isWorkoutPoolsidePauseStep(
+  step: SessionDraftStep,
+  environment: SessionGeneratorEnvironment
+) {
+  if (isPoolWorkoutEnvironment(environment)) {
+    return step.category === "rest" || step.durationMode === "fixed_rest";
+  }
+
   return (
     step.category === "rest" ||
     step.durationMode === "fixed_rest" ||
@@ -2443,7 +2632,17 @@ function isWorkoutPoolsidePauseStep(step: SessionDraftStep) {
   );
 }
 
-function buildWorkoutPoolsidePauseLabel(step: SessionDraftStep, basePaceSecondsPer100m: number) {
+function buildWorkoutPoolsidePauseLabel(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment
+) {
+  if (isPoolWorkoutEnvironment(environment)) {
+    return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+      environment,
+    });
+  }
+
   if (step.durationMode === "lap_button") {
     return "Lap button";
   }
@@ -2463,12 +2662,18 @@ function buildWorkoutPoolsidePauseLabel(step: SessionDraftStep, basePaceSecondsP
     return formatPoolsidePauseDuration(step.timeMin);
   }
 
-  return buildWorkoutHandoffDurationSummary(step, basePaceSecondsPer100m);
+  return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+    environment,
+  });
 }
 
-function buildWorkoutPoolsideIntervalLabel(step: SessionDraftStep, basePaceSecondsPer100m: number) {
+function buildWorkoutPoolsideIntervalLabel(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment
+) {
   return [
-    buildWorkoutPoolsideDurationLabel(step, basePaceSecondsPer100m),
+    buildWorkoutPoolsideDurationLabel(step, basePaceSecondsPer100m, environment),
     buildWorkoutPoolsideDescriptor(step),
     getSessionEffortLabel(step.intensity),
     buildWorkoutPoolsideTargetLabel(step, basePaceSecondsPer100m),
@@ -2477,7 +2682,17 @@ function buildWorkoutPoolsideIntervalLabel(step: SessionDraftStep, basePaceSecon
     .join(" · ");
 }
 
-function buildWorkoutPoolsideDurationLabel(step: SessionDraftStep, basePaceSecondsPer100m: number) {
+function buildWorkoutPoolsideDurationLabel(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment
+) {
+  if (isPoolWorkoutEnvironment(environment)) {
+    return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+      environment,
+    });
+  }
+
   switch (step.durationMode) {
     case "distance":
       return step.distanceM ? `${step.distanceM}m` : "Distance not set";
@@ -2494,7 +2709,9 @@ function buildWorkoutPoolsideDurationLabel(step: SessionDraftStep, basePaceSecon
     case "lap_button":
       return "Lap button";
     default:
-      return buildWorkoutHandoffDurationSummary(step, basePaceSecondsPer100m);
+      return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+        environment,
+      });
   }
 }
 
@@ -2707,7 +2924,8 @@ function buildWorkoutGarminReadyExportStep(
   step: SessionDraftStep,
   index: number,
   basePaceSecondsPer100m: number,
-  reviewIssueIds: string[]
+  reviewIssueIds: string[],
+  environment: SessionGeneratorEnvironment
 ): WorkoutGarminReadyExportStep {
   const targetMode = step.targetMode ?? "none";
   const structuredTargetLabel = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
@@ -2746,15 +2964,22 @@ function buildWorkoutGarminReadyExportStep(
     },
     duration: {
       mode: step.durationMode,
-      label: getSessionStepDurationModeLabel(step.durationMode),
+      label: getWorkoutStepDurationModeOutputLabel(step.durationMode, {
+        environment,
+        category: step.category,
+      }),
       distanceM: step.distanceM ?? null,
       timeMin: step.timeMin ?? null,
       cssSendOffOffsetSeconds: step.cssSendOffOffsetSeconds ?? null,
-      summary: buildWorkoutHandoffDurationSummary(step, basePaceSecondsPer100m),
+      summary: buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+        environment,
+      }),
     },
     target: {
       mode: targetMode,
-      label: getSessionStepTargetModeLabel(targetMode),
+      label: getWorkoutStepTargetModeOutputLabel(targetMode, {
+        environment,
+      }),
       effortTarget: step.effortTarget
         ? {
             value: step.effortTarget,
@@ -2775,9 +3000,16 @@ function buildWorkoutGarminReadyExportStep(
   };
 }
 
-function buildWorkoutHandoffStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
+function buildWorkoutHandoffStepSummary(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment
+) {
   const structuredTarget = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
-  const contextParts = [getSessionStepStrokeLabel(step.stroke)];
+  const contextParts =
+    isPoolWorkoutEnvironment(environment) && step.category === "rest"
+      ? []
+      : [getSessionStepStrokeLabel(step.stroke)];
 
   if (step.drillType && step.drillType !== "none") {
     const drillLabel = getSessionStepDrillTypeLabel(step.drillType);
@@ -2791,44 +3023,14 @@ function buildWorkoutHandoffStepSummary(step: SessionDraftStep, basePaceSecondsP
   }
 
   return [
-    buildWorkoutHandoffDurationSummary(step, basePaceSecondsPer100m),
+    buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+      environment,
+    }),
     contextParts.join(" · "),
     structuredTarget ?? getSessionEffortLabel(step.intensity),
   ]
     .filter(Boolean)
     .join(" · ");
-}
-
-function buildWorkoutHandoffDurationSummary(
-  step: SessionDraftStep,
-  basePaceSecondsPer100m: number
-) {
-  switch (step.durationMode) {
-    case "distance":
-      return step.distanceM ? `${step.distanceM}m` : "Distance not set";
-    case "time":
-      return step.timeMin ? formatMinutesLabel(step.timeMin) : "Time not set";
-    case "fixed_rest":
-      return step.timeMin
-        ? `Fixed rest ${formatClockDurationLabel(step.timeMin)}`
-        : "Fixed rest not set";
-    case "send_off":
-      return step.timeMin
-        ? `Send-off ${formatClockDurationLabel(step.timeMin)}`
-        : "Send-off not set";
-    case "css_send_off":
-      if (typeof step.cssSendOffOffsetSeconds !== "number") {
-        return "CSS send-off not set";
-      }
-
-      return `CSS ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s send-off (${formatClockDurationLabelFromSeconds(
-        basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
-      )})`;
-    case "lap_button":
-      return "Lap button press";
-    default:
-      return getSessionStepDurationModeLabel(step.durationMode);
-  }
 }
 
 function formatMinutesLabel(value: number) {
