@@ -1180,12 +1180,12 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
 
+    expect(screen.getByText("Session builder")).toBeVisible();
     expect(screen.getByLabelText("Step type")).toBeVisible();
     expect(screen.getByLabelText("Stroke")).toBeVisible();
     expect(screen.getByLabelText("Drill type")).toBeVisible();
     expect(screen.getByLabelText("Step timing")).toBeVisible();
     expect(screen.getByLabelText("Target")).toBeVisible();
-    expect(screen.getByLabelText("Target summary")).toBeVisible();
     expect(screen.getByLabelText("Step note")).toBeVisible();
     expect(screen.getByRole("option", { name: "Distance swim" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Time-based swim" })).toBeVisible();
@@ -1193,21 +1193,20 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByRole("option", { name: "Rest time" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Send-off time" })).toBeVisible();
     expect(screen.getByRole("option", { name: "CSS send-off" })).toBeVisible();
+    expect(screen.queryByLabelText("Step name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Effort cue")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Target summary")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Target notes")).not.toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Use Stroke for the swim pattern. Add Drill type only when the step needs extra drill, kick, or pull notation."
+      screen.queryByText(
+        "Use Stroke pattern for the swim pattern. Add Drill type only when the step needs extra drill, kick, or pull notation."
       )
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Optional. Leave Drill type on None unless the step needs extra drill, kick, or pull notation."
       )
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Optional short cue for the interval summary. Use Step note for the Garmin-style step note."
-      )
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText("Closest match to Garmin Add Step Note for this pool step.")
     ).toBeVisible();
