@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-07-pool-swim-builder-step-authoring-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-07`
 - `updated`: `2026-04-07`
@@ -237,3 +237,5 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-07 | in progress | created a dedicated step-authoring parity slice after confirming on origin/main that entry split, field parity, repeat/rest, compatibility guards, stroke/drill readiness, and equipment truthfulness were already closed; the remaining visible Garmin gap is the pool-only step-editor wording around stroke, timing, targets, and step-note semantics | next: update WorkoutEditor pool labels/helper text, refresh targeted tests, and run pre-PR verification`
 - `2026-04-07 | implementation + full pre-PR gate | tightened the manual pool step editor around the remaining Garmin-like wording (`Stroke`, `Step timing`, `Target`, `Target summary`, clarified `Step note`, and explicit pool timing option labels), updated targeted unit/e2e coverage, passed npm run lint:briefs:all, npm run typecheck, targeted vitest, targeted desktop-chromium Playwright, and a full npm run verify:pre-pr (96 passed / 318 skipped); the worktree had to use local copy-on-write copies of node_modules and .env.local because Turbopack rejected symlinks outside the worktree root during build | next: inspect final diff, commit, push, and open the PR`
+- `2026-04-07 | pre-merge gate green | npm run verify:pre-merge passed with 96 passed / 318 skipped, the private-gate leg was correctly skipped because SITE_LOCK_ENABLED!=1 in this local run, and all required GitHub checks for PR #382 finished green before merge | next: merge the feature PR and close out the brief`
+- `2026-04-07 | merged + closeout | PR #382 merged to main as `989f34c`, the remote feature branch was deleted, and this brief moved to done to reflect the shipped pool step-authoring wording parity cleanup | next: none`
