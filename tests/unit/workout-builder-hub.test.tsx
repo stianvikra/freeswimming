@@ -304,7 +304,7 @@ describe("WorkoutBuilderHub", () => {
       "Unsaved changes stay local until you save this workout."
     );
     expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
-      "2 review items"
+      "4 review items"
     );
     openSupportToolsPanel();
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
@@ -312,17 +312,29 @@ describe("WorkoutBuilderHub", () => {
       "review"
     );
     expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
-      "Review 2 Garmin/export mapping details before you treat this workout as handoff-ready."
+      "Review 4 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent("Fins");
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent(
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
+      "last rest interval"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
+      "older watches skip the final rest instead"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
+      "CSS-relative pacing"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
+      "2:00/100m if no CSS is set"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent("Fins");
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
       "Manual Garmin translation is still required"
     );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent(
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
       "CSS send-off"
     );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent(
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
       "open rest instead"
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
@@ -1233,6 +1245,25 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByTestId("workout-editor-panel")).toHaveTextContent("Unspecified selected.");
     expect(saveButton).toBeEnabled();
+    expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
+      "1 review item"
+    );
+
+    openSupportToolsPanel();
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
+      "data-readiness-status",
+      "review"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
+    );
+    fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
+      "Unspecified pool size"
+    );
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
+      "yard pools"
+    );
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {

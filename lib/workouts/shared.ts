@@ -2159,18 +2159,148 @@ function buildWorkoutGarminReadinessIssues(
 function buildWorkoutGarminAggregateReadinessIssues(
   draft: SessionDraft
 ): WorkoutGarminReadinessIssue[] {
-  if (draft.environment !== "pool" || draft.steps.length <= WORKOUT_GARMIN_POOL_MAX_STEP_COUNT) {
+  if (draft.environment !== "pool") {
     return [];
   }
 
-  return [
-    {
+  const issues: WorkoutGarminReadinessIssue[] = [];
+
+  if (draft.steps.length > WORKOUT_GARMIN_POOL_MAX_STEP_COUNT) {
+    issues.push({
       id: "draft-pool-step-cap",
       stepId: WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID,
       stepIndex: -1,
       detail: `This Pool Swim draft currently has ${draft.steps.length} authored steps. Garmin pool workouts top out at ${WORKOUT_GARMIN_POOL_MAX_STEP_COUNT} workout steps, so consolidate the set before Garmin/export handoff.`,
-    },
-  ];
+    });
+  }
+
+  const unspecifiedPoolSizeIssue = buildWorkoutGarminPoolUnspecifiedPoolSizeIssue(draft);
+  if (unspecifiedPoolSizeIssue) {
+    issues.push(unspecifiedPoolSizeIssue);
+  }
+
+  const repeatEndingRestCompatibilityIssue =
+    buildWorkoutGarminPoolRepeatEndingRestCompatibilityIssue(draft);
+  if (repeatEndingRestCompatibilityIssue) {
+    issues.push(repeatEndingRestCompatibilityIssue);
+  }
+
+  const cssCompatibilityIssue = buildWorkoutGarminPoolCssCompatibilityIssue(draft);
+  if (cssCompatibilityIssue) {
+    issues.push(cssCompatibilityIssue);
+  }
+
+  return issues;
+}
+
+function buildWorkoutGarminPoolUnspecifiedPoolSizeIssue(
+  draft: SessionDraft
+): WorkoutGarminReadinessIssue | null {
+  if (draft.environment !== "pool" || draft.poolLengthM !== null) {
+    return null;
+  }
+
+  return {
+    id: "draft-pool-size-unspecified-compatibility",
+    stepId: WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID,
+    stepIndex: -1,
+    detail:
+      "This Pool Swim draft uses Unspecified pool size. Garmin documents that setting as partially compatible across pool-swim watches: fully compatible devices keep the authored step distances as entered, while older devices may convert the distance in yard pools. Confirm the target watch before Garmin/export handoff.",
+  };
+}
+
+function buildWorkoutGarminPoolRepeatEndingRestCompatibilityIssue(
+  draft: SessionDraft
+): WorkoutGarminReadinessIssue | null {
+  if (draft.environment !== "pool") {
+    return null;
+  }
+
+  const useLastRestGroups = buildWorkoutHandoffGroups(draft.steps)
+    .filter((group): group is Extract<WorkoutHandoffGroup, { kind: "repeat" }> => group.kind === "repeat")
+    .filter(
+      (group) =>
+        group.repeatCount !== null &&
+        group.repeatCount > 1 &&
+        group.repeatEndingRestMode === "use_last_rest" &&
+        Boolean(group.entries.at(-1) && isSessionDraftRepeatEndingRestStep(group.entries.at(-1)!.step))
+    )
+    .map((group) => {
+      const firstEntry = group.entries[0];
+      return firstEntry
+        ? `repeat block starting at ${buildWorkoutStepReadinessLabel(firstEntry.step, firstEntry.index)}`
+        : null;
+    })
+    .filter((value): value is string => Boolean(value));
+
+  if (useLastRestGroups.length === 0) {
+    return null;
+  }
+
+  return {
+    id: "draft-pool-repeat-ending-rest-compatible-device-review",
+    stepId: WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID,
+    stepIndex: -1,
+    detail: `This Pool Swim draft keeps the last rest interval in ${joinWorkoutIssueReferences(
+      useLastRestGroups
+    )}. Garmin documents that compatible devices can use the last rest interval in a repeat block, but older watches skip the final rest instead. Confirm the target watch before Garmin/export handoff.`,
+  };
+}
+
+function buildWorkoutGarminPoolCssCompatibilityIssue(
+  draft: SessionDraft
+): WorkoutGarminReadinessIssue | null {
+  if (draft.environment !== "pool") {
+    return null;
+  }
+
+  const cssReferences = draft.steps.flatMap((step, index) => {
+    const stepLabel = buildWorkoutStepReadinessLabel(step, index);
+    const references: string[] = [];
+
+    if (step.targetMode === "css_target_pace") {
+      references.push(`${stepLabel} (CSS target pace)`);
+    }
+
+    if (step.durationMode === "css_send_off") {
+      references.push(`${stepLabel} (CSS send-off)`);
+    }
+
+    return references;
+  });
+
+  if (cssReferences.length === 0) {
+    return null;
+  }
+
+  const currentCssBaselineLabel = `${
+    draft.usedCssPaceLabel ?? formatClockDurationLabelFromSeconds(draft.basePaceSecondsPer100m)
+  }/100m`;
+
+  return {
+    id: "draft-pool-css-compatible-device-review",
+    stepId: WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID,
+    stepIndex: -1,
+    detail: `This Pool Swim draft uses CSS-relative pacing in ${joinWorkoutIssueReferences(
+      cssReferences
+    )}. Garmin documents that compatible devices auto-adjust CSS-relative send-off times and pace targets when CSS changes, and use 2:00/100m if no CSS is set. FreeSwimming previews currently use ${currentCssBaselineLabel} as the workout CSS baseline, so confirm the final watch target before Garmin/export handoff.`,
+  };
+}
+
+function joinWorkoutIssueReferences(values: string[]) {
+  if (values.length === 0) {
+    return "";
+  }
+
+  if (values.length === 1) {
+    return values[0];
+  }
+
+  if (values.length === 2) {
+    return `${values[0]} and ${values[1]}`;
+  }
+
+  return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
 }
 
 function buildWorkoutGarminSendOffCompatibilityIssue(

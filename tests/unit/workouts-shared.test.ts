@@ -155,6 +155,69 @@ describe("workouts shared readiness", () => {
     expect(report.issues[0]?.detail).toContain("100 workout steps");
   });
 
+  it("reports review when a pool workout uses unspecified pool size", () => {
+    const report = buildWorkoutGarminReadinessReport({
+      ...buildDraft(),
+      poolLengthM: null,
+    });
+
+    expect(report.status).toBe("review");
+    expect(report.summary).toBe(
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
+    );
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0]?.detail).toContain("Unspecified pool size");
+    expect(report.issues[0]?.detail).toContain("partially compatible across pool-swim watches");
+    expect(report.issues[0]?.detail).toContain("yard pools");
+  });
+
+  it("reports review when a pool repeat block keeps the last rest interval", () => {
+    const report = buildWorkoutGarminReadinessReport({
+      ...buildDraft(),
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Repeat swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "Hold the line.",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "send_off",
+          distanceM: null,
+          timeMin: 2,
+          targetSummary: "Reset before the next round.",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "use_last_rest",
+        },
+      ],
+    });
+
+    expect(report.status).toBe("review");
+    expect(report.summary).toBe(
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
+    );
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0]?.detail).toContain("last rest interval");
+    expect(report.issues[0]?.detail).toContain("Step 1 (Repeat swim)");
+    expect(report.issues[0]?.detail).toContain("older watches skip the final rest instead");
+  });
+
   it("reports review when send-off time is not authored as a rest after a distance-based swim step", () => {
     const report = buildWorkoutGarminReadinessReport({
       ...buildDraft(),
@@ -196,7 +259,7 @@ describe("workouts shared readiness", () => {
     expect(report.issues[0]?.detail).toContain("is not a distance-based swim step");
   });
 
-  it("keeps valid CSS send-off rest usage ready when it follows a distance-based swim step", () => {
+  it("reports review for CSS-relative pool timing even when the send-off placement itself is valid", () => {
     const report = buildWorkoutGarminReadinessReport({
       ...buildDraft(),
       steps: [
@@ -228,9 +291,15 @@ describe("workouts shared readiness", () => {
       ],
     });
 
-    expect(report.status).toBe("ready");
-    expect(report.summary).toBe("Ready for the planned Garmin/export handoff.");
-    expect(report.issues).toEqual([]);
+    expect(report.status).toBe("review");
+    expect(report.summary).toBe(
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
+    );
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0]?.detail).toContain("CSS-relative pacing");
+    expect(report.issues[0]?.detail).toContain("Step 2 (CSS send-off rest) (CSS send-off)");
+    expect(report.issues[0]?.detail).toContain("2:00/100m if no CSS is set");
+    expect(report.issues[0]?.detail).toContain("2:08/100m as the workout CSS baseline");
   });
 
   it("builds a canonical handoff text export with workout metadata and steps", () => {
@@ -525,6 +594,8 @@ describe("workouts shared readiness", () => {
     expect(text).toContain("Source: Local draft");
     expect(text).toContain("Garmin/export readiness: Review");
     expect(text).toContain("Review before export/send");
+    expect(text).toContain("last rest interval");
+    expect(text).toContain("older watches skip the final rest instead");
     expect(text).toContain("IM by round");
     expect(text).toContain("Pull");
     expect(text).toContain("Fins");
@@ -582,8 +653,12 @@ describe("workouts shared readiness", () => {
       "freeswimming-review-export-draft-garmin-ready-draft.json"
     );
     expect(exportPayload.diagnostics.status).toBe("review");
-    expect(exportPayload.diagnostics.issueCount).toBe(1);
+    expect(exportPayload.diagnostics.issueCount).toBe(2);
+    expect(exportPayload.diagnostics.issues[0]?.detail).toContain("last rest interval");
     expect(exportPayload.diagnostics.issues[0]?.detail).toContain(
+      "older watches skip the final rest instead"
+    );
+    expect(exportPayload.diagnostics.issues[1]?.detail).toContain(
       "Garmin's documented swim-workout builder does not list a matching equipment field"
     );
     expect(exportPayload.blocks).toHaveLength(1);
@@ -753,8 +828,10 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Source: Local draft");
     expect(html).toContain("Review print draft");
     expect(html).toContain(
-      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
+      "Review 2 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
+    expect(html).toContain("last rest interval");
+    expect(html).toContain("older watches skip the final rest instead");
     expect(html).toContain("Manual Garmin translation is still required.");
     expect(html).toContain("Repeat block");
     expect(html).toContain("Repeat review swim");

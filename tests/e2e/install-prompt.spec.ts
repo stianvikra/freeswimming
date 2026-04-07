@@ -1,10 +1,47 @@
 import { expect, test, type Page } from "@playwright/test";
+import { COURSE_MODULES } from "../../app/course/courseData";
+import { resolveCanonicalCourseLessonRuntimeId } from "../../lib/course/runtime-id-manifest";
 import { isMobileProject } from "./project-guards";
 
 const UNSUPPORTED_BROWSER_MESSAGE =
   "Install is not available in this browser yet. For best support, use Safari, Chrome, or Edge.";
 const INSTALL_SUCCESS_MESSAGE =
   "App installed. You can open FreeSwimming from your Dock, Start menu, or home screen.";
+const INSTALL_PROMPT_LESSON_ID =
+  resolveCanonicalCourseLessonRuntimeId("mod3-l1") ?? "mod3-l1";
+
+async function stubPublishedCourseContent(page: Page) {
+  await page.route("**/api/course/content*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        modules: COURSE_MODULES,
+        preview: {
+          enabled: false,
+          mode: "published",
+        },
+      }),
+    });
+  });
+}
+
+async function gotoInstallPromptLesson(page: Page) {
+  await page.goto(`/course?lesson=${encodeURIComponent(INSTALL_PROMPT_LESSON_ID)}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await waitForCoursePageToSettle(page);
+  await expect(page.getByTestId("course-page")).toHaveAttribute(
+    "data-active-lesson-id",
+    INSTALL_PROMPT_LESSON_ID
+  );
+}
+
+test.beforeEach(async ({ page }) => {
+  await stubPublishedCourseContent(page);
+});
 
 async function waitForCoursePageToSettle(page: Page) {
   const compilingIndicator = page.getByText("Compiling", { exact: true });
@@ -26,8 +63,7 @@ async function waitForCoursePageToSettle(page: Page) {
 }
 
 async function openMainMenuFromCourse(page: Page) {
-  await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
-  await waitForCoursePageToSettle(page);
+  await gotoInstallPromptLesson(page);
 
   const lessonsToggle = page.getByTestId("course-nav-lessons");
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
@@ -403,8 +439,7 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   );
   test.slow();
 
-  await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
-  await waitForCoursePageToSettle(page);
+  await gotoInstallPromptLesson(page);
   const markDoneButton = page.getByTestId("course-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   await dismissSwipeHintIfPresent(page);
@@ -443,8 +478,7 @@ test("contextual install prompt shows success confirmation after accepted instal
   );
   test.slow();
 
-  await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
-  await waitForCoursePageToSettle(page);
+  await gotoInstallPromptLesson(page);
   const markDoneButton = page.getByTestId("course-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   await dismissSwipeHintIfPresent(page);
@@ -485,8 +519,7 @@ test("guest sees free-account backup prompt after completing three lessons", asy
     localStorage.removeItem("fs_course_done_lessons");
     localStorage.removeItem("fs_course_backup_prompt_dismissed_at");
   });
-  await page.goto("/course?lesson=mod3-l1", { waitUntil: "domcontentloaded", timeout: 60_000 });
-  await waitForCoursePageToSettle(page);
+  await gotoInstallPromptLesson(page);
   await dismissSwipeHintIfPresent(page);
 
   await satisfyDoneGateIfPresent(page);
