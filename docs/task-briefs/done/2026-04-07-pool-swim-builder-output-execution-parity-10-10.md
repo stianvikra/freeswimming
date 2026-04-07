@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-07-pool-swim-builder-output-execution-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-07`
 - `updated`: `2026-04-07`
@@ -243,3 +243,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-07 | in progress | created a dedicated output/execution parity slice after confirming on origin/main that the remaining pool Garmin gap lives in closed step summaries, handoff text, PDF detail labels, Garmin-ready export labels, and poolside output; the key truthfulness fix is distinguishing Open swim from Open rest without changing the canonical draft model | next: update shared output helpers and WorkoutEditor summaries, then refresh targeted tests and run the pre-PR gate`
 - `2026-04-07 | implementation + pre-PR gate | aligned pool-only execution wording across WorkoutEditor step cards, handoff text, PDF detail labels, Garmin-ready export labels, and poolside lines; added targeted unit/e2e coverage for Open swim vs Open rest and pool note labels; passed npm run lint:briefs:all, npm run typecheck, targeted vitest, targeted desktop-chromium Playwright, and npm run verify:pre-pr (96 passed / 318 skipped) | next: review final diff, commit, push, and open the feature PR`
 - `2026-04-07 | committed | feature commit \`3a05313\` captured the pool output/execution parity slice after the green pre-PR gate; the branch is ready for push + PR handoff | next: push the branch, open the PR, and monitor required CI before merge`
+- `2026-04-07 | merged + closeout | PR \`#384\` merged to \`main\` as squash commit \`1c1e592\`; required GitHub checks passed, local \`npm run verify:pre-merge\` passed (\`96 passed / 318 skipped\`), and the brief now moves to \`done\` | next: summarize shipped outcome and remaining parity gap`
