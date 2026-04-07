@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-06-pool-swim-builder-garmin-compatibility-guards-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-06`
-- `updated`: `2026-04-06`
+- `updated`: `2026-04-07`
 
 ## Goal
 
@@ -211,3 +211,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-06 | in progress | created the compatibility-guards brief after the repeat/rest slice closed; scope is now narrowed to documented Garmin step-cap and send-off truthfulness in the shared readiness layer | next: implement aggregate readiness issues, update targeted tests, and run full pre-PR verification`
 - `2026-04-06 | implementation + full gate | added pool-only Garmin compatibility review rules for authored step cap and send-off placement, updated shared readiness coverage plus builder-hub expectations, and passed npm run lint:briefs:all, targeted vitest, npm run typecheck, and full npm run verify:pre-pr (96 passed / 318 skipped); perf-budget trend recommendation remained hold (runs: 1/2, worst margin 36.2%) | next: inspect final diff, commit the slice, push the branch, and open the PR`
+- `2026-04-07 | merged to main + closeout | feature PR #376 merged to main as d3a713c after local npm run verify:pre-merge passed (96 passed / 318 skipped; private gate intentionally skipped because SITE_LOCK_ENABLED!=1) and required GitHub checks turned green; brief moved to done on the closeout branch | next: none`
