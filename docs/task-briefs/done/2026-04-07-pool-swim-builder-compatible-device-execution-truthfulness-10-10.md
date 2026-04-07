@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-07-pool-swim-builder-compatible-device-execution-truthfulness-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-07`
 - `updated`: `2026-04-07`
@@ -239,6 +239,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
-- `2026-04-07 | pending commit | hardened the mobile install-prompt Playwright spec to stub deterministic course content and jump to a canonical lesson id so pre-merge no longer depends on the current published-course dataset; local `npm run verify:pre-merge` passed (`96 passed / 318 skipped`) | next: commit, push, refresh PR checks, and merge when CI is green`
+- `2026-04-07 | aad26ed | feature PR #386 merged to `main` after required CI returned green; the slice now ships pool-only review guards for `Unspecified` pool size, `Use last rest interval`, and CSS-relative targets, plus deterministic install-prompt gate coverage that no longer depends on the live published-course dataset | next: close out the brief in a docs-only PR`
+- `2026-04-07 | 05bcceb | hardened the mobile install-prompt Playwright spec to stub deterministic course content and jump to a canonical lesson id so pre-merge no longer depends on the current published-course dataset; local `npm run verify:pre-merge` passed (`96 passed / 318 skipped`) | next: push, refresh PR checks, and merge when CI is green`
 - `2026-04-07 | a1183c2 | added pool-only readiness truthfulness guards for Unspecified pool size, use-last-rest repeat blocks, and CSS-relative targets in the shared Garmin/export layer; refreshed shared + hub tests; local validation passed via lint:briefs:all, typecheck, targeted vitest, targeted Playwright, and verify:pre-pr (96 passed / 318 skipped) | next: commit, push, open PR, and monitor CI`
 - `2026-04-07 | in progress | created a dedicated compatible-device execution truthfulness slice after the wording/output parity wave closed; the next source-backed Garmin gap is no longer labels, but pool features whose execution still varies by device or CSS baseline (`Unspecified` pool size, `Use last rest interval`, and CSS-relative targets) | next: update shared readiness logic, refresh targeted tests, and run the pre-PR gate`
