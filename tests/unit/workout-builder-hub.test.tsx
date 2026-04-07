@@ -316,6 +316,9 @@ describe("WorkoutBuilderHub", () => {
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
     expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent("Fins");
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent(
+      "Manual Garmin translation is still required"
+    );
     expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent(
       "CSS send-off"
     );
