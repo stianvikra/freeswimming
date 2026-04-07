@@ -97,6 +97,110 @@ describe("workouts shared readiness", () => {
     expect(report.issues[2]?.detail).toContain("Fins");
   });
 
+  it("reports review when a pool workout exceeds Garmin's documented authored-step cap", () => {
+    const report = buildWorkoutGarminReadinessReport({
+      ...buildDraft(),
+      steps: Array.from({ length: 101 }, (_, index) => ({
+        id: `step-${index + 1}`,
+        category: "main" as const,
+        name: `Main step ${index + 1}`,
+        stroke: "freestyle" as const,
+        intensity: "moderate" as const,
+        durationMode: "distance" as const,
+        distanceM: 25,
+        timeMin: null,
+        targetSummary: "",
+        notes: "",
+      })),
+    });
+
+    expect(report.status).toBe("review");
+    expect(report.summary).toBe(
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
+    );
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0]?.detail).toContain("101 authored steps");
+    expect(report.issues[0]?.detail).toContain("100 workout steps");
+  });
+
+  it("reports review when send-off time is not authored as a rest after a distance-based swim step", () => {
+    const report = buildWorkoutGarminReadinessReport({
+      ...buildDraft(),
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Time swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "time",
+          distanceM: null,
+          timeMin: 6,
+          targetSummary: "Hold rhythm.",
+          notes: "",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Send-off rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "send_off",
+          distanceM: null,
+          timeMin: 2,
+          targetSummary: "Leave on the clock.",
+          notes: "",
+        },
+      ],
+    });
+
+    expect(report.status).toBe("review");
+    expect(report.summary).toBe(
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
+    );
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0]?.detail).toContain("Send-off Time");
+    expect(report.issues[0]?.detail).toContain("open rest instead");
+    expect(report.issues[0]?.detail).toContain("is not a distance-based swim step");
+  });
+
+  it("keeps valid CSS send-off rest usage ready when it follows a distance-based swim step", () => {
+    const report = buildWorkoutGarminReadinessReport({
+      ...buildDraft(),
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "CSS swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "Hold CSS shape.",
+          notes: "",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "CSS send-off rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "css_send_off",
+          distanceM: null,
+          timeMin: null,
+          cssSendOffOffsetSeconds: 2,
+          targetSummary: "Leave 2 seconds over CSS.",
+          notes: "",
+        },
+      ],
+    });
+
+    expect(report.status).toBe("ready");
+    expect(report.summary).toBe("Ready for the planned Garmin/export handoff.");
+    expect(report.issues).toEqual([]);
+  });
+
   it("builds a canonical handoff text export with workout metadata and steps", () => {
     const draft = buildDraft();
     const text = buildWorkoutHandoffText(draft, {
