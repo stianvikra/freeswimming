@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-07-pool-swim-builder-equipment-compatibility-truthfulness-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-07`
 - `updated`: `2026-04-07`
@@ -212,3 +212,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-07 | implementation + targeted validation | updated the shared equipment review detail so it now says FreeSwimming already keeps equipment labels in handoff/PDF/Garmin-ready export output while manual Garmin translation still remains unresolved, then passed npm run lint:briefs:all, npm run typecheck, targeted vitest, and targeted desktop-chromium Playwright | next: run npm run verify:pre-pr on the full branch diff, then commit/push/open the PR if green`
 - `2026-04-07 | full pre-PR gate green | npm run verify:pre-pr passed on the full branch diff with 96 passed / 318 skipped after the updated equipment review detail landed; no deterministic regressions surfaced in the broader regression matrix | next: commit, push, and open the feature PR, then run npm run verify:pre-merge before merge recommendation`
 - `2026-04-07 | pre-merge gate green | npm run verify:pre-merge passed with 96 passed / 318 skipped, and the private-gate leg was correctly skipped because SITE_LOCK_ENABLED!=1 in this local run; perf-budget trend recommended hold, not tighten, after this first green sample on the new slice | next: keep the PR body/check evidence aligned, then wait for required GitHub checks before merge`
+- `2026-04-07 | merged + closeout | PR #380 merged to main as `1fac0e7` after required GitHub checks returned green, the feature branch was deleted on origin, and this brief moved to done to reflect the shipped truthfulness cleanup for pool equipment compatibility wording | next: none`
