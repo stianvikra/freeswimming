@@ -305,6 +305,110 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Readiness coverage for workout builder handoff.");
   });
 
+  it("keeps pool execution wording aligned across handoff, pdf, export, and poolside outputs", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      title: "Pool execution wording draft",
+      steps: [
+        {
+          id: "step-1",
+          category: "swim",
+          name: "Open swim step",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "lap_button",
+          distanceM: null,
+          timeMin: null,
+          targetSummary: "Stay tall through the turn.",
+          notes: "Count strokes off every wall.",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Open rest step",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "lap_button",
+          distanceM: null,
+          timeMin: null,
+          targetSummary: "Reset before the next send-off.",
+          notes: "Breathe before you leave.",
+        },
+        {
+          id: "step-3",
+          category: "rest",
+          name: "Send-off rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "send_off",
+          distanceM: null,
+          timeMin: 2,
+          targetSummary: "",
+          notes: "",
+        },
+      ],
+    };
+
+    const handoffText = buildWorkoutHandoffText(draft, {
+      draftState: "canonical",
+    });
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "standard",
+    });
+    const pdfModel = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+    });
+    const exportPayload = buildWorkoutGarminReadyExport(draft, {
+      draftState: "canonical",
+      workoutId: "workout-output-1",
+    });
+
+    expect(handoffText).toContain("Swim · Open swim · Freestyle · Moderate");
+    expect(handoffText).toContain("Rest · Open rest · Easy");
+    expect(handoffText).toContain("Target summary: Stay tall through the turn.");
+    expect(handoffText).toContain("Step note: Count strokes off every wall.");
+    expect(html).toContain("Target summary: Stay tall through the turn.");
+    expect(html).toContain("Step note: Count strokes off every wall.");
+    expect(pdfModel.poolsideLines).toContain("Open swim · Freestyle · Moderate");
+    expect(pdfModel.poolsideLines).toContain("P: Open rest");
+    expect(pdfModel.poolsideLines).toContain("P: Send-off Time 2:00");
+
+    if (exportPayload.blocks[0]?.kind !== "single") {
+      throw new Error("Expected first block to be a single-step export.");
+    }
+
+    if (exportPayload.blocks[1]?.kind !== "single") {
+      throw new Error("Expected second block to be a single-step export.");
+    }
+
+    if (exportPayload.blocks[2]?.kind !== "single") {
+      throw new Error("Expected third block to be a single-step export.");
+    }
+
+    expect(exportPayload.blocks[0].step.duration).toMatchObject({
+      mode: "lap_button",
+      label: "Open swim",
+      summary: "Open swim",
+    });
+    expect(exportPayload.blocks[0].step.target).toMatchObject({
+      mode: "none",
+      label: "No target",
+      draftSummary: "Stay tall through the turn.",
+    });
+    expect(exportPayload.blocks[1].step.duration).toMatchObject({
+      mode: "lap_button",
+      label: "Open rest",
+      summary: "Open rest",
+    });
+    expect(exportPayload.blocks[2].step.duration).toMatchObject({
+      mode: "send_off",
+      label: "Send-off Time",
+      summary: "Send-off Time 2:00",
+    });
+  });
+
   it("builds a canonical garmin-ready export payload with deterministic workout metadata", () => {
     const draft = buildDraft();
     const exportPayload = buildWorkoutGarminReadyExport(draft, {
@@ -524,7 +628,7 @@ describe("workouts shared readiness", () => {
       reviewIssueIds: [],
       duration: {
         mode: "send_off",
-        summary: "Send-off 2:00",
+        summary: "Send-off Time 2:00",
       },
     });
   });
@@ -584,7 +688,9 @@ describe("workouts shared readiness", () => {
       kind: "repeat",
       summary: "4 rounds · 100m + 2:00 per round · Final rest skipped",
     });
-    expect(pdfModel.poolsideLines).toContain("P: 2:00 between rounds (final rest skipped)");
+    expect(pdfModel.poolsideLines).toContain(
+      "P: Send-off Time 2:00 between rounds (final rest skipped)"
+    );
 
     if (exportPayload.blocks[0]?.kind !== "repeat") {
       throw new Error("Expected repeat block export.");
