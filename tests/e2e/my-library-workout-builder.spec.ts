@@ -238,6 +238,9 @@ test.describe("my library workout builder", () => {
     );
     await page.getByTestId("workout-editor-garmin-readiness-toggle").click();
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText("Fins");
+    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText(
+      "Manual Garmin translation is still required"
+    );
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
       "data-handoff-state",

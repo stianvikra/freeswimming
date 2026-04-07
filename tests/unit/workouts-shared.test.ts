@@ -93,6 +93,8 @@ describe("workouts shared readiness", () => {
     );
     expect(report.issues).toHaveLength(1);
     expect(report.issues[0]?.detail).toContain("Fins");
+    expect(report.issues[0]?.detail).toContain("handoff, PDF, and Garmin-ready export output");
+    expect(report.issues[0]?.detail).toContain("Manual Garmin translation is still required");
   });
 
   it("keeps convenience stroke and drill review warnings outside the pool parity path", () => {
@@ -422,6 +424,8 @@ describe("workouts shared readiness", () => {
     expect(text).toContain("IM by round");
     expect(text).toContain("Pull");
     expect(text).toContain("Fins");
+    expect(text).toContain("handoff, PDF, and Garmin-ready export output");
+    expect(text).toContain("Manual Garmin translation is still required");
     expect(text).toContain("1. Repeat block · 4 rounds · 100m + 2:00 per round");
     expect(text).toContain("1.1 Repeat review swim");
     expect(text).toContain("1.2 Repeat review rest");
@@ -475,6 +479,9 @@ describe("workouts shared readiness", () => {
     );
     expect(exportPayload.diagnostics.status).toBe("review");
     expect(exportPayload.diagnostics.issueCount).toBe(1);
+    expect(exportPayload.diagnostics.issues[0]?.detail).toContain(
+      "Garmin's documented swim-workout builder does not list a matching equipment field"
+    );
     expect(exportPayload.blocks).toHaveLength(1);
     expect(exportPayload.blocks[0]).toMatchObject({
       kind: "repeat",
@@ -642,6 +649,7 @@ describe("workouts shared readiness", () => {
     expect(html).toContain(
       "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
+    expect(html).toContain("Manual Garmin translation is still required.");
     expect(html).toContain("Repeat block");
     expect(html).toContain("Repeat review swim");
     expect(html).toContain("Reverse IM order (RIMO)");

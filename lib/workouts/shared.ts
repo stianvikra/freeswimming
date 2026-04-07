@@ -2129,7 +2129,7 @@ function buildWorkoutGarminReadinessIssues(
       stepIndex: index,
       detail: `${stepLabel} uses ${getSessionStepEquipmentLabel(
         step.equipment
-      )}. Garmin/PDF adapter support for equipment metadata still needs explicit review.`,
+      )}. FreeSwimming already keeps that label in handoff, PDF, and Garmin-ready export output, but Garmin's documented swim-workout builder does not list a matching equipment field. Manual Garmin translation is still required.`,
     });
   }
 
