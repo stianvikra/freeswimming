@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-07-pool-swim-builder-supported-strokes-and-drills-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-07`
 - `updated`: `2026-04-07`
@@ -210,3 +210,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-07 | in progress | updated shared readiness logic so pool workouts no longer flag source-backed `IM by round`, `Reverse IM order (RIMO)`, or drill-type metadata as review-only, refreshed builder-hub/workout/program export tests, and restored the printable-program contract to the new ready-state truth | next: run `npm run verify:pre-pr`, then commit/push/open PR if green`
 - `2026-04-07 | in progress | full `npm run verify:pre-pr` passed after aligning the last desktop workout-builder E2E expectation with the new single-review-item truth and re-running the full matrix (`96 passed / 318 skipped`) | next: remove generated artifacts, commit, push, and open the feature PR`
 - `2026-04-07 | in progress | `npm run verify:pre-merge` exposed a desktop Chromium flake in the canonical program-export route because `page.goto` on the program detail page still used a 20s navigation timeout under heavy load; increased that route timeout to 60s, confirmed the targeted `my-library-program-export` spec passes, and kept the product assertions unchanged | next: commit the timeout hardening and rerun `npm run verify:pre-merge` on current HEAD`
+- `2026-04-07 | merged + closeout | PR #378 merged to `main` as `a9f9a0e`; local `npm run verify:pre-merge` passed on current HEAD with 96 passed / 318 skipped, required GitHub checks were green, and the slice closed with pool stroke/drill readiness truth aligned to the documented Garmin support surface while unresolved equipment warnings stayed intact | next: none`
