@@ -66,7 +66,7 @@ describe("workouts shared readiness", () => {
     expect(report.issues).toEqual([]);
   });
 
-  it("reports review issues for convenience strokes, drill metadata, and equipment metadata", () => {
+  it("keeps supported pool stroke and drill semantics ready while unresolved equipment stays in review", () => {
     const report = buildWorkoutGarminReadinessReport({
       ...buildDraft(),
       steps: [
@@ -89,12 +89,42 @@ describe("workouts shared readiness", () => {
 
     expect(report.status).toBe("review");
     expect(report.summary).toBe(
-      "Review 3 Garmin/export mapping details before you treat this workout as handoff-ready."
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
-    expect(report.issues).toHaveLength(3);
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0]?.detail).toContain("Fins");
+  });
+
+  it("keeps convenience stroke and drill review warnings outside the pool parity path", () => {
+    const report = buildWorkoutGarminReadinessReport({
+      ...buildDraft(),
+      environment: "open_water",
+      poolLengthM: null,
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Open water review step",
+          stroke: "reverse_im_order",
+          drillType: "pull",
+          equipment: "none",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "Truthful mapping check.",
+          notes: "",
+        },
+      ],
+    });
+
+    expect(report.status).toBe("review");
+    expect(report.summary).toBe(
+      "Review 2 Garmin/export mapping details before you treat this workout as handoff-ready."
+    );
+    expect(report.issues).toHaveLength(2);
     expect(report.issues[0]?.detail).toContain("Reverse IM order (RIMO)");
     expect(report.issues[1]?.detail).toContain("Pull");
-    expect(report.issues[2]?.detail).toContain("Fins");
   });
 
   it("reports review when a pool workout exceeds Garmin's documented authored-step cap", () => {
@@ -444,7 +474,7 @@ describe("workouts shared readiness", () => {
       "freeswimming-review-export-draft-garmin-ready-draft.json"
     );
     expect(exportPayload.diagnostics.status).toBe("review");
-    expect(exportPayload.diagnostics.issueCount).toBe(3);
+    expect(exportPayload.diagnostics.issueCount).toBe(1);
     expect(exportPayload.blocks).toHaveLength(1);
     expect(exportPayload.blocks[0]).toMatchObject({
       kind: "repeat",
@@ -461,16 +491,12 @@ describe("workouts shared readiness", () => {
       throw new Error("Expected repeat block export.");
     }
 
-    expect(exportPayload.blocks[0].reviewIssueIds).toEqual([
-      "step-1-im-by-round",
-      "step-1-drill-focus",
-      "step-1-equipment",
-    ]);
+    expect(exportPayload.blocks[0].reviewIssueIds).toEqual(["step-1-equipment"]);
     expect(exportPayload.blocks[0].steps[0]).toMatchObject({
       id: "step-1",
       position: 1,
       mappingStatus: "review",
-      reviewIssueIds: ["step-1-im-by-round", "step-1-drill-focus", "step-1-equipment"],
+      reviewIssueIds: ["step-1-equipment"],
       stroke: {
         value: "im_by_round",
         label: "IM by round",
@@ -614,7 +640,7 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Source: Local draft");
     expect(html).toContain("Review print draft");
     expect(html).toContain(
-      "Review 3 Garmin/export mapping details before you treat this workout as handoff-ready."
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
     expect(html).toContain("Repeat block");
     expect(html).toContain("Repeat review swim");

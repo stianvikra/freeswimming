@@ -226,7 +226,7 @@ test.describe("my library workout builder", () => {
       "Unsaved changes stay local until you save this workout."
     );
     await expect(page.getByTestId("workout-editor-support-tools-status")).toHaveText(
-      "2 review items"
+      "1 review item"
     );
     await openSupportToolsPanel(page);
     await expect(page.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
@@ -234,11 +234,11 @@ test.describe("my library workout builder", () => {
       "review"
     );
     await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
-      "Review 2 Garmin/export mapping details before you treat this workout as handoff-ready."
+      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
     await page.getByTestId("workout-editor-garmin-readiness-toggle").click();
-    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText("Pull");
-    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-1")).toContainText("Fins");
+    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText("Fins");
+    await expect(page.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
       "data-handoff-state",
       "local_draft"
