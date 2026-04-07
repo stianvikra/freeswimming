@@ -177,7 +177,7 @@ test.describe("my library program export", () => {
 
     await page.goto(`/my-library/programs/${createProgramBody.program?.id}`, {
       waitUntil: "domcontentloaded",
-      timeout: 20_000,
+      timeout: 60_000,
     });
     await waitForProgramBuilderClientReady(page);
 

@@ -304,7 +304,7 @@ describe("WorkoutBuilderHub", () => {
       "Unsaved changes stay local until you save this workout."
     );
     expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
-      "4 review items"
+      "2 review items"
     );
     openSupportToolsPanel();
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
@@ -312,19 +312,15 @@ describe("WorkoutBuilderHub", () => {
       "review"
     );
     expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
-      "Review 4 Garmin/export mapping details before you treat this workout as handoff-ready."
+      "Review 2 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent("Pull");
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent("Fins");
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-2")).toHaveTextContent(
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-0")).toHaveTextContent("Fins");
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent(
       "CSS send-off"
     );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-2")).toHaveTextContent(
+    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-1")).toHaveTextContent(
       "open rest instead"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-issue-3")).toHaveTextContent(
-      "IM by round"
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
     fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));

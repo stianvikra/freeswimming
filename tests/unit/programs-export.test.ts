@@ -221,6 +221,7 @@ describe("program exports", () => {
     expect(html).toContain("Week 1");
     expect(html).toContain("Monday");
     expect(html).toContain("Printable review workout");
-    expect(html).toContain("Reverse IM order (RIMO)");
+    expect(html).toContain("Ready for the planned Garmin/export handoff.");
+    expect(html).not.toContain("Reverse IM order (RIMO)");
   });
 });

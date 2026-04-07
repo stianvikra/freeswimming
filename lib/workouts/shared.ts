@@ -2083,7 +2083,13 @@ function buildWorkoutGarminReadinessIssues(
     }
   }
 
-  if (step.stroke === "im_by_round") {
+  const suppressPoolStrokeAndDrillCompatibilityWarning =
+    environment === "pool" &&
+    (step.stroke === "im_by_round" ||
+      step.stroke === "reverse_im_order" ||
+      (step.drillType && step.drillType !== "none"));
+
+  if (!suppressPoolStrokeAndDrillCompatibilityWarning && step.stroke === "im_by_round") {
     issues.push({
       id: `${step.id}-im-by-round`,
       stepId: step.id,
@@ -2092,7 +2098,7 @@ function buildWorkoutGarminReadinessIssues(
     });
   }
 
-  if (step.stroke === "reverse_im_order") {
+  if (!suppressPoolStrokeAndDrillCompatibilityWarning && step.stroke === "reverse_im_order") {
     issues.push({
       id: `${step.id}-reverse-im-order`,
       stepId: step.id,
@@ -2101,7 +2107,11 @@ function buildWorkoutGarminReadinessIssues(
     });
   }
 
-  if (step.drillType && step.drillType !== "none") {
+  if (
+    !suppressPoolStrokeAndDrillCompatibilityWarning &&
+    step.drillType &&
+    step.drillType !== "none"
+  ) {
     issues.push({
       id: `${step.id}-drill-focus`,
       stepId: step.id,
