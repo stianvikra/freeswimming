@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-08-pool-swim-session-builder-owner-notes-repeat-copy-rest-time-and-pool-size-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-08`
 - `updated`: `2026-04-08`
@@ -250,6 +250,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-08 | done | PR #392 merged to main as squash commit f39fe35e2e1d29f8e92288ded69e6f21b7090fae after local npm run verify:pre-merge and required CI both passed; slice is now shipped and the six production admin notes can be marked done | next: close the shipped admin notes and remove the temporary implementation branch/worktree`
 - `2026-04-08 | in-progress | implemented the six-note polish slice in WorkoutEditor and supporting tests: new repeat starters default to skip-last-rest, repeat/title/support filler copy is removed or simplified, pool rest steps use minute+second editing while preserving canonical timeMin, and pool-size/poolside panels are calmer on wide screens; validation green: npm run lint:briefs:all, npm run typecheck, npx vitest run tests/unit/workout-builder-hub.test.tsx, and full npm run verify:pre-pr (96 passed, 318 skipped) after freeing temp Playwright artifacts and running with a local env copy that omits STRIPE_PRICE_ID_POOLSIDE_GUIDE to avoid an unrelated local commerce dependency | next: commit, push, and open the PR in Safari`
 - `2026-04-08 | in-progress | moved the brief into active implementation and began the builder pass in a clean worktree; scope locked to the six production owner notes covering repeat default/header cleanup, title and step-note copy cleanup, MM:SS rest entry, poolside support copy removal, and pool-size layout/copy polish | next: finish the WorkoutEditor and test patches, run targeted validation, then verify:pre-pr before PR handoff`
 - `2026-04-08 | planning | reviewed the live production admin-notes queue directly and grouped six still-open notes on /my-library/workouts/8082725f-26de-4efe-876f-9e84148bba45 into one owner-led polish slice covering repeat default/copy cleanup, MM:SS rest-time entry, and pool-size selected-state/layout cleanup | next: implement the slice in one bounded pass, validate repeat default persistence and rest-time parsing with targeted unit/e2e coverage, then run verify:pre-pr before PR handoff`
