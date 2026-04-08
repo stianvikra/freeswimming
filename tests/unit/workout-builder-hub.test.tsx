@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
@@ -167,6 +167,21 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent("Ready");
     expect(
+      screen.queryByText(
+        "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface."
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Opening or downloading anything here does not send or publish anything. It only opens or downloads support output for this saved session."
+      )
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
+
+    openSupportToolsPanel();
+
+    expect(screen.getByTestId("workout-editor-garmin-readiness")).toBeVisible();
+    expect(
       screen.getByText(
         "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface."
       )
@@ -176,11 +191,6 @@ describe("WorkoutBuilderHub", () => {
         "Opening or downloading anything here does not send or publish anything. It only opens or downloads support output for this saved session."
       )
     ).toBeVisible();
-    expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
-
-    openSupportToolsPanel();
-
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toBeVisible();
   });
 
   it("loads an accepted workout and saves canonical edits back to the same workout", async () => {
@@ -1263,6 +1273,99 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
       "yard pools"
     );
+  });
+
+  it("converts yard pool sizes back into the canonical meter value on save", async () => {
+    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        draft: SessionDraft;
+      };
+
+      return {
+        ok: true,
+        json: async () => ({
+          ok: true,
+          workout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: body.draft,
+          }),
+          summary: buildWorkoutSummary({
+            sourceKind: "manual",
+            title: body.draft.title,
+            totalDistanceM: body.draft.totalDistanceM,
+            estimatedDurationMin: body.draft.estimatedDurationMin,
+          }),
+        }),
+      } as Response;
+    });
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("workout-editor-pool-length-unit-yd"));
+    fireEvent.click(screen.getByRole("button", { name: "25yd" }));
+
+    expect(screen.getByLabelText("Exact pool size (yd)")).toHaveValue("25");
+    expect(
+      screen.getByText("Common yard presets: 25yd and 50yd. Preset selected.")
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/workouts/workout-1",
+        expect.objectContaining({
+          method: "PATCH",
+        })
+      );
+    });
+
+    const fetchBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
+      draft: SessionDraft;
+    };
+
+    expect(fetchBody.draft.poolLengthM).toBe(22.86);
+  });
+
+  it("keeps the poolside focus selector compact and removes redundant focus role labels", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary()}
+        trainingFocusOptions={Array.from({ length: 10 }, (_, index) => ({
+          id: `focus-${index + 1}`,
+          title: `Focus ${index + 1}`,
+          isPrimary: index === 0,
+        }))}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    const focusList = screen.getByTestId("workout-editor-poolside-focus-list");
+    expect(focusList).toHaveClass("overflow-y-auto");
+    expect(within(focusList).queryByText("Primary focus")).not.toBeInTheDocument();
+    expect(within(focusList).queryByText("Optional focus")).not.toBeInTheDocument();
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {

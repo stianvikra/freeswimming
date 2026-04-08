@@ -44,7 +44,6 @@ import {
   getSessionStrokeLabel,
   getSessionTypeLabel,
   isSessionDraftRepeatEndingRestStep,
-  isSessionDraftPoolLengthPreset,
   isSessionDraftStepDistancePreset,
   resolveSessionDraftRepeatEndingRestMode,
   type SessionDraft,
@@ -132,6 +131,10 @@ type PendingRemoval =
     };
 
 const MANUAL_POOL_SIZE_QUICK_CHOICES = [25, 50] as const;
+const YARD_POOL_SIZE_QUICK_CHOICES = [25, 50] as const;
+const METERS_PER_YARD = 0.9144;
+
+type PoolLengthUnit = "m" | "yd";
 
 type LastRemovedBlock = {
   kind: "step" | "repeat";
@@ -246,7 +249,19 @@ function parsePositiveInteger(value: string) {
   return parsed;
 }
 
-function parsePoolLengthInput(value: string) {
+function roundToTwoDecimals(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function convertPoolLengthToMeters(value: number, unit: PoolLengthUnit) {
+  return roundToTwoDecimals(unit === "yd" ? value * METERS_PER_YARD : value);
+}
+
+function convertMetersToPoolLengthUnit(value: number, unit: PoolLengthUnit) {
+  return roundToTwoDecimals(unit === "yd" ? value / METERS_PER_YARD : value);
+}
+
+function parsePoolLengthInput(value: string, unit: PoolLengthUnit = "m") {
   const trimmed = value.trim().replace(",", ".");
   if (trimmed.length === 0) return null;
   if (!/^\d+(\.\d{0,2})?$/.test(trimmed)) return null;
@@ -254,17 +269,36 @@ function parsePoolLengthInput(value: string) {
   const parsed = Number.parseFloat(trimmed);
   if (!Number.isFinite(parsed)) return null;
 
-  const normalized = Math.round(parsed * 100) / 100;
-  if (normalized < SESSION_DRAFT_POOL_LENGTH_MIN || normalized > SESSION_DRAFT_POOL_LENGTH_MAX) {
+  const normalizedMeters = convertPoolLengthToMeters(parsed, unit);
+  if (
+    normalizedMeters < SESSION_DRAFT_POOL_LENGTH_MIN ||
+    normalizedMeters > SESSION_DRAFT_POOL_LENGTH_MAX
+  ) {
     return null;
   }
 
-  return normalized;
+  return normalizedMeters;
 }
 
-function formatEditablePoolLength(value: number | null | undefined) {
+function formatEditablePoolLength(value: number | null | undefined, unit: PoolLengthUnit = "m") {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
-  return value.toFixed(2).replace(/\.?0+$/, "");
+  return convertMetersToPoolLengthUnit(value, unit).toFixed(2).replace(/\.?0+$/, "");
+}
+
+function formatPoolLengthUnitLabel(value: number, unit: PoolLengthUnit) {
+  return `${formatEditablePoolLength(value, unit)}${unit}`;
+}
+
+function isPoolLengthQuickChoiceSelected(
+  currentValueMeters: number | null | undefined,
+  quickChoiceValue: number,
+  unit: PoolLengthUnit
+) {
+  if (typeof currentValueMeters !== "number" || !Number.isFinite(currentValueMeters)) {
+    return false;
+  }
+
+  return Math.abs(currentValueMeters - convertPoolLengthToMeters(quickChoiceValue, unit)) < 0.01;
 }
 
 function formatEditableDistance(value: number | null | undefined) {
@@ -707,6 +741,7 @@ export default function WorkoutEditor({
   const isManualPoolMode = manualBuilderMode === "pool";
   const isManualOpenWaterMode = manualBuilderMode === "open_water";
   const [openStepId, setOpenStepId] = useState<string | null>(null);
+  const [poolLengthUnit, setPoolLengthUnit] = useState<PoolLengthUnit>("m");
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
     formatEditablePoolLength(draft.poolLengthM)
   );
@@ -770,9 +805,18 @@ export default function WorkoutEditor({
           unsavedDraftPendingState:
             "This draft still needs to be accepted into the canonical workout layer.",
         };
+  const poolLengthQuickChoices =
+    poolLengthUnit === "yd"
+      ? YARD_POOL_SIZE_QUICK_CHOICES
+      : isManualPoolMode
+        ? MANUAL_POOL_SIZE_QUICK_CHOICES
+        : SESSION_DRAFT_POOL_LENGTH_PRESETS;
   const poolLengthUsesPreset =
-    typeof draft.poolLengthM === "number" && isSessionDraftPoolLengthPreset(draft.poolLengthM);
-  const parsedPoolLengthInput = parsePoolLengthInput(poolLengthInput);
+    typeof draft.poolLengthM === "number" &&
+    poolLengthQuickChoices.some((value) =>
+      isPoolLengthQuickChoiceSelected(draft.poolLengthM, value, poolLengthUnit)
+    );
+  const parsedPoolLengthInput = parsePoolLengthInput(poolLengthInput, poolLengthUnit);
   const poolSizeInputInvalid =
     draft.environment === "pool" &&
     !poolSizeExplicitlyUnspecified &&
@@ -816,7 +860,9 @@ export default function WorkoutEditor({
     ? [
         draftTotals.totalDistanceM ? `${draftTotals.totalDistanceM}m` : null,
         draftTotals.estimatedDurationMin ? `~${draftTotals.estimatedDurationMin} min` : null,
-        draft.poolLengthM === null ? "Pool size unspecified" : formatPoolLengthLabel(draft.poolLengthM),
+        draft.poolLengthM === null
+          ? "Pool size unspecified"
+          : formatPoolLengthUnitLabel(draft.poolLengthM, poolLengthUnit),
       ]
         .filter(Boolean)
         .join(" · ")
@@ -919,9 +965,9 @@ export default function WorkoutEditor({
   useAutoDismissNotice(handoffNotice, setHandoffNotice);
 
   useEffect(() => {
-    setPoolLengthInput(formatEditablePoolLength(draft.poolLengthM));
+    setPoolLengthInput(formatEditablePoolLength(draft.poolLengthM, poolLengthUnit));
     setPoolSizeExplicitlyUnspecified(draft.environment === "pool" && draft.poolLengthM === null);
-  }, [draft.environment, draft.poolLengthM]);
+  }, [draft.environment, draft.poolLengthM, poolLengthUnit]);
 
   useEffect(() => {
     if (openStepId && !draft.steps.some((step) => step.id === openStepId)) {
@@ -1496,10 +1542,21 @@ export default function WorkoutEditor({
       return;
     }
 
-    const parsed = parsePoolLengthInput(nextValue);
+    const parsed = parsePoolLengthInput(nextValue, poolLengthUnit);
     if (parsed !== null) {
       updateDraft("poolLengthM", parsed);
     }
+  }
+
+  function updatePoolLengthUnit(nextUnit: PoolLengthUnit) {
+    setPoolLengthUnit(nextUnit);
+  }
+
+  function choosePoolLengthQuickChoice(value: number) {
+    const nextPoolLength = convertPoolLengthToMeters(value, poolLengthUnit);
+    setPoolSizeExplicitlyUnspecified(false);
+    setPoolLengthInput(formatEditablePoolLength(nextPoolLength, poolLengthUnit));
+    updateDraft("poolLengthM", nextPoolLength);
   }
 
   function chooseUnspecifiedPoolSize() {
@@ -2348,31 +2405,65 @@ export default function WorkoutEditor({
           <p className="text-sm font-medium text-slate-900">
             {isManualPoolMode ? "Pool Size" : "Pool length"}
           </p>
+          <div
+            role="group"
+            aria-label={isManualPoolMode ? "Pool size unit" : "Pool length unit"}
+            className="mt-3 flex flex-wrap items-center gap-2"
+          >
+            {([
+              ["m", "Meters"],
+              ["yd", "Yards"],
+            ] as const).map(([unit, label]) => {
+              const isSelected = poolLengthUnit === unit;
+              return (
+                <button
+                  key={unit}
+                  type="button"
+                  aria-pressed={isSelected}
+                  data-testid={`workout-editor-pool-length-unit-${unit}`}
+                  onClick={() => updatePoolLengthUnit(unit)}
+                  className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
+                    isSelected
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {poolLengthUnit === "yd" ? (
+            <p className="mt-2 text-xs text-slate-500">
+              Yard entry converts to the saved meter value automatically.
+            </p>
+          ) : null}
           {isManualPoolMode ? null : (
             <p className="mt-1 text-xs text-slate-500">
-              Choose 12.5m, 25m, or 50m, or type the exact length when you build for a less common
-              setup.
+              Choose the unit first, then pick a common pool size or type the exact length for a
+              less common setup.
             </p>
           )}
 
           <div className={`${isManualPoolMode ? "mt-0" : "mt-3"} flex flex-wrap gap-2`}>
-            {(isManualPoolMode
-              ? MANUAL_POOL_SIZE_QUICK_CHOICES
-              : SESSION_DRAFT_POOL_LENGTH_PRESETS
-            ).map((value) => {
-              const isSelected = draft.poolLengthM === value;
+            {poolLengthQuickChoices.map((value) => {
+              const isSelected = isPoolLengthQuickChoiceSelected(
+                draft.poolLengthM,
+                value,
+                poolLengthUnit
+              );
               return (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => updateDraft("poolLengthM", value)}
+                  onClick={() => choosePoolLengthQuickChoice(value)}
                   className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
                     isSelected
                       ? "border-blue-600 bg-blue-50 text-blue-700"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  {formatPoolLengthLabel(value)}
+                  {poolLengthUnit === "yd" ? `${value}yd` : formatPoolLengthLabel(value)}
                 </button>
               );
             })}
@@ -2393,7 +2484,9 @@ export default function WorkoutEditor({
           </div>
 
           <label className="mt-4 block text-sm text-slate-700">
-            {isManualPoolMode ? "Exact pool size (m)" : "Exact pool length (m)"}
+            {isManualPoolMode
+              ? `Exact pool size (${poolLengthUnit})`
+              : `Exact pool length (${poolLengthUnit})`}
             <input
               type="text"
               inputMode="decimal"
@@ -2407,20 +2500,28 @@ export default function WorkoutEditor({
           <p className="mt-2 text-xs text-slate-500">
             {poolSizeInputInvalid ? (
               <>
-                Enter a valid pool size between {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MIN)}{" "}
-                and {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}, or choose Unspecified.
+                {poolLengthUnit === "yd"
+                  ? `Enter a valid pool ${isManualPoolMode ? "size" : "length"} in yards, or choose Unspecified.`
+                  : `Enter a valid pool ${isManualPoolMode ? "size" : "length"} between ${formatPoolLengthLabel(
+                      SESSION_DRAFT_POOL_LENGTH_MIN
+                    )} and ${formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}, or choose Unspecified.`}
               </>
             ) : (
               <>
-                Supported range: {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MIN)} to{" "}
-                {formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}.{" "}
+                {poolLengthUnit === "yd"
+                  ? "Common yard presets: 25yd and 50yd. "
+                  : `Supported range: ${formatPoolLengthLabel(
+                      SESSION_DRAFT_POOL_LENGTH_MIN
+                    )} to ${formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}. `}
                 {draft.poolLengthM === null
                   ? isManualPoolMode
                     ? "Unspecified selected."
                     : "Enter a valid pool length before saving."
                   : poolLengthUsesPreset
                     ? "Preset selected."
-                    : `Custom length saved as ${formatPoolLengthLabel(draft.poolLengthM)}.`}
+                    : `Custom ${
+                        poolLengthUnit === "yd" ? "size" : "length"
+                      } saved as ${formatPoolLengthUnitLabel(draft.poolLengthM, poolLengthUnit)}.`}
               </>
             )}
           </p>
@@ -2836,7 +2937,10 @@ export default function WorkoutEditor({
         <div className="rounded-2xl border border-blue-100 bg-white/80 p-4">
           <p className="text-sm font-semibold text-slate-900">Open focus cues</p>
           {trainingFocusOptions.length > 0 ? (
-            <div className="mt-3 grid gap-3">
+            <div
+              data-testid="workout-editor-poolside-focus-list"
+              className="mt-3 grid max-h-72 gap-3 overflow-y-auto pr-1"
+            >
               {trainingFocusOptions.map((focus) => (
                 <label
                   key={focus.id}
@@ -2848,11 +2952,8 @@ export default function WorkoutEditor({
                     onChange={() => togglePoolsideFocusSelection(focus.id)}
                     data-testid={`workout-editor-poolside-focus-${focus.id}`}
                   />
-                  <span>
+                  <span className="min-w-0 flex-1">
                     <span className="block font-medium text-slate-900">{focus.title}</span>
-                    <span className="mt-1 block text-xs text-slate-500">
-                      {focus.isPrimary ? "Primary focus" : "Optional focus"}
-                    </span>
                   </span>
                 </label>
               ))}
@@ -2926,13 +3027,17 @@ export default function WorkoutEditor({
           >
             Export and handoff support
           </p>
-          <p className="mt-2 text-sm font-medium text-slate-900">
-            {supportToolsAudienceDescription}
-          </p>
-          <p className="mt-1 text-sm text-slate-700">{supportToolsDraftStateDescription}</p>
-          <p className="mt-1 text-sm text-slate-600">{supportToolsPersistenceDescription}</p>
-          {supportToolsWarningSummary ? (
-            <p className="mt-1 text-sm text-slate-600">{supportToolsWarningSummary}</p>
+          {supportToolsOpen ? (
+            <>
+              <p className="mt-2 text-sm font-medium text-slate-900">
+                {supportToolsAudienceDescription}
+              </p>
+              <p className="mt-1 text-sm text-slate-700">{supportToolsDraftStateDescription}</p>
+              <p className="mt-1 text-sm text-slate-600">{supportToolsPersistenceDescription}</p>
+              {supportToolsWarningSummary ? (
+                <p className="mt-1 text-sm text-slate-600">{supportToolsWarningSummary}</p>
+              ) : null}
+            </>
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
