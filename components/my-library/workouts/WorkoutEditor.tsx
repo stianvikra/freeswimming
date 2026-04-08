@@ -2182,6 +2182,7 @@ export default function WorkoutEditor({
             <label className="text-sm text-slate-700 md:col-span-2">
               {isManualPoolMode ? "Step note" : "Notes"}
               <AutoGrowingTextarea
+                aria-label={isManualPoolMode ? "Step note" : "Notes"}
                 value={step.notes}
                 onChange={(event) =>
                   updateDraftStep(step.id, (current) => ({
@@ -2302,6 +2303,7 @@ export default function WorkoutEditor({
           </p>
         )}
         <AutoGrowingTextarea
+          aria-label="Session note"
           value={draft.description}
           onChange={(event) => updateDraft("description", event.target.value)}
           data-testid="session-draft-description"

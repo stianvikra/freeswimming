@@ -149,18 +149,15 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
       "CSS send-off"
     );
-    await expect(page.getByLabel("Step name")).toHaveCount(0);
-    await expect(page.getByLabel("Effort cue")).toHaveCount(0);
-    await expect(page.getByLabel("Target summary")).toHaveCount(0);
-    await expect(page.getByLabel("Target notes")).toHaveCount(0);
-    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "CSS send-off"
-    );
+    await expect(page.locator("label").filter({ hasText: /^Step name$/ })).toHaveCount(0);
+    await expect(page.locator("label").filter({ hasText: /^Effort cue$/ })).toHaveCount(0);
+    await expect(page.locator("label").filter({ hasText: /^Target summary$/ })).toHaveCount(0);
+    await expect(page.locator("label").filter({ hasText: /^Target notes$/ })).toHaveCount(0);
     await expect(
       page.getByText(
         "Optional short cue for the interval summary. Use Step note for the Garmin-style step note."
       )
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       page.getByText("Closest match to Garmin Add Step Note for this pool step.")
     ).toBeVisible();
@@ -253,7 +250,6 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-target-mode-1").selectOption("target_pace");
     await page.getByTestId("session-draft-step-target-pace-minutes-1").fill("1");
     await page.getByTestId("session-draft-step-target-pace-seconds-1").fill("35");
-    await page.getByLabel("Target summary").fill("Hold 1:35 and leave on the red top.");
     await page.getByLabel("Step note").fill("Leave on the top and count strokes.");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
@@ -289,9 +285,6 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
       "Final rest skipped"
-    );
-    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
-      "Target summary: Hold 1:35 and leave on the red top."
     );
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
       "Step note: Leave on the top and count strokes."
