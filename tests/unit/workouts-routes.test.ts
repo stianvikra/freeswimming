@@ -593,7 +593,7 @@ describe("workouts routes", () => {
 
     expect(response.status).toBe(400);
     expect(payload.ok).toBe(false);
-    expect(payload.error).toContain("CSS send-off offset");
+    expect(payload.error).toContain("CSS-Based Send-Off Time offset");
     expect(insert).not.toHaveBeenCalled();
   });
 

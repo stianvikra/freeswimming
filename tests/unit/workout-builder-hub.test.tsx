@@ -336,10 +336,10 @@ describe("WorkoutBuilderHub", () => {
       "Manual Garmin translation is still required"
     );
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "CSS send-off"
+      "CSS-Based Send-Off Time"
     );
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "open rest instead"
+      "Lap Button Press instead"
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
     fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
@@ -1194,18 +1194,20 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
 
     expect(screen.getByText("Session builder")).toBeVisible();
-    expect(screen.getByLabelText("Step type")).toBeVisible();
-    expect(screen.getByLabelText("Stroke")).toBeVisible();
-    expect(screen.getByLabelText("Drill type")).toBeVisible();
-    expect(screen.getByLabelText("Step timing")).toBeVisible();
+    expect(screen.getByLabelText("Step Type")).toBeVisible();
+    expect(screen.getByLabelText("Stroke Type")).toBeVisible();
+    expect(screen.getByLabelText("Drill Type")).toBeVisible();
+    expect(screen.getByLabelText("Duration")).toBeVisible();
     expect(screen.getByLabelText("Target")).toBeVisible();
-    expect(screen.getByLabelText("Step note")).toBeVisible();
-    expect(screen.getByRole("option", { name: "Distance swim" })).toBeVisible();
-    expect(screen.getByRole("option", { name: "Time-based swim" })).toBeVisible();
-    expect(screen.getByRole("option", { name: "Open swim" })).toBeVisible();
-    expect(screen.getByRole("option", { name: "Rest time" })).toBeVisible();
-    expect(screen.getByRole("option", { name: "Send-off time" })).toBeVisible();
-    expect(screen.getByRole("option", { name: "CSS send-off" })).toBeVisible();
+    expect(screen.getByLabelText("Notes")).toBeVisible();
+    expect(screen.getByRole("option", { name: "Distance" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Time" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Lap Button Press" })).toBeVisible();
+    expect(screen.queryByRole("option", { name: "Fixed Rest Time" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Send-Off Time" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "CSS-Based Send-Off Time" })
+    ).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Step name")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Effort cue")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Target summary")).not.toBeInTheDocument();
@@ -1220,9 +1222,23 @@ describe("WorkoutBuilderHub", () => {
         "Optional. Leave Drill type on None unless the step needs extra drill, kick, or pull notation."
       )
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByText("Add a note for this step.")
-    ).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Step Type"), {
+      target: { value: "rest" },
+    });
+
+    expect(screen.getByTestId("session-draft-step-duration-mode-0")).toHaveValue("fixed_rest");
+    expect(screen.getByRole("option", { name: "Fixed Rest Time" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Send-Off Time" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "CSS-Based Send-Off Time" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Lap Button Press" })).toBeVisible();
+    expect(screen.queryByRole("option", { name: "Distance" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Time" })).not.toBeInTheDocument();
+    expect(readPreviewDraft().steps[0]).toMatchObject({
+      category: "rest",
+      durationMode: "fixed_rest",
+    });
+
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
     expect(
       screen.getByTestId("session-draft-repeat-ending-rest-mode-1")
@@ -1236,6 +1252,45 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.queryByText("Move the full repeat block from the header.")
     ).not.toBeInTheDocument();
+  });
+
+  it("normalizes legacy manual-pool mixed duration states on load", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({
+              steps: [
+                {
+                  id: "step-1",
+                  category: "main",
+                  name: "Legacy mixed step",
+                  stroke: "freestyle",
+                  intensity: "moderate",
+                  durationMode: "fixed_rest",
+                  distanceM: null,
+                  timeMin: 1,
+                  targetSummary: "",
+                  notes: "",
+                },
+              ],
+            }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(readPreviewDraft().steps[0]).toMatchObject({
+        category: "main",
+        durationMode: "distance",
+        distanceM: 100,
+        timeMin: null,
+      });
+    });
   });
 
   it("hides the auto untitled pool title in the manual builder input until the owner edits it", async () => {
@@ -1296,12 +1351,15 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-step-rest-minutes-2"), {
       target: { value: "0" },
     });
+    await waitFor(() => {
+      expect(readPreviewDraft().steps[2]?.timeMin).toBeNull();
+    });
     fireEvent.change(screen.getByTestId("session-draft-step-rest-seconds-2"), {
       target: { value: "45" },
     });
 
-    expect(screen.getByText("0:45 rest")).toBeVisible();
     expect(readPreviewDraft().steps[2]?.timeMin).toBe(0.75);
+    expect(readPreviewDraft().steps[2]?.name).toContain("Fixed Rest Time 0:45");
   });
 
   it("treats unspecified pool size as valid while invalid custom input still blocks save", async () => {
