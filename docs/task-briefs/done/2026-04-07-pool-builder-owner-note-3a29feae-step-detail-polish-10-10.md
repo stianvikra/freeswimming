@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-07-pool-builder-owner-note-3a29feae-step-detail-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-07`
-- `updated`: `2026-04-07`
+- `updated`: `2026-04-08`
 
 ## Goal
 
@@ -26,20 +26,20 @@ The pool session builder removes the remaining small authoring seams from owner 
 ## Dependencies And Boundaries
 
 - Parent builder live-review brief:
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+  - `docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Recently shipped pool builder lineage that stays authoritative:
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/docs/task-briefs/done/2026-04-06-pool-swim-builder-field-parity-10-10.md`
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/docs/task-briefs/done/2026-04-06-pool-swim-builder-repeat-rest-parity-10-10.md`
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/docs/task-briefs/done/2026-04-06-pool-swim-builder-garmin-parity-10-10.md`
+  - `docs/task-briefs/done/2026-04-06-pool-swim-builder-field-parity-10-10.md`
+  - `docs/task-briefs/done/2026-04-06-pool-swim-builder-repeat-rest-parity-10-10.md`
+  - `docs/task-briefs/done/2026-04-06-pool-swim-builder-garmin-parity-10-10.md`
 - Metadata-panel lineage that this slice builds on:
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/docs/task-briefs/done/2026-04-05-swim-session-builder-metadata-panel-clarity-10-10.md`
+  - `docs/task-briefs/done/2026-04-05-swim-session-builder-metadata-panel-clarity-10-10.md`
 - Parked follow-up that must remain parked in this chat:
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/docs/task-briefs/planned/2026-04-07-pool-swim-builder-garmin-follow-up-map-10-10.md`
+  - `docs/task-briefs/planned/2026-04-07-pool-swim-builder-garmin-follow-up-map-10-10.md`
 - Primary implementation files likely touched:
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/components/my-library/workouts/WorkoutEditor.tsx`
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/components/my-library/workouts/WorkoutBuilderHub.tsx`
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/tests/unit/workout-builder-hub.test.tsx`
-  - `/tmp/freeswimming-pool-builder-owner-note-3a29feae-2026-04-07/tests/e2e/my-library-workout-builder.spec.ts`
+  - `components/my-library/workouts/WorkoutEditor.tsx`
+  - `components/my-library/workouts/WorkoutBuilderHub.tsx`
+  - `tests/unit/workout-builder-hub.test.tsx`
+  - `tests/e2e/my-library-workout-builder.spec.ts`
 - Boundary decisions for this brief:
   - no new Garmin slice,
   - no open-water contract decisions,
@@ -224,3 +224,4 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-04-07 | planning | created a dedicated child brief from owner note 3A29FEAE on the shipped pool builder route; scoped it to UI/detail polish only, explicitly kept the parked Garmin follow-up out of scope, and documented that hidden pool step fields must stay compatibility-safe without turning this into a schema migration | next: implement the pool-builder UI cleanup, update targeted tests, and run lint:briefs + targeted validation + verify:pre-pr`
+- `2026-04-08 | shipped | merged PR #388 to main as squash commit def4b42 after rebasing, targeted unit/e2e fixes, local verify:pre-merge PASS, and green required GitHub checks; moved this brief to done and normalized repo-relative references for long-term traceability | next: continue collecting owner-led builder-polish findings under the parent live-review thread`
