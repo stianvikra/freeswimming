@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-08-swim-session-builder-support-tools-pool-size-and-poolside-focus-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-08`
 - `updated`: `2026-04-08`
@@ -204,3 +204,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-08 | planning + implementation start | created owner-led child brief for the two remaining open Swim Session Builder notes (`54f170f7`, `66e90451`) after confirming the earlier note `3a29feae` was already shipped; scoped this slice to calmer support disclosure, yard-pool authoring over the existing meter-canonical contract, and compact Poolside Note focus selection | next: implement the builder polish, update targeted coverage, mark shipped note 3a29 done in admin notes, and run verification before PR handoff`
 - `2026-04-08 | implementation + validation complete on branch | implemented truly collapsed support-tools copy, yard-pool authoring with meter-canonical save conversion, and compact Poolside Note focus selection; marked shipped admin note `3a29feae` done in production while leaving the two newly implemented notes open until merge; passed `npm run lint:briefs:all`, targeted `vitest`, targeted `playwright`, `npm run typecheck`, and full `npm run verify:pre-pr` in clean worktree `/private/tmp/freeswimming-swim-session-builder-owner-notes-2026-04-08` from base commit `bef9edc` | next: commit, push, open PR, and summarize before merge`
+- `2026-04-08 | merged + production note closeout | PR #390 merged to \`main\` as squash commit \`4b257b5\`; local \`npm run verify:pre-merge\` passed on commit \`6c9d8a2\`; production admin notes \`54f170f7\`, \`66e90451\`, and previously shipped \`3a29feae\` are all confirmed \`is_done = true\` after merge | next: delete temporary branches/worktrees and keep future builder polish in new owner-led briefs`
