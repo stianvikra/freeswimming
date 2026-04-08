@@ -169,6 +169,11 @@ test.describe("my library workout builder", () => {
       "false"
     );
     await expect(page.getByTestId("workout-editor-support-tools-status")).toHaveText("Ready");
+    await expect(
+      page.getByText(
+        "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface."
+      )
+    ).toHaveCount(0);
     await openSupportToolsPanel(page);
     await page.getByTestId("workout-editor-garmin-export-toggle").click();
     await page.getByTestId("workout-editor-handoff-toggle").click();
@@ -235,7 +240,9 @@ test.describe("my library workout builder", () => {
 
     await openMetadataPanelIfCollapsed(page);
     await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled pool session");
-    await page.getByTestId("session-draft-pool-length-input").fill("33.33");
+    await page.getByTestId("workout-editor-pool-length-unit-yd").click();
+    await expect(page.getByLabel("Exact pool size (yd)")).toBeVisible();
+    await page.getByRole("button", { name: "25yd" }).click();
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
     await page.getByTestId("session-draft-add-repeat").click();
@@ -396,7 +403,7 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
-    await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("33.33");
+    await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("25");
     await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(page.getByTestId("session-draft-step-distance-0")).toHaveValue("custom");
     await expect(page.getByTestId("session-draft-step-distance-custom-0")).toHaveValue("333");
