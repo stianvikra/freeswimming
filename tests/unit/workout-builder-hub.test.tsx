@@ -314,7 +314,7 @@ describe("WorkoutBuilderHub", () => {
       "Unsaved changes stay local until you save this workout."
     );
     expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
-      "4 review items"
+      "3 review items"
     );
     openSupportToolsPanel();
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
@@ -322,15 +322,9 @@ describe("WorkoutBuilderHub", () => {
       "review"
     );
     expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
-      "Review 4 Garmin/export mapping details before you treat this workout as handoff-ready."
+      "Review 3 Garmin/export mapping details before you treat this workout as handoff-ready."
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "last rest interval"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "older watches skip the final rest instead"
-    );
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
       "CSS-relative pacing"
     );
@@ -555,7 +549,7 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
     expect(screen.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
-      "use_last_rest"
+      "skip_last_rest"
     );
     expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim");
 
@@ -565,13 +559,23 @@ describe("WorkoutBuilderHub", () => {
     expect(previewDraft.steps).toHaveLength(3);
     expect(repeatSteps).toHaveLength(2);
     expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
-    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "use_last_rest")).toBe(true);
+    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(
+      true
+    );
     expect(previewDraft.steps[0]?.repeatGroupId ?? null).toBeNull();
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
   });
 
-  it("can switch a pool repeat block to skip the final rest interval", async () => {
-    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+  it("hides the repeat-header summary in the manual pool builder while defaulting to skip last rest", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
@@ -581,11 +585,10 @@ describe("WorkoutBuilderHub", () => {
     });
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
-    fireEvent.change(screen.getByTestId("session-draft-repeat-ending-rest-mode-1"), {
-      target: { value: "skip_last_rest" },
-    });
-
-    expect(screen.getByText(/Final rest skipped/)).toBeVisible();
+    expect(screen.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
+      "skip_last_rest"
+    );
+    expect(screen.queryByText(/Final rest skipped/)).not.toBeInTheDocument();
 
     const previewDraft = readPreviewDraft();
     const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
@@ -1218,8 +1221,87 @@ describe("WorkoutBuilderHub", () => {
       )
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText("Closest match to Garmin Add Step Note for this pool step.")
+      screen.getByText("Add a note for this step.")
     ).toBeVisible();
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    expect(
+      screen.getByTestId("session-draft-repeat-ending-rest-mode-1")
+    ).toHaveValue("skip_last_rest");
+    expect(
+      screen.queryByText("Edit this into the exact repeat you want to hold.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Adjust or remove this recovery once the set is dialed in.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Move the full repeat block from the header.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the auto untitled pool title in the manual builder input until the owner edits it", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({ title: "Untitled pool session" }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual", title: "Untitled pool session" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("");
+
+    fireEvent.change(screen.getByTestId("session-draft-title"), {
+      target: { value: "Owner title" },
+    });
+
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Owner title");
+    expect(readPreviewDraft().title).toBe("Owner title");
+  });
+
+  it("edits pool rest time with minute and second fields while keeping canonical timeMin", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-2"));
+
+    expect(screen.getByTestId("session-draft-step-rest-minutes-2")).toHaveValue("1");
+    expect(screen.getByTestId("session-draft-step-rest-seconds-2")).toHaveValue("00");
+
+    fireEvent.change(screen.getByTestId("session-draft-step-rest-minutes-2"), {
+      target: { value: "0" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-rest-seconds-2"), {
+      target: { value: "45" },
+    });
+
+    expect(screen.getByText("0:45 rest")).toBeVisible();
+    expect(readPreviewDraft().steps[2]?.timeMin).toBe(0.75);
   });
 
   it("treats unspecified pool size as valid while invalid custom input still blocks save", async () => {
@@ -1252,7 +1334,9 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Unspecified" }));
 
-    expect(screen.getByTestId("workout-editor-panel")).toHaveTextContent("Unspecified selected.");
+    expect(screen.getByTestId("workout-editor-panel")).toHaveTextContent(
+      "Supported range: 12.5m to 500m."
+    );
     expect(saveButton).toBeEnabled();
     expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
       "1 review item"
@@ -1320,9 +1404,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "25yd" }));
 
     expect(screen.getByLabelText("Exact pool size (yd)")).toHaveValue("25");
-    expect(
-      screen.getByText("Common yard presets: 25yd and 50yd. Preset selected.")
-    ).toBeVisible();
+    expect(screen.getByText("Common yard presets: 25yd and 50yd.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));

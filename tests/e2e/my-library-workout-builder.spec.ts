@@ -159,7 +159,7 @@ test.describe("my library workout builder", () => {
       )
     ).toHaveCount(0);
     await expect(
-      page.getByText("Closest match to Garmin Add Step Note for this pool step.")
+      page.getByText("Add a note for this step.")
     ).toBeVisible();
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
@@ -239,7 +239,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     await openMetadataPanelIfCollapsed(page);
-    await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled pool session");
+    await expect(page.getByTestId("session-draft-title")).toHaveValue("");
     await page.getByTestId("workout-editor-pool-length-unit-yd").click();
     await expect(page.getByLabel("Exact pool size (yd)")).toBeVisible();
     await page.getByRole("button", { name: "25yd" }).click();
@@ -247,9 +247,14 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
     await page.getByTestId("session-draft-add-repeat").click();
     await page.getByTestId("session-draft-repeat-count-1").fill("6");
-    await page
-      .getByTestId("session-draft-repeat-ending-rest-mode-1")
-      .selectOption("skip_last_rest");
+    await expect(page.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
+      "skip_last_rest"
+    );
+    await expect(page.getByText("Edit this into the exact repeat you want to hold.")).toHaveCount(0);
+    await expect(
+      page.getByText("Adjust or remove this recovery once the set is dialed in.")
+    ).toHaveCount(0);
+    await expect(page.getByText("Move the full repeat block from the header.")).toHaveCount(0);
     await page.getByTestId("session-draft-step-distance-1").selectOption("200");
     await page.getByTestId("session-draft-step-stroke-1").selectOption("backstroke");
     await page.getByTestId("session-draft-step-drill-type-1").selectOption("pull");
@@ -257,6 +262,9 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-target-mode-1").selectOption("target_pace");
     await page.getByTestId("session-draft-step-target-pace-minutes-1").fill("1");
     await page.getByTestId("session-draft-step-target-pace-seconds-1").fill("35");
+    await page.getByTestId("session-draft-step-toggle-2").click();
+    await page.getByTestId("session-draft-step-rest-minutes-2").fill("0");
+    await page.getByTestId("session-draft-step-rest-seconds-2").fill("45");
     await page.getByLabel("Step note").fill("Leave on the top and count strokes.");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
@@ -273,6 +281,12 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
       "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
+    await expect(
+      page.getByText(/open focuses will be included on the poolside note/i)
+    ).toHaveCount(0);
+    await expect(
+      page.getByText("Color-first output. Turn on Print backgrounds in your browser if you want the blue fills.")
+    ).toHaveCount(0);
     await page.getByTestId("workout-editor-garmin-readiness-toggle").click();
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText("Fins");
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText(
@@ -358,7 +372,7 @@ test.describe("my library workout builder", () => {
     await expect(poolsidePopup.locator("body")).toContainText("Poolside Note");
     await expect(poolsidePopup.locator("body")).toContainText("Ink saver");
     await expect(poolsidePopup.locator("body")).toContainText("Tot:");
-    await expect(poolsidePopup.locator("body")).toContainText("P: Rest time 1:00");
+    await expect(poolsidePopup.locator("body")).toContainText("P: Rest time 0:45");
     await poolsidePopup.close();
 
     const patchResponsePromise = page.waitForResponse(
