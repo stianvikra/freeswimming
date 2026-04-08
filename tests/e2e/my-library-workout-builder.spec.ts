@@ -125,42 +125,56 @@ test.describe("my library workout builder", () => {
     await expect(
       page.getByTestId("workout-editor-panel").getByRole("heading", { name: "Session builder" })
     ).toBeVisible();
-    await expect(page.getByLabel("Step type")).toBeVisible();
-    await expect(page.getByLabel("Stroke")).toBeVisible();
-    await expect(page.getByLabel("Drill type")).toBeVisible();
-    await expect(page.getByLabel("Step timing")).toBeVisible();
+    await expect(page.getByLabel("Step Type")).toBeVisible();
+    await expect(page.getByLabel("Stroke Type")).toBeVisible();
+    await expect(page.getByLabel("Drill Type")).toBeVisible();
+    await expect(page.getByLabel("Duration")).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Target" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Step note" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Notes" })).toBeVisible();
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "Distance swim"
+      "Distance"
     );
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "Time-based swim"
+      "Time"
     );
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "Open swim"
+      "Lap Button Press"
     );
-    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "Rest time"
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).not.toContainText(
+      "Fixed Rest Time"
     );
-    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "Send-off time"
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).not.toContainText(
+      "Send-Off Time"
     );
-    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "CSS send-off"
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).not.toContainText(
+      "CSS-Based Send-Off Time"
     );
     await expect(page.locator("label").filter({ hasText: /^Step name$/ })).toHaveCount(0);
     await expect(page.locator("label").filter({ hasText: /^Effort cue$/ })).toHaveCount(0);
     await expect(page.locator("label").filter({ hasText: /^Target summary$/ })).toHaveCount(0);
     await expect(page.locator("label").filter({ hasText: /^Target notes$/ })).toHaveCount(0);
-    await expect(
-      page.getByText(
-        "Optional short cue for the interval summary. Use Step note for the Garmin-style step note."
-      )
-    ).toHaveCount(0);
-    await expect(
-      page.getByText("Add a note for this step.")
-    ).toBeVisible();
+    await page.getByLabel("Step Type").selectOption("rest");
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toHaveValue(
+      "fixed_rest"
+    );
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
+      "Fixed Rest Time"
+    );
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
+      "Send-Off Time"
+    );
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
+      "CSS-Based Send-Off Time"
+    );
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
+      "Lap Button Press"
+    );
+    const restDurationOptions = page
+      .getByTestId("session-draft-step-duration-mode-0")
+      .locator("option");
+    await expect(restDurationOptions.filter({ hasText: /^Distance$/ })).toHaveCount(0);
+    await expect(restDurationOptions.filter({ hasText: /^Time$/ })).toHaveCount(0);
+    await page.getByLabel("Step Type").selectOption("main");
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
     );
@@ -198,7 +212,7 @@ test.describe("my library workout builder", () => {
       '"draftState": "canonical"'
     );
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
-      '"label": "Distance swim"'
+      '"label": "Distance"'
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
@@ -234,9 +248,9 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("workout-editor-removal-undo-button").click();
     await expect(page.getByTestId("workout-editor-removal-undo")).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
-      "Unsaved changes stay local until you save this workout."
+      "All builder changes are saved to the canonical workout."
     );
-    await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
+    await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
 
     await openMetadataPanelIfCollapsed(page);
     await expect(page.getByTestId("session-draft-title")).toHaveValue("");
@@ -265,7 +279,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-toggle-2").click();
     await page.getByTestId("session-draft-step-rest-minutes-2").fill("0");
     await page.getByTestId("session-draft-step-rest-seconds-2").fill("45");
-    await page.getByLabel("Step note").fill("Leave on the top and count strokes.");
+    await page.getByLabel("Notes").fill("Leave on the top and count strokes.");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
@@ -308,7 +322,7 @@ test.describe("my library workout builder", () => {
       "Final rest skipped"
     );
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
-      "Step note: Leave on the top and count strokes."
+      "Notes: Leave on the top and count strokes."
     );
     await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",
@@ -324,7 +338,7 @@ test.describe("my library workout builder", () => {
       `"title": "${uniqueTitle}"`
     );
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
-      '"label": "Rest time"'
+      '"label": "Fixed Rest Time"'
     );
     await expect(page.getByTestId("workout-editor-garmin-export-preview")).toContainText(
       '"reviewIssueIds": ['
@@ -372,7 +386,7 @@ test.describe("my library workout builder", () => {
     await expect(poolsidePopup.locator("body")).toContainText("Poolside Note");
     await expect(poolsidePopup.locator("body")).toContainText("Ink saver");
     await expect(poolsidePopup.locator("body")).toContainText("Tot:");
-    await expect(poolsidePopup.locator("body")).toContainText("P: Rest time 0:45");
+    await expect(poolsidePopup.locator("body")).toContainText("P: Fixed Rest Time 0:45");
     await poolsidePopup.close();
 
     const patchResponsePromise = page.waitForResponse(

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type TextareaHTMLAttributes } from "react";
+import { useCallback, useEffect, useRef, useState, type TextareaHTMLAttributes } from "react";
 import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
 import {
@@ -319,8 +319,8 @@ function parseSignatureValues(value: string) {
 
 function buildStepStrokeGuidance(step: SessionDraftStep, isManualPoolMode: boolean) {
   const recommendedFocus = getRecommendedStepFocus(step);
-  const drillTypeLabel = isManualPoolMode ? "Drill type" : "Focus tag";
-  const strokeLabel = isManualPoolMode ? "Stroke" : "Stroke pattern";
+  const drillTypeLabel = isManualPoolMode ? "Drill Type" : "Focus tag";
+  const strokeLabel = isManualPoolMode ? "Stroke Type" : "Stroke pattern";
 
   if (step.category === "kick") {
     return `Kick category already tags this as kick work. Use ${strokeLabel} for the movement pattern this set supports, and change ${drillTypeLabel} only when you need extra kick, pull, or drill notation.`;
@@ -337,7 +337,7 @@ function buildStepStrokeGuidance(step: SessionDraftStep, isManualPoolMode: boole
 
 function buildStepFocusGuidance(step: SessionDraftStep, isManualPoolMode: boolean) {
   const recommendedFocus = getRecommendedStepFocus(step);
-  const drillTypeLabel = isManualPoolMode ? "Drill type" : "Focus tag";
+  const drillTypeLabel = isManualPoolMode ? "Drill Type" : "Focus tag";
   if (recommendedFocus === "kick") {
     return `Recommended ${drillTypeLabel}: Kick. Change it only when this kick set needs a more specific drill or pull note.`;
   }
@@ -359,18 +359,83 @@ function getStepDurationModeEditorLabel(
 
   switch (value) {
     case "distance":
-      return "Distance swim";
+      return "Distance";
     case "time":
-      return "Time-based swim";
+      return "Time";
     case "fixed_rest":
-      return "Rest time";
+      return "Fixed Rest Time";
     case "lap_button":
-      return "Open swim";
+      return "Lap Button Press";
+    case "send_off":
+      return "Send-Off Time";
     case "css_send_off":
-      return "CSS send-off";
+      return "CSS-Based Send-Off Time";
     default:
       return getSessionStepDurationModeLabel(value);
   }
+}
+
+const MANUAL_POOL_SWIM_DURATION_MODES: readonly SessionDraftStepDurationMode[] = [
+  "distance",
+  "time",
+  "lap_button",
+];
+
+const MANUAL_POOL_REST_DURATION_MODES: readonly SessionDraftStepDurationMode[] = [
+  "fixed_rest",
+  "lap_button",
+  "send_off",
+  "css_send_off",
+];
+
+function isManualPoolRestCategory(category: SessionDraftStepCategory) {
+  return category === "rest";
+}
+
+function getManualPoolDurationModesForCategory(
+  category: SessionDraftStepCategory
+): readonly SessionDraftStepDurationMode[] {
+  return isManualPoolRestCategory(category)
+    ? MANUAL_POOL_REST_DURATION_MODES
+    : MANUAL_POOL_SWIM_DURATION_MODES;
+}
+
+function getDefaultManualPoolDurationMode(
+  category: SessionDraftStepCategory
+): SessionDraftStepDurationMode {
+  return isManualPoolRestCategory(category) ? "fixed_rest" : "distance";
+}
+
+function isManualPoolDurationModeAllowed(
+  category: SessionDraftStepCategory,
+  durationMode: SessionDraftStepDurationMode
+) {
+  return getManualPoolDurationModesForCategory(category).includes(durationMode);
+}
+
+function applyStepDurationModeDefaults(
+  step: SessionDraftStep,
+  nextMode: SessionDraftStepDurationMode
+): SessionDraftStep {
+  return {
+    ...step,
+    durationMode: nextMode,
+    distanceM: nextMode === "distance" ? (step.distanceM ?? 100) : null,
+    timeMin:
+      nextMode === "time" || nextMode === "fixed_rest" || nextMode === "send_off"
+        ? (step.timeMin ?? (nextMode === "send_off" ? 2 : 1))
+        : null,
+    cssSendOffOffsetSeconds:
+      nextMode === "css_send_off" ? (step.cssSendOffOffsetSeconds ?? 0) : null,
+  };
+}
+
+function normalizeManualPoolStepForEditor(step: SessionDraftStep): SessionDraftStep {
+  if (isManualPoolDurationModeAllowed(step.category, step.durationMode)) {
+    return step;
+  }
+
+  return applyStepDurationModeDefaults(step, getDefaultManualPoolDurationMode(step.category));
 }
 
 function getStepTargetModeEditorLabel(
@@ -565,28 +630,47 @@ function buildStepSummary(
 }
 
 function buildManualPoolStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
-  const structuredTarget = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
+  const normalizedStep = normalizeManualPoolStepForEditor(step);
+  const structuredTarget = buildSessionStepStructuredTargetLabel(
+    normalizedStep,
+    basePaceSecondsPer100m
+  );
 
   return [
-    buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+    buildWorkoutStepDurationOutputSummary(normalizedStep, basePaceSecondsPer100m, {
       environment: "pool",
     }),
-    buildStepContextLabel(step, { environment: "pool" }),
+    buildStepContextLabel(normalizedStep, { environment: "pool" }),
     structuredTarget,
   ]
     .filter(Boolean)
-    .join(" · ") || `${getSessionStepCategoryLabel(step.category)} step`;
+    .join(" · ") || `${getSessionStepCategoryLabel(normalizedStep.category)} step`;
 }
 
 function syncManualPoolEditableStep(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number
 ): SessionDraftStep {
+  const normalizedStep = normalizeManualPoolStepForEditor(step);
+
   return {
-    ...step,
-    name: buildManualPoolStepSummary(step, basePaceSecondsPer100m).slice(0, 120),
+    ...normalizedStep,
+    name: buildManualPoolStepSummary(normalizedStep, basePaceSecondsPer100m).slice(0, 120),
     targetSummary: "",
   };
+}
+
+function hasSelectionSyncChanges(currentDraft: SessionDraft, nextDraft: SessionDraft) {
+  return JSON.stringify({
+    steps: currentDraft.steps,
+    allowedStrokes: currentDraft.allowedStrokes,
+    equipmentAllowlist: currentDraft.equipmentAllowlist,
+  }) !==
+    JSON.stringify({
+      steps: nextDraft.steps,
+      allowedStrokes: nextDraft.allowedStrokes,
+      equipmentAllowlist: nextDraft.equipmentAllowlist,
+    });
 }
 
 function buildRepeatSummary(
@@ -1068,7 +1152,7 @@ export default function WorkoutEditor({
     });
   }, [savedWorkoutId]);
 
-  function syncDraftSelections(nextDraft: SessionDraft) {
+  const syncDraftSelections = useCallback((nextDraft: SessionDraft) => {
     const nextSteps = isManualPoolMode
       ? nextDraft.steps.map((step) =>
           syncManualPoolEditableStep(step, nextDraft.basePaceSecondsPer100m)
@@ -1103,7 +1187,20 @@ export default function WorkoutEditor({
         new Set([...nextDraft.equipmentAllowlist, ...requiredEquipment])
       ),
     };
-  }
+  }, [isManualPoolMode]);
+
+  useEffect(() => {
+    if (!isManualPoolMode) {
+      return;
+    }
+
+    const syncedDraft = syncDraftSelections(draft);
+    if (!hasSelectionSyncChanges(draft, syncedDraft)) {
+      return;
+    }
+
+    onDraftChange(syncedDraft);
+  }, [draft, isManualPoolMode, onDraftChange, syncDraftSelections]);
 
   function stepUsesAllowedStroke(stroke: SessionGeneratorStroke) {
     return draft.steps.some((step) => step.stroke === stroke);
@@ -1463,17 +1560,14 @@ export default function WorkoutEditor({
   }
 
   function updateStepDurationMode(stepId: string, nextMode: SessionDraftStepDurationMode) {
-    updateDraftStep(stepId, (current) => ({
-      ...current,
-      durationMode: nextMode,
-      distanceM: nextMode === "distance" ? (current.distanceM ?? 100) : null,
-      timeMin:
-        nextMode === "time" || nextMode === "fixed_rest" || nextMode === "send_off"
-          ? (current.timeMin ?? (nextMode === "send_off" ? 2 : 1))
-          : null,
-      cssSendOffOffsetSeconds:
-        nextMode === "css_send_off" ? (current.cssSendOffOffsetSeconds ?? 0) : null,
-    }));
+    updateDraftStep(stepId, (current) =>
+      applyStepDurationModeDefaults(
+        current,
+        isManualPoolMode && !isManualPoolDurationModeAllowed(current.category, nextMode)
+          ? getDefaultManualPoolDurationMode(current.category)
+          : nextMode
+      )
+    );
   }
 
   function updateStepDurationClock(
@@ -1824,7 +1918,7 @@ export default function WorkoutEditor({
             )}
 
             <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Step type" : "Category"}
+              {isManualPoolMode ? "Step Type" : "Category"}
               <select
                 value={step.category}
                 onChange={(event) =>
@@ -1845,7 +1939,7 @@ export default function WorkoutEditor({
             </label>
 
             <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Stroke" : "Stroke pattern"}
+              {isManualPoolMode ? "Stroke Type" : "Stroke pattern"}
               <select
                 value={step.stroke ?? "choice"}
                 onChange={(event) => {
@@ -1869,7 +1963,7 @@ export default function WorkoutEditor({
             </label>
 
             <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Drill type" : "Focus tag"}
+              {isManualPoolMode ? "Drill Type" : "Focus tag"}
               <select
                 value={step.drillType ?? "none"}
                 onChange={(event) =>
@@ -1944,7 +2038,7 @@ export default function WorkoutEditor({
             )}
 
             <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Step timing" : "Duration mode"}
+              {isManualPoolMode ? "Duration" : "Duration mode"}
               <select
                 value={step.durationMode}
                 onChange={(event) =>
@@ -1956,7 +2050,10 @@ export default function WorkoutEditor({
                 data-testid={`session-draft-step-duration-mode-${index}`}
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
-                {SESSION_DRAFT_STEP_DURATION_MODES.map((value) => (
+                {(isManualPoolMode
+                  ? getManualPoolDurationModesForCategory(step.category)
+                  : SESSION_DRAFT_STEP_DURATION_MODES
+                ).map((value) => (
                   <option key={value} value={value}>
                     {getStepDurationModeEditorLabel(value, isManualPoolMode)}
                   </option>
@@ -2016,7 +2113,7 @@ export default function WorkoutEditor({
             ) : step.durationMode === "fixed_rest" ? (
               <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
                 <label className="text-sm text-slate-700">
-                  Rest min
+                  Minutes
                   <input
                     type="text"
                     inputMode="numeric"
@@ -2029,7 +2126,7 @@ export default function WorkoutEditor({
                   />
                 </label>
                 <label className="text-sm text-slate-700">
-                  Rest sec
+                  Seconds
                   <input
                     type="text"
                     inputMode="numeric"
@@ -2042,12 +2139,14 @@ export default function WorkoutEditor({
                   />
                 </label>
                 <div className="self-end text-sm text-slate-500">
-                  {step.timeMin ? `${formatClockDurationLabel(step.timeMin)} rest` : "Set rest time"}
+                  {step.timeMin
+                    ? `Fixed Rest Time ${formatClockDurationLabel(step.timeMin)}`
+                    : "Set Fixed Rest Time"}
                 </div>
               </div>
             ) : step.durationMode === "time" ? (
               <label className="text-sm text-slate-700">
-                {isManualPoolMode ? "Swim time (min)" : "Time (min)"}
+                {isManualPoolMode ? "Time" : "Time (min)"}
                 <input
                   type="text"
                   inputMode="numeric"
@@ -2065,7 +2164,7 @@ export default function WorkoutEditor({
             ) : step.durationMode === "send_off" ? (
               <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
                 <label className="text-sm text-slate-700">
-                  Send-off min
+                  Minutes
                   <input
                     type="text"
                     inputMode="numeric"
@@ -2078,7 +2177,7 @@ export default function WorkoutEditor({
                   />
                 </label>
                 <label className="text-sm text-slate-700">
-                  Send-off sec
+                  Seconds
                   <input
                     type="text"
                     inputMode="numeric"
@@ -2092,13 +2191,13 @@ export default function WorkoutEditor({
                 </label>
                 <div className="self-end text-sm text-slate-500">
                   {step.timeMin
-                    ? `${formatClockDurationLabel(step.timeMin)} send-off`
-                    : "Set send-off"}
+                    ? `Send-Off Time ${formatClockDurationLabel(step.timeMin)}`
+                    : "Set Send-Off Time"}
                 </div>
               </div>
             ) : step.durationMode === "css_send_off" ? (
               <label className="text-sm text-slate-700 md:col-span-2">
-                CSS send-off offset
+                CSS-Based Send-Off Time
                 <select
                   value={String(step.cssSendOffOffsetSeconds ?? 0)}
                   onChange={(event) =>
@@ -2124,9 +2223,7 @@ export default function WorkoutEditor({
               </label>
             ) : (
               <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600">
-                {isManualPoolMode
-                  ? "This is an open swim step. It stays open until the swimmer advances with the lap button."
-                  : "This step stays open until the swimmer advances with the lap button."}
+                This step stays open until the swimmer advances with the lap button.
               </div>
             )}
 
@@ -2268,9 +2365,9 @@ export default function WorkoutEditor({
             )}
 
             <label className="text-sm text-slate-700 md:col-span-2">
-              {isManualPoolMode ? "Step note" : "Notes"}
+              {isManualPoolMode ? "Notes" : "Notes"}
               <AutoGrowingTextarea
-                aria-label={isManualPoolMode ? "Step note" : "Notes"}
+                aria-label={isManualPoolMode ? "Notes" : "Notes"}
                 value={step.notes}
                 onChange={(event) =>
                   updateDraftStep(step.id, (current) => ({
@@ -2281,9 +2378,6 @@ export default function WorkoutEditor({
                 minRows={isManualPoolMode ? 1 : 3}
                 className="mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
-              {isManualPoolMode ? (
-                <p className="mt-2 text-xs text-slate-500">Add a note for this step.</p>
-              ) : null}
             </label>
           </div>
         ) : null}

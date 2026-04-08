@@ -8,7 +8,7 @@ import {
 import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
 
 const ENV: NodeJS.ProcessEnv = {
-  ...process.env,
+  NODE_ENV: "test",
   STRIPE_PRICE_ID_0_1000M_GUIDE: "price_1000",
   STRIPE_PRICE_ID_POOLSIDE_GUIDE: "price_poolside",
   STRIPE_PRICE_ID_ANALYSIS: "price_analysis",
@@ -41,7 +41,7 @@ describe("commerce catalog", () => {
 
   it("returns per-product availability without throwing", () => {
     const partialEnv: NodeJS.ProcessEnv = {
-      ...process.env,
+      NODE_ENV: "test",
       STRIPE_PRICE_ID_0_1000M_GUIDE: "price_1000",
       STRIPE_PRICE_ID_ANALYSIS: "price_analysis",
     };

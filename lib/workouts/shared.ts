@@ -310,7 +310,26 @@ export function buildWorkoutDraftChangeSignature(
   draft: SessionDraft | null | undefined
 ): string | null {
   if (!draft) return null;
-  return JSON.stringify(draft);
+  return JSON.stringify(normalizeWorkoutDraftForChangeSignature(draft));
+}
+
+function normalizeWorkoutDraftForChangeSignature(draft: SessionDraft): SessionDraft {
+  if (
+    draft.environment !== "pool" ||
+    typeof draft.sourceFingerprint !== "string" ||
+    !draft.sourceFingerprint.startsWith("manual")
+  ) {
+    return draft;
+  }
+
+  return {
+    ...draft,
+    steps: draft.steps.map((step) => ({
+      ...step,
+      name: "",
+      targetSummary: "",
+    })),
+  };
 }
 
 export function haveWorkoutDraftChanges(
@@ -2263,7 +2282,7 @@ function buildWorkoutGarminPoolCssCompatibilityIssue(
     }
 
     if (step.durationMode === "css_send_off") {
-      references.push(`${stepLabel} (CSS send-off)`);
+      references.push(`${stepLabel} (CSS-Based Send-Off Time)`);
     }
 
     return references;
@@ -2320,7 +2339,7 @@ function buildWorkoutGarminSendOffCompatibilityIssue(
 
   const stepLabel = buildWorkoutStepReadinessLabel(step, index);
   const durationLabel =
-    step.durationMode === "css_send_off" ? "CSS send-off" : "Send-off Time";
+    step.durationMode === "css_send_off" ? "CSS-Based Send-Off Time" : "Send-Off Time";
   const reasons: string[] = [];
 
   if (step.category !== "rest") {
@@ -2344,7 +2363,7 @@ function buildWorkoutGarminSendOffCompatibilityIssue(
     id: `${step.id}-send-off-compatibility`,
     stepId: step.id,
     stepIndex: index,
-    detail: `${stepLabel} uses ${durationLabel}, but Garmin pool workouts keep ${durationLabel} as a rest choice after a distance-based swim step. Because ${reasonSummary}, device handoff may behave like open rest instead.`,
+    detail: `${stepLabel} uses ${durationLabel}, but Garmin pool workouts keep ${durationLabel} as a rest choice after a distance-based swim step. Because ${reasonSummary}, device handoff may behave like Lap Button Press instead.`,
   };
 }
 
@@ -2367,7 +2386,7 @@ function getWorkoutStepDetailLabels(
   if (isPoolWorkoutEnvironment(environment)) {
     return {
       targetSummary: "Target summary",
-      stepNote: "Step note",
+      stepNote: "Notes",
     };
   }
 
@@ -2390,17 +2409,17 @@ export function getWorkoutStepDurationModeOutputLabel(
 
   switch (value) {
     case "distance":
-      return "Distance swim";
+      return "Distance";
     case "time":
-      return "Time-based swim";
+      return "Time";
     case "fixed_rest":
-      return "Rest time";
+      return "Fixed Rest Time";
     case "lap_button":
-      return options?.category === "rest" ? "Open rest" : "Open swim";
+      return "Lap Button Press";
     case "send_off":
-      return "Send-off Time";
+      return "Send-Off Time";
     case "css_send_off":
-      return "CSS send-off";
+      return "CSS-Based Send-Off Time";
     default:
       return getSessionStepDurationModeLabel(value);
   }
@@ -2456,10 +2475,10 @@ export function buildWorkoutStepDurationOutputSummary(
           : "Send-off not set";
       case "css_send_off":
         if (typeof step.cssSendOffOffsetSeconds !== "number") {
-          return "CSS send-off not set";
+          return "CSS-Based Send-Off Time not set";
         }
 
-        return `CSS ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s send-off (${formatClockDurationLabelFromSeconds(
+        return `CSS-Based Send-Off Time ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s (${formatClockDurationLabelFromSeconds(
           basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
         )})`;
       case "lap_button":
@@ -2471,25 +2490,23 @@ export function buildWorkoutStepDurationOutputSummary(
 
   switch (step.durationMode) {
     case "distance":
-      return step.distanceM ? `${step.distanceM}m` : "Distance swim not set";
+      return step.distanceM ? `${step.distanceM}m` : "Distance not set";
     case "time":
-      return step.timeMin
-        ? `Time-based swim ${formatMinutesLabel(step.timeMin)}`
-        : "Time-based swim not set";
+      return step.timeMin ? `Time ${formatMinutesLabel(step.timeMin)}` : "Time not set";
     case "fixed_rest":
       return step.timeMin
-        ? `Rest time ${formatClockDurationLabel(step.timeMin)}`
-        : "Rest time not set";
+        ? `Fixed Rest Time ${formatClockDurationLabel(step.timeMin)}`
+        : "Fixed Rest Time not set";
     case "send_off":
       return step.timeMin
-        ? `Send-off Time ${formatClockDurationLabel(step.timeMin)}`
-        : "Send-off Time not set";
+        ? `Send-Off Time ${formatClockDurationLabel(step.timeMin)}`
+        : "Send-Off Time not set";
     case "css_send_off":
       if (typeof step.cssSendOffOffsetSeconds !== "number") {
-        return "CSS send-off not set";
+        return "CSS-Based Send-Off Time not set";
       }
 
-      return `CSS send-off ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s (${formatClockDurationLabelFromSeconds(
+      return `CSS-Based Send-Off Time ${step.cssSendOffOffsetSeconds > 0 ? "+" : ""}${step.cssSendOffOffsetSeconds}s (${formatClockDurationLabelFromSeconds(
         basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
       )})`;
     case "lap_button":
@@ -2778,7 +2795,7 @@ function buildWorkoutPoolsidePauseLabel(
   }
 
   if (step.durationMode === "css_send_off" && typeof step.cssSendOffOffsetSeconds === "number") {
-    return `CSS send-off ${formatClockDurationLabelFromSeconds(
+    return `CSS-Based Send-Off Time ${formatClockDurationLabelFromSeconds(
       basePaceSecondsPer100m + step.cssSendOffOffsetSeconds
     )}`;
   }
@@ -3311,7 +3328,7 @@ function normalizeStep(
   if (input.durationMode === "css_send_off" && cssSendOffOffsetSeconds === null) {
     return {
       ok: false,
-      error: `Step ${index + 1} needs a CSS send-off offset before saving.`,
+      error: `Step ${index + 1} needs a CSS-Based Send-Off Time offset before saving.`,
     };
   }
 

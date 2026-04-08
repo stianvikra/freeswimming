@@ -10,6 +10,7 @@ import {
   buildWorkoutGarminReadinessReport,
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
+  haveWorkoutDraftChanges,
   selectWorkoutPoolsideFocusTitles,
 } from "@/lib/workouts/shared";
 
@@ -218,6 +219,73 @@ describe("workouts shared readiness", () => {
     expect(report.issues[0]?.detail).toContain("older watches skip the final rest instead");
   });
 
+  it("ignores manual-pool derived step labels when checking unsaved changes", () => {
+    const savedDraft: SessionDraft = {
+      version: 1,
+      status: "draft",
+      generatorKind: "rule_engine_v1",
+      createdAt: "2026-04-08T12:00:00.000Z",
+      sourceFingerprint: "manual-empty-pool-20260408120000",
+      title: "Untitled pool session",
+      titleSuggestions: ["Untitled pool session"],
+      description: "",
+      environment: "pool",
+      poolLengthM: 25,
+      sessionType: "endurance",
+      effort: "moderate",
+      sizeMode: "distance",
+      targetDistanceM: null,
+      targetTimeMin: null,
+      totalDistanceM: 100,
+      estimatedDurationMin: null,
+      basePaceSecondsPer100m: 120,
+      usedCssPaceLabel: null,
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: [],
+      focusText: null,
+      goalTitle: null,
+      constraintText: null,
+      warnings: [],
+      steps: [
+        {
+          id: "manual-step-1",
+          category: "main",
+          name: "First step",
+          stroke: "freestyle",
+          drillType: "none",
+          equipment: "none",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetMode: "none",
+          effortTarget: null,
+          targetPaceSecondsPer100m: null,
+          cssTargetOffsetSeconds: null,
+          cssSendOffOffsetSeconds: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: null,
+          repeatCount: null,
+          repeatEndingRestMode: null,
+        },
+      ],
+    };
+
+    const editorSyncedDraft: SessionDraft = {
+      ...savedDraft,
+      steps: [
+        {
+          ...savedDraft.steps[0]!,
+          name: "100m · Freestyle · Moderate",
+          targetSummary: "legacy hidden summary should not keep the draft dirty",
+        },
+      ],
+    };
+
+    expect(haveWorkoutDraftChanges(editorSyncedDraft, savedDraft)).toBe(false);
+  });
+
   it("reports review when send-off time is not authored as a rest after a distance-based swim step", () => {
     const report = buildWorkoutGarminReadinessReport({
       ...buildDraft(),
@@ -254,8 +322,8 @@ describe("workouts shared readiness", () => {
       "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
     expect(report.issues).toHaveLength(1);
-    expect(report.issues[0]?.detail).toContain("Send-off Time");
-    expect(report.issues[0]?.detail).toContain("open rest instead");
+    expect(report.issues[0]?.detail).toContain("Send-Off Time");
+    expect(report.issues[0]?.detail).toContain("Lap Button Press instead");
     expect(report.issues[0]?.detail).toContain("is not a distance-based swim step");
   });
 
@@ -297,7 +365,9 @@ describe("workouts shared readiness", () => {
     );
     expect(report.issues).toHaveLength(1);
     expect(report.issues[0]?.detail).toContain("CSS-relative pacing");
-    expect(report.issues[0]?.detail).toContain("Step 2 (CSS send-off rest) (CSS send-off)");
+    expect(report.issues[0]?.detail).toContain(
+      "Step 2 (CSS send-off rest) (CSS-Based Send-Off Time)"
+    );
     expect(report.issues[0]?.detail).toContain("2:00/100m if no CSS is set");
     expect(report.issues[0]?.detail).toContain("2:08/100m as the workout CSS baseline");
   });
@@ -434,15 +504,15 @@ describe("workouts shared readiness", () => {
       workoutId: "workout-output-1",
     });
 
-    expect(handoffText).toContain("Swim · Open swim · Freestyle · Moderate");
-    expect(handoffText).toContain("Rest · Open rest · Easy");
+    expect(handoffText).toContain("Swim · Lap Button Press · Freestyle · Moderate");
+    expect(handoffText).toContain("Rest · Lap Button Press · Easy");
     expect(handoffText).toContain("Target summary: Stay tall through the turn.");
-    expect(handoffText).toContain("Step note: Count strokes off every wall.");
+    expect(handoffText).toContain("Notes: Count strokes off every wall.");
     expect(html).toContain("Target summary: Stay tall through the turn.");
-    expect(html).toContain("Step note: Count strokes off every wall.");
-    expect(pdfModel.poolsideLines).toContain("Open swim · Freestyle · Moderate");
-    expect(pdfModel.poolsideLines).toContain("P: Open rest");
-    expect(pdfModel.poolsideLines).toContain("P: Send-off Time 2:00");
+    expect(html).toContain("Notes: Count strokes off every wall.");
+    expect(pdfModel.poolsideLines).toContain("Lap Button Press · Freestyle · Moderate");
+    expect(pdfModel.poolsideLines).toContain("P: Lap Button Press");
+    expect(pdfModel.poolsideLines).toContain("P: Send-Off Time 2:00");
 
     if (exportPayload.blocks[0]?.kind !== "single") {
       throw new Error("Expected first block to be a single-step export.");
@@ -458,8 +528,8 @@ describe("workouts shared readiness", () => {
 
     expect(exportPayload.blocks[0].step.duration).toMatchObject({
       mode: "lap_button",
-      label: "Open swim",
-      summary: "Open swim",
+      label: "Lap Button Press",
+      summary: "Lap Button Press",
     });
     expect(exportPayload.blocks[0].step.target).toMatchObject({
       mode: "none",
@@ -468,13 +538,13 @@ describe("workouts shared readiness", () => {
     });
     expect(exportPayload.blocks[1].step.duration).toMatchObject({
       mode: "lap_button",
-      label: "Open rest",
-      summary: "Open rest",
+      label: "Lap Button Press",
+      summary: "Lap Button Press",
     });
     expect(exportPayload.blocks[2].step.duration).toMatchObject({
       mode: "send_off",
-      label: "Send-off Time",
-      summary: "Send-off Time 2:00",
+      label: "Send-Off Time",
+      summary: "Send-Off Time 2:00",
     });
   });
 
@@ -703,7 +773,7 @@ describe("workouts shared readiness", () => {
       reviewIssueIds: [],
       duration: {
         mode: "send_off",
-        summary: "Send-off Time 2:00",
+        summary: "Send-Off Time 2:00",
       },
     });
   });
@@ -764,7 +834,7 @@ describe("workouts shared readiness", () => {
       summary: "4 rounds · 100m + 2:00 per round · Final rest skipped",
     });
     expect(pdfModel.poolsideLines).toContain(
-      "P: Send-off Time 2:00 between rounds (final rest skipped)"
+      "P: Send-Off Time 2:00 between rounds (final rest skipped)"
     );
 
     if (exportPayload.blocks[0]?.kind !== "repeat") {
