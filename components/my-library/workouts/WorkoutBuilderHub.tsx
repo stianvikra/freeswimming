@@ -216,22 +216,6 @@ export default function WorkoutBuilderHub({
                 My Swim Sessions
               </Link>
             ) : null}
-            {savedWorkout ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setPendingCurrentDelete(true);
-                  setPendingDeleteWorkoutId(null);
-                  setError("");
-                  setSuccess("");
-                }}
-                disabled={deletingWorkoutId === savedWorkout.id}
-                data-testid="workout-builder-delete-current-workout"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete session"}
-              </button>
-            ) : null}
           </div>
         </div>
       )}
@@ -420,6 +404,13 @@ export default function WorkoutBuilderHub({
               showLoadedBanner={false}
               showPdfPanel={false}
               forceMetadataOpenOnLoad={preferExpandedDetailsOnLoad}
+              onRequestDeleteCurrent={() => {
+                setPendingCurrentDelete(true);
+                setPendingDeleteWorkoutId(null);
+                setError("");
+                setSuccess("");
+              }}
+              isDeletingCurrent={deletingWorkoutId === savedWorkout.id}
               recentWorkoutsDescription="Edit another saved session when you want to switch what you are working on."
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
               saveButtonTestId="workout-builder-save"

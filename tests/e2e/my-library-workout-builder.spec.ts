@@ -122,12 +122,14 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("combobox", { name: "Effort" })).toHaveCount(0);
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     await page.getByTestId("session-draft-step-toggle-0").click();
+    await expect(
+      page.getByTestId("workout-editor-panel").getByRole("heading", { name: "Session builder" })
+    ).toBeVisible();
     await expect(page.getByLabel("Step type")).toBeVisible();
     await expect(page.getByLabel("Stroke")).toBeVisible();
     await expect(page.getByLabel("Drill type")).toBeVisible();
     await expect(page.getByLabel("Step timing")).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Target" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Target summary" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Step note" })).toBeVisible();
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
       "Distance swim"
@@ -147,11 +149,15 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
       "CSS send-off"
     );
+    await expect(page.locator("label").filter({ hasText: /^Step name$/ })).toHaveCount(0);
+    await expect(page.locator("label").filter({ hasText: /^Effort cue$/ })).toHaveCount(0);
+    await expect(page.locator("label").filter({ hasText: /^Target summary$/ })).toHaveCount(0);
+    await expect(page.locator("label").filter({ hasText: /^Target notes$/ })).toHaveCount(0);
     await expect(
       page.getByText(
         "Optional short cue for the interval summary. Use Step note for the Garmin-style step note."
       )
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       page.getByText("Closest match to Garmin Add Step Note for this pool step.")
     ).toBeVisible();
@@ -205,11 +211,9 @@ test.describe("my library workout builder", () => {
     );
     await savedWorkoutPdfPopup.close();
 
-    await page.getByTestId("session-draft-step-name-0").fill("Warmup swim");
-
     await page.getByTestId("session-draft-step-remove-0").click();
     await expect(page.getByTestId("workout-editor-removal-confirm")).toContainText(
-      "Remove Warmup swim?"
+      "Remove 100m · Freestyle?"
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
     await page.getByTestId("workout-editor-removal-cancel-button").click();
@@ -217,7 +221,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-remove-0").click();
     await page.getByTestId("workout-editor-removal-confirm-button").click();
     await expect(page.getByTestId("workout-editor-removal-undo")).toContainText(
-      "Removed Warmup swim."
+      "Removed 100m · Freestyle."
     );
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
@@ -231,7 +235,6 @@ test.describe("my library workout builder", () => {
 
     await openMetadataPanelIfCollapsed(page);
     await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled pool session");
-    await expect(page.getByTestId("session-draft-step-name-0")).toHaveValue("Warmup swim");
     await page.getByTestId("session-draft-pool-length-input").fill("33.33");
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
@@ -240,7 +243,6 @@ test.describe("my library workout builder", () => {
     await page
       .getByTestId("session-draft-repeat-ending-rest-mode-1")
       .selectOption("skip_last_rest");
-    await page.getByTestId("session-draft-step-name-1").fill("Repeat swim focus");
     await page.getByTestId("session-draft-step-distance-1").selectOption("200");
     await page.getByTestId("session-draft-step-stroke-1").selectOption("backstroke");
     await page.getByTestId("session-draft-step-drill-type-1").selectOption("pull");
@@ -248,7 +250,6 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-target-mode-1").selectOption("target_pace");
     await page.getByTestId("session-draft-step-target-pace-minutes-1").fill("1");
     await page.getByTestId("session-draft-step-target-pace-seconds-1").fill("35");
-    await page.getByLabel("Target summary").fill("Hold 1:35 and leave on the red top.");
     await page.getByLabel("Step note").fill("Leave on the top and count strokes.");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
@@ -286,9 +287,6 @@ test.describe("my library workout builder", () => {
       "Final rest skipped"
     );
     await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
-      "Target summary: Hold 1:35 and leave on the red top."
-    );
-    await expect(page.getByTestId("workout-editor-handoff-preview")).toContainText(
       "Step note: Leave on the top and count strokes."
     );
     await expect(page.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
@@ -321,7 +319,7 @@ test.describe("my library workout builder", () => {
       page.getByText(
         "Optional. Use this for the whole-session purpose or one short coaching note that applies across the session."
       )
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     const pdfPopupPromise = page.waitForEvent("popup");
@@ -335,7 +333,8 @@ test.describe("my library workout builder", () => {
     await expect(pdfPopup.locator('[data-testid="workout-pdf-title"]')).toContainText(uniqueTitle);
     await expect(pdfPopup.locator("body")).toContainText("Workout PDF");
     await expect(pdfPopup.locator("body")).toContainText("Print / Save PDF");
-    await expect(pdfPopup.locator("body")).toContainText("Repeat swim focus");
+    await expect(pdfPopup.locator("body")).toContainText("200m");
+    await expect(pdfPopup.locator("body")).toContainText("Backstroke");
     await pdfPopup.close();
 
     const poolsidePopupPromise = page.waitForEvent("popup");
@@ -403,7 +402,6 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-distance-custom-0")).toHaveValue("333");
     await expect(page.getByTestId("session-draft-repeat-count-1")).toHaveValue("6");
     await page.getByTestId("session-draft-step-toggle-1").click();
-    await expect(page.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim focus");
     await expect(page.getByTestId("session-draft-step-distance-1")).toHaveValue("200");
     await expect(page.getByTestId("session-draft-step-stroke-1")).toHaveValue("backstroke");
     await expect(page.getByTestId("session-draft-step-drill-type-1")).toHaveValue("pull");
