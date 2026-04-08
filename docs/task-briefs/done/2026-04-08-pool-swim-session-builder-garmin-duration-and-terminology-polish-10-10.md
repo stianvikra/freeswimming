@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-08-pool-swim-session-builder-garmin-duration-and-terminology-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-08`
 - `updated`: `2026-04-08`
@@ -245,3 +245,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-08 | in-progress | created clean worktree feat/pool-builder-garmin-terms-2026-04-08 from origin/main and locked scope to manual-pool Garmin terminology + duration filtering; confirmed there is no existing open admin note covering this exact step-timing finding, only an unrelated open pool-size autofocus note on the same workout route | next: patch WorkoutEditor/shared labels and duration filtering, then update unit/e2e coverage`
 - `2026-04-08 | in-progress | implemented Garmin-visible manual-pool terminology, filtered duration options by step type, updated shared Garmin/export labels, fixed deterministic catalog-test env isolation, and normalized manual-pool dirty-state comparison so hidden derived step labels do not keep canonical sessions falsely dirty; verify:pre-pr finished green (96 passed, 318 skipped, 0 failed) after targeted vitest/playwright reruns | next: commit, push, open PR, and monitor required CI before merge`
+- `2026-04-08 | done | PR #394 merged to main as 7595f017bf42738775ee1ed40be8cfe67729aa18 after required CI passed and local npm run verify:pre-merge finished green (96 passed, 318 skipped, 0 failed + private-gate regression pass); moved brief to done on closeout branch docs/pool-builder-garmin-terms-closeout-2026-04-08 | next: none`
