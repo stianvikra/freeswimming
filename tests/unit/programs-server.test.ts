@@ -42,6 +42,7 @@ function buildWorkoutRow(overrides?: Partial<WorkoutRow>): WorkoutRow {
     description: draft.description,
     environment: draft.environment,
     pool_length_m: draft.poolLengthM,
+    pool_length_unit: draft.poolLengthUnit ?? "m",
     session_type: draft.sessionType,
     effort: draft.effort,
     size_mode: draft.sizeMode,

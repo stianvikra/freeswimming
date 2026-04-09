@@ -35,6 +35,7 @@ function buildDraft(overrides?: Partial<SessionDraft>): SessionDraft {
     titleSuggestions: ["Accepted threshold workout"],
     description: "Threshold session in pool mode.",
     environment: "pool",
+    poolLengthUnit: "m",
     poolLengthM: 25,
     sessionType: "threshold_css",
     effort: "moderate",
@@ -74,6 +75,7 @@ function buildWorkoutSummary(overrides?: Partial<WorkoutSummary>): WorkoutSummar
     id: "workout-1",
     title: "Accepted threshold workout",
     environment: "pool",
+    poolLengthUnit: "m",
     poolLengthM: 25,
     sessionType: "threshold_css",
     effort: "moderate",
@@ -208,6 +210,7 @@ describe("WorkoutBuilderHub", () => {
           }),
           summary: buildWorkoutSummary({
             title: body.draft.title,
+            poolLengthUnit: body.draft.poolLengthUnit,
             totalDistanceM: body.draft.totalDistanceM,
             estimatedDurationMin: body.draft.estimatedDurationMin,
           }),
@@ -297,16 +300,16 @@ describe("WorkoutBuilderHub", () => {
       target: { value: "0" },
     });
     fireEvent.click(screen.getByTestId("session-draft-add-step"));
-    fireEvent.change(screen.getByTestId("session-draft-step-name-3"), {
+    fireEvent.change(screen.getByTestId("session-draft-step-name-4"), {
       target: { value: "CSS send-off rest" },
     });
-    fireEvent.change(screen.getByTestId("session-draft-step-duration-mode-3"), {
+    fireEvent.change(screen.getByTestId("session-draft-step-duration-mode-4"), {
       target: { value: "css_send_off" },
     });
-    fireEvent.change(screen.getByTestId("session-draft-step-stroke-3"), {
+    fireEvent.change(screen.getByTestId("session-draft-step-stroke-4"), {
       target: { value: "im_by_round" },
     });
-    fireEvent.change(screen.getByTestId("session-draft-step-css-sendoff-offset-3"), {
+    fireEvent.change(screen.getByTestId("session-draft-step-css-sendoff-offset-4"), {
       target: { value: "2" },
     });
 
@@ -396,6 +399,11 @@ describe("WorkoutBuilderHub", () => {
       timeMin: 2,
     });
     expect(fetchBody.draft.steps[3]).toMatchObject({
+      category: "rest",
+      durationMode: "fixed_rest",
+      postSetRestForRepeatGroupId: expect.any(String),
+    });
+    expect(fetchBody.draft.steps[4]).toMatchObject({
       name: "CSS send-off rest",
       stroke: "im_by_round",
       durationMode: "css_send_off",
@@ -416,8 +424,8 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-drill-type-1")).toHaveValue("pull");
     expect(screen.getByTestId("session-draft-step-equipment-1")).toHaveValue("fins");
     expect(screen.getByTestId("session-draft-step-target-mode-1")).toHaveValue("css_target_pace");
-    fireEvent.click(screen.getByTestId("session-draft-step-toggle-3"));
-    expect(screen.getByTestId("session-draft-step-stroke-3")).toHaveValue("im_by_round");
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-4"));
+    expect(screen.getByTestId("session-draft-step-stroke-4")).toHaveValue("im_by_round");
   }, 15_000);
 
   it("can reset unsaved edits back to the last saved workout", async () => {
@@ -555,9 +563,13 @@ describe("WorkoutBuilderHub", () => {
 
     const previewDraft = readPreviewDraft();
     const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
+    const linkedPostSetRestSteps = previewDraft.steps.filter(
+      (step) => step.postSetRestForRepeatGroupId
+    );
 
-    expect(previewDraft.steps).toHaveLength(3);
+    expect(previewDraft.steps).toHaveLength(4);
     expect(repeatSteps).toHaveLength(2);
+    expect(linkedPostSetRestSteps).toHaveLength(1);
     expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
     expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(
       true
@@ -622,14 +634,14 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-repeat-remove-1"));
 
     expect(screen.getByTestId("workout-editor-removal-confirm")).toHaveTextContent(
-      "Repeat block (2 steps, 4 rounds)"
+      "Repeat block (3 steps, 4 rounds)"
     );
 
     fireEvent.click(screen.getByTestId("workout-editor-removal-confirm-button"));
 
     expect(screen.queryByTestId("session-draft-repeat-count-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-editor-removal-undo")).toHaveTextContent(
-      "Removed Repeat block (2 steps, 4 rounds)."
+      "Removed Repeat block (3 steps, 4 rounds)."
     );
 
     fireEvent.click(screen.getByTestId("workout-editor-removal-undo-button"));
@@ -653,7 +665,7 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
     expect(screen.getByTestId("session-draft-repeat-count-2")).toHaveValue("4");
-    expect(screen.getByTestId("session-draft-step-name-3")).toHaveValue("Repeat swim");
+    expect(screen.getByTestId("session-draft-step-name-4")).toHaveValue("Repeat swim");
 
     fireEvent.change(screen.getByTestId("session-draft-repeat-count-2"), {
       target: { value: "6" },
@@ -694,7 +706,7 @@ describe("WorkoutBuilderHub", () => {
 
     let previewDraft = readPreviewDraft();
 
-    expect(previewDraft.steps).toHaveLength(4);
+    expect(previewDraft.steps).toHaveLength(5);
     expect(previewDraft.steps[2]).toMatchObject({
       name: "Repeat step",
       repeatGroupId: repeatGroupIdBeforeInsert,
@@ -705,12 +717,12 @@ describe("WorkoutBuilderHub", () => {
 
     previewDraft = readPreviewDraft();
 
-    expect(previewDraft.steps).toHaveLength(5);
-    expect(previewDraft.steps[4]).toMatchObject({
+    expect(previewDraft.steps).toHaveLength(6);
+    expect(previewDraft.steps[5]).toMatchObject({
       name: "Custom step",
     });
-    expect(previewDraft.steps[4]?.repeatGroupId ?? null).toBeNull();
-    expect(screen.getByTestId("session-draft-step-name-4")).toHaveValue("Custom step");
+    expect(previewDraft.steps[5]?.repeatGroupId ?? null).toBeNull();
+    expect(screen.getByTestId("session-draft-step-name-5")).toHaveValue("Custom step");
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
   });
 
@@ -1049,9 +1061,12 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("Session note")).toBeVisible();
     expect(screen.queryByText("Environment")).not.toBeInTheDocument();
     expect(screen.getByText("Pool Size")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Meters" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Yards" })).toBeVisible();
     expect(screen.getByRole("button", { name: "25m" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "33.33m" })).toBeVisible();
     expect(screen.getByRole("button", { name: "50m" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Unspecified" })).toBeVisible();
+    expect(screen.getByLabelText("Exact pool size (m)")).toHaveValue("25");
     expect(screen.queryByRole("combobox", { name: "Session type" })).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Effort" })).not.toBeInTheDocument();
     expect(screen.queryByText("Training profile")).not.toBeInTheDocument();
@@ -1234,6 +1249,9 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.getByTestId("session-draft-step-duration-mode-0")).toHaveValue("fixed_rest");
+    expect(screen.queryByLabelText("Stroke Type")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Drill Type")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Target")).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Fixed Rest Time" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Send-Off Time" })).toBeVisible();
     expect(screen.getByRole("option", { name: "CSS-Based Send-Off Time" })).toBeVisible();
@@ -1409,7 +1427,7 @@ describe("WorkoutBuilderHub", () => {
     expect(readPreviewDraft().steps[2]?.name).toContain("Fixed Rest Time 0:45");
   });
 
-  it("treats unspecified pool size as valid while invalid custom input still blocks save", async () => {
+  it("requires an exact pool size while invalid custom input still blocks save", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
@@ -1433,16 +1451,18 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.getByTestId("workout-editor-panel")).toHaveTextContent(
-      "Enter a valid pool size between 12.5m and 500m, or choose Unspecified."
+      "Enter a valid pool size between 12.5m and 500m."
     );
     expect(saveButton).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Unspecified" }));
+    fireEvent.change(screen.getByLabelText("Exact pool size (m)"), {
+      target: { value: "" },
+    });
 
     expect(screen.getByTestId("workout-editor-panel")).toHaveTextContent(
-      "Supported range: 12.5m to 500m."
+      "Enter a valid pool size between 12.5m and 500m."
     );
-    expect(saveButton).toBeEnabled();
+    expect(saveButton).toBeDisabled();
     expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
       "1 review item"
     );
@@ -1457,14 +1477,14 @@ describe("WorkoutBuilderHub", () => {
     );
     fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "Unspecified pool size"
+      "no exact pool size set"
     );
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "yard pools"
+      "Choose a pool size before Garmin/export handoff"
     );
   });
 
-  it("converts yard pool sizes back into the canonical meter value on save", async () => {
+  it("converts exact yard pool sizes back into canonical meters on save", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {
         draft: SessionDraft;
@@ -1481,6 +1501,7 @@ describe("WorkoutBuilderHub", () => {
           summary: buildWorkoutSummary({
             sourceKind: "manual",
             title: body.draft.title,
+            poolLengthUnit: body.draft.poolLengthUnit,
             totalDistanceM: body.draft.totalDistanceM,
             estimatedDurationMin: body.draft.estimatedDurationMin,
           }),
@@ -1506,10 +1527,14 @@ describe("WorkoutBuilderHub", () => {
     });
 
     fireEvent.click(screen.getByTestId("workout-editor-pool-length-unit-yd"));
-    fireEvent.click(screen.getByRole("button", { name: "25yd" }));
+    fireEvent.change(screen.getByLabelText("Exact pool size (yd)"), {
+      target: { value: "33,33" },
+    });
 
-    expect(screen.getByLabelText("Exact pool size (yd)")).toHaveValue("25");
-    expect(screen.getByText("Common yard presets: 25yd and 50yd.")).toBeVisible();
+    expect(screen.getByLabelText("Exact pool size (yd)")).toHaveValue("33.33");
+    expect(screen.getByTestId("workout-editor-panel")).toHaveTextContent(
+      "Common presets: 25yd, 33.33yd, 50yd."
+    );
     expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
@@ -1527,7 +1552,8 @@ describe("WorkoutBuilderHub", () => {
       draft: SessionDraft;
     };
 
-    expect(fetchBody.draft.poolLengthM).toBe(22.86);
+    expect(fetchBody.draft.poolLengthUnit).toBe("yd");
+    expect(fetchBody.draft.poolLengthM).toBe(30.477);
   });
 
   it("keeps the poolside focus selector compact and removes redundant focus role labels", async () => {

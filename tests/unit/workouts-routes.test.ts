@@ -42,6 +42,7 @@ function buildWorkoutRow(overrides?: Partial<WorkoutRow>): WorkoutRow {
     description: "Threshold session in pool mode.",
     environment: "pool",
     pool_length_m: 25,
+    pool_length_unit: "m",
     session_type: "threshold_css",
     effort: "moderate",
     size_mode: "distance",

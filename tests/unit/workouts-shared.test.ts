@@ -130,7 +130,7 @@ describe("workouts shared readiness", () => {
     expect(report.issues[1]?.detail).toContain("Pull");
   });
 
-  it("reports review when a pool workout exceeds Garmin's documented authored-step cap", () => {
+  it("reports review when a pool workout exceeds Garmin's documented active-step cap", () => {
     const report = buildWorkoutGarminReadinessReport({
       ...buildDraft(),
       steps: Array.from({ length: 101 }, (_, index) => ({
@@ -152,11 +152,11 @@ describe("workouts shared readiness", () => {
       "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
     expect(report.issues).toHaveLength(1);
-    expect(report.issues[0]?.detail).toContain("101 authored steps");
+    expect(report.issues[0]?.detail).toContain("101 active workout steps");
     expect(report.issues[0]?.detail).toContain("100 workout steps");
   });
 
-  it("reports review when a pool workout uses unspecified pool size", () => {
+  it("reports review when a pool workout has no exact pool size set", () => {
     const report = buildWorkoutGarminReadinessReport({
       ...buildDraft(),
       poolLengthM: null,
@@ -167,9 +167,9 @@ describe("workouts shared readiness", () => {
       "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
     expect(report.issues).toHaveLength(1);
-    expect(report.issues[0]?.detail).toContain("Unspecified pool size");
-    expect(report.issues[0]?.detail).toContain("partially compatible across pool-swim watches");
-    expect(report.issues[0]?.detail).toContain("yard pools");
+    expect(report.issues[0]?.detail).toContain("no exact pool size set");
+    expect(report.issues[0]?.detail).toContain("Choose a pool size before Garmin/export handoff");
+    expect(report.issues[0]?.detail).toContain("distance labels, totals, and device translation");
   });
 
   it("reports review when a pool repeat block keeps the last rest interval", () => {
@@ -420,7 +420,7 @@ describe("workouts shared readiness", () => {
     });
   });
 
-  it("surfaces unspecified pool size clearly in shared workout summaries", () => {
+  it("surfaces missing pool size clearly in shared workout summaries", () => {
     const model = buildWorkoutPdfModel(
       {
         ...buildDraft(),
@@ -431,7 +431,7 @@ describe("workouts shared readiness", () => {
       }
     );
 
-    expect(model.environmentSummary).toBe("Pool (Unspecified)");
+    expect(model.environmentSummary).toBe("Pool (size not set)");
   });
 
   it("renders the session note label in printable workout PDF html", () => {
