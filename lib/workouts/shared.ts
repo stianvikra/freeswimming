@@ -3831,7 +3831,7 @@ function normalizeNullableInteger(value: unknown) {
 
 function normalizeNullableDistance(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
-  const normalized = Math.round(value * 100) / 100;
+  const normalized = Math.round(value * 10000) / 10000;
   return normalized > 0 ? normalized : null;
 }
 

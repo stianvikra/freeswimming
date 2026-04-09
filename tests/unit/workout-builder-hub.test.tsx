@@ -1553,7 +1553,7 @@ describe("WorkoutBuilderHub", () => {
     };
 
     expect(fetchBody.draft.poolLengthUnit).toBe("yd");
-    expect(fetchBody.draft.poolLengthM).toBe(30.48);
+    expect(fetchBody.draft.poolLengthM).toBe(30.477);
   });
 
   it("keeps the poolside focus selector compact and removes redundant focus role labels", async () => {

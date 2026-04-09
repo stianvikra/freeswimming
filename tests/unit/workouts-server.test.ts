@@ -5,6 +5,10 @@ import {
   buildManualWorkoutStarterDraft,
 } from "@/lib/workouts/manual";
 import {
+  convertMetersToPoolUnitValue,
+  convertPoolUnitValueToMeters,
+} from "@/lib/session-generator-v1/shared";
+import {
   buildWorkoutEditorRecord,
   buildWorkoutInsert,
   buildWorkoutSummary,
@@ -182,6 +186,44 @@ describe("workouts server", () => {
     expect(editorRecord.draft.poolLengthM).toBe(33.33);
     expect(summary.poolLengthUnit).toBe("yd");
     expect(summary.poolLengthM).toBe(33.33);
+  });
+
+  it("preserves whole-yard custom distances through save and reload normalization", () => {
+    const customDistanceMeters = convertPoolUnitValueToMeters(333, "yd");
+    const yardDraft: SessionDraft = {
+      ...buildDraft(),
+      title: "Whole-yard roundtrip workout",
+      titleSuggestions: ["Whole-yard roundtrip workout"],
+      poolLengthUnit: "yd",
+      poolLengthM: convertPoolUnitValueToMeters(25, "yd"),
+      targetDistanceM: customDistanceMeters,
+      totalDistanceM: customDistanceMeters,
+      steps: [
+        {
+          ...buildDraft().steps[0],
+          distanceM: customDistanceMeters,
+        },
+      ],
+    };
+
+    const insert = buildWorkoutInsert("user-1", yardDraft, "manual");
+    const storedRow = buildWorkoutRow({
+      source_kind: "manual",
+      title: "Whole-yard roundtrip workout",
+      title_suggestions: ["Whole-yard roundtrip workout"],
+      pool_length_unit: "yd",
+      pool_length_m: convertPoolUnitValueToMeters(25, "yd"),
+      target_distance_m: insert.target_distance_m,
+      total_distance_m: insert.total_distance_m,
+      steps: insert.steps,
+    });
+    const editorRecord = buildWorkoutEditorRecord(storedRow);
+    const firstStep = editorRecord.draft.steps[0];
+
+    expect(insert.total_distance_m).toBeCloseTo(customDistanceMeters, 4);
+    expect(convertMetersToPoolUnitValue(insert.total_distance_m ?? 0, "yd")).toBe(333);
+    expect(firstStep?.distanceM).toBeCloseTo(customDistanceMeters, 4);
+    expect(convertMetersToPoolUnitValue(firstStep?.distanceM ?? 0, "yd")).toBe(333);
   });
 
   it("requires an exact pool size before saving manual builder workouts", () => {

@@ -397,7 +397,7 @@ test.describe("my library workout builder", () => {
     await expect(pdfPopup.locator('[data-testid="workout-pdf-title"]')).toContainText(uniqueTitle);
     await expect(pdfPopup.locator("body")).toContainText("Workout PDF");
     await expect(pdfPopup.locator("body")).toContainText("Print / Save PDF");
-    await expect(pdfPopup.locator("body")).toContainText("200m");
+    await expect(pdfPopup.locator("body")).toContainText("200yd");
     await expect(pdfPopup.locator("body")).toContainText("Backstroke");
     await pdfPopup.close();
 

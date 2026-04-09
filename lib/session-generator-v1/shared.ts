@@ -97,6 +97,7 @@ export const SESSION_DRAFT_POOL_LENGTH_PRESETS = [12.5, 25, 50] as const;
 export const SESSION_DRAFT_POOL_LENGTH_MIN = 12.5;
 export const SESSION_DRAFT_POOL_LENGTH_MAX = 500;
 export const METERS_PER_YARD = 0.9144;
+const WORKOUT_DISTANCE_PRECISION_FACTOR = 10000;
 
 export type SessionGeneratorEnvironment = (typeof SESSION_GENERATOR_ENVIRONMENTS)[number];
 export type SessionGeneratorPoolLength = (typeof SESSION_GENERATOR_POOL_LENGTHS)[number];
@@ -376,12 +377,12 @@ export function resolveSessionDraftPoolLengthUnit(
 
 export function convertPoolUnitValueToMeters(value: number, unit: SessionDraftPoolLengthUnit) {
   const normalized = unit === "yd" ? value * METERS_PER_YARD : value;
-  return Math.round(normalized * 100) / 100;
+  return Math.round(normalized * WORKOUT_DISTANCE_PRECISION_FACTOR) / WORKOUT_DISTANCE_PRECISION_FACTOR;
 }
 
 export function convertMetersToPoolUnitValue(value: number, unit: SessionDraftPoolLengthUnit) {
   const normalized = unit === "yd" ? value / METERS_PER_YARD : value;
-  return Math.round(normalized * 100) / 100;
+  return Math.round(normalized * WORKOUT_DISTANCE_PRECISION_FACTOR) / WORKOUT_DISTANCE_PRECISION_FACTOR;
 }
 
 function formatWorkoutUnitValue(value: number) {
@@ -711,7 +712,11 @@ export function computeSessionDraftDerivedTotals(draft: SessionDraft): {
   }
 
   return {
-    totalDistanceM: totalDistanceM > 0 ? Math.round(totalDistanceM * 100) / 100 : null,
+    totalDistanceM:
+      totalDistanceM > 0
+        ? Math.round(totalDistanceM * WORKOUT_DISTANCE_PRECISION_FACTOR) /
+          WORKOUT_DISTANCE_PRECISION_FACTOR
+        : null,
     estimatedDurationMin: estimatedMinutes > 0 ? Math.round(estimatedMinutes) : null,
   };
 }
