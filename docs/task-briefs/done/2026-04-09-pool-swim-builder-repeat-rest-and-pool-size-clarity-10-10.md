@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-09-pool-swim-builder-repeat-rest-and-pool-size-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-09`
 - `updated`: `2026-04-09`
@@ -266,3 +266,4 @@ Critical target categories for `10/10` claim:
 - `2026-04-09 | in-progress | committed implementation as bae5464 (Clarify pool repeat rest and unit semantics) and pushed branch feat/pool-repeat-rest-pool-size-clarity-2026-04-09 to origin | next: create/update PR, watch CI, and run npm run verify:pre-merge before merge recommendation`
 - `2026-04-09 | in-progress | confirmed the Supabase account exposed to this repo currently has only one project (`freeswimming-org-prod` / `sazgjhgxvmxcyowovond`), linked the worktree to that project, and ran \`supabase db push --dry-run\`, which reported exactly one pending migration: \`20260409121500_workouts_pool_units_and_decimal_distances.sql\`; there is no discoverable preview/non-prod database target to validate against first | next: get explicit owner approval before any live prod \`supabase db push\`, then rerun preview/schema follow-up on the applied schema`
 - `2026-04-09 | in-progress | applied \`20260409121500_workouts_pool_units_and_decimal_distances.sql\` to the linked project, reran schema-dependent workout flows, and found one real yard-roundtrip precision bug: whole-yard custom step distances and totals could reopen as \`333.01yd\`/\`1533.01yd\` because canonical meter normalization was still limited to 2 decimals; patched internal distance precision to 4 decimals, added a follow-up migration for top-level stored distances, and revalidated with targeted vitest plus desktop Chromium workout/generator/program Playwright coverage | next: run full verify on the follow-up precision patch, push it, apply the new distance-precision migration, and then recheck PR merge readiness`
+- `2026-04-09 | done | merged PR #398 as \`93c0abd\`, applied both workout schema migrations to the linked production project (\`20260409121500\` and \`20260409160500\`), revalidated with local \`verify:pre-pr\`, local \`verify:pre-merge\`, targeted schema-sensitive Playwright after live rollout, and confirmed all GitHub checks green before closeout | next: none`
