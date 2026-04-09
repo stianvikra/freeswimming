@@ -277,7 +277,9 @@ function formatEditablePoolLength(
   unit: SessionDraftPoolLengthUnit = "m"
 ) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
-  return convertMetersToPoolUnitValue(value, unit).toFixed(2).replace(/\.?0+$/, "");
+  return convertMetersToPoolUnitValue(value, unit)
+    .toFixed(2)
+    .replace(/\.?0+$/, "");
 }
 
 function formatPoolLengthUnitLabel(value: number, unit: SessionDraftPoolLengthUnit) {
@@ -310,7 +312,9 @@ function formatEditableDistance(
   unit: SessionDraftPoolLengthUnit = "m"
 ) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
-  return convertMetersToPoolUnitValue(value, unit).toFixed(2).replace(/\.?0+$/, "");
+  return convertMetersToPoolUnitValue(value, unit)
+    .toFixed(2)
+    .replace(/\.?0+$/, "");
 }
 
 function isDistanceQuickChoiceSelected(
@@ -760,16 +764,18 @@ function buildManualPoolStepSummary(
     poolLengthUnit
   );
 
-  return [
-    buildWorkoutStepDurationOutputSummary(normalizedStep, basePaceSecondsPer100m, {
-      environment: "pool",
-      poolLengthUnit,
-    }),
-    buildStepContextLabel(normalizedStep, { environment: "pool" }),
-    structuredTarget,
-  ]
-    .filter(Boolean)
-    .join(" · ") || `${getSessionStepCategoryLabel(normalizedStep.category)} step`;
+  return (
+    [
+      buildWorkoutStepDurationOutputSummary(normalizedStep, basePaceSecondsPer100m, {
+        environment: "pool",
+        poolLengthUnit,
+      }),
+      buildStepContextLabel(normalizedStep, { environment: "pool" }),
+      structuredTarget,
+    ]
+      .filter(Boolean)
+      .join(" · ") || `${getSessionStepCategoryLabel(normalizedStep.category)} step`
+  );
 }
 
 function syncManualPoolEditableStep(
@@ -790,16 +796,18 @@ function syncManualPoolEditableStep(
 }
 
 function hasSelectionSyncChanges(currentDraft: SessionDraft, nextDraft: SessionDraft) {
-  return JSON.stringify({
-    steps: currentDraft.steps,
-    allowedStrokes: currentDraft.allowedStrokes,
-    equipmentAllowlist: currentDraft.equipmentAllowlist,
-  }) !==
+  return (
+    JSON.stringify({
+      steps: currentDraft.steps,
+      allowedStrokes: currentDraft.allowedStrokes,
+      equipmentAllowlist: currentDraft.equipmentAllowlist,
+    }) !==
     JSON.stringify({
       steps: nextDraft.steps,
       allowedStrokes: nextDraft.allowedStrokes,
       equipmentAllowlist: nextDraft.equipmentAllowlist,
-    });
+    })
+  );
 }
 
 function buildRepeatSummary(
@@ -836,7 +844,8 @@ function buildRepeatSummary(
   const parts = [`${repeatCount} rounds`];
   const roundParts: string[] = [];
 
-  if (roundDistanceM > 0) roundParts.push(formatDistanceMetersLabel(roundDistanceM, poolLengthUnit));
+  if (roundDistanceM > 0)
+    roundParts.push(formatDistanceMetersLabel(roundDistanceM, poolLengthUnit));
   if (roundDurationSeconds > 0) {
     roundParts.push(formatClockDurationLabelFromSeconds(roundDurationSeconds));
   }
@@ -999,7 +1008,10 @@ export default function WorkoutEditor({
   const [openStepId, setOpenStepId] = useState<string | null>(null);
   const poolLengthUnit = resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit);
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
-    formatEditablePoolLength(draft.poolLengthM, resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit))
+    formatEditablePoolLength(
+      draft.poolLengthM,
+      resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit)
+    )
   );
   const [timeDurationInputs, setTimeDurationInputs] = useState<Record<string, string>>(() =>
     Object.fromEntries(
@@ -1113,7 +1125,9 @@ export default function WorkoutEditor({
           ? formatDistanceMetersLabel(draftTotals.totalDistanceM, poolLengthUnit)
           : null,
         draftTotals.estimatedDurationMin ? `~${draftTotals.estimatedDurationMin} min` : null,
-        draft.poolLengthM === null ? "Set pool size" : formatPoolLengthUnitLabel(draft.poolLengthM, poolLengthUnit),
+        draft.poolLengthM === null
+          ? "Set pool size"
+          : formatPoolLengthUnitLabel(draft.poolLengthM, poolLengthUnit),
       ]
         .filter(Boolean)
         .join(" · ")
@@ -1210,6 +1224,10 @@ export default function WorkoutEditor({
       : `${garminReadiness.issues.length} review ${
           garminReadiness.issues.length === 1 ? "item" : "items"
         }`;
+  const integratedSupportSectionClass = "border-t border-slate-200/80 pt-4";
+  const supportPreviewShellClass =
+    "mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950";
+  const supportSummaryItemClass = "rounded-xl bg-slate-100/80 p-4";
 
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
@@ -1342,47 +1360,46 @@ export default function WorkoutEditor({
     });
   }, [savedWorkoutId]);
 
-  const syncDraftSelections = useCallback((nextDraft: SessionDraft) => {
-    const nextPoolLengthUnit = resolveSessionDraftPoolLengthUnit(nextDraft.poolLengthUnit);
-    const nextSteps = isManualPoolMode
-      ? nextDraft.steps.map((step) =>
-          syncManualPoolEditableStep(
-            step,
-            nextDraft.basePaceSecondsPer100m,
-            nextPoolLengthUnit
+  const syncDraftSelections = useCallback(
+    (nextDraft: SessionDraft) => {
+      const nextPoolLengthUnit = resolveSessionDraftPoolLengthUnit(nextDraft.poolLengthUnit);
+      const nextSteps = isManualPoolMode
+        ? nextDraft.steps.map((step) =>
+            syncManualPoolEditableStep(step, nextDraft.basePaceSecondsPer100m, nextPoolLengthUnit)
           )
-        )
-      : nextDraft.steps;
-    const requiredStrokes = Array.from(
-      new Set(
-        nextSteps
-          .map((step) => step.stroke)
-          .filter((stroke): stroke is SessionGeneratorStroke =>
-            SESSION_GENERATOR_STROKES.includes(stroke as SessionGeneratorStroke)
-          )
-      )
-    );
-    const requiredEquipment = Array.from(
-      new Set(
-        nextSteps
-          .map((step) => step.equipment)
-          .filter((value): value is (typeof SESSION_GENERATOR_EQUIPMENT)[number] =>
-            SESSION_GENERATOR_EQUIPMENT.includes(
-              value as (typeof SESSION_GENERATOR_EQUIPMENT)[number]
+        : nextDraft.steps;
+      const requiredStrokes = Array.from(
+        new Set(
+          nextSteps
+            .map((step) => step.stroke)
+            .filter((stroke): stroke is SessionGeneratorStroke =>
+              SESSION_GENERATOR_STROKES.includes(stroke as SessionGeneratorStroke)
             )
-          )
-      )
-    );
+        )
+      );
+      const requiredEquipment = Array.from(
+        new Set(
+          nextSteps
+            .map((step) => step.equipment)
+            .filter((value): value is (typeof SESSION_GENERATOR_EQUIPMENT)[number] =>
+              SESSION_GENERATOR_EQUIPMENT.includes(
+                value as (typeof SESSION_GENERATOR_EQUIPMENT)[number]
+              )
+            )
+        )
+      );
 
-    return {
-      ...nextDraft,
-      steps: nextSteps,
-      allowedStrokes: Array.from(new Set([...nextDraft.allowedStrokes, ...requiredStrokes])),
-      equipmentAllowlist: Array.from(
-        new Set([...nextDraft.equipmentAllowlist, ...requiredEquipment])
-      ),
-    };
-  }, [isManualPoolMode]);
+      return {
+        ...nextDraft,
+        steps: nextSteps,
+        allowedStrokes: Array.from(new Set([...nextDraft.allowedStrokes, ...requiredStrokes])),
+        equipmentAllowlist: Array.from(
+          new Set([...nextDraft.equipmentAllowlist, ...requiredEquipment])
+        ),
+      };
+    },
+    [isManualPoolMode]
+  );
 
   useEffect(() => {
     if (!isManualPoolMode) {
@@ -1848,7 +1865,9 @@ export default function WorkoutEditor({
     timeDurationInputFocusRef.current[stepId] = false;
     const normalized = normalizeClockDurationInput(timeDurationInputs[stepId] ?? "");
     setTimeDurationInputs((current) =>
-      current[stepId] === normalized.display ? current : { ...current, [stepId]: normalized.display }
+      current[stepId] === normalized.display
+        ? current
+        : { ...current, [stepId]: normalized.display }
     );
     updateDraftStep(stepId, (current) => ({
       ...current,
@@ -2207,61 +2226,63 @@ export default function WorkoutEditor({
                 }
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
-                {(isLinkedPostSetRest ? (["rest"] as const) : SESSION_DRAFT_STEP_CATEGORIES).map((value) => (
-                  <option key={value} value={value}>
-                    {getSessionStepCategoryLabel(value)}
-                  </option>
-                ))}
+                {(isLinkedPostSetRest ? (["rest"] as const) : SESSION_DRAFT_STEP_CATEGORIES).map(
+                  (value) => (
+                    <option key={value} value={value}>
+                      {getSessionStepCategoryLabel(value)}
+                    </option>
+                  )
+                )}
               </select>
             </label>
 
             {isMinimalRestEditor ? null : (
-            <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Stroke Type" : "Stroke pattern"}
-              <select
-                value={step.stroke ?? "choice"}
-                onChange={(event) => {
-                  const nextStroke = event.target.value as SessionDraftStep["stroke"];
+              <label className="text-sm text-slate-700">
+                {isManualPoolMode ? "Stroke Type" : "Stroke pattern"}
+                <select
+                  value={step.stroke ?? "choice"}
+                  onChange={(event) => {
+                    const nextStroke = event.target.value as SessionDraftStep["stroke"];
 
-                  updateDraftStep(step.id, (current) =>
-                    applyRecommendedStepFocus(current, {
-                      stroke: nextStroke,
-                    })
-                  );
-                }}
-                data-testid={`session-draft-step-stroke-${index}`}
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                {SESSION_DRAFT_STEP_STROKES.map((value) => (
-                  <option key={value} value={value}>
-                    {getSessionStepStrokeLabel(value)}
-                  </option>
-                ))}
-              </select>
-            </label>
+                    updateDraftStep(step.id, (current) =>
+                      applyRecommendedStepFocus(current, {
+                        stroke: nextStroke,
+                      })
+                    );
+                  }}
+                  data-testid={`session-draft-step-stroke-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                >
+                  {SESSION_DRAFT_STEP_STROKES.map((value) => (
+                    <option key={value} value={value}>
+                      {getSessionStepStrokeLabel(value)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
 
             {isMinimalRestEditor ? null : (
-            <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Drill Type" : "Focus tag"}
-              <select
-                value={step.drillType ?? "none"}
-                onChange={(event) =>
-                  updateDraftStep(step.id, (current) => ({
-                    ...current,
-                    drillType: event.target.value as NonNullable<SessionDraftStep["drillType"]>,
-                  }))
-                }
-                data-testid={`session-draft-step-drill-type-${index}`}
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                {SESSION_DRAFT_STEP_DRILL_TYPES.map((value) => (
-                  <option key={value} value={value}>
-                    {getSessionStepDrillTypeLabel(value)}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="text-sm text-slate-700">
+                {isManualPoolMode ? "Drill Type" : "Focus tag"}
+                <select
+                  value={step.drillType ?? "none"}
+                  onChange={(event) =>
+                    updateDraftStep(step.id, (current) => ({
+                      ...current,
+                      drillType: event.target.value as NonNullable<SessionDraftStep["drillType"]>,
+                    }))
+                  }
+                  data-testid={`session-draft-step-drill-type-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                >
+                  {SESSION_DRAFT_STEP_DRILL_TYPES.map((value) => (
+                    <option key={value} value={value}>
+                      {getSessionStepDrillTypeLabel(value)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
 
             {isManualPoolMode || isMinimalRestEditor ? null : (
@@ -2276,26 +2297,26 @@ export default function WorkoutEditor({
             )}
 
             {isMinimalRestEditor ? null : (
-            <label className="text-sm text-slate-700">
-              Equipment
-              <select
-                value={step.equipment ?? "none"}
-                onChange={(event) =>
-                  updateDraftStep(step.id, (current) => ({
-                    ...current,
-                    equipment: event.target.value as NonNullable<SessionDraftStep["equipment"]>,
-                  }))
-                }
-                data-testid={`session-draft-step-equipment-${index}`}
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                {SESSION_DRAFT_STEP_EQUIPMENT.map((value) => (
-                  <option key={value} value={value}>
-                    {getSessionStepEquipmentLabel(value)}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="text-sm text-slate-700">
+                Equipment
+                <select
+                  value={step.equipment ?? "none"}
+                  onChange={(event) =>
+                    updateDraftStep(step.id, (current) => ({
+                      ...current,
+                      equipment: event.target.value as NonNullable<SessionDraftStep["equipment"]>,
+                    }))
+                  }
+                  data-testid={`session-draft-step-equipment-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                >
+                  {SESSION_DRAFT_STEP_EQUIPMENT.map((value) => (
+                    <option key={value} value={value}>
+                      {getSessionStepEquipmentLabel(value)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
 
             {isManualPoolMode || isMinimalRestEditor ? null : (
@@ -2349,7 +2370,11 @@ export default function WorkoutEditor({
                 <label className="text-sm text-slate-700">
                   Distance
                   <select
-                    value={selectedDistancePreset ? String(selectedDistancePreset) : CUSTOM_DISTANCE_VALUE}
+                    value={
+                      selectedDistancePreset
+                        ? String(selectedDistancePreset)
+                        : CUSTOM_DISTANCE_VALUE
+                    }
                     onChange={(event) => updateStepDistanceSelection(step.id, event.target.value)}
                     data-testid={`session-draft-step-distance-${index}`}
                     className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -2428,7 +2453,9 @@ export default function WorkoutEditor({
                   type="text"
                   inputMode="numeric"
                   placeholder={isManualPoolMode ? "MM:SS" : undefined}
-                  value={isManualPoolMode ? (timeDurationInputs[step.id] ?? "") : (step.timeMin ?? "")}
+                  value={
+                    isManualPoolMode ? (timeDurationInputs[step.id] ?? "") : (step.timeMin ?? "")
+                  }
                   onFocus={() => {
                     if (!isManualPoolMode) return;
                     timeDurationInputFocusRef.current[step.id] = true;
@@ -2519,38 +2546,38 @@ export default function WorkoutEditor({
             )}
 
             {isMinimalRestEditor ? null : (
-            <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Target" : "Target mode"}
-              <select
-                value={step.targetMode ?? "none"}
-                onChange={(event) =>
-                  updateDraftStep(step.id, (current) => ({
-                    ...current,
-                    targetMode: event.target.value as NonNullable<SessionDraftStep["targetMode"]>,
-                    effortTarget:
-                      event.target.value === "effort"
-                        ? (current.effortTarget ?? current.intensity)
-                        : null,
-                    targetPaceSecondsPer100m:
-                      event.target.value === "target_pace"
-                        ? current.targetPaceSecondsPer100m
-                        : null,
-                    cssTargetOffsetSeconds:
-                      event.target.value === "css_target_pace"
-                        ? (current.cssTargetOffsetSeconds ?? 0)
-                        : null,
-                  }))
-                }
-                data-testid={`session-draft-step-target-mode-${index}`}
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                {SESSION_DRAFT_STEP_TARGET_MODES.map((value) => (
-                  <option key={value} value={value}>
-                    {getStepTargetModeEditorLabel(value, isManualPoolMode)}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="text-sm text-slate-700">
+                {isManualPoolMode ? "Target" : "Target mode"}
+                <select
+                  value={step.targetMode ?? "none"}
+                  onChange={(event) =>
+                    updateDraftStep(step.id, (current) => ({
+                      ...current,
+                      targetMode: event.target.value as NonNullable<SessionDraftStep["targetMode"]>,
+                      effortTarget:
+                        event.target.value === "effort"
+                          ? (current.effortTarget ?? current.intensity)
+                          : null,
+                      targetPaceSecondsPer100m:
+                        event.target.value === "target_pace"
+                          ? current.targetPaceSecondsPer100m
+                          : null,
+                      cssTargetOffsetSeconds:
+                        event.target.value === "css_target_pace"
+                          ? (current.cssTargetOffsetSeconds ?? 0)
+                          : null,
+                    }))
+                  }
+                  data-testid={`session-draft-step-target-mode-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                >
+                  {SESSION_DRAFT_STEP_TARGET_MODES.map((value) => (
+                    <option key={value} value={value}>
+                      {getStepTargetModeEditorLabel(value, isManualPoolMode)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
 
             {!isMinimalRestEditor && (step.targetMode ?? "none") === "effort" ? (
@@ -2777,8 +2804,8 @@ export default function WorkoutEditor({
         Session note
         {isManualPoolMode ? null : (
           <p className="mt-2 text-xs text-slate-500">
-            Optional. Use this for the whole-session purpose or one short coaching note that
-            applies across the session.
+            Optional. Use this for the whole-session purpose or one short coaching note that applies
+            across the session.
           </p>
         )}
         <AutoGrowingTextarea
@@ -2796,10 +2823,7 @@ export default function WorkoutEditor({
           <legend className="px-1 text-sm font-semibold text-slate-900">Environment</legend>
           <div className="mt-3 flex flex-wrap gap-3">
             {SESSION_GENERATOR_ENVIRONMENTS.map((value) => (
-              <label
-                key={value}
-                className="inline-flex items-center gap-2 text-sm text-slate-700"
-              >
+              <label key={value} className="inline-flex items-center gap-2 text-sm text-slate-700">
                 <input
                   type="radio"
                   name="session-draft-environment"
@@ -2823,80 +2847,91 @@ export default function WorkoutEditor({
       )}
 
       {draft.environment === "pool" ? (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
+        <div
+          data-testid="workout-editor-pool-size-panel"
+          data-containment-style="integrated"
+          className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2"
+        >
           <p className="text-sm font-medium text-slate-900">
             {isManualPoolMode ? "Pool Size" : "Pool length"}
           </p>
-          <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.9fr)] xl:items-stretch">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Unit and common sizes
-              </p>
-              <div
-                role="group"
-                aria-label={isManualPoolMode ? "Pool size unit" : "Pool length unit"}
-                className="mt-3 flex flex-wrap items-center gap-2"
-              >
-                {([
-                  ["m", "Meters"],
-                  ["yd", "Yards"],
-                ] as const).map(([unit, label]) => {
-                  const isSelected = poolLengthUnit === unit;
-                  return (
-                    <button
-                      key={unit}
-                      type="button"
-                      aria-pressed={isSelected}
-                      data-testid={`workout-editor-pool-length-unit-${unit}`}
-                      onClick={() => updatePoolLengthUnit(unit)}
-                      className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
-                        isSelected
-                          ? "border-blue-600 bg-blue-50 text-blue-700"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
+          <p className="mt-2 text-xs text-slate-500">
+            {poolLengthUnit === "yd"
+              ? "Yard entry stays visible in yards while FreeSwimming saves the exact meter conversion canonically."
+              : "Choose meters or yards, then pick a common size or type the exact value."}
+          </p>
+          <div className="mt-4 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.9fr)] xl:items-start">
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Unit</p>
+                <div
+                  role="group"
+                  aria-label={isManualPoolMode ? "Pool size unit" : "Pool length unit"}
+                  className="mt-3 flex flex-wrap items-center gap-2"
+                >
+                  {(
+                    [
+                      ["m", "Meters"],
+                      ["yd", "Yards"],
+                    ] as const
+                  ).map(([unit, label]) => {
+                    const isSelected = poolLengthUnit === unit;
+                    return (
+                      <button
+                        key={unit}
+                        type="button"
+                        aria-pressed={isSelected}
+                        data-testid={`workout-editor-pool-length-unit-${unit}`}
+                        onClick={() => updatePoolLengthUnit(unit)}
+                        className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
+                          isSelected
+                            ? "border-blue-600 bg-blue-50 text-blue-700"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <p className="mt-3 text-xs text-slate-500">
-                {poolLengthUnit === "yd"
-                  ? "Yard entry stays visible in yards while FreeSwimming saves the exact meter conversion canonically."
-                  : "Pick a common pool size here, or use the exact field for less common setups."}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {poolLengthQuickChoices.map((value) => {
-                  const isSelected = isPoolLengthQuickChoiceSelected(
-                    draft.poolLengthM,
-                    value,
-                    poolLengthUnit
-                  );
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => choosePoolLengthQuickChoice(value)}
-                      className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
-                        isSelected
-                          ? "border-blue-600 bg-blue-50 text-blue-700"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      {poolLengthUnit === "yd"
-                        ? `${value}yd`
-                        : formatPoolLengthLabel(value, poolLengthUnit)}
-                    </button>
-                  );
-                })}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Common sizes
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {poolLengthQuickChoices.map((value) => {
+                    const isSelected = isPoolLengthQuickChoiceSelected(
+                      draft.poolLengthM,
+                      value,
+                      poolLengthUnit
+                    );
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => choosePoolLengthQuickChoice(value)}
+                        className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
+                          isSelected
+                            ? "border-blue-600 bg-blue-50 text-blue-700"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        {poolLengthUnit === "yd"
+                          ? `${value}yd`
+                          : formatPoolLengthLabel(value, poolLengthUnit)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="space-y-2 xl:border-l xl:border-slate-200 xl:pl-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Exact pool size
+                Exact size
               </p>
-              <label className="mt-3 block text-sm text-slate-700">
+              <label className="block text-sm text-slate-700">
                 {isManualPoolMode
                   ? `Exact pool size (${poolLengthUnit})`
                   : `Exact pool length (${poolLengthUnit})`}
@@ -2909,7 +2944,7 @@ export default function WorkoutEditor({
                   className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </label>
-              <p className="mt-2 text-xs text-slate-500">{poolLengthSupportCopy}</p>
+              <p className="text-xs text-slate-500">{poolLengthSupportCopy}</p>
             </div>
           </div>
         </div>
@@ -3054,7 +3089,7 @@ export default function WorkoutEditor({
       </div>
 
       {showPdfPanel ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <section className={integratedSupportSectionClass}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
@@ -3104,10 +3139,10 @@ export default function WorkoutEditor({
               {workoutPdfError}
             </p>
           ) : null}
-        </div>
+        </section>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <section className={integratedSupportSectionClass}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
@@ -3172,7 +3207,7 @@ export default function WorkoutEditor({
         ) : null}
 
         {supportSectionOpen.garminExport ? (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+          <div className={supportPreviewShellClass}>
             <pre
               data-testid="workout-editor-garmin-export-preview"
               className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
@@ -3181,9 +3216,9 @@ export default function WorkoutEditor({
             </pre>
           </div>
         ) : null}
-      </div>
+      </section>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <section className={integratedSupportSectionClass}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -3252,7 +3287,7 @@ export default function WorkoutEditor({
         ) : null}
 
         {supportSectionOpen.handoff ? (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+          <div className={supportPreviewShellClass}>
             <pre
               data-testid="workout-editor-handoff-preview"
               className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
@@ -3261,20 +3296,20 @@ export default function WorkoutEditor({
             </pre>
           </div>
         ) : null}
-      </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <div className="grid gap-3 border-t border-slate-200/80 pt-4 md:grid-cols-3">
+        <div className={supportSummaryItemClass}>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">
             {savedWorkout ? "Accepted" : "Draft"}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+        <div className={supportSummaryItemClass}>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Session</p>
           <p className="mt-2 text-sm font-semibold text-slate-900">{metadataSummary}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+        <div className={supportSummaryItemClass}>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Context</p>
           <p className="mt-2 text-sm font-semibold text-slate-900">
             {draft.goalTitle ?? draft.focusText ?? "Session-only request"}
@@ -3292,8 +3327,9 @@ export default function WorkoutEditor({
 
   const poolsideNotePanel = showCalmBuilderLayout ? (
     <div
-      className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4"
+      className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-5"
       data-testid="workout-editor-poolside-panel"
+      data-containment-style="split"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -3316,13 +3352,13 @@ export default function WorkoutEditor({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
-        <div className="rounded-2xl border border-blue-100 bg-white/80 p-4">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] lg:items-start">
+        <div className="min-w-0 space-y-3 lg:border-r lg:border-blue-200/70 lg:pr-5">
           <p className="text-sm font-semibold text-slate-900">Open focus cues</p>
           {trainingFocusOptions.length > 0 ? (
             <div
               data-testid="workout-editor-poolside-focus-list"
-              className="mt-3 grid max-h-72 gap-3 overflow-y-auto pr-1"
+              className="grid max-h-72 gap-3 overflow-y-auto pr-1"
             >
               {trainingFocusOptions.map((focus) => (
                 <label
@@ -3342,16 +3378,16 @@ export default function WorkoutEditor({
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-slate-600">
+            <p className="text-sm text-slate-600">
               No open focuses are available, so the poolside note will only include the workout and
               totals.
             </p>
           )}
         </div>
 
-        <fieldset className="rounded-2xl border border-blue-100 bg-white/80 p-4">
-          <legend className="px-1 text-sm font-semibold text-slate-900">Print style</legend>
-          <div className="mt-3 grid gap-3">
+        <fieldset className="min-w-0 space-y-3 lg:pl-5">
+          <legend className="text-sm font-semibold text-slate-900">Print style</legend>
+          <div className="grid gap-3">
             <label className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
               <span className="flex items-start gap-3">
                 <input
@@ -3395,7 +3431,8 @@ export default function WorkoutEditor({
   const supportToolsPanel = showCalmBuilderLayout ? (
     <section
       data-testid="workout-editor-support-tools-panel"
-      className={`rounded-2xl border p-4 ${
+      data-containment-style="sectioned"
+      className={`rounded-2xl border p-5 ${
         garminReadiness.status === "ready"
           ? "border-emerald-200 bg-emerald-50/60"
           : "border-amber-200 bg-amber-50/60"
@@ -3688,7 +3725,9 @@ export default function WorkoutEditor({
             ) : (
               <section
                 key={group.repeatGroupId}
-                className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
+                data-testid={`workout-editor-repeat-group-${groupIndex}`}
+                data-containment-style="calm"
+                className="rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-4 ring-1 ring-inset ring-blue-100"
               >
                 {(() => {
                   const repeatSummary = buildRepeatSummary(
@@ -3719,139 +3758,142 @@ export default function WorkoutEditor({
                     group.repeatEndingRestMode === "use_last_rest" &&
                     Boolean(
                       group.entries[group.entries.length - 1] &&
-                        isSessionDraftRepeatEndingRestStep(
-                          group.entries[group.entries.length - 1].step
-                        )
+                      isSessionDraftRepeatEndingRestStep(
+                        group.entries[group.entries.length - 1].step
+                      )
                     );
 
                   return (
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                      Repeat set
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">{repeatSummary}</p>
-                    {isManualPoolMode ? (
-                      <p className="mt-1 text-xs text-slate-600">
-                        Inside the repeat: work interval, then between-interval recovery. After
-                        the set: separate post-set rest.
-                      </p>
-                    ) : (
-                      <>
-                        <p className="mt-1 text-xs text-slate-600">
-                          Edit the repeated steps below instead of duplicating every round by hand.
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                          Repeat set
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
-                          {SESSION_DRAFT_REPEAT_MAX} rounds per block.
-                        </p>
-                      </>
-                    )}
-                    {repeatEndingRestDescription ? (
-                      <p className="mt-2 text-xs text-slate-600">{repeatEndingRestDescription}</p>
-                    ) : null}
-                    {postSetRestLabel ? (
-                      <p className="mt-1 text-xs text-slate-600">
-                        {postSetRestSuppressed
-                          ? `${postSetRestLabel} is preserved as post-set rest, but suppressed while the last internal rest interval runs after the final round.`
-                          : `${postSetRestLabel} stays outside the repeat block as the post-set rest after the set.`}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap items-end gap-2">
-                    <label className="text-sm text-slate-700">
-                      Repeat count
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={group.repeatCount ?? ""}
-                        onChange={(event) =>
-                          updateRepeatGroupCount(group.repeatGroupId, event.target.value)
-                        }
-                        min={SESSION_DRAFT_REPEAT_MIN}
-                        max={SESSION_DRAFT_REPEAT_MAX}
-                        data-testid={`session-draft-repeat-count-${groupIndex}`}
-                        className="mt-2 block h-11 w-28 rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      />
-                    </label>
-                    {draft.environment === "pool" &&
-                    (() => {
-                      const lastEntry = group.entries[group.entries.length - 1];
-                      return Boolean(
-                        lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step)
-                      );
-                    })() ? (
-                      <label className="text-sm text-slate-700">
-                        Last rest interval
-                        <select
-                          value={group.repeatEndingRestMode}
-                          onChange={(event) =>
-                            updateRepeatGroupEndingRestMode(
-                              group.repeatGroupId,
-                              event.target.value as SessionDraftRepeatEndingRestMode
-                            )
-                          }
-                          data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
-                          className="mt-2 block h-11 min-w-[15rem] rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        <p className="mt-1 text-sm font-medium text-slate-900">{repeatSummary}</p>
+                        {isManualPoolMode ? (
+                          <p className="mt-1 text-xs text-slate-600">
+                            Inside the repeat: work interval, then between-interval recovery. After
+                            the set: separate post-set rest.
+                          </p>
+                        ) : (
+                          <>
+                            <p className="mt-1 text-xs text-slate-600">
+                              Edit the repeated steps below instead of duplicating every round by
+                              hand.
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
+                              {SESSION_DRAFT_REPEAT_MAX} rounds per block.
+                            </p>
+                          </>
+                        )}
+                        {repeatEndingRestDescription ? (
+                          <p className="mt-2 text-xs text-slate-600">
+                            {repeatEndingRestDescription}
+                          </p>
+                        ) : null}
+                        {postSetRestLabel ? (
+                          <p className="mt-1 text-xs text-slate-600">
+                            {postSetRestSuppressed
+                              ? `${postSetRestLabel} is preserved as post-set rest, but suppressed while the last internal rest interval runs after the final round.`
+                              : `${postSetRestLabel} stays outside the repeat block as the post-set rest after the set.`}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap items-end gap-2">
+                        <label className="text-sm text-slate-700">
+                          Repeat count
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={group.repeatCount ?? ""}
+                            onChange={(event) =>
+                              updateRepeatGroupCount(group.repeatGroupId, event.target.value)
+                            }
+                            min={SESSION_DRAFT_REPEAT_MIN}
+                            max={SESSION_DRAFT_REPEAT_MAX}
+                            data-testid={`session-draft-repeat-count-${groupIndex}`}
+                            className="mt-2 block h-11 w-28 rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                          />
+                        </label>
+                        {draft.environment === "pool" &&
+                        (() => {
+                          const lastEntry = group.entries[group.entries.length - 1];
+                          return Boolean(
+                            lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step)
+                          );
+                        })() ? (
+                          <label className="text-sm text-slate-700">
+                            Last rest interval
+                            <select
+                              value={group.repeatEndingRestMode}
+                              onChange={(event) =>
+                                updateRepeatGroupEndingRestMode(
+                                  group.repeatGroupId,
+                                  event.target.value as SessionDraftRepeatEndingRestMode
+                                )
+                              }
+                              data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
+                              className="mt-2 block h-11 min-w-[15rem] rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                            >
+                              {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
+                                <option key={mode} value={mode}>
+                                  {getSessionDraftRepeatEndingRestModeLabel(mode)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => moveDraftGroup(groupIndex, -1)}
+                          disabled={groupIndex === 0}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
-                            <option key={mode} value={mode}>
-                              {getSessionDraftRepeatEndingRestModeLabel(mode)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => moveDraftGroup(groupIndex, -1)}
-                      disabled={groupIndex === 0}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Move up
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveDraftGroup(groupIndex, 1)}
-                      disabled={groupIndex === stepGroups.length - 1}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Move down
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertStepAfterGroup(groupIndex)}
-                      data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                    >
-                      Add step after
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertRepeatAfterGroup(groupIndex)}
-                      data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                    >
-                      Add repeat after
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
-                      data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                    >
-                      Duplicate repeat
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
-                      data-testid={`session-draft-repeat-remove-${groupIndex}`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-                    >
-                      Remove repeat
-                    </button>
-                  </div>
-                </div>
+                          Move up
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveDraftGroup(groupIndex, 1)}
+                          disabled={groupIndex === stepGroups.length - 1}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Move down
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertStepAfterGroup(groupIndex)}
+                          data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                        >
+                          Add step after
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertRepeatAfterGroup(groupIndex)}
+                          data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                        >
+                          Add repeat after
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
+                          data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                        >
+                          Duplicate repeat
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
+                          data-testid={`session-draft-repeat-remove-${groupIndex}`}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+                        >
+                          Remove repeat
+                        </button>
+                      </div>
+                    </div>
                   );
                 })()}
 
@@ -3879,12 +3921,12 @@ export default function WorkoutEditor({
                             group.repeatEndingRestMode === "use_last_rest" &&
                             Boolean(
                               group.entries[group.entries.length - 1] &&
-                                isSessionDraftRepeatEndingRestStep(
-                                  group.entries[group.entries.length - 1].step
-                                )
+                              isSessionDraftRepeatEndingRestStep(
+                                group.entries[group.entries.length - 1].step
+                              )
                             )
-                            ? "Separate canonical rest after the set. It is preserved here, but active execution and export suppress it because the last internal rest interval is used after the final rep."
-                            : "Separate canonical rest after the set, outside the repeat block itself.",
+                              ? "Separate canonical rest after the set. It is preserved here, but active execution and export suppress it because the last internal rest interval is used after the final rep."
+                              : "Separate canonical rest after the set, outside the repeat block itself.",
                           isLinkedPostSetRest: true,
                         }
                       )

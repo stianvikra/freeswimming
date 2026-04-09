@@ -195,6 +195,41 @@ describe("WorkoutBuilderHub", () => {
     ).toBeVisible();
   });
 
+  it("uses the flatter containment markers for the calm workout builder layout", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+      "data-containment-style",
+      "flat"
+    );
+    openWorkoutMetadataPanel();
+    expect(screen.getByTestId("workout-editor-pool-size-panel")).toHaveAttribute(
+      "data-containment-style",
+      "integrated"
+    );
+    expect(screen.getByTestId("workout-editor-support-tools-panel")).toHaveAttribute(
+      "data-containment-style",
+      "sectioned"
+    );
+    expect(screen.getByTestId("workout-editor-poolside-panel")).toHaveAttribute(
+      "data-containment-style",
+      "split"
+    );
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    expect(screen.getByTestId("workout-editor-repeat-group-1")).toHaveAttribute(
+      "data-containment-style",
+      "calm"
+    );
+  });
+
   it("loads an accepted workout and saves canonical edits back to the same workout", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {
@@ -571,9 +606,7 @@ describe("WorkoutBuilderHub", () => {
     expect(repeatSteps).toHaveLength(2);
     expect(linkedPostSetRestSteps).toHaveLength(1);
     expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
-    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(
-      true
-    );
+    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(true);
     expect(previewDraft.steps[0]?.repeatGroupId ?? null).toBeNull();
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
   });
@@ -612,9 +645,7 @@ describe("WorkoutBuilderHub", () => {
     const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
 
     expect(repeatSteps).toHaveLength(2);
-    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(
-      true
-    );
+    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(true);
   });
 
   it("supports confirm and undo when removing a repeat block", async () => {
@@ -1264,9 +1295,9 @@ describe("WorkoutBuilderHub", () => {
     });
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
-    expect(
-      screen.getByTestId("session-draft-repeat-ending-rest-mode-1")
-    ).toHaveValue("skip_last_rest");
+    expect(screen.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
+      "skip_last_rest"
+    );
     expect(
       screen.queryByText("Edit this into the exact repeat you want to hold.")
     ).not.toBeInTheDocument();
@@ -1366,7 +1397,9 @@ describe("WorkoutBuilderHub", () => {
             sourceKind: "manual",
             draft: buildDraft({ title: "Untitled pool session" }),
           }),
-          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual", title: "Untitled pool session" })],
+          recentWorkouts: [
+            buildWorkoutSummary({ sourceKind: "manual", title: "Untitled pool session" }),
+          ],
         })}
         preferExpandedDetailsOnLoad
       />

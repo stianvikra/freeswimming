@@ -170,7 +170,8 @@ export default function WorkoutBuilderHub({
     <section
       data-testid="workout-builder-hub"
       data-client-ready={clientReady ? "true" : "false"}
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      data-containment-style="flat"
+      className="space-y-5"
     >
       {browseOnly ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -227,7 +228,7 @@ export default function WorkoutBuilderHub({
       )}
 
       {!workoutLibrary.schemaReady ? (
-        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
           <p className="text-sm text-amber-900">
             Canonical workout save is still syncing in this environment. Come back once the workouts
             table is live to edit accepted workouts here.
@@ -236,24 +237,24 @@ export default function WorkoutBuilderHub({
       ) : null}
 
       {workoutLibrary.loadError ? (
-        <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
           <p className="text-sm text-rose-900">{workoutLibrary.loadError}</p>
         </div>
       ) : null}
 
       {error ? (
-        <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
           <p className="text-sm text-rose-900">{error}</p>
         </div>
       ) : null}
 
       {success ? (
-        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
           <p className="text-sm text-emerald-900">{success}</p>
         </div>
       ) : null}
 
-      <div className="mt-6 space-y-5">
+      <div className="space-y-5">
         {!browseOnly && savedWorkout && pendingCurrentDelete ? (
           <div
             data-testid="workout-builder-current-workout-actions"
