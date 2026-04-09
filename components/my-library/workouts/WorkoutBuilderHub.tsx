@@ -20,6 +20,8 @@ import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 type Props = {
   workoutLibrary: WorkoutLibrarySnapshot;
   trainingFocusOptions?: WorkoutPoolsideFocusOption[];
+  manualPoolCssMetricSecondsPer100m?: number | null;
+  manualPoolCssPaceLabel?: string | null;
   browseOnly?: boolean;
   hideShellIntro?: boolean;
   preferExpandedDetailsOnLoad?: boolean;
@@ -33,6 +35,8 @@ function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSumm
 export default function WorkoutBuilderHub({
   workoutLibrary,
   trainingFocusOptions = [],
+  manualPoolCssMetricSecondsPer100m = null,
+  manualPoolCssPaceLabel = null,
   browseOnly = false,
   hideShellIntro = false,
   preferExpandedDetailsOnLoad = false,
@@ -175,6 +179,8 @@ export default function WorkoutBuilderHub({
               <CreateManualWorkoutButton
                 label="Build pool session"
                 testId="workout-builder-browse-create-pool"
+                manualPoolCssMetricSecondsPer100m={manualPoolCssMetricSecondsPer100m}
+                manualPoolCssPaceLabel={manualPoolCssPaceLabel}
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
               />
             ) : null}
@@ -356,6 +362,8 @@ export default function WorkoutBuilderHub({
                   <CreateManualWorkoutButton
                     label="Build pool session"
                     testId="workout-builder-empty-create-pool"
+                    manualPoolCssMetricSecondsPer100m={manualPoolCssMetricSecondsPer100m}
+                    manualPoolCssPaceLabel={manualPoolCssPaceLabel}
                     className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                   />
                 ) : null}

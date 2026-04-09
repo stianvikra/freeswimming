@@ -566,7 +566,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
   });
 
-  it("hides the repeat-header summary in the manual pool builder while defaulting to skip last rest", async () => {
+  it("shows repeat summary and final-rest clarification in the manual pool builder while defaulting to skip last rest", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
@@ -588,7 +588,13 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
       "skip_last_rest"
     );
-    expect(screen.queryByText(/Final rest skipped/)).not.toBeInTheDocument();
+    expect(screen.getByText(/4 rounds/)).toBeVisible();
+    expect(screen.getByText(/Final rest skipped/)).toBeVisible();
+    expect(
+      screen.getByText(
+        "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
+      )
+    ).toBeVisible();
 
     const previewDraft = readPreviewDraft();
     const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
@@ -1252,6 +1258,47 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.queryByText("Move the full repeat block from the header.")
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
+      )
+    ).toBeVisible();
+  });
+
+  it("uses a single MM:SS field for manual-pool time duration editing", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.change(screen.getByTestId("session-draft-step-duration-mode-0"), {
+      target: { value: "time" },
+    });
+
+    const timeInput = screen.getByTestId("session-draft-step-time-0");
+    fireEvent.focus(timeInput);
+    fireEvent.change(timeInput, { target: { value: "1:30" } });
+    fireEvent.blur(timeInput);
+
+    expect(screen.getByTestId("session-draft-step-time-0")).toHaveValue("1:30");
+    expect(screen.getByText("Use `MM:SS`.")).toBeVisible();
+    expect(readPreviewDraft().steps[0]).toMatchObject({
+      durationMode: "time",
+      timeMin: 1.5,
+    });
   });
 
   it("normalizes legacy manual-pool mixed duration states on load", async () => {
@@ -1693,6 +1740,61 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByRole("link", { name: "AI-generated session" })).toHaveAttribute(
       "href",
       "/my-library/generator"
+    );
+  });
+
+  it("seeds new manual pool sessions from the provided CSS pace", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        workout: buildWorkoutRecord({
+          id: "workout-created",
+          sourceKind: "manual",
+          draft: buildDraft({
+            sourceFingerprint: "manual-empty-pool-seeded",
+            basePaceSecondsPer100m: 118,
+            usedCssPaceLabel: "1:58",
+          }),
+        }),
+        summary: buildWorkoutSummary({
+          id: "workout-created",
+          sourceKind: "manual",
+        }),
+      }),
+    } as Response);
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+        })}
+        manualPoolCssMetricSecondsPer100m={118}
+        manualPoolCssPaceLabel="1:58"
+        browseOnly
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Build pool session" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit | undefined;
+    const body = JSON.parse(String(request?.body ?? "{}")) as { draft?: SessionDraft };
+
+    expect(body.draft?.basePaceSecondsPer100m).toBe(118);
+    expect(body.draft?.usedCssPaceLabel).toBe("1:58");
+    expect(navigationState.push).toHaveBeenCalledWith(
+      "/my-library/workouts/workout-created?entry=manual-pool"
     );
   });
 

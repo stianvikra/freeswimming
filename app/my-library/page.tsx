@@ -256,6 +256,10 @@ export default async function MyLibraryPage() {
                     <CreateManualWorkoutButton
                       label="Build pool session"
                       testId="my-library-create-pool-workout"
+                      manualPoolCssMetricSecondsPer100m={
+                        athleteProfileSnapshot.cssMetric?.valueSeconds ?? null
+                      }
+                      manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                     />
                   ) : null}
