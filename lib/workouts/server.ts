@@ -5,6 +5,7 @@ import {
   SESSION_GENERATOR_SESSION_TYPES,
   SESSION_GENERATOR_SIZE_MODES,
   normalizeSessionDraftPoolLength,
+  resolveSessionDraftPoolLengthUnit,
   type SessionDraft,
 } from "@/lib/session-generator-v1/shared";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
@@ -36,6 +37,7 @@ export const WORKOUT_SELECT = `
   description,
   environment,
   pool_length_m,
+  pool_length_unit,
   session_type,
   effort,
   size_mode,
@@ -79,6 +81,7 @@ export function buildWorkoutInsert(
     description: normalized.value.description,
     environment: normalized.value.environment,
     pool_length_m: normalized.value.poolLengthM,
+    pool_length_unit: normalized.value.poolLengthUnit ?? "m",
     session_type: normalized.value.sessionType,
     effort: normalized.value.effort,
     size_mode: normalized.value.sizeMode,
@@ -112,6 +115,7 @@ export function buildWorkoutUpdate(draft: SessionDraft | null | undefined): Work
     description: normalized.value.description,
     environment: normalized.value.environment,
     pool_length_m: normalized.value.poolLengthM,
+    pool_length_unit: normalized.value.poolLengthUnit ?? "m",
     session_type: normalized.value.sessionType,
     effort: normalized.value.effort,
     size_mode: normalized.value.sizeMode,
@@ -164,6 +168,7 @@ function buildStoredWorkoutDraftInput(row: WorkoutRow): SessionDraft {
     )
       ? (row.environment as SessionDraft["environment"])
       : "pool",
+    poolLengthUnit: resolveSessionDraftPoolLengthUnit(row.pool_length_unit),
     poolLengthM: normalizePoolLength(row.pool_length_m),
     sessionType: SESSION_GENERATOR_SESSION_TYPES.includes(row.session_type as SessionDraft["sessionType"])
       ? (row.session_type as SessionDraft["sessionType"])
@@ -217,6 +222,7 @@ export function buildWorkoutSummary(row: WorkoutRow): WorkoutSummary {
     id: row.id,
     title: draft.title,
     environment: draft.environment,
+    poolLengthUnit: draft.poolLengthUnit,
     poolLengthM: draft.poolLengthM,
     sessionType: draft.sessionType,
     effort: draft.effort,

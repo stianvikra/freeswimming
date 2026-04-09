@@ -1094,6 +1094,7 @@ export type Database = {
           goal_title: string | null;
           id: string;
           pool_length_m: number | null;
+          pool_length_unit: string;
           size_mode: string;
           source_fingerprint: string;
           source_kind: string;
@@ -1127,6 +1128,7 @@ export type Database = {
           goal_title?: string | null;
           id?: string;
           pool_length_m?: number | null;
+          pool_length_unit?: string;
           size_mode: string;
           source_fingerprint: string;
           source_kind: string;
@@ -1160,6 +1162,7 @@ export type Database = {
           goal_title?: string | null;
           id?: string;
           pool_length_m?: number | null;
+          pool_length_unit?: string;
           size_mode?: string;
           source_fingerprint?: string;
           source_kind?: string;

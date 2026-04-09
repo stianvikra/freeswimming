@@ -11,7 +11,6 @@ import {
   SESSION_DRAFT_STEP_DRILL_TYPES,
   SESSION_DRAFT_POOL_LENGTH_MAX,
   SESSION_DRAFT_POOL_LENGTH_MIN,
-  SESSION_DRAFT_POOL_LENGTH_PRESETS,
   SESSION_DRAFT_STEP_DURATION_MODES,
   SESSION_DRAFT_STEP_EQUIPMENT,
   SESSION_DRAFT_REPEAT_MAX,
@@ -28,6 +27,8 @@ import {
   buildSessionStepStructuredTargetLabel,
   buildSessionTargetSummary,
   computeSessionDraftDerivedTotals,
+  convertMetersToPoolUnitValue,
+  convertPoolUnitValueToMeters,
   formatDistanceMetersLabel,
   formatPaceSecondsPer100m,
   formatPoolLengthLabel,
@@ -44,9 +45,10 @@ import {
   getSessionStrokeLabel,
   getSessionTypeLabel,
   isSessionDraftRepeatEndingRestStep,
-  isSessionDraftStepDistancePreset,
+  resolveSessionDraftPoolLengthUnit,
   resolveSessionDraftRepeatEndingRestMode,
   type SessionDraft,
+  type SessionDraftPoolLengthUnit,
   type SessionDraftRepeatEndingRestMode,
   type SessionDraftStep,
   type SessionDraftStepCategory,
@@ -114,6 +116,7 @@ type StepRenderGroup =
       repeatCount: number | null;
       repeatEndingRestMode: SessionDraftRepeatEndingRestMode;
       entries: StepRenderEntry[];
+      postSetRestEntry: StepRenderEntry | null;
     };
 
 type PendingRemoval =
@@ -129,11 +132,8 @@ type PendingRemoval =
       label: string;
     };
 
-const MANUAL_POOL_SIZE_QUICK_CHOICES = [25, 50] as const;
-const YARD_POOL_SIZE_QUICK_CHOICES = [25, 50] as const;
-const METERS_PER_YARD = 0.9144;
-
-type PoolLengthUnit = "m" | "yd";
+const MANUAL_POOL_SIZE_QUICK_CHOICES = [25, 33.33, 50] as const;
+const YARD_POOL_SIZE_QUICK_CHOICES = [25, 33.33, 50] as const;
 
 type LastRemovedBlock = {
   kind: "step" | "repeat";
@@ -234,6 +234,7 @@ function buildBlankStep(
     repeatGroupId: null,
     repeatCount: null,
     repeatEndingRestMode: null,
+    postSetRestForRepeatGroupId: null,
     ...overrides,
   };
 }
@@ -252,19 +253,7 @@ function parsePositiveInteger(value: string) {
   return parsed;
 }
 
-function roundToTwoDecimals(value: number) {
-  return Math.round(value * 100) / 100;
-}
-
-function convertPoolLengthToMeters(value: number, unit: PoolLengthUnit) {
-  return roundToTwoDecimals(unit === "yd" ? value * METERS_PER_YARD : value);
-}
-
-function convertMetersToPoolLengthUnit(value: number, unit: PoolLengthUnit) {
-  return roundToTwoDecimals(unit === "yd" ? value / METERS_PER_YARD : value);
-}
-
-function parsePoolLengthInput(value: string, unit: PoolLengthUnit = "m") {
+function parsePoolLengthInput(value: string, unit: SessionDraftPoolLengthUnit = "m") {
   const trimmed = value.trim().replace(",", ".");
   if (trimmed.length === 0) return null;
   if (!/^\d+(\.\d{0,2})?$/.test(trimmed)) return null;
@@ -272,7 +261,7 @@ function parsePoolLengthInput(value: string, unit: PoolLengthUnit = "m") {
   const parsed = Number.parseFloat(trimmed);
   if (!Number.isFinite(parsed)) return null;
 
-  const normalizedMeters = convertPoolLengthToMeters(parsed, unit);
+  const normalizedMeters = convertPoolUnitValueToMeters(parsed, unit);
   if (
     normalizedMeters < SESSION_DRAFT_POOL_LENGTH_MIN ||
     normalizedMeters > SESSION_DRAFT_POOL_LENGTH_MAX
@@ -283,30 +272,57 @@ function parsePoolLengthInput(value: string, unit: PoolLengthUnit = "m") {
   return normalizedMeters;
 }
 
-function formatEditablePoolLength(value: number | null | undefined, unit: PoolLengthUnit = "m") {
+function formatEditablePoolLength(
+  value: number | null | undefined,
+  unit: SessionDraftPoolLengthUnit = "m"
+) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
-  return convertMetersToPoolLengthUnit(value, unit).toFixed(2).replace(/\.?0+$/, "");
+  return convertMetersToPoolUnitValue(value, unit).toFixed(2).replace(/\.?0+$/, "");
 }
 
-function formatPoolLengthUnitLabel(value: number, unit: PoolLengthUnit) {
+function formatPoolLengthUnitLabel(value: number, unit: SessionDraftPoolLengthUnit) {
   return `${formatEditablePoolLength(value, unit)}${unit}`;
 }
 
 function isPoolLengthQuickChoiceSelected(
   currentValueMeters: number | null | undefined,
   quickChoiceValue: number,
-  unit: PoolLengthUnit
+  unit: SessionDraftPoolLengthUnit
 ) {
   if (typeof currentValueMeters !== "number" || !Number.isFinite(currentValueMeters)) {
     return false;
   }
 
-  return Math.abs(currentValueMeters - convertPoolLengthToMeters(quickChoiceValue, unit)) < 0.01;
+  return Math.abs(currentValueMeters - convertPoolUnitValueToMeters(quickChoiceValue, unit)) < 0.01;
 }
 
-function formatEditableDistance(value: number | null | undefined) {
+function parseDistanceInput(value: string, unit: SessionDraftPoolLengthUnit) {
+  const trimmed = value.trim().replace(",", ".");
+  if (trimmed.length === 0) return null;
+  if (!/^\d+(\.\d{0,2})?$/.test(trimmed)) return null;
+  const parsed = Number.parseFloat(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return convertPoolUnitValueToMeters(parsed, unit);
+}
+
+function formatEditableDistance(
+  value: number | null | undefined,
+  unit: SessionDraftPoolLengthUnit = "m"
+) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
-  return String(Math.round(value));
+  return convertMetersToPoolUnitValue(value, unit).toFixed(2).replace(/\.?0+$/, "");
+}
+
+function isDistanceQuickChoiceSelected(
+  currentValueMeters: number | null | undefined,
+  quickChoiceValue: number,
+  unit: SessionDraftPoolLengthUnit
+) {
+  if (typeof currentValueMeters !== "number" || !Number.isFinite(currentValueMeters)) {
+    return false;
+  }
+
+  return Math.abs(currentValueMeters - convertPoolUnitValueToMeters(quickChoiceValue, unit)) < 0.01;
 }
 
 function parseSignatureValues(value: string) {
@@ -528,6 +544,20 @@ function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
       repeatCount: 4,
       repeatEndingRestMode: "skip_last_rest",
     }),
+    buildBlankStep(index + 2, {
+      id: `${groupId}-post-set-rest`,
+      category: "rest",
+      name: "Post-set rest",
+      stroke: "choice",
+      intensity: "easy",
+      durationMode: "fixed_rest",
+      distanceM: null,
+      timeMin: 1,
+      targetMode: "none",
+      targetSummary: "",
+      notes: "",
+      postSetRestForRepeatGroupId: groupId,
+    }),
   ];
 }
 
@@ -544,6 +574,7 @@ function buildRepeatInsertedStep(
     repeatGroupId,
     repeatCount,
     repeatEndingRestMode,
+    postSetRestForRepeatGroupId: null,
   };
 }
 
@@ -646,10 +677,15 @@ function buildStepRemovalLabel(
   options?: {
     isManualPoolMode?: boolean;
     basePaceSecondsPer100m?: number;
+    poolLengthUnit?: SessionDraftPoolLengthUnit;
   }
 ) {
   if (options?.isManualPoolMode && typeof options.basePaceSecondsPer100m === "number") {
-    return buildManualPoolStepSummary(step, options.basePaceSecondsPer100m);
+    return buildManualPoolStepSummary(
+      step,
+      options.basePaceSecondsPer100m,
+      options.poolLengthUnit ?? "m"
+    );
   }
 
   return (
@@ -691,13 +727,19 @@ function buildStepContextLabel(
 function buildStepSummary(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number,
-  environment: SessionGeneratorEnvironment
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit = "m"
 ) {
-  const structuredTarget = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
+  const structuredTarget = buildSessionStepStructuredTargetLabel(
+    step,
+    basePaceSecondsPer100m,
+    environment === "pool" ? poolLengthUnit : "m"
+  );
 
   return [
     buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
       environment,
+      poolLengthUnit,
     }),
     buildStepContextLabel(step, { environment }),
     structuredTarget ?? getSessionEffortLabel(step.intensity),
@@ -706,16 +748,22 @@ function buildStepSummary(
     .join(" · ");
 }
 
-function buildManualPoolStepSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
+function buildManualPoolStepSummary(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
   const normalizedStep = normalizeManualPoolStepForEditor(step);
   const structuredTarget = buildSessionStepStructuredTargetLabel(
     normalizedStep,
-    basePaceSecondsPer100m
+    basePaceSecondsPer100m,
+    poolLengthUnit
   );
 
   return [
     buildWorkoutStepDurationOutputSummary(normalizedStep, basePaceSecondsPer100m, {
       environment: "pool",
+      poolLengthUnit,
     }),
     buildStepContextLabel(normalizedStep, { environment: "pool" }),
     structuredTarget,
@@ -726,13 +774,17 @@ function buildManualPoolStepSummary(step: SessionDraftStep, basePaceSecondsPer10
 
 function syncManualPoolEditableStep(
   step: SessionDraftStep,
-  basePaceSecondsPer100m: number
+  basePaceSecondsPer100m: number,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ): SessionDraftStep {
   const normalizedStep = normalizeManualPoolStepForEditor(step);
 
   return {
     ...normalizedStep,
-    name: buildManualPoolStepSummary(normalizedStep, basePaceSecondsPer100m).slice(0, 120),
+    name: buildManualPoolStepSummary(normalizedStep, basePaceSecondsPer100m, poolLengthUnit).slice(
+      0,
+      120
+    ),
     targetSummary: "",
   };
 }
@@ -754,7 +806,8 @@ function buildRepeatSummary(
   entries: StepRenderEntry[],
   repeatCount: number | null,
   basePaceSecondsPer100m: number,
-  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   if (repeatCount === null) {
     return "Set a repeat count to keep this block valid.";
@@ -783,7 +836,7 @@ function buildRepeatSummary(
   const parts = [`${repeatCount} rounds`];
   const roundParts: string[] = [];
 
-  if (roundDistanceM > 0) roundParts.push(`${roundDistanceM}m`);
+  if (roundDistanceM > 0) roundParts.push(formatDistanceMetersLabel(roundDistanceM, poolLengthUnit));
   if (roundDurationSeconds > 0) {
     roundParts.push(formatClockDurationLabelFromSeconds(roundDurationSeconds));
   }
@@ -791,7 +844,9 @@ function buildRepeatSummary(
     parts.push(`${roundParts.join(" + ")} per round`);
   }
   if (roundDistanceM > 0) {
-    parts.push(`${roundDistanceM * repeatCount}m repeated distance`);
+    parts.push(
+      `${formatDistanceMetersLabel(roundDistanceM * repeatCount, poolLengthUnit)} repeated distance`
+    );
   }
 
   const lastEntry = entries[entries.length - 1];
@@ -812,7 +867,8 @@ function buildRepeatEndingRestDescription(
   entries: StepRenderEntry[],
   repeatCount: number | null,
   basePaceSecondsPer100m: number,
-  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   const lastEntry = entries[entries.length - 1];
   if (!lastEntry || !isSessionDraftRepeatEndingRestStep(lastEntry.step)) {
@@ -821,6 +877,7 @@ function buildRepeatEndingRestDescription(
 
   const restLabel = buildWorkoutStepDurationOutputSummary(lastEntry.step, basePaceSecondsPer100m, {
     environment: "pool",
+    poolLengthUnit,
   });
 
   if (repeatCount !== null && repeatCount <= 1) {
@@ -878,6 +935,12 @@ function buildStepRenderGroups(steps: SessionDraftStep[]): StepRenderGroup[] {
       nextIndex += 1;
     }
 
+    const postSetRestStep =
+      steps[nextIndex]?.postSetRestForRepeatGroupId === step.repeatGroupId
+        ? steps[nextIndex]
+        : null;
+    const postSetRestEntry = postSetRestStep ? { step: postSetRestStep, index: nextIndex } : null;
+
     groups.push({
       kind: "repeat",
       repeatGroupId: step.repeatGroupId,
@@ -886,8 +949,9 @@ function buildStepRenderGroups(steps: SessionDraftStep[]): StepRenderGroup[] {
         step.repeatEndingRestMode ?? null
       ),
       entries,
+      postSetRestEntry,
     });
-    index = nextIndex - 1;
+    index = postSetRestEntry ? nextIndex : nextIndex - 1;
   }
 
   return groups;
@@ -933,9 +997,9 @@ export default function WorkoutEditor({
   const autoPoolBuilderTitle = getPoolBuilderAutoTitle(draft.environment);
   const timeDurationInputFocusRef = useRef<Record<string, boolean>>({});
   const [openStepId, setOpenStepId] = useState<string | null>(null);
-  const [poolLengthUnit, setPoolLengthUnit] = useState<PoolLengthUnit>("m");
+  const poolLengthUnit = resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit);
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
-    formatEditablePoolLength(draft.poolLengthM)
+    formatEditablePoolLength(draft.poolLengthM, resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit))
   );
   const [timeDurationInputs, setTimeDurationInputs] = useState<Record<string, string>>(() =>
     Object.fromEntries(
@@ -945,9 +1009,6 @@ export default function WorkoutEditor({
     )
   );
   const [manualPoolTitleEdited, setManualPoolTitleEdited] = useState(false);
-  const [poolSizeExplicitlyUnspecified, setPoolSizeExplicitlyUnspecified] = useState(
-    () => draft.environment === "pool" && draft.poolLengthM === null
-  );
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
   const [lastRemovedBlock, setLastRemovedBlock] = useState<LastRemovedBlock | null>(null);
   const [workoutPdfNotice, setWorkoutPdfNotice] = useState("");
@@ -1006,15 +1067,10 @@ export default function WorkoutEditor({
             "This draft still needs to be accepted into the canonical workout layer.",
         };
   const poolLengthQuickChoices =
-    poolLengthUnit === "yd"
-      ? YARD_POOL_SIZE_QUICK_CHOICES
-      : isManualPoolMode
-        ? MANUAL_POOL_SIZE_QUICK_CHOICES
-        : SESSION_DRAFT_POOL_LENGTH_PRESETS;
+    poolLengthUnit === "yd" ? YARD_POOL_SIZE_QUICK_CHOICES : MANUAL_POOL_SIZE_QUICK_CHOICES;
   const parsedPoolLengthInput = parsePoolLengthInput(poolLengthInput, poolLengthUnit);
   const poolSizeInputInvalid =
     draft.environment === "pool" &&
-    !poolSizeExplicitlyUnspecified &&
     (poolLengthInput.trim().length === 0 || parsedPoolLengthInput === null);
   const handoffDraftState: WorkoutHandoffDraftState =
     savedWorkout && !hasUnsavedChanges ? "canonical" : "local_draft";
@@ -1053,11 +1109,11 @@ export default function WorkoutEditor({
   const selectedPoolsideFocusSignature = selectedPoolsideFocusTitles.join("|");
   const metadataSummary = isManualPoolMode
     ? [
-        draftTotals.totalDistanceM ? `${draftTotals.totalDistanceM}m` : null,
+        draftTotals.totalDistanceM
+          ? formatDistanceMetersLabel(draftTotals.totalDistanceM, poolLengthUnit)
+          : null,
         draftTotals.estimatedDurationMin ? `~${draftTotals.estimatedDurationMin} min` : null,
-        draft.poolLengthM === null
-          ? "Pool size unspecified"
-          : formatPoolLengthUnitLabel(draft.poolLengthM, poolLengthUnit),
+        draft.poolLengthM === null ? "Set pool size" : formatPoolLengthUnitLabel(draft.poolLengthM, poolLengthUnit),
       ]
         .filter(Boolean)
         .join(" · ")
@@ -1124,16 +1180,15 @@ export default function WorkoutEditor({
     draft.title === autoPoolBuilderTitle;
   const displayedTitle = shouldHideAutoPoolBuilderTitle ? "" : draft.title;
   const poolLengthSupportCopy = poolSizeInputInvalid
-    ? poolLengthUnit === "yd"
-      ? `Enter a valid pool ${isManualPoolMode ? "size" : "length"} in yards, or choose Unspecified.`
-      : `Enter a valid pool ${isManualPoolMode ? "size" : "length"} between ${formatPoolLengthLabel(
-          SESSION_DRAFT_POOL_LENGTH_MIN
-        )} and ${formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}, or choose Unspecified.`
-    : poolLengthUnit === "yd"
-      ? "Common yard presets: 25yd and 50yd."
-      : `Supported range: ${formatPoolLengthLabel(
-          SESSION_DRAFT_POOL_LENGTH_MIN
-        )} to ${formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX)}.`;
+    ? `Enter a valid pool ${isManualPoolMode ? "size" : "length"} between ${formatPoolLengthLabel(
+        SESSION_DRAFT_POOL_LENGTH_MIN,
+        poolLengthUnit
+      )} and ${formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX, poolLengthUnit)}.`
+    : `Common presets: ${poolLengthQuickChoices
+        .map((value) =>
+          poolLengthUnit === "yd" ? `${value}yd` : formatPoolLengthLabel(value, poolLengthUnit)
+        )
+        .join(", ")}.`;
   const supportToolsDraftStateDescription =
     handoffDraftState === "canonical"
       ? "These support tools currently reflect the saved session."
@@ -1162,7 +1217,6 @@ export default function WorkoutEditor({
 
   useEffect(() => {
     setPoolLengthInput(formatEditablePoolLength(draft.poolLengthM, poolLengthUnit));
-    setPoolSizeExplicitlyUnspecified(draft.environment === "pool" && draft.poolLengthM === null);
   }, [draft.environment, draft.poolLengthM, poolLengthUnit]);
 
   useEffect(() => {
@@ -1289,9 +1343,14 @@ export default function WorkoutEditor({
   }, [savedWorkoutId]);
 
   const syncDraftSelections = useCallback((nextDraft: SessionDraft) => {
+    const nextPoolLengthUnit = resolveSessionDraftPoolLengthUnit(nextDraft.poolLengthUnit);
     const nextSteps = isManualPoolMode
       ? nextDraft.steps.map((step) =>
-          syncManualPoolEditableStep(step, nextDraft.basePaceSecondsPer100m)
+          syncManualPoolEditableStep(
+            step,
+            nextDraft.basePaceSecondsPer100m,
+            nextPoolLengthUnit
+          )
         )
       : nextDraft.steps;
     const requiredStrokes = Array.from(
@@ -1375,7 +1434,11 @@ export default function WorkoutEditor({
     onDraftChange(
       syncDraftSelections({
         ...draft,
-        steps: nextGroups.flatMap((group) => group.entries.map((entry) => entry.step)),
+        steps: nextGroups.flatMap((group) =>
+          group.kind === "repeat" && group.postSetRestEntry
+            ? [...group.entries.map((entry) => entry.step), group.postSetRestEntry.step]
+            : group.entries.map((entry) => entry.step)
+        ),
       })
     );
   }
@@ -1416,7 +1479,12 @@ export default function WorkoutEditor({
 
   function getGroupInsertIndex(groupIndex: number) {
     const group = stepGroups[groupIndex];
-    const lastEntry = group ? group.entries[group.entries.length - 1] : null;
+    const lastEntry =
+      group?.kind === "repeat" && group.postSetRestEntry
+        ? group.postSetRestEntry
+        : group
+          ? group.entries[group.entries.length - 1]
+          : null;
     if (!lastEntry) return null;
     return lastEntry.index + 1;
   }
@@ -1488,6 +1556,9 @@ export default function WorkoutEditor({
 
     const sourceSteps = draft.steps.filter((step) => step.repeatGroupId === repeatGroupId);
     if (sourceSteps.length === 0) return;
+    const sourcePostSetRest = draft.steps.find(
+      (step) => step.postSetRestForRepeatGroupId === repeatGroupId
+    );
 
     const nextRepeatGroupId = buildRepeatGroupId(draft.steps.length + 1);
     const duplicatedSteps = sourceSteps.map((step, index) => ({
@@ -1495,8 +1566,20 @@ export default function WorkoutEditor({
       id: `${nextRepeatGroupId}-step-${index + 1}`,
       repeatGroupId: nextRepeatGroupId,
     }));
+    const duplicatedPostSetRest = sourcePostSetRest
+      ? {
+          ...sourcePostSetRest,
+          id: `${nextRepeatGroupId}-post-set-rest`,
+          postSetRestForRepeatGroupId: nextRepeatGroupId,
+        }
+      : null;
     const nextSteps = [...draft.steps];
-    nextSteps.splice(sourceIndex + sourceSteps.length, 0, ...duplicatedSteps);
+    nextSteps.splice(
+      sourceIndex + sourceSteps.length + (sourcePostSetRest ? 1 : 0),
+      0,
+      ...duplicatedSteps,
+      ...(duplicatedPostSetRest ? [duplicatedPostSetRest] : [])
+    );
 
     setPendingRemoval(null);
     setLastRemovedBlock(null);
@@ -1521,6 +1604,7 @@ export default function WorkoutEditor({
       label: buildStepRemovalLabel(step, stepIndex, {
         isManualPoolMode,
         basePaceSecondsPer100m: draft.basePaceSecondsPer100m,
+        poolLengthUnit,
       }),
       repeatGroupId: step.repeatGroupId ?? null,
     });
@@ -1529,6 +1613,9 @@ export default function WorkoutEditor({
   function requestRepeatGroupRemoval(repeatGroupId: string) {
     const repeatEntries = draft.steps.filter((step) => step.repeatGroupId === repeatGroupId);
     if (repeatEntries.length === 0) return;
+    const linkedPostSetRest = draft.steps.find(
+      (step) => step.postSetRestForRepeatGroupId === repeatGroupId
+    );
 
     const repeatCount = repeatEntries[0]?.repeatCount;
     const roundsLabel =
@@ -1538,7 +1625,7 @@ export default function WorkoutEditor({
     setPendingRemoval({
       kind: "repeat",
       repeatGroupId,
-      label: `Repeat block (${repeatEntries.length} steps, ${roundsLabel})`,
+      label: `Repeat block (${repeatEntries.length + (linkedPostSetRest ? 1 : 0)} steps, ${roundsLabel})`,
     });
   }
 
@@ -1581,7 +1668,9 @@ export default function WorkoutEditor({
     }
 
     const removedSteps = draft.steps.filter(
-      (step) => step.repeatGroupId === pendingRemoval.repeatGroupId
+      (step) =>
+        step.repeatGroupId === pendingRemoval.repeatGroupId ||
+        step.postSetRestForRepeatGroupId === pendingRemoval.repeatGroupId
     );
     if (removedSteps.length === 0) {
       setPendingRemoval(null);
@@ -1592,7 +1681,9 @@ export default function WorkoutEditor({
       (step) => step.repeatGroupId === pendingRemoval.repeatGroupId
     );
     const nextSteps = draft.steps.filter(
-      (step) => step.repeatGroupId !== pendingRemoval.repeatGroupId
+      (step) =>
+        step.repeatGroupId !== pendingRemoval.repeatGroupId &&
+        step.postSetRestForRepeatGroupId !== pendingRemoval.repeatGroupId
     );
     const removedOpenStep = removedSteps.some((step) => step.id === openStepId);
 
@@ -1770,10 +1861,12 @@ export default function WorkoutEditor({
       ...current,
       distanceM:
         value === CUSTOM_DISTANCE_VALUE
-          ? isSessionDraftStepDistancePreset(current.distanceM ?? Number.NaN)
+          ? SESSION_DRAFT_STEP_DISTANCE_PRESETS.some((preset) =>
+              isDistanceQuickChoiceSelected(current.distanceM, preset, poolLengthUnit)
+            )
             ? null
             : current.distanceM
-          : Number.parseInt(value, 10),
+          : convertPoolUnitValueToMeters(Number.parseFloat(value), poolLengthUnit),
     }));
   }
 
@@ -1799,34 +1892,25 @@ export default function WorkoutEditor({
 
   function updateDraftPoolLengthInput(nextValue: string) {
     setPoolLengthInput(nextValue);
-    setPoolSizeExplicitlyUnspecified(false);
 
     const trimmed = nextValue.trim();
     if (trimmed.length === 0) {
+      updateDraft("poolLengthM", null);
       return;
     }
 
     const parsed = parsePoolLengthInput(nextValue, poolLengthUnit);
-    if (parsed !== null) {
-      updateDraft("poolLengthM", parsed);
-    }
+    updateDraft("poolLengthM", parsed);
   }
 
-  function updatePoolLengthUnit(nextUnit: PoolLengthUnit) {
-    setPoolLengthUnit(nextUnit);
+  function updatePoolLengthUnit(nextUnit: SessionDraftPoolLengthUnit) {
+    updateDraft("poolLengthUnit", nextUnit);
   }
 
   function choosePoolLengthQuickChoice(value: number) {
-    const nextPoolLength = convertPoolLengthToMeters(value, poolLengthUnit);
-    setPoolSizeExplicitlyUnspecified(false);
+    const nextPoolLength = convertPoolUnitValueToMeters(value, poolLengthUnit);
     setPoolLengthInput(formatEditablePoolLength(nextPoolLength, poolLengthUnit));
     updateDraft("poolLengthM", nextPoolLength);
-  }
-
-  function chooseUnspecifiedPoolSize() {
-    setPoolSizeExplicitlyUnspecified(true);
-    setPoolLengthInput("");
-    updateDraft("poolLengthM", null);
   }
 
   function togglePoolsideFocusSelection(focusId: string) {
@@ -1948,19 +2032,29 @@ export default function WorkoutEditor({
     options?: {
       insideRepeatGroup?: boolean;
       repeatStepNumber?: number;
+      labelOverride?: string;
+      descriptionOverride?: string | null;
+      isLinkedPostSetRest?: boolean;
     }
   ) {
     const insideRepeatGroup = options?.insideRepeatGroup ?? false;
+    const isLinkedPostSetRest = options?.isLinkedPostSetRest ?? false;
     const isOpen = openStepId === step.id;
     const toggleLabel = isOpen ? "Done" : "Edit step";
     const panelId = `session-draft-step-panel-${step.id}`;
-    const stepLabel = insideRepeatGroup
-      ? step.category === "rest"
-        ? `Repeat rest step ${options?.repeatStepNumber ?? 1}`
-        : `Repeat step ${options?.repeatStepNumber ?? 1}`
-      : `Step ${index + 1}`;
+    const stepLabel =
+      options?.labelOverride ??
+      (insideRepeatGroup
+        ? step.category === "rest"
+          ? `Repeat rest step ${options?.repeatStepNumber ?? 1}`
+          : `Repeat step ${options?.repeatStepNumber ?? 1}`
+        : `Step ${index + 1}`);
+    const selectedDistancePreset = SESSION_DRAFT_STEP_DISTANCE_PRESETS.find((value) =>
+      isDistanceQuickChoiceSelected(step.distanceM, value, poolLengthUnit)
+    );
+    const isMinimalRestEditor = isManualPoolMode && step.category === "rest";
     const stepTitle = isManualPoolMode
-      ? buildManualPoolStepSummary(step, draft.basePaceSecondsPer100m)
+      ? buildManualPoolStepSummary(step, draft.basePaceSecondsPer100m, poolLengthUnit)
       : step.name || getSessionStepCategoryLabel(step.category);
 
     return (
@@ -1985,8 +2079,16 @@ export default function WorkoutEditor({
             </p>
             {!isManualPoolMode ? (
               <p className="mt-2 text-xs text-slate-600">
-                {buildStepSummary(step, draft.basePaceSecondsPer100m, draft.environment)}
+                {buildStepSummary(
+                  step,
+                  draft.basePaceSecondsPer100m,
+                  draft.environment,
+                  poolLengthUnit
+                )}
               </p>
+            ) : null}
+            {options?.descriptionOverride ? (
+              <p className="mt-2 text-xs text-slate-500">{options.descriptionOverride}</p>
             ) : null}
             {!isManualPoolMode && step.targetSummary ? (
               <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
@@ -1994,7 +2096,7 @@ export default function WorkoutEditor({
             {step.notes ? <p className="mt-1 text-xs text-slate-400">{step.notes}</p> : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {insideRepeatGroup ? null : (
+            {insideRepeatGroup || isLinkedPostSetRest ? null : (
               <>
                 <button
                   type="button"
@@ -2014,15 +2116,17 @@ export default function WorkoutEditor({
                 </button>
               </>
             )}
-            <button
-              type="button"
-              onClick={() => insertStepAfterStep(step.id)}
-              data-testid={`session-draft-step-add-after-${index}`}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
-            >
-              Add step after
-            </button>
-            {!insideRepeatGroup ? (
+            {isLinkedPostSetRest ? null : (
+              <button
+                type="button"
+                onClick={() => insertStepAfterStep(step.id)}
+                data-testid={`session-draft-step-add-after-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+              >
+                Add step after
+              </button>
+            )}
+            {!insideRepeatGroup && !isLinkedPostSetRest ? (
               <button
                 type="button"
                 onClick={() => insertRepeatAfterGroup(groupIndex)}
@@ -2032,14 +2136,16 @@ export default function WorkoutEditor({
                 Add repeat after
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => duplicateStep(step.id)}
-              data-testid={`session-draft-step-duplicate-${index}`}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50"
-            >
-              Duplicate
-            </button>
+            {isLinkedPostSetRest ? null : (
+              <button
+                type="button"
+                onClick={() => duplicateStep(step.id)}
+                data-testid={`session-draft-step-duplicate-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                Duplicate
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setOpenStepId((current) => (current === step.id ? null : step.id))}
@@ -2054,14 +2160,16 @@ export default function WorkoutEditor({
             >
               {toggleLabel}
             </button>
-            <button
-              type="button"
-              onClick={() => requestStepRemoval(step.id)}
-              data-testid={`session-draft-step-remove-${index}`}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-            >
-              Remove
-            </button>
+            {isLinkedPostSetRest ? null : (
+              <button
+                type="button"
+                onClick={() => requestStepRemoval(step.id)}
+                data-testid={`session-draft-step-remove-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+              >
+                Remove
+              </button>
+            )}
           </div>
         </div>
 
@@ -2089,6 +2197,7 @@ export default function WorkoutEditor({
               {isManualPoolMode ? "Step Type" : "Category"}
               <select
                 value={step.category}
+                disabled={isLinkedPostSetRest}
                 onChange={(event) =>
                   updateDraftStep(step.id, (current) =>
                     applyRecommendedStepFocus(current, {
@@ -2098,7 +2207,7 @@ export default function WorkoutEditor({
                 }
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
-                {SESSION_DRAFT_STEP_CATEGORIES.map((value) => (
+                {(isLinkedPostSetRest ? (["rest"] as const) : SESSION_DRAFT_STEP_CATEGORIES).map((value) => (
                   <option key={value} value={value}>
                     {getSessionStepCategoryLabel(value)}
                   </option>
@@ -2106,6 +2215,7 @@ export default function WorkoutEditor({
               </select>
             </label>
 
+            {isMinimalRestEditor ? null : (
             <label className="text-sm text-slate-700">
               {isManualPoolMode ? "Stroke Type" : "Stroke pattern"}
               <select
@@ -2129,7 +2239,9 @@ export default function WorkoutEditor({
                 ))}
               </select>
             </label>
+            )}
 
+            {isMinimalRestEditor ? null : (
             <label className="text-sm text-slate-700">
               {isManualPoolMode ? "Drill Type" : "Focus tag"}
               <select
@@ -2150,8 +2262,9 @@ export default function WorkoutEditor({
                 ))}
               </select>
             </label>
+            )}
 
-            {isManualPoolMode ? null : (
+            {isManualPoolMode || isMinimalRestEditor ? null : (
               <>
                 <p className="text-sm text-slate-500 md:col-span-2">
                   {buildStepStrokeGuidance(step, isManualPoolMode)}
@@ -2162,6 +2275,7 @@ export default function WorkoutEditor({
               </>
             )}
 
+            {isMinimalRestEditor ? null : (
             <label className="text-sm text-slate-700">
               Equipment
               <select
@@ -2182,8 +2296,9 @@ export default function WorkoutEditor({
                 ))}
               </select>
             </label>
+            )}
 
-            {isManualPoolMode ? null : (
+            {isManualPoolMode || isMinimalRestEditor ? null : (
               <label className="text-sm text-slate-700">
                 Effort cue
                 <select
@@ -2234,38 +2349,30 @@ export default function WorkoutEditor({
                 <label className="text-sm text-slate-700">
                   Distance
                   <select
-                    value={
-                      typeof step.distanceM === "number" &&
-                      isSessionDraftStepDistancePreset(step.distanceM)
-                        ? String(step.distanceM)
-                        : CUSTOM_DISTANCE_VALUE
-                    }
+                    value={selectedDistancePreset ? String(selectedDistancePreset) : CUSTOM_DISTANCE_VALUE}
                     onChange={(event) => updateStepDistanceSelection(step.id, event.target.value)}
                     data-testid={`session-draft-step-distance-${index}`}
                     className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
                     {SESSION_DRAFT_STEP_DISTANCE_PRESETS.map((value) => (
                       <option key={value} value={String(value)}>
-                        {formatDistanceMetersLabel(value)}
+                        {poolLengthUnit === "yd" ? `${value}yd` : formatDistanceMetersLabel(value)}
                       </option>
                     ))}
                     <option value={CUSTOM_DISTANCE_VALUE}>Custom distance</option>
                   </select>
                 </label>
-                {!(
-                  typeof step.distanceM === "number" &&
-                  isSessionDraftStepDistancePreset(step.distanceM)
-                ) ? (
+                {!selectedDistancePreset ? (
                   <label className="text-sm text-slate-700">
-                    Custom distance (m)
+                    {`Custom distance (${poolLengthUnit})`}
                     <input
                       type="text"
-                      inputMode="numeric"
-                      value={formatEditableDistance(step.distanceM)}
+                      inputMode="decimal"
+                      value={formatEditableDistance(step.distanceM, poolLengthUnit)}
                       onChange={(event) =>
                         updateDraftStep(step.id, (current) => ({
                           ...current,
-                          distanceM: parsePositiveInteger(event.target.value),
+                          distanceM: parseDistanceInput(event.target.value, poolLengthUnit),
                         }))
                       }
                       data-testid={`session-draft-step-distance-custom-${index}`}
@@ -2274,7 +2381,9 @@ export default function WorkoutEditor({
                   </label>
                 ) : (
                   <div className="self-end text-sm text-slate-500">
-                    {formatDistanceMetersLabel(step.distanceM)}
+                    {typeof step.distanceM === "number"
+                      ? formatDistanceMetersLabel(step.distanceM, poolLengthUnit)
+                      : null}
                   </div>
                 )}
               </div>
@@ -2409,6 +2518,7 @@ export default function WorkoutEditor({
               </div>
             )}
 
+            {isMinimalRestEditor ? null : (
             <label className="text-sm text-slate-700">
               {isManualPoolMode ? "Target" : "Target mode"}
               <select
@@ -2441,8 +2551,9 @@ export default function WorkoutEditor({
                 ))}
               </select>
             </label>
+            )}
 
-            {(step.targetMode ?? "none") === "effort" ? (
+            {!isMinimalRestEditor && (step.targetMode ?? "none") === "effort" ? (
               <label className="text-sm text-slate-700">
                 Target effort
                 <select
@@ -2465,7 +2576,7 @@ export default function WorkoutEditor({
               </label>
             ) : null}
 
-            {(step.targetMode ?? "none") === "target_pace" ? (
+            {!isMinimalRestEditor && (step.targetMode ?? "none") === "target_pace" ? (
               <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
                 <label className="text-sm text-slate-700">
                   Pace minutes
@@ -2495,13 +2606,13 @@ export default function WorkoutEditor({
                 </label>
                 <div className="self-end text-sm text-slate-500">
                   {step.targetPaceSecondsPer100m
-                    ? formatPaceSecondsPer100m(step.targetPaceSecondsPer100m)
+                    ? formatPaceSecondsPer100m(step.targetPaceSecondsPer100m, poolLengthUnit)
                     : "Set pace"}
                 </div>
               </div>
             ) : null}
 
-            {(step.targetMode ?? "none") === "css_target_pace" ? (
+            {!isMinimalRestEditor && (step.targetMode ?? "none") === "css_target_pace" ? (
               <label className="text-sm text-slate-700 md:col-span-2">
                 CSS pace offset
                 <select
@@ -2520,7 +2631,8 @@ export default function WorkoutEditor({
                     return (
                       <option key={value} value={String(value)}>
                         {`CSS ${sign}${value}s (${formatPaceSecondsPer100m(
-                          draft.basePaceSecondsPer100m + value
+                          draft.basePaceSecondsPer100m + value,
+                          poolLengthUnit
                         )})`}
                       </option>
                     );
@@ -2529,7 +2641,7 @@ export default function WorkoutEditor({
               </label>
             ) : null}
 
-            {isManualPoolMode ? null : (
+            {isManualPoolMode || isMinimalRestEditor ? null : (
               <label className="text-sm text-slate-700 md:col-span-2">
                 Target notes
                 <input
@@ -2715,91 +2827,76 @@ export default function WorkoutEditor({
           <p className="text-sm font-medium text-slate-900">
             {isManualPoolMode ? "Pool Size" : "Pool length"}
           </p>
-          <div
-            role="group"
-            aria-label={isManualPoolMode ? "Pool size unit" : "Pool length unit"}
-            className="mt-3 flex flex-wrap items-center gap-2"
-          >
-            {([
-              ["m", "Meters"],
-              ["yd", "Yards"],
-            ] as const).map(([unit, label]) => {
-              const isSelected = poolLengthUnit === unit;
-              return (
-                <button
-                  key={unit}
-                  type="button"
-                  aria-pressed={isSelected}
-                  data-testid={`workout-editor-pool-length-unit-${unit}`}
-                  onClick={() => updatePoolLengthUnit(unit)}
-                  className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
-                    isSelected
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-          {poolLengthUnit === "yd" ? (
-            <p className="mt-2 text-xs text-slate-500">
-              Yard entry converts to the saved meter value automatically.
-            </p>
-          ) : null}
-          {isManualPoolMode ? null : (
-            <p className="mt-1 text-xs text-slate-500">
-              Choose the unit first, then pick a common pool size or type the exact length for a
-              less common setup.
-            </p>
-          )}
-
-          <div
-            className={`${
-              isManualPoolMode ? "mt-0" : "mt-3"
-            } grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(16rem,0.9fr)] xl:items-start`}
-          >
-            <div className="flex flex-wrap gap-2">
-              {poolLengthQuickChoices.map((value) => {
-                const isSelected = isPoolLengthQuickChoiceSelected(
-                  draft.poolLengthM,
-                  value,
-                  poolLengthUnit
-                );
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => choosePoolLengthQuickChoice(value)}
-                    className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
-                      isSelected
-                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                    }`}
-                  >
-                    {poolLengthUnit === "yd" ? `${value}yd` : formatPoolLengthLabel(value)}
-                  </button>
-                );
-              })}
-
-              {isManualPoolMode ? (
-                <button
-                  type="button"
-                  onClick={chooseUnspecifiedPoolSize}
-                  className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
-                    draft.poolLengthM === null
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  Unspecified
-                </button>
-              ) : null}
+          <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.9fr)] xl:items-stretch">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Unit and common sizes
+              </p>
+              <div
+                role="group"
+                aria-label={isManualPoolMode ? "Pool size unit" : "Pool length unit"}
+                className="mt-3 flex flex-wrap items-center gap-2"
+              >
+                {([
+                  ["m", "Meters"],
+                  ["yd", "Yards"],
+                ] as const).map(([unit, label]) => {
+                  const isSelected = poolLengthUnit === unit;
+                  return (
+                    <button
+                      key={unit}
+                      type="button"
+                      aria-pressed={isSelected}
+                      data-testid={`workout-editor-pool-length-unit-${unit}`}
+                      onClick={() => updatePoolLengthUnit(unit)}
+                      className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
+                        isSelected
+                          ? "border-blue-600 bg-blue-50 text-blue-700"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                {poolLengthUnit === "yd"
+                  ? "Yard entry stays visible in yards while FreeSwimming saves the exact meter conversion canonically."
+                  : "Pick a common pool size here, or use the exact field for less common setups."}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {poolLengthQuickChoices.map((value) => {
+                  const isSelected = isPoolLengthQuickChoiceSelected(
+                    draft.poolLengthM,
+                    value,
+                    poolLengthUnit
+                  );
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => choosePoolLengthQuickChoice(value)}
+                      className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
+                        isSelected
+                          ? "border-blue-600 bg-blue-50 text-blue-700"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      {poolLengthUnit === "yd"
+                        ? `${value}yd`
+                        : formatPoolLengthLabel(value, poolLengthUnit)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm text-slate-700">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Exact pool size
+              </p>
+              <label className="mt-3 block text-sm text-slate-700">
                 {isManualPoolMode
                   ? `Exact pool size (${poolLengthUnit})`
                   : `Exact pool length (${poolLengthUnit})`}
@@ -2809,10 +2906,9 @@ export default function WorkoutEditor({
                   value={poolLengthInput}
                   onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
                   data-testid="session-draft-pool-length-input"
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 xl:max-w-xs"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </label>
-
               <p className="mt-2 text-xs text-slate-500">{poolLengthSupportCopy}</p>
             </div>
           </div>
@@ -3393,7 +3489,12 @@ export default function WorkoutEditor({
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
                   <p className="mt-1 text-sm text-slate-600">
-                    {workout.totalDistanceM ? `${workout.totalDistanceM}m` : null}
+                    {workout.totalDistanceM
+                      ? formatDistanceMetersLabel(
+                          workout.totalDistanceM,
+                          resolveSessionDraftPoolLengthUnit(workout.poolLengthUnit)
+                        )
+                      : null}
                     {workout.totalDistanceM && workout.estimatedDurationMin ? " · " : null}
                     {workout.estimatedDurationMin ? `~${workout.estimatedDurationMin} min` : null}
                     {workout.totalDistanceM || workout.estimatedDurationMin ? " · " : null}
@@ -3594,23 +3695,48 @@ export default function WorkoutEditor({
                     group.entries,
                     group.repeatCount,
                     draft.basePaceSecondsPer100m,
-                    group.repeatEndingRestMode
+                    group.repeatEndingRestMode,
+                    poolLengthUnit
                   );
                   const repeatEndingRestDescription = buildRepeatEndingRestDescription(
                     group.entries,
                     group.repeatCount,
                     draft.basePaceSecondsPer100m,
-                    group.repeatEndingRestMode
+                    group.repeatEndingRestMode,
+                    poolLengthUnit
                   );
+                  const postSetRestLabel = group.postSetRestEntry
+                    ? buildWorkoutStepDurationOutputSummary(
+                        group.postSetRestEntry.step,
+                        draft.basePaceSecondsPer100m,
+                        {
+                          environment: "pool",
+                          poolLengthUnit,
+                        }
+                      )
+                    : null;
+                  const postSetRestSuppressed =
+                    group.repeatEndingRestMode === "use_last_rest" &&
+                    Boolean(
+                      group.entries[group.entries.length - 1] &&
+                        isSessionDraftRepeatEndingRestStep(
+                          group.entries[group.entries.length - 1].step
+                        )
+                    );
 
                   return (
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                      Repeat block
+                      Repeat set
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-900">{repeatSummary}</p>
-                    {isManualPoolMode ? null : (
+                    {isManualPoolMode ? (
+                      <p className="mt-1 text-xs text-slate-600">
+                        Inside the repeat: work interval, then between-interval recovery. After
+                        the set: separate post-set rest.
+                      </p>
+                    ) : (
                       <>
                         <p className="mt-1 text-xs text-slate-600">
                           Edit the repeated steps below instead of duplicating every round by hand.
@@ -3623,6 +3749,13 @@ export default function WorkoutEditor({
                     )}
                     {repeatEndingRestDescription ? (
                       <p className="mt-2 text-xs text-slate-600">{repeatEndingRestDescription}</p>
+                    ) : null}
+                    {postSetRestLabel ? (
+                      <p className="mt-1 text-xs text-slate-600">
+                        {postSetRestSuppressed
+                          ? `${postSetRestLabel} is preserved as post-set rest, but suppressed while the last internal rest interval runs after the final round.`
+                          : `${postSetRestLabel} stays outside the repeat block as the post-set rest after the set.`}
+                      </p>
                     ) : null}
                   </div>
                   <div className="flex flex-wrap items-end gap-2">
@@ -3727,8 +3860,35 @@ export default function WorkoutEditor({
                     renderStepEditorCard(entry.step, entry.index, groupIndex, {
                       insideRepeatGroup: true,
                       repeatStepNumber: repeatIndex + 1,
+                      labelOverride:
+                        repeatIndex === 0
+                          ? "Work interval"
+                          : repeatIndex === 1
+                            ? "Between-interval recovery"
+                            : undefined,
                     })
                   )}
+                  {group.postSetRestEntry
+                    ? renderStepEditorCard(
+                        group.postSetRestEntry.step,
+                        group.postSetRestEntry.index,
+                        groupIndex,
+                        {
+                          labelOverride: "Post-set rest",
+                          descriptionOverride:
+                            group.repeatEndingRestMode === "use_last_rest" &&
+                            Boolean(
+                              group.entries[group.entries.length - 1] &&
+                                isSessionDraftRepeatEndingRestStep(
+                                  group.entries[group.entries.length - 1].step
+                                )
+                            )
+                            ? "Separate canonical rest after the set. It is preserved here, but active execution and export suppress it because the last internal rest interval is used after the final rep."
+                            : "Separate canonical rest after the set, outside the repeat block itself.",
+                          isLinkedPostSetRest: true,
+                        }
+                      )
+                    : null}
                 </div>
               </section>
             )

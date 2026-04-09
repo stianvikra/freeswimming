@@ -17,6 +17,8 @@ import {
   computeSessionDraftDerivedTotals,
   buildSessionStepStructuredTargetLabel,
   buildSessionTargetSummary,
+  convertMetersToPoolUnitValue,
+  formatDistanceMetersLabel,
   formatPoolLengthLabel,
   getSessionEffortLabel,
   getSessionEnvironmentLabel,
@@ -28,9 +30,12 @@ import {
   getSessionStepTargetModeLabel,
   getSessionTypeLabel,
   isSessionDraftRepeatEndingRestStep,
+  isSessionDraftRepeatPostSetRestStep,
   normalizeSessionDraftPoolLength,
+  resolveSessionDraftPoolLengthUnit,
   resolveSessionDraftRepeatEndingRestMode,
   type SessionDraft,
+  type SessionDraftPoolLengthUnit,
   type SessionDraftRepeatEndingRestMode,
   type SessionDraftStep,
   type SessionGeneratorEnvironment,
@@ -48,6 +53,7 @@ export type WorkoutSummary = {
   id: string;
   title: string;
   environment: SessionGeneratorEnvironment;
+  poolLengthUnit?: SessionDraft["poolLengthUnit"];
   poolLengthM: SessionDraft["poolLengthM"];
   sessionType: SessionDraft["sessionType"];
   effort: SessionDraft["effort"];
@@ -123,6 +129,27 @@ export type WorkoutGarminReadinessReport = {
 
 const WORKOUT_GARMIN_POOL_MAX_STEP_COUNT = 100;
 const WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID = "__draft__";
+
+function getWorkoutPoolLengthUnit(draft: Pick<SessionDraft, "environment" | "poolLengthUnit">) {
+  return draft.environment === "pool" ? resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit) : "m";
+}
+
+function formatWorkoutDistanceLabel(
+  value: number,
+  options?: {
+    environment?: SessionGeneratorEnvironment | null;
+    poolLengthUnit?: SessionDraftPoolLengthUnit | null;
+  }
+) {
+  if (options?.environment === "pool") {
+    return formatDistanceMetersLabel(
+      value,
+      resolveSessionDraftPoolLengthUnit(options.poolLengthUnit)
+    );
+  }
+
+  return `${value.toFixed(2).replace(/\.?0+$/, "")}m`;
+}
 
 export type WorkoutHandoffDraftState = "canonical" | "local_draft";
 export type WorkoutPdfVariant = "standard" | "poolside";
@@ -221,6 +248,8 @@ export type WorkoutGarminReadyExportStep = {
     mode: SessionDraftStep["durationMode"];
     label: string;
     distanceM: number | null;
+    distanceValue: number | null;
+    distanceUnit: SessionDraftPoolLengthUnit | null;
     timeMin: number | null;
     cssSendOffOffsetSeconds: number | null;
     summary: string;
@@ -286,6 +315,7 @@ export type WorkoutGarminReadyExport = {
       label: string;
       subSport: "lap_swimming" | "open_water";
       poolLengthM: number | null;
+      poolLengthUnit: SessionDraftPoolLengthUnit;
     };
     sessionType: WorkoutGarminReadyExportLabeledValue<SessionDraft["sessionType"]>;
     effort: WorkoutGarminReadyExportLabeledValue<SessionDraft["effort"]>;
@@ -456,6 +486,7 @@ export function buildWorkoutGarminReadyExport(
     totalDistanceM: totals.totalDistanceM ?? draft.totalDistanceM,
     estimatedDurationMin: totals.estimatedDurationMin ?? draft.estimatedDurationMin,
   };
+  const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
   const issueIdsByStepId = new Map<string, string[]>();
 
   for (const issue of diagnostics.issues) {
@@ -473,7 +504,8 @@ export function buildWorkoutGarminReadyExport(
         entry.index,
         draft.basePaceSecondsPer100m,
         reviewIssueIds,
-        draft.environment
+        draft.environment,
+        poolLengthUnit
       );
 
       return {
@@ -505,7 +537,8 @@ export function buildWorkoutGarminReadyExport(
         group.entries,
         group.repeatCount,
         draft.basePaceSecondsPer100m,
-        group.repeatEndingRestMode
+        group.repeatEndingRestMode,
+        poolLengthUnit
       ),
       roundDistanceM: roundMetrics.roundDistanceM,
       roundDurationSeconds: roundMetrics.roundDurationSeconds,
@@ -515,7 +548,8 @@ export function buildWorkoutGarminReadyExport(
           entry.index,
           draft.basePaceSecondsPer100m,
           issueIdsByStepId.get(entry.step.id) ?? [],
-          draft.environment
+          draft.environment,
+          poolLengthUnit
         )
       ),
     };
@@ -543,6 +577,7 @@ export function buildWorkoutGarminReadyExport(
         label: getSessionEnvironmentLabel(draft.environment),
         subSport: draft.environment === "open_water" ? "open_water" : "lap_swimming",
         poolLengthM: draft.poolLengthM,
+        poolLengthUnit: getWorkoutPoolLengthUnit(draft),
       },
       sessionType: {
         value: draft.sessionType,
@@ -590,6 +625,7 @@ export function buildWorkoutHandoffText(
   const readiness = buildWorkoutGarminReadinessReport(draft);
   const stepGroups = buildWorkoutHandoffGroups(draft.steps);
   const detailLabels = getWorkoutStepDetailLabels(draft.environment);
+  const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
   const lines = [
     "FreeSwimming workout handoff",
     `Source: ${draftState === "canonical" ? "Canonical workout" : "Local draft"}`,
@@ -650,7 +686,8 @@ export function buildWorkoutHandoffText(
         `   - ${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
           entry.step,
           draft.basePaceSecondsPer100m,
-          draft.environment
+          draft.environment,
+          poolLengthUnit
         )}`
       );
 
@@ -670,7 +707,8 @@ export function buildWorkoutHandoffText(
         group.entries,
         group.repeatCount,
         draft.basePaceSecondsPer100m,
-        group.repeatEndingRestMode
+        group.repeatEndingRestMode,
+        poolLengthUnit
       )}`
     );
 
@@ -680,7 +718,8 @@ export function buildWorkoutHandoffText(
         `      - ${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
           entry.step,
           draft.basePaceSecondsPer100m,
-          draft.environment
+          draft.environment,
+          poolLengthUnit
         )}`
       );
 
@@ -748,11 +787,15 @@ export function buildWorkoutPdfModel(
     totalDistanceM: totals.totalDistanceM ?? draft.totalDistanceM,
     estimatedDurationMin: totals.estimatedDurationMin ?? draft.estimatedDurationMin,
   };
+  const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
   const readiness = buildWorkoutGarminReadinessReport(draft);
   const issuesByStepId = new Map<string, string[]>();
   const totalDistanceLabel =
     normalizedDraft.totalDistanceM && normalizedDraft.totalDistanceM > 0
-      ? `Tot: ${normalizedDraft.totalDistanceM}m`
+      ? `Tot: ${formatWorkoutDistanceLabel(normalizedDraft.totalDistanceM, {
+          environment: draft.environment,
+          poolLengthUnit,
+        })}`
       : null;
 
   for (const issue of readiness.issues) {
@@ -771,7 +814,8 @@ export function buildWorkoutPdfModel(
         summary: `${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
           entry.step,
           draft.basePaceSecondsPer100m,
-          draft.environment
+          draft.environment,
+          poolLengthUnit
         )}`,
         targetNotes: entry.step.targetSummary || null,
         notes: entry.step.notes || null,
@@ -785,7 +829,8 @@ export function buildWorkoutPdfModel(
       summary: `${getSessionStepCategoryLabel(entry.step.category)} · ${buildWorkoutHandoffStepSummary(
         entry.step,
         draft.basePaceSecondsPer100m,
-        draft.environment
+        draft.environment,
+        poolLengthUnit
       )}`,
       targetNotes: entry.step.targetSummary || null,
       notes: entry.step.notes || null,
@@ -800,7 +845,8 @@ export function buildWorkoutPdfModel(
         group.entries,
         group.repeatCount,
         draft.basePaceSecondsPer100m,
-        group.repeatEndingRestMode
+        group.repeatEndingRestMode,
+        poolLengthUnit
       ),
       reviewDetails: Array.from(new Set(steps.flatMap((step) => step.reviewDetails))),
       steps,
@@ -1926,7 +1972,12 @@ export function normalizeSessionDraftForWorkoutPersistence(
     return { ok: false, error: "Choose a supported environment before saving." };
   }
 
+  const poolLengthUnit = resolveSessionDraftPoolLengthUnit(input.poolLengthUnit);
   const poolLengthM = input.environment === "pool" ? normalizePoolLength(input.poolLengthM) : null;
+
+  if (input.environment === "pool" && poolLengthM === null) {
+    return { ok: false, error: "Choose an exact pool size before saving." };
+  }
 
   if (!SESSION_GENERATOR_SESSION_TYPES.includes(input.sessionType)) {
     return { ok: false, error: "Choose a supported session type before saving." };
@@ -1971,10 +2022,22 @@ export function normalizeSessionDraftForWorkoutPersistence(
     normalizedSteps.push(normalizedStep.value);
   }
 
-  const explicitStepStrokes = normalizedSteps
+  const canonicalSteps =
+    input.environment === "pool" && input.sourceFingerprint.startsWith("manual")
+      ? ensureManualPoolRepeatPostSetRestSteps(normalizedSteps)
+      : normalizedSteps;
+
+  if (canonicalSteps.length > 40) {
+    return {
+      ok: false,
+      error: "This first canonical slice supports up to 40 workout steps per session.",
+    };
+  }
+
+  const explicitStepStrokes = canonicalSteps
     .map((step) => mapDraftStepStrokeToAllowedStroke(step.stroke))
     .filter((stroke): stroke is SessionGeneratorStroke => Boolean(stroke));
-  const requiredEquipment = normalizedSteps
+  const requiredEquipment = canonicalSteps
     .map((step) => mapDraftStepEquipmentToAllowlist(step.equipment))
     .filter((item): item is (typeof SESSION_GENERATOR_EQUIPMENT)[number] => Boolean(item));
   const canonicalAllowedStrokes = Array.from(new Set([...allowedStrokes, ...explicitStepStrokes]));
@@ -1991,7 +2054,7 @@ export function normalizeSessionDraftForWorkoutPersistence(
     }
   >();
 
-  for (const [index, step] of normalizedSteps.entries()) {
+  for (const [index, step] of canonicalSteps.entries()) {
     if (!step.repeatGroupId || step.repeatCount == null) continue;
 
     const existing = repeatGroups.get(step.repeatGroupId);
@@ -2033,6 +2096,11 @@ export function normalizeSessionDraftForWorkoutPersistence(
     existing.lastIndex = index;
   }
 
+  const linkedPostSetRestValidation = validateLinkedRepeatPostSetRestSteps(canonicalSteps, repeatGroups);
+  if (!linkedPostSetRestValidation.ok) {
+    return linkedPostSetRestValidation;
+  }
+
   const createdAt = normalizeIsoDate(input.createdAt) ?? new Date().toISOString();
   const basePaceSecondsPer100m = normalizePositiveNumber(input.basePaceSecondsPer100m);
 
@@ -2050,11 +2118,12 @@ export function normalizeSessionDraftForWorkoutPersistence(
     titleSuggestions: titleSuggestions.length > 0 ? titleSuggestions : [title],
     description,
     environment: input.environment,
+    poolLengthUnit,
     poolLengthM,
     sessionType: input.sessionType,
     effort: input.effort,
     sizeMode: input.sizeMode,
-    targetDistanceM: normalizeNullableInteger(input.targetDistanceM),
+    targetDistanceM: normalizeNullableDistance(input.targetDistanceM),
     targetTimeMin: normalizeNullableInteger(input.targetTimeMin),
     totalDistanceM: null,
     estimatedDurationMin: null,
@@ -2066,7 +2135,7 @@ export function normalizeSessionDraftForWorkoutPersistence(
     goalTitle: normalizeNullableText(input.goalTitle, 120),
     constraintText: normalizeNullableText(input.constraintText, 240),
     warnings,
-    steps: normalizedSteps,
+    steps: canonicalSteps,
   };
 
   const totals = computeSessionDraftDerivedTotals(normalizedDraft);
@@ -2183,13 +2252,20 @@ function buildWorkoutGarminAggregateReadinessIssues(
   }
 
   const issues: WorkoutGarminReadinessIssue[] = [];
+  const activePoolStepCount = buildWorkoutHandoffGroups(draft.steps).reduce((total, group) => {
+    if (group.kind === "single") {
+      return total + 1;
+    }
 
-  if (draft.steps.length > WORKOUT_GARMIN_POOL_MAX_STEP_COUNT) {
+    return total + group.entries.length;
+  }, 0);
+
+  if (activePoolStepCount > WORKOUT_GARMIN_POOL_MAX_STEP_COUNT) {
     issues.push({
       id: "draft-pool-step-cap",
       stepId: WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID,
       stepIndex: -1,
-      detail: `This Pool Swim draft currently has ${draft.steps.length} authored steps. Garmin pool workouts top out at ${WORKOUT_GARMIN_POOL_MAX_STEP_COUNT} workout steps, so consolidate the set before Garmin/export handoff.`,
+      detail: `This Pool Swim draft currently resolves to ${activePoolStepCount} active workout steps. Garmin pool workouts top out at ${WORKOUT_GARMIN_POOL_MAX_STEP_COUNT} workout steps, so consolidate the set before Garmin/export handoff.`,
     });
   }
 
@@ -2220,11 +2296,11 @@ function buildWorkoutGarminPoolUnspecifiedPoolSizeIssue(
   }
 
   return {
-    id: "draft-pool-size-unspecified-compatibility",
+    id: "draft-pool-size-missing",
     stepId: WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID,
     stepIndex: -1,
     detail:
-      "This Pool Swim draft uses Unspecified pool size. Garmin documents that setting as partially compatible across pool-swim watches: fully compatible devices keep the authored step distances as entered, while older devices may convert the distance in yard pools. Confirm the target watch before Garmin/export handoff.",
+      "This Pool Swim draft still has no exact pool size set. Choose a pool size before Garmin/export handoff so distance labels, totals, and device translation stay deterministic.",
   };
 }
 
@@ -2455,6 +2531,7 @@ export function buildWorkoutStepDurationOutputSummary(
   basePaceSecondsPer100m: number,
   options?: {
     environment?: SessionGeneratorEnvironment | null;
+    poolLengthUnit?: SessionDraftPoolLengthUnit | null;
   }
 ) {
   const environment = options?.environment;
@@ -2462,7 +2539,12 @@ export function buildWorkoutStepDurationOutputSummary(
   if (!isPoolWorkoutEnvironment(environment)) {
     switch (step.durationMode) {
       case "distance":
-        return step.distanceM ? `${step.distanceM}m` : "Distance not set";
+        return step.distanceM
+          ? formatWorkoutDistanceLabel(step.distanceM, {
+              environment,
+              poolLengthUnit: options?.poolLengthUnit,
+            })
+          : "Distance not set";
       case "time":
         return step.timeMin ? formatMinutesLabel(step.timeMin) : "Time not set";
       case "fixed_rest":
@@ -2490,7 +2572,12 @@ export function buildWorkoutStepDurationOutputSummary(
 
   switch (step.durationMode) {
     case "distance":
-      return step.distanceM ? `${step.distanceM}m` : "Distance not set";
+      return step.distanceM
+        ? formatWorkoutDistanceLabel(step.distanceM, {
+            environment,
+            poolLengthUnit: options?.poolLengthUnit,
+          })
+        : "Distance not set";
     case "time":
       return step.timeMin ? `Time ${formatClockDurationLabel(step.timeMin)}` : "Time not set";
     case "fixed_rest":
@@ -2688,7 +2775,12 @@ export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | unde
   }
 
   const totalDistanceLabel =
-    draft?.totalDistanceM && draft.totalDistanceM > 0 ? `Tot: ${draft.totalDistanceM}m` : null;
+    draft?.totalDistanceM && draft.totalDistanceM > 0
+      ? `Tot: ${formatWorkoutDistanceLabel(draft.totalDistanceM, {
+          environment: draft.environment,
+          poolLengthUnit: draft.poolLengthUnit ?? null,
+        })}`
+      : null;
 
   return [...lines, ...(totalDistanceLabel ? ["", totalDistanceLabel] : [])].join("\n");
 }
@@ -2698,6 +2790,8 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
     return [];
   }
 
+  const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
+
   const lineItems = buildWorkoutHandoffGroups(draft.steps).flatMap((group) => {
     if (group.kind === "single") {
       return buildWorkoutPoolsideLineItems(
@@ -2705,7 +2799,8 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
         null,
         "use_last_rest",
         draft.basePaceSecondsPer100m,
-        draft.environment
+        draft.environment,
+        poolLengthUnit
       );
     }
 
@@ -2714,7 +2809,8 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
       group.repeatCount,
       group.repeatEndingRestMode,
       draft.basePaceSecondsPer100m,
-      draft.environment
+      draft.environment,
+      poolLengthUnit
     );
   });
 
@@ -2726,7 +2822,8 @@ function buildWorkoutPoolsideLineItems(
   repeatCount: number | null,
   repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
   basePaceSecondsPer100m: number,
-  environment: SessionGeneratorEnvironment
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   const lineItems: WorkoutPoolsideLineItem[] = [];
 
@@ -2744,7 +2841,8 @@ function buildWorkoutPoolsideLineItems(
         text: `P: ${buildWorkoutPoolsidePauseLabel(
           step,
           basePaceSecondsPer100m,
-          environment
+          environment,
+          poolLengthUnit
         )}${skipFinalRestNote}`,
       });
       continue;
@@ -2756,7 +2854,8 @@ function buildWorkoutPoolsideLineItems(
       text: `${prefix}${buildWorkoutPoolsideIntervalLabel(
         step,
         basePaceSecondsPer100m,
-        environment
+        environment,
+        poolLengthUnit
       )}`,
     });
   }
@@ -2782,11 +2881,13 @@ function isWorkoutPoolsidePauseStep(
 function buildWorkoutPoolsidePauseLabel(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number,
-  environment: SessionGeneratorEnvironment
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   if (isPoolWorkoutEnvironment(environment)) {
     return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
       environment,
+      poolLengthUnit,
     });
   }
 
@@ -2811,19 +2912,21 @@ function buildWorkoutPoolsidePauseLabel(
 
   return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
     environment,
+    poolLengthUnit,
   });
 }
 
 function buildWorkoutPoolsideIntervalLabel(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number,
-  environment: SessionGeneratorEnvironment
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   return [
-    buildWorkoutPoolsideDurationLabel(step, basePaceSecondsPer100m, environment),
+    buildWorkoutPoolsideDurationLabel(step, basePaceSecondsPer100m, environment, poolLengthUnit),
     buildWorkoutPoolsideDescriptor(step),
     getSessionEffortLabel(step.intensity),
-    buildWorkoutPoolsideTargetLabel(step, basePaceSecondsPer100m),
+    buildWorkoutPoolsideTargetLabel(step, basePaceSecondsPer100m, poolLengthUnit),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -2832,17 +2935,24 @@ function buildWorkoutPoolsideIntervalLabel(
 function buildWorkoutPoolsideDurationLabel(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number,
-  environment: SessionGeneratorEnvironment
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   if (isPoolWorkoutEnvironment(environment)) {
     return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
       environment,
+      poolLengthUnit,
     });
   }
 
   switch (step.durationMode) {
     case "distance":
-      return step.distanceM ? `${step.distanceM}m` : "Distance not set";
+      return step.distanceM
+        ? formatWorkoutDistanceLabel(step.distanceM, {
+            environment,
+            poolLengthUnit,
+          })
+        : "Distance not set";
     case "time":
       return step.timeMin ? formatMinutesLabel(step.timeMin) : "Time not set";
     case "send_off":
@@ -2858,6 +2968,7 @@ function buildWorkoutPoolsideDurationLabel(
     default:
       return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
         environment,
+        poolLengthUnit,
       });
   }
 }
@@ -2894,8 +3005,16 @@ function buildWorkoutPoolsideDescriptor(step: SessionDraftStep) {
   return parts.length > 0 ? parts.join(" · ") : step.name;
 }
 
-function buildWorkoutPoolsideTargetLabel(step: SessionDraftStep, basePaceSecondsPer100m: number) {
-  return buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m) ?? null;
+function buildWorkoutPoolsideTargetLabel(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  return buildSessionStepStructuredTargetLabel(
+    step,
+    basePaceSecondsPer100m,
+    poolLengthUnit
+  ) ?? null;
 }
 
 function formatPoolsidePauseDuration(valueMinutes: number) {
@@ -2932,12 +3051,12 @@ function buildWorkoutEnvironmentSummary(draft: SessionDraft) {
   }
 
   if (draft.poolLengthM === null) {
-    return `${getSessionEnvironmentLabel(draft.environment)} (Unspecified)`;
+    return `${getSessionEnvironmentLabel(draft.environment)} (size not set)`;
   }
 
   const poolLength =
     typeof draft.poolLengthM === "number" && Number.isFinite(draft.poolLengthM)
-      ? ` (${formatPoolLengthLabel(draft.poolLengthM)})`
+      ? ` (${formatPoolLengthLabel(draft.poolLengthM, getWorkoutPoolLengthUnit(draft))})`
       : "";
 
   return `${getSessionEnvironmentLabel(draft.environment)}${poolLength}`;
@@ -2945,11 +3064,19 @@ function buildWorkoutEnvironmentSummary(draft: SessionDraft) {
 
 function buildWorkoutHandoffGroups(steps: SessionDraftStep[]): WorkoutHandoffGroup[] {
   const groups: WorkoutHandoffGroup[] = [];
+  const suppressedPostSetRestGroupIds = collectSuppressedWorkoutPostSetRestGroupIds(steps);
 
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index];
 
     if (!step) continue;
+
+    if (
+      isSessionDraftRepeatPostSetRestStep(step) &&
+      suppressedPostSetRestGroupIds.has(step.postSetRestForRepeatGroupId ?? "")
+    ) {
+      continue;
+    }
 
     if (!step.repeatGroupId) {
       groups.push({
@@ -2984,6 +3111,37 @@ function buildWorkoutHandoffGroups(steps: SessionDraftStep[]): WorkoutHandoffGro
   return groups;
 }
 
+function collectSuppressedWorkoutPostSetRestGroupIds(steps: SessionDraftStep[]) {
+  const groupIds = new Set<string>();
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+    if (!step?.repeatGroupId) continue;
+
+    const entries: WorkoutHandoffEntry[] = [{ step, index }];
+    let nextIndex = index + 1;
+    while (nextIndex < steps.length && steps[nextIndex]?.repeatGroupId === step.repeatGroupId) {
+      const nextStep = steps[nextIndex];
+      if (!nextStep) break;
+      entries.push({ step: nextStep, index: nextIndex });
+      nextIndex += 1;
+    }
+
+    if (
+      shouldSuppressWorkoutRepeatPostSetRest(
+        entries,
+        resolveSessionDraftRepeatEndingRestMode(step.repeatEndingRestMode ?? null)
+      )
+    ) {
+      groupIds.add(step.repeatGroupId);
+    }
+
+    index = nextIndex - 1;
+  }
+
+  return groupIds;
+}
+
 function shouldSkipWorkoutRepeatEndingRest(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
@@ -2997,11 +3155,24 @@ function shouldSkipWorkoutRepeatEndingRest(
   return Boolean(lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step));
 }
 
+function shouldSuppressWorkoutRepeatPostSetRest(
+  entries: WorkoutHandoffEntry[],
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
+) {
+  if (repeatEndingRestMode !== "use_last_rest") {
+    return false;
+  }
+
+  const lastEntry = entries[entries.length - 1];
+  return Boolean(lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step));
+}
+
 function buildWorkoutHandoffRepeatSummary(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
   basePaceSecondsPer100m: number,
-  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   if (repeatCount === null) {
     return "repeat count not set";
@@ -3018,7 +3189,12 @@ function buildWorkoutHandoffRepeatSummary(
     const roundParts: string[] = [];
 
     if (roundMetrics.roundDistanceM !== null) {
-      roundParts.push(`${roundMetrics.roundDistanceM}m`);
+      roundParts.push(
+        formatWorkoutDistanceLabel(roundMetrics.roundDistanceM, {
+          environment: "pool",
+          poolLengthUnit,
+        })
+      );
     }
 
     if (roundMetrics.roundDurationSeconds !== null) {
@@ -3062,7 +3238,7 @@ function buildWorkoutRepeatRoundMetrics(
   }
 
   return {
-    roundDistanceM: roundDistanceM > 0 ? roundDistanceM : null,
+    roundDistanceM: roundDistanceM > 0 ? Math.round(roundDistanceM * 100) / 100 : null,
     roundDurationSeconds: roundDurationSeconds > 0 ? roundDurationSeconds : null,
   };
 }
@@ -3072,10 +3248,15 @@ function buildWorkoutGarminReadyExportStep(
   index: number,
   basePaceSecondsPer100m: number,
   reviewIssueIds: string[],
-  environment: SessionGeneratorEnvironment
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ): WorkoutGarminReadyExportStep {
   const targetMode = step.targetMode ?? "none";
-  const structuredTargetLabel = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
+  const structuredTargetLabel = buildSessionStepStructuredTargetLabel(
+    step,
+    basePaceSecondsPer100m,
+    environment === "pool" ? poolLengthUnit : "m"
+  );
 
   return {
     id: step.id,
@@ -3116,10 +3297,16 @@ function buildWorkoutGarminReadyExportStep(
         category: step.category,
       }),
       distanceM: step.distanceM ?? null,
+      distanceValue:
+        step.distanceM && environment === "pool"
+          ? convertMetersToPoolUnitValue(step.distanceM, poolLengthUnit)
+          : step.distanceM ?? null,
+      distanceUnit: step.distanceM && environment === "pool" ? poolLengthUnit : null,
       timeMin: step.timeMin ?? null,
       cssSendOffOffsetSeconds: step.cssSendOffOffsetSeconds ?? null,
       summary: buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
         environment,
+        poolLengthUnit,
       }),
     },
     target: {
@@ -3150,9 +3337,14 @@ function buildWorkoutGarminReadyExportStep(
 function buildWorkoutHandoffStepSummary(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number,
-  environment: SessionGeneratorEnvironment
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
-  const structuredTarget = buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m);
+  const structuredTarget = buildSessionStepStructuredTargetLabel(
+    step,
+    basePaceSecondsPer100m,
+    environment === "pool" ? poolLengthUnit : "m"
+  );
   const contextParts =
     isPoolWorkoutEnvironment(environment) && step.category === "rest"
       ? []
@@ -3172,6 +3364,7 @@ function buildWorkoutHandoffStepSummary(
   return [
     buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
       environment,
+      poolLengthUnit,
     }),
     contextParts.join(" · "),
     structuredTarget ?? getSessionEffortLabel(step.intensity),
@@ -3217,6 +3410,135 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
+function ensureManualPoolRepeatPostSetRestSteps(steps: SessionDraftStep[]) {
+  const existingLinkedGroupIds = new Set(
+    steps
+      .filter((step) => isSessionDraftRepeatPostSetRestStep(step))
+      .map((step) => step.postSetRestForRepeatGroupId)
+      .filter((value): value is string => Boolean(value))
+  );
+  const nextSteps: SessionDraftStep[] = [];
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+    if (!step) continue;
+
+    nextSteps.push(step);
+
+    if (!step.repeatGroupId) {
+      continue;
+    }
+
+    const nextStep = steps[index + 1] ?? null;
+    const isRepeatGroupEnd = nextStep?.repeatGroupId !== step.repeatGroupId;
+
+    if (!isRepeatGroupEnd || existingLinkedGroupIds.has(step.repeatGroupId)) {
+      continue;
+    }
+
+    nextSteps.push(buildLinkedPostSetRestStep(step.repeatGroupId, step));
+  }
+
+  return nextSteps;
+}
+
+function buildLinkedPostSetRestStep(repeatGroupId: string, lastRepeatStep: SessionDraftStep): SessionDraftStep {
+  const copyLastRestTiming = lastRepeatStep.category === "rest";
+  const durationMode =
+    copyLastRestTiming &&
+    (lastRepeatStep.durationMode === "fixed_rest" ||
+      lastRepeatStep.durationMode === "lap_button" ||
+      lastRepeatStep.durationMode === "send_off" ||
+      lastRepeatStep.durationMode === "css_send_off")
+      ? lastRepeatStep.durationMode
+      : "fixed_rest";
+
+  return {
+    id: `${repeatGroupId}-post-set-rest`,
+    category: "rest",
+    name: "Post-set rest",
+    stroke: "choice",
+    drillType: "none",
+    equipment: "none",
+    intensity: "easy",
+    durationMode,
+    distanceM: null,
+    timeMin:
+      durationMode === "fixed_rest" || durationMode === "send_off"
+        ? (copyLastRestTiming ? lastRepeatStep.timeMin ?? 1 : 1)
+        : durationMode === "lap_button" || durationMode === "css_send_off"
+          ? null
+          : 1,
+    targetMode: "none",
+    effortTarget: null,
+    targetPaceSecondsPer100m: null,
+    cssTargetOffsetSeconds: null,
+    cssSendOffOffsetSeconds:
+      durationMode === "css_send_off" && copyLastRestTiming
+        ? lastRepeatStep.cssSendOffOffsetSeconds ?? 0
+        : null,
+    targetSummary: "",
+    notes: copyLastRestTiming ? lastRepeatStep.notes : "",
+    repeatGroupId: null,
+    repeatCount: null,
+    repeatEndingRestMode: null,
+    postSetRestForRepeatGroupId: repeatGroupId,
+  };
+}
+
+function validateLinkedRepeatPostSetRestSteps(
+  steps: SessionDraftStep[],
+  repeatGroups: Map<
+    string,
+    {
+      repeatCount: number;
+      repeatEndingRestMode: SessionDraftRepeatEndingRestMode;
+      lastIndex: number;
+    }
+  >
+): { ok: true } | { ok: false; error: string } {
+  const seenGroupIds = new Set<string>();
+
+  for (const [index, step] of steps.entries()) {
+    if (!isSessionDraftRepeatPostSetRestStep(step)) {
+      continue;
+    }
+
+    const repeatGroupId = step.postSetRestForRepeatGroupId;
+    if (!repeatGroupId || !repeatGroups.has(repeatGroupId)) {
+      return {
+        ok: false,
+        error: `Step ${index + 1} links to a repeat block that does not exist.`,
+      };
+    }
+
+    if (seenGroupIds.has(repeatGroupId)) {
+      return {
+        ok: false,
+        error: `Repeat block ${repeatGroupId} can only have one linked post-set rest step.`,
+      };
+    }
+
+    if (step.category !== "rest") {
+      return {
+        ok: false,
+        error: `Step ${index + 1} must stay a rest step when it is linked after a repeat block.`,
+      };
+    }
+
+    if ((repeatGroups.get(repeatGroupId)?.lastIndex ?? -1) !== index - 1) {
+      return {
+        ok: false,
+        error: `Linked post-set rest for repeat block ${repeatGroupId} must sit immediately after that repeat block.`,
+      };
+    }
+
+    seenGroupIds.add(repeatGroupId);
+  }
+
+  return { ok: true };
+}
+
 function normalizeStep(
   input: SessionDraftStep,
   index: number
@@ -3258,6 +3580,7 @@ function normalizeStep(
   const notes = normalizeText(input.notes, 400);
   const id = normalizeRequiredText(input.id, 80) ?? `step-${index + 1}`;
   const repeatGroupId = normalizeNullableText(input.repeatGroupId, 80);
+  const postSetRestForRepeatGroupId = normalizeNullableText(input.postSetRestForRepeatGroupId, 80);
   const repeatCount = normalizeNullableInteger(input.repeatCount);
   const repeatEndingRestMode = normalizeRepeatEndingRestMode(input.repeatEndingRestMode);
   const drillType = normalizeStepDrillType(input.drillType);
@@ -3280,6 +3603,13 @@ function normalizeStep(
     };
   }
 
+  if (repeatGroupId && postSetRestForRepeatGroupId) {
+    return {
+      ok: false,
+      error: `Step ${index + 1} cannot be both inside a repeat block and the linked post-set rest.`,
+    };
+  }
+
   if (repeatEndingRestMode === "invalid") {
     return {
       ok: false,
@@ -3291,6 +3621,13 @@ function normalizeStep(
     return {
       ok: false,
       error: `Step ${index + 1} can only set last-rest behavior inside a repeat block.`,
+    };
+  }
+
+  if (postSetRestForRepeatGroupId && input.category !== "rest") {
+    return {
+      ok: false,
+      error: `Step ${index + 1} must stay a rest step when it is linked as post-set rest.`,
     };
   }
 
@@ -3333,7 +3670,7 @@ function normalizeStep(
   }
 
   if (input.durationMode === "distance") {
-    const distanceM = normalizeNullableInteger(input.distanceM);
+    const distanceM = normalizeNullableDistance(input.distanceM);
 
     if (distanceM === null) {
       return { ok: false, error: `Step ${index + 1} needs a distance target before saving.` };
@@ -3362,6 +3699,7 @@ function normalizeStep(
         repeatGroupId,
         repeatCount,
         repeatEndingRestMode,
+        postSetRestForRepeatGroupId,
       },
     };
   }
@@ -3390,6 +3728,7 @@ function normalizeStep(
         repeatGroupId,
         repeatCount,
         repeatEndingRestMode,
+        postSetRestForRepeatGroupId,
       },
     };
   }
@@ -3418,6 +3757,7 @@ function normalizeStep(
         repeatGroupId,
         repeatCount,
         repeatEndingRestMode,
+        postSetRestForRepeatGroupId,
       },
     };
   }
@@ -3455,6 +3795,7 @@ function normalizeStep(
       repeatGroupId,
       repeatCount,
       repeatEndingRestMode,
+      postSetRestForRepeatGroupId,
     },
   };
 }
@@ -3485,6 +3826,12 @@ function normalizeNullableText(value: unknown, maxLength: number) {
 function normalizeNullableInteger(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   const normalized = Math.round(value);
+  return normalized > 0 ? normalized : null;
+}
+
+function normalizeNullableDistance(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const normalized = Math.round(value * 100) / 100;
   return normalized > 0 ? normalized : null;
 }
 

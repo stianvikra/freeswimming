@@ -25,6 +25,7 @@ function buildDraft(): SessionDraft {
     titleSuggestions: ["Threshold / CSS 25m Pool draft"],
     description: "Threshold session in pool mode.",
     environment: "pool",
+    poolLengthUnit: "m",
     poolLengthM: 25,
     sessionType: "threshold_css",
     effort: "moderate",
@@ -95,6 +96,7 @@ function buildWorkoutRow(overrides?: Partial<WorkoutRow>): WorkoutRow {
     description: "Threshold session in pool mode.",
     environment: "pool",
     pool_length_m: 25,
+    pool_length_unit: "m",
     session_type: "threshold_css",
     effort: "moderate",
     size_mode: "distance",
@@ -159,6 +161,7 @@ describe("workouts server", () => {
       ...buildDraft(),
       title: "Custom pool workout",
       titleSuggestions: ["Custom pool workout"],
+      poolLengthUnit: "yd",
       poolLengthM: 33.33,
     };
 
@@ -167,37 +170,31 @@ describe("workouts server", () => {
       source_kind: "manual",
       title: "Custom pool workout",
       title_suggestions: ["Custom pool workout"],
+      pool_length_unit: "yd",
       pool_length_m: 33.33,
     });
     const editorRecord = buildWorkoutEditorRecord(storedRow);
     const summary = buildWorkoutSummary(storedRow);
 
+    expect(insert.pool_length_unit).toBe("yd");
     expect(insert.pool_length_m).toBe(33.33);
+    expect(editorRecord.draft.poolLengthUnit).toBe("yd");
     expect(editorRecord.draft.poolLengthM).toBe(33.33);
+    expect(summary.poolLengthUnit).toBe("yd");
     expect(summary.poolLengthM).toBe(33.33);
   });
 
-  it("persists and reloads unspecified pool size for manual builder workouts", () => {
-    const unspecifiedPoolDraft: SessionDraft = {
+  it("requires an exact pool size before saving manual builder workouts", () => {
+    const missingPoolDraft: SessionDraft = {
       ...buildDraft(),
-      title: "Unspecified pool workout",
-      titleSuggestions: ["Unspecified pool workout"],
+      title: "Missing pool workout",
+      titleSuggestions: ["Missing pool workout"],
       poolLengthM: null,
     };
 
-    const insert = buildWorkoutInsert("user-1", unspecifiedPoolDraft, "manual");
-    const storedRow = buildWorkoutRow({
-      source_kind: "manual",
-      title: "Unspecified pool workout",
-      title_suggestions: ["Unspecified pool workout"],
-      pool_length_m: null,
-    });
-    const editorRecord = buildWorkoutEditorRecord(storedRow);
-    const summary = buildWorkoutSummary(storedRow);
-
-    expect(insert.pool_length_m).toBeNull();
-    expect(editorRecord.draft.poolLengthM).toBeNull();
-    expect(summary.poolLengthM).toBeNull();
+    expect(() => buildWorkoutInsert("user-1", missingPoolDraft, "manual")).toThrow(
+      "Choose an exact pool size before saving."
+    );
   });
 
   it("persists repeat metadata and multiplies totals from grouped repeat steps", () => {

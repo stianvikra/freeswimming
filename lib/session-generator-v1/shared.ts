@@ -92,9 +92,11 @@ export const SESSION_DRAFT_REPEAT_ENDING_REST_MODES = [
   "use_last_rest",
   "skip_last_rest",
 ] as const;
+export const SESSION_DRAFT_POOL_LENGTH_UNITS = ["m", "yd"] as const;
 export const SESSION_DRAFT_POOL_LENGTH_PRESETS = [12.5, 25, 50] as const;
 export const SESSION_DRAFT_POOL_LENGTH_MIN = 12.5;
 export const SESSION_DRAFT_POOL_LENGTH_MAX = 500;
+export const METERS_PER_YARD = 0.9144;
 
 export type SessionGeneratorEnvironment = (typeof SESSION_GENERATOR_ENVIRONMENTS)[number];
 export type SessionGeneratorPoolLength = (typeof SESSION_GENERATOR_POOL_LENGTHS)[number];
@@ -113,6 +115,7 @@ export type SessionDraftStepTargetMode = (typeof SESSION_DRAFT_STEP_TARGET_MODES
 export type SessionDraftStepDistancePreset = (typeof SESSION_DRAFT_STEP_DISTANCE_PRESETS)[number];
 export type SessionDraftRepeatEndingRestMode =
   (typeof SESSION_DRAFT_REPEAT_ENDING_REST_MODES)[number];
+export type SessionDraftPoolLengthUnit = (typeof SESSION_DRAFT_POOL_LENGTH_UNITS)[number];
 export type SessionDraftPoolLength = number;
 
 export type SessionGeneratorFormState = {
@@ -170,6 +173,7 @@ export type SessionDraftStep = {
   repeatGroupId?: string | null;
   repeatCount?: number | null;
   repeatEndingRestMode?: SessionDraftRepeatEndingRestMode | null;
+  postSetRestForRepeatGroupId?: string | null;
 };
 
 export type SessionDraft = {
@@ -182,6 +186,7 @@ export type SessionDraft = {
   titleSuggestions: string[];
   description: string;
   environment: SessionGeneratorEnvironment;
+  poolLengthUnit?: SessionDraftPoolLengthUnit | null;
   poolLengthM: SessionDraftPoolLength | null;
   sessionType: SessionGeneratorSessionType;
   effort: SessionGeneratorEffortPreset;
@@ -361,12 +366,37 @@ export function getSessionDraftRepeatEndingRestModeLabel(value: SessionDraftRepe
   return REPEAT_ENDING_REST_MODE_LABELS[value];
 }
 
-export function formatPoolLengthLabel(value: number) {
-  return `${value.toFixed(2).replace(/\.?0+$/, "")}m`;
+export function resolveSessionDraftPoolLengthUnit(
+  value: unknown
+): SessionDraftPoolLengthUnit {
+  return SESSION_DRAFT_POOL_LENGTH_UNITS.includes(value as SessionDraftPoolLengthUnit)
+    ? (value as SessionDraftPoolLengthUnit)
+    : "m";
 }
 
-export function formatDistanceMetersLabel(value: number) {
-  return `${Math.round(value)}m`;
+export function convertPoolUnitValueToMeters(value: number, unit: SessionDraftPoolLengthUnit) {
+  const normalized = unit === "yd" ? value * METERS_PER_YARD : value;
+  return Math.round(normalized * 100) / 100;
+}
+
+export function convertMetersToPoolUnitValue(value: number, unit: SessionDraftPoolLengthUnit) {
+  const normalized = unit === "yd" ? value / METERS_PER_YARD : value;
+  return Math.round(normalized * 100) / 100;
+}
+
+function formatWorkoutUnitValue(value: number) {
+  return value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+export function formatPoolLengthLabel(value: number, unit: SessionDraftPoolLengthUnit = "m") {
+  return `${formatWorkoutUnitValue(convertMetersToPoolUnitValue(value, unit))}${unit}`;
+}
+
+export function formatDistanceMetersLabel(
+  value: number,
+  unit: SessionDraftPoolLengthUnit = "m"
+) {
+  return `${formatWorkoutUnitValue(convertMetersToPoolUnitValue(value, unit))}${unit}`;
 }
 
 export function normalizeSessionDraftPoolLength(value: unknown): SessionDraft["poolLengthM"] {
@@ -394,11 +424,16 @@ export function isSessionDraftStepDistancePreset(
   return SESSION_DRAFT_STEP_DISTANCE_PRESETS.includes(value as SessionDraftStepDistancePreset);
 }
 
-export function formatPaceSecondsPer100m(value: number) {
-  const totalSeconds = Math.max(1, Math.round(value));
+export function formatPaceSecondsPer100m(
+  value: number,
+  unit: SessionDraftPoolLengthUnit = "m"
+) {
+  const normalizedSeconds =
+    unit === "yd" ? Math.max(1, Math.round(value * METERS_PER_YARD)) : Math.max(1, Math.round(value));
+  const totalSeconds = normalizedSeconds;
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}/100m`;
+  return `${minutes}:${String(seconds).padStart(2, "0")}/100${unit}`;
 }
 
 export function resolveSessionStepTargetMode(step: SessionDraftStep): SessionDraftStepTargetMode {
@@ -420,9 +455,14 @@ export function isSessionDraftRepeatEndingRestStep(step: SessionDraftStep) {
   return step.category === "rest";
 }
 
+export function isSessionDraftRepeatPostSetRestStep(step: SessionDraftStep) {
+  return Boolean(step.postSetRestForRepeatGroupId && !step.repeatGroupId);
+}
+
 export function buildSessionStepStructuredTargetLabel(
   step: SessionDraftStep,
-  basePaceSecondsPer100m: number
+  basePaceSecondsPer100m: number,
+  unit: SessionDraftPoolLengthUnit = "m"
 ) {
   const targetMode = resolveSessionStepTargetMode(step);
 
@@ -435,13 +475,16 @@ export function buildSessionStepStructuredTargetLabel(
   }
 
   if (targetMode === "target_pace" && step.targetPaceSecondsPer100m) {
-    return `Target ${formatPaceSecondsPer100m(step.targetPaceSecondsPer100m)}`;
+    return `Target ${formatPaceSecondsPer100m(step.targetPaceSecondsPer100m, unit)}`;
   }
 
   if (targetMode === "css_target_pace" && typeof step.cssTargetOffsetSeconds === "number") {
     const offset = Math.round(step.cssTargetOffsetSeconds);
     const sign = offset > 0 ? "+" : "";
-    return `CSS ${sign}${offset}s (${formatPaceSecondsPer100m(basePaceSecondsPer100m + offset)})`;
+    return `CSS ${sign}${offset}s (${formatPaceSecondsPer100m(
+      basePaceSecondsPer100m + offset,
+      unit
+    )})`;
   }
 
   return null;
@@ -581,11 +624,19 @@ export function computeSessionDraftDerivedTotals(draft: SessionDraft): {
 } {
   let totalDistanceM = 0;
   let estimatedMinutes = 0;
+  const suppressedPostSetRestGroupIds = collectSuppressedPostSetRestGroupIds(draft.steps);
 
   for (let index = 0; index < draft.steps.length; index += 1) {
     const step = draft.steps[index];
 
     if (!step) continue;
+
+    if (
+      isSessionDraftRepeatPostSetRestStep(step) &&
+      suppressedPostSetRestGroupIds.has(step.postSetRestForRepeatGroupId ?? "")
+    ) {
+      continue;
+    }
 
     const repeatCount =
       step.repeatGroupId && step.repeatCount && step.repeatCount >= SESSION_DRAFT_REPEAT_MIN
@@ -660,14 +711,16 @@ export function computeSessionDraftDerivedTotals(draft: SessionDraft): {
   }
 
   return {
-    totalDistanceM: totalDistanceM > 0 ? totalDistanceM : null,
+    totalDistanceM: totalDistanceM > 0 ? Math.round(totalDistanceM * 100) / 100 : null,
     estimatedDurationMin: estimatedMinutes > 0 ? Math.round(estimatedMinutes) : null,
   };
 }
 
 export function buildSessionTargetSummary(draft: SessionDraft) {
+  const poolLengthUnit =
+    draft.environment === "pool" ? resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit) : "m";
   const parts = [
-    draft.totalDistanceM ? `${draft.totalDistanceM}m` : null,
+    draft.totalDistanceM ? formatDistanceMetersLabel(draft.totalDistanceM, poolLengthUnit) : null,
     draft.estimatedDurationMin ? `~${draft.estimatedDurationMin} min` : null,
     getSessionEffortLabel(draft.effort),
   ].filter(Boolean);
@@ -693,6 +746,40 @@ function mapRecordStroke(value: string): SessionGeneratorStroke | null {
   if (value === "butterfly") return "butterfly";
   if (value === "individual_medley") return "individual_medley";
   return null;
+}
+
+function collectSuppressedPostSetRestGroupIds(steps: SessionDraftStep[]) {
+  const suppressedGroupIds = new Set<string>();
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+    if (!step?.repeatGroupId) continue;
+
+    const entries: SessionDraftStep[] = [step];
+    let nextIndex = index + 1;
+    while (steps[nextIndex]?.repeatGroupId === step.repeatGroupId) {
+      const nextStep = steps[nextIndex];
+      if (!nextStep) break;
+      entries.push(nextStep);
+      nextIndex += 1;
+    }
+
+    const lastEntry = entries[entries.length - 1];
+    const repeatEndingRestMode = resolveSessionDraftRepeatEndingRestMode(
+      step.repeatEndingRestMode ?? null
+    );
+    if (
+      repeatEndingRestMode === "use_last_rest" &&
+      lastEntry &&
+      isSessionDraftRepeatEndingRestStep(lastEntry)
+    ) {
+      suppressedGroupIds.add(step.repeatGroupId);
+    }
+
+    index = nextIndex - 1;
+  }
+
+  return suppressedGroupIds;
 }
 
 function normalizeIntegerString(value: unknown, maxLength: number) {
