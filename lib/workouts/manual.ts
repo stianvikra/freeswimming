@@ -5,6 +5,10 @@ import {
 } from "@/lib/session-generator-v1/shared";
 
 export type ManualWorkoutBuilderMode = "pool" | "open_water";
+export type ManualWorkoutDraftDefaults = {
+  basePaceSecondsPer100m?: number | null;
+  usedCssPaceLabel?: string | null;
+};
 
 function buildStepId(seed: string, index: number) {
   return `manual-step-${seed}-${index + 1}`;
@@ -155,13 +159,37 @@ export function buildManualWorkoutStarterDraft(now = new Date()): SessionDraft {
   };
 }
 
+function resolveManualWorkoutBasePaceDefaults(
+  mode: ManualWorkoutBuilderMode,
+  defaults?: ManualWorkoutDraftDefaults
+) {
+  if (
+    mode === "pool" &&
+    typeof defaults?.basePaceSecondsPer100m === "number" &&
+    Number.isFinite(defaults.basePaceSecondsPer100m) &&
+    defaults.basePaceSecondsPer100m > 0
+  ) {
+    return {
+      basePaceSecondsPer100m: defaults.basePaceSecondsPer100m,
+      usedCssPaceLabel: defaults.usedCssPaceLabel?.trim() || null,
+    };
+  }
+
+  return {
+    basePaceSecondsPer100m: 120,
+    usedCssPaceLabel: null,
+  };
+}
+
 function buildManualWorkoutEmptyDraftForMode(
   mode: ManualWorkoutBuilderMode,
-  now = new Date()
+  now = new Date(),
+  defaults?: ManualWorkoutDraftDefaults
 ): SessionDraft {
   const createdAt = now.toISOString();
   const seed = createdAt.replace(/[^0-9]/g, "").slice(0, 14);
   const title = mode === "pool" ? "Untitled pool session" : "Untitled open water session";
+  const paceDefaults = resolveManualWorkoutBasePaceDefaults(mode, defaults);
   const baseDraft: SessionDraft = {
     version: 1,
     status: "draft",
@@ -180,8 +208,8 @@ function buildManualWorkoutEmptyDraftForMode(
     targetTimeMin: null,
     totalDistanceM: null,
     estimatedDurationMin: null,
-    basePaceSecondsPer100m: 120,
-    usedCssPaceLabel: null,
+    basePaceSecondsPer100m: paceDefaults.basePaceSecondsPer100m,
+    usedCssPaceLabel: paceDefaults.usedCssPaceLabel,
     allowedStrokes: ["freestyle"],
     equipmentAllowlist: [],
     focusText: null,
@@ -199,14 +227,23 @@ function buildManualWorkoutEmptyDraftForMode(
   };
 }
 
-export function buildManualPoolWorkoutEmptyDraft(now = new Date()): SessionDraft {
-  return buildManualWorkoutEmptyDraftForMode("pool", now);
+export function buildManualPoolWorkoutEmptyDraft(
+  now = new Date(),
+  defaults?: ManualWorkoutDraftDefaults
+): SessionDraft {
+  return buildManualWorkoutEmptyDraftForMode("pool", now, defaults);
 }
 
-export function buildManualOpenWaterWorkoutEmptyDraft(now = new Date()): SessionDraft {
-  return buildManualWorkoutEmptyDraftForMode("open_water", now);
+export function buildManualOpenWaterWorkoutEmptyDraft(
+  now = new Date(),
+  defaults?: ManualWorkoutDraftDefaults
+): SessionDraft {
+  return buildManualWorkoutEmptyDraftForMode("open_water", now, defaults);
 }
 
-export function buildManualWorkoutEmptyDraft(now = new Date()): SessionDraft {
-  return buildManualPoolWorkoutEmptyDraft(now);
+export function buildManualWorkoutEmptyDraft(
+  now = new Date(),
+  defaults?: ManualWorkoutDraftDefaults
+): SessionDraft {
+  return buildManualPoolWorkoutEmptyDraft(now, defaults);
 }

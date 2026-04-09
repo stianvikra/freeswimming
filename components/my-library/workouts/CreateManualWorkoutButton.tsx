@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   buildManualOpenWaterWorkoutEmptyDraft,
   buildManualPoolWorkoutEmptyDraft,
+  type ManualWorkoutDraftDefaults,
   type ManualWorkoutBuilderMode,
 } from "@/lib/workouts/manual";
 import type { WorkoutSaveApiResponse } from "@/lib/workouts/shared";
@@ -16,6 +17,8 @@ type Props = {
   testId?: string;
   builderMode?: ManualWorkoutBuilderMode;
   createdWorkoutHrefBuilder?: (workoutId: string) => string;
+  manualPoolCssMetricSecondsPer100m?: number | null;
+  manualPoolCssPaceLabel?: string | null;
 };
 
 export default function CreateManualWorkoutButton({
@@ -25,6 +28,8 @@ export default function CreateManualWorkoutButton({
   testId = "create-manual-workout",
   builderMode = "pool",
   createdWorkoutHrefBuilder,
+  manualPoolCssMetricSecondsPer100m = null,
+  manualPoolCssPaceLabel = null,
 }: Props) {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
@@ -34,10 +39,16 @@ export default function CreateManualWorkoutButton({
   const resolvedPendingLabel =
     pendingLabel ??
     (builderMode === "pool" ? "Building pool session..." : "Building open water session...");
-  const buildDraft =
-    builderMode === "pool"
-      ? buildManualPoolWorkoutEmptyDraft
-      : buildManualOpenWaterWorkoutEmptyDraft;
+  const manualPoolDefaults: ManualWorkoutDraftDefaults | undefined =
+    builderMode === "pool" &&
+    typeof manualPoolCssMetricSecondsPer100m === "number" &&
+    Number.isFinite(manualPoolCssMetricSecondsPer100m) &&
+    manualPoolCssMetricSecondsPer100m > 0
+      ? {
+          basePaceSecondsPer100m: manualPoolCssMetricSecondsPer100m,
+          usedCssPaceLabel: manualPoolCssPaceLabel,
+        }
+      : undefined;
   const buildWorkoutHref =
     createdWorkoutHrefBuilder ??
     ((workoutId: string) =>
@@ -57,7 +68,10 @@ export default function CreateManualWorkoutButton({
         },
         body: JSON.stringify({
           sourceKind: "manual",
-          draft: buildDraft(),
+          draft:
+            builderMode === "pool"
+              ? buildManualPoolWorkoutEmptyDraft(new Date(), manualPoolDefaults)
+              : buildManualOpenWaterWorkoutEmptyDraft(),
         }),
       });
       const responseBody = (await response

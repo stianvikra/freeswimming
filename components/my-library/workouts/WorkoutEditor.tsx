@@ -563,6 +563,83 @@ function formatClockDurationLabel(valueMinutes: number | null | undefined) {
   return formatClockDurationLabelFromSeconds(getClockTotalSeconds(valueMinutes));
 }
 
+function formatEditableClockDuration(valueMinutes: number | null | undefined) {
+  if (!valueMinutes || valueMinutes <= 0) return "";
+  return formatClockDurationLabel(valueMinutes);
+}
+
+function sanitizeClockDurationInput(rawValue: string) {
+  const cleaned = rawValue.replace(/[^\d:]/g, "");
+  const [rawMinutes = "", ...rest] = cleaned.split(":");
+  const minutes = rawMinutes.slice(0, 3);
+
+  if (rest.length === 0) {
+    return minutes;
+  }
+
+  return `${minutes}:${rest.join("").slice(0, 2)}`;
+}
+
+function parseClockDurationInputForChange(value: string) {
+  const trimmed = value.trim();
+
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  if (/^\d{1,3}$/.test(trimmed)) {
+    const minutes = Number.parseInt(trimmed, 10);
+    return minutes > 0 ? minutes : null;
+  }
+
+  const completeClockMatch = trimmed.match(/^(\d{1,3}):(\d{2})$/);
+  if (!completeClockMatch) {
+    return undefined;
+  }
+
+  const minutes = Number.parseInt(completeClockMatch[1], 10);
+  const seconds = Math.min(59, Number.parseInt(completeClockMatch[2], 10));
+  const totalSeconds = minutes * 60 + seconds;
+
+  return totalSeconds > 0 ? totalSeconds / 60 : null;
+}
+
+function normalizeClockDurationInput(value: string) {
+  const trimmed = value.trim();
+
+  if (trimmed.length === 0) {
+    return {
+      display: "",
+      timeMin: null as number | null,
+    };
+  }
+
+  if (/^\d{1,3}$/.test(trimmed)) {
+    const minutes = Number.parseInt(trimmed, 10);
+    return {
+      display: `${minutes}:00`,
+      timeMin: minutes > 0 ? minutes : null,
+    };
+  }
+
+  const partialClockMatch = trimmed.match(/^(\d{1,3}):(\d{0,2})$/);
+  if (!partialClockMatch) {
+    return {
+      display: "",
+      timeMin: null as number | null,
+    };
+  }
+
+  const minutes = Number.parseInt(partialClockMatch[1], 10);
+  const seconds = Math.min(59, Number.parseInt(partialClockMatch[2] || "0", 10));
+  const totalSeconds = minutes * 60 + seconds;
+
+  return {
+    display: `${minutes}:${String(seconds).padStart(2, "0")}`,
+    timeMin: totalSeconds > 0 ? totalSeconds / 60 : null,
+  };
+}
+
 function buildStepRemovalLabel(
   step: SessionDraftStep,
   fallbackIndex: number,
@@ -731,6 +808,32 @@ function buildRepeatSummary(
   return parts.join(" · ");
 }
 
+function buildRepeatEndingRestDescription(
+  entries: StepRenderEntry[],
+  repeatCount: number | null,
+  basePaceSecondsPer100m: number,
+  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
+) {
+  const lastEntry = entries[entries.length - 1];
+  if (!lastEntry || !isSessionDraftRepeatEndingRestStep(lastEntry.step)) {
+    return null;
+  }
+
+  const restLabel = buildWorkoutStepDurationOutputSummary(lastEntry.step, basePaceSecondsPer100m, {
+    environment: "pool",
+  });
+
+  if (repeatCount !== null && repeatCount <= 1) {
+    return repeatEndingRestMode === "skip_last_rest"
+      ? `${restLabel} is skipped after the round.`
+      : `${restLabel} runs after the round.`;
+  }
+
+  return repeatEndingRestMode === "skip_last_rest"
+    ? `${restLabel} still runs between rounds. It is skipped only after the final round.`
+    : `${restLabel} runs between rounds and again after the final round.`;
+}
+
 function getPaceMinutes(secondsPer100m: number | null | undefined) {
   if (!secondsPer100m || secondsPer100m <= 0) return "";
   return String(Math.floor(secondsPer100m / 60));
@@ -828,10 +931,18 @@ export default function WorkoutEditor({
   const isManualPoolMode = manualBuilderMode === "pool";
   const isManualOpenWaterMode = manualBuilderMode === "open_water";
   const autoPoolBuilderTitle = getPoolBuilderAutoTitle(draft.environment);
+  const timeDurationInputFocusRef = useRef<Record<string, boolean>>({});
   const [openStepId, setOpenStepId] = useState<string | null>(null);
   const [poolLengthUnit, setPoolLengthUnit] = useState<PoolLengthUnit>("m");
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
     formatEditablePoolLength(draft.poolLengthM)
+  );
+  const [timeDurationInputs, setTimeDurationInputs] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      draft.steps
+        .filter((step) => step.durationMode === "time")
+        .map((step) => [step.id, formatEditableClockDuration(step.timeMin)])
+    )
   );
   const [manualPoolTitleEdited, setManualPoolTitleEdited] = useState(false);
   const [poolSizeExplicitlyUnspecified, setPoolSizeExplicitlyUnspecified] = useState(
@@ -1059,6 +1170,31 @@ export default function WorkoutEditor({
       setOpenStepId(null);
     }
   }, [draft.steps, openStepId]);
+
+  useEffect(() => {
+    setTimeDurationInputs((current) => {
+      const next: Record<string, string> = {};
+
+      for (const step of draft.steps) {
+        if (step.durationMode !== "time") continue;
+
+        next[step.id] = timeDurationInputFocusRef.current[step.id]
+          ? (current[step.id] ?? formatEditableClockDuration(step.timeMin))
+          : formatEditableClockDuration(step.timeMin);
+      }
+
+      const currentKeys = Object.keys(current);
+      const nextKeys = Object.keys(next);
+      if (
+        currentKeys.length === nextKeys.length &&
+        currentKeys.every((key) => current[key] === next[key])
+      ) {
+        return current;
+      }
+
+      return next;
+    });
+  }, [draft.steps]);
 
   useEffect(() => {
     setSupportToolsOpen(!showCalmBuilderLayout);
@@ -1600,6 +1736,35 @@ export default function WorkoutEditor({
     });
   }
 
+  function handleTimeDurationInputChange(stepId: string, rawValue: string) {
+    const sanitized = sanitizeClockDurationInput(rawValue);
+    setTimeDurationInputs((current) =>
+      current[stepId] === sanitized ? current : { ...current, [stepId]: sanitized }
+    );
+
+    const parsed = parseClockDurationInputForChange(sanitized);
+    if (parsed === undefined) {
+      return;
+    }
+
+    updateDraftStep(stepId, (current) => ({
+      ...current,
+      timeMin: parsed,
+    }));
+  }
+
+  function commitTimeDurationInput(stepId: string) {
+    timeDurationInputFocusRef.current[stepId] = false;
+    const normalized = normalizeClockDurationInput(timeDurationInputs[stepId] ?? "");
+    setTimeDurationInputs((current) =>
+      current[stepId] === normalized.display ? current : { ...current, [stepId]: normalized.display }
+    );
+    updateDraftStep(stepId, (current) => ({
+      ...current,
+      timeMin: normalized.timeMin,
+    }));
+  }
+
   function updateStepDistanceSelection(stepId: string, value: string) {
     updateDraftStep(stepId, (current) => ({
       ...current,
@@ -1789,6 +1954,11 @@ export default function WorkoutEditor({
     const isOpen = openStepId === step.id;
     const toggleLabel = isOpen ? "Done" : "Edit step";
     const panelId = `session-draft-step-panel-${step.id}`;
+    const stepLabel = insideRepeatGroup
+      ? step.category === "rest"
+        ? `Repeat rest step ${options?.repeatStepNumber ?? 1}`
+        : `Repeat step ${options?.repeatStepNumber ?? 1}`
+      : `Step ${index + 1}`;
     const stepTitle = isManualPoolMode
       ? buildManualPoolStepSummary(step, draft.basePaceSecondsPer100m)
       : step.name || getSessionStepCategoryLabel(step.category);
@@ -1807,9 +1977,7 @@ export default function WorkoutEditor({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {insideRepeatGroup
-                ? `Repeat step ${options?.repeatStepNumber ?? 1}`
-                : `Step ${index + 1}`}
+              {stepLabel}
             </p>
             <p className="mt-1 text-sm font-medium text-slate-900">{stepTitle}</p>
             <p className="mt-1 text-xs font-medium text-slate-600">
@@ -2150,16 +2318,30 @@ export default function WorkoutEditor({
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={step.timeMin ?? ""}
+                  placeholder={isManualPoolMode ? "MM:SS" : undefined}
+                  value={isManualPoolMode ? (timeDurationInputs[step.id] ?? "") : (step.timeMin ?? "")}
+                  onFocus={() => {
+                    if (!isManualPoolMode) return;
+                    timeDurationInputFocusRef.current[step.id] = true;
+                  }}
+                  onBlur={() => {
+                    if (!isManualPoolMode) return;
+                    commitTimeDurationInput(step.id);
+                  }}
                   onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      timeMin: parsePositiveNumber(event.target.value),
-                    }))
+                    isManualPoolMode
+                      ? handleTimeDurationInputChange(step.id, event.target.value)
+                      : updateDraftStep(step.id, (current) => ({
+                          ...current,
+                          timeMin: parsePositiveNumber(event.target.value),
+                        }))
                   }
                   data-testid={`session-draft-step-time-${index}`}
                   className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
+                {isManualPoolMode ? (
+                  <p className="mt-2 text-xs text-slate-500">Use `MM:SS`.</p>
+                ) : null}
               </label>
             ) : step.durationMode === "send_off" ? (
               <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
@@ -3407,30 +3589,41 @@ export default function WorkoutEditor({
                 key={group.repeatGroupId}
                 className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
               >
+                {(() => {
+                  const repeatSummary = buildRepeatSummary(
+                    group.entries,
+                    group.repeatCount,
+                    draft.basePaceSecondsPer100m,
+                    group.repeatEndingRestMode
+                  );
+                  const repeatEndingRestDescription = buildRepeatEndingRestDescription(
+                    group.entries,
+                    group.repeatCount,
+                    draft.basePaceSecondsPer100m,
+                    group.repeatEndingRestMode
+                  );
+
+                  return (
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                    Repeat block
-                  </p>
-                  {isManualPoolMode ? null : (
-                    <>
-                      <p className="mt-1 text-sm font-medium text-slate-900">
-                        {buildRepeatSummary(
-                          group.entries,
-                          group.repeatCount,
-                          draft.basePaceSecondsPer100m,
-                          group.repeatEndingRestMode
-                        )}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        Edit the repeated steps below instead of duplicating every round by hand.
-                      </p>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      Repeat block
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-900">{repeatSummary}</p>
+                    {isManualPoolMode ? null : (
+                      <>
+                        <p className="mt-1 text-xs text-slate-600">
+                          Edit the repeated steps below instead of duplicating every round by hand.
+                        </p>
                         <p className="mt-1 text-xs text-slate-500">
                           Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
                           {SESSION_DRAFT_REPEAT_MAX} rounds per block.
                         </p>
                       </>
                     )}
+                    {repeatEndingRestDescription ? (
+                      <p className="mt-2 text-xs text-slate-600">{repeatEndingRestDescription}</p>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap items-end gap-2">
                     <label className="text-sm text-slate-700">
@@ -3526,6 +3719,8 @@ export default function WorkoutEditor({
                     </button>
                   </div>
                 </div>
+                  );
+                })()}
 
                 <div className="mt-4 space-y-3">
                   {group.entries.map((entry, repeatIndex) =>

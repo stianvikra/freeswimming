@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
+import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import type { WorkoutPoolsideFocusOption } from "@/lib/workouts/shared";
@@ -19,9 +20,10 @@ export default async function WorkoutSessionsPage() {
     redirect("/auth/sign-in?next=%2Fmy-library%2Fworkouts");
   }
 
-  const [workoutLibrary, trainingContextSnapshot] = await Promise.all([
+  const [workoutLibrary, trainingContextSnapshot, athleteProfileSnapshot] = await Promise.all([
     loadWorkoutLibrarySnapshot(supabase, user.id, null),
     loadTrainingContextSnapshot(supabase, user.id),
+    loadAthleteProfileSnapshot(supabase, user.id),
   ]);
   const trainingFocusOptions: WorkoutPoolsideFocusOption[] =
     trainingContextSnapshot.schemaReady && !trainingContextSnapshot.loadError
@@ -57,6 +59,8 @@ export default async function WorkoutSessionsPage() {
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
               trainingFocusOptions={trainingFocusOptions}
+              manualPoolCssMetricSecondsPer100m={athleteProfileSnapshot.cssMetric?.valueSeconds ?? null}
+              manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
               browseOnly
             />
           </div>

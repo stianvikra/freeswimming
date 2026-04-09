@@ -2492,7 +2492,7 @@ export function buildWorkoutStepDurationOutputSummary(
     case "distance":
       return step.distanceM ? `${step.distanceM}m` : "Distance not set";
     case "time":
-      return step.timeMin ? `Time ${formatMinutesLabel(step.timeMin)}` : "Time not set";
+      return step.timeMin ? `Time ${formatClockDurationLabel(step.timeMin)}` : "Time not set";
     case "fixed_rest":
       return step.timeMin
         ? `Fixed Rest Time ${formatClockDurationLabel(step.timeMin)}`

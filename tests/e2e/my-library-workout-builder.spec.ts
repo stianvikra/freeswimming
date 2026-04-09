@@ -175,6 +175,12 @@ test.describe("my library workout builder", () => {
     await expect(restDurationOptions.filter({ hasText: /^Distance$/ })).toHaveCount(0);
     await expect(restDurationOptions.filter({ hasText: /^Time$/ })).toHaveCount(0);
     await page.getByLabel("Step Type").selectOption("main");
+    await page.getByTestId("session-draft-step-duration-mode-0").selectOption("time");
+    await page.getByTestId("session-draft-step-time-0").fill("1:30");
+    await page.getByTestId("session-draft-step-time-0").blur();
+    await expect(page.getByTestId("session-draft-step-time-0")).toHaveValue("1:30");
+    await expect(page.getByText("Use `MM:SS`.")).toBeVisible();
+    await page.getByTestId("session-draft-step-duration-mode-0").selectOption("distance");
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
     );
@@ -264,6 +270,11 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
       "skip_last_rest"
     );
+    await expect(
+      page.getByText(
+        "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
+      )
+    ).toBeVisible();
     await expect(page.getByText("Edit this into the exact repeat you want to hold.")).toHaveCount(0);
     await expect(
       page.getByText("Adjust or remove this recovery once the set is dialed in.")
