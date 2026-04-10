@@ -109,6 +109,22 @@ test.describe("my library workout builder", () => {
     });
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
+    await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(
+      "data-containment-style",
+      "flat"
+    );
+    await expect(page.getByTestId("workout-editor-pool-size-panel")).toHaveAttribute(
+      "data-containment-style",
+      "integrated"
+    );
+    await expect(page.getByTestId("workout-editor-support-tools-panel")).toHaveAttribute(
+      "data-containment-style",
+      "sectioned"
+    );
+    await expect(page.getByTestId("workout-editor-poolside-panel")).toHaveAttribute(
+      "data-containment-style",
+      "split"
+    );
 
     await expect(page.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
       "aria-expanded",
@@ -145,12 +161,8 @@ test.describe("my library workout builder", () => {
     await expect(page.getByLabel("Duration")).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Target" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Notes" })).toBeVisible();
-    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "Distance"
-    );
-    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
-      "Time"
-    );
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText("Distance");
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText("Time");
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
       "Lap Button Press"
     );
@@ -168,9 +180,7 @@ test.describe("my library workout builder", () => {
     await expect(page.locator("label").filter({ hasText: /^Target summary$/ })).toHaveCount(0);
     await expect(page.locator("label").filter({ hasText: /^Target notes$/ })).toHaveCount(0);
     await page.getByLabel("Step Type").selectOption("rest");
-    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toHaveValue(
-      "fixed_rest"
-    );
+    await expect(page.getByTestId("session-draft-step-duration-mode-0")).toHaveValue("fixed_rest");
     await expect(page.getByLabel("Stroke Type")).toHaveCount(0);
     await expect(page.getByLabel("Drill Type")).toHaveCount(0);
     await expect(page.getByRole("combobox", { name: "Target" })).toHaveCount(0);
@@ -293,7 +303,9 @@ test.describe("my library workout builder", () => {
         "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
       )
     ).toBeVisible();
-    await expect(page.getByText("Edit this into the exact repeat you want to hold.")).toHaveCount(0);
+    await expect(page.getByText("Edit this into the exact repeat you want to hold.")).toHaveCount(
+      0
+    );
     await expect(
       page.getByText("Adjust or remove this recovery once the set is dialed in.")
     ).toHaveCount(0);
@@ -324,11 +336,13 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-garmin-readiness-summary")).toHaveText(
       "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
     );
+    await expect(page.getByText(/open focuses will be included on the poolside note/i)).toHaveCount(
+      0
+    );
     await expect(
-      page.getByText(/open focuses will be included on the poolside note/i)
-    ).toHaveCount(0);
-    await expect(
-      page.getByText("Color-first output. Turn on Print backgrounds in your browser if you want the blue fills.")
+      page.getByText(
+        "Color-first output. Turn on Print backgrounds in your browser if you want the blue fills."
+      )
     ).toHaveCount(0);
     await page.getByTestId("workout-editor-garmin-readiness-toggle").click();
     await expect(page.getByTestId("workout-editor-garmin-readiness-issue-0")).toContainText("Fins");
