@@ -272,6 +272,31 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-repeat-mobile-remove-1")).toBeVisible();
   });
 
+  it("keeps larger-screen step and repeat action rows stacked below readable summaries", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("session-draft-step-summary-0")).toBeVisible();
+    expect(screen.getByTestId("session-draft-step-desktop-actions-0")).toHaveAttribute(
+      "data-desktop-layout",
+      "stacked"
+    );
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+
+    expect(screen.getByTestId("session-draft-repeat-summary-1")).toBeVisible();
+    expect(screen.getByTestId("session-draft-repeat-desktop-actions-1")).toHaveAttribute(
+      "data-desktop-layout",
+      "stacked"
+    );
+  });
+
   it("loads an accepted workout and saves canonical edits back to the same workout", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {

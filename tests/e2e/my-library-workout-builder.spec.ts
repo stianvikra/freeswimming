@@ -232,6 +232,20 @@ test.describe("my library workout builder", () => {
     await expect(page.locator("fieldset").filter({ hasText: "Equipment" })).toHaveCount(0);
     await expect(page.getByRole("combobox", { name: "Session type" })).toHaveCount(0);
     await expect(page.getByRole("combobox", { name: "Effort" })).toHaveCount(0);
+    await expect(page.getByTestId("session-draft-step-summary-0")).toBeVisible();
+    await expect(page.getByTestId("session-draft-step-desktop-actions-0")).toHaveAttribute(
+      "data-desktop-layout",
+      "stacked"
+    );
+    const stepSummaryBox = await page.getByTestId("session-draft-step-summary-0").boundingBox();
+    const stepActionsBox = await page
+      .getByTestId("session-draft-step-desktop-actions-0")
+      .boundingBox();
+    expect(stepSummaryBox).not.toBeNull();
+    expect(stepActionsBox).not.toBeNull();
+    expect(stepActionsBox!.y).toBeGreaterThanOrEqual(
+      stepSummaryBox!.y + stepSummaryBox!.height - 2
+    );
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(
@@ -376,6 +390,19 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
     await page.getByTestId("session-draft-add-repeat").click();
+    await expect(page.getByTestId("session-draft-repeat-desktop-actions-1")).toHaveAttribute(
+      "data-desktop-layout",
+      "stacked"
+    );
+    const repeatSummaryBox = await page.getByTestId("session-draft-repeat-summary-1").boundingBox();
+    const repeatActionsBox = await page
+      .getByTestId("session-draft-repeat-desktop-actions-1")
+      .boundingBox();
+    expect(repeatSummaryBox).not.toBeNull();
+    expect(repeatActionsBox).not.toBeNull();
+    expect(repeatActionsBox!.y).toBeGreaterThanOrEqual(
+      repeatSummaryBox!.y + repeatSummaryBox!.height - 2
+    );
     await page.getByTestId("session-draft-repeat-count-1").fill("6");
     await expect(page.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
       "skip_last_rest"

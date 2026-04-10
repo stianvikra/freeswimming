@@ -1237,6 +1237,10 @@ export default function WorkoutEditor({
   const mobileActionPanelClass = "mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-2.5";
   const mobileSecondaryActionClass =
     "inline-flex min-h-10 w-full items-center justify-start rounded-xl border px-3 py-2 text-sm font-medium transition";
+  const desktopHeaderStackClass = "flex items-start justify-between gap-3 sm:flex-col sm:justify-start";
+  const desktopSummaryBlockClass = "min-w-0 flex-1 sm:w-full";
+  const desktopActionRowClass = "hidden w-full flex-wrap items-center gap-2 sm:flex";
+  const desktopRepeatControlRowClass = "grid gap-3";
 
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
@@ -2140,8 +2144,8 @@ export default function WorkoutEditor({
               : "border-slate-200 bg-slate-50/70"
         }`}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        <div className={desktopHeaderStackClass}>
+          <div className={desktopSummaryBlockClass}>
             <button
               type="button"
               onClick={() => {
@@ -2160,9 +2164,18 @@ export default function WorkoutEditor({
                 </span>
               </div>
             </button>
-            <div className="hidden sm:block">{stepSummaryContent}</div>
+            <div
+              data-testid={`session-draft-step-summary-${index}`}
+              className="hidden sm:block"
+            >
+              {stepSummaryContent}
+            </div>
           </div>
-          <div className="hidden flex-wrap items-center gap-2 sm:flex">
+          <div
+            data-testid={`session-draft-step-desktop-actions-${index}`}
+            data-desktop-layout="stacked"
+            className={desktopActionRowClass}
+          >
             {insideRepeatGroup || isLinkedPostSetRest ? null : (
               <>
                 <button
@@ -3959,8 +3972,11 @@ export default function WorkoutEditor({
 
                   return (
                     <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
+                      <div className={desktopHeaderStackClass}>
+                        <div
+                          data-testid={`session-draft-repeat-summary-${groupIndex}`}
+                          className={desktopSummaryBlockClass}
+                        >
                           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                             Repeat set
                           </p>
@@ -4015,7 +4031,7 @@ export default function WorkoutEditor({
                         </div>
                       </div>
 
-                      <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:justify-between">
+                      <div className={desktopRepeatControlRowClass}>
                         <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
                           <label className="text-sm text-slate-700">
                             Repeat count
@@ -4056,7 +4072,11 @@ export default function WorkoutEditor({
                           ) : null}
                         </div>
 
-                        <div className="hidden flex-wrap items-end gap-2 sm:flex">
+                        <div
+                          data-testid={`session-draft-repeat-desktop-actions-${groupIndex}`}
+                          data-desktop-layout="stacked"
+                          className="hidden w-full flex-wrap items-end gap-2 sm:flex"
+                        >
                           <button
                             type="button"
                             onClick={() => moveDraftGroup(groupIndex, -1)}
