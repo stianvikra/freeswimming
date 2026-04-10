@@ -36,26 +36,37 @@ export default async function WorkoutSessionsPage() {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
-        <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+      <section
+        data-testid="workout-builder-route-shell"
+        data-mobile-density="tight"
+        className="mx-auto min-h-screen w-full max-w-[980px] px-3 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-24 sm:px-5 sm:pb-20 sm:pt-28 lg:px-6"
+      >
+        <div
+          data-testid="workout-builder-page-card"
+          data-mobile-density="tight"
+          className="rounded-[1.75rem] border border-blue-100 bg-white/95 p-3 shadow-[0_16px_60px_rgba(24,58,107,0.14)] sm:rounded-3xl sm:p-6 lg:p-8"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">My Swim Sessions</h1>
+              <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
+                My Swim Sessions
+              </h1>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
                 href="/my-library"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
-                Back to My Library
+                <span className="sm:hidden">Back</span>
+                <span className="hidden sm:inline">Back to My Library</span>
               </Link>
             </div>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-6 sm:mt-8">
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
               trainingFocusOptions={trainingFocusOptions}

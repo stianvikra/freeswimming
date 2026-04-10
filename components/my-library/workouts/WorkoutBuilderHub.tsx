@@ -171,7 +171,8 @@ export default function WorkoutBuilderHub({
       data-testid="workout-builder-hub"
       data-client-ready={clientReady ? "true" : "false"}
       data-containment-style="flat"
-      className="space-y-5"
+      data-mobile-density="tight"
+      className="space-y-4 sm:space-y-5"
     >
       {browseOnly ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -207,7 +208,7 @@ export default function WorkoutBuilderHub({
           ) : null}
         </div>
       ) : (
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
           {!hideShellIntro ? (
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
@@ -218,9 +219,10 @@ export default function WorkoutBuilderHub({
               <Link
                 href="/my-library/workouts"
                 data-testid="workout-builder-view-sessions-link"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:h-10 sm:px-4"
               >
-                My Swim Sessions
+                <span className="sm:hidden">Sessions</span>
+                <span className="hidden sm:inline">My Swim Sessions</span>
               </Link>
             ) : null}
           </div>
@@ -228,7 +230,7 @@ export default function WorkoutBuilderHub({
       )}
 
       {!workoutLibrary.schemaReady ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4">
           <p className="text-sm text-amber-900">
             Canonical workout save is still syncing in this environment. Come back once the workouts
             table is live to edit accepted workouts here.
@@ -237,28 +239,28 @@ export default function WorkoutBuilderHub({
       ) : null}
 
       {workoutLibrary.loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 sm:p-4">
           <p className="text-sm text-rose-900">{workoutLibrary.loadError}</p>
         </div>
       ) : null}
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 sm:p-4">
           <p className="text-sm text-rose-900">{error}</p>
         </div>
       ) : null}
 
       {success ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 sm:p-4">
           <p className="text-sm text-emerald-900">{success}</p>
         </div>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5">
         {!browseOnly && savedWorkout && pendingCurrentDelete ? (
           <div
             data-testid="workout-builder-current-workout-actions"
-            className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4"
+            className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 sm:p-4"
           >
             <p className="text-sm font-medium text-rose-900">Delete this saved session?</p>
             <p className="mt-1 text-sm text-rose-900/90">
@@ -329,7 +331,7 @@ export default function WorkoutBuilderHub({
               deletingWorkoutId={deletingWorkoutId}
             />
           ) : (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
               <p className="text-sm font-medium text-slate-900">No saved sessions yet.</p>
               <p className="mt-2 text-sm text-slate-600">
                 Create your first pool or open water session here, then return to My Swim Sessions
@@ -338,8 +340,8 @@ export default function WorkoutBuilderHub({
             </div>
           )
         ) : !savedWorkout ? (
-          <div className="space-y-5">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+          <div className="space-y-4 sm:space-y-5">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4">
               <p className="text-sm font-medium text-amber-900">
                 {workoutLibrary.selectedWorkoutMissing
                   ? "That saved swim session could not be found."
