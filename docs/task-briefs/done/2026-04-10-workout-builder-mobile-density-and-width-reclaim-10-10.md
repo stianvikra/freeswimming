@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-10-workout-builder-mobile-density-and-width-reclaim-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-10`
 - `updated`: `2026-04-10`
@@ -277,3 +277,4 @@ Strict 10/10 mode for this brief:
 
 - `2026-04-10 | in-progress | created the mobile density and width reclaim child brief in a fresh isolated worktree from main so step-2 builder cleanup can proceed without touching unrelated local changes | next: tighten route-shell/mobile spacing, reprioritize step actions on phone-width layouts, and add targeted tests before running the normal gates`
 - `2026-04-10 | in-progress | tightened route-shell and builder mobile spacing, moved step/repeat secondary actions behind progressive disclosure on phone-width layouts, added targeted unit + mobile e2e coverage, and completed a green local verify:pre-pr run in the isolated worktree | next: commit, push, open the implementation PR, and run verify:pre-merge before final merge-readiness call`
+- `2026-04-10 | done | merged implementation PR #404 as 5c23d49, completed green local verify:pre-merge plus green required CI, and moved the brief to done in a docs closeout branch | next: none`
