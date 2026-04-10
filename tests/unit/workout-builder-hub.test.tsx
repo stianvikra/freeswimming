@@ -230,6 +230,48 @@ describe("WorkoutBuilderHub", () => {
     );
   });
 
+  it("keeps mobile step and repeat actions progressive while preserving access to secondary controls", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("session-draft-step-mobile-summary-0")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.queryByTestId("session-draft-step-mobile-primary-add-after-0")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-mobile-summary-0"));
+
+    expect(screen.getByTestId("session-draft-step-mobile-summary-0")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(screen.getByTestId("session-draft-step-mobile-primary-add-after-0")).toBeVisible();
+    expect(screen.getByTestId("session-draft-step-mobile-primary-add-repeat-after-0")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-mobile-actions-toggle-0"));
+
+    expect(screen.getByTestId("session-draft-step-mobile-actions-panel-0")).toBeVisible();
+    expect(screen.getByTestId("session-draft-step-mobile-move-up-0")).toBeDisabled();
+    expect(screen.getByTestId("session-draft-step-mobile-remove-0")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+
+    expect(screen.getByTestId("session-draft-repeat-mobile-primary-add-step-after-1")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("session-draft-repeat-mobile-actions-toggle-1"));
+
+    expect(screen.getByTestId("session-draft-repeat-mobile-actions-panel-1")).toBeVisible();
+    expect(screen.getByTestId("session-draft-repeat-mobile-add-repeat-after-1")).toBeVisible();
+    expect(screen.getByTestId("session-draft-repeat-mobile-remove-1")).toBeVisible();
+  });
+
   it("loads an accepted workout and saves canonical edits back to the same workout", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {

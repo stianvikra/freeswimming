@@ -9,6 +9,12 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
 }
 
+function runOnceOnMobileChromium(projectName: string) {
+  test.skip(!projectName.startsWith("mobile-"), "Workout builder mobile density e2e is mobile-only.");
+  test.skip(projectName !== "mobile-chromium", "Runs once on mobile Chromium.");
+  test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
+}
+
 async function loginToMyLibraryViaDevBypass(page: Page) {
   await page.goto(`/dev/login?next=${encodeURIComponent("/my-library")}`);
   const pathAfterLogin = new URL(page.url()).pathname;
@@ -72,6 +78,82 @@ async function triggerCreateSession(page: Page, testId: string) {
 }
 
 test.describe("my library workout builder", () => {
+  test("reclaims mobile width and keeps secondary builder actions behind progressive disclosure on phone widths", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnMobileChromium(testInfo.project.name);
+    test.slow();
+
+    await loginToMyLibraryViaDevBypass(page);
+
+    const createButton = page.getByTestId("my-library-create-pool-workout");
+    const schemaReady = await createButton.isVisible().catch(() => false);
+
+    if (!schemaReady) {
+      await expect(
+        page.getByText("This canonical swim-session layer is still syncing in this environment.")
+      ).toBeVisible();
+      return;
+    }
+
+    const createResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/my-library/workouts") &&
+        response.request().method() === "POST" &&
+        response.status() === 200
+    );
+
+    await triggerCreateSession(page, "my-library-create-pool-workout");
+    await createResponsePromise;
+    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
+      timeout: 20_000,
+    });
+    await waitForWorkoutBuilderClientReady(page);
+    await waitForWorkoutBuilderSaveReady(page);
+
+    await expect(page.getByTestId("workout-builder-route-shell")).toHaveAttribute(
+      "data-mobile-density",
+      "tight"
+    );
+    await expect(page.getByTestId("workout-builder-page-card")).toHaveAttribute(
+      "data-mobile-density",
+      "tight"
+    );
+    await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(
+      "data-mobile-density",
+      "tight"
+    );
+
+    await expect(page.getByTestId("session-draft-step-mobile-summary-0")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await page.getByTestId("session-draft-step-mobile-summary-0").click();
+    await expect(page.getByTestId("session-draft-step-mobile-summary-0")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    await expect(page.getByTestId("session-draft-step-mobile-primary-add-after-0")).toBeVisible();
+    await expect(
+      page.getByTestId("session-draft-step-mobile-primary-add-repeat-after-0")
+    ).toBeVisible();
+
+    await page.getByTestId("session-draft-step-mobile-actions-toggle-0").click();
+    await expect(page.getByTestId("session-draft-step-mobile-actions-panel-0")).toBeVisible();
+    await expect(page.getByTestId("session-draft-step-mobile-remove-0")).toBeVisible();
+
+    await page.getByTestId("session-draft-add-repeat").click();
+    await expect(page.getByTestId("session-draft-repeat-count-1")).toBeVisible();
+    await expect(
+      page.getByTestId("session-draft-repeat-mobile-primary-add-step-after-1")
+    ).toBeVisible();
+
+    await page.getByTestId("session-draft-repeat-mobile-actions-toggle-1").click();
+    await expect(page.getByTestId("session-draft-repeat-mobile-actions-panel-1")).toBeVisible();
+    await expect(page.getByTestId("session-draft-repeat-mobile-add-repeat-after-1")).toBeVisible();
+    await expect(page.getByTestId("session-draft-repeat-mobile-remove-1")).toBeVisible();
+  });
+
   test("creates a clean new swim session and saves canonical edits when the schema is available", async ({
     page,
   }, testInfo) => {

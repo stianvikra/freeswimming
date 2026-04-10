@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronDown, ChevronUp, Ellipsis } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type TextareaHTMLAttributes } from "react";
 import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
@@ -1006,6 +1007,7 @@ export default function WorkoutEditor({
   const autoPoolBuilderTitle = getPoolBuilderAutoTitle(draft.environment);
   const timeDurationInputFocusRef = useRef<Record<string, boolean>>({});
   const [openStepId, setOpenStepId] = useState<string | null>(null);
+  const [openMobileActionKey, setOpenMobileActionKey] = useState<string | null>(null);
   const poolLengthUnit = resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit);
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
     formatEditablePoolLength(
@@ -1227,7 +1229,14 @@ export default function WorkoutEditor({
   const integratedSupportSectionClass = "border-t border-slate-200/80 pt-4";
   const supportPreviewShellClass =
     "mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950";
-  const supportSummaryItemClass = "rounded-xl bg-slate-100/80 p-4";
+  const supportSummaryItemClass = "rounded-xl bg-slate-100/80 p-3 sm:p-4";
+  const mobileSummaryToggleClass =
+    "w-full rounded-2xl text-left outline-none transition focus-visible:ring-2 focus-visible:ring-blue-200";
+  const mobileActionToggleClass =
+    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 active:bg-slate-100";
+  const mobileActionPanelClass = "mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-2.5";
+  const mobileSecondaryActionClass =
+    "inline-flex min-h-10 w-full items-center justify-start rounded-xl border px-3 py-2 text-sm font-medium transition";
 
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
@@ -1242,6 +1251,24 @@ export default function WorkoutEditor({
       setOpenStepId(null);
     }
   }, [draft.steps, openStepId]);
+
+  useEffect(() => {
+    if (!openMobileActionKey) return;
+
+    const validMobileActionKeys = new Set<string>();
+    for (const step of draft.steps) {
+      validMobileActionKeys.add(`step:${step.id}`);
+    }
+    for (const group of stepGroups) {
+      if (group.kind === "repeat") {
+        validMobileActionKeys.add(`repeat:${group.repeatGroupId}`);
+      }
+    }
+
+    if (!validMobileActionKeys.has(openMobileActionKey)) {
+      setOpenMobileActionKey(null);
+    }
+  }, [draft.steps, openMobileActionKey, stepGroups]);
 
   useEffect(() => {
     setTimeDurationInputs((current) => {
@@ -2075,11 +2102,37 @@ export default function WorkoutEditor({
     const stepTitle = isManualPoolMode
       ? buildManualPoolStepSummary(step, draft.basePaceSecondsPer100m, poolLengthUnit)
       : step.name || getSessionStepCategoryLabel(step.category);
+    const mobileActionKey = `step:${step.id}`;
+    const mobileActionsOpen = openMobileActionKey === mobileActionKey;
+    const showMobilePrimaryAddAfter = isOpen && !isLinkedPostSetRest;
+    const showMobilePrimaryAddRepeatAfter = showMobilePrimaryAddAfter && !insideRepeatGroup;
+    const stepSummaryContent = (
+      <>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stepLabel}</p>
+        <p className="mt-1 text-base font-medium text-slate-900 sm:text-sm">{stepTitle}</p>
+        <p className="mt-1 text-xs font-medium text-slate-600">
+          {getSessionStepCategoryLabel(step.category)}
+        </p>
+        {!isManualPoolMode ? (
+          <p className="mt-2 text-xs text-slate-600">
+            {buildStepSummary(step, draft.basePaceSecondsPer100m, draft.environment, poolLengthUnit)}
+          </p>
+        ) : null}
+        {options?.descriptionOverride ? (
+          <p className="mt-2 text-xs text-slate-500">{options.descriptionOverride}</p>
+        ) : null}
+        {!isManualPoolMode && step.targetSummary ? (
+          <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
+        ) : null}
+        {step.notes ? <p className="mt-1 text-xs text-slate-400">{step.notes}</p> : null}
+      </>
+    );
 
     return (
       <article
         key={step.id}
-        className={`rounded-2xl border p-4 transition ${
+        data-mobile-actions="progressive"
+        className={`rounded-2xl border p-3 transition sm:p-4 ${
           isOpen
             ? "border-blue-300 bg-white shadow-sm ring-1 ring-blue-100"
             : insideRepeatGroup
@@ -2087,34 +2140,29 @@ export default function WorkoutEditor({
               : "border-slate-200 bg-slate-50/70"
         }`}
       >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {stepLabel}
-            </p>
-            <p className="mt-1 text-sm font-medium text-slate-900">{stepTitle}</p>
-            <p className="mt-1 text-xs font-medium text-slate-600">
-              {getSessionStepCategoryLabel(step.category)}
-            </p>
-            {!isManualPoolMode ? (
-              <p className="mt-2 text-xs text-slate-600">
-                {buildStepSummary(
-                  step,
-                  draft.basePaceSecondsPer100m,
-                  draft.environment,
-                  poolLengthUnit
-                )}
-              </p>
-            ) : null}
-            {options?.descriptionOverride ? (
-              <p className="mt-2 text-xs text-slate-500">{options.descriptionOverride}</p>
-            ) : null}
-            {!isManualPoolMode && step.targetSummary ? (
-              <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
-            ) : null}
-            {step.notes ? <p className="mt-1 text-xs text-slate-400">{step.notes}</p> : null}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => {
+                setOpenMobileActionKey(null);
+                setOpenStepId((current) => (current === step.id ? null : step.id));
+              }}
+              aria-expanded={isOpen}
+              aria-controls={panelId}
+              data-testid={`session-draft-step-mobile-summary-${index}`}
+              className={`${mobileSummaryToggleClass} sm:hidden`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">{stepSummaryContent}</div>
+                <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
+                  {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                </span>
+              </div>
+            </button>
+            <div className="hidden sm:block">{stepSummaryContent}</div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden flex-wrap items-center gap-2 sm:flex">
             {insideRepeatGroup || isLinkedPostSetRest ? null : (
               <>
                 <button
@@ -2190,7 +2238,146 @@ export default function WorkoutEditor({
               </button>
             )}
           </div>
+          <div className="flex shrink-0 sm:hidden">
+            <button
+              type="button"
+              onClick={() =>
+                setOpenMobileActionKey((current) =>
+                  current === mobileActionKey ? null : mobileActionKey
+                )
+              }
+              aria-expanded={mobileActionsOpen}
+              aria-controls={`session-draft-step-mobile-actions-panel-${step.id}`}
+              data-testid={`session-draft-step-mobile-actions-toggle-${index}`}
+              className={mobileActionToggleClass}
+            >
+              <Ellipsis className="size-5" />
+              <span className="sr-only">
+                {mobileActionsOpen ? "Hide step actions" : "Show step actions"}
+              </span>
+            </button>
+          </div>
         </div>
+
+        {mobileActionsOpen ? (
+          <div
+            id={`session-draft-step-mobile-actions-panel-${step.id}`}
+            data-testid={`session-draft-step-mobile-actions-panel-${index}`}
+            className={`${mobileActionPanelClass} sm:hidden`}
+          >
+            {!insideRepeatGroup && !isLinkedPostSetRest ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    moveDraftGroup(groupIndex, -1);
+                    setOpenMobileActionKey(null);
+                  }}
+                  disabled={groupIndex === 0}
+                  data-testid={`session-draft-step-mobile-move-up-${index}`}
+                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  Move up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    moveDraftGroup(groupIndex, 1);
+                    setOpenMobileActionKey(null);
+                  }}
+                  disabled={groupIndex === stepGroups.length - 1}
+                  data-testid={`session-draft-step-mobile-move-down-${index}`}
+                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  Move down
+                </button>
+              </div>
+            ) : null}
+            <div className="mt-2 grid gap-2">
+              {!showMobilePrimaryAddAfter && !isLinkedPostSetRest ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertStepAfterStep(step.id);
+                    setOpenMobileActionKey(null);
+                  }}
+                  data-testid={`session-draft-step-mobile-add-after-${index}`}
+                  className={`${mobileSecondaryActionClass} border-blue-200 bg-white text-blue-800 hover:bg-blue-50`}
+                >
+                  Add step after
+                </button>
+              ) : null}
+              {!showMobilePrimaryAddRepeatAfter && !insideRepeatGroup && !isLinkedPostSetRest ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertRepeatAfterGroup(groupIndex);
+                    setOpenMobileActionKey(null);
+                  }}
+                  data-testid={`session-draft-step-mobile-add-repeat-after-${index}`}
+                  className={`${mobileSecondaryActionClass} border-blue-200 bg-white text-blue-800 hover:bg-blue-50`}
+                >
+                  Add repeat after
+                </button>
+              ) : null}
+              {isLinkedPostSetRest ? null : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    duplicateStep(step.id);
+                    setOpenMobileActionKey(null);
+                  }}
+                  data-testid={`session-draft-step-mobile-duplicate-${index}`}
+                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100`}
+                >
+                  Duplicate
+                </button>
+              )}
+              {isLinkedPostSetRest ? null : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    requestStepRemoval(step.id);
+                    setOpenMobileActionKey(null);
+                  }}
+                  data-testid={`session-draft-step-mobile-remove-${index}`}
+                  className={`${mobileSecondaryActionClass} border-rose-200 bg-white text-rose-700 hover:bg-rose-50`}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {showMobilePrimaryAddAfter ? (
+          <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
+            <button
+              type="button"
+              onClick={() => {
+                insertStepAfterStep(step.id);
+                setOpenMobileActionKey(null);
+              }}
+              data-testid={`session-draft-step-mobile-primary-add-after-${index}`}
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+            >
+              Add after
+            </button>
+            {showMobilePrimaryAddRepeatAfter ? (
+              <button
+                type="button"
+                onClick={() => {
+                  insertRepeatAfterGroup(groupIndex);
+                  setOpenMobileActionKey(null);
+                }}
+                data-testid={`session-draft-step-mobile-primary-add-repeat-after-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100"
+              >
+                Repeat after
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {isOpen ? (
           <div id={panelId} className="mt-4 grid gap-4 md:grid-cols-2">
@@ -2366,7 +2553,7 @@ export default function WorkoutEditor({
             </label>
 
             {step.durationMode === "distance" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                 <label className="text-sm text-slate-700">
                   Distance
                   <select
@@ -2413,7 +2600,7 @@ export default function WorkoutEditor({
                 )}
               </div>
             ) : step.durationMode === "fixed_rest" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
+              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
                 <label className="text-sm text-slate-700">
                   Minutes
                   <input
@@ -2480,7 +2667,7 @@ export default function WorkoutEditor({
                 ) : null}
               </label>
             ) : step.durationMode === "send_off" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
+              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
                 <label className="text-sm text-slate-700">
                   Minutes
                   <input
@@ -2540,7 +2727,7 @@ export default function WorkoutEditor({
                 </select>
               </label>
             ) : (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 text-sm text-slate-600">
                 This step stays open until the swimmer advances with the lap button.
               </div>
             )}
@@ -2604,7 +2791,7 @@ export default function WorkoutEditor({
             ) : null}
 
             {!isMinimalRestEditor && (step.targetMode ?? "none") === "target_pace" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
+              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
                 <label className="text-sm text-slate-700">
                   Pace minutes
                   <input
@@ -2707,7 +2894,7 @@ export default function WorkoutEditor({
   }
 
   const sessionTypeField = (
-    <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+    <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
       Session type
       <select
         value={draft.sessionType}
@@ -2726,7 +2913,7 @@ export default function WorkoutEditor({
   );
 
   const effortField = (
-    <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+    <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
       Effort
       <select
         value={draft.effort}
@@ -2743,7 +2930,7 @@ export default function WorkoutEditor({
   );
 
   const manualMetadataProfileFields = (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:col-span-2">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 md:col-span-2">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-slate-900">Training profile</p>
@@ -2782,7 +2969,7 @@ export default function WorkoutEditor({
 
   const metadataFields = (
     <div className="grid gap-4 md:grid-cols-2">
-      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700">
+      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
         Title
         <input
           type="text"
@@ -2800,7 +2987,7 @@ export default function WorkoutEditor({
 
       {isManualMetadataMode ? null : sessionTypeField}
 
-      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2">
+      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700 md:col-span-2">
         Session note
         {isManualPoolMode ? null : (
           <p className="mt-2 text-xs text-slate-500">
@@ -2819,7 +3006,7 @@ export default function WorkoutEditor({
       </label>
 
       {manualBuilderMode ? null : (
-        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">
           <legend className="px-1 text-sm font-semibold text-slate-900">Environment</legend>
           <div className="mt-3 flex flex-wrap gap-3">
             {SESSION_GENERATOR_ENVIRONMENTS.map((value) => (
@@ -2850,7 +3037,7 @@ export default function WorkoutEditor({
         <div
           data-testid="workout-editor-pool-size-panel"
           data-containment-style="integrated"
-          className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 md:col-span-2"
+          className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700 md:col-span-2"
         >
           <p className="text-sm font-medium text-slate-900">
             {isManualPoolMode ? "Pool Size" : "Pool length"}
@@ -2953,7 +3140,7 @@ export default function WorkoutEditor({
       {isManualPoolMode ? null : isManualMetadataMode ? manualMetadataProfileFields : effortField}
 
       {isManualPoolMode ? null : (
-        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:col-span-2">
+        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 md:col-span-2">
           <legend className="px-1 text-sm font-semibold text-slate-900">Session strokes</legend>
           <div className="mt-3 flex flex-wrap gap-3">
             {SESSION_GENERATOR_STROKES.map((stroke) => (
@@ -2975,7 +3162,7 @@ export default function WorkoutEditor({
       )}
 
       {isManualPoolMode ? null : (
-        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:col-span-2">
+        <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 md:col-span-2">
           <legend className="px-1 text-sm font-semibold text-slate-900">Equipment</legend>
           <div className="mt-3 flex flex-wrap gap-3">
             {SESSION_GENERATOR_EQUIPMENT.map((item) => (
@@ -3001,7 +3188,7 @@ export default function WorkoutEditor({
   const supportStatusSections = (
     <>
       {draft.warnings.length > 0 ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4">
           <ul className="space-y-2 text-sm text-amber-900">
             {draft.warnings.map((warning) => (
               <li key={warning}>{warning}</li>
@@ -3013,7 +3200,7 @@ export default function WorkoutEditor({
       <div
         data-testid="workout-editor-garmin-readiness"
         data-readiness-status={garminReadiness.status}
-        className={`rounded-2xl border p-4 ${
+        className={`rounded-2xl border p-3 sm:p-4 ${
           garminReadiness.status === "ready"
             ? "border-emerald-200 bg-emerald-50/80"
             : "border-amber-200 bg-amber-50/80"
@@ -3327,7 +3514,7 @@ export default function WorkoutEditor({
 
   const poolsideNotePanel = showCalmBuilderLayout ? (
     <div
-      className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-5"
+      className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 sm:p-5"
       data-testid="workout-editor-poolside-panel"
       data-containment-style="split"
     >
@@ -3432,7 +3619,7 @@ export default function WorkoutEditor({
     <section
       data-testid="workout-editor-support-tools-panel"
       data-containment-style="sectioned"
-      className={`rounded-2xl border p-5 ${
+      className={`rounded-2xl border p-4 sm:p-5 ${
         garminReadiness.status === "ready"
           ? "border-emerald-200 bg-emerald-50/60"
           : "border-amber-200 bg-amber-50/60"
@@ -3488,9 +3675,9 @@ export default function WorkoutEditor({
   );
 
   return (
-    <div data-testid="workout-editor-panel" className="space-y-5">
+    <div data-testid="workout-editor-panel" className="space-y-4 sm:space-y-5">
       {showLoadedBanner && savedWorkout ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/80 p-3 sm:p-4">
           <div>
             <p className="text-sm font-medium text-blue-900">{loadedBannerTitle}</p>
             <p className="mt-1 text-sm text-blue-900/90">{loadedBannerDescription}</p>
@@ -3509,7 +3696,7 @@ export default function WorkoutEditor({
       {recentWorkouts.length > 0 ? (
         <div
           data-testid="session-generator-recent-workouts"
-          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -3552,7 +3739,7 @@ export default function WorkoutEditor({
       ) : null}
 
       {!showCalmBuilderLayout ? (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-3 sm:p-4">
           <p className="text-sm text-blue-900">
             {savedWorkout ? editorCopy.loadedDraftBanner : editorCopy.unsavedDraftBanner}
           </p>
@@ -3564,7 +3751,7 @@ export default function WorkoutEditor({
       {showCalmBuilderLayout ? (
         <section
           data-testid="workout-editor-metadata-panel"
-          className="rounded-2xl border border-slate-200 bg-white p-4"
+          className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -3614,7 +3801,7 @@ export default function WorkoutEditor({
         metadataFields
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-base font-semibold text-slate-900">
             {isManualPoolMode ? "Session builder" : "Editable draft steps"}
@@ -3624,7 +3811,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={addStep}
               data-testid="session-draft-add-step"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:h-10 sm:px-4"
             >
               Add step
             </button>
@@ -3632,7 +3819,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={addRepeat}
               data-testid="session-draft-add-repeat"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200 sm:h-10 sm:px-4"
             >
               Add repeat
             </button>
@@ -3643,7 +3830,7 @@ export default function WorkoutEditor({
           {stepGroups.length === 0 ? (
             <div
               data-testid="session-draft-empty-steps"
-              className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4"
+              className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-3 sm:p-4"
             >
               <p className="text-sm font-medium text-slate-900">
                 Start from a clean empty session.
@@ -3657,7 +3844,7 @@ export default function WorkoutEditor({
           {pendingRemoval ? (
             <div
               data-testid="workout-editor-removal-confirm"
-              className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4"
+              className="rounded-2xl border border-amber-200 bg-amber-50/90 p-3 sm:p-4"
             >
               <p className="text-sm font-medium text-amber-950">
                 Confirm removal before this builder change is applied.
@@ -3690,7 +3877,7 @@ export default function WorkoutEditor({
           {lastRemovedBlock ? (
             <div
               data-testid="workout-editor-removal-undo"
-              className="rounded-2xl border border-blue-200 bg-blue-50/90 p-4"
+              className="rounded-2xl border border-blue-200 bg-blue-50/90 p-3 sm:p-4"
             >
               <p className="text-sm font-medium text-blue-950">
                 Removed <span className="font-semibold">{lastRemovedBlock.label}</span>.
@@ -3727,7 +3914,7 @@ export default function WorkoutEditor({
                 key={group.repeatGroupId}
                 data-testid={`workout-editor-repeat-group-${groupIndex}`}
                 data-containment-style="calm"
-                className="rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-4 ring-1 ring-inset ring-blue-100"
+                className="rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-3 ring-1 ring-inset ring-blue-100 sm:p-4"
               >
                 {(() => {
                   const repeatSummary = buildRepeatSummary(
@@ -3762,137 +3949,256 @@ export default function WorkoutEditor({
                         group.entries[group.entries.length - 1].step
                       )
                     );
+                  const hasEditableRepeatEndingRest = Boolean(
+                    draft.environment === "pool" &&
+                      (() => {
+                        const lastEntry = group.entries[group.entries.length - 1];
+                        return lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step);
+                      })()
+                  );
+                  const repeatMobileActionKey = `repeat:${group.repeatGroupId}`;
+                  const repeatMobileActionsOpen = openMobileActionKey === repeatMobileActionKey;
 
                   return (
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                          Repeat set
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-slate-900">{repeatSummary}</p>
-                        {isManualPoolMode ? (
-                          <p className="mt-1 text-xs text-slate-600">
-                            Inside the repeat: work interval, then between-interval recovery. After
-                            the set: separate post-set rest.
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                            Repeat set
                           </p>
-                        ) : (
-                          <>
+                          <p className="mt-1 text-sm font-medium text-slate-900">
+                            {repeatSummary}
+                          </p>
+                          {isManualPoolMode ? (
                             <p className="mt-1 text-xs text-slate-600">
-                              Edit the repeated steps below instead of duplicating every round by
-                              hand.
+                              Inside the repeat: work interval, then between-interval recovery.
+                              After the set: separate post-set rest.
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
-                              {SESSION_DRAFT_REPEAT_MAX} rounds per block.
+                          ) : (
+                            <>
+                              <p className="mt-1 text-xs text-slate-600">
+                                Edit the repeated steps below instead of duplicating every round by
+                                hand.
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
+                                {SESSION_DRAFT_REPEAT_MAX} rounds per block.
+                              </p>
+                            </>
+                          )}
+                          {repeatEndingRestDescription ? (
+                            <p className="mt-2 text-xs text-slate-600">
+                              {repeatEndingRestDescription}
                             </p>
-                          </>
-                        )}
-                        {repeatEndingRestDescription ? (
-                          <p className="mt-2 text-xs text-slate-600">
-                            {repeatEndingRestDescription}
-                          </p>
-                        ) : null}
-                        {postSetRestLabel ? (
-                          <p className="mt-1 text-xs text-slate-600">
-                            {postSetRestSuppressed
-                              ? `${postSetRestLabel} is preserved as post-set rest, but suppressed while the last internal rest interval runs after the final round.`
-                              : `${postSetRestLabel} stays outside the repeat block as the post-set rest after the set.`}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="flex flex-wrap items-end gap-2">
-                        <label className="text-sm text-slate-700">
-                          Repeat count
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={group.repeatCount ?? ""}
-                            onChange={(event) =>
-                              updateRepeatGroupCount(group.repeatGroupId, event.target.value)
+                          ) : null}
+                          {postSetRestLabel ? (
+                            <p className="mt-1 text-xs text-slate-600">
+                              {postSetRestSuppressed
+                                ? `${postSetRestLabel} is preserved as post-set rest, but suppressed while the last internal rest interval runs after the final round.`
+                                : `${postSetRestLabel} stays outside the repeat block as the post-set rest after the set.`}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="flex shrink-0 sm:hidden">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenMobileActionKey((current) =>
+                                current === repeatMobileActionKey ? null : repeatMobileActionKey
+                              )
                             }
-                            min={SESSION_DRAFT_REPEAT_MIN}
-                            max={SESSION_DRAFT_REPEAT_MAX}
-                            data-testid={`session-draft-repeat-count-${groupIndex}`}
-                            className="mt-2 block h-11 w-28 rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                          />
-                        </label>
-                        {draft.environment === "pool" &&
-                        (() => {
-                          const lastEntry = group.entries[group.entries.length - 1];
-                          return Boolean(
-                            lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step)
-                          );
-                        })() ? (
+                            aria-expanded={repeatMobileActionsOpen}
+                            aria-controls={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
+                            data-testid={`session-draft-repeat-mobile-actions-toggle-${groupIndex}`}
+                            className={mobileActionToggleClass}
+                          >
+                            <Ellipsis className="size-5" />
+                            <span className="sr-only">
+                              {repeatMobileActionsOpen
+                                ? "Hide repeat actions"
+                                : "Show repeat actions"}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:justify-between">
+                        <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
                           <label className="text-sm text-slate-700">
-                            Last rest interval
-                            <select
-                              value={group.repeatEndingRestMode}
+                            Repeat count
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={group.repeatCount ?? ""}
                               onChange={(event) =>
-                                updateRepeatGroupEndingRestMode(
-                                  group.repeatGroupId,
-                                  event.target.value as SessionDraftRepeatEndingRestMode
-                                )
+                                updateRepeatGroupCount(group.repeatGroupId, event.target.value)
                               }
-                              data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
-                              className="mt-2 block h-11 min-w-[15rem] rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                            >
-                              {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
-                                <option key={mode} value={mode}>
-                                  {getSessionDraftRepeatEndingRestModeLabel(mode)}
-                                </option>
-                              ))}
-                            </select>
+                              min={SESSION_DRAFT_REPEAT_MIN}
+                              max={SESSION_DRAFT_REPEAT_MAX}
+                              data-testid={`session-draft-repeat-count-${groupIndex}`}
+                              className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
+                            />
                           </label>
-                        ) : null}
+                          {hasEditableRepeatEndingRest ? (
+                            <label className="text-sm text-slate-700">
+                              Last rest interval
+                              <select
+                                value={group.repeatEndingRestMode}
+                                onChange={(event) =>
+                                  updateRepeatGroupEndingRestMode(
+                                    group.repeatGroupId,
+                                    event.target.value as SessionDraftRepeatEndingRestMode
+                                  )
+                                }
+                                data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
+                                className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
+                              >
+                                {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
+                                  <option key={mode} value={mode}>
+                                    {getSessionDraftRepeatEndingRestModeLabel(mode)}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ) : null}
+                        </div>
+
+                        <div className="hidden flex-wrap items-end gap-2 sm:flex">
+                          <button
+                            type="button"
+                            onClick={() => moveDraftGroup(groupIndex, -1)}
+                            disabled={groupIndex === 0}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Move up
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveDraftGroup(groupIndex, 1)}
+                            disabled={groupIndex === stepGroups.length - 1}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Move down
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertStepAfterGroup(groupIndex)}
+                            data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                          >
+                            Add step after
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertRepeatAfterGroup(groupIndex)}
+                            data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                          >
+                            Add repeat after
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
+                            data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                          >
+                            Duplicate repeat
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
+                            data-testid={`session-draft-repeat-remove-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+                          >
+                            Remove repeat
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="sm:hidden">
                         <button
                           type="button"
-                          onClick={() => moveDraftGroup(groupIndex, -1)}
-                          disabled={groupIndex === 0}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Move up
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveDraftGroup(groupIndex, 1)}
-                          disabled={groupIndex === stepGroups.length - 1}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Move down
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => insertStepAfterGroup(groupIndex)}
-                          data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                          onClick={() => {
+                            insertStepAfterGroup(groupIndex);
+                            setOpenMobileActionKey(null);
+                          }}
+                          data-testid={`session-draft-repeat-mobile-primary-add-step-after-${groupIndex}`}
+                          className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
                         >
                           Add step after
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => insertRepeatAfterGroup(groupIndex)}
-                          data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                        >
-                          Add repeat after
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
-                          data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                        >
-                          Duplicate repeat
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
-                          data-testid={`session-draft-repeat-remove-${groupIndex}`}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-                        >
-                          Remove repeat
-                        </button>
                       </div>
+
+                      {repeatMobileActionsOpen ? (
+                        <div
+                          id={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
+                          data-testid={`session-draft-repeat-mobile-actions-panel-${groupIndex}`}
+                          className={`${mobileActionPanelClass} sm:hidden`}
+                        >
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                moveDraftGroup(groupIndex, -1);
+                                setOpenMobileActionKey(null);
+                              }}
+                              disabled={groupIndex === 0}
+                              data-testid={`session-draft-repeat-mobile-move-up-${groupIndex}`}
+                              className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
+                            >
+                              Move up
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                moveDraftGroup(groupIndex, 1);
+                                setOpenMobileActionKey(null);
+                              }}
+                              disabled={groupIndex === stepGroups.length - 1}
+                              data-testid={`session-draft-repeat-mobile-move-down-${groupIndex}`}
+                              className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
+                            >
+                              Move down
+                            </button>
+                          </div>
+                          <div className="mt-2 grid gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                insertRepeatAfterGroup(groupIndex);
+                                setOpenMobileActionKey(null);
+                              }}
+                              data-testid={`session-draft-repeat-mobile-add-repeat-after-${groupIndex}`}
+                              className={`${mobileSecondaryActionClass} border-blue-200 bg-white text-blue-800 hover:bg-blue-50`}
+                            >
+                              Add repeat after
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                duplicateRepeatGroup(group.repeatGroupId);
+                                setOpenMobileActionKey(null);
+                              }}
+                              data-testid={`session-draft-repeat-mobile-duplicate-${groupIndex}`}
+                              className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100`}
+                            >
+                              Duplicate repeat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                requestRepeatGroupRemoval(group.repeatGroupId);
+                                setOpenMobileActionKey(null);
+                              }}
+                              data-testid={`session-draft-repeat-mobile-remove-${groupIndex}`}
+                              className={`${mobileSecondaryActionClass} border-rose-200 bg-white text-rose-700 hover:bg-rose-50`}
+                            >
+                              Remove repeat
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+
                     </div>
                   );
                 })()}
@@ -3940,7 +4246,7 @@ export default function WorkoutEditor({
 
       {poolsideNotePanel}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
         <div>
           <p className="text-sm text-slate-600">
             {savedWorkout ? editorCopy.savedWorkoutDescription : editorCopy.unsavedDraftDescription}
