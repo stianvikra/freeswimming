@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-10-workout-builder-step-action-desktop-regression-fix-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-10`
 - `updated`: `2026-04-10`
@@ -125,3 +125,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-10 | in-progress | owner-reported screenshot review found a new larger-screen step-header regression after the shipped mobile density slice: step summary text can be squeezed behind the action row on desktop/tablet | next: fix the step/repeat action header layout in WorkoutEditor, add targeted desktop regression coverage, and run the normal local gates`
 - `2026-04-10 | in-progress | layout fix and targeted regression coverage landed in WorkoutEditor, unit coverage passed, targeted desktop Playwright passed/skipped safely in local env, and full local verify:pre-pr completed green | next: clean test artifacts, commit, push, open PR, and run verify:pre-merge before merge recommendation`
+- `2026-04-10 | done | merged to main as 02cb6c9 after green local verify:pre-pr, green local verify:pre-merge, and green PR 408 checks | next: none`
