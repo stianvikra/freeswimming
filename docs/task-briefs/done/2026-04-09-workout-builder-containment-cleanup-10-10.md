@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-09-workout-builder-containment-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-09`
-- `updated`: `2026-04-09`
+- `updated`: `2026-04-10`
 
 ## Goal
 
@@ -265,3 +265,4 @@ Strict 10/10 mode for this brief:
 - `2026-04-09 | planned | brief lint, verify:pre-pr, and verify:pre-merge all passed in the isolated worktree; branch is ready for docs-only PR handoff | next: commit, push, and open/update the PR`
 - `2026-04-09 | in-progress | implementation started from main in an isolated worktree; scope stays limited to WorkoutBuilderHub plus the targeted top-level WorkoutEditor containment surfaces from this brief | next: flatten the builder shell, pool-size, support/export, poolside note, and repeat chrome without touching workout semantics`
 - `2026-04-09 | in-progress | flattened the builder shell plus the targeted pool-size, support/export, poolside, and repeat-containment surfaces; targeted unit/e2e checks and full verify:pre-pr passed locally | next: commit, push, and open the implementation PR`
+- `2026-04-10 | done | implementation PR #402 merged to main as 90702ade5ae83b31251430c1b9e52997fb80962a after local verify:pre-pr, local verify:pre-merge, and green required CI; brief moved to done during closeout | next: mobile density follow-up, if approved, should be scoped as a separate child brief rather than reopening this slice`
