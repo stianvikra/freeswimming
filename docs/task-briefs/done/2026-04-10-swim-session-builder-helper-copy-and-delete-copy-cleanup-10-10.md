@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-10-swim-session-builder-helper-copy-and-delete-copy-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-10`
 - `updated`: `2026-04-10`
@@ -182,3 +182,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-10 | planning | live `freeswimming.org` admin-note re-check showed that the metadata-panel slice is already shipped on main, while the remaining open builder notes now cluster around low-value helper text and delete-copy truthfulness | next: implement a narrow follow-up slice for `68e1e612` + `7a506574`, keep stale pool-size notes out of scope, and validate with targeted tests plus verify:pre-pr`
 - `2026-04-10 | implementation | changed automatic effort wording from `Target <Effort>` to `Effort <Effort>`, removed the lap-button helper sentence and the extra manual-pool repeat explainer, and tightened saved-session delete copy without changing builder semantics | validation: `npx vitest run tests/unit/workout-builder-hub.test.tsx`, `npm run typecheck`, targeted Playwright builder smoke with local env, and `npm run verify:pre-pr` all passed | next: commit, push, open PR, monitor CI, then run `npm run verify:pre-merge` before merge recommendation`
+- `2026-04-10 | closeout | PR #406 merged to main as `f1c2cc6`; local `npm run verify:pre-merge` passed on the implementation head before merge recommendation, and the brief was moved from `in-progress` to `done` in the closeout follow-up | next: none`
