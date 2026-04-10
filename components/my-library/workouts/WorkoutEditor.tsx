@@ -2727,9 +2727,7 @@ export default function WorkoutEditor({
                 </select>
               </label>
             ) : (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 text-sm text-slate-600">
-                This step stays open until the swimmer advances with the lap button.
-              </div>
+              null
             )}
 
             {isMinimalRestEditor ? null : (
@@ -3969,12 +3967,7 @@ export default function WorkoutEditor({
                           <p className="mt-1 text-sm font-medium text-slate-900">
                             {repeatSummary}
                           </p>
-                          {isManualPoolMode ? (
-                            <p className="mt-1 text-xs text-slate-600">
-                              Inside the repeat: work interval, then between-interval recovery.
-                              After the set: separate post-set rest.
-                            </p>
-                          ) : (
+                          {isManualPoolMode ? null : (
                             <>
                               <p className="mt-1 text-xs text-slate-600">
                                 Edit the repeated steps below instead of duplicating every round by

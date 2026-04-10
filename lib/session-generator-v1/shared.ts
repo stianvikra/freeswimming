@@ -472,7 +472,7 @@ export function buildSessionStepStructuredTargetLabel(
       step.effortTarget && SESSION_GENERATOR_EFFORT_PRESETS.includes(step.effortTarget)
         ? step.effortTarget
         : step.intensity;
-    return `Target ${getSessionEffortLabel(effortTarget)}`;
+    return `Effort ${getSessionEffortLabel(effortTarget)}`;
   }
 
   if (targetMode === "target_pace" && step.targetPaceSecondsPer100m) {

@@ -1316,6 +1316,32 @@ describe("WorkoutBuilderHub", () => {
         "Optional. Leave Drill type on None unless the step needs extra drill, kick, or pull notation."
       )
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("This step stays open until the swimmer advances with the lap button.")
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("session-draft-step-target-mode-0"), {
+      target: { value: "effort" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-target-effort-0"), {
+      target: { value: "moderate" },
+    });
+
+    await waitFor(() => {
+      expect(readPreviewDraft().steps[0]).toMatchObject({
+        targetMode: "effort",
+        effortTarget: "moderate",
+        name: expect.stringContaining("Effort Moderate"),
+      });
+    });
+
+    fireEvent.change(screen.getByTestId("session-draft-step-duration-mode-0"), {
+      target: { value: "lap_button_press" },
+    });
+
+    expect(
+      screen.queryByText("This step stays open until the swimmer advances with the lap button.")
+    ).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Step Type"), {
       target: { value: "rest" },
@@ -1348,6 +1374,11 @@ describe("WorkoutBuilderHub", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText("Move the full repeat block from the header.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Inside the repeat: work interval, then between-interval recovery. After the set: separate post-set rest."
+      )
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(
@@ -1761,6 +1792,11 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
 
     expect(screen.getByText("Delete this saved session from My Library?")).toBeVisible();
+    expect(
+      screen.getByText("Any unsaved builder edits for this session are discarded too.")
+    ).toBeVisible();
+    expect(screen.queryByText(/saved canonical session/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/unsaved local edits/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("workout-builder-confirm-delete-workout-workout-2"));
 

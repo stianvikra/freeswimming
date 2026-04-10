@@ -246,8 +246,7 @@ export default function SavedWorkoutsPanel({
                       Delete this saved session from My Library?
                     </p>
                     <p className="mt-1 text-sm text-rose-900/90">
-                      This removes the saved canonical session and any unsaved local edits in this
-                      open builder view.
+                      Any unsaved builder edits for this session are discarded too.
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
