@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-11-swim-session-builder-repeat-summary-and-poolside-note-copy-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-11`
 - `updated`: `2026-04-11`
@@ -210,3 +210,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-11 | planning + implementation start | re-checked live admin notes on freeswimming.org and confirmed that note 68e1e612 is only partially shipped: effort wording and lap-button cleanup are already done, while repeat-header helper text, `Final rest skipped` in the builder summary, poolside focus descriptions, and short print-style copy still remain | next: implement the remaining note-owned copy/output cleanup, update targeted tests, and run verification before PR handoff`
 - `2026-04-11 | implementation + validation complete on branch | removed the remaining repeat-header helper copy from the builder summary, kept handoff/export repeat semantics intact, threaded training-focus descriptions into Poolside Note selection/output, shortened print-style helper copy, and validated with `npm run lint:briefs:all`, `npm run typecheck`, targeted `vitest`, targeted `playwright`, and full `npm run verify:pre-pr`; perf-budget trend recommendation remains `hold`because the weekly tighten gate is not met yet | next: commit, push, open PR, monitor CI, and run`npm run verify:pre-merge` before merge recommendation`
+- `2026-04-11 | closeout | PR #411 merged to main as `61097e1`; local `npm run verify:pre-merge`passed before merge recommendation, all required PR checks were green, and the brief was moved from`in-progress`to`done` in post-merge closeout | next: none`
