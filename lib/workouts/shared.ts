@@ -131,7 +131,9 @@ const WORKOUT_GARMIN_POOL_MAX_STEP_COUNT = 100;
 const WORKOUT_GARMIN_DRAFT_ISSUE_STEP_ID = "__draft__";
 
 function getWorkoutPoolLengthUnit(draft: Pick<SessionDraft, "environment" | "poolLengthUnit">) {
-  return draft.environment === "pool" ? resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit) : "m";
+  return draft.environment === "pool"
+    ? resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit)
+    : "m";
 }
 
 function formatWorkoutDistanceLabel(
@@ -159,6 +161,7 @@ export type WorkoutPoolsidePrintStyle = (typeof WORKOUT_POOLSIDE_PRINT_STYLES)[n
 export type WorkoutPoolsideFocusOption = {
   id: string;
   title: string;
+  description?: string | null;
   isPrimary?: boolean;
 };
 
@@ -2109,7 +2112,10 @@ export function normalizeSessionDraftForWorkoutPersistence(
     existing.lastIndex = index;
   }
 
-  const linkedPostSetRestValidation = validateLinkedRepeatPostSetRestSteps(canonicalSteps, repeatGroups);
+  const linkedPostSetRestValidation = validateLinkedRepeatPostSetRestSteps(
+    canonicalSteps,
+    repeatGroups
+  );
   if (!linkedPostSetRestValidation.ok) {
     return linkedPostSetRestValidation;
   }
@@ -2325,13 +2331,17 @@ function buildWorkoutGarminPoolRepeatEndingRestCompatibilityIssue(
   }
 
   const useLastRestGroups = buildWorkoutHandoffGroups(draft.steps)
-    .filter((group): group is Extract<WorkoutHandoffGroup, { kind: "repeat" }> => group.kind === "repeat")
+    .filter(
+      (group): group is Extract<WorkoutHandoffGroup, { kind: "repeat" }> => group.kind === "repeat"
+    )
     .filter(
       (group) =>
         group.repeatCount !== null &&
         group.repeatCount > 1 &&
         group.repeatEndingRestMode === "use_last_rest" &&
-        Boolean(group.entries.at(-1) && isSessionDraftRepeatEndingRestStep(group.entries.at(-1)!.step))
+        Boolean(
+          group.entries.at(-1) && isSessionDraftRepeatEndingRestStep(group.entries.at(-1)!.step)
+        )
     )
     .map((group) => {
       const firstEntry = group.entries[0];
@@ -2420,9 +2430,13 @@ function buildWorkoutGarminSendOffCompatibilityIssue(
     return null;
   }
 
-  const previousStep = index > 0 ? steps[index - 1] ?? null : null;
+  const previousStep = index > 0 ? (steps[index - 1] ?? null) : null;
 
-  if (step.category === "rest" && previousStep && isWorkoutGarminDistanceBasedSwimStep(previousStep)) {
+  if (
+    step.category === "rest" &&
+    previousStep &&
+    isWorkoutGarminDistanceBasedSwimStep(previousStep)
+  ) {
     return null;
   }
 
@@ -2780,6 +2794,32 @@ export function selectWorkoutPoolsideFocusTitles(
   return focusOptions.filter((option) => validIds.has(option.id)).map((option) => option.title);
 }
 
+function buildWorkoutPoolsideFocusPoint(option: WorkoutPoolsideFocusOption) {
+  const description = normalizeNullableText(option.description, 240);
+  if (!description || description === option.title) {
+    return option.title;
+  }
+
+  return `${option.title}: ${description}`;
+}
+
+export function selectWorkoutPoolsideFocusPoints(
+  focusOptions: WorkoutPoolsideFocusOption[],
+  selectedFocusIds: string[] | null | undefined
+): string[] {
+  const validIds = new Set(
+    (selectedFocusIds ?? []).map((value) => normalizeRequiredText(value, 120)).filter(Boolean)
+  );
+
+  if (validIds.size === 0) {
+    return [];
+  }
+
+  return focusOptions
+    .filter((option) => validIds.has(option.id))
+    .map(buildWorkoutPoolsideFocusPoint);
+}
+
 export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | undefined) {
   const lines = buildWorkoutPoolsideLines(draft);
 
@@ -3023,11 +3063,9 @@ function buildWorkoutPoolsideTargetLabel(
   basePaceSecondsPer100m: number,
   poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
-  return buildSessionStepStructuredTargetLabel(
-    step,
-    basePaceSecondsPer100m,
-    poolLengthUnit
-  ) ?? null;
+  return (
+    buildSessionStepStructuredTargetLabel(step, basePaceSecondsPer100m, poolLengthUnit) ?? null
+  );
 }
 
 function formatPoolsidePauseDuration(valueMinutes: number) {
@@ -3191,10 +3229,7 @@ function buildWorkoutHandoffRepeatSummary(
     return "repeat count not set";
   }
 
-  const roundMetrics = buildWorkoutRepeatRoundMetrics(
-    entries,
-    basePaceSecondsPer100m
-  );
+  const roundMetrics = buildWorkoutRepeatRoundMetrics(entries, basePaceSecondsPer100m);
 
   const parts = [`${repeatCount} rounds`];
 
@@ -3313,7 +3348,7 @@ function buildWorkoutGarminReadyExportStep(
       distanceValue:
         step.distanceM && environment === "pool"
           ? convertMetersToPoolUnitValue(step.distanceM, poolLengthUnit)
-          : step.distanceM ?? null,
+          : (step.distanceM ?? null),
       distanceUnit: step.distanceM && environment === "pool" ? poolLengthUnit : null,
       timeMin: step.timeMin ?? null,
       cssSendOffOffsetSeconds: step.cssSendOffOffsetSeconds ?? null,
@@ -3455,7 +3490,10 @@ function ensureManualPoolRepeatPostSetRestSteps(steps: SessionDraftStep[]) {
   return nextSteps;
 }
 
-function buildLinkedPostSetRestStep(repeatGroupId: string, lastRepeatStep: SessionDraftStep): SessionDraftStep {
+function buildLinkedPostSetRestStep(
+  repeatGroupId: string,
+  lastRepeatStep: SessionDraftStep
+): SessionDraftStep {
   const copyLastRestTiming = lastRepeatStep.category === "rest";
   const durationMode =
     copyLastRestTiming &&
@@ -3478,7 +3516,9 @@ function buildLinkedPostSetRestStep(repeatGroupId: string, lastRepeatStep: Sessi
     distanceM: null,
     timeMin:
       durationMode === "fixed_rest" || durationMode === "send_off"
-        ? (copyLastRestTiming ? lastRepeatStep.timeMin ?? 1 : 1)
+        ? copyLastRestTiming
+          ? (lastRepeatStep.timeMin ?? 1)
+          : 1
         : durationMode === "lap_button" || durationMode === "css_send_off"
           ? null
           : 1,
@@ -3488,7 +3528,7 @@ function buildLinkedPostSetRestStep(repeatGroupId: string, lastRepeatStep: Sessi
     cssTargetOffsetSeconds: null,
     cssSendOffOffsetSeconds:
       durationMode === "css_send_off" && copyLastRestTiming
-        ? lastRepeatStep.cssSendOffOffsetSeconds ?? 0
+        ? (lastRepeatStep.cssSendOffOffsetSeconds ?? 0)
         : null,
     targetSummary: "",
     notes: copyLastRestTiming ? lastRepeatStep.notes : "",

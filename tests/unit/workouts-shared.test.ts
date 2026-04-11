@@ -12,6 +12,7 @@ import {
   buildWorkoutHandoffText,
   haveWorkoutDraftChanges,
   normalizeSessionDraftForWorkoutPersistence,
+  selectWorkoutPoolsideFocusPoints,
   selectWorkoutPoolsideFocusTitles,
 } from "@/lib/workouts/shared";
 
@@ -1033,5 +1034,20 @@ describe("workouts shared readiness", () => {
         ["focus-2", "missing-focus", "focus-1"]
       )
     ).toEqual(["High elbow catch", "Calm exhale"]);
+
+    expect(
+      selectWorkoutPoolsideFocusPoints(
+        [
+          {
+            id: "focus-1",
+            title: "High elbow catch",
+            description: "Keep the forearm vertical before pressing back.",
+            isPrimary: true,
+          },
+          { id: "focus-2", title: "Calm exhale", description: null, isPrimary: false },
+        ],
+        ["focus-2", "missing-focus", "focus-1"]
+      )
+    ).toEqual(["High elbow catch: Keep the forearm vertical before pressing back.", "Calm exhale"]);
   });
 });

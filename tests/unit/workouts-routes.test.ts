@@ -312,11 +312,13 @@ describe("workouts routes", () => {
         {
           id: "focus-1",
           title: "High elbow catch",
+          details: "Keep the forearm vertical before pressing back.",
           isPrimary: true,
         },
         {
           id: "focus-2",
           title: "Calm exhale",
+          details: "Start the exhale before the head turns to breathe.",
           isPrimary: false,
         },
       ],
@@ -354,7 +356,7 @@ describe("workouts routes", () => {
     expect(body).toContain("Poolside Note");
     expect(body).toContain('data-pdf-variant="poolside"');
     expect(body).toContain('data-poolside-print-style="ink_saver"');
-    expect(body).toContain("Calm exhale");
+    expect(body).toContain("Calm exhale: Start the exhale before the head turns to breathe.");
     expect(body).not.toContain("High elbow catch");
     expect(body).toContain("Breathing timing");
     expect(body).toContain("lockup-domain-ink.png");

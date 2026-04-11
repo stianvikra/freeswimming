@@ -5,7 +5,7 @@ import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import {
   buildWorkoutPdfHtmlDocument,
   normalizeWorkoutPoolsidePrintStyle,
-  selectWorkoutPoolsideFocusTitles,
+  selectWorkoutPoolsideFocusPoints,
   type WorkoutPoolsideFocusOption,
 } from "@/lib/workouts/shared";
 import { buildWorkoutEditorRecord, WORKOUT_SELECT } from "@/lib/workouts/server";
@@ -93,13 +93,16 @@ export async function GET(request: Request, context: RouteContext) {
       ? trainingContextSnapshot.openFocuses.map((focus) => ({
           id: focus.id,
           title: focus.title,
+          description: focus.details,
           isPrimary: focus.isPrimary,
         }))
       : [];
   const focusPoints =
     requestedFocusIds.length > 0
-      ? selectWorkoutPoolsideFocusTitles(focusOptions, requestedFocusIds)
-      : focusOptions.map((focus) => focus.title);
+      ? selectWorkoutPoolsideFocusPoints(focusOptions, requestedFocusIds)
+      : focusOptions.map((focus) =>
+          focus.description ? `${focus.title}: ${focus.description}` : focus.title
+        );
 
   return applySupabaseCookies(
     noStoreHtml(

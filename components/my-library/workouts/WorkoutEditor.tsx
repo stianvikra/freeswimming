@@ -67,7 +67,7 @@ import {
   buildWorkoutGarminReadinessReport,
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
-  selectWorkoutPoolsideFocusTitles,
+  selectWorkoutPoolsideFocusPoints,
   type WorkoutEditorRecord,
   type WorkoutHandoffDraftState,
   type WorkoutPoolsideFocusOption,
@@ -859,46 +859,7 @@ function buildRepeatSummary(
     );
   }
 
-  const lastEntry = entries[entries.length - 1];
-
-  if (
-    repeatEndingRestMode === "skip_last_rest" &&
-    repeatCount > 1 &&
-    lastEntry &&
-    isSessionDraftRepeatEndingRestStep(lastEntry.step)
-  ) {
-    parts.push("Final rest skipped");
-  }
-
   return parts.join(" · ");
-}
-
-function buildRepeatEndingRestDescription(
-  entries: StepRenderEntry[],
-  repeatCount: number | null,
-  basePaceSecondsPer100m: number,
-  repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
-  poolLengthUnit: SessionDraftPoolLengthUnit
-) {
-  const lastEntry = entries[entries.length - 1];
-  if (!lastEntry || !isSessionDraftRepeatEndingRestStep(lastEntry.step)) {
-    return null;
-  }
-
-  const restLabel = buildWorkoutStepDurationOutputSummary(lastEntry.step, basePaceSecondsPer100m, {
-    environment: "pool",
-    poolLengthUnit,
-  });
-
-  if (repeatCount !== null && repeatCount <= 1) {
-    return repeatEndingRestMode === "skip_last_rest"
-      ? `${restLabel} is skipped after the round.`
-      : `${restLabel} runs after the round.`;
-  }
-
-  return repeatEndingRestMode === "skip_last_rest"
-    ? `${restLabel} still runs between rounds. It is skipped only after the final round.`
-    : `${restLabel} runs between rounds and again after the final round.`;
 }
 
 function getPaceMinutes(secondsPer100m: number | null | undefined) {
@@ -1116,11 +1077,11 @@ export default function WorkoutEditor({
         ? BRAND_PDF_LOGO_PATH
         : new URL(BRAND_PDF_LOGO_PATH, window.location.origin).toString(),
   });
-  const selectedPoolsideFocusTitles = selectWorkoutPoolsideFocusTitles(
+  const selectedPoolsideFocusPoints = selectWorkoutPoolsideFocusPoints(
     trainingFocusOptions,
     selectedPoolsideFocusIds
   );
-  const selectedPoolsideFocusSignature = selectedPoolsideFocusTitles.join("|");
+  const selectedPoolsideFocusSignature = selectedPoolsideFocusPoints.join("|");
   const metadataSummary = isManualPoolMode
     ? [
         draftTotals.totalDistanceM
@@ -1226,7 +1187,8 @@ export default function WorkoutEditor({
   const mobileActionPanelClass = "mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-2.5";
   const mobileSecondaryActionClass =
     "inline-flex min-h-10 w-full items-center justify-start rounded-xl border px-3 py-2 text-sm font-medium transition";
-  const desktopHeaderStackClass = "flex items-start justify-between gap-3 sm:flex-col sm:justify-start";
+  const desktopHeaderStackClass =
+    "flex items-start justify-between gap-3 sm:flex-col sm:justify-start";
   const desktopSummaryBlockClass = "min-w-0 flex-1 sm:w-full";
   const desktopActionRowClass = "hidden w-full flex-wrap items-center gap-2 sm:flex";
   const desktopRepeatControlRowClass = "grid gap-3";
@@ -2032,7 +1994,7 @@ export default function WorkoutEditor({
           ? buildWorkoutPdfHtmlDocument(draft, {
               draftState: handoffDraftState,
               variant: "poolside",
-              focusPoints: selectedPoolsideFocusTitles,
+              focusPoints: selectedPoolsideFocusPoints,
               poolsidePrintStyle,
               logoUrl: new URL(BRAND_PDF_LOGO_PATH, window.location.origin).toString(),
               fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, window.location.origin).toString(),
@@ -2104,7 +2066,12 @@ export default function WorkoutEditor({
         </p>
         {!isManualPoolMode ? (
           <p className="mt-2 text-xs text-slate-600">
-            {buildStepSummary(step, draft.basePaceSecondsPer100m, draft.environment, poolLengthUnit)}
+            {buildStepSummary(
+              step,
+              draft.basePaceSecondsPer100m,
+              draft.environment,
+              poolLengthUnit
+            )}
           </p>
         ) : null}
         {options?.descriptionOverride ? (
@@ -2149,10 +2116,7 @@ export default function WorkoutEditor({
                 </span>
               </div>
             </button>
-            <div
-              data-testid={`session-draft-step-summary-${index}`}
-              className="hidden sm:block"
-            >
+            <div data-testid={`session-draft-step-summary-${index}`} className="hidden sm:block">
               {stepSummaryContent}
             </div>
           </div>
@@ -2724,9 +2688,7 @@ export default function WorkoutEditor({
                   })}
                 </select>
               </label>
-            ) : (
-              null
-            )}
+            ) : null}
 
             {isMinimalRestEditor ? null : (
               <label className="text-sm text-slate-700">
@@ -2891,7 +2853,7 @@ export default function WorkoutEditor({
 
   const metadataFields = (
     <div className="grid gap-4 md:grid-cols-2">
-      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
+      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 sm:p-4">
         Title
         <input
           type="text"
@@ -2908,7 +2870,7 @@ export default function WorkoutEditor({
       </label>
 
       {!simplifyManualMetadata ? (
-        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
+        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 sm:p-4">
           Session type
           <select
             value={draft.sessionType}
@@ -2926,7 +2888,7 @@ export default function WorkoutEditor({
         </label>
       ) : null}
 
-      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700 md:col-span-2">
+      <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 sm:p-4 md:col-span-2">
         {simplifyManualMetadata ? "Session note" : "Description"}
         {!simplifyManualMetadata ? (
           <p className="mt-2 text-xs text-slate-500">
@@ -2976,7 +2938,7 @@ export default function WorkoutEditor({
         <div
           data-testid="workout-editor-pool-size-panel"
           data-containment-style="integrated"
-          className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700 md:col-span-2"
+          className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 sm:p-4 md:col-span-2"
         >
           <p className="text-sm font-medium text-slate-900">
             {isManualPoolMode ? "Pool Size" : "Pool length"}
@@ -3077,7 +3039,7 @@ export default function WorkoutEditor({
       ) : null}
 
       {!simplifyManualMetadata ? (
-        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
+        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 sm:p-4">
           Effort
           <select
             value={draft.effort}
@@ -3516,6 +3478,9 @@ export default function WorkoutEditor({
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium text-slate-900">{focus.title}</span>
+                    {focus.description ? (
+                      <span className="mt-1 block text-xs text-slate-500">{focus.description}</span>
+                    ) : null}
                   </span>
                 </label>
               ))}
@@ -3542,9 +3507,7 @@ export default function WorkoutEditor({
                 />
                 <span>
                   <span className="block font-medium text-slate-900">Color mode</span>
-                  <span className="mt-1 block text-xs text-slate-500">
-                    Keeps the blue surfaces when your browser prints backgrounds.
-                  </span>
+                  <span className="mt-1 block text-xs text-slate-500">Keeps the blue surfaces</span>
                 </span>
               </span>
             </label>
@@ -3559,9 +3522,7 @@ export default function WorkoutEditor({
                 />
                 <span>
                   <span className="block font-medium text-slate-900">Ink saver</span>
-                  <span className="mt-1 block text-xs text-slate-500">
-                    Uses white surfaces and strong outlines for cheaper printing.
-                  </span>
+                  <span className="mt-1 block text-xs text-slate-500">Uses white surfaces.</span>
                 </span>
               </span>
             </label>
@@ -3714,9 +3675,7 @@ export default function WorkoutEditor({
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Session details
               </p>
-              <h3 className="mt-2 text-base font-semibold text-slate-900">
-                Session setup
-              </h3>
+              <h3 className="mt-2 text-base font-semibold text-slate-900">Session setup</h3>
               {!metadataOpen ? (
                 <p
                   data-testid="workout-editor-metadata-summary"
@@ -3879,37 +3838,12 @@ export default function WorkoutEditor({
                     group.repeatEndingRestMode,
                     poolLengthUnit
                   );
-                  const repeatEndingRestDescription = buildRepeatEndingRestDescription(
-                    group.entries,
-                    group.repeatCount,
-                    draft.basePaceSecondsPer100m,
-                    group.repeatEndingRestMode,
-                    poolLengthUnit
-                  );
-                  const postSetRestLabel = group.postSetRestEntry
-                    ? buildWorkoutStepDurationOutputSummary(
-                        group.postSetRestEntry.step,
-                        draft.basePaceSecondsPer100m,
-                        {
-                          environment: "pool",
-                          poolLengthUnit,
-                        }
-                      )
-                    : null;
-                  const postSetRestSuppressed =
-                    group.repeatEndingRestMode === "use_last_rest" &&
-                    Boolean(
-                      group.entries[group.entries.length - 1] &&
-                      isSessionDraftRepeatEndingRestStep(
-                        group.entries[group.entries.length - 1].step
-                      )
-                    );
                   const hasEditableRepeatEndingRest = Boolean(
                     draft.environment === "pool" &&
-                      (() => {
-                        const lastEntry = group.entries[group.entries.length - 1];
-                        return lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step);
-                      })()
+                    (() => {
+                      const lastEntry = group.entries[group.entries.length - 1];
+                      return lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step);
+                    })()
                   );
                   const repeatMobileActionKey = `repeat:${group.repeatGroupId}`;
                   const repeatMobileActionsOpen = openMobileActionKey === repeatMobileActionKey;
@@ -3924,9 +3858,7 @@ export default function WorkoutEditor({
                           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                             Repeat set
                           </p>
-                          <p className="mt-1 text-sm font-medium text-slate-900">
-                            {repeatSummary}
-                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-900">{repeatSummary}</p>
                           {isManualPoolMode ? null : (
                             <>
                               <p className="mt-1 text-xs text-slate-600">
@@ -3939,18 +3871,6 @@ export default function WorkoutEditor({
                               </p>
                             </>
                           )}
-                          {repeatEndingRestDescription ? (
-                            <p className="mt-2 text-xs text-slate-600">
-                              {repeatEndingRestDescription}
-                            </p>
-                          ) : null}
-                          {postSetRestLabel ? (
-                            <p className="mt-1 text-xs text-slate-600">
-                              {postSetRestSuppressed
-                                ? `${postSetRestLabel} is preserved as post-set rest, but suppressed while the last internal rest interval runs after the final round.`
-                                : `${postSetRestLabel} stays outside the repeat block as the post-set rest after the set.`}
-                            </p>
-                          ) : null}
                         </div>
                         <div className="flex shrink-0 sm:hidden">
                           <button
@@ -4155,7 +4075,6 @@ export default function WorkoutEditor({
                           </div>
                         </div>
                       ) : null}
-
                     </div>
                   );
                 })()}
