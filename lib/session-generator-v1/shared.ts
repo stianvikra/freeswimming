@@ -21,6 +21,17 @@ export const SESSION_GENERATOR_EFFORT_PRESETS = [
   "very_hard",
   "race_pace",
 ] as const;
+export const SESSION_DRAFT_STEP_INTENSITY_PRESETS = [
+  "recovery",
+  "easy",
+  "moderate",
+  "hard",
+  "very_hard",
+  "race_pace",
+  "all_out",
+  "ascending",
+  "descending",
+] as const;
 export const SESSION_GENERATOR_SIZE_MODES = ["distance", "estimated_time"] as const;
 export const SESSION_GENERATOR_STROKES = [
   "freestyle",
@@ -88,10 +99,7 @@ export const SESSION_DRAFT_STEP_DISTANCE_PRESETS = [
 ] as const;
 export const SESSION_DRAFT_REPEAT_MIN = 2;
 export const SESSION_DRAFT_REPEAT_MAX = 20;
-export const SESSION_DRAFT_REPEAT_ENDING_REST_MODES = [
-  "use_last_rest",
-  "skip_last_rest",
-] as const;
+export const SESSION_DRAFT_REPEAT_ENDING_REST_MODES = ["use_last_rest", "skip_last_rest"] as const;
 export const SESSION_DRAFT_POOL_LENGTH_UNITS = ["m", "yd"] as const;
 export const SESSION_DRAFT_POOL_LENGTH_PRESETS = [12.5, 25, 50] as const;
 export const SESSION_DRAFT_POOL_LENGTH_MIN = 12.5;
@@ -103,6 +111,7 @@ export type SessionGeneratorEnvironment = (typeof SESSION_GENERATOR_ENVIRONMENTS
 export type SessionGeneratorPoolLength = (typeof SESSION_GENERATOR_POOL_LENGTHS)[number];
 export type SessionGeneratorSessionType = (typeof SESSION_GENERATOR_SESSION_TYPES)[number];
 export type SessionGeneratorEffortPreset = (typeof SESSION_GENERATOR_EFFORT_PRESETS)[number];
+export type SessionDraftStepIntensityPreset = (typeof SESSION_DRAFT_STEP_INTENSITY_PRESETS)[number];
 export type SessionGeneratorSizeMode = (typeof SESSION_GENERATOR_SIZE_MODES)[number];
 export type SessionGeneratorStroke = (typeof SESSION_GENERATOR_STROKES)[number];
 export type SessionGeneratorEquipment = (typeof SESSION_GENERATOR_EQUIPMENT)[number];
@@ -160,12 +169,12 @@ export type SessionDraftStep = {
   stroke: SessionDraftStepStroke;
   drillType?: SessionDraftStepDrillType | null;
   equipment?: SessionDraftStepEquipment | null;
-  intensity: SessionGeneratorEffortPreset;
+  intensity: SessionDraftStepIntensityPreset;
   durationMode: SessionDraftStepDurationMode;
   distanceM: number | null;
   timeMin: number | null;
   targetMode?: SessionDraftStepTargetMode | null;
-  effortTarget?: SessionGeneratorEffortPreset | null;
+  effortTarget?: SessionDraftStepIntensityPreset | null;
   targetPaceSecondsPer100m?: number | null;
   cssTargetOffsetSeconds?: number | null;
   cssSendOffOffsetSeconds?: number | null;
@@ -240,6 +249,18 @@ const EFFORT_LABELS: Record<SessionGeneratorEffortPreset, string> = {
   hard: "Hard",
   very_hard: "Very hard",
   race_pace: "Race pace",
+};
+
+const STEP_INTENSITY_LABELS: Record<SessionDraftStepIntensityPreset, string> = {
+  recovery: "Recovery",
+  easy: "Easy",
+  moderate: "Moderate",
+  hard: "Hard",
+  very_hard: "Very hard",
+  race_pace: "Race pace",
+  all_out: "All out",
+  ascending: "Ascending",
+  descending: "Descending",
 };
 
 const STROKE_LABELS: Record<SessionGeneratorStroke, string> = {
@@ -330,6 +351,10 @@ export function getSessionEffortLabel(value: SessionGeneratorEffortPreset) {
   return EFFORT_LABELS[value];
 }
 
+export function getSessionStepIntensityLabel(value: SessionDraftStepIntensityPreset) {
+  return STEP_INTENSITY_LABELS[value];
+}
+
 export function getSessionStrokeLabel(value: SessionGeneratorStroke | "choice") {
   if (value === "choice") return "Stroke choice";
   return STROKE_LABELS[value];
@@ -367,9 +392,7 @@ export function getSessionDraftRepeatEndingRestModeLabel(value: SessionDraftRepe
   return REPEAT_ENDING_REST_MODE_LABELS[value];
 }
 
-export function resolveSessionDraftPoolLengthUnit(
-  value: unknown
-): SessionDraftPoolLengthUnit {
+export function resolveSessionDraftPoolLengthUnit(value: unknown): SessionDraftPoolLengthUnit {
   return SESSION_DRAFT_POOL_LENGTH_UNITS.includes(value as SessionDraftPoolLengthUnit)
     ? (value as SessionDraftPoolLengthUnit)
     : "m";
@@ -377,12 +400,16 @@ export function resolveSessionDraftPoolLengthUnit(
 
 export function convertPoolUnitValueToMeters(value: number, unit: SessionDraftPoolLengthUnit) {
   const normalized = unit === "yd" ? value * METERS_PER_YARD : value;
-  return Math.round(normalized * WORKOUT_DISTANCE_PRECISION_FACTOR) / WORKOUT_DISTANCE_PRECISION_FACTOR;
+  return (
+    Math.round(normalized * WORKOUT_DISTANCE_PRECISION_FACTOR) / WORKOUT_DISTANCE_PRECISION_FACTOR
+  );
 }
 
 export function convertMetersToPoolUnitValue(value: number, unit: SessionDraftPoolLengthUnit) {
   const normalized = unit === "yd" ? value / METERS_PER_YARD : value;
-  return Math.round(normalized * WORKOUT_DISTANCE_PRECISION_FACTOR) / WORKOUT_DISTANCE_PRECISION_FACTOR;
+  return (
+    Math.round(normalized * WORKOUT_DISTANCE_PRECISION_FACTOR) / WORKOUT_DISTANCE_PRECISION_FACTOR
+  );
 }
 
 function formatWorkoutUnitValue(value: number) {
@@ -393,10 +420,7 @@ export function formatPoolLengthLabel(value: number, unit: SessionDraftPoolLengt
   return `${formatWorkoutUnitValue(convertMetersToPoolUnitValue(value, unit))}${unit}`;
 }
 
-export function formatDistanceMetersLabel(
-  value: number,
-  unit: SessionDraftPoolLengthUnit = "m"
-) {
+export function formatDistanceMetersLabel(value: number, unit: SessionDraftPoolLengthUnit = "m") {
   return `${formatWorkoutUnitValue(convertMetersToPoolUnitValue(value, unit))}${unit}`;
 }
 
@@ -425,12 +449,11 @@ export function isSessionDraftStepDistancePreset(
   return SESSION_DRAFT_STEP_DISTANCE_PRESETS.includes(value as SessionDraftStepDistancePreset);
 }
 
-export function formatPaceSecondsPer100m(
-  value: number,
-  unit: SessionDraftPoolLengthUnit = "m"
-) {
+export function formatPaceSecondsPer100m(value: number, unit: SessionDraftPoolLengthUnit = "m") {
   const normalizedSeconds =
-    unit === "yd" ? Math.max(1, Math.round(value * METERS_PER_YARD)) : Math.max(1, Math.round(value));
+    unit === "yd"
+      ? Math.max(1, Math.round(value * METERS_PER_YARD))
+      : Math.max(1, Math.round(value));
   const totalSeconds = normalizedSeconds;
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -445,9 +468,7 @@ export function resolveSessionStepTargetMode(step: SessionDraftStep): SessionDra
 export function resolveSessionDraftRepeatEndingRestMode(
   value: SessionDraftStep["repeatEndingRestMode"]
 ): SessionDraftRepeatEndingRestMode {
-  return SESSION_DRAFT_REPEAT_ENDING_REST_MODES.includes(
-    value as SessionDraftRepeatEndingRestMode
-  )
+  return SESSION_DRAFT_REPEAT_ENDING_REST_MODES.includes(value as SessionDraftRepeatEndingRestMode)
     ? (value as SessionDraftRepeatEndingRestMode)
     : "use_last_rest";
 }
@@ -469,10 +490,10 @@ export function buildSessionStepStructuredTargetLabel(
 
   if (targetMode === "effort") {
     const effortTarget =
-      step.effortTarget && SESSION_GENERATOR_EFFORT_PRESETS.includes(step.effortTarget)
+      step.effortTarget && SESSION_DRAFT_STEP_INTENSITY_PRESETS.includes(step.effortTarget)
         ? step.effortTarget
         : step.intensity;
-    return `Effort ${getSessionEffortLabel(effortTarget)}`;
+    return getSessionStepIntensityLabel(effortTarget);
   }
 
   if (targetMode === "target_pace" && step.targetPaceSecondsPer100m) {
@@ -688,9 +709,7 @@ export function computeSessionDraftDerivedTotals(draft: SessionDraft): {
       }
 
       if (
-        (durationMode === "time" ||
-          durationMode === "fixed_rest" ||
-          durationMode === "send_off") &&
+        (durationMode === "time" || durationMode === "fixed_rest" || durationMode === "send_off") &&
         groupStep.timeMin
       ) {
         estimatedMinutes += groupStep.timeMin * repeatMultiplier;
@@ -832,12 +851,20 @@ function isEffortPreset(value: unknown): value is SessionGeneratorEffortPreset {
   return SESSION_GENERATOR_EFFORT_PRESETS.includes(value as SessionGeneratorEffortPreset);
 }
 
+export function isSessionDraftStepIntensityPreset(
+  value: unknown
+): value is SessionDraftStepIntensityPreset {
+  return SESSION_DRAFT_STEP_INTENSITY_PRESETS.includes(value as SessionDraftStepIntensityPreset);
+}
+
 function isSizeMode(value: unknown): value is SessionGeneratorSizeMode {
   return SESSION_GENERATOR_SIZE_MODES.includes(value as SessionGeneratorSizeMode);
 }
 
-function getIntensityMultiplier(value: SessionGeneratorEffortPreset) {
+function getIntensityMultiplier(value: SessionDraftStepIntensityPreset) {
   switch (value) {
+    case "recovery":
+      return 1.18;
     case "easy":
       return 1.12;
     case "moderate":
@@ -847,7 +874,13 @@ function getIntensityMultiplier(value: SessionGeneratorEffortPreset) {
     case "very_hard":
       return 0.96;
     case "race_pace":
-      return 0.93;
+      return 0.94;
+    case "all_out":
+      return 0.9;
+    case "ascending":
+      return 1.02;
+    case "descending":
+      return 1;
   }
 }
 
@@ -870,7 +903,7 @@ function resolveStepPaceSecondsPer100m(draft: SessionDraft, step: SessionDraftSt
   const effectiveEffort =
     targetMode === "effort" &&
     step.effortTarget &&
-    SESSION_GENERATOR_EFFORT_PRESETS.includes(step.effortTarget)
+    SESSION_DRAFT_STEP_INTENSITY_PRESETS.includes(step.effortTarget)
       ? step.effortTarget
       : step.intensity;
 

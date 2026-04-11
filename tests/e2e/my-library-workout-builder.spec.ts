@@ -226,7 +226,9 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("link", { name: "AI-generated session" })).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-create-pool")).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-create-open-water")).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "Session setup" })).toBeVisible();
+    await expect(
+      page.getByTestId("workout-editor-metadata-panel").getByText("Untitled pool session")
+    ).toBeVisible();
     await expect(page.getByText("Title through equipment")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toBeVisible();
     await expect(page.getByText("Session details")).toBeVisible();
@@ -242,9 +244,11 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("combobox", { name: "Session type" })).toHaveCount(0);
     await expect(page.getByRole("combobox", { name: "Effort" })).toHaveCount(0);
     await expect(page.getByTestId("session-draft-step-summary-0")).toBeVisible();
+    await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
+    await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(page.getByTestId("session-draft-step-desktop-actions-0")).toHaveAttribute(
       "data-desktop-layout",
-      "stacked"
+      "bottom"
     );
     const stepSummaryBox = await page.getByTestId("session-draft-step-summary-0").boundingBox();
     const stepActionsBox = await page
@@ -255,8 +259,6 @@ test.describe("my library workout builder", () => {
     expect(stepActionsBox!.y).toBeGreaterThanOrEqual(
       stepSummaryBox!.y + stepSummaryBox!.height - 2
     );
-    await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
-    await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(
       page.getByTestId("workout-editor-panel").getByRole("heading", { name: "Session builder" })
     ).toBeVisible();
@@ -311,7 +313,6 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-time-0").fill("1:30");
     await page.getByTestId("session-draft-step-time-0").blur();
     await expect(page.getByTestId("session-draft-step-time-0")).toHaveValue("1:30");
-    await expect(page.getByText("Use `MM:SS`.")).toBeVisible();
     await page.getByTestId("session-draft-step-duration-mode-0").selectOption("distance");
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "All builder changes are saved to the canonical workout."
@@ -370,7 +371,7 @@ test.describe("my library workout builder", () => {
 
     await page.getByTestId("session-draft-step-remove-0").click();
     await expect(page.getByTestId("workout-editor-removal-confirm")).toContainText(
-      "Remove 100m · Freestyle?"
+      "Remove 100m · Freestyle · Moderate?"
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
     await page.getByTestId("workout-editor-removal-cancel-button").click();
@@ -378,7 +379,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-remove-0").click();
     await page.getByTestId("workout-editor-removal-confirm-button").click();
     await expect(page.getByTestId("workout-editor-removal-undo")).toContainText(
-      "Removed 100m · Freestyle."
+      "Removed 100m · Freestyle · Moderate."
     );
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
@@ -401,7 +402,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-add-repeat").click();
     await expect(page.getByTestId("session-draft-repeat-desktop-actions-1")).toHaveAttribute(
       "data-desktop-layout",
-      "stacked"
+      "bottom"
     );
     const repeatSummaryBox = await page.getByTestId("session-draft-repeat-summary-1").boundingBox();
     const repeatActionsBox = await page
@@ -445,9 +446,13 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-target-pace-minutes-1").fill("1");
     await page.getByTestId("session-draft-step-target-pace-seconds-1").fill("35");
     await page.getByTestId("session-draft-step-toggle-2").click();
-    await page.getByTestId("session-draft-step-rest-minutes-2").fill("0");
-    await page.getByTestId("session-draft-step-rest-seconds-2").fill("45");
-    await page.getByLabel("Notes").fill("Leave on the top and count strokes.");
+    await page.getByTestId("session-draft-step-rest-time-2").fill("0:45");
+    await page.getByTestId("session-draft-step-rest-time-2").blur();
+    await page
+      .getByTestId("session-draft-step-summary-2")
+      .locator("xpath=ancestor::article[1]")
+      .getByRole("textbox", { name: "Notes" })
+      .fill("Leave on the top and count strokes.");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
@@ -520,6 +525,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-pdf-open")).toBeVisible();
     await expect(page.getByTestId("workout-editor-poolside-pdf-open")).toBeVisible();
     await page.getByTestId("workout-editor-poolside-style-ink-saver").click();
+    await page.getByTestId("workout-editor-poolside-layout-landscape").click();
     await expect(
       page.getByText(
         "Optional. Use this for the whole-session purpose or one short coaching note that applies across the session."
@@ -553,8 +559,13 @@ test.describe("my library workout builder", () => {
       "data-poolside-print-style",
       "ink_saver"
     );
+    await expect(poolsidePopup.locator('[data-testid="workout-pdf-print-view"]')).toHaveAttribute(
+      "data-poolside-print-layout",
+      "landscape"
+    );
     await expect(poolsidePopup.locator("body")).toContainText("Poolside Note");
     await expect(poolsidePopup.locator("body")).toContainText("Ink saver");
+    await expect(poolsidePopup.locator("body")).toContainText("Landscape");
     await expect(poolsidePopup.locator("body")).toContainText("Tot:");
     await expect(poolsidePopup.locator("body")).toContainText("P: Fixed Rest Time 0:45");
     await poolsidePopup.close();

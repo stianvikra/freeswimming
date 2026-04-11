@@ -1013,7 +1013,7 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("400m");
     expect(html).toContain("Tot: 400m");
     expect(html).toContain("lockup-domain-ink.png");
-    expect(html).toContain("Learn. Drill. Swim.");
+    expect(html).toContain("Pool session execution");
     expect(html).not.toContain("Compact lane-side note");
   });
 

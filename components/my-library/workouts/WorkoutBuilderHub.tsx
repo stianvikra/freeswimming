@@ -22,6 +22,7 @@ type Props = {
   trainingFocusOptions?: WorkoutPoolsideFocusOption[];
   manualPoolCssMetricSecondsPer100m?: number | null;
   manualPoolCssPaceLabel?: string | null;
+  swimmerName?: string | null;
   browseOnly?: boolean;
   hideShellIntro?: boolean;
   preferExpandedDetailsOnLoad?: boolean;
@@ -37,6 +38,7 @@ export default function WorkoutBuilderHub({
   trainingFocusOptions = [],
   manualPoolCssMetricSecondsPer100m = null,
   manualPoolCssPaceLabel = null,
+  swimmerName = null,
   browseOnly = false,
   hideShellIntro = false,
   preferExpandedDetailsOnLoad = false,
@@ -422,6 +424,7 @@ export default function WorkoutBuilderHub({
                 setSuccess("");
               }}
               isDeletingCurrent={deletingWorkoutId === savedWorkout.id}
+              swimmerName={swimmerName}
               recentWorkoutsDescription="Edit another saved session when you want to switch what you are working on."
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
               saveButtonTestId="workout-builder-save"
