@@ -11,6 +11,7 @@ const DOCS_ONLY_ALLOWED_PATTERNS = [
   /^\.github\/pull_request_template\.md$/,
   /^supabase\/README\.md$/,
 ];
+const LOCAL_ARTIFACT_PATTERNS = [/^artifacts\//];
 
 function run(command) {
   try {
@@ -27,10 +28,15 @@ function normalizeGitPath(filePath) {
   return filePath.replace(/\\/g, "/").replace(/^\.\//, "").trim();
 }
 
+function isIgnoredLocalArtifactPath(filePath) {
+  const normalizedPath = normalizeGitPath(filePath);
+  return LOCAL_ARTIFACT_PATTERNS.some((pattern) => pattern.test(normalizedPath));
+}
+
 function uniqueSorted(items) {
-  return Array.from(new Set(items.filter(Boolean).map(normalizeGitPath))).sort((left, right) =>
-    left.localeCompare(right)
-  );
+  return Array.from(
+    new Set(items.filter(Boolean).map(normalizeGitPath).filter((filePath) => !isIgnoredLocalArtifactPath(filePath)))
+  ).sort((left, right) => left.localeCompare(right));
 }
 
 function parseNameStatusZ(output) {

@@ -56,4 +56,14 @@ describe("verification scope", () => {
     expect(result.lane).toBe("full");
     expect(result.disallowedPaths).toEqual(["tests/unit/example.test.ts"]);
   });
+
+  it("ignores local artifacts when classifying docs-only scope", () => {
+    const result = explainVerificationScope([
+      "artifacts/perf-budgets/trend-log.ndjson",
+      "docs/foo.md",
+    ]);
+
+    expect(result.lane).toBe("docs-only");
+    expect(result.changedFiles).toEqual(["docs/foo.md"]);
+  });
 });

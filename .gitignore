@@ -17,6 +17,8 @@
 /blob-report
 .husky/_
 /artifacts/test-runs
+/artifacts/perf-budgets
+/artifacts/verify-pre-merge
 /artifacts/finance-reconciliation
 /.tmp/admin-note-imports/
 
