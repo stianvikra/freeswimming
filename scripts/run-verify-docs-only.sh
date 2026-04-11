@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Try to load Node via nvm when npm is not already on PATH
 if ! command -v npm >/dev/null 2>&1; then
   export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
   if [ -s "${NVM_DIR}/nvm.sh" ]; then
@@ -12,7 +11,7 @@ if ! command -v npm >/dev/null 2>&1; then
 fi
 
 if ! command -v npm >/dev/null 2>&1; then
-  echo "[verify-open] npm not found. Load Node first (for example with nvm)."
+  echo "[verify-docs-only] npm not found. Load Node first (for example with nvm)."
   exit 127
 fi
 
@@ -22,34 +21,31 @@ run_dir="${runs_root}/${timestamp}"
 log_file="${run_dir}/verify.log"
 
 mkdir -p "${run_dir}"
-printf "%s\n" "full-public" > "${run_dir}/mode.txt"
+printf "%s\n" "docs-only" > "${run_dir}/mode.txt"
 
-echo "[verify-open] Running with SITE_LOCK_ENABLED=0"
-echo "[verify-open] Output log: ${log_file}"
+echo "[verify-docs-only] Running docs-only verification lane"
+echo "[verify-docs-only] Output log: ${log_file}"
 
 status=0
-if SITE_LOCK_ENABLED=0 npm run verify 2>&1 | tee "${log_file}"; then
+if {
+  node ./scripts/verification-scope.mjs --summary --assert-docs-only
+  npm run lint:briefs:all
+  npm run lint:admin-audit
+  npm run lint:env-parity
+  npm run lint:pr-body:generated
+} 2>&1 | tee "${log_file}"; then
   status=0
 else
   status=$?
 fi
 
-if [ -d "test-results" ]; then
-  cp -R "test-results" "${run_dir}/test-results"
-fi
-
-if [ -d "playwright-report" ]; then
-  cp -R "playwright-report" "${run_dir}/playwright-report"
-fi
-
 printf "%s\n" "${status}" > "${run_dir}/exit-code.txt"
-
 ln -sfn "${timestamp}" "${runs_root}/latest"
 
 if [ "${status}" -eq 0 ]; then
-  echo "[verify-open] PASS"
+  echo "[verify-docs-only] PASS"
 else
-  echo "[verify-open] FAIL (exit ${status})"
+  echo "[verify-docs-only] FAIL (exit ${status})"
 fi
 
 exit "${status}"

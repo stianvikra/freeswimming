@@ -19,6 +19,12 @@
 ## Test Evidence
 
 - Policy-impact checklist: PASS/FAIL/PENDING/N/A (use `docs/checklists/policy-impact-release-review.md`)
+- For pure docs/governance diffs, document docs-only lane evidence and mark runtime gates `N/A` with rationale.
+- [ ] `npm run verify:docs-only` (pure docs/governance diffs only)
+- [ ] `npm run lint:briefs:all` (required for docs-only lane)
+- [ ] `npm run lint:admin-audit` (required for docs-only lane)
+- [ ] `npm run lint:env-parity` (required for docs-only lane)
+- [ ] `npm run lint:pr-body:generated` (required for docs-only lane)
 - [ ] `npm run lint:briefs`
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`

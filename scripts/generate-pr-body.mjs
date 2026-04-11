@@ -11,7 +11,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { inferPolicyImpactFromChangedFiles } from "./lint-pr-body-sections.mjs";
+import { classifyVerificationLane } from "./verification-scope.mjs";
 
 const BRIEF_PATH_PATTERN =
   /^docs\/task-briefs\/(planned|in-progress|done|deferred|blocked)\/\d{4}-\d{2}-\d{2}-.+\.md$/;
@@ -146,8 +148,10 @@ function readLatestVerifyRun() {
   if (!runDir || !existsSync(runDir)) return null;
 
   const exitCodePath = path.join(runDir, "exit-code.txt");
+  const modePath = path.join(runDir, "mode.txt");
   const verifyLogPath = path.join(runDir, "verify.log");
   const exitCode = existsSync(exitCodePath) ? readFileSync(exitCodePath, "utf8").trim() : "";
+  const lane = existsSync(modePath) ? readFileSync(modePath, "utf8").trim() : "";
   const status = exitCode === "0" ? "PASS" : exitCode ? "FAIL" : "NOT RUN";
   const summaryLines = existsSync(verifyLogPath)
     ? readFileSync(verifyLogPath, "utf8")
@@ -158,6 +162,7 @@ function readLatestVerifyRun() {
 
   return {
     runDir,
+    lane,
     status,
     summaryLines,
   };
@@ -181,6 +186,7 @@ function readLatestPreMergeMarker(headShaFull) {
       headSha: marker?.headSha ?? "",
       shortSha: marker?.shortSha ?? "",
       timestampUtc: marker?.timestampUtc ?? "",
+      verificationLane: marker?.verificationLane ?? "full",
       privateGateMode: marker?.privateGateMode ?? "unknown",
       shaMatches,
     };
@@ -189,7 +195,7 @@ function readLatestPreMergeMarker(headShaFull) {
   }
 }
 
-function buildPreMergeEvidenceLine(preMergeMarker, headShaShort) {
+export function buildPreMergeEvidenceLine(preMergeMarker, headShaShort) {
   const safeHead = headShaShort || "unknown-sha";
   if (!preMergeMarker) {
     return {
@@ -201,11 +207,12 @@ function buildPreMergeEvidenceLine(preMergeMarker, headShaShort) {
   const markerShort =
     preMergeMarker.shortSha || (preMergeMarker.headSha ? preMergeMarker.headSha.slice(0, 7) : "unknown-sha");
   const markerTime = preMergeMarker.timestampUtc || "unknown time";
+  const markerLane = preMergeMarker.verificationLane || "full";
   const markerMode = preMergeMarker.privateGateMode || "unknown";
 
   if (preMergeMarker.status === "PASS" && preMergeMarker.shaMatches) {
     return {
-      line: `- \`npm run verify:pre-merge\`: **PASS** for \`${safeHead}\` (${markerTime}, mode: ${markerMode}).`,
+      line: `- \`npm run verify:pre-merge\`: **PASS** for \`${safeHead}\` (${markerTime}, lane: ${markerLane}, mode: ${markerMode}).`,
       checked: true,
     };
   }
@@ -221,6 +228,45 @@ function buildPreMergeEvidenceLine(preMergeMarker, headShaShort) {
     line: `- \`npm run verify:pre-merge\`: **${preMergeMarker.status}** for \`${markerShort}\` (${markerTime}); rerun on \`${safeHead}\` before merge.`,
     checked: false,
   };
+}
+
+export function buildVerifyPrePrLine(verifyRun) {
+  if (!verifyRun) {
+    return "- `npm run verify:pre-pr`: **NOT RUN** (run locally before pushing PR updates).";
+  }
+
+  const laneSuffix = verifyRun.lane ? `, lane: ${verifyRun.lane}` : "";
+  return `- \`npm run verify:pre-pr\`: **${verifyRun.status}** (${verifyRun.runDir}${laneSuffix})`;
+}
+
+export function buildCommandChecklist({
+  docsOnlyChecklist,
+  verifyRun,
+  verifyPreMergeEvidence,
+}) {
+  if (docsOnlyChecklist) {
+    return [
+      "- [ ] `npm run lint:briefs:all`",
+      "- [ ] `npm run lint:admin-audit`",
+      "- [ ] `npm run lint:env-parity`",
+      "- [ ] `npm run lint:pr-body:generated`",
+      `- [${verifyRun?.status === "PASS" && verifyRun?.lane === "docs-only" ? "x" : " "}] \`npm run verify:docs-only\``,
+      `- [${verifyRun?.status === "PASS" ? "x" : " "}] \`npm run verify:pre-pr\``,
+      `- [${verifyPreMergeEvidence.checked ? "x" : " "}] \`npm run verify:pre-merge\` (must be PASS on current HEAD SHA before merge)`,
+      "- [ ] Runtime gates N/A for this pure docs/governance diff, or rationale documented if full lane was forced intentionally",
+    ];
+  }
+
+  return [
+    "- [ ] `npm run lint:briefs`",
+    "- [ ] `npm run lint`",
+    "- [ ] `npm run typecheck`",
+    "- [ ] `npm run test:unit`",
+    "- [ ] `npm run build`",
+    "- [ ] `npm run test:e2e` (or explain why skipped)",
+    `- [${verifyRun?.status === "PASS" ? "x" : " "}] \`npm run verify:pre-pr\``,
+    `- [${verifyPreMergeEvidence.checked ? "x" : " "}] \`npm run verify:pre-merge\` (must be PASS on current HEAD SHA before merge)`,
+  ];
 }
 
 function shortList(items, limit = 8) {
@@ -409,12 +455,17 @@ function buildBody({
     verifyRun?.summaryLines.length > 0
       ? verifyRun.summaryLines.map((line) => `  - ${line}`)
       : ["  - No local verify log found in `artifacts/test-runs/latest`."];
-
-  const verifyPrePrLine = verifyRun
-    ? `- \`npm run verify:pre-pr\`: **${verifyRun.status}** (${verifyRun.runDir})`
-    : "- `npm run verify:pre-pr`: **NOT RUN** (run locally before pushing PR updates).";
+  const inferredVerificationLane = classifyVerificationLane(changedFiles);
+  const docsOnlyChecklist =
+    verifyRun?.lane === "docs-only" || (!verifyRun?.lane && inferredVerificationLane === "docs-only");
+  const verifyPrePrLine = buildVerifyPrePrLine(verifyRun);
   const verifyPreMergeEvidence = buildPreMergeEvidenceLine(preMergeMarker, headShaShort);
   const verifyPreMergeLine = verifyPreMergeEvidence.line;
+  const commandChecklist = buildCommandChecklist({
+    docsOnlyChecklist,
+    verifyRun,
+    verifyPreMergeEvidence,
+  });
 
   const briefLinkLine = brief.path
     ? `- Brief link(s): \`${brief.path}\``
@@ -464,14 +515,7 @@ function buildBody({
     "- CI links: use PR Checks tab (`CI / verify`, `CodeQL`, `PR Size`, `Vercel`).",
     "- Checkbox evidence policy: mark a checkbox only when proof is present in this PR; otherwise leave it unchecked or document `N/A` with rationale.",
     "",
-    "- [ ] `npm run lint:briefs`",
-    "- [ ] `npm run lint`",
-    "- [ ] `npm run typecheck`",
-    "- [ ] `npm run test:unit`",
-    "- [ ] `npm run build`",
-    "- [ ] `npm run test:e2e` (or explain why skipped)",
-    `- [${verifyRun?.status === "PASS" ? "x" : " "}] \`npm run verify:pre-pr\``,
-    `- [${verifyPreMergeEvidence.checked ? "x" : " "}] \`npm run verify:pre-merge\` (must be PASS on current HEAD SHA before merge)`,
+    ...commandChecklist,
     "- [ ] Local manual QA done on dev URL (list URL + browser/device in PR description)",
     "- [ ] Vercel preview manual QA done (paste preview URL + browser/device in PR description)",
     "- [ ] QA covered relevant matrix for this change (mobile, tablet, desktop browsers)",
@@ -567,4 +611,7 @@ function main() {
   process.stdout.write(body);
 }
 
-main();
+const entryHref = process.argv[1] ? pathToFileURL(process.argv[1]).href : "";
+if (import.meta.url === entryHref) {
+  main();
+}
