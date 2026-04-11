@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ProgramSaveApiResponse } from "@/lib/programs/shared";
 
@@ -18,8 +18,13 @@ export default function CreateManualProgramButton({
   testId = "create-manual-program",
 }: Props) {
   const router = useRouter();
+  const [clientReady, setClientReady] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
 
   async function handleCreate() {
     setIsCreating(true);
@@ -58,8 +63,9 @@ export default function CreateManualProgramButton({
       <button
         type="button"
         data-testid={testId}
+        data-client-ready={clientReady ? "true" : "false"}
         onClick={handleCreate}
-        disabled={isCreating}
+        disabled={!clientReady || isCreating}
         className={className}
       >
         {isCreating ? pendingLabel : label}

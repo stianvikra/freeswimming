@@ -57,6 +57,16 @@ async function loginAsAdminViaDevBypass(page: Page, nextPath: string) {
   await waitForRouteToSettle(page);
 }
 
+async function waitForCourseLessonContext(page: Page, lessonId: string) {
+  const coursePage = page.getByTestId("course-page");
+  await expect(coursePage).toHaveAttribute("data-has-resolved-requested-lesson", "true", {
+    timeout: 15_000,
+  });
+  await expect(coursePage).toHaveAttribute("data-active-lesson-id", lessonId, {
+    timeout: 15_000,
+  });
+}
+
 async function toggleDoneAndWait(
   page: Page,
   panel: ReturnType<Page["getByTestId"]>,
@@ -127,6 +137,37 @@ async function ensureContextCreateFormOpen(page: Page, panel: ReturnType<Page["g
   return createForm;
 }
 
+async function expectContextCreateFormCollapsed(panel: ReturnType<Page["getByTestId"]>) {
+  const createToggle = panel.getByTestId("admin-context-note-create-toggle");
+  await expect(createToggle).toHaveText("Expand add note", { timeout: 15_000 });
+  await expect(panel.getByTestId("admin-context-note-create-form")).toHaveCount(0, {
+    timeout: 15_000,
+  });
+}
+
+async function openQuickCaptureDialog(page: Page, panel: ReturnType<Page["getByTestId"]>) {
+  const trigger = panel.getByRole("button", { name: "Quick note" });
+  const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (await quickCaptureDialog.isVisible().catch(() => false)) {
+      return quickCaptureDialog;
+    }
+
+    await trigger.click();
+
+    try {
+      await expect(quickCaptureDialog).toBeVisible({ timeout: 5_000 });
+      return quickCaptureDialog;
+    } catch {
+      await page.waitForTimeout(250);
+    }
+  }
+
+  await expect(quickCaptureDialog).toBeVisible({ timeout: 15_000 });
+  return quickCaptureDialog;
+}
+
 async function expectPageQuickCaptureFlow(
   page: Page,
   contextPath: string,
@@ -151,9 +192,7 @@ async function expectPageQuickCaptureFlow(
     .poll(async () => await panel.getByText("Loading notes…").count(), { timeout: 15_000 })
     .toBe(0);
 
-  await panel.getByRole("button", { name: "Quick note" }).click();
-  const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
-  await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+  const quickCaptureDialog = await openQuickCaptureDialog(page, panel);
   const createForm = page.getByTestId("admin-note-quick-capture-form");
   await createForm.getByLabel("Title").fill(title);
   await createForm.getByLabel("Category").fill("Operations");
@@ -252,6 +291,7 @@ test.describe("admin contextual notes", () => {
     await expect
       .poll(() => page.url(), { timeout: 15_000 })
       .toContain(`lesson=${encodeURIComponent(canonicalLessonContextRef)}`);
+    await waitForCourseLessonContext(page, canonicalLessonContextRef);
 
     const probe = await page.request.get(
       `/api/admin/notes?contextType=course_lesson&contextRef=${encodeURIComponent(canonicalLessonContextRef)}`
@@ -347,8 +387,7 @@ test.describe("admin contextual notes", () => {
     await expect(createdItem).toContainText("High");
     const createToggle = panel.getByTestId("admin-context-note-create-toggle");
     await expect(createToggle).toBeVisible();
-    await expect(createToggle).toHaveText("Expand add note");
-    await expect(createForm).toHaveCount(0);
+    await expectContextCreateFormCollapsed(panel);
     await createToggle.click();
     await expect(createToggle).toHaveText("Collapse add note");
     await expect(panel.getByTestId("admin-context-note-create-form")).toBeVisible();
@@ -491,15 +530,12 @@ test.describe("admin contextual notes", () => {
       label: "Plans quick capture",
       unique,
     });
-    await panel.getByRole("button", { name: "Quick note" }).click();
-    const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
-    await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+    const quickCaptureDialog = await openQuickCaptureDialog(page, panel);
     await quickCaptureDialog.getByLabel("Title").fill(`Cancel ${title}`);
     await quickCaptureDialog.getByRole("button", { name: "Discard" }).first().click();
     await expect(quickCaptureDialog).toHaveCount(0);
 
-    await panel.getByRole("button", { name: "Quick note" }).click();
-    await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
+    await openQuickCaptureDialog(page, panel);
     const createForm = page.getByTestId("admin-note-quick-capture-form");
     await createForm.getByLabel("Title").fill(title);
     await createForm.getByLabel("Category").fill("Content");

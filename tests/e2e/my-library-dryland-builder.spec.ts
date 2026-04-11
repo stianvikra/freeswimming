@@ -55,6 +55,9 @@ test.describe("my library dryland builder", () => {
         response.status() === 200
     );
 
+    await expect(createButton).toHaveAttribute("data-client-ready", "true", {
+      timeout: 15_000,
+    });
     await createButton.click();
     const createResponse = await createResponsePromise;
     const createResponseBody = (await createResponse.json()) as {

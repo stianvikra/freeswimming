@@ -11,6 +11,7 @@ import {
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
   haveWorkoutDraftChanges,
+  normalizeSessionDraftForWorkoutPersistence,
   selectWorkoutPoolsideFocusTitles,
 } from "@/lib/workouts/shared";
 
@@ -613,6 +614,88 @@ describe("workouts shared readiness", () => {
           draftSummary: "Easy settle-in.",
         },
       },
+    });
+  });
+
+  it("normalizes legacy workout drafts that omit description instead of crashing", () => {
+    const result = normalizeSessionDraftForWorkoutPersistence({
+      ...buildDraft(),
+      description: undefined,
+    } as unknown as SessionDraft);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.description).toBe("");
+    }
+  });
+
+  it("defaults legacy workout drafts without sizeMode to distance when distance data exists", () => {
+    const result = normalizeSessionDraftForWorkoutPersistence({
+      ...buildDraft(),
+      sizeMode: undefined,
+    } as unknown as SessionDraft);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.sizeMode).toBe("distance");
+      expect(result.value.targetDistanceM).toBe(1200);
+    }
+  });
+
+  it("infers estimated-time size mode when a legacy workout only carries target time", () => {
+    const result = normalizeSessionDraftForWorkoutPersistence({
+      ...buildDraft(),
+      sizeMode: undefined,
+      targetDistanceM: null,
+      targetTimeMin: 30,
+    } as unknown as SessionDraft);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.sizeMode).toBe("estimated_time");
+      expect(result.value.targetTimeMin).toBe(30);
+    }
+  });
+
+  it("infers the session stroke allowlist from workout steps when legacy drafts omit it", () => {
+    const result = normalizeSessionDraftForWorkoutPersistence({
+      ...buildDraft(),
+      allowedStrokes: undefined,
+    } as unknown as SessionDraft);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.allowedStrokes).toContain("freestyle");
+    }
+  });
+
+  it("still rejects an explicitly empty stroke allowlist when no step strokes can recover it", () => {
+    const result = normalizeSessionDraftForWorkoutPersistence({
+      ...buildDraft(),
+      allowedStrokes: [],
+      steps: [
+        {
+          ...buildDraft().steps[0],
+          stroke: "choice",
+        },
+      ],
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Select at least one session stroke before saving.",
+    });
+  });
+
+  it("rejects workout descriptions above the persistence limit", () => {
+    const result = normalizeSessionDraftForWorkoutPersistence({
+      ...buildDraft(),
+      description: "a".repeat(601),
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Workout description must stay under 600 characters.",
     });
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { buildManualDrylandStarterDraft } from "@/lib/dryland/manual";
 import type { DrylandSaveApiResponse, DrylandSessionKind } from "@/lib/dryland/shared";
@@ -21,8 +21,13 @@ export default function CreateManualDrylandSessionButton({
   testId = "create-manual-dryland-session",
 }: Props) {
   const router = useRouter();
+  const [clientReady, setClientReady] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
 
   async function handleCreateSession() {
     setIsCreating(true);
@@ -67,8 +72,9 @@ export default function CreateManualDrylandSessionButton({
       <button
         type="button"
         data-testid={testId}
+        data-client-ready={clientReady ? "true" : "false"}
         onClick={() => void handleCreateSession()}
-        disabled={isCreating}
+        disabled={!clientReady || isCreating}
         className={className}
       >
         {isCreating ? pendingLabel : label}

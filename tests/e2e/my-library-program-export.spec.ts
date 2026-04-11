@@ -86,7 +86,11 @@ async function ensureProgramSchemaReady(page: Page) {
 }
 
 async function triggerCreateSession(page: Page, testId: string) {
-  await page.getByTestId(testId).click();
+  const createButton = page.getByTestId(testId);
+  await expect(createButton).toHaveAttribute("data-client-ready", "true", {
+    timeout: 15_000,
+  });
+  await createButton.click();
   const startScratchButton = page.getByTestId(`${testId}-start-scratch`);
   const chooserVisible = await startScratchButton.isVisible({ timeout: 1_500 }).catch(() => false);
 
