@@ -103,4 +103,59 @@ describe("programs server", () => {
     expect(snapshot.availableWorkouts).toHaveLength(1);
     expect(snapshot.availableWorkouts[0]?.title).toBe("Untitled pool session");
   });
+
+  it("skips invalid available workouts instead of failing the entire program library snapshot", async () => {
+    const recentProgramsLimit = vi.fn().mockResolvedValue({
+      data: [buildProgramRow()],
+      error: null,
+    });
+    const recentProgramsOrder = vi.fn(() => ({ limit: recentProgramsLimit }));
+    const recentProgramsEq = vi.fn(() => ({ order: recentProgramsOrder }));
+
+    const recentWorkoutsLimit = vi.fn().mockResolvedValue({
+      data: [
+        buildWorkoutRow(),
+        buildWorkoutRow({
+          id: "legacy-invalid-workout",
+          description: undefined as unknown as WorkoutRow["description"],
+          size_mode: undefined as unknown as WorkoutRow["size_mode"],
+          allowed_strokes: undefined as unknown as WorkoutRow["allowed_strokes"],
+          steps: null as unknown as WorkoutRow["steps"],
+        }),
+      ],
+      error: null,
+    });
+    const recentWorkoutsOrder = vi.fn(() => ({ limit: recentWorkoutsLimit }));
+    const recentWorkoutsEq = vi.fn(() => ({ order: recentWorkoutsOrder }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "programs") {
+        return {
+          select: vi.fn(() => ({ eq: recentProgramsEq })),
+        };
+      }
+
+      if (table === "workouts") {
+        return {
+          select: vi.fn(() => ({ eq: recentWorkoutsEq })),
+        };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const snapshot = await loadProgramLibrarySnapshot(
+      {
+        from,
+      } as never,
+      "user-1",
+      null
+    );
+
+    expect(snapshot.schemaReady).toBe(true);
+    expect(snapshot.loadError).toBeNull();
+    expect(snapshot.recentPrograms).toHaveLength(1);
+    expect(snapshot.availableWorkouts).toHaveLength(1);
+    expect(snapshot.availableWorkouts[0]?.id).toBe("workout-1");
+  });
 });

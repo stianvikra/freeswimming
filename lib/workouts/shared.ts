@@ -1987,14 +1987,17 @@ export function normalizeSessionDraftForWorkoutPersistence(
     return { ok: false, error: "Choose a supported session effort before saving." };
   }
 
-  if (input.sizeMode !== "distance" && input.sizeMode !== "estimated_time") {
-    return { ok: false, error: "Choose whether the workout is sized by distance or time." };
-  }
+  const normalizedTargetDistanceM = normalizeNullableInteger(input.targetDistanceM);
+  const normalizedTargetTimeMin = normalizeNullableInteger(input.targetTimeMin);
+  const sizeMode =
+    input.sizeMode === "distance" || input.sizeMode === "estimated_time"
+      ? input.sizeMode
+      : normalizedTargetTimeMin !== null && normalizedTargetDistanceM === null
+        ? "estimated_time"
+        : "distance";
 
+  const hasExplicitAllowedStrokes = Array.isArray(input.allowedStrokes);
   const allowedStrokes = uniqueEnumList(input.allowedStrokes, SESSION_GENERATOR_STROKES);
-  if (allowedStrokes.length === 0) {
-    return { ok: false, error: "Select at least one session stroke before saving." };
-  }
 
   const equipmentAllowlist = uniqueEnumList(input.equipmentAllowlist, SESSION_GENERATOR_EQUIPMENT);
 
@@ -2041,9 +2044,19 @@ export function normalizeSessionDraftForWorkoutPersistence(
     .map((step) => mapDraftStepEquipmentToAllowlist(step.equipment))
     .filter((item): item is (typeof SESSION_GENERATOR_EQUIPMENT)[number] => Boolean(item));
   const canonicalAllowedStrokes = Array.from(new Set([...allowedStrokes, ...explicitStepStrokes]));
+  const resolvedAllowedStrokes =
+    canonicalAllowedStrokes.length > 0
+      ? canonicalAllowedStrokes
+      : hasExplicitAllowedStrokes
+        ? canonicalAllowedStrokes
+        : [...SESSION_GENERATOR_STROKES];
   const canonicalEquipmentAllowlist = Array.from(
     new Set([...equipmentAllowlist, ...requiredEquipment])
   );
+
+  if (resolvedAllowedStrokes.length === 0) {
+    return { ok: false, error: "Select at least one session stroke before saving." };
+  }
 
   const repeatGroups = new Map<
     string,
@@ -2122,14 +2135,14 @@ export function normalizeSessionDraftForWorkoutPersistence(
     poolLengthM,
     sessionType: input.sessionType,
     effort: input.effort,
-    sizeMode: input.sizeMode,
-    targetDistanceM: normalizeNullableDistance(input.targetDistanceM),
-    targetTimeMin: normalizeNullableInteger(input.targetTimeMin),
+    sizeMode,
+    targetDistanceM: normalizedTargetDistanceM,
+    targetTimeMin: normalizedTargetTimeMin,
     totalDistanceM: null,
     estimatedDurationMin: null,
     basePaceSecondsPer100m,
     usedCssPaceLabel: normalizeNullableText(input.usedCssPaceLabel, 32),
-    allowedStrokes: canonicalAllowedStrokes,
+    allowedStrokes: resolvedAllowedStrokes,
     equipmentAllowlist: canonicalEquipmentAllowlist,
     focusText: normalizeNullableText(input.focusText, 120),
     goalTitle: normalizeNullableText(input.goalTitle, 120),

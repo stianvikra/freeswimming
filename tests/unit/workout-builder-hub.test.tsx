@@ -1104,6 +1104,13 @@ describe("WorkoutBuilderHub", () => {
       "aria-expanded",
       "false"
     );
+    expect(screen.getByText("Session setup")).toBeVisible();
+    expect(screen.queryByText("Title through equipment")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Collapsed while you work on the session itself. Open anytime to change title, environment, or equipment."
+      )
+    ).not.toBeInTheDocument();
     expect(screen.queryByTestId("session-draft-title")).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-editor-metadata-summary")).toHaveTextContent(
       "400m · ~10 min · Moderate"
@@ -1118,7 +1125,47 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
   });
 
-  it("shows calmer session-note guidance in the metadata panel", async () => {
+  it("shows a simplified metadata panel for manual workouts", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: {
+              ...buildDraft(),
+              sourceFingerprint: "manual-20260410",
+              title: "Manual pool workout",
+              description: "Manual notes for the session.",
+              sessionType: "endurance",
+              effort: "moderate",
+            },
+          }),
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    openWorkoutMetadataPanel();
+    expect(screen.getByText("Session setup")).toBeVisible();
+    expect(screen.getByLabelText("Session note")).toBeVisible();
+    expect(screen.queryByText("Description")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Session type" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Effort" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Title through equipment")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching note that applies across the session."
+      )
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the full metadata controls for non-manual workout sources", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
     await waitFor(() => {
@@ -1129,12 +1176,10 @@ describe("WorkoutBuilderHub", () => {
     });
 
     openWorkoutMetadataPanel();
-    expect(screen.getByText("Session note")).toBeVisible();
-    expect(
-      screen.getByText(
-        "Optional. Use this for the whole-session purpose or one short coaching note that applies across the session."
-      )
-    ).toBeVisible();
+    expect(screen.getByText("Description")).toBeVisible();
+    expect(screen.getByTestId("session-draft-description")).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Session type" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Effort" })).toBeVisible();
   });
 
   it("uses pool-swim field parity for manual builder workouts", async () => {

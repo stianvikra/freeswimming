@@ -68,7 +68,11 @@ async function openMetadataPanelIfCollapsed(page: Page) {
 }
 
 async function triggerCreateSession(page: Page, testId: string) {
-  await page.getByTestId(testId).click();
+  const createButton = page.getByTestId(testId);
+  await expect(createButton).toHaveAttribute("data-client-ready", "true", {
+    timeout: 15_000,
+  });
+  await createButton.click();
   const startScratchButton = page.getByTestId(`${testId}-start-scratch`);
   const chooserVisible = await startScratchButton.isVisible({ timeout: 1_500 }).catch(() => false);
 
@@ -219,6 +223,8 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("link", { name: "AI-generated session" })).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-create-pool")).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-create-open-water")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Session setup" })).toBeVisible();
+    await expect(page.getByText("Title through equipment")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toBeVisible();
     await expect(page.getByText("Pool Swim")).toBeVisible();
     await expect(page.getByText("Session note")).toBeVisible();

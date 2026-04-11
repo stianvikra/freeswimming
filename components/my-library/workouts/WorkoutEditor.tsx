@@ -1034,7 +1034,6 @@ export default function WorkoutEditor({
   const [metadataOpen, setMetadataOpen] = useState(
     () => forceMetadataOpenOnLoad || !(savedWorkout && copyVariant === "default")
   );
-  const [manualMetadataProfileOpen, setManualMetadataProfileOpen] = useState(false);
   const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions)
@@ -1046,6 +1045,8 @@ export default function WorkoutEditor({
   });
   const [supportToolsOpen, setSupportToolsOpen] = useState(() => copyVariant !== "default");
   const savedWorkoutId = savedWorkout?.id ?? null;
+  const isManualSourceDraft = draft.sourceFingerprint.startsWith("manual-");
+  const simplifyManualMetadata = showCalmBuilderLayout && isManualSourceDraft;
   const trainingFocusIdSignature = trainingFocusOptions.map((focus) => focus.id).join("|");
   const defaultPoolsideFocusIdSignature =
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions).join("|");
@@ -1138,17 +1139,6 @@ export default function WorkoutEditor({
         totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
         estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
       });
-  const manualMetadataProfileSummary = `${getSessionTypeLabel(draft.sessionType)} · ${getSessionEffortLabel(draft.effort)}`;
-  const metadataHeading = isManualPoolMode
-    ? "Pool Swim"
-    : isManualOpenWaterMode
-      ? "Build your open water session"
-      : "Build your swim session";
-  const collapsedMetadataCopy = isManualPoolMode
-    ? "Open when you want to change the title, session note, or pool size."
-    : isManualOpenWaterMode
-      ? "Open when you want to change the title, session note, strokes, or equipment."
-      : "Open when you want to change the title, session note, environment, strokes, or equipment.";
   const workoutPdfHeadingLabel = "PDF";
   const workoutPdfStateLabel =
     handoffDraftState === "canonical"
@@ -2940,44 +2930,6 @@ export default function WorkoutEditor({
     </label>
   );
 
-  const manualMetadataProfileFields = (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 md:col-span-2">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-slate-900">Training profile</p>
-          <p className="mt-1 text-xs text-slate-500">
-            These labels shape summaries and export context. Change them when this session needs a
-            different training emphasis.
-          </p>
-          {!manualMetadataProfileOpen ? (
-            <p
-              data-testid="workout-editor-metadata-profile-summary"
-              className="mt-2 text-sm font-medium text-slate-900"
-            >
-              {manualMetadataProfileSummary}
-            </p>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={() => setManualMetadataProfileOpen((current) => !current)}
-          aria-expanded={manualMetadataProfileOpen}
-          data-testid="workout-editor-metadata-profile-toggle"
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-        >
-          {manualMetadataProfileOpen ? "Hide profile" : "Edit profile"}
-        </button>
-      </div>
-
-      {manualMetadataProfileOpen ? (
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          {sessionTypeField}
-          {effortField}
-        </div>
-      ) : null}
-    </div>
-  );
-
   const metadataFields = (
     <div className="grid gap-4 md:grid-cols-2">
       <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
@@ -2996,18 +2948,35 @@ export default function WorkoutEditor({
         />
       </label>
 
-      {isManualMetadataMode ? null : sessionTypeField}
+      {!simplifyManualMetadata ? (
+        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
+          Session type
+          <select
+            value={draft.sessionType}
+            onChange={(event) =>
+              updateDraft("sessionType", event.target.value as SessionDraft["sessionType"])
+            }
+            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          >
+            {SESSION_GENERATOR_SESSION_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {getSessionTypeLabel(value)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700 md:col-span-2">
-        Session note
-        {isManualPoolMode ? null : (
+        {simplifyManualMetadata ? "Session note" : "Description"}
+        {!simplifyManualMetadata ? (
           <p className="mt-2 text-xs text-slate-500">
-            Optional. Use this for the whole-session purpose or one short coaching note that applies
-            across the session.
+            Optional. Use this for the whole-workout purpose, pacing intent, or one short coaching
+            note that applies across the session.
           </p>
-        )}
+        ) : null}
         <AutoGrowingTextarea
-          aria-label="Session note"
+          aria-label={simplifyManualMetadata ? "Session note" : "Description"}
           value={draft.description}
           onChange={(event) => updateDraft("description", event.target.value)}
           data-testid="session-draft-description"
@@ -3148,7 +3117,24 @@ export default function WorkoutEditor({
         </div>
       ) : null}
 
-      {isManualPoolMode ? null : isManualMetadataMode ? manualMetadataProfileFields : effortField}
+      {!simplifyManualMetadata ? (
+        <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
+          Effort
+          <select
+            value={draft.effort}
+            onChange={(event) =>
+              updateDraft("effort", event.target.value as SessionDraft["effort"])
+            }
+            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          >
+            {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
+              <option key={value} value={value}>
+                {getSessionEffortLabel(value)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       {isManualPoolMode ? null : (
         <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 md:col-span-2">
@@ -3769,10 +3755,9 @@ export default function WorkoutEditor({
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Session details
               </p>
-              <h3 className="mt-2 text-base font-semibold text-slate-900">{metadataHeading}</h3>
-              {metadataOpen ? null : (
-                <p className="mt-1 text-sm text-slate-600">{collapsedMetadataCopy}</p>
-              )}
+              <h3 className="mt-2 text-base font-semibold text-slate-900">
+                Session setup
+              </h3>
               {!metadataOpen ? (
                 <p
                   data-testid="workout-editor-metadata-summary"

@@ -151,7 +151,6 @@ function inferStoredWorkoutSizeMode(row: WorkoutRow): SessionDraft["sizeMode"] {
 
 function buildStoredWorkoutDraftInput(row: WorkoutRow): SessionDraft {
   const titleSuggestions = normalizeTextArray(row.title_suggestions);
-  const allowedStrokes = normalizeTextArray(row.allowed_strokes) as SessionDraft["allowedStrokes"];
   const sizeMode = inferStoredWorkoutSizeMode(row);
 
   return {
@@ -185,7 +184,7 @@ function buildStoredWorkoutDraftInput(row: WorkoutRow): SessionDraft {
     estimatedDurationMin: row.estimated_duration_min,
     basePaceSecondsPer100m: row.base_pace_seconds_per_100 ?? 120,
     usedCssPaceLabel: row.used_css_pace_label,
-    allowedStrokes: allowedStrokes.length > 0 ? allowedStrokes : ["freestyle"],
+    allowedStrokes: row.allowed_strokes as unknown as SessionDraft["allowedStrokes"],
     equipmentAllowlist: normalizeTextArray(
       row.equipment_allowlist
     ) as SessionDraft["equipmentAllowlist"],

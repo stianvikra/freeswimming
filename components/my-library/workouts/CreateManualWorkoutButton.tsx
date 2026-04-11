@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   buildManualOpenWaterWorkoutEmptyDraft,
@@ -32,6 +32,7 @@ export default function CreateManualWorkoutButton({
   manualPoolCssPaceLabel = null,
 }: Props) {
   const router = useRouter();
+  const [clientReady, setClientReady] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const resolvedLabel =
@@ -55,6 +56,10 @@ export default function CreateManualWorkoutButton({
       `/my-library/workouts/${workoutId}?entry=${
         builderMode === "pool" ? "manual-pool" : "manual-open-water"
       }`);
+
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
 
   async function handleCreateManualSession() {
     setIsCreating(true);
@@ -104,8 +109,9 @@ export default function CreateManualWorkoutButton({
       <button
         type="button"
         data-testid={testId}
+        data-client-ready={clientReady ? "true" : "false"}
         onClick={() => void handleCreateManualSession()}
-        disabled={isCreating}
+        disabled={!clientReady || isCreating}
         className={className}
       >
         {isCreating ? resolvedPendingLabel : resolvedLabel}
