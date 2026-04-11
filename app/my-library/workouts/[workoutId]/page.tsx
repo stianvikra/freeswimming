@@ -63,6 +63,7 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
       ? trainingContextSnapshot.openFocuses.map((focus) => ({
           id: focus.id,
           title: focus.title,
+          description: focus.details,
           isPrimary: focus.isPrimary,
         }))
       : [];
@@ -103,7 +104,9 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
               trainingFocusOptions={trainingFocusOptions}
-              manualPoolCssMetricSecondsPer100m={athleteProfileSnapshot.cssMetric?.valueSeconds ?? null}
+              manualPoolCssMetricSecondsPer100m={
+                athleteProfileSnapshot.cssMetric?.valueSeconds ?? null
+              }
               manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
               hideShellIntro
               preferExpandedDetailsOnLoad={preferExpandedDetailsOnLoad}

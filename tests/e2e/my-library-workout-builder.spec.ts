@@ -10,7 +10,10 @@ function runOnceOnDesktopChromium(projectName: string) {
 }
 
 function runOnceOnMobileChromium(projectName: string) {
-  test.skip(!projectName.startsWith("mobile-"), "Workout builder mobile density e2e is mobile-only.");
+  test.skip(
+    !projectName.startsWith("mobile-"),
+    "Workout builder mobile density e2e is mobile-only."
+  );
   test.skip(projectName !== "mobile-chromium", "Runs once on mobile Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
 }
@@ -413,11 +416,20 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
       "skip_last_rest"
     );
+    const repeatSummary = page.getByTestId("session-draft-repeat-summary-1");
     await expect(
-      page.getByText(
+      repeatSummary.getByText(
         "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
       )
-    ).toBeVisible();
+    ).toHaveCount(0);
+    await expect(
+      repeatSummary.getByText(
+        "Fixed Rest Time 1:00 stays outside the repeat block as the post-set rest after the set."
+      )
+    ).toHaveCount(0);
+    await expect(repeatSummary.getByText("Final rest skipped")).toHaveCount(0);
+    await expect(page.getByText("Keeps the blue surfaces")).toBeVisible();
+    await expect(page.getByText("Uses white surfaces.")).toBeVisible();
     await expect(page.getByText("Edit this into the exact repeat you want to hold.")).toHaveCount(
       0
     );

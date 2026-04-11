@@ -122,8 +122,18 @@ function readPreviewDraft() {
 
 function buildTrainingFocusOptions() {
   return [
-    { id: "focus-1", title: "High elbow catch", isPrimary: true },
-    { id: "focus-2", title: "Calm exhale", isPrimary: false },
+    {
+      id: "focus-1",
+      title: "High elbow catch",
+      description: "Keep the forearm vertical before pressing back.",
+      isPrimary: true,
+    },
+    {
+      id: "focus-2",
+      title: "Calm exhale",
+      description: "Start the exhale before the head turns to breathe.",
+      isPrimary: false,
+    },
   ];
 }
 
@@ -244,7 +254,9 @@ describe("WorkoutBuilderHub", () => {
       "aria-expanded",
       "false"
     );
-    expect(screen.queryByTestId("session-draft-step-mobile-primary-add-after-0")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("session-draft-step-mobile-primary-add-after-0")
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("session-draft-step-mobile-summary-0"));
 
@@ -253,7 +265,9 @@ describe("WorkoutBuilderHub", () => {
       "true"
     );
     expect(screen.getByTestId("session-draft-step-mobile-primary-add-after-0")).toBeVisible();
-    expect(screen.getByTestId("session-draft-step-mobile-primary-add-repeat-after-0")).toBeVisible();
+    expect(
+      screen.getByTestId("session-draft-step-mobile-primary-add-repeat-after-0")
+    ).toBeVisible();
 
     fireEvent.click(screen.getByTestId("session-draft-step-mobile-actions-toggle-0"));
 
@@ -263,7 +277,9 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
 
-    expect(screen.getByTestId("session-draft-repeat-mobile-primary-add-step-after-1")).toBeVisible();
+    expect(
+      screen.getByTestId("session-draft-repeat-mobile-primary-add-step-after-1")
+    ).toBeVisible();
 
     fireEvent.click(screen.getByTestId("session-draft-repeat-mobile-actions-toggle-1"));
 
@@ -704,12 +720,12 @@ describe("WorkoutBuilderHub", () => {
       "skip_last_rest"
     );
     expect(screen.getByText(/4 rounds/)).toBeVisible();
-    expect(screen.getByText(/Final rest skipped/)).toBeVisible();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
       )
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Final rest skipped/)).not.toBeInTheDocument();
 
     const previewDraft = readPreviewDraft();
     const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
@@ -1084,6 +1100,12 @@ describe("WorkoutBuilderHub", () => {
         expect.stringContaining("Calm exhale")
       );
       expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining("High elbow catch: Keep the forearm vertical before pressing back.")
+      );
+      expect(printWindow.document.write).toHaveBeenCalledWith(
+        expect.stringContaining("Calm exhale: Start the exhale before the head turns to breathe.")
+      );
+      expect(printWindow.document.write).toHaveBeenCalledWith(
         expect.stringContaining("Poolside Note")
       );
       expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Tot:"));
@@ -1091,6 +1113,15 @@ describe("WorkoutBuilderHub", () => {
         expect.stringContaining("lockup-domain-ink.png")
       );
     });
+
+    expect(screen.getByText("Keeps the blue surfaces")).toBeVisible();
+    expect(screen.getByText("Uses white surfaces.")).toBeVisible();
+    expect(
+      screen.queryByText("Keeps the blue surfaces when your browser prints backgrounds.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Uses white surfaces and strong outlines for cheaper printing.")
+    ).not.toBeInTheDocument();
   });
 
   it("collapses the metadata panel by default for saved builder sessions and reopens on demand", async () => {
@@ -1458,10 +1489,11 @@ describe("WorkoutBuilderHub", () => {
       )
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
       )
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Final rest skipped")).not.toBeInTheDocument();
   });
 
   it("uses a single MM:SS field for manual-pool time duration editing", async () => {
@@ -1746,6 +1778,7 @@ describe("WorkoutBuilderHub", () => {
         trainingFocusOptions={Array.from({ length: 10 }, (_, index) => ({
           id: `focus-${index + 1}`,
           title: `Focus ${index + 1}`,
+          description: index === 0 ? "Hold the line before pressing back." : null,
           isPrimary: index === 0,
         }))}
       />
@@ -1762,6 +1795,7 @@ describe("WorkoutBuilderHub", () => {
     expect(focusList).toHaveClass("overflow-y-auto");
     expect(within(focusList).queryByText("Primary focus")).not.toBeInTheDocument();
     expect(within(focusList).queryByText("Optional focus")).not.toBeInTheDocument();
+    expect(within(focusList).getByText("Hold the line before pressing back.")).toBeVisible();
   });
 
   it("shows recovery guidance when the requested workout is missing", () => {
