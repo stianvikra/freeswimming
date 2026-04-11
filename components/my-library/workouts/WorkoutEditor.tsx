@@ -1003,7 +1003,6 @@ export default function WorkoutEditor({
       : "pool"
     : null;
   const isManualPoolMode = manualBuilderMode === "pool";
-  const isManualOpenWaterMode = manualBuilderMode === "open_water";
   const autoPoolBuilderTitle = getPoolBuilderAutoTitle(draft.environment);
   const timeDurationInputFocusRef = useRef<Record<string, boolean>>({});
   const [openStepId, setOpenStepId] = useState<string | null>(null);
@@ -1296,10 +1295,6 @@ export default function WorkoutEditor({
   useEffect(() => {
     setManualPoolTitleEdited(false);
   }, [savedWorkoutId, savedWorkout?.updatedAt]);
-
-  useEffect(() => {
-    setManualMetadataProfileOpen(false);
-  }, [savedWorkoutId, isManualMetadataMode]);
 
   useEffect(() => {
     if (!pendingRemoval) return;
@@ -2893,42 +2888,6 @@ export default function WorkoutEditor({
       </article>
     );
   }
-
-  const sessionTypeField = (
-    <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
-      Session type
-      <select
-        value={draft.sessionType}
-        onChange={(event) =>
-          updateDraft("sessionType", event.target.value as SessionDraft["sessionType"])
-        }
-        className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-      >
-        {SESSION_GENERATOR_SESSION_TYPES.map((value) => (
-          <option key={value} value={value}>
-            {getSessionTypeLabel(value)}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-
-  const effortField = (
-    <label className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 text-sm text-slate-700">
-      Effort
-      <select
-        value={draft.effort}
-        onChange={(event) => updateDraft("effort", event.target.value as SessionDraft["effort"])}
-        className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-      >
-        {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
-          <option key={value} value={value}>
-            {getSessionEffortLabel(value)}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
 
   const metadataFields = (
     <div className="grid gap-4 md:grid-cols-2">

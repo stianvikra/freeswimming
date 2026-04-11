@@ -226,7 +226,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("heading", { name: "Session setup" })).toBeVisible();
     await expect(page.getByText("Title through equipment")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toBeVisible();
-    await expect(page.getByText("Pool Swim")).toBeVisible();
+    await expect(page.getByText("Session details")).toBeVisible();
     await expect(page.getByText("Session note")).toBeVisible();
     await expect(page.getByText("Pool Size", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Meters" })).toBeVisible();

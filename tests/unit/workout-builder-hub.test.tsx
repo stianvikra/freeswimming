@@ -682,7 +682,10 @@ describe("WorkoutBuilderHub", () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
-          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({ sourceFingerprint: "manual-pool-field-parity" }),
+          }),
           recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
         })}
         preferExpandedDetailsOnLoad
@@ -1186,7 +1189,10 @@ describe("WorkoutBuilderHub", () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
-          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({ sourceFingerprint: "manual-pool-field-parity-2" }),
+          }),
           recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
         })}
         preferExpandedDetailsOnLoad
@@ -1200,7 +1206,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByText("Pool Swim")).toBeVisible();
+    expect(screen.getByText("Session setup")).toBeVisible();
     expect(screen.getByText("Session note")).toBeVisible();
     expect(screen.queryByText("Environment")).not.toBeInTheDocument();
     expect(screen.getByText("Pool Size")).toBeVisible();
@@ -1224,6 +1230,7 @@ describe("WorkoutBuilderHub", () => {
           selectedWorkout: buildWorkoutRecord({
             sourceKind: "manual",
             draft: buildDraft({
+              sourceFingerprint: "manual-open-water-lock",
               environment: "open_water",
               poolLengthM: null,
               description: "Long aerobic open water work.",
@@ -1249,7 +1256,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByText("Build your open water session")).toBeVisible();
+    expect(screen.getByText("Session setup")).toBeVisible();
     expect(screen.getByText("Session note")).toBeVisible();
     expect(screen.queryByText("Environment")).not.toBeInTheDocument();
     expect(screen.queryByText("Pool length")).not.toBeInTheDocument();
@@ -1267,7 +1274,7 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByText("Build your swim session")).toBeVisible();
+    expect(screen.getByText("Session setup")).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Session type" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Effort" })).toBeVisible();
     expect(screen.queryByTestId("workout-editor-metadata-profile-toggle")).not.toBeInTheDocument();
