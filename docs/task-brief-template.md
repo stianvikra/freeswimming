@@ -140,13 +140,19 @@ List measurable outcomes.
 Which commands should pass?
 
 - `npm ci`
-- `npm run lint:briefs`
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test:unit`
-- `npm run test:e2e`
-- `npm run build`
-- `npm run verify`
+- For pure docs/governance-only diffs:
+  - `npm run verify:docs-only`
+  - `npm run verify:pre-pr`
+  - `npm run verify:pre-merge`
+  - `npm run lint:briefs:all`
+- For any diff touching code, scripts, tests, configs, workflows, or runtime behavior:
+  - `npm run lint:briefs`
+  - `npm run lint`
+  - `npm run typecheck`
+  - `npm run test:unit`
+  - `npm run test:e2e`
+  - `npm run build`
+  - `npm run verify`
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
 - `npm run verify:public` (when private gate can affect route visibility)

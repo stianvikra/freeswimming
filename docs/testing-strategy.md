@@ -48,6 +48,13 @@ Local Playwright runs are isolated by default to avoid collisions with owner-run
 3. Manual local QA on dev URL for changed user flows.
 4. Manual Vercel preview QA for changed user flows (same flows verified in preview).
 
+Docs-only lane rule:
+
+- `npm run verify:pre-pr` and `npm run verify:pre-merge` keep the same command names for all PRs.
+- For pure docs/governance diffs, they may auto-select a docs-only lane instead of lint/typecheck/build/perf/e2e.
+- Any diff touching runtime code, scripts, tests, configs, workflows, or other non-docs files still runs the full lane.
+- Set `VERIFY_FORCE_FULL=1` if you intentionally want the full lane on an otherwise docs-only diff.
+
 Useful commands:
 
 - `npm run test:e2e:mobile` for fast mobile install/nav checks.
@@ -62,6 +69,7 @@ Useful commands:
 - `SITE_LOCK_ENABLED=1 PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN="$SITE_LOCK_BYPASS_TOKEN" npm run test:perf:budgets` for gated-bypass perf profile.
 - `npm run test:e2e:admin` for authenticated admin flows (foundation/parity/notes).
 - `npm run verify:pre-pr` and `npm run verify:pre-merge` for release gates.
+- `npm run verify:docs-only` for pure docs/governance scope when you need the narrow lane directly.
 
 ## Automation-first execution
 
@@ -89,6 +97,7 @@ Useful commands:
    - `npm run verify:pre-pr`
 3. Before merge to `main`:
    - `npm run verify:pre-merge`
+   - if the diff is pure docs/governance, these commands may resolve to the docs-only lane automatically
 4. Nightly/regular regression run:
    - `npm run test:perf:budgets`
    - `npm run verify:public`

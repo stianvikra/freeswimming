@@ -66,6 +66,11 @@ Before moving any brief to `done/`, run a final closeout gate:
    - tests + manual QA evidence recorded in brief,
    - PR/branch ready for merge and post-merge hygiene.
 
+Docs-only closeout rule:
+
+- If the final diff is pure docs/governance, `npm run verify:pre-pr` and `npm run verify:pre-merge` may close out through the docs-only lane.
+- If the closeout diff touches scripts, tests, package/config, workflows, or runtime code, use the full lane even if the intent is "docs cleanup".
+
 Agent should explicitly ask owner before final lifecycle actions:
 
 - `Do you want to move this brief to done now?`

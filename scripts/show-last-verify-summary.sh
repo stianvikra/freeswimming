@@ -22,6 +22,9 @@ if [ ! -d "${run_dir}" ]; then
 fi
 
 echo "[verify-last] Run: ${run_dir}"
+if [ -f "${run_dir}/mode.txt" ]; then
+  echo "[verify-last] Lane: $(cat "${run_dir}/mode.txt")"
+fi
 if [ -f "${run_dir}/exit-code.txt" ]; then
   echo "[verify-last] Exit code: $(cat "${run_dir}/exit-code.txt")"
 fi

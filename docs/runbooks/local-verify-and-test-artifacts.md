@@ -11,6 +11,8 @@ Use this runbook for reliable local validation when private-access (site lock) i
 
 - Run full verify with site lock disabled for this command only:
   - `npm run verify:public`
+- Run docs/governance-only verification directly:
+  - `npm run verify:docs-only`
 - Run full verify with automatic local log + artifact capture:
   - `npm run verify:open:log`
 - Run production-start performance budget gate only:
@@ -18,6 +20,8 @@ Use this runbook for reliable local validation when private-access (site lock) i
 - Run release gates with one command:
   - pre-PR: `npm run verify:pre-pr`
   - pre-merge: `npm run verify:pre-merge`
+  - pure docs/governance diffs may auto-select `docs-only` inside those commands
+  - code/scripts/tests/config/workflow/runtime diffs still run the full lane
   - pre-merge + PR evidence refresh: `npm run gate:pre-merge`
   - private-gate env when lock is enabled:
     - automation default (auto-wires token when available): `SITE_LOCK_ENABLED=1 npm run verify:pre-merge`
@@ -62,6 +66,7 @@ Optional overrides:
 - Files:
   - `verify.log`
   - `exit-code.txt`
+  - `mode.txt` (`docs-only` or `full-public`)
   - copied Playwright output if present:
     - `test-results/`
     - `playwright-report/`
@@ -74,13 +79,16 @@ Pre-merge evidence marker (for PR body refresh automation):
 
 - Local path: `artifacts/verify-pre-merge/`
 - Files:
-  - `<timestamp>.json` (contains PASS marker + head SHA + mode metadata)
+  - `<timestamp>.json` (contains PASS marker + head SHA + lane/mode metadata)
   - `latest.json` symlink to newest marker
 
 ## Recommended regular cadence
 
 - On each feature branch before PR:
   - `npm run verify:pre-pr`
+- For pure docs/governance closeouts:
+  - `npm run verify:pre-pr` and `npm run verify:pre-merge` may auto-select docs-only.
+  - `VERIFY_FORCE_FULL=1 npm run verify:pre-pr` forces the full lane when needed.
 - For faster inner-loop checks:
   - `npm run lint`
   - `npm run typecheck`

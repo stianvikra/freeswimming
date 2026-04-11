@@ -22,6 +22,8 @@ read_env_file_value() {
 }
 
 record_pre_merge_pass() {
+  local verification_lane="${1:-full}"
+  local private_gate_mode_override="${2:-}"
   local runs_root="artifacts/verify-pre-merge"
   local timestamp_utc
   local iso_utc
@@ -35,7 +37,11 @@ record_pre_merge_pass() {
   head_sha="$(git rev-parse HEAD 2>/dev/null || printf '')"
   short_sha="$(git rev-parse --short HEAD 2>/dev/null || printf '')"
 
-  if [ "${SITE_LOCK_ENABLED:-0}" = "1" ]; then
+  if [ -n "${private_gate_mode_override}" ]; then
+    private_gate_mode="${private_gate_mode_override}"
+  elif [ "${verification_lane}" = "docs-only" ]; then
+    private_gate_mode="skipped-docs-only"
+  elif [ "${SITE_LOCK_ENABLED:-0}" = "1" ]; then
     if [ "${PW_SITE_LOCK_USE_PASSWORD:-0}" = "1" ] && [ -n "${PW_SITE_LOCK_PASSWORD:-}" ]; then
       private_gate_mode="password"
     elif [ -n "${PW_SITE_LOCK_BYPASS_TOKEN:-}" ]; then
@@ -54,6 +60,7 @@ record_pre_merge_pass() {
   "timestampUtc": "${iso_utc}",
   "headSha": "${head_sha}",
   "shortSha": "${short_sha}",
+  "verificationLane": "${verification_lane}",
   "siteLockEnabled": "${SITE_LOCK_ENABLED:-0}",
   "privateGateMode": "${private_gate_mode}"
 }
@@ -76,6 +83,18 @@ fi
 if ! command -v npm >/dev/null 2>&1; then
   echo "[verify-pre-merge] npm not found. Load Node first (for example with nvm)."
   exit 127
+fi
+
+node ./scripts/verification-scope.mjs --summary
+verification_lane="$(node ./scripts/verification-scope.mjs --lane)"
+
+if [ "${verification_lane}" = "docs-only" ]; then
+  echo "[verify-pre-merge] Step 1/2: Docs-only verification"
+  npm run verify:docs-only
+  echo "[verify-pre-merge] Step 2/2: Skipped private-gate regression (docs-only lane)."
+  record_pre_merge_pass "docs-only" "skipped-docs-only"
+  echo "[verify-pre-merge] PASS"
+  exit 0
 fi
 
 echo "[verify-pre-merge] Step 1/2: Public-mode full verification"
@@ -120,6 +139,6 @@ else
   echo "[verify-pre-merge] If target environment is private-gated, rerun with SITE_LOCK_ENABLED=1 and PW_SITE_LOCK_PASSWORD or PW_SITE_LOCK_BYPASS_TOKEN set."
 fi
 
-record_pre_merge_pass
+record_pre_merge_pass "full"
 
 echo "[verify-pre-merge] PASS"

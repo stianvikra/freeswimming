@@ -25,7 +25,7 @@ This file defines how coding agents should collaborate in this repository.
 
 1. Requested behavior is implemented and scoped correctly.
 2. Relevant tests are added or updated.
-3. `npm run verify:pre-pr` passes locally; use `npm run verify:pre-merge` before merge.
+3. `npm run verify:pre-pr` passes locally; use `npm run verify:pre-merge` before merge. For pure docs/governance diffs these commands may auto-select the docs-only lane; any code-touching diff still requires the full lane.
 4. Accessibility semantics are preserved for changed UI.
 5. Related docs are updated when rules/contracts change.
 6. If admin/user workflow labels, actions, or recovery behavior changed, `Help/Guide` and relevant runbooks are updated in the same PR.
@@ -143,6 +143,7 @@ This file defines how coding agents should collaborate in this repository.
 - Required gate sequence under automation:
   - before PR update/push: `npm run verify:pre-pr`,
   - before merge recommendation: `npm run verify:pre-merge` + required CI green.
+  - pure docs/governance diffs may auto-select the docs-only lane inside those commands; scripts/package/tests/config/workflow/runtime changes must still run the full lane.
 - If automation cannot complete a step, assistant must provide:
   - exact blocker,
   - exact next command/UI click,
@@ -155,6 +156,9 @@ This file defines how coding agents should collaborate in this repository.
 - Before merge to `main`:
   - run `npm run verify:pre-merge`
   - ensure required CI checks are green
+- Gate selection policy:
+  - pure docs/governance diffs may use the docs-only lane automatically through `verify:pre-pr` / `verify:pre-merge`
+  - any diff touching runtime code, scripts, tests, configs, workflows, or other non-docs files must run the full lane
 - Never merge with known failing required checks, even if failures look unrelated.
 - For auth, payments, admin, or access-control changes:
   - include relevant negative-path tests (unauthorized/forbidden/failure-mode).
@@ -175,6 +179,9 @@ This file defines how coding agents should collaborate in this repository.
 - Default local cadence during implementation:
   - run relevant targeted tests after each meaningful change.
   - run `npm run verify:pre-pr` before every PR update/push checkpoint.
+- Docs-only closeout rule:
+  - for pure docs/governance diffs, `npm run verify:pre-pr` and `npm run verify:pre-merge` auto-select the docs-only lane.
+  - use `VERIFY_FORCE_FULL=1` when you intentionally want the full lane on an otherwise docs-only diff.
 - For local Playwright:
   - keep isolated defaults (`PW_PORT=3100`, `NEXT_DIST_DIR=.next-playwright`, `SITE_LOCK_ENABLED=0`).
   - only use `PW_REUSE_EXISTING_SERVER=1` as explicit debug override.
