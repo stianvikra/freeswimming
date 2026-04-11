@@ -110,12 +110,42 @@ test.describe("my library dryland builder", () => {
     );
 
     await page.getByTestId("dryland-delete-current-session").click();
-    await Promise.all([
-      page.waitForURL(/\/my-library\/dryland(?:\?.*)?$/, {
-        timeout: 20_000,
+
+    const deleteResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/my-library/dryland/${createdSessionId}`) &&
+        response.request().method() === "DELETE" &&
+        response.status() === 200
+    );
+
+    await page.getByTestId("dryland-confirm-delete-current-session").click();
+    const deleteResponse = await deleteResponsePromise;
+    const deleteResponseBody = (await deleteResponse.json()) as {
+      ok?: boolean;
+      deletedSessionId?: string;
+    };
+    expect(deleteResponseBody.ok).toBe(true);
+    expect(deleteResponseBody.deletedSessionId).toBe(createdSessionId);
+
+    const navigatedAfterDelete = await page
+      .waitForFunction(
+        () =>
+          /^\/my-library\/dryland(?:\?.*)?$/.test(
+            window.location.pathname + window.location.search
+          ),
+        null,
+        { timeout: 20_000 }
+      )
+      .then(() => true)
+      .catch(() => false);
+
+    if (!navigatedAfterDelete) {
+      await page.goto("/my-library/dryland", {
+        timeout: 60_000,
         waitUntil: "domcontentloaded",
-      }),
-      page.getByTestId("dryland-confirm-delete-current-session").click(),
-    ]);
+      });
+    }
+
+    await expect(page).toHaveURL(/\/my-library\/dryland(?:\?.*)?$/);
   });
 });

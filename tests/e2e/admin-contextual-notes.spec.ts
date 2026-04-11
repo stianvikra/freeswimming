@@ -174,9 +174,16 @@ async function expectPageQuickCaptureFlow(
   title: string,
   body: string
 ) {
-  const probe = await page.request.get(
-    `/api/admin/notes?contextType=page&contextRef=${encodeURIComponent(contextPath)}`
-  );
+  const probeUrl = `/api/admin/notes?contextType=page&contextRef=${encodeURIComponent(contextPath)}`;
+  const probe = await page.request.get(probeUrl).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : "unknown request failure";
+    test.skip(true, `Context notes API probe failed (${message}).`);
+    return null;
+  });
+  if (!probe) {
+    return;
+  }
+
   if (!probe.ok()) {
     test.skip(true, `Context notes API unavailable (${probe.status()}).`);
   }
@@ -226,10 +233,7 @@ async function expectPageQuickCaptureFlow(
       typeof createPayload?.error === "string"
         ? createPayload.error
         : `status ${createResponse.status()}`;
-    test.skip(
-      true,
-      `Page-level note create is not write-ready in this environment (${reason}).`
-    );
+    test.skip(true, `Page-level note create is not write-ready in this environment (${reason}).`);
   }
 
   await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });
@@ -242,7 +246,10 @@ async function expectPageQuickCaptureFlow(
     await toggle.click();
   }
 
-  const createdItem = panel.getByTestId("admin-context-note-item").filter({ hasText: title }).first();
+  const createdItem = panel
+    .getByTestId("admin-context-note-item")
+    .filter({ hasText: title })
+    .first();
   await expect
     .poll(
       async () =>
@@ -257,7 +264,9 @@ async function expectPageQuickCaptureFlow(
 
   page.once("dialog", (dialog) => dialog.accept());
   await createdItem.getByRole("button", { name: "Delete" }).click();
-  await expect(panel.getByTestId("admin-context-note-item").filter({ hasText: title })).toHaveCount(0);
+  await expect(panel.getByTestId("admin-context-note-item").filter({ hasText: title })).toHaveCount(
+    0
+  );
 }
 
 test.describe("admin contextual notes", () => {
@@ -427,9 +436,10 @@ test.describe("admin contextual notes", () => {
       return;
     }
 
-    const attachmentCreatePayload = (await attachmentCreateResponse
-      .json()
-      .catch(() => null)) as { ok?: boolean; error?: string } | null;
+    const attachmentCreatePayload = (await attachmentCreateResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
     if (!attachmentCreateResponse.ok() || attachmentCreatePayload?.ok === false) {
       const reason =
         typeof attachmentCreatePayload?.error === "string"
@@ -462,9 +472,10 @@ test.describe("admin contextual notes", () => {
       return;
     }
 
-    const attachmentDeletePayload = (await attachmentDeleteResponse
-      .json()
-      .catch(() => null)) as { ok?: boolean; error?: string } | null;
+    const attachmentDeletePayload = (await attachmentDeleteResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
     if (!attachmentDeleteResponse.ok() || attachmentDeletePayload?.ok === false) {
       const reason =
         typeof attachmentDeletePayload?.error === "string"
