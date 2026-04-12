@@ -28,6 +28,46 @@ type AdminNoteArtifactCleanupEnv = {
   serviceRoleKey: string;
 };
 
+type RetryableCleanupResult<T> = {
+  data: T;
+  error: {
+    message: string;
+  } | null;
+};
+
+function isTransientCleanupErrorMessage(message: string) {
+  return /fetch failed|Failed to fetch|timeout|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i.test(
+    message
+  );
+}
+
+async function waitForCleanupRetry(attempt: number) {
+  await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+}
+
+async function runCleanupStepWithRetry<T>(
+  run: () => PromiseLike<RetryableCleanupResult<T>>
+): Promise<RetryableCleanupResult<T>> {
+  let lastResult: RetryableCleanupResult<T> | null = null;
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const result = await run();
+    lastResult = result;
+
+    if (!result.error || !isTransientCleanupErrorMessage(result.error.message) || attempt === 3) {
+      return result;
+    }
+
+    await waitForCleanupRetry(attempt);
+  }
+
+  if (lastResult) {
+    return lastResult;
+  }
+
+  throw new Error("Cleanup retry exhausted without a query result.");
+}
+
 function readEnvFileValue(name: "NEXT_PUBLIC_SUPABASE_URL" | "SUPABASE_SERVICE_ROLE_KEY") {
   for (const fileName of [".env.local", ".env"]) {
     const filePath = path.join(process.cwd(), fileName);
@@ -114,11 +154,13 @@ export async function cleanupAdminNoteTestArtifacts(options: AdminNoteArtifactCl
   }
 
   const supabase = createCleanupSupabaseClient(env);
-  const notesResult = await supabase
-    .from("admin_notes")
-    .select("id,title,body")
-    .order("created_at", { ascending: false })
-    .limit(400);
+  const notesResult = await runCleanupStepWithRetry(() =>
+    supabase
+      .from("admin_notes")
+      .select("id,title,body")
+      .order("created_at", { ascending: false })
+      .limit(400)
+  );
 
   if (notesResult.error) {
     throw new Error(
@@ -136,10 +178,9 @@ export async function cleanupAdminNoteTestArtifacts(options: AdminNoteArtifactCl
   }
 
   const noteIds = [...new Set(artifactNotes.map((note) => note.id))];
-  const attachmentsResult = await supabase
-    .from("admin_note_attachments")
-    .select("id,note_id,storage_path")
-    .in("note_id", noteIds);
+  const attachmentsResult = await runCleanupStepWithRetry(() =>
+    supabase.from("admin_note_attachments").select("id,note_id,storage_path").in("note_id", noteIds)
+  );
 
   if (attachmentsResult.error) {
     throw new Error(
@@ -151,9 +192,9 @@ export async function cleanupAdminNoteTestArtifacts(options: AdminNoteArtifactCl
   const storagePaths = [...new Set(attachmentRows.map((row) => row.storage_path).filter(Boolean))];
 
   if (storagePaths.length > 0) {
-    const storageDelete = await supabase.storage
-      .from(ADMIN_NOTE_ATTACHMENT_BUCKET)
-      .remove(storagePaths);
+    const storageDelete = await runCleanupStepWithRetry(() =>
+      supabase.storage.from(ADMIN_NOTE_ATTACHMENT_BUCKET).remove(storagePaths)
+    );
 
     if (storageDelete.error) {
       throw new Error(
@@ -162,20 +203,18 @@ export async function cleanupAdminNoteTestArtifacts(options: AdminNoteArtifactCl
     }
   }
 
-  const deleteLinksByNoteId = await supabase
-    .from("admin_note_links")
-    .delete()
-    .in("note_id", noteIds);
+  const deleteLinksByNoteId = await runCleanupStepWithRetry(() =>
+    supabase.from("admin_note_links").delete().in("note_id", noteIds)
+  );
   if (deleteLinksByNoteId.error) {
     throw new Error(
       `Could not delete admin-note artifact links by note_id: ${deleteLinksByNoteId.error.message}`
     );
   }
 
-  const deleteLinksByRelatedId = await supabase
-    .from("admin_note_links")
-    .delete()
-    .in("related_note_id", noteIds);
+  const deleteLinksByRelatedId = await runCleanupStepWithRetry(() =>
+    supabase.from("admin_note_links").delete().in("related_note_id", noteIds)
+  );
   if (deleteLinksByRelatedId.error) {
     throw new Error(
       `Could not delete admin-note artifact links by related_note_id: ${deleteLinksByRelatedId.error.message}`
@@ -183,10 +222,9 @@ export async function cleanupAdminNoteTestArtifacts(options: AdminNoteArtifactCl
   }
 
   if (attachmentRows.length > 0) {
-    const deleteAttachments = await supabase
-      .from("admin_note_attachments")
-      .delete()
-      .in("note_id", noteIds);
+    const deleteAttachments = await runCleanupStepWithRetry(() =>
+      supabase.from("admin_note_attachments").delete().in("note_id", noteIds)
+    );
 
     if (deleteAttachments.error) {
       throw new Error(
@@ -195,7 +233,9 @@ export async function cleanupAdminNoteTestArtifacts(options: AdminNoteArtifactCl
     }
   }
 
-  const deleteNotes = await supabase.from("admin_notes").delete().in("id", noteIds);
+  const deleteNotes = await runCleanupStepWithRetry(() =>
+    supabase.from("admin_notes").delete().in("id", noteIds)
+  );
   if (deleteNotes.error) {
     throw new Error(`Could not delete admin-note artifacts: ${deleteNotes.error.message}`);
   }

@@ -292,16 +292,62 @@ describe("workouts routes", () => {
   });
 
   it("returns a compact poolside note with focus points for the authenticated owner", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({
+    const workoutMaybeSingle = vi.fn().mockResolvedValue({
       data: buildWorkoutRow({
         title: "Poolside QA workout",
       }),
       error: null,
     });
-    const eqId = vi.fn(() => ({ maybeSingle }));
-    const eqUser = vi.fn(() => ({ eq: eqId }));
-    const select = vi.fn(() => ({ eq: eqUser }));
-    const from = vi.fn().mockReturnValue({ select });
+    const athleteProfileMaybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    const trainingMetricMaybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    const trainingPreferencesMaybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    const personalRecordsEq = vi.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    });
+    const from = vi.fn((table: string) => {
+      if (table === "workouts") {
+        const eqId = vi.fn(() => ({ maybeSingle: workoutMaybeSingle }));
+        const eqUser = vi.fn(() => ({ eq: eqId }));
+        return {
+          select: vi.fn(() => ({ eq: eqUser })),
+        };
+      }
+      if (table === "athlete_profiles") {
+        const eqUser = vi.fn(() => ({ maybeSingle: athleteProfileMaybeSingle }));
+        return {
+          select: vi.fn(() => ({ eq: eqUser })),
+        };
+      }
+      if (table === "training_metrics") {
+        const eqMetricKey = vi.fn(() => ({ maybeSingle: trainingMetricMaybeSingle }));
+        const eqUser = vi.fn(() => ({ eq: eqMetricKey }));
+        return {
+          select: vi.fn(() => ({ eq: eqUser })),
+        };
+      }
+      if (table === "training_preferences") {
+        const eqUser = vi.fn(() => ({ maybeSingle: trainingPreferencesMaybeSingle }));
+        return {
+          select: vi.fn(() => ({ eq: eqUser })),
+        };
+      }
+      if (table === "personal_records") {
+        return {
+          select: vi.fn(() => ({ eq: personalRecordsEq })),
+        };
+      }
+      throw new Error(`Unexpected table mock: ${table}`);
+    });
 
     loadTrainingContextSnapshotMock.mockResolvedValue({
       schemaReady: true,
@@ -360,6 +406,10 @@ describe("workouts routes", () => {
     expect(body).not.toContain("High elbow catch");
     expect(body).toContain("Breathing timing");
     expect(body).toContain("lockup-domain-ink.png");
+    expect(from).toHaveBeenCalledWith("athlete_profiles");
+    expect(from).toHaveBeenCalledWith("training_metrics");
+    expect(from).toHaveBeenCalledWith("training_preferences");
+    expect(from).toHaveBeenCalledWith("personal_records");
   });
 
   it("creates manual canonical workouts when the request source kind is manual", async () => {

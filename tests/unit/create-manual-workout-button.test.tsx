@@ -4,6 +4,7 @@ import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateMa
 
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
+  refresh: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -51,6 +52,7 @@ describe("CreateManualWorkoutButton", () => {
         "/my-library/workouts/11111111-1111-4111-8111-111111111111?entry=manual-pool"
       );
     });
+    expect(navigationState.refresh).toHaveBeenCalled();
   });
 
   it("shows an inline error when manual creation fails", async () => {
@@ -105,6 +107,7 @@ describe("CreateManualWorkoutButton", () => {
         "/my-library/workouts/33333333-3333-4333-8333-333333333333?from=overview"
       );
     });
+    expect(navigationState.refresh).toHaveBeenCalled();
   });
 
   it("creates an open water workout from the dedicated open-water entry", async () => {
@@ -137,5 +140,6 @@ describe("CreateManualWorkoutButton", () => {
         "/my-library/workouts/44444444-4444-4444-8444-444444444444?entry=manual-open-water"
       );
     });
+    expect(navigationState.refresh).toHaveBeenCalled();
   });
 });

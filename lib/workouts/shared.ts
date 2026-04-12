@@ -3,6 +3,7 @@ import {
   SESSION_DRAFT_STEP_CATEGORIES,
   SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
   SESSION_DRAFT_STEP_DRILL_TYPES,
+  SESSION_DRAFT_STEP_INTENSITY_PRESETS,
   SESSION_DRAFT_STEP_DURATION_MODES,
   SESSION_DRAFT_STEP_EQUIPMENT,
   SESSION_DRAFT_REPEAT_MAX,
@@ -25,10 +26,12 @@ import {
   getSessionStepCategoryLabel,
   getSessionStepDrillTypeLabel,
   getSessionStepEquipmentLabel,
+  getSessionStepIntensityLabel,
   getSessionStepStrokeLabel,
   getSessionStepDurationModeLabel,
   getSessionStepTargetModeLabel,
   getSessionTypeLabel,
+  isSessionDraftStepIntensityPreset,
   isSessionDraftRepeatEndingRestStep,
   isSessionDraftRepeatPostSetRestStep,
   normalizeSessionDraftPoolLength,
@@ -38,6 +41,7 @@ import {
   type SessionDraftPoolLengthUnit,
   type SessionDraftRepeatEndingRestMode,
   type SessionDraftStep,
+  type SessionDraftStepIntensityPreset,
   type SessionGeneratorEnvironment,
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
@@ -156,8 +160,10 @@ function formatWorkoutDistanceLabel(
 export type WorkoutHandoffDraftState = "canonical" | "local_draft";
 export type WorkoutPdfVariant = "standard" | "poolside";
 export const WORKOUT_POOLSIDE_PRINT_STYLES = ["color", "ink_saver"] as const;
+export const WORKOUT_POOLSIDE_PRINT_LAYOUTS = ["portrait", "landscape"] as const;
 
 export type WorkoutPoolsidePrintStyle = (typeof WORKOUT_POOLSIDE_PRINT_STYLES)[number];
+export type WorkoutPoolsidePrintLayout = (typeof WORKOUT_POOLSIDE_PRINT_LAYOUTS)[number];
 export type WorkoutPoolsideFocusOption = {
   id: string;
   title: string;
@@ -198,7 +204,9 @@ export type WorkoutPdfModel = {
   draftState: WorkoutHandoffDraftState;
   variant: WorkoutPdfVariant;
   poolsidePrintStyle: WorkoutPoolsidePrintStyle;
+  poolsidePrintLayout: WorkoutPoolsidePrintLayout;
   logoUrl: string | null;
+  swimmerName: string | null;
   sourceLabel: string;
   title: string;
   sessionSummary: string;
@@ -746,16 +754,20 @@ export function buildWorkoutPdfModel(
     variant?: WorkoutPdfVariant;
     focusPoints?: string[];
     poolsidePrintStyle?: WorkoutPoolsidePrintStyle;
+    poolsidePrintLayout?: WorkoutPoolsidePrintLayout;
+    swimmerName?: string | null;
     logoUrl?: string | null;
   }
 ): WorkoutPdfModel {
   const draftState = options?.draftState ?? "local_draft";
   const variant = options?.variant ?? "standard";
   const poolsidePrintStyle = normalizeWorkoutPoolsidePrintStyle(options?.poolsidePrintStyle);
+  const poolsidePrintLayout = normalizeWorkoutPoolsidePrintLayout(options?.poolsidePrintLayout);
   const fileName = buildWorkoutPdfFileName(draft, { draftState, variant });
   const sourceLabel = draftState === "canonical" ? "Canonical workout" : "Local draft";
   const focusPoints = buildWorkoutPdfFocusPoints(draft, options?.focusPoints);
   const poolsideLines = buildWorkoutPoolsideLines(draft);
+  const swimmerName = normalizeWorkoutSwimmerName(options?.swimmerName);
 
   if (!draft) {
     const readiness = buildWorkoutGarminReadinessReport(draft);
@@ -764,7 +776,9 @@ export function buildWorkoutPdfModel(
       draftState,
       variant,
       poolsidePrintStyle,
+      poolsidePrintLayout,
       logoUrl: options?.logoUrl ?? null,
+      swimmerName,
       sourceLabel,
       title: variant === "poolside" ? "Poolside Note" : "Workout PDF",
       sessionSummary: "No workout draft is available yet.",
@@ -861,7 +875,9 @@ export function buildWorkoutPdfModel(
     draftState,
     variant,
     poolsidePrintStyle,
+    poolsidePrintLayout,
     logoUrl: options?.logoUrl ?? null,
+    swimmerName,
     sourceLabel,
     title: draft.title,
     sessionSummary: buildSessionTargetSummary(normalizedDraft),
@@ -888,6 +904,8 @@ export function buildWorkoutPdfHtmlDocument(
     variant?: WorkoutPdfVariant;
     focusPoints?: string[];
     poolsidePrintStyle?: WorkoutPoolsidePrintStyle;
+    poolsidePrintLayout?: WorkoutPoolsidePrintLayout;
+    swimmerName?: string | null;
     logoUrl?: string | null;
     fontUrl?: string | null;
   }
@@ -1497,10 +1515,9 @@ function buildStandardWorkoutPdfHtmlDocument(
 
 function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: string | null) {
   const isInkSaver = model.poolsidePrintStyle === "ink_saver";
+  const isLandscape = model.poolsidePrintLayout === "landscape";
   const printModeLabel = isInkSaver ? "Ink saver" : "Color mode";
-  const printModeDescription = isInkSaver
-    ? "Text-first print layout with white surfaces to save ink."
-    : "Color-first print layout. Turn on Print backgrounds in your browser if you want the blue fills.";
+  const printLayoutLabel = isLandscape ? "Landscape" : "Portrait";
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
   const focusPointsHtml =
@@ -1516,6 +1533,9 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       : "";
   const totalDistanceHtml = model.totalDistanceLabel
     ? `<p class="poolside-total">${escapeHtml(model.totalDistanceLabel)}</p>`
+    : "";
+  const swimmerNameHtml = model.swimmerName
+    ? `<p class="swimmer-pill">Swimmer: ${escapeHtml(model.swimmerName)}</p>`
     : "";
 
   return `<!DOCTYPE html>
@@ -1627,7 +1647,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .page {
-        width: min(100%, 104mm);
+        width: min(100%, ${isLandscape ? "240mm" : "104mm"});
         margin: 0 auto;
         border: 1px solid rgba(16, 33, 60, 0.08);
         border-radius: 24px;
@@ -1692,8 +1712,14 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .hero-top {
         display: flex;
-        align-items: center;
-        gap: 12px;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .hero-copy {
+        flex: 1 1 auto;
+        min-width: 0;
       }
 
       .brand-tagline {
@@ -1709,6 +1735,18 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         font-size: 13px;
         line-height: 1.45;
         color: var(--muted);
+      }
+
+      .swimmer-pill {
+        display: inline-flex;
+        margin: 10px 0 0;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        padding: 6px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--ink);
       }
 
       .session-pill-row {
@@ -1737,6 +1775,20 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: grid;
         gap: 10px;
         padding: 14px;
+      }
+
+      .body-landscape {
+        align-items: start;
+        grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+        gap: 16px;
+      }
+
+      .poolside-meta,
+      .poolside-steps {
+        min-width: 0;
+        display: grid;
+        gap: 10px;
+        align-content: start;
       }
 
       .callout,
@@ -1847,16 +1899,6 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         color: var(--ink);
       }
 
-      .print-style-note {
-        border: 1px dashed var(--line);
-        border-radius: 14px;
-        padding: 10px 12px;
-        font-size: 11px;
-        line-height: 1.45;
-        color: var(--muted);
-        background: ${isInkSaver ? "#ffffff" : "rgba(255, 255, 255, 0.8)"};
-      }
-
       @media print {
         html,
         body {
@@ -1876,16 +1918,16 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         }
 
         .page {
-          width: 96mm;
-          max-width: 96mm;
-          min-width: 96mm;
+          width: ${isLandscape ? "100%" : "96mm"};
+          max-width: ${isLandscape ? "100%" : "96mm"};
+          min-width: ${isLandscape ? "100%" : "96mm"};
           border-radius: 20px;
           box-shadow: none;
         }
       }
 
       @page {
-        size: A4 portrait;
+        size: A4 ${isLandscape ? "landscape" : "portrait"};
         margin: 12mm;
       }
     </style>
@@ -1911,25 +1953,32 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         data-testid="workout-pdf-print-view"
         data-pdf-variant="poolside"
         data-poolside-print-style="${escapeHtml(model.poolsidePrintStyle)}"
+        data-poolside-print-layout="${escapeHtml(model.poolsidePrintLayout)}"
       >
         <header class="hero">
           <div class="hero-top">
             ${logoHtml}
-            <div>
+            <div class="hero-copy">
               <p class="section-kicker">freeswimming.org</p>
-              <p class="brand-tagline">Learn. Drill. Swim.</p>
+              <p class="brand-tagline">Pool session execution</p>
               <h1 data-testid="workout-pdf-title">Poolside Note</h1>
+              ${swimmerNameHtml}
             </div>
           </div>
           <p class="lede">${escapeHtml(model.title)}</p>
           <div class="session-pill-row">
             <span class="session-pill">${escapeHtml(model.sessionSummary)}</span>
             <span class="session-pill session-pill-neutral">${escapeHtml(printModeLabel)}</span>
+            <span class="session-pill session-pill-neutral">${escapeHtml(printLayoutLabel)}</span>
           </div>
         </header>
-        <div class="body">
-          <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
-          <section>
+        <div class="body ${isLandscape ? "body-landscape" : "body-portrait"}">
+          <aside class="poolside-meta">
+            <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
+            ${totalDistanceHtml}
+            ${focusPointsHtml}
+          </aside>
+          <section class="poolside-steps">
             <ol class="poolside-line-list">
               ${model.poolsideLines
                 .map((line) =>
@@ -1941,11 +1990,6 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
                 .join("")}
             </ol>
           </section>
-          ${totalDistanceHtml}
-          ${focusPointsHtml}
-          <p class="print-style-note" data-testid="workout-pdf-print-style-note">
-            ${escapeHtml(printModeDescription)}
-          </p>
         </div>
       </article>
     </main>
@@ -2542,7 +2586,7 @@ export function getWorkoutStepTargetModeOutputLabel(
 
   switch (targetMode) {
     case "effort":
-      return "Effort cue";
+      return "Effort";
     case "css_target_pace":
       return "CSS target pace";
     default:
@@ -2754,6 +2798,16 @@ export function normalizeWorkoutPoolsidePrintStyle(
   value: string | null | undefined
 ): WorkoutPoolsidePrintStyle {
   return value === "ink_saver" ? "ink_saver" : "color";
+}
+
+export function normalizeWorkoutPoolsidePrintLayout(
+  value: string | null | undefined
+): WorkoutPoolsidePrintLayout {
+  return value === "landscape" ? "landscape" : "portrait";
+}
+
+function normalizeWorkoutSwimmerName(value: string | null | undefined) {
+  return normalizeNullableText(value, 120);
 }
 
 export function getDefaultWorkoutPoolsideFocusIds(
@@ -2978,7 +3032,7 @@ function buildWorkoutPoolsideIntervalLabel(
   return [
     buildWorkoutPoolsideDurationLabel(step, basePaceSecondsPer100m, environment, poolLengthUnit),
     buildWorkoutPoolsideDescriptor(step),
-    getSessionEffortLabel(step.intensity),
+    getSessionStepIntensityLabel(step.intensity),
     buildWorkoutPoolsideTargetLabel(step, basePaceSecondsPer100m, poolLengthUnit),
   ]
     .filter(Boolean)
@@ -3336,7 +3390,7 @@ function buildWorkoutGarminReadyExportStep(
         : null,
     intensity: {
       value: step.intensity,
-      label: getSessionEffortLabel(step.intensity),
+      label: getSessionStepIntensityLabel(step.intensity),
     },
     duration: {
       mode: step.durationMode,
@@ -3365,7 +3419,7 @@ function buildWorkoutGarminReadyExportStep(
       effortTarget: step.effortTarget
         ? {
             value: step.effortTarget,
-            label: getSessionEffortLabel(step.effortTarget),
+            label: getSessionStepIntensityLabel(step.effortTarget),
           }
         : null,
       targetPaceSecondsPer100m: step.targetPaceSecondsPer100m ?? null,
@@ -3415,7 +3469,7 @@ function buildWorkoutHandoffStepSummary(
       poolLengthUnit,
     }),
     contextParts.join(" · "),
-    structuredTarget ?? getSessionEffortLabel(step.intensity),
+    structuredTarget ?? getSessionStepIntensityLabel(step.intensity),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -3603,7 +3657,7 @@ function normalizeStep(
     };
   }
 
-  if (!SESSION_GENERATOR_EFFORT_PRESETS.includes(input.intensity)) {
+  if (!SESSION_DRAFT_STEP_INTENSITY_PRESETS.includes(input.intensity)) {
     return {
       ok: false,
       error: `Step ${index + 1} uses an unsupported intensity.`,
@@ -3639,7 +3693,9 @@ function normalizeStep(
   const drillType = normalizeStepDrillType(input.drillType);
   const equipment = normalizeStepEquipment(input.equipment);
   const targetMode = normalizeTargetMode(input.targetMode);
-  const effortTarget = targetMode === "effort" ? normalizeEffortPreset(input.effortTarget) : null;
+  const intensity = normalizeStepIntensityPreset(input.intensity);
+  const effortTarget =
+    targetMode === "effort" ? normalizeStepIntensityPreset(input.effortTarget) : null;
   const targetPaceSecondsPer100m =
     targetMode === "target_pace" ? normalizeNullableInteger(input.targetPaceSecondsPer100m) : null;
   const cssTargetOffsetSeconds =
@@ -3738,7 +3794,7 @@ function normalizeStep(
         stroke: input.stroke,
         drillType,
         equipment,
-        intensity: input.intensity,
+        intensity: intensity!,
         durationMode: "distance",
         distanceM,
         timeMin: null,
@@ -3767,7 +3823,7 @@ function normalizeStep(
         stroke: input.stroke,
         drillType,
         equipment,
-        intensity: input.intensity,
+        intensity: intensity!,
         durationMode: "lap_button",
         distanceM: null,
         timeMin: null,
@@ -3796,7 +3852,7 @@ function normalizeStep(
         stroke: input.stroke,
         drillType,
         equipment,
-        intensity: input.intensity,
+        intensity: intensity!,
         durationMode: "css_send_off",
         distanceM: null,
         timeMin: null,
@@ -3829,7 +3885,7 @@ function normalizeStep(
       stroke: input.stroke,
       drillType,
       equipment,
-      intensity: input.intensity,
+      intensity: intensity!,
       durationMode:
         input.durationMode === "fixed_rest"
           ? "fixed_rest"
@@ -3905,10 +3961,8 @@ function normalizePositiveNumber(value: unknown) {
   return Math.round(value * 10000) / 10000;
 }
 
-function normalizeEffortPreset(value: unknown) {
-  return SESSION_GENERATOR_EFFORT_PRESETS.includes(value as SessionDraft["effort"])
-    ? (value as SessionDraft["effort"])
-    : null;
+function normalizeStepIntensityPreset(value: unknown): SessionDraftStepIntensityPreset | null {
+  return isSessionDraftStepIntensityPreset(value) ? value : null;
 }
 
 function normalizeTargetMode(value: unknown) {

@@ -75,6 +75,7 @@ export default async function WorkoutSessionsPage() {
                 athleteProfileSnapshot.cssMetric?.valueSeconds ?? null
               }
               manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
+              swimmerName={athleteProfileSnapshot.profile?.primaryName ?? null}
               browseOnly
             />
           </div>

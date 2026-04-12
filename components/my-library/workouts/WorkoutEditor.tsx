@@ -10,6 +10,7 @@ import {
   SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS,
   SESSION_DRAFT_STEP_DISTANCE_PRESETS,
   SESSION_DRAFT_STEP_DRILL_TYPES,
+  SESSION_DRAFT_STEP_INTENSITY_PRESETS,
   SESSION_DRAFT_POOL_LENGTH_MAX,
   SESSION_DRAFT_POOL_LENGTH_MIN,
   SESSION_DRAFT_STEP_DURATION_MODES,
@@ -40,6 +41,7 @@ import {
   getSessionStepCategoryLabel,
   getSessionStepDrillTypeLabel,
   getSessionStepEquipmentLabel,
+  getSessionStepIntensityLabel,
   getSessionStepStrokeLabel,
   getSessionStepDurationModeLabel,
   getSessionStepTargetModeLabel,
@@ -54,6 +56,7 @@ import {
   type SessionDraftStep,
   type SessionDraftStepCategory,
   type SessionDraftStepDurationMode,
+  type SessionDraftStepIntensityPreset,
   type SessionGeneratorEnvironment,
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
@@ -71,6 +74,7 @@ import {
   type WorkoutEditorRecord,
   type WorkoutHandoffDraftState,
   type WorkoutPoolsideFocusOption,
+  type WorkoutPoolsidePrintLayout,
   type WorkoutPoolsidePrintStyle,
   type WorkoutSummary,
 } from "@/lib/workouts/shared";
@@ -99,6 +103,7 @@ type Props = {
   forceMetadataOpenOnLoad?: boolean;
   onRequestDeleteCurrent?: (() => void) | null;
   isDeletingCurrent?: boolean;
+  swimmerName?: string | null;
 };
 
 type StepRenderEntry = {
@@ -133,8 +138,37 @@ type PendingRemoval =
       label: string;
     };
 
-const MANUAL_POOL_SIZE_QUICK_CHOICES = [25, 33.33, 50] as const;
-const YARD_POOL_SIZE_QUICK_CHOICES = [25, 33.33, 50] as const;
+const MANUAL_POOL_SIZE_QUICK_CHOICES = [25, 50] as const;
+const YARD_POOL_SIZE_QUICK_CHOICES = [25, 50] as const;
+const MANUAL_POOL_VISIBLE_STEP_CATEGORIES = [
+  "warmup",
+  "main",
+  "cooldown",
+  "rest",
+  "swim",
+] as const satisfies readonly SessionDraftStepCategory[];
+const MANUAL_POOL_VISIBLE_STEP_STROKES = [
+  "freestyle",
+  "breaststroke",
+  "backstroke",
+  "butterfly",
+  "choice",
+  "individual_medley",
+  "im_by_round",
+  "reverse_im_order",
+  "mixed",
+] as const;
+const MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS = [
+  "recovery",
+  "easy",
+  "moderate",
+  "hard",
+  "very_hard",
+  "all_out",
+  "ascending",
+  "descending",
+] as const satisfies readonly SessionDraftStepIntensityPreset[];
+const WORKOUT_VIEW_MODES = ["edit", "view"] as const;
 
 type LastRemovedBlock = {
   kind: "step" | "repeat";
@@ -396,6 +430,10 @@ function getStepDurationModeEditorLabel(
   }
 }
 
+function usesClockDurationInput(durationMode: SessionDraftStepDurationMode) {
+  return durationMode === "time" || durationMode === "fixed_rest" || durationMode === "send_off";
+}
+
 const MANUAL_POOL_SWIM_DURATION_MODES: readonly SessionDraftStepDurationMode[] = [
   "distance",
   "time",
@@ -411,6 +449,41 @@ const MANUAL_POOL_REST_DURATION_MODES: readonly SessionDraftStepDurationMode[] =
 
 function isManualPoolRestCategory(category: SessionDraftStepCategory) {
   return category === "rest";
+}
+
+function normalizeManualPoolStepCategory(category: SessionDraftStepCategory) {
+  if (category === "drill") {
+    return {
+      category: "swim" as const,
+      drillType: "drill" as const,
+    };
+  }
+
+  if (category === "kick") {
+    return {
+      category: "swim" as const,
+      drillType: "kick" as const,
+    };
+  }
+
+  return {
+    category,
+    drillType: null,
+  };
+}
+
+function normalizeManualPoolStrokeForEditor(stroke: SessionDraftStep["stroke"]) {
+  if (stroke === "drill") {
+    return {
+      stroke: "choice" as const,
+      drillType: "drill" as const,
+    };
+  }
+
+  return {
+    stroke,
+    drillType: null,
+  };
 }
 
 function getManualPoolDurationModesForCategory(
@@ -452,11 +525,26 @@ function applyStepDurationModeDefaults(
 }
 
 function normalizeManualPoolStepForEditor(step: SessionDraftStep): SessionDraftStep {
-  if (isManualPoolDurationModeAllowed(step.category, step.durationMode)) {
-    return step;
+  const normalizedCategory = normalizeManualPoolStepCategory(step.category);
+  const normalizedStroke = normalizeManualPoolStrokeForEditor(step.stroke);
+  const nextStep: SessionDraftStep = {
+    ...step,
+    category: normalizedCategory.category,
+    stroke: normalizedStroke.stroke,
+    drillType:
+      step.drillType && step.drillType !== "none"
+        ? step.drillType
+        : (normalizedCategory.drillType ?? normalizedStroke.drillType ?? step.drillType ?? "none"),
+  };
+
+  if (isManualPoolDurationModeAllowed(nextStep.category, nextStep.durationMode)) {
+    return nextStep;
   }
 
-  return applyStepDurationModeDefaults(step, getDefaultManualPoolDurationMode(step.category));
+  return applyStepDurationModeDefaults(
+    nextStep,
+    getDefaultManualPoolDurationMode(nextStep.category)
+  );
 }
 
 function getStepTargetModeEditorLabel(
@@ -469,7 +557,7 @@ function getStepTargetModeEditorLabel(
 
   switch (value) {
     case "effort":
-      return "Effort cue";
+      return "Effort";
     case "css_target_pace":
       return "CSS target pace";
     default:
@@ -564,6 +652,22 @@ function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
       postSetRestForRepeatGroupId: groupId,
     }),
   ];
+}
+
+function buildAutoRestStep(index: number): SessionDraftStep {
+  return buildBlankStep(index, {
+    category: "rest",
+    name: "Auto rest",
+    stroke: "choice",
+    intensity: "recovery",
+    durationMode: "fixed_rest",
+    distanceM: null,
+    timeMin: 0.5,
+    targetMode: "none",
+    effortTarget: null,
+    targetSummary: "",
+    notes: "",
+  });
 }
 
 function buildRepeatInsertedStep(
@@ -747,7 +851,7 @@ function buildStepSummary(
       poolLengthUnit,
     }),
     buildStepContextLabel(step, { environment }),
-    structuredTarget ?? getSessionEffortLabel(step.intensity),
+    structuredTarget ?? getSessionStepIntensityLabel(step.intensity),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -772,11 +876,45 @@ function buildManualPoolStepSummary(
         poolLengthUnit,
       }),
       buildStepContextLabel(normalizedStep, { environment: "pool" }),
-      structuredTarget,
+      structuredTarget ?? getSessionStepIntensityLabel(normalizedStep.intensity),
     ]
       .filter(Boolean)
       .join(" · ") || `${getSessionStepCategoryLabel(normalizedStep.category)} step`
   );
+}
+
+function buildManualPoolRestInlineSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
+  const summary = buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+    environment: "pool",
+  });
+  return summary.startsWith("Fixed Rest Time ")
+    ? `Rest ${summary.replace("Fixed Rest Time ", "")}`
+    : summary;
+}
+
+function buildManualPoolDisplaySummary(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  poolLengthUnit: SessionDraftPoolLengthUnit,
+  linkedRestStep?: SessionDraftStep | null
+) {
+  const normalizedStep = normalizeManualPoolStepForEditor(step);
+  const parts = buildManualPoolStepSummary(
+    normalizedStep,
+    basePaceSecondsPer100m,
+    poolLengthUnit
+  ).split(" · ");
+
+  if (
+    normalizedStep.category !== "rest" &&
+    linkedRestStep &&
+    linkedRestStep.category === "rest" &&
+    linkedRestStep.postSetRestForRepeatGroupId == null
+  ) {
+    parts.push(buildManualPoolRestInlineSummary(linkedRestStep, basePaceSecondsPer100m));
+  }
+
+  return parts.filter(Boolean).join(" · ");
 }
 
 function syncManualPoolEditableStep(
@@ -952,6 +1090,7 @@ export default function WorkoutEditor({
   forceMetadataOpenOnLoad = false,
   onRequestDeleteCurrent = null,
   isDeletingCurrent = false,
+  swimmerName = null,
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const garminReadiness = buildWorkoutGarminReadinessReport(draft);
@@ -978,7 +1117,7 @@ export default function WorkoutEditor({
   const [timeDurationInputs, setTimeDurationInputs] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       draft.steps
-        .filter((step) => step.durationMode === "time")
+        .filter((step) => usesClockDurationInput(step.durationMode))
         .map((step) => [step.id, formatEditableClockDuration(step.timeMin)])
     )
   );
@@ -994,7 +1133,11 @@ export default function WorkoutEditor({
   const [metadataOpen, setMetadataOpen] = useState(
     () => forceMetadataOpenOnLoad || !(savedWorkout && copyVariant === "default")
   );
+  const [builderViewMode, setBuilderViewMode] =
+    useState<(typeof WORKOUT_VIEW_MODES)[number]>("edit");
   const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
+  const [poolsidePrintLayout, setPoolsidePrintLayout] =
+    useState<WorkoutPoolsidePrintLayout>("portrait");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions)
   );
@@ -1068,6 +1211,7 @@ export default function WorkoutEditor({
   const workoutPdfHtml = buildWorkoutPdfHtmlDocument(draft, {
     draftState: handoffDraftState,
     variant: "standard",
+    swimmerName,
     fontUrl:
       typeof window === "undefined"
         ? BRAND_FONT_PUBLIC_PATH
@@ -1111,10 +1255,10 @@ export default function WorkoutEditor({
     : "Full-session PDF reflects the current local draft before canonical save.";
   const workoutPdfBodyCopy =
     handoffDraftState === "canonical"
-      ? "Use PDF for the full-session sheet, or Poolside Note for the compact lane-side note."
+      ? "Use PDF for the full-session sheet, or Print Preview for the compact lane-side note."
       : "Both PDF views reflect the unsaved draft currently on screen.";
   const workoutPdfButtonLabel = "PDF";
-  const workoutPoolsidePdfButtonLabel = "Poolside Note";
+  const workoutPoolsidePdfButtonLabel = "Print Preview";
   const garminExportStateLabel =
     handoffDraftState === "canonical"
       ? "Canonical Garmin-ready export"
@@ -1145,16 +1289,6 @@ export default function WorkoutEditor({
     autoPoolBuilderTitle !== null &&
     draft.title === autoPoolBuilderTitle;
   const displayedTitle = shouldHideAutoPoolBuilderTitle ? "" : draft.title;
-  const poolLengthSupportCopy = poolSizeInputInvalid
-    ? `Enter a valid pool ${isManualPoolMode ? "size" : "length"} between ${formatPoolLengthLabel(
-        SESSION_DRAFT_POOL_LENGTH_MIN,
-        poolLengthUnit
-      )} and ${formatPoolLengthLabel(SESSION_DRAFT_POOL_LENGTH_MAX, poolLengthUnit)}.`
-    : `Common presets: ${poolLengthQuickChoices
-        .map((value) =>
-          poolLengthUnit === "yd" ? `${value}yd` : formatPoolLengthLabel(value, poolLengthUnit)
-        )
-        .join(", ")}.`;
   const supportToolsDraftStateDescription =
     handoffDraftState === "canonical"
       ? "These support tools currently reflect the saved session."
@@ -1190,8 +1324,8 @@ export default function WorkoutEditor({
   const desktopHeaderStackClass =
     "flex items-start justify-between gap-3 sm:flex-col sm:justify-start";
   const desktopSummaryBlockClass = "min-w-0 flex-1 sm:w-full";
-  const desktopActionRowClass = "hidden w-full flex-wrap items-center gap-2 sm:flex";
   const desktopRepeatControlRowClass = "grid gap-3";
+  const isViewMode = builderViewMode === "view";
 
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
@@ -1230,7 +1364,7 @@ export default function WorkoutEditor({
       const next: Record<string, string> = {};
 
       for (const step of draft.steps) {
-        if (step.durationMode !== "time") continue;
+        if (!usesClockDurationInput(step.durationMode)) continue;
 
         next[step.id] = timeDurationInputFocusRef.current[step.id]
           ? (current[step.id] ?? formatEditableClockDuration(step.timeMin))
@@ -1253,6 +1387,14 @@ export default function WorkoutEditor({
   useEffect(() => {
     setSupportToolsOpen(!showCalmBuilderLayout);
   }, [savedWorkoutId, showCalmBuilderLayout]);
+
+  useEffect(() => {
+    if (!isViewMode) return;
+
+    setOpenStepId(null);
+    setOpenMobileActionKey(null);
+    setMetadataOpen(false);
+  }, [isViewMode]);
 
   useEffect(() => {
     setManualPoolTitleEdited(false);
@@ -1284,7 +1426,9 @@ export default function WorkoutEditor({
 
   useEffect(() => {
     setMetadataOpen(forceMetadataOpenOnLoad || !metadataStartsCollapsed);
+    setBuilderViewMode("edit");
     setPoolsidePrintStyle("color");
+    setPoolsidePrintLayout("portrait");
     setSelectedPoolsideFocusIds(parseSignatureValues(defaultPoolsideFocusIdSignature));
   }, [
     copyVariant,
@@ -1317,7 +1461,9 @@ export default function WorkoutEditor({
     savedWorkoutId,
     savedWorkout?.updatedAt,
     poolsidePrintStyle,
+    poolsidePrintLayout,
     selectedPoolsideFocusSignature,
+    swimmerName,
   ]);
 
   useEffect(() => {
@@ -1438,12 +1584,27 @@ export default function WorkoutEditor({
     );
   }
 
-  function insertStepAt(insertIndex: number, overrides: Partial<SessionDraftStep> = {}) {
+  function insertStepAt(
+    insertIndex: number,
+    overrides: Partial<SessionDraftStep> = {},
+    options?: {
+      autoCreateStandaloneRest?: boolean;
+    }
+  ) {
     const nextStep = buildBlankStep(draft.steps.length + 1, overrides);
+    const shouldAutoCreateStandaloneRest =
+      options?.autoCreateStandaloneRest === true &&
+      isManualPoolMode &&
+      !nextStep.repeatGroupId &&
+      !nextStep.postSetRestForRepeatGroupId &&
+      nextStep.category !== "rest";
+    const insertedSteps = shouldAutoCreateStandaloneRest
+      ? [nextStep, buildAutoRestStep(draft.steps.length + 2)]
+      : [nextStep];
     const nextSteps = [...draft.steps];
     const safeInsertIndex = Math.min(Math.max(insertIndex, 0), nextSteps.length);
 
-    nextSteps.splice(safeInsertIndex, 0, nextStep);
+    nextSteps.splice(safeInsertIndex, 0, ...insertedSteps);
     setPendingRemoval(null);
     setLastRemovedBlock(null);
     setOpenStepId(nextStep.id);
@@ -1485,7 +1646,7 @@ export default function WorkoutEditor({
   }
 
   function addStep() {
-    insertStepAt(draft.steps.length);
+    insertStepAt(draft.steps.length, {}, { autoCreateStandaloneRest: true });
   }
 
   function addRepeat() {
@@ -1506,14 +1667,17 @@ export default function WorkoutEditor({
             sourceStep.repeatCount ?? null,
             resolveSessionDraftRepeatEndingRestMode(sourceStep.repeatEndingRestMode ?? null)
           )
-        : {}
+        : {},
+      {
+        autoCreateStandaloneRest: !sourceStep.repeatGroupId,
+      }
     );
   }
 
   function insertStepAfterGroup(groupIndex: number) {
     const insertIndex = getGroupInsertIndex(groupIndex);
     if (insertIndex === null) return;
-    insertStepAt(insertIndex);
+    insertStepAt(insertIndex, {}, { autoCreateStandaloneRest: true });
   }
 
   function insertRepeatAfterGroup(groupIndex: number) {
@@ -1996,12 +2160,14 @@ export default function WorkoutEditor({
               variant: "poolside",
               focusPoints: selectedPoolsideFocusPoints,
               poolsidePrintStyle,
+              poolsidePrintLayout,
+              swimmerName,
               logoUrl: new URL(BRAND_PDF_LOGO_PATH, window.location.origin).toString(),
               fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, window.location.origin).toString(),
             })
           : workoutPdfHtml;
       const fileName = variant === "poolside" ? workoutPoolsidePdfFileName : workoutPdfFileName;
-      const variantLabel = variant === "poolside" ? "Poolside Note" : "PDF";
+      const variantLabel = variant === "poolside" ? "Print Preview" : "PDF";
       const printWindow = window.open("", "_blank");
 
       if (!printWindow?.document) {
@@ -2036,34 +2202,98 @@ export default function WorkoutEditor({
   ) {
     const insideRepeatGroup = options?.insideRepeatGroup ?? false;
     const isLinkedPostSetRest = options?.isLinkedPostSetRest ?? false;
-    const isOpen = openStepId === step.id;
+    const isOpen = !isViewMode && openStepId === step.id;
     const toggleLabel = isOpen ? "Done" : "Edit step";
     const panelId = `session-draft-step-panel-${step.id}`;
+    const normalizedStep = isManualPoolMode ? normalizeManualPoolStepForEditor(step) : step;
+    const nextDraftStep = draft.steps[index + 1] ?? null;
+    const linkedRestStep =
+      isManualPoolMode &&
+      normalizedStep.category !== "rest" &&
+      nextDraftStep?.category === "rest" &&
+      ((normalizedStep.repeatGroupId &&
+        nextDraftStep.repeatGroupId === normalizedStep.repeatGroupId) ||
+        (!normalizedStep.repeatGroupId &&
+          !nextDraftStep.repeatGroupId &&
+          !nextDraftStep.postSetRestForRepeatGroupId))
+        ? nextDraftStep
+        : null;
+    const topLevelSingleEntries = isManualPoolMode
+      ? stepGroups.filter(
+          (group): group is Extract<StepRenderGroup, { kind: "single" }> => group.kind === "single"
+        )
+      : [];
+    const sameTypeTotal = isManualPoolMode
+      ? topLevelSingleEntries.filter(
+          (group) =>
+            normalizeManualPoolStepForEditor(group.entries[0].step).category ===
+            normalizedStep.category
+        ).length
+      : 0;
+    const sameTypePosition = isManualPoolMode
+      ? topLevelSingleEntries.filter(
+          (group) =>
+            normalizeManualPoolStepForEditor(group.entries[0].step).category ===
+              normalizedStep.category && group.entries[0].index <= index
+        ).length
+      : 0;
     const stepLabel =
       options?.labelOverride ??
       (insideRepeatGroup
         ? step.category === "rest"
           ? `Repeat rest step ${options?.repeatStepNumber ?? 1}`
           : `Repeat step ${options?.repeatStepNumber ?? 1}`
-        : `Step ${index + 1}`);
+        : isManualPoolMode
+          ? sameTypeTotal > 1
+            ? `${getSessionStepCategoryLabel(normalizedStep.category)} ${sameTypePosition} of ${sameTypeTotal}`
+            : getSessionStepCategoryLabel(normalizedStep.category)
+          : `Step ${index + 1}`);
     const selectedDistancePreset = SESSION_DRAFT_STEP_DISTANCE_PRESETS.find((value) =>
-      isDistanceQuickChoiceSelected(step.distanceM, value, poolLengthUnit)
+      isDistanceQuickChoiceSelected(normalizedStep.distanceM, value, poolLengthUnit)
     );
-    const isMinimalRestEditor = isManualPoolMode && step.category === "rest";
+    const isMinimalRestEditor = isManualPoolMode && normalizedStep.category === "rest";
     const stepTitle = isManualPoolMode
-      ? buildManualPoolStepSummary(step, draft.basePaceSecondsPer100m, poolLengthUnit)
+      ? buildManualPoolDisplaySummary(
+          normalizedStep,
+          draft.basePaceSecondsPer100m,
+          poolLengthUnit,
+          linkedRestStep
+        )
       : step.name || getSessionStepCategoryLabel(step.category);
     const mobileActionKey = `step:${step.id}`;
     const mobileActionsOpen = openMobileActionKey === mobileActionKey;
-    const showMobilePrimaryAddAfter = isOpen && !isLinkedPostSetRest;
+    const showMobilePrimaryAddAfter = !isViewMode && isOpen && !isLinkedPostSetRest;
     const showMobilePrimaryAddRepeatAfter = showMobilePrimaryAddAfter && !insideRepeatGroup;
+    const stepCategoryValue = isManualPoolMode ? normalizedStep.category : step.category;
+    const stepStrokeValue = isManualPoolMode
+      ? (normalizedStep.stroke ?? "choice")
+      : (step.stroke ?? "choice");
+    const stepDrillTypeValue =
+      isManualPoolMode && normalizedStep.drillType
+        ? normalizedStep.drillType
+        : (step.drillType ?? "none");
+    const stepIntensityValue = isManualPoolMode ? normalizedStep.intensity : step.intensity;
+    const stepEquipmentValue = isManualPoolMode
+      ? (normalizedStep.equipment ?? "none")
+      : (step.equipment ?? "none");
+    const stepDurationModeValue = isManualPoolMode
+      ? normalizedStep.durationMode
+      : step.durationMode;
+    const stepTargetModeValue = isManualPoolMode
+      ? (normalizedStep.targetMode ?? "none")
+      : (step.targetMode ?? "none");
+    const stepEffortTargetValue = isManualPoolMode
+      ? (normalizedStep.effortTarget ?? normalizedStep.intensity)
+      : (step.effortTarget ?? step.intensity);
     const stepSummaryContent = (
       <>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stepLabel}</p>
         <p className="mt-1 text-base font-medium text-slate-900 sm:text-sm">{stepTitle}</p>
-        <p className="mt-1 text-xs font-medium text-slate-600">
-          {getSessionStepCategoryLabel(step.category)}
-        </p>
+        {!isManualPoolMode ? (
+          <p className="mt-1 text-xs font-medium text-slate-600">
+            {getSessionStepCategoryLabel(step.category)}
+          </p>
+        ) : null}
         {!isManualPoolMode ? (
           <p className="mt-2 text-xs text-slate-600">
             {buildStepSummary(
@@ -2098,130 +2328,76 @@ export default function WorkoutEditor({
       >
         <div className={desktopHeaderStackClass}>
           <div className={desktopSummaryBlockClass}>
-            <button
-              type="button"
-              onClick={() => {
-                setOpenMobileActionKey(null);
-                setOpenStepId((current) => (current === step.id ? null : step.id));
-              }}
-              aria-expanded={isOpen}
-              aria-controls={panelId}
-              data-testid={`session-draft-step-mobile-summary-${index}`}
-              className={`${mobileSummaryToggleClass} sm:hidden`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">{stepSummaryContent}</div>
-                <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
-                  {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-                </span>
+            {isViewMode ? (
+              <div data-testid={`session-draft-step-mobile-summary-${index}`} className="sm:hidden">
+                {stepSummaryContent}
               </div>
-            </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenMobileActionKey(null);
+                  setOpenStepId((current) => (current === step.id ? null : step.id));
+                }}
+                aria-expanded={isOpen}
+                aria-controls={panelId}
+                data-testid={`session-draft-step-mobile-summary-${index}`}
+                className={`${mobileSummaryToggleClass} sm:hidden`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">{stepSummaryContent}</div>
+                  <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
+                    {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                  </span>
+                </div>
+              </button>
+            )}
             <div data-testid={`session-draft-step-summary-${index}`} className="hidden sm:block">
               {stepSummaryContent}
             </div>
           </div>
-          <div
-            data-testid={`session-draft-step-desktop-actions-${index}`}
-            data-desktop-layout="stacked"
-            className={desktopActionRowClass}
-          >
-            {insideRepeatGroup || isLinkedPostSetRest ? null : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => moveDraftGroup(groupIndex, -1)}
-                  disabled={groupIndex === 0}
-                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Move up
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveDraftGroup(groupIndex, 1)}
-                  disabled={groupIndex === stepGroups.length - 1}
-                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Move down
-                </button>
-              </>
-            )}
-            {isLinkedPostSetRest ? null : (
+          {!isViewMode ? (
+            <div className="hidden shrink-0 sm:flex">
               <button
                 type="button"
-                onClick={() => insertStepAfterStep(step.id)}
-                data-testid={`session-draft-step-add-after-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+                onClick={() => setOpenStepId((current) => (current === step.id ? null : step.id))}
+                aria-expanded={isOpen}
+                aria-controls={panelId}
+                data-testid={`session-draft-step-toggle-${index}`}
+                className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm transition ${
+                  isOpen
+                    ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
               >
-                Add step after
+                {toggleLabel}
               </button>
-            )}
-            {!insideRepeatGroup && !isLinkedPostSetRest ? (
+            </div>
+          ) : null}
+          {!isViewMode ? (
+            <div className="flex shrink-0 sm:hidden">
               <button
                 type="button"
-                onClick={() => insertRepeatAfterGroup(groupIndex)}
-                data-testid={`session-draft-step-add-repeat-after-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+                onClick={() =>
+                  setOpenMobileActionKey((current) =>
+                    current === mobileActionKey ? null : mobileActionKey
+                  )
+                }
+                aria-expanded={mobileActionsOpen}
+                aria-controls={`session-draft-step-mobile-actions-panel-${step.id}`}
+                data-testid={`session-draft-step-mobile-actions-toggle-${index}`}
+                className={mobileActionToggleClass}
               >
-                Add repeat after
+                <Ellipsis className="size-5" />
+                <span className="sr-only">
+                  {mobileActionsOpen ? "Hide step actions" : "Show step actions"}
+                </span>
               </button>
-            ) : null}
-            {isLinkedPostSetRest ? null : (
-              <button
-                type="button"
-                onClick={() => duplicateStep(step.id)}
-                data-testid={`session-draft-step-duplicate-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50"
-              >
-                Duplicate
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setOpenStepId((current) => (current === step.id ? null : step.id))}
-              aria-expanded={isOpen}
-              aria-controls={panelId}
-              data-testid={`session-draft-step-toggle-${index}`}
-              className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm transition ${
-                isOpen
-                  ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              {toggleLabel}
-            </button>
-            {isLinkedPostSetRest ? null : (
-              <button
-                type="button"
-                onClick={() => requestStepRemoval(step.id)}
-                data-testid={`session-draft-step-remove-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-              >
-                Remove
-              </button>
-            )}
-          </div>
-          <div className="flex shrink-0 sm:hidden">
-            <button
-              type="button"
-              onClick={() =>
-                setOpenMobileActionKey((current) =>
-                  current === mobileActionKey ? null : mobileActionKey
-                )
-              }
-              aria-expanded={mobileActionsOpen}
-              aria-controls={`session-draft-step-mobile-actions-panel-${step.id}`}
-              data-testid={`session-draft-step-mobile-actions-toggle-${index}`}
-              className={mobileActionToggleClass}
-            >
-              <Ellipsis className="size-5" />
-              <span className="sr-only">
-                {mobileActionsOpen ? "Hide step actions" : "Show step actions"}
-              </span>
-            </button>
-          </div>
+            </div>
+          ) : null}
         </div>
 
-        {mobileActionsOpen ? (
+        {!isViewMode && mobileActionsOpen ? (
           <div
             id={`session-draft-step-mobile-actions-panel-${step.id}`}
             data-testid={`session-draft-step-mobile-actions-panel-${index}`}
@@ -2312,7 +2488,7 @@ export default function WorkoutEditor({
           </div>
         ) : null}
 
-        {showMobilePrimaryAddAfter ? (
+        {!isViewMode && showMobilePrimaryAddAfter ? (
           <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
             <button
               type="button"
@@ -2364,7 +2540,7 @@ export default function WorkoutEditor({
             <label className="text-sm text-slate-700">
               {isManualPoolMode ? "Step Type" : "Category"}
               <select
-                value={step.category}
+                value={stepCategoryValue}
                 disabled={isLinkedPostSetRest}
                 onChange={(event) =>
                   updateDraftStep(step.id, (current) =>
@@ -2375,13 +2551,16 @@ export default function WorkoutEditor({
                 }
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
-                {(isLinkedPostSetRest ? (["rest"] as const) : SESSION_DRAFT_STEP_CATEGORIES).map(
-                  (value) => (
-                    <option key={value} value={value}>
-                      {getSessionStepCategoryLabel(value)}
-                    </option>
-                  )
-                )}
+                {(isLinkedPostSetRest
+                  ? (["rest"] as const)
+                  : isManualPoolMode
+                    ? MANUAL_POOL_VISIBLE_STEP_CATEGORIES
+                    : SESSION_DRAFT_STEP_CATEGORIES
+                ).map((value) => (
+                  <option key={value} value={value}>
+                    {getSessionStepCategoryLabel(value)}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -2389,7 +2568,7 @@ export default function WorkoutEditor({
               <label className="text-sm text-slate-700">
                 {isManualPoolMode ? "Stroke Type" : "Stroke pattern"}
                 <select
-                  value={step.stroke ?? "choice"}
+                  value={stepStrokeValue}
                   onChange={(event) => {
                     const nextStroke = event.target.value as SessionDraftStep["stroke"];
 
@@ -2402,7 +2581,10 @@ export default function WorkoutEditor({
                   data-testid={`session-draft-step-stroke-${index}`}
                   className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
-                  {SESSION_DRAFT_STEP_STROKES.map((value) => (
+                  {(isManualPoolMode
+                    ? MANUAL_POOL_VISIBLE_STEP_STROKES
+                    : SESSION_DRAFT_STEP_STROKES
+                  ).map((value) => (
                     <option key={value} value={value}>
                       {getSessionStepStrokeLabel(value)}
                     </option>
@@ -2415,7 +2597,7 @@ export default function WorkoutEditor({
               <label className="text-sm text-slate-700">
                 {isManualPoolMode ? "Drill Type" : "Focus tag"}
                 <select
-                  value={step.drillType ?? "none"}
+                  value={stepDrillTypeValue}
                   onChange={(event) =>
                     updateDraftStep(step.id, (current) => ({
                       ...current,
@@ -2449,7 +2631,7 @@ export default function WorkoutEditor({
               <label className="text-sm text-slate-700">
                 Equipment
                 <select
-                  value={step.equipment ?? "none"}
+                  value={stepEquipmentValue}
                   onChange={(event) =>
                     updateDraftStep(step.id, (current) => ({
                       ...current,
@@ -2470,20 +2652,23 @@ export default function WorkoutEditor({
 
             {isManualPoolMode || isMinimalRestEditor ? null : (
               <label className="text-sm text-slate-700">
-                Effort cue
+                Effort
                 <select
-                  value={step.intensity}
+                  value={stepIntensityValue}
                   onChange={(event) =>
                     updateDraftStep(step.id, (current) => ({
                       ...current,
-                      intensity: event.target.value as SessionDraft["effort"],
+                      intensity: event.target.value as SessionDraftStepIntensityPreset,
                     }))
                   }
                   className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
-                  {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
+                  {(isManualPoolMode
+                    ? MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS
+                    : SESSION_DRAFT_STEP_INTENSITY_PRESETS
+                  ).map((value) => (
                     <option key={value} value={value}>
-                      {getSessionEffortLabel(value)}
+                      {getSessionStepIntensityLabel(value)}
                     </option>
                   ))}
                 </select>
@@ -2493,7 +2678,7 @@ export default function WorkoutEditor({
             <label className="text-sm text-slate-700">
               {isManualPoolMode ? "Duration" : "Duration mode"}
               <select
-                value={step.durationMode}
+                value={stepDurationModeValue}
                 onChange={(event) =>
                   updateStepDurationMode(
                     step.id,
@@ -2504,7 +2689,7 @@ export default function WorkoutEditor({
                 className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
                 {(isManualPoolMode
-                  ? getManualPoolDurationModesForCategory(step.category)
+                  ? getManualPoolDurationModesForCategory(stepCategoryValue)
                   : SESSION_DRAFT_STEP_DURATION_MODES
                 ).map((value) => (
                   <option key={value} value={value}>
@@ -2561,6 +2746,25 @@ export default function WorkoutEditor({
                   </div>
                 )}
               </div>
+            ) : step.durationMode === "fixed_rest" && isManualPoolMode ? (
+              <label className="text-sm text-slate-700">
+                Rest time
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="MM:SS"
+                  value={timeDurationInputs[step.id] ?? ""}
+                  onFocus={() => {
+                    timeDurationInputFocusRef.current[step.id] = true;
+                  }}
+                  onBlur={() => {
+                    commitTimeDurationInput(step.id);
+                  }}
+                  onChange={(event) => handleTimeDurationInputChange(step.id, event.target.value)}
+                  data-testid={`session-draft-step-rest-time-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </label>
             ) : step.durationMode === "fixed_rest" ? (
               <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
                 <label className="text-sm text-slate-700">
@@ -2624,9 +2828,25 @@ export default function WorkoutEditor({
                   data-testid={`session-draft-step-time-${index}`}
                   className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
-                {isManualPoolMode ? (
-                  <p className="mt-2 text-xs text-slate-500">Use `MM:SS`.</p>
-                ) : null}
+              </label>
+            ) : step.durationMode === "send_off" && isManualPoolMode ? (
+              <label className="text-sm text-slate-700">
+                Send-off time
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="MM:SS"
+                  value={timeDurationInputs[step.id] ?? ""}
+                  onFocus={() => {
+                    timeDurationInputFocusRef.current[step.id] = true;
+                  }}
+                  onBlur={() => {
+                    commitTimeDurationInput(step.id);
+                  }}
+                  onChange={(event) => handleTimeDurationInputChange(step.id, event.target.value)}
+                  data-testid={`session-draft-step-sendoff-time-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
               </label>
             ) : step.durationMode === "send_off" ? (
               <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
@@ -2694,7 +2914,7 @@ export default function WorkoutEditor({
               <label className="text-sm text-slate-700">
                 {isManualPoolMode ? "Target" : "Target mode"}
                 <select
-                  value={step.targetMode ?? "none"}
+                  value={stepTargetModeValue}
                   onChange={(event) =>
                     updateDraftStep(step.id, (current) => ({
                       ...current,
@@ -2725,30 +2945,33 @@ export default function WorkoutEditor({
               </label>
             )}
 
-            {!isMinimalRestEditor && (step.targetMode ?? "none") === "effort" ? (
+            {!isMinimalRestEditor && stepTargetModeValue === "effort" ? (
               <label className="text-sm text-slate-700">
                 Target effort
                 <select
-                  value={step.effortTarget ?? step.intensity}
+                  value={stepEffortTargetValue}
                   onChange={(event) =>
                     updateDraftStep(step.id, (current) => ({
                       ...current,
-                      effortTarget: event.target.value as SessionDraft["effort"],
+                      effortTarget: event.target.value as SessionDraftStepIntensityPreset,
                     }))
                   }
                   data-testid={`session-draft-step-target-effort-${index}`}
                   className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
-                  {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
+                  {(isManualPoolMode
+                    ? MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS
+                    : SESSION_DRAFT_STEP_INTENSITY_PRESETS
+                  ).map((value) => (
                     <option key={value} value={value}>
-                      {getSessionEffortLabel(value)}
+                      {getSessionStepIntensityLabel(value)}
                     </option>
                   ))}
                 </select>
               </label>
             ) : null}
 
-            {!isMinimalRestEditor && (step.targetMode ?? "none") === "target_pace" ? (
+            {!isMinimalRestEditor && stepTargetModeValue === "target_pace" ? (
               <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
                 <label className="text-sm text-slate-700">
                   Pace minutes
@@ -2784,7 +3007,7 @@ export default function WorkoutEditor({
               </div>
             ) : null}
 
-            {!isMinimalRestEditor && (step.targetMode ?? "none") === "css_target_pace" ? (
+            {!isMinimalRestEditor && stepTargetModeValue === "css_target_pace" ? (
               <label className="text-sm text-slate-700 md:col-span-2">
                 CSS pace offset
                 <select
@@ -2845,6 +3068,75 @@ export default function WorkoutEditor({
                 className="mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
             </label>
+
+            {!isViewMode ? (
+              <div
+                data-testid={`session-draft-step-desktop-actions-${index}`}
+                data-desktop-layout="bottom"
+                className="hidden flex-wrap items-center gap-2 border-t border-slate-200 pt-3 sm:flex md:col-span-2"
+              >
+                {insideRepeatGroup || isLinkedPostSetRest ? null : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => moveDraftGroup(groupIndex, -1)}
+                      disabled={groupIndex === 0}
+                      className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Move up
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveDraftGroup(groupIndex, 1)}
+                      disabled={groupIndex === stepGroups.length - 1}
+                      className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Move down
+                    </button>
+                  </>
+                )}
+                {isLinkedPostSetRest ? null : (
+                  <button
+                    type="button"
+                    onClick={() => insertStepAfterStep(step.id)}
+                    data-testid={`session-draft-step-add-after-${index}`}
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+                  >
+                    Add step after
+                  </button>
+                )}
+                {!insideRepeatGroup && !isLinkedPostSetRest ? (
+                  <button
+                    type="button"
+                    onClick={() => insertRepeatAfterGroup(groupIndex)}
+                    data-testid={`session-draft-step-add-repeat-after-${index}`}
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+                  >
+                    Add repeat after
+                  </button>
+                ) : null}
+                {isLinkedPostSetRest ? null : (
+                  <button
+                    type="button"
+                    onClick={() => duplicateStep(step.id)}
+                    data-testid={`session-draft-step-duplicate-${index}`}
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Duplicate
+                  </button>
+                )}
+                {isLinkedPostSetRest ? null : (
+                  <button
+                    type="button"
+                    onClick={() => requestStepRemoval(step.id)}
+                    data-testid={`session-draft-step-remove-${index}`}
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </article>
@@ -2943,11 +3235,6 @@ export default function WorkoutEditor({
           <p className="text-sm font-medium text-slate-900">
             {isManualPoolMode ? "Pool Size" : "Pool length"}
           </p>
-          <p className="mt-2 text-xs text-slate-500">
-            {poolLengthUnit === "yd"
-              ? "Yard entry stays visible in yards while FreeSwimming saves the exact meter conversion canonically."
-              : "Choose meters or yards, then pick a common size or type the exact value."}
-          </p>
           <div className="mt-4 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.9fr)] xl:items-start">
             <div className="space-y-4">
               <div>
@@ -3019,20 +3306,23 @@ export default function WorkoutEditor({
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Exact size
               </p>
-              <label className="block text-sm text-slate-700">
-                {isManualPoolMode
-                  ? `Exact pool size (${poolLengthUnit})`
-                  : `Exact pool length (${poolLengthUnit})`}
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={poolLengthInput}
-                  onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
-                  data-testid="session-draft-pool-length-input"
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-              </label>
-              <p className="text-xs text-slate-500">{poolLengthSupportCopy}</p>
+              <input
+                type="text"
+                inputMode="decimal"
+                aria-label={
+                  isManualPoolMode
+                    ? `Exact pool size (${poolLengthUnit})`
+                    : `Exact pool length (${poolLengthUnit})`
+                }
+                value={poolLengthInput}
+                onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
+                data-testid="session-draft-pool-length-input"
+                className={`block h-11 w-full rounded-xl border bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition ${
+                  poolSizeInputInvalid
+                    ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                    : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                }`}
+              />
             </div>
           </div>
         </div>
@@ -3441,9 +3731,9 @@ export default function WorkoutEditor({
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
             Poolside Note
           </p>
-          <p className="mt-2 text-sm font-medium text-slate-900">
-            Choose the focus cues and print style before you open the compact lane-side note.
-          </p>
+          {swimmerName ? (
+            <p className="mt-2 text-sm font-medium text-slate-900">Swimmer: {swimmerName}</p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -3452,14 +3742,14 @@ export default function WorkoutEditor({
             data-testid="workout-editor-poolside-pdf-open"
             className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
           >
-            Open Poolside Note
+            Print Preview
           </button>
         </div>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] lg:items-start">
         <div className="min-w-0 space-y-3 lg:border-r lg:border-blue-200/70 lg:pr-5">
-          <p className="text-sm font-semibold text-slate-900">Open focus cues</p>
+          <p className="text-sm font-semibold text-slate-900">Session Focus</p>
           {trainingFocusOptions.length > 0 ? (
             <div
               data-testid="workout-editor-poolside-focus-list"
@@ -3468,13 +3758,14 @@ export default function WorkoutEditor({
               {trainingFocusOptions.map((focus) => (
                 <label
                   key={focus.id}
-                  className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
+                  className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
                 >
                   <input
                     type="checkbox"
                     checked={selectedPoolsideFocusIds.includes(focus.id)}
                     onChange={() => togglePoolsideFocusSelection(focus.id)}
                     data-testid={`workout-editor-poolside-focus-${focus.id}`}
+                    className="mt-1"
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium text-slate-900">{focus.title}</span>
@@ -3493,41 +3784,79 @@ export default function WorkoutEditor({
           )}
         </div>
 
-        <fieldset className="min-w-0 space-y-3 lg:pl-5">
-          <legend className="text-sm font-semibold text-slate-900">Print style</legend>
-          <div className="grid gap-3">
-            <label className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-              <span className="flex items-start gap-3">
+        <div className="min-w-0 space-y-5 lg:pl-5">
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-semibold text-slate-900">Print style</legend>
+            <div className="grid gap-3">
+              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
                 <input
                   type="radio"
                   name="workout-poolside-print-style"
                   checked={poolsidePrintStyle === "color"}
                   onChange={() => setPoolsidePrintStyle("color")}
                   data-testid="workout-editor-poolside-style-color"
+                  className="mt-1"
                 />
                 <span>
                   <span className="block font-medium text-slate-900">Color mode</span>
                   <span className="mt-1 block text-xs text-slate-500">Keeps the blue surfaces</span>
                 </span>
-              </span>
-            </label>
-            <label className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-              <span className="flex items-start gap-3">
+              </label>
+              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
                 <input
                   type="radio"
                   name="workout-poolside-print-style"
                   checked={poolsidePrintStyle === "ink_saver"}
                   onChange={() => setPoolsidePrintStyle("ink_saver")}
                   data-testid="workout-editor-poolside-style-ink-saver"
+                  className="mt-1"
                 />
                 <span>
                   <span className="block font-medium text-slate-900">Ink saver</span>
                   <span className="mt-1 block text-xs text-slate-500">Uses white surfaces.</span>
                 </span>
-              </span>
-            </label>
-          </div>
-        </fieldset>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-semibold text-slate-900">Print layout</legend>
+            <div className="grid gap-3">
+              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="workout-poolside-print-layout"
+                  checked={poolsidePrintLayout === "portrait"}
+                  onChange={() => setPoolsidePrintLayout("portrait")}
+                  data-testid="workout-editor-poolside-layout-portrait"
+                  className="mt-1"
+                />
+                <span>
+                  <span className="block font-medium text-slate-900">Portrait</span>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    Compact lane-side note in one tall column.
+                  </span>
+                </span>
+              </label>
+              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="workout-poolside-print-layout"
+                  checked={poolsidePrintLayout === "landscape"}
+                  onChange={() => setPoolsidePrintLayout("landscape")}
+                  data-testid="workout-editor-poolside-layout-landscape"
+                  className="mt-1"
+                />
+                <span>
+                  <span className="block font-medium text-slate-900">Landscape</span>
+                  <span className="mt-1 block text-xs text-slate-500">
+                    Wider split layout for longer programs and more focus notes.
+                  </span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+        </div>
       </div>
     </div>
   ) : null;
@@ -3675,8 +4004,10 @@ export default function WorkoutEditor({
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Session details
               </p>
-              <h3 className="mt-2 text-base font-semibold text-slate-900">Session setup</h3>
-              {!metadataOpen ? (
+              <p className="mt-2 text-base font-semibold text-slate-900">
+                {draft.title || autoPoolBuilderTitle || "Untitled swim session"}
+              </p>
+              {!metadataOpen || isViewMode ? (
                 <p
                   data-testid="workout-editor-metadata-summary"
                   className="mt-2 text-sm font-medium text-slate-900"
@@ -3686,15 +4017,17 @@ export default function WorkoutEditor({
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setMetadataOpen((current) => !current)}
-                aria-expanded={metadataOpen}
-                data-testid="workout-editor-metadata-toggle"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                {metadataOpen ? "Hide details" : "Show details"}
-              </button>
+              {!isViewMode ? (
+                <button
+                  type="button"
+                  onClick={() => setMetadataOpen((current) => !current)}
+                  aria-expanded={metadataOpen}
+                  data-testid="workout-editor-metadata-toggle"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                >
+                  {metadataOpen ? "Hide details" : "Show details"}
+                </button>
+              ) : null}
               {savedWorkout && onRequestDeleteCurrent ? (
                 <button
                   type="button"
@@ -3709,7 +4042,7 @@ export default function WorkoutEditor({
             </div>
           </div>
 
-          {metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
+          {!isViewMode && metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
         </section>
       ) : (
         metadataFields
@@ -3720,23 +4053,53 @@ export default function WorkoutEditor({
           <h3 className="text-base font-semibold text-slate-900">
             {isManualPoolMode ? "Session builder" : "Editable draft steps"}
           </h3>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={addStep}
-              data-testid="session-draft-add-step"
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:h-10 sm:px-4"
-            >
-              Add step
-            </button>
-            <button
-              type="button"
-              onClick={addRepeat}
-              data-testid="session-draft-add-repeat"
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200 sm:h-10 sm:px-4"
-            >
-              Add repeat
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {showCalmBuilderLayout ? (
+              <div
+                role="group"
+                aria-label="Builder mode"
+                className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1"
+              >
+                {WORKOUT_VIEW_MODES.map((mode) => {
+                  const isSelected = builderViewMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setBuilderViewMode(mode)}
+                      data-testid={`workout-editor-builder-mode-${mode}`}
+                      className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm font-medium transition ${
+                        isSelected
+                          ? "bg-white text-slate-900 shadow-sm"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {mode === "edit" ? "Edit" : "View"}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+            {!isViewMode ? (
+              <>
+                <button
+                  type="button"
+                  onClick={addStep}
+                  data-testid="session-draft-add-step"
+                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:h-10 sm:px-4"
+                >
+                  Add step
+                </button>
+                <button
+                  type="button"
+                  onClick={addRepeat}
+                  data-testid="session-draft-add-repeat"
+                  className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200 sm:h-10 sm:px-4"
+                >
+                  Add repeat
+                </button>
+              </>
+            ) : null}
           </div>
         </div>
 
@@ -3872,141 +4235,92 @@ export default function WorkoutEditor({
                             </>
                           )}
                         </div>
-                        <div className="flex shrink-0 sm:hidden">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setOpenMobileActionKey((current) =>
-                                current === repeatMobileActionKey ? null : repeatMobileActionKey
-                              )
-                            }
-                            aria-expanded={repeatMobileActionsOpen}
-                            aria-controls={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
-                            data-testid={`session-draft-repeat-mobile-actions-toggle-${groupIndex}`}
-                            className={mobileActionToggleClass}
-                          >
-                            <Ellipsis className="size-5" />
-                            <span className="sr-only">
-                              {repeatMobileActionsOpen
-                                ? "Hide repeat actions"
-                                : "Show repeat actions"}
-                            </span>
-                          </button>
-                        </div>
+                        {!isViewMode ? (
+                          <div className="flex shrink-0 sm:hidden">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenMobileActionKey((current) =>
+                                  current === repeatMobileActionKey ? null : repeatMobileActionKey
+                                )
+                              }
+                              aria-expanded={repeatMobileActionsOpen}
+                              aria-controls={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
+                              data-testid={`session-draft-repeat-mobile-actions-toggle-${groupIndex}`}
+                              className={mobileActionToggleClass}
+                            >
+                              <Ellipsis className="size-5" />
+                              <span className="sr-only">
+                                {repeatMobileActionsOpen
+                                  ? "Hide repeat actions"
+                                  : "Show repeat actions"}
+                              </span>
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
 
-                      <div className={desktopRepeatControlRowClass}>
-                        <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
-                          <label className="text-sm text-slate-700">
-                            Repeat count
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={group.repeatCount ?? ""}
-                              onChange={(event) =>
-                                updateRepeatGroupCount(group.repeatGroupId, event.target.value)
-                              }
-                              min={SESSION_DRAFT_REPEAT_MIN}
-                              max={SESSION_DRAFT_REPEAT_MAX}
-                              data-testid={`session-draft-repeat-count-${groupIndex}`}
-                              className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
-                            />
-                          </label>
-                          {hasEditableRepeatEndingRest ? (
+                      {!isViewMode ? (
+                        <div className={desktopRepeatControlRowClass}>
+                          <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
                             <label className="text-sm text-slate-700">
-                              Last rest interval
-                              <select
-                                value={group.repeatEndingRestMode}
+                              Repeat count
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={group.repeatCount ?? ""}
                                 onChange={(event) =>
-                                  updateRepeatGroupEndingRestMode(
-                                    group.repeatGroupId,
-                                    event.target.value as SessionDraftRepeatEndingRestMode
-                                  )
+                                  updateRepeatGroupCount(group.repeatGroupId, event.target.value)
                                 }
-                                data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
-                                className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
-                              >
-                                {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
-                                  <option key={mode} value={mode}>
-                                    {getSessionDraftRepeatEndingRestModeLabel(mode)}
-                                  </option>
-                                ))}
-                              </select>
+                                min={SESSION_DRAFT_REPEAT_MIN}
+                                max={SESSION_DRAFT_REPEAT_MAX}
+                                data-testid={`session-draft-repeat-count-${groupIndex}`}
+                                className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
+                              />
                             </label>
-                          ) : null}
+                            {hasEditableRepeatEndingRest ? (
+                              <label className="text-sm text-slate-700">
+                                Last rest interval
+                                <select
+                                  value={group.repeatEndingRestMode}
+                                  onChange={(event) =>
+                                    updateRepeatGroupEndingRestMode(
+                                      group.repeatGroupId,
+                                      event.target.value as SessionDraftRepeatEndingRestMode
+                                    )
+                                  }
+                                  data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
+                                  className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
+                                >
+                                  {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
+                                    <option key={mode} value={mode}>
+                                      {getSessionDraftRepeatEndingRestModeLabel(mode)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            ) : null}
+                          </div>
                         </div>
+                      ) : null}
 
-                        <div
-                          data-testid={`session-draft-repeat-desktop-actions-${groupIndex}`}
-                          data-desktop-layout="stacked"
-                          className="hidden w-full flex-wrap items-end gap-2 sm:flex"
-                        >
+                      {!isViewMode ? (
+                        <div className="sm:hidden">
                           <button
                             type="button"
-                            onClick={() => moveDraftGroup(groupIndex, -1)}
-                            disabled={groupIndex === 0}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Move up
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveDraftGroup(groupIndex, 1)}
-                            disabled={groupIndex === stepGroups.length - 1}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Move down
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => insertStepAfterGroup(groupIndex)}
-                            data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                            onClick={() => {
+                              insertStepAfterGroup(groupIndex);
+                              setOpenMobileActionKey(null);
+                            }}
+                            data-testid={`session-draft-repeat-mobile-primary-add-step-after-${groupIndex}`}
+                            className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
                           >
                             Add step after
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => insertRepeatAfterGroup(groupIndex)}
-                            data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                          >
-                            Add repeat after
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
-                            data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                          >
-                            Duplicate repeat
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
-                            data-testid={`session-draft-repeat-remove-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-                          >
-                            Remove repeat
-                          </button>
                         </div>
-                      </div>
+                      ) : null}
 
-                      <div className="sm:hidden">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            insertStepAfterGroup(groupIndex);
-                            setOpenMobileActionKey(null);
-                          }}
-                          data-testid={`session-draft-repeat-mobile-primary-add-step-after-${groupIndex}`}
-                          className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
-                        >
-                          Add step after
-                        </button>
-                      </div>
-
-                      {repeatMobileActionsOpen ? (
+                      {!isViewMode && repeatMobileActionsOpen ? (
                         <div
                           id={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
                           data-testid={`session-draft-repeat-mobile-actions-panel-${groupIndex}`}
@@ -4113,6 +4427,62 @@ export default function WorkoutEditor({
                         }
                       )
                     : null}
+                  {!isViewMode ? (
+                    <div
+                      data-testid={`session-draft-repeat-desktop-actions-${groupIndex}`}
+                      data-desktop-layout="bottom"
+                      className="hidden flex-wrap items-end gap-2 border-t border-blue-100 pt-3 sm:flex"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => moveDraftGroup(groupIndex, -1)}
+                        disabled={groupIndex === 0}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Move up
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveDraftGroup(groupIndex, 1)}
+                        disabled={groupIndex === stepGroups.length - 1}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Move down
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertStepAfterGroup(groupIndex)}
+                        data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                      >
+                        Add step after
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertRepeatAfterGroup(groupIndex)}
+                        data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                      >
+                        Add repeat after
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
+                        data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                      >
+                        Duplicate repeat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
+                        data-testid={`session-draft-repeat-remove-${groupIndex}`}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+                      >
+                        Remove repeat
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </section>
             )

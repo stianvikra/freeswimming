@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
+import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import {
   buildWorkoutPdfHtmlDocument,
+  normalizeWorkoutPoolsidePrintLayout,
   normalizeWorkoutPoolsidePrintStyle,
   selectWorkoutPoolsideFocusPoints,
   type WorkoutPoolsideFocusOption,
@@ -49,6 +51,9 @@ export async function GET(request: Request, context: RouteContext) {
   const poolsidePrintStyle = normalizeWorkoutPoolsidePrintStyle(
     requestUrl.searchParams.get("printStyle")
   );
+  const poolsidePrintLayout = normalizeWorkoutPoolsidePrintLayout(
+    requestUrl.searchParams.get("printLayout")
+  );
   const { workoutId } = await context.params;
   if (!UUID_PATTERN.test(workoutId)) {
     return noStoreText("Invalid workout id.", 400);
@@ -86,8 +91,13 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const workout = buildWorkoutEditorRecord(result.data);
-  const trainingContextSnapshot =
-    pdfVariant === "poolside" ? await loadTrainingContextSnapshot(supabase, user.id) : null;
+  const [trainingContextSnapshot, athleteProfileSnapshot] =
+    pdfVariant === "poolside"
+      ? await Promise.all([
+          loadTrainingContextSnapshot(supabase, user.id),
+          loadAthleteProfileSnapshot(supabase, user.id),
+        ])
+      : [null, null];
   const focusOptions: WorkoutPoolsideFocusOption[] =
     trainingContextSnapshot?.schemaReady && !trainingContextSnapshot.loadError
       ? trainingContextSnapshot.openFocuses.map((focus) => ({
@@ -111,6 +121,8 @@ export async function GET(request: Request, context: RouteContext) {
         variant: pdfVariant,
         focusPoints,
         poolsidePrintStyle,
+        poolsidePrintLayout,
+        swimmerName: athleteProfileSnapshot?.profile?.primaryName ?? null,
         logoUrl: new URL(BRAND_PDF_LOGO_PATH, requestUrl).toString(),
         fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, requestUrl).toString(),
       })

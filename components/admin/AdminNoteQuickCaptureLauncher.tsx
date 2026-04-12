@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
@@ -462,6 +463,10 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
     resetDraftState();
   }
 
+  function handleOpenInNotesClick() {
+    closeLauncher();
+  }
+
   function handleFormPaste(event: React.ClipboardEvent<HTMLFormElement>) {
     const result = extractAdminNoteClipboardImage({
       clipboardData: event.clipboardData,
@@ -668,12 +673,13 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                         {notesHref ? (
                           <>
                             {" "}
-                            <a
+                            <Link
                               href={notesHref}
+                              onClick={handleOpenInNotesClick}
                               className="font-semibold underline underline-offset-2"
                             >
                               Open in Notes
-                            </a>
+                            </Link>
                           </>
                         ) : null}{" "}
                         Ready for another note in the same locked context.
@@ -814,12 +820,13 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     {createdCaptureRecovery && notesHref ? (
                       <p className="mt-3 text-xs text-slate-600">
                         Note saved already.{" "}
-                        <a
+                        <Link
                           href={notesHref}
+                          onClick={handleOpenInNotesClick}
                           className="font-semibold text-blue-700 underline underline-offset-2"
                         >
                           Open in Notes
-                        </a>{" "}
+                        </Link>{" "}
                         if you want to finish without retrying the remaining image upload.
                       </p>
                     ) : null}
@@ -930,8 +937,8 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                       <div className="text-xs text-slate-500">
                         {createdCaptureRecovery ? (
                           <p>
-                            The note is already saved. Retry the image upload or close and reopen
-                            it from Notes.
+                            The note is already saved. Retry the image upload or close and reopen it
+                            from Notes.
                           </p>
                         ) : null}
                       </div>
@@ -989,9 +996,13 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
             {notesHref ? (
               <>
                 {" "}
-                <a href={notesHref} className="font-semibold underline underline-offset-2">
+                <Link
+                  href={notesHref}
+                  onClick={handleOpenInNotesClick}
+                  className="font-semibold underline underline-offset-2"
+                >
                   Open in Notes
-                </a>
+                </Link>
               </>
             ) : null}
           </p>
