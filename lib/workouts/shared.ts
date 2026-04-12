@@ -809,7 +809,7 @@ export function buildWorkoutPdfModel(
   const issuesByStepId = new Map<string, string[]>();
   const totalDistanceLabel =
     normalizedDraft.totalDistanceM && normalizedDraft.totalDistanceM > 0
-      ? `Tot: ${formatWorkoutDistanceLabel(normalizedDraft.totalDistanceM, {
+      ? `Total: ${formatWorkoutDistanceLabel(normalizedDraft.totalDistanceM, {
           environment: draft.environment,
           poolLengthUnit,
         })}`
@@ -1516,10 +1516,9 @@ function buildStandardWorkoutPdfHtmlDocument(
 function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: string | null) {
   const isInkSaver = model.poolsidePrintStyle === "ink_saver";
   const isLandscape = model.poolsidePrintLayout === "landscape";
-  const printModeLabel = isInkSaver ? "Ink saver" : "Color mode";
-  const printLayoutLabel = isLandscape ? "Landscape" : "Portrait";
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
+  const totalDistanceValue = model.totalDistanceLabel?.replace(/^Total:\s*/, "") ?? null;
   const focusPointsHtml =
     model.focusPoints.length > 0
       ? `
@@ -1531,8 +1530,13 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         </section>
       `
       : "";
-  const totalDistanceHtml = model.totalDistanceLabel
-    ? `<p class="poolside-total">${escapeHtml(model.totalDistanceLabel)}</p>`
+  const totalDistanceHtml = totalDistanceValue
+    ? `
+        <section class="metric-card">
+          <p class="metric-label">Total</p>
+          <p class="metric-value">${escapeHtml(totalDistanceValue)}</p>
+        </section>
+      `
     : "";
   const swimmerNameHtml = model.swimmerName
     ? `<p class="swimmer-pill">Swimmer: ${escapeHtml(model.swimmerName)}</p>`
@@ -1647,7 +1651,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .page {
-        width: min(100%, ${isLandscape ? "240mm" : "104mm"});
+        width: min(100%, ${isLandscape ? "244mm" : "112mm"});
         margin: 0 auto;
         border: 1px solid rgba(16, 33, 60, 0.08);
         border-radius: 24px;
@@ -1657,11 +1661,13 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .hero {
-        padding: 18px 18px 16px;
+        padding: 16px 18px 14px;
         background: ${
           isInkSaver ? "#ffffff" : "linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%)"
         };
         border-bottom: 1px solid rgba(16, 33, 60, 0.08);
+        display: grid;
+        gap: 12px;
       }
 
       .brand-mark {
@@ -1688,33 +1694,26 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: inline-flex;
       }
 
-      .source-pill {
-        display: inline-flex;
-        margin-top: 10px;
-        border-radius: 999px;
-        border: 1px solid ${isInkSaver ? "rgba(15, 23, 42, 0.18)" : "rgba(29, 78, 216, 0.12)"};
-        background: ${isInkSaver ? "#ffffff" : "rgba(255, 255, 255, 0.92)"};
-        padding: 6px 10px;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--accent-strong);
-      }
-
       h1 {
-        margin: 4px 0 0;
-        font-size: 22px;
+        margin: 0;
+        font-size: 24px;
         font-weight: 800;
         letter-spacing: -0.02em;
         line-height: 1.15;
       }
 
-      .hero-top {
+      .hero-brand-row {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         gap: 16px;
+      }
+
+      .hero-brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
       }
 
       .hero-copy {
@@ -1722,24 +1721,16 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         min-width: 0;
       }
 
-      .brand-tagline {
-        margin: 4px 0 0;
-        color: var(--muted);
-        font-size: 11px;
+      .hero-session-title {
+        margin: 0;
+        font-size: 16px;
         font-weight: 700;
-        letter-spacing: 0.04em;
-      }
-
-      .lede {
-        margin: 10px 0 0;
-        font-size: 13px;
-        line-height: 1.45;
-        color: var(--muted);
+        line-height: 1.35;
+        color: var(--ink);
       }
 
       .swimmer-pill {
         display: inline-flex;
-        margin: 10px 0 0;
         border-radius: 999px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
@@ -1749,11 +1740,10 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         color: var(--ink);
       }
 
-      .session-pill-row {
+      .hero-meta-row {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
-        margin-top: 12px;
       }
 
       .session-pill {
@@ -1765,10 +1755,6 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         font-weight: 700;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-      }
-
-      .session-pill-neutral {
-        color: var(--muted);
       }
 
       .body {
@@ -1789,6 +1775,30 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: grid;
         gap: 10px;
         align-content: start;
+      }
+
+      .metric-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px 12px;
+      }
+
+      .metric-label {
+        margin: 0;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent-strong);
+      }
+
+      .metric-value {
+        margin: 6px 0 0;
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--ink);
       }
 
       .callout,
@@ -1892,13 +1902,6 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         color: var(--accent-strong);
       }
 
-      .poolside-total {
-        margin: 6px 0 0;
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--ink);
-      }
-
       @media print {
         html,
         body {
@@ -1918,9 +1921,9 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         }
 
         .page {
-          width: ${isLandscape ? "100%" : "96mm"};
-          max-width: ${isLandscape ? "100%" : "96mm"};
-          min-width: ${isLandscape ? "100%" : "96mm"};
+          width: ${isLandscape ? "100%" : "104mm"};
+          max-width: ${isLandscape ? "100%" : "104mm"};
+          min-width: ${isLandscape ? "100%" : "104mm"};
           border-radius: 20px;
           box-shadow: none;
         }
@@ -1956,25 +1959,23 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         data-poolside-print-layout="${escapeHtml(model.poolsidePrintLayout)}"
       >
         <header class="hero">
-          <div class="hero-top">
-            ${logoHtml}
-            <div class="hero-copy">
-              <p class="section-kicker">freeswimming.org</p>
-              <p class="brand-tagline">Pool session execution</p>
-              <h1 data-testid="workout-pdf-title">Poolside Note</h1>
-              ${swimmerNameHtml}
+          <div class="hero-brand-row">
+            <div class="hero-brand-lockup">
+              ${logoHtml}
+              <div class="hero-copy">
+                <p class="section-kicker">freeswimming.org</p>
+                <h1 data-testid="workout-pdf-title">Poolside Note</h1>
+              </div>
             </div>
+            ${swimmerNameHtml}
           </div>
-          <p class="lede">${escapeHtml(model.title)}</p>
-          <div class="session-pill-row">
+          <p class="hero-session-title">${escapeHtml(model.title)}</p>
+          <div class="hero-meta-row">
             <span class="session-pill">${escapeHtml(model.sessionSummary)}</span>
-            <span class="session-pill session-pill-neutral">${escapeHtml(printModeLabel)}</span>
-            <span class="session-pill session-pill-neutral">${escapeHtml(printLayoutLabel)}</span>
           </div>
         </header>
         <div class="body ${isLandscape ? "body-landscape" : "body-portrait"}">
           <aside class="poolside-meta">
-            <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
             ${totalDistanceHtml}
             ${focusPointsHtml}
           </aside>
@@ -2883,7 +2884,7 @@ export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | unde
 
   const totalDistanceLabel =
     draft?.totalDistanceM && draft.totalDistanceM > 0
-      ? `Tot: ${formatWorkoutDistanceLabel(draft.totalDistanceM, {
+      ? `Total: ${formatWorkoutDistanceLabel(draft.totalDistanceM, {
           environment: draft.environment,
           poolLengthUnit: draft.poolLengthUnit ?? null,
         })}`

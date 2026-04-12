@@ -169,7 +169,9 @@ function buildStoredWorkoutDraftInput(row: WorkoutRow): SessionDraft {
       : "pool",
     poolLengthUnit: resolveSessionDraftPoolLengthUnit(row.pool_length_unit),
     poolLengthM: normalizePoolLength(row.pool_length_m),
-    sessionType: SESSION_GENERATOR_SESSION_TYPES.includes(row.session_type as SessionDraft["sessionType"])
+    sessionType: SESSION_GENERATOR_SESSION_TYPES.includes(
+      row.session_type as SessionDraft["sessionType"]
+    )
       ? (row.session_type as SessionDraft["sessionType"])
       : "endurance",
     effort: SESSION_GENERATOR_EFFORT_PRESETS.includes(row.effort as SessionDraft["effort"])
@@ -275,8 +277,7 @@ export async function loadWorkoutLibrarySnapshot(
       .from("workouts")
       .select(WORKOUT_SELECT)
       .eq("user_id", userId)
-      .order("updated_at", { ascending: false })
-      .limit(6),
+      .order("updated_at", { ascending: false }),
     selectedWorkoutId
       ? supabase
           .from("workouts")
@@ -337,7 +338,9 @@ export async function loadWorkoutLibrarySnapshot(
         ? "This saved workout could not be opened because its stored data is invalid."
         : null,
       selectedWorkout,
-      selectedWorkoutMissing: Boolean(selectedWorkoutId && (!selectedResult.data || invalidSelectedWorkout)),
+      selectedWorkoutMissing: Boolean(
+        selectedWorkoutId && (!selectedResult.data || invalidSelectedWorkout)
+      ),
       recentWorkouts,
     };
   } catch (error) {

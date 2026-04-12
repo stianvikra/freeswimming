@@ -629,7 +629,7 @@ function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
       intensity: "easy",
       durationMode: "fixed_rest",
       distanceM: null,
-      timeMin: 1,
+      timeMin: 0.5,
       targetMode: "none",
       targetSummary: "Short recovery before the next round.",
       notes: "",
@@ -645,7 +645,7 @@ function buildRepeatStarterSteps(index: number): SessionDraftStep[] {
       intensity: "easy",
       durationMode: "fixed_rest",
       distanceM: null,
-      timeMin: 1,
+      timeMin: 0.5,
       targetMode: "none",
       targetSummary: "",
       notes: "",
@@ -710,14 +710,28 @@ function formatEditableClockDuration(valueMinutes: number | null | undefined) {
 
 function sanitizeClockDurationInput(rawValue: string) {
   const cleaned = rawValue.replace(/[^\d:]/g, "");
-  const [rawMinutes = "", ...rest] = cleaned.split(":");
-  const minutes = rawMinutes.slice(0, 3);
+  const digits = cleaned.replace(/[^\d]/g, "").slice(0, 5);
 
-  if (rest.length === 0) {
-    return minutes;
+  if (cleaned.includes(":")) {
+    const [rawMinutes = "", rawSeconds = ""] = cleaned.split(":");
+    const minutes = rawMinutes.replace(/[^\d]/g, "").slice(0, 3);
+    const seconds = rawSeconds.replace(/[^\d]/g, "").slice(0, 2);
+
+    if (!minutes && !seconds) {
+      return "";
+    }
+
+    return `${minutes}${cleaned.endsWith(":") && seconds.length === 0 ? ":" : seconds.length > 0 ? `:${seconds}` : ""}`;
   }
 
-  return `${minutes}:${rest.join("").slice(0, 2)}`;
+  if (digits.length === 0) return "";
+  if (digits.length === 1) return digits;
+  if (digits.length === 2) return `${digits}:`;
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  }
+
+  return `${digits.slice(0, 3)}:${digits.slice(3)}`;
 }
 
 function parseClockDurationInputForChange(value: string) {
@@ -730,6 +744,10 @@ function parseClockDurationInputForChange(value: string) {
   if (/^\d{1,3}$/.test(trimmed)) {
     const minutes = Number.parseInt(trimmed, 10);
     return minutes > 0 ? minutes : null;
+  }
+
+  if (/^\d{1,3}:$/.test(trimmed)) {
+    return undefined;
   }
 
   const completeClockMatch = trimmed.match(/^(\d{1,3}):(\d{2})$/);
@@ -998,6 +1016,195 @@ function buildRepeatSummary(
   }
 
   return parts.join(" · ");
+}
+
+type ManualPoolViewSectionLine = {
+  text: string;
+  tone?: "default" | "rest" | "subtle";
+};
+
+type ManualPoolViewSection = {
+  key: string;
+  title: string;
+  lines: ManualPoolViewSectionLine[];
+  numbered: boolean;
+  variant: "default" | "rest" | "repeat";
+};
+
+function findTopLevelLinkedRestStep(
+  steps: SessionDraftStep[],
+  step: SessionDraftStep,
+  index: number
+) {
+  const nextStep = steps[index + 1] ?? null;
+
+  if (
+    step.category === "rest" ||
+    step.repeatGroupId ||
+    step.postSetRestForRepeatGroupId ||
+    !nextStep ||
+    nextStep.category !== "rest" ||
+    nextStep.repeatGroupId ||
+    nextStep.postSetRestForRepeatGroupId
+  ) {
+    return null;
+  }
+
+  return nextStep;
+}
+
+function buildManualPoolViewLine(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  poolLengthUnit: SessionDraftPoolLengthUnit,
+  linkedRestStep?: SessionDraftStep | null
+) {
+  const normalizedStep = normalizeManualPoolStepForEditor(step);
+
+  if (normalizedStep.category === "rest") {
+    return buildManualPoolRestInlineSummary(normalizedStep, basePaceSecondsPer100m);
+  }
+
+  const stepSummary = buildManualPoolStepSummary(
+    normalizedStep,
+    basePaceSecondsPer100m,
+    poolLengthUnit
+  );
+
+  if (!linkedRestStep || linkedRestStep.category !== "rest") {
+    return stepSummary;
+  }
+
+  const restSummary = buildManualPoolRestInlineSummary(linkedRestStep, basePaceSecondsPer100m);
+  return `${stepSummary} · ${restSummary.replace(/^Rest /, "Rest: ")}`;
+}
+
+function buildManualPoolRepeatViewSection(
+  group: Extract<StepRenderGroup, { kind: "repeat" }>,
+  basePaceSecondsPer100m: number,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+): ManualPoolViewSection {
+  const workStep = group.entries[0]?.step ?? null;
+  const betweenStep = group.entries[1]?.step ?? null;
+  const normalizedWorkStep = workStep ? normalizeManualPoolStepForEditor(workStep) : null;
+  const repeatCountLabel = group.repeatCount ? `${group.repeatCount} x ` : "";
+  const title = normalizedWorkStep
+    ? getSessionStepCategoryLabel(normalizedWorkStep.category)
+    : "Repeat";
+
+  if (!normalizedWorkStep) {
+    return {
+      key: group.repeatGroupId,
+      title,
+      lines: [{ text: "Set the work interval for this repeat block." }],
+      numbered: false,
+      variant: "repeat",
+    };
+  }
+
+  const lines: ManualPoolViewSectionLine[] = [
+    {
+      text: `${repeatCountLabel}${buildManualPoolStepSummary(
+        normalizedWorkStep,
+        basePaceSecondsPer100m,
+        poolLengthUnit
+      )}`,
+    },
+  ];
+
+  if (betweenStep) {
+    if (betweenStep.category === "rest") {
+      lines[0] = {
+        text: `${lines[0].text} · Rest: ${formatClockDurationLabel(betweenStep.timeMin)}`,
+      };
+    } else {
+      lines.push({
+        text: `Recovery: ${buildManualPoolStepSummary(
+          betweenStep,
+          basePaceSecondsPer100m,
+          poolLengthUnit
+        )}`,
+        tone: "subtle",
+      });
+    }
+  }
+
+  if (group.postSetRestEntry?.step && group.repeatEndingRestMode !== "use_last_rest") {
+    lines.push({
+      text: `Post-set rest: ${formatClockDurationLabel(group.postSetRestEntry.step.timeMin)}`,
+      tone: "rest",
+    });
+  }
+
+  return {
+    key: group.repeatGroupId,
+    title,
+    lines,
+    numbered: false,
+    variant: "repeat",
+  };
+}
+
+function buildManualPoolViewSections(
+  stepGroups: StepRenderGroup[],
+  draftSteps: SessionDraftStep[],
+  basePaceSecondsPer100m: number,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  const sections: ManualPoolViewSection[] = [];
+  const consumedRestStepIds = new Set<string>();
+
+  stepGroups.forEach((group) => {
+    if (group.kind === "repeat") {
+      sections.push(
+        buildManualPoolRepeatViewSection(group, basePaceSecondsPer100m, poolLengthUnit)
+      );
+      return;
+    }
+
+    const entry = group.entries[0];
+    const linkedRestStep = findTopLevelLinkedRestStep(draftSteps, entry.step, entry.index);
+    if (linkedRestStep) {
+      consumedRestStepIds.add(linkedRestStep.id);
+    }
+    if (consumedRestStepIds.has(entry.step.id)) {
+      return;
+    }
+
+    const normalizedStep = normalizeManualPoolStepForEditor(entry.step);
+    const title = getSessionStepCategoryLabel(normalizedStep.category);
+    const nextLine: ManualPoolViewSectionLine = {
+      text: buildManualPoolViewLine(
+        normalizedStep,
+        basePaceSecondsPer100m,
+        poolLengthUnit,
+        linkedRestStep
+      ),
+      tone: normalizedStep.category === "rest" ? "rest" : "default",
+    };
+    const lastSection = sections[sections.length - 1] ?? null;
+
+    if (
+      lastSection &&
+      lastSection.variant !== "repeat" &&
+      lastSection.title === title &&
+      normalizedStep.category !== "rest"
+    ) {
+      lastSection.lines.push(nextLine);
+      lastSection.numbered = true;
+      return;
+    }
+
+    sections.push({
+      key: entry.step.id,
+      title,
+      lines: [nextLine],
+      numbered: false,
+      variant: normalizedStep.category === "rest" ? "rest" : "default",
+    });
+  });
+
+  return sections;
 }
 
 function getPaceMinutes(secondsPer100m: number | null | undefined) {
@@ -1326,6 +1533,14 @@ export default function WorkoutEditor({
   const desktopSummaryBlockClass = "min-w-0 flex-1 sm:w-full";
   const desktopRepeatControlRowClass = "grid gap-3";
   const isViewMode = builderViewMode === "view";
+  const manualPoolViewSections = isManualPoolMode
+    ? buildManualPoolViewSections(
+        stepGroups,
+        draft.steps,
+        draft.basePaceSecondsPer100m,
+        poolLengthUnit
+      )
+    : [];
 
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
@@ -2203,7 +2418,7 @@ export default function WorkoutEditor({
     const insideRepeatGroup = options?.insideRepeatGroup ?? false;
     const isLinkedPostSetRest = options?.isLinkedPostSetRest ?? false;
     const isOpen = !isViewMode && openStepId === step.id;
-    const toggleLabel = isOpen ? "Done" : "Edit step";
+    const toggleLabel = isOpen ? "Done" : "Edit";
     const panelId = `session-draft-step-panel-${step.id}`;
     const normalizedStep = isManualPoolMode ? normalizeManualPoolStepForEditor(step) : step;
     const nextDraftStep = draft.steps[index + 1] ?? null;
@@ -2252,6 +2467,7 @@ export default function WorkoutEditor({
       isDistanceQuickChoiceSelected(normalizedStep.distanceM, value, poolLengthUnit)
     );
     const isMinimalRestEditor = isManualPoolMode && normalizedStep.category === "rest";
+    const isRestStepCard = normalizedStep.category === "rest";
     const stepTitle = isManualPoolMode
       ? buildManualPoolDisplaySummary(
           normalizedStep,
@@ -2285,6 +2501,7 @@ export default function WorkoutEditor({
     const stepEffortTargetValue = isManualPoolMode
       ? (normalizedStep.effortTarget ?? normalizedStep.intensity)
       : (step.effortTarget ?? step.intensity);
+    const pendingDelete = pendingRemoval?.kind === "step" && pendingRemoval.stepId === step.id;
     const stepSummaryContent = (
       <>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stepLabel}</p>
@@ -2320,10 +2537,14 @@ export default function WorkoutEditor({
         data-mobile-actions="progressive"
         className={`rounded-2xl border p-3 transition sm:p-4 ${
           isOpen
-            ? "border-blue-300 bg-white shadow-sm ring-1 ring-blue-100"
-            : insideRepeatGroup
-              ? "border-blue-200 bg-white"
-              : "border-slate-200 bg-slate-50/70"
+            ? isRestStepCard
+              ? "border-blue-300 bg-blue-50/70 shadow-sm ring-1 ring-blue-100"
+              : "border-blue-300 bg-white shadow-sm ring-1 ring-blue-100"
+            : isRestStepCard
+              ? "border-blue-100 bg-blue-50/55"
+              : insideRepeatGroup
+                ? "border-blue-200 bg-white"
+                : "border-slate-200 bg-slate-50/70"
         }`}
       >
         <div className={desktopHeaderStackClass}>
@@ -2481,7 +2702,7 @@ export default function WorkoutEditor({
                   data-testid={`session-draft-step-mobile-remove-${index}`}
                   className={`${mobileSecondaryActionClass} border-rose-200 bg-white text-rose-700 hover:bg-rose-50`}
                 >
-                  Remove
+                  Delete
                 </button>
               )}
             </div>
@@ -2514,6 +2735,39 @@ export default function WorkoutEditor({
                 Repeat after
               </button>
             ) : null}
+          </div>
+        ) : null}
+
+        {pendingDelete ? (
+          <div
+            data-testid="workout-editor-removal-confirm"
+            className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/90 p-3"
+          >
+            <p className="text-sm font-medium text-rose-950">
+              Delete <span className="font-semibold">{pendingRemoval?.label ?? "this step"}</span>?
+            </p>
+            <p className="mt-1 text-sm text-rose-900">
+              This builder change stays local until you save, and you can still undo it right after
+              deletion.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={confirmPendingRemoval}
+                data-testid="workout-editor-removal-confirm-button"
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
+              >
+                Delete now
+              </button>
+              <button
+                type="button"
+                onClick={cancelPendingRemoval}
+                data-testid="workout-editor-removal-cancel-button"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-900 transition hover:bg-rose-100 active:bg-rose-200"
+              >
+                Keep it
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -2947,7 +3201,7 @@ export default function WorkoutEditor({
 
             {!isMinimalRestEditor && stepTargetModeValue === "effort" ? (
               <label className="text-sm text-slate-700">
-                Target effort
+                {isManualPoolMode ? "Effort" : "Target effort"}
                 <select
                   value={stepEffortTargetValue}
                   onChange={(event) =>
@@ -3132,7 +3386,7 @@ export default function WorkoutEditor({
                     data-testid={`session-draft-step-remove-${index}`}
                     className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
                   >
-                    Remove
+                    Delete
                   </button>
                 )}
               </div>
@@ -3765,7 +4019,7 @@ export default function WorkoutEditor({
                     checked={selectedPoolsideFocusIds.includes(focus.id)}
                     onChange={() => togglePoolsideFocusSelection(focus.id)}
                     data-testid={`workout-editor-poolside-focus-${focus.id}`}
-                    className="mt-1"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium text-slate-900">{focus.title}</span>
@@ -3784,78 +4038,78 @@ export default function WorkoutEditor({
           )}
         </div>
 
-        <div className="min-w-0 space-y-5 lg:pl-5">
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-semibold text-slate-900">Print style</legend>
-            <div className="grid gap-3">
-              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="workout-poolside-print-style"
-                  checked={poolsidePrintStyle === "color"}
-                  onChange={() => setPoolsidePrintStyle("color")}
-                  data-testid="workout-editor-poolside-style-color"
-                  className="mt-1"
-                />
-                <span>
-                  <span className="block font-medium text-slate-900">Color mode</span>
-                  <span className="mt-1 block text-xs text-slate-500">Keeps the blue surfaces</span>
-                </span>
-              </label>
-              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="workout-poolside-print-style"
-                  checked={poolsidePrintStyle === "ink_saver"}
-                  onChange={() => setPoolsidePrintStyle("ink_saver")}
-                  data-testid="workout-editor-poolside-style-ink-saver"
-                  className="mt-1"
-                />
-                <span>
-                  <span className="block font-medium text-slate-900">Ink saver</span>
-                  <span className="mt-1 block text-xs text-slate-500">Uses white surfaces.</span>
-                </span>
-              </label>
-            </div>
-          </fieldset>
+        <div className="min-w-0 space-y-4 lg:pl-5">
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-sm font-semibold text-slate-900">Print options</p>
 
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-semibold text-slate-900">Print layout</legend>
-            <div className="grid gap-3">
-              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="workout-poolside-print-layout"
-                  checked={poolsidePrintLayout === "portrait"}
-                  onChange={() => setPoolsidePrintLayout("portrait")}
-                  data-testid="workout-editor-poolside-layout-portrait"
-                  className="mt-1"
-                />
-                <span>
+            <fieldset className="space-y-3">
+              <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Style
+              </legend>
+              <div className="grid gap-3">
+                <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                  <input
+                    type="radio"
+                    name="workout-poolside-print-style"
+                    checked={poolsidePrintStyle === "color"}
+                    onChange={() => setPoolsidePrintStyle("color")}
+                    data-testid="workout-editor-poolside-style-color"
+                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                  />
+                  <span>
+                    <span className="block font-medium text-slate-900">Color mode</span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      Keeps the blue surfaces
+                    </span>
+                  </span>
+                </label>
+                <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                  <input
+                    type="radio"
+                    name="workout-poolside-print-style"
+                    checked={poolsidePrintStyle === "ink_saver"}
+                    onChange={() => setPoolsidePrintStyle("ink_saver")}
+                    data-testid="workout-editor-poolside-style-ink-saver"
+                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                  />
+                  <span>
+                    <span className="block font-medium text-slate-900">Ink saver</span>
+                    <span className="mt-1 block text-xs text-slate-500">Uses white surfaces.</span>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset className="space-y-3">
+              <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Layout
+              </legend>
+              <div className="grid gap-3">
+                <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                  <input
+                    type="radio"
+                    name="workout-poolside-print-layout"
+                    checked={poolsidePrintLayout === "portrait"}
+                    onChange={() => setPoolsidePrintLayout("portrait")}
+                    data-testid="workout-editor-poolside-layout-portrait"
+                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                  />
                   <span className="block font-medium text-slate-900">Portrait</span>
-                  <span className="mt-1 block text-xs text-slate-500">
-                    Compact lane-side note in one tall column.
-                  </span>
-                </span>
-              </label>
-              <label className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="workout-poolside-print-layout"
-                  checked={poolsidePrintLayout === "landscape"}
-                  onChange={() => setPoolsidePrintLayout("landscape")}
-                  data-testid="workout-editor-poolside-layout-landscape"
-                  className="mt-1"
-                />
-                <span>
+                </label>
+                <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                  <input
+                    type="radio"
+                    name="workout-poolside-print-layout"
+                    checked={poolsidePrintLayout === "landscape"}
+                    onChange={() => setPoolsidePrintLayout("landscape")}
+                    data-testid="workout-editor-poolside-layout-landscape"
+                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                  />
                   <span className="block font-medium text-slate-900">Landscape</span>
-                  <span className="mt-1 block text-xs text-slate-500">
-                    Wider split layout for longer programs and more focus notes.
-                  </span>
-                </span>
-              </label>
-            </div>
-          </fieldset>
+                </label>
+              </div>
+            </fieldset>
+          </div>
         </div>
       </div>
     </div>
@@ -4051,14 +4305,14 @@ export default function WorkoutEditor({
       <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-base font-semibold text-slate-900">
-            {isManualPoolMode ? "Session builder" : "Editable draft steps"}
+            {isManualPoolMode ? "Session steps" : "Editable draft steps"}
           </h3>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             {showCalmBuilderLayout ? (
               <div
                 role="group"
                 aria-label="Builder mode"
-                className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1"
+                className="inline-flex rounded-xl border border-blue-100 bg-blue-50/60 p-1"
               >
                 {WORKOUT_VIEW_MODES.map((mode) => {
                   const isSelected = builderViewMode === mode;
@@ -4068,10 +4322,10 @@ export default function WorkoutEditor({
                       type="button"
                       onClick={() => setBuilderViewMode(mode)}
                       data-testid={`workout-editor-builder-mode-${mode}`}
-                      className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm font-medium transition ${
+                      className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm font-semibold transition ${
                         isSelected
-                          ? "bg-white text-slate-900 shadow-sm"
-                          : "text-slate-600 hover:text-slate-900"
+                          ? "border border-blue-200 bg-blue-600 text-white shadow-sm"
+                          : "text-blue-900/70 hover:text-blue-900"
                       }`}
                     >
                       {mode === "edit" ? "Edit" : "View"}
@@ -4081,7 +4335,7 @@ export default function WorkoutEditor({
               </div>
             ) : null}
             {!isViewMode ? (
-              <>
+              <div className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-3">
                 <button
                   type="button"
                   onClick={addStep}
@@ -4098,7 +4352,7 @@ export default function WorkoutEditor({
                 >
                   Add repeat
                 </button>
-              </>
+              </div>
             ) : null}
           </div>
         </div>
@@ -4118,46 +4372,13 @@ export default function WorkoutEditor({
             </div>
           ) : null}
 
-          {pendingRemoval ? (
-            <div
-              data-testid="workout-editor-removal-confirm"
-              className="rounded-2xl border border-amber-200 bg-amber-50/90 p-3 sm:p-4"
-            >
-              <p className="text-sm font-medium text-amber-950">
-                Confirm removal before this builder change is applied.
-              </p>
-              <p className="mt-1 text-sm text-amber-900">
-                Remove <span className="font-semibold">{pendingRemoval.label}</span>? You can still
-                undo it locally before saving.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={confirmPendingRemoval}
-                  data-testid="workout-editor-removal-confirm-button"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
-                >
-                  Remove now
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelPendingRemoval}
-                  data-testid="workout-editor-removal-cancel-button"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-100 active:bg-amber-200"
-                >
-                  Keep it
-                </button>
-              </div>
-            </div>
-          ) : null}
-
           {lastRemovedBlock ? (
             <div
               data-testid="workout-editor-removal-undo"
               className="rounded-2xl border border-blue-200 bg-blue-50/90 p-3 sm:p-4"
             >
               <p className="text-sm font-medium text-blue-950">
-                Removed <span className="font-semibold">{lastRemovedBlock.label}</span>.
+                Deleted <span className="font-semibold">{lastRemovedBlock.label}</span>.
               </p>
               <p className="mt-1 text-sm text-blue-900">
                 Undo restores it to the same local spot before you save this workout.
@@ -4169,7 +4390,7 @@ export default function WorkoutEditor({
                   data-testid="workout-editor-removal-undo-button"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Undo removal
+                  Undo delete
                 </button>
                 <button
                   type="button"
@@ -4183,310 +4404,396 @@ export default function WorkoutEditor({
             </div>
           ) : null}
 
-          {stepGroups.map((group, groupIndex) =>
-            group.kind === "single" ? (
-              renderStepEditorCard(group.entries[0].step, group.entries[0].index, groupIndex)
-            ) : (
-              <section
-                key={group.repeatGroupId}
-                data-testid={`workout-editor-repeat-group-${groupIndex}`}
-                data-containment-style="calm"
-                className="rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-3 ring-1 ring-inset ring-blue-100 sm:p-4"
-              >
-                {(() => {
-                  const repeatSummary = buildRepeatSummary(
-                    group.entries,
-                    group.repeatCount,
-                    draft.basePaceSecondsPer100m,
-                    group.repeatEndingRestMode,
-                    poolLengthUnit
-                  );
-                  const hasEditableRepeatEndingRest = Boolean(
-                    draft.environment === "pool" &&
-                    (() => {
-                      const lastEntry = group.entries[group.entries.length - 1];
-                      return lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step);
-                    })()
-                  );
-                  const repeatMobileActionKey = `repeat:${group.repeatGroupId}`;
-                  const repeatMobileActionsOpen = openMobileActionKey === repeatMobileActionKey;
-
-                  return (
-                    <div className="space-y-3">
-                      <div className={desktopHeaderStackClass}>
-                        <div
-                          data-testid={`session-draft-repeat-summary-${groupIndex}`}
-                          className={desktopSummaryBlockClass}
-                        >
-                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                            Repeat set
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-slate-900">{repeatSummary}</p>
-                          {isManualPoolMode ? null : (
-                            <>
-                              <p className="mt-1 text-xs text-slate-600">
-                                Edit the repeated steps below instead of duplicating every round by
-                                hand.
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500">
-                                Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
-                                {SESSION_DRAFT_REPEAT_MAX} rounds per block.
-                              </p>
-                            </>
-                          )}
-                        </div>
-                        {!isViewMode ? (
-                          <div className="flex shrink-0 sm:hidden">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setOpenMobileActionKey((current) =>
-                                  current === repeatMobileActionKey ? null : repeatMobileActionKey
-                                )
-                              }
-                              aria-expanded={repeatMobileActionsOpen}
-                              aria-controls={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
-                              data-testid={`session-draft-repeat-mobile-actions-toggle-${groupIndex}`}
-                              className={mobileActionToggleClass}
-                            >
-                              <Ellipsis className="size-5" />
-                              <span className="sr-only">
-                                {repeatMobileActionsOpen
-                                  ? "Hide repeat actions"
-                                  : "Show repeat actions"}
-                              </span>
-                            </button>
-                          </div>
+          {isViewMode && isManualPoolMode
+            ? manualPoolViewSections.map((section) => (
+                <section
+                  key={section.key}
+                  className={`rounded-2xl border p-4 ${
+                    section.variant === "repeat"
+                      ? "border-blue-200 bg-gradient-to-b from-blue-50/70 to-white"
+                      : section.variant === "rest"
+                        ? "border-blue-100 bg-blue-50/55"
+                        : "border-slate-200 bg-slate-50/70"
+                  }`}
+                >
+                  <p
+                    className={`text-xs font-semibold uppercase tracking-wide ${
+                      section.variant === "repeat" ? "text-blue-700" : "text-slate-500"
+                    }`}
+                  >
+                    {section.title}
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {section.lines.map((line, lineIndex) => (
+                      <div
+                        key={`${section.key}-line-${lineIndex}`}
+                        className={`text-base leading-6 ${
+                          line.tone === "rest"
+                            ? "font-semibold text-blue-900"
+                            : line.tone === "subtle"
+                              ? "text-slate-600"
+                              : "text-slate-900"
+                        }`}
+                      >
+                        {section.numbered ? (
+                          <span className="mr-2 font-semibold text-slate-500">
+                            {lineIndex + 1}.
+                          </span>
                         ) : null}
+                        <span>{line.text}</span>
                       </div>
+                    ))}
+                  </div>
+                </section>
+              ))
+            : stepGroups.map((group, groupIndex) =>
+                group.kind === "single" ? (
+                  renderStepEditorCard(group.entries[0].step, group.entries[0].index, groupIndex)
+                ) : (
+                  <section
+                    key={group.repeatGroupId}
+                    data-testid={`workout-editor-repeat-group-${groupIndex}`}
+                    data-containment-style="calm"
+                    className="rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-3 ring-1 ring-inset ring-blue-100 sm:p-4"
+                  >
+                    {(() => {
+                      const repeatSummary = buildRepeatSummary(
+                        group.entries,
+                        group.repeatCount,
+                        draft.basePaceSecondsPer100m,
+                        group.repeatEndingRestMode,
+                        poolLengthUnit
+                      );
+                      const hasEditableRepeatEndingRest = Boolean(
+                        draft.environment === "pool" &&
+                        (() => {
+                          const lastEntry = group.entries[group.entries.length - 1];
+                          return lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step);
+                        })()
+                      );
+                      const repeatMobileActionKey = `repeat:${group.repeatGroupId}`;
+                      const repeatMobileActionsOpen = openMobileActionKey === repeatMobileActionKey;
 
-                      {!isViewMode ? (
-                        <div className={desktopRepeatControlRowClass}>
-                          <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
-                            <label className="text-sm text-slate-700">
-                              Repeat count
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={group.repeatCount ?? ""}
-                                onChange={(event) =>
-                                  updateRepeatGroupCount(group.repeatGroupId, event.target.value)
-                                }
-                                min={SESSION_DRAFT_REPEAT_MIN}
-                                max={SESSION_DRAFT_REPEAT_MAX}
-                                data-testid={`session-draft-repeat-count-${groupIndex}`}
-                                className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
-                              />
-                            </label>
-                            {hasEditableRepeatEndingRest ? (
-                              <label className="text-sm text-slate-700">
-                                Last rest interval
-                                <select
-                                  value={group.repeatEndingRestMode}
-                                  onChange={(event) =>
-                                    updateRepeatGroupEndingRestMode(
-                                      group.repeatGroupId,
-                                      event.target.value as SessionDraftRepeatEndingRestMode
+                      return (
+                        <div className="space-y-3">
+                          <div className={desktopHeaderStackClass}>
+                            <div
+                              data-testid={`session-draft-repeat-summary-${groupIndex}`}
+                              className={desktopSummaryBlockClass}
+                            >
+                              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                                Repeat set
+                              </p>
+                              <p className="mt-1 text-sm font-medium text-slate-900">
+                                {repeatSummary}
+                              </p>
+                              {isManualPoolMode ? null : (
+                                <>
+                                  <p className="mt-1 text-xs text-slate-600">
+                                    Edit the repeated steps below instead of duplicating every round
+                                    by hand.
+                                  </p>
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
+                                    {SESSION_DRAFT_REPEAT_MAX} rounds per block.
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                            {!isViewMode ? (
+                              <div className="flex shrink-0 sm:hidden">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOpenMobileActionKey((current) =>
+                                      current === repeatMobileActionKey
+                                        ? null
+                                        : repeatMobileActionKey
                                     )
                                   }
-                                  data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
-                                  className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
+                                  aria-expanded={repeatMobileActionsOpen}
+                                  aria-controls={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
+                                  data-testid={`session-draft-repeat-mobile-actions-toggle-${groupIndex}`}
+                                  className={mobileActionToggleClass}
                                 >
-                                  {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
-                                    <option key={mode} value={mode}>
-                                      {getSessionDraftRepeatEndingRestModeLabel(mode)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
+                                  <Ellipsis className="size-5" />
+                                  <span className="sr-only">
+                                    {repeatMobileActionsOpen
+                                      ? "Hide repeat actions"
+                                      : "Show repeat actions"}
+                                  </span>
+                                </button>
+                              </div>
                             ) : null}
+                          </div>
+
+                          {!isViewMode ? (
+                            <div className={desktopRepeatControlRowClass}>
+                              <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
+                                <label className="text-sm text-slate-700">
+                                  Repeat count
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={group.repeatCount ?? ""}
+                                    onChange={(event) =>
+                                      updateRepeatGroupCount(
+                                        group.repeatGroupId,
+                                        event.target.value
+                                      )
+                                    }
+                                    min={SESSION_DRAFT_REPEAT_MIN}
+                                    max={SESSION_DRAFT_REPEAT_MAX}
+                                    data-testid={`session-draft-repeat-count-${groupIndex}`}
+                                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
+                                  />
+                                </label>
+                                {hasEditableRepeatEndingRest ? (
+                                  <label className="text-sm text-slate-700">
+                                    Last rest interval
+                                    <select
+                                      value={group.repeatEndingRestMode}
+                                      onChange={(event) =>
+                                        updateRepeatGroupEndingRestMode(
+                                          group.repeatGroupId,
+                                          event.target.value as SessionDraftRepeatEndingRestMode
+                                        )
+                                      }
+                                      data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
+                                      className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
+                                    >
+                                      {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
+                                        <option key={mode} value={mode}>
+                                          {getSessionDraftRepeatEndingRestModeLabel(mode)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                ) : null}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {!isViewMode ? (
+                            <div className="sm:hidden">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  insertStepAfterGroup(groupIndex);
+                                  setOpenMobileActionKey(null);
+                                }}
+                                data-testid={`session-draft-repeat-mobile-primary-add-step-after-${groupIndex}`}
+                                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+                              >
+                                Add step after
+                              </button>
+                            </div>
+                          ) : null}
+
+                          {!isViewMode && repeatMobileActionsOpen ? (
+                            <div
+                              id={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
+                              data-testid={`session-draft-repeat-mobile-actions-panel-${groupIndex}`}
+                              className={`${mobileActionPanelClass} sm:hidden`}
+                            >
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    moveDraftGroup(groupIndex, -1);
+                                    setOpenMobileActionKey(null);
+                                  }}
+                                  disabled={groupIndex === 0}
+                                  data-testid={`session-draft-repeat-mobile-move-up-${groupIndex}`}
+                                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
+                                >
+                                  Move up
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    moveDraftGroup(groupIndex, 1);
+                                    setOpenMobileActionKey(null);
+                                  }}
+                                  disabled={groupIndex === stepGroups.length - 1}
+                                  data-testid={`session-draft-repeat-mobile-move-down-${groupIndex}`}
+                                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
+                                >
+                                  Move down
+                                </button>
+                              </div>
+                              <div className="mt-2 grid gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    insertRepeatAfterGroup(groupIndex);
+                                    setOpenMobileActionKey(null);
+                                  }}
+                                  data-testid={`session-draft-repeat-mobile-add-repeat-after-${groupIndex}`}
+                                  className={`${mobileSecondaryActionClass} border-blue-200 bg-white text-blue-800 hover:bg-blue-50`}
+                                >
+                                  Add repeat after
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    duplicateRepeatGroup(group.repeatGroupId);
+                                    setOpenMobileActionKey(null);
+                                  }}
+                                  data-testid={`session-draft-repeat-mobile-duplicate-${groupIndex}`}
+                                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100`}
+                                >
+                                  Duplicate repeat
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    requestRepeatGroupRemoval(group.repeatGroupId);
+                                    setOpenMobileActionKey(null);
+                                  }}
+                                  data-testid={`session-draft-repeat-mobile-remove-${groupIndex}`}
+                                  className={`${mobileSecondaryActionClass} border-rose-200 bg-white text-rose-700 hover:bg-rose-50`}
+                                >
+                                  Delete repeat
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
+
+                    <div className="mt-4 space-y-3">
+                      {group.entries.map((entry, repeatIndex) =>
+                        renderStepEditorCard(entry.step, entry.index, groupIndex, {
+                          insideRepeatGroup: true,
+                          repeatStepNumber: repeatIndex + 1,
+                          labelOverride:
+                            repeatIndex === 0
+                              ? "Work interval"
+                              : repeatIndex === 1
+                                ? "Between-interval recovery"
+                                : undefined,
+                        })
+                      )}
+                      {group.postSetRestEntry
+                        ? renderStepEditorCard(
+                            group.postSetRestEntry.step,
+                            group.postSetRestEntry.index,
+                            groupIndex,
+                            {
+                              labelOverride: "Post-set rest",
+                              descriptionOverride:
+                                group.repeatEndingRestMode === "use_last_rest" &&
+                                Boolean(
+                                  group.entries[group.entries.length - 1] &&
+                                  isSessionDraftRepeatEndingRestStep(
+                                    group.entries[group.entries.length - 1].step
+                                  )
+                                )
+                                  ? "Separate canonical rest after the set. It is preserved here, but active execution and export suppress it because the last internal rest interval is used after the final rep."
+                                  : "Separate canonical rest after the set, outside the repeat block itself.",
+                              isLinkedPostSetRest: true,
+                            }
+                          )
+                        : null}
+                      {pendingRemoval?.kind === "repeat" &&
+                      pendingRemoval.repeatGroupId === group.repeatGroupId ? (
+                        <div
+                          data-testid="workout-editor-removal-confirm"
+                          className="rounded-2xl border border-rose-200 bg-rose-50/90 p-3"
+                        >
+                          <p className="text-sm font-medium text-rose-950">
+                            Delete{" "}
+                            <span className="font-semibold">
+                              {pendingRemoval?.label ?? "this repeat block"}
+                            </span>
+                            ?
+                          </p>
+                          <p className="mt-1 text-sm text-rose-900">
+                            This builder change stays local until you save, and you can still undo
+                            it right after deletion.
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={confirmPendingRemoval}
+                              data-testid="workout-editor-removal-confirm-button"
+                              className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
+                            >
+                              Delete now
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelPendingRemoval}
+                              data-testid="workout-editor-removal-cancel-button"
+                              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-900 transition hover:bg-rose-100 active:bg-rose-200"
+                            >
+                              Keep it
+                            </button>
                           </div>
                         </div>
                       ) : null}
-
                       {!isViewMode ? (
-                        <div className="sm:hidden">
+                        <div
+                          data-testid={`session-draft-repeat-desktop-actions-${groupIndex}`}
+                          data-desktop-layout="bottom"
+                          className="hidden flex-wrap items-end gap-2 border-t border-blue-100 pt-3 sm:flex"
+                        >
                           <button
                             type="button"
-                            onClick={() => {
-                              insertStepAfterGroup(groupIndex);
-                              setOpenMobileActionKey(null);
-                            }}
-                            data-testid={`session-draft-repeat-mobile-primary-add-step-after-${groupIndex}`}
-                            className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+                            onClick={() => moveDraftGroup(groupIndex, -1)}
+                            disabled={groupIndex === 0}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Move up
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveDraftGroup(groupIndex, 1)}
+                            disabled={groupIndex === stepGroups.length - 1}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Move down
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertStepAfterGroup(groupIndex)}
+                            data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
                           >
                             Add step after
                           </button>
-                        </div>
-                      ) : null}
-
-                      {!isViewMode && repeatMobileActionsOpen ? (
-                        <div
-                          id={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
-                          data-testid={`session-draft-repeat-mobile-actions-panel-${groupIndex}`}
-                          className={`${mobileActionPanelClass} sm:hidden`}
-                        >
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                moveDraftGroup(groupIndex, -1);
-                                setOpenMobileActionKey(null);
-                              }}
-                              disabled={groupIndex === 0}
-                              data-testid={`session-draft-repeat-mobile-move-up-${groupIndex}`}
-                              className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
-                            >
-                              Move up
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                moveDraftGroup(groupIndex, 1);
-                                setOpenMobileActionKey(null);
-                              }}
-                              disabled={groupIndex === stepGroups.length - 1}
-                              data-testid={`session-draft-repeat-mobile-move-down-${groupIndex}`}
-                              className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
-                            >
-                              Move down
-                            </button>
-                          </div>
-                          <div className="mt-2 grid gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                insertRepeatAfterGroup(groupIndex);
-                                setOpenMobileActionKey(null);
-                              }}
-                              data-testid={`session-draft-repeat-mobile-add-repeat-after-${groupIndex}`}
-                              className={`${mobileSecondaryActionClass} border-blue-200 bg-white text-blue-800 hover:bg-blue-50`}
-                            >
-                              Add repeat after
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                duplicateRepeatGroup(group.repeatGroupId);
-                                setOpenMobileActionKey(null);
-                              }}
-                              data-testid={`session-draft-repeat-mobile-duplicate-${groupIndex}`}
-                              className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100`}
-                            >
-                              Duplicate repeat
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                requestRepeatGroupRemoval(group.repeatGroupId);
-                                setOpenMobileActionKey(null);
-                              }}
-                              data-testid={`session-draft-repeat-mobile-remove-${groupIndex}`}
-                              className={`${mobileSecondaryActionClass} border-rose-200 bg-white text-rose-700 hover:bg-rose-50`}
-                            >
-                              Remove repeat
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => insertRepeatAfterGroup(groupIndex)}
+                            data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                          >
+                            Add repeat after
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
+                            data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+                          >
+                            Duplicate repeat
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
+                            data-testid={`session-draft-repeat-remove-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+                          >
+                            Delete repeat
+                          </button>
                         </div>
                       ) : null}
                     </div>
-                  );
-                })()}
-
-                <div className="mt-4 space-y-3">
-                  {group.entries.map((entry, repeatIndex) =>
-                    renderStepEditorCard(entry.step, entry.index, groupIndex, {
-                      insideRepeatGroup: true,
-                      repeatStepNumber: repeatIndex + 1,
-                      labelOverride:
-                        repeatIndex === 0
-                          ? "Work interval"
-                          : repeatIndex === 1
-                            ? "Between-interval recovery"
-                            : undefined,
-                    })
-                  )}
-                  {group.postSetRestEntry
-                    ? renderStepEditorCard(
-                        group.postSetRestEntry.step,
-                        group.postSetRestEntry.index,
-                        groupIndex,
-                        {
-                          labelOverride: "Post-set rest",
-                          descriptionOverride:
-                            group.repeatEndingRestMode === "use_last_rest" &&
-                            Boolean(
-                              group.entries[group.entries.length - 1] &&
-                              isSessionDraftRepeatEndingRestStep(
-                                group.entries[group.entries.length - 1].step
-                              )
-                            )
-                              ? "Separate canonical rest after the set. It is preserved here, but active execution and export suppress it because the last internal rest interval is used after the final rep."
-                              : "Separate canonical rest after the set, outside the repeat block itself.",
-                          isLinkedPostSetRest: true,
-                        }
-                      )
-                    : null}
-                  {!isViewMode ? (
-                    <div
-                      data-testid={`session-draft-repeat-desktop-actions-${groupIndex}`}
-                      data-desktop-layout="bottom"
-                      className="hidden flex-wrap items-end gap-2 border-t border-blue-100 pt-3 sm:flex"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => moveDraftGroup(groupIndex, -1)}
-                        disabled={groupIndex === 0}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Move up
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveDraftGroup(groupIndex, 1)}
-                        disabled={groupIndex === stepGroups.length - 1}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Move down
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => insertStepAfterGroup(groupIndex)}
-                        data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                      >
-                        Add step after
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => insertRepeatAfterGroup(groupIndex)}
-                        data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                      >
-                        Add repeat after
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
-                        data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                      >
-                        Duplicate repeat
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
-                        data-testid={`session-draft-repeat-remove-${groupIndex}`}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-                      >
-                        Remove repeat
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </section>
-            )
-          )}
+                  </section>
+                )
+              )}
         </div>
       </div>
 

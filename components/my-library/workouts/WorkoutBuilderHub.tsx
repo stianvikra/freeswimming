@@ -30,7 +30,9 @@ type Props = {
 
 function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
   const existing = current.filter((summary) => summary.id !== next.id);
-  return [next, ...existing].slice(0, 6);
+  return [next, ...existing].sort(
+    (left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt)
+  );
 }
 
 export default function WorkoutBuilderHub({
@@ -54,6 +56,7 @@ export default function WorkoutBuilderHub({
   const [isSaving, setIsSaving] = useState(false);
   const [pendingDeleteWorkoutId, setPendingDeleteWorkoutId] = useState<string | null>(null);
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [pendingCurrentDelete, setPendingCurrentDelete] = useState(false);
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
@@ -72,6 +75,7 @@ export default function WorkoutBuilderHub({
     setSuccess("");
     setPendingDeleteWorkoutId(null);
     setDeletingWorkoutId(null);
+    setBulkDeleting(false);
     setPendingCurrentDelete(false);
   }, [
     workoutLibrary.recentWorkouts,
@@ -168,6 +172,77 @@ export default function WorkoutBuilderHub({
     }
   }
 
+  async function confirmDeleteWorkouts(workouts: WorkoutSummary[]) {
+    if (workouts.length === 0) return;
+
+    setBulkDeleting(true);
+    setPendingDeleteWorkoutId(null);
+    setPendingCurrentDelete(false);
+    setError("");
+    setSuccess("");
+
+    try {
+      const results = await Promise.all(
+        workouts.map(async (workout) => {
+          try {
+            const response = await fetch(`/api/my-library/workouts/${workout.id}`, {
+              method: "DELETE",
+            });
+            const responseBody = (await response
+              .json()
+              .catch(() => null)) as WorkoutDeleteApiResponse | null;
+
+            return {
+              workout,
+              ok: Boolean(response.ok && responseBody?.ok),
+              error:
+                response.ok && responseBody?.ok
+                  ? null
+                  : responseBody && !responseBody.ok
+                    ? responseBody.error
+                    : "Could not delete workout right now.",
+            };
+          } catch {
+            return {
+              workout,
+              ok: false,
+              error: "Could not delete workout right now.",
+            };
+          }
+        })
+      );
+
+      const deletedIds = results.filter((result) => result.ok).map((result) => result.workout.id);
+      const failedDeletes = results.filter((result) => !result.ok);
+
+      if (deletedIds.length > 0) {
+        setRecentWorkouts((current) =>
+          current.filter((summary) => !deletedIds.includes(summary.id))
+        );
+      }
+
+      if (deletedIds.length > 0 && failedDeletes.length === 0) {
+        setSuccess(
+          deletedIds.length === 1
+            ? `Deleted ${results.find((result) => result.ok)?.workout.title ?? "1 session"}.`
+            : `Deleted ${deletedIds.length} saved sessions.`
+        );
+      } else if (deletedIds.length > 0) {
+        setError(
+          `Deleted ${deletedIds.length} saved session${
+            deletedIds.length === 1 ? "" : "s"
+          }, but ${failedDeletes.length} could not be deleted right now.`
+        );
+      } else {
+        setError(failedDeletes[0]?.error ?? "Could not delete the selected sessions right now.");
+      }
+
+      router.refresh();
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
   return (
     <section
       data-testid="workout-builder-hub"
@@ -205,7 +280,7 @@ export default function WorkoutBuilderHub({
           </div>
           {recentWorkouts.length > 0 ? (
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {recentWorkouts.length} saved swim session{recentWorkouts.length === 1 ? "" : "s"}
+              {recentWorkouts.length} saved session{recentWorkouts.length === 1 ? "" : "s"}
             </p>
           ) : null}
         </div>
@@ -313,7 +388,8 @@ export default function WorkoutBuilderHub({
               showToggle={false}
               showInlinePreview
               showHeader={false}
-              initialVisibleCount={3}
+              initialVisibleCount={null}
+              enableBulkDelete
               editButtonTestIdBuilder={(workoutId) => `workout-builder-edit-workout-${workoutId}`}
               deleteButtonTestIdBuilder={(workoutId) =>
                 `workout-builder-delete-workout-${workoutId}`
@@ -329,8 +405,10 @@ export default function WorkoutBuilderHub({
               }}
               onCancelDeleteWorkout={() => setPendingDeleteWorkoutId(null)}
               onConfirmDeleteWorkout={confirmDeleteWorkout}
+              onConfirmDeleteWorkouts={confirmDeleteWorkouts}
               pendingDeleteWorkoutId={pendingDeleteWorkoutId}
               deletingWorkoutId={deletingWorkoutId}
+              bulkDeleting={bulkDeleting}
             />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">

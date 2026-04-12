@@ -344,7 +344,7 @@ test.describe("my library generator intake", () => {
 
     await waitForWorkoutBuilderClientReady(page);
     await expect(
-      page.getByRole("heading", { name: "Swim session builder", level: 1 })
+      page.getByRole("heading", { name: "Pool session builder", level: 1 })
     ).toBeVisible();
     await ensureWorkoutMetadataOpen(page);
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
