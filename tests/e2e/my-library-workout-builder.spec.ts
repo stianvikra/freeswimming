@@ -51,6 +51,14 @@ async function waitForWorkoutBuilderSaveReady(page: Page) {
   await expect(saveButton).toBeVisible({ timeout: 15_000 });
 }
 
+async function waitForWorkoutBuilderRoute(page: Page) {
+  await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
+    timeout: 60_000,
+    waitUntil: "commit",
+  });
+  await page.waitForLoadState("domcontentloaded");
+}
+
 async function openSupportToolsPanel(page: Page) {
   const toggle = page.getByTestId("workout-editor-support-tools-toggle");
 
@@ -112,9 +120,7 @@ test.describe("my library workout builder", () => {
 
     await triggerCreateSession(page, "my-library-create-pool-workout");
     await createResponsePromise;
-    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
-      timeout: 20_000,
-    });
+    await waitForWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
 
@@ -193,9 +199,7 @@ test.describe("my library workout builder", () => {
 
     await triggerCreateSession(page, "my-library-create-pool-workout");
     await createResponsePromise;
-    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
-      timeout: 20_000,
-    });
+    await waitForWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
     await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(

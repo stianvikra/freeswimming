@@ -414,3 +414,20 @@ The following owner decisions are already locked for implementation:
     - all three failing desktop tests passed when rerun in isolation, so current blocker is repo-wide verification instability rather than a reproduced regression in this slice
   - next step:
     - either obtain one clean full `verify:pre-pr` rerun, or stabilize the unrelated flaky desktop e2e path before claiming merge readiness
+- 2026-04-12
+  - latest local follow-up:
+    - added workout-create navigation hardening for the `/my-library` -> new workout route handoff
+    - hardened the mobile workout-builder Playwright route wait so first-load builder compilation no longer fails the mobile density scenario
+    - raised explicit timeouts on the heaviest `workout-builder-hub` integration tests so full-suite load does not fail this slice's own builder tests
+  - verification evidence:
+    - `npx vitest run tests/unit/create-manual-workout-button.test.tsx` passed
+    - `npx vitest run tests/unit/workout-builder-hub.test.tsx` passed
+    - `npx playwright test tests/e2e/my-library-workout-builder.spec.ts --project=mobile-chromium -g "reclaims mobile width and keeps secondary builder actions behind progressive disclosure on phone widths"` passed
+  - current blocker:
+    - repeated full `npm run verify:pre-pr` attempts are now blocked by unrelated repo-wide unit timeouts outside this slice
+    - confirmed outside-slice failures:
+      - `tests/unit/admin-context-notes-panel.test.tsx`
+      - `tests/unit/session-generator-panel.test.tsx`
+    - both outside-slice tests also fail in isolation with their own `5000ms` test timeout, so this is not caused by the swim-builder brief changes
+  - next step:
+    - fix or explicitly defer the unrelated repo-wide unit timeout debt before claiming this branch merge-ready

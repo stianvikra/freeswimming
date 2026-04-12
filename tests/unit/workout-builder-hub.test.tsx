@@ -545,7 +545,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-target-mode-1")).toHaveValue("css_target_pace");
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-4"));
     expect(screen.getByTestId("session-draft-step-stroke-4")).toHaveValue("im_by_round");
-  }, 15_000);
+  }, 30_000);
 
   it("can reset unsaved edits back to the last saved workout", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
@@ -584,7 +584,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "All builder changes are saved to the canonical workout."
     );
-  });
+  }, 30000);
 
   it("requires confirmation and supports undo for destructive single-step removal", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
@@ -1134,7 +1134,7 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.queryByText("Uses white surfaces and strong outlines for cheaper printing.")
     ).not.toBeInTheDocument();
-  });
+  }, 30000);
 
   it("collapses the metadata panel by default for saved builder sessions and reopens on demand", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
@@ -1528,7 +1528,7 @@ describe("WorkoutBuilderHub", () => {
       )
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Final rest skipped")).not.toBeInTheDocument();
-  });
+  }, 30000);
 
   it("uses a single MM:SS field for manual-pool time duration editing", async () => {
     render(

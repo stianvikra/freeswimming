@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   buildManualOpenWaterWorkoutEmptyDraft,
@@ -92,7 +92,18 @@ export default function CreateManualWorkoutButton({
         return;
       }
 
-      router.push(buildWorkoutHref(responseBody.workout.id));
+      const workoutHref = buildWorkoutHref(responseBody.workout.id);
+
+      startTransition(() => {
+        router.push(workoutHref);
+        router.refresh();
+      });
+
+      window.setTimeout(() => {
+        if (window.location.pathname === "/my-library") {
+          window.location.assign(workoutHref);
+        }
+      }, 250);
     } catch {
       setError(
         builderMode === "pool"
