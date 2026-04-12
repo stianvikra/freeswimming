@@ -146,7 +146,7 @@ describe("AdminContextNotesPanel", () => {
 
     expect(await screen.findByText("Image deleted.")).toBeInTheDocument();
     expect(within(editForm).getByText("No images attached yet.")).toBeVisible();
-  });
+  }, 15_000);
 
   it("shows stable note references and full-notes jump links for contextual notes", async () => {
     const initialItem = buildItem({

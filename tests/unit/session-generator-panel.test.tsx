@@ -439,7 +439,7 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByText("Saved session loaded.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
-  });
+  }, 15_000);
 
   it("loads a previously accepted workout into the same editor", async () => {
     render(

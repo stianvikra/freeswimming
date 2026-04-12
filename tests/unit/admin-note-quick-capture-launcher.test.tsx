@@ -211,6 +211,67 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(openLink).toHaveAttribute("href", expect.stringContaining("notesContextRef=%2Fplans"));
   });
 
+  it("closes the quick-capture panel when opening the saved note in Notes", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          items: [{ id: "category-1", title: "Operations", is_active: true }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          item: {
+            id: "123e4567-e89b-42d3-a456-426614174099",
+            title: "Plans follow-up",
+            body: "Remember to tighten copy.",
+            category: "Operations",
+            note_date: "2026-03-22",
+            priority: "high",
+            is_done: false,
+            context_type: "page",
+            context_ref: "/plans",
+            created_by: "admin-user",
+            updated_by: "admin-user",
+            created_at: "2026-03-22T12:00:00.000Z",
+            updated_at: "2026-03-22T12:00:00.000Z",
+            attachments: [],
+            related_notes: [],
+          },
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminNoteQuickCaptureLauncher
+        adminRole="editor"
+        contextType="page"
+        contextRef="/plans"
+        contextLabel="Plans page"
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("admin-note-quick-capture-trigger"));
+    await screen.findByTestId("admin-note-quick-capture-dialog");
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Plans follow-up" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    const openLink = await screen.findByRole("link", { name: "Open in Notes" });
+    fireEvent.click(openLink);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("admin-note-quick-capture-dialog")).not.toBeInTheDocument();
+    });
+  });
+
   it("auto-dismisses the saved notice after a short acknowledgement window", async () => {
     const fetchMock = vi
       .fn()
