@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getSessionTypeLabel } from "@/lib/session-generator-v1/shared";
+import {
+  formatDistanceMetersLabel,
+  getSessionTypeLabel,
+  resolveSessionDraftPoolLengthUnit,
+} from "@/lib/session-generator-v1/shared";
 import type { WorkoutSummary } from "@/lib/workouts/shared";
 
 type Props = {
@@ -23,6 +27,9 @@ type Props = {
   onConfirmDeleteWorkout?: ((workout: WorkoutSummary) => void) | null;
   pendingDeleteWorkoutId?: string | null;
   deletingWorkoutId?: string | null;
+  enableBulkDelete?: boolean;
+  onConfirmDeleteWorkouts?: ((workouts: WorkoutSummary[]) => void) | null;
+  bulkDeleting?: boolean;
   printButtonTestIdBuilder?: (workoutId: string) => string;
   poolsidePdfButtonTestIdBuilder?: (workoutId: string) => string;
   currentWorkoutId?: string | null;
@@ -52,6 +59,9 @@ export default function SavedWorkoutsPanel({
   onConfirmDeleteWorkout = null,
   pendingDeleteWorkoutId = null,
   deletingWorkoutId = null,
+  enableBulkDelete = false,
+  onConfirmDeleteWorkouts = null,
+  bulkDeleting = false,
   printButtonTestIdBuilder = (workoutId) => `saved-workouts-print-${workoutId}`,
   poolsidePdfButtonTestIdBuilder = (workoutId) => `saved-workouts-poolside-${workoutId}`,
   currentWorkoutId = null,
@@ -65,12 +75,13 @@ export default function SavedWorkoutsPanel({
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
   const [previewWorkoutId, setPreviewWorkoutId] = useState<string | null>(null);
   const [showAllWorkouts, setShowAllWorkouts] = useState(() => initialVisibleCount == null);
+  const [bulkSelectionMode, setBulkSelectionMode] = useState(false);
+  const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
+  const [selectedWorkoutIds, setSelectedWorkoutIds] = useState<string[]>([]);
   const visibleLimit = initialVisibleCount ?? undefined;
 
   const hasHiddenWorkouts =
-    visibleLimit != null && Number.isFinite(visibleLimit)
-      ? workouts.length > visibleLimit
-      : false;
+    visibleLimit != null && Number.isFinite(visibleLimit) ? workouts.length > visibleLimit : false;
   const visibleWorkouts =
     hasHiddenWorkouts && !showAllWorkouts ? workouts.slice(0, visibleLimit) : workouts;
   const hiddenWorkoutCount = hasHiddenWorkouts ? workouts.length - visibleWorkouts.length : 0;
@@ -79,6 +90,7 @@ export default function SavedWorkoutsPanel({
     if (pendingDeleteWorkoutId) {
       setExpanded(true);
       setShowAllWorkouts(true);
+      setPendingBulkDelete(false);
     }
   }, [pendingDeleteWorkoutId]);
 
@@ -95,6 +107,18 @@ export default function SavedWorkoutsPanel({
   }, [previewWorkoutId, workouts]);
 
   useEffect(() => {
+    setSelectedWorkoutIds((current) =>
+      current.filter((workoutId) => workouts.some((workout) => workout.id === workoutId))
+    );
+  }, [workouts]);
+
+  useEffect(() => {
+    if (selectedWorkoutIds.length === 0) {
+      setPendingBulkDelete(false);
+    }
+  }, [selectedWorkoutIds.length]);
+
+  useEffect(() => {
     if (initialVisibleCount == null) {
       setShowAllWorkouts(true);
     }
@@ -104,6 +128,9 @@ export default function SavedWorkoutsPanel({
     return null;
   }
 
+  const selectedWorkouts = workouts.filter((workout) => selectedWorkoutIds.includes(workout.id));
+  const showBulkToolbar = enableBulkDelete && typeof onConfirmDeleteWorkouts === "function";
+
   return (
     <div data-testid={testId} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
       {showHeader ? (
@@ -112,7 +139,7 @@ export default function SavedWorkoutsPanel({
             <h3 className="text-sm font-semibold text-slate-900">{heading}</h3>
             {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
             <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {workouts.length} saved swim session{workouts.length === 1 ? "" : "s"}
+              {workouts.length} saved session{workouts.length === 1 ? "" : "s"}
             </p>
           </div>
           {showToggle ? (
@@ -131,6 +158,97 @@ export default function SavedWorkoutsPanel({
 
       {!showToggle || expanded ? (
         <div className={`${showHeader ? "mt-4" : ""} grid gap-3`}>
+          {showBulkToolbar ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/80 bg-white px-3 py-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Library cleanup</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {bulkSelectionMode
+                    ? `${selectedWorkoutIds.length} selected`
+                    : "Use selection mode when you want to delete multiple saved sessions at once."}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {!bulkSelectionMode ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBulkSelectionMode(true);
+                      setPendingBulkDelete(false);
+                    }}
+                    data-testid={`${testId}-bulk-select-toggle`}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  >
+                    Select sessions
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedWorkoutIds(workouts.map((workout) => workout.id))}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      Select all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBulkSelectionMode(false);
+                        setPendingBulkDelete(false);
+                        setSelectedWorkoutIds([]);
+                      }}
+                      disabled={bulkDeleting}
+                      data-testid={`${testId}-bulk-cancel`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Done
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingBulkDelete(true)}
+                      disabled={selectedWorkoutIds.length === 0 || bulkDeleting}
+                      data-testid={`${testId}-bulk-delete`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {bulkDeleting ? "Deleting..." : "Delete selected"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          {showBulkToolbar && bulkSelectionMode && pendingBulkDelete ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3">
+              <p className="text-sm font-medium text-rose-900">
+                Delete {selectedWorkoutIds.length} saved session
+                {selectedWorkoutIds.length === 1 ? "" : "s"} from My Library?
+              </p>
+              <p className="mt-1 text-sm text-rose-900/90">
+                Selected sessions are deleted permanently from this library view.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onConfirmDeleteWorkouts?.(selectedWorkouts)}
+                  disabled={selectedWorkoutIds.length === 0 || bulkDeleting}
+                  data-testid={`${testId}-bulk-confirm-delete`}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {bulkDeleting ? "Deleting..." : "Delete selected sessions"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingBulkDelete(false)}
+                  disabled={bulkDeleting}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {visibleWorkouts.map((workout) => {
             const deleting = deletingWorkoutId === workout.id;
             const pendingDelete = pendingDeleteWorkoutId === workout.id;
@@ -138,6 +256,22 @@ export default function SavedWorkoutsPanel({
             const workoutPoolsidePdfHref = workoutPoolsidePdfHrefBuilder?.(workout.id) ?? null;
             const isCurrentWorkout = currentWorkoutId === workout.id;
             const previewOpen = previewWorkoutId === workout.id;
+            const isSelected = selectedWorkoutIds.includes(workout.id);
+            const workoutDistanceLabel = workout.totalDistanceM
+              ? workout.environment === "pool"
+                ? formatDistanceMetersLabel(
+                    workout.totalDistanceM,
+                    resolveSessionDraftPoolLengthUnit(workout.poolLengthUnit)
+                  )
+                : `${workout.totalDistanceM}m`
+              : null;
+            const updatedLabel = new Intl.DateTimeFormat("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(new Date(workout.updatedAt));
 
             return (
               <div
@@ -146,7 +280,25 @@ export default function SavedWorkoutsPanel({
                 className="rounded-2xl border border-white/80 bg-white p-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
+                  <div className="min-w-0 flex-1">
+                    {bulkSelectionMode ? (
+                      <label className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() =>
+                            setSelectedWorkoutIds((current) =>
+                              current.includes(workout.id)
+                                ? current.filter((workoutId) => workoutId !== workout.id)
+                                : [...current, workout.id]
+                            )
+                          }
+                          data-testid={`saved-workout-select-${workout.id}`}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                        />
+                        Select session
+                      </label>
+                    ) : null}
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
                       {isCurrentWorkout ? (
@@ -159,11 +311,14 @@ export default function SavedWorkoutsPanel({
                       ) : null}
                     </div>
                     <p className="mt-1 text-sm text-slate-600">
-                      {workout.totalDistanceM ? `${workout.totalDistanceM}m` : null}
-                      {workout.totalDistanceM && workout.estimatedDurationMin ? " · " : null}
+                      {workoutDistanceLabel}
+                      {workoutDistanceLabel && workout.estimatedDurationMin ? " · " : null}
                       {workout.estimatedDurationMin ? `~${workout.estimatedDurationMin} min` : null}
-                      {workout.totalDistanceM || workout.estimatedDurationMin ? " · " : null}
+                      {workoutDistanceLabel || workout.estimatedDurationMin ? " · " : null}
                       {getSessionTypeLabel(workout.sessionType)}
+                    </p>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Updated {updatedLabel}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -212,7 +367,9 @@ export default function SavedWorkoutsPanel({
                         Poolside Note
                       </Link>
                     ) : null}
-                    {!isCurrentWorkout && typeof onRequestDeleteWorkout === "function" ? (
+                    {!bulkSelectionMode &&
+                    !isCurrentWorkout &&
+                    typeof onRequestDeleteWorkout === "function" ? (
                       <button
                         type="button"
                         onClick={() => onRequestDeleteWorkout(workout)}

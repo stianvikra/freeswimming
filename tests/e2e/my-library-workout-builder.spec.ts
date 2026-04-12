@@ -202,6 +202,9 @@ test.describe("my library workout builder", () => {
     await waitForWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Pool session builder" })
+    ).toBeVisible();
     await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(
       "data-containment-style",
       "flat"
@@ -264,7 +267,7 @@ test.describe("my library workout builder", () => {
       stepSummaryBox!.y + stepSummaryBox!.height - 2
     );
     await expect(
-      page.getByTestId("workout-editor-panel").getByRole("heading", { name: "Session builder" })
+      page.getByTestId("workout-editor-panel").getByRole("heading", { name: "Session steps" })
     ).toBeVisible();
     await expect(page.getByLabel("Step Type")).toBeVisible();
     await expect(page.getByLabel("Stroke Type")).toBeVisible();
@@ -375,7 +378,7 @@ test.describe("my library workout builder", () => {
 
     await page.getByTestId("session-draft-step-remove-0").click();
     await expect(page.getByTestId("workout-editor-removal-confirm")).toContainText(
-      "Remove 100m · Freestyle · Moderate?"
+      "Delete 100m · Freestyle · Moderate?"
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
     await page.getByTestId("workout-editor-removal-cancel-button").click();
@@ -383,7 +386,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-remove-0").click();
     await page.getByTestId("workout-editor-removal-confirm-button").click();
     await expect(page.getByTestId("workout-editor-removal-undo")).toContainText(
-      "Removed 100m · Freestyle · Moderate."
+      "Deleted 100m · Freestyle · Moderate."
     );
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
       "Unsaved changes stay local until you save this workout."
@@ -530,6 +533,13 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("workout-editor-poolside-pdf-open")).toBeVisible();
     await page.getByTestId("workout-editor-poolside-style-ink-saver").click();
     await page.getByTestId("workout-editor-poolside-layout-landscape").click();
+    await expect(page.getByText("Print options")).toBeVisible();
+    await expect(
+      page.getByTestId("workout-editor-poolside-panel").getByText("Style", { exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("workout-editor-poolside-panel").getByText("Layout", { exact: true })
+    ).toBeVisible();
     await expect(
       page.getByText(
         "Optional. Use this for the whole-session purpose or one short coaching note that applies across the session."
@@ -568,9 +578,13 @@ test.describe("my library workout builder", () => {
       "landscape"
     );
     await expect(poolsidePopup.locator("body")).toContainText("Poolside Note");
-    await expect(poolsidePopup.locator("body")).toContainText("Ink saver");
-    await expect(poolsidePopup.locator("body")).toContainText("Landscape");
-    await expect(poolsidePopup.locator("body")).toContainText("Tot:");
+    await expect(poolsidePopup.locator("body")).not.toContainText("Color mode");
+    await expect(poolsidePopup.locator("body")).not.toContainText("Ink saver");
+    await expect(poolsidePopup.locator("body")).not.toContainText("Portrait");
+    await expect(poolsidePopup.locator("body")).not.toContainText("Landscape");
+    await expect(poolsidePopup.locator("body")).not.toContainText("Source: Local draft");
+    await expect(poolsidePopup.locator("body")).not.toContainText("Pool session execution");
+    await expect(poolsidePopup.locator("body")).toContainText("Total");
     await expect(poolsidePopup.locator("body")).toContainText("P: Fixed Rest Time 0:45");
     await poolsidePopup.close();
 
@@ -648,7 +662,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
     await page.getByTestId(`saved-workouts-view-${workoutId}`).click();
-    await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("Tot:");
+    await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("Total:");
     await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("P:");
     await page.getByTestId(`workout-builder-edit-workout-${workoutId}`).click();
     await page.waitForURL(new RegExp(`/my-library/workouts/${workoutId}$`), {

@@ -1011,9 +1011,15 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("High elbow catch");
     expect(html).toContain("Calm exhale");
     expect(html).toContain("400m");
-    expect(html).toContain("Tot: 400m");
+    expect(html).toContain("Total");
+    expect(html).toContain('metric-value">400m<');
     expect(html).toContain("lockup-domain-ink.png");
-    expect(html).toContain("Pool session execution");
+    expect(html).not.toContain("Pool session execution");
+    expect(html).not.toContain("Source: Local draft");
+    expect(html).not.toContain(">Color mode<");
+    expect(html).not.toContain(">Ink saver<");
+    expect(html).not.toContain(">Portrait<");
+    expect(html).not.toContain(">Landscape<");
     expect(html).not.toContain("Compact lane-side note");
   });
 

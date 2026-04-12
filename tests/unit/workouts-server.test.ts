@@ -559,11 +559,10 @@ describe("workouts server", () => {
   });
 
   it("marks selected workouts as missing when the id is not found", async () => {
-    const recentLimit = vi.fn().mockResolvedValue({
+    const recentOrder = vi.fn().mockResolvedValue({
       data: [buildWorkoutRow()],
       error: null,
     });
-    const recentOrder = vi.fn(() => ({ limit: recentLimit }));
     const recentEq = vi.fn(() => ({ order: recentOrder }));
 
     const selectedMaybeSingle = vi.fn().mockResolvedValue({
@@ -597,7 +596,7 @@ describe("workouts server", () => {
   });
 
   it("skips invalid legacy recent workouts instead of crashing the library snapshot", async () => {
-    const recentLimit = vi.fn().mockResolvedValue({
+    const recentOrder = vi.fn().mockResolvedValue({
       data: [
         buildWorkoutRow(),
         buildWorkoutRow({
@@ -608,7 +607,6 @@ describe("workouts server", () => {
       ],
       error: null,
     });
-    const recentOrder = vi.fn(() => ({ limit: recentLimit }));
     const recentEq = vi.fn(() => ({ order: recentOrder }));
 
     const supabase = {

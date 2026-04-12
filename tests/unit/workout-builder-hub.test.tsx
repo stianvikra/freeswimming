@@ -85,7 +85,7 @@ function buildWorkoutSummary(overrides?: Partial<WorkoutSummary>): WorkoutSummar
     acceptedAt: "2026-03-20T12:18:00.000Z",
     sourceKind: "ai_session_v1",
     status: "accepted",
-    previewText: "400m · Freestyle · Easy\n\nTot: 2200m",
+    previewText: "400m · Freestyle · Easy\n\nTotal: 2200m",
     ...overrides,
   };
 }
@@ -600,7 +600,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-remove-0"));
 
     expect(screen.getByTestId("workout-editor-removal-confirm")).toHaveTextContent(
-      "Remove Easy warmup swim?"
+      "Delete Easy warmup swim?"
     );
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
 
@@ -615,7 +615,7 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.queryByTestId("session-draft-step-toggle-0")).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-editor-removal-undo")).toHaveTextContent(
-      "Removed Easy warmup swim."
+      "Deleted Easy warmup swim."
     );
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
@@ -762,7 +762,7 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.queryByTestId("session-draft-repeat-count-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-editor-removal-undo")).toHaveTextContent(
-      "Removed Repeat block (3 steps, 4 rounds)."
+      "Deleted Repeat block (3 steps, 4 rounds)."
     );
 
     fireEvent.click(screen.getByTestId("workout-editor-removal-undo-button"));
@@ -858,7 +858,7 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.queryByTestId("session-draft-step-name-0")).not.toBeInTheDocument();
-    expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Edit step");
+    expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Edit");
 
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
 
@@ -868,7 +868,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
 
     expect(screen.queryByTestId("session-draft-step-name-0")).not.toBeInTheDocument();
-    expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Edit step");
+    expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Edit");
   });
 
   it("builds a truthful handoff preview and supports copy/download actions", async () => {
@@ -1116,18 +1116,30 @@ describe("WorkoutBuilderHub", () => {
       expect(printWindow.document.write).toHaveBeenCalledWith(
         expect.stringContaining("Poolside Note")
       );
-      expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining("Tot:"));
       expect(printWindow.document.write).toHaveBeenCalledWith(
         expect.stringContaining("lockup-domain-ink.png")
       );
     });
 
+    const poolsideHtml = String(printWindow.document.write.mock.calls.at(-1)?.[0] ?? "");
+
+    expect(poolsideHtml).toContain("Total");
+    expect(poolsideHtml).not.toContain("Pool session execution");
+    expect(poolsideHtml).not.toContain("Source: Local draft");
+    expect(poolsideHtml).not.toContain(">Color mode<");
+    expect(poolsideHtml).not.toContain(">Ink saver<");
+    expect(poolsideHtml).not.toContain(">Portrait<");
+    expect(poolsideHtml).not.toContain(">Landscape<");
+
     expect(screen.getByText("Keeps the blue surfaces")).toBeVisible();
     expect(screen.getByText("Uses white surfaces.")).toBeVisible();
-    expect(screen.getByText("Compact lane-side note in one tall column.")).toBeVisible();
+    expect(screen.getByText("Print options")).toBeVisible();
     expect(
-      screen.getByText("Wider split layout for longer programs and more focus notes.")
-    ).toBeVisible();
+      screen.queryByText("Compact lane-side note in one tall column.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Wider split layout for longer programs and more focus notes.")
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText("Keeps the blue surfaces when your browser prints backgrounds.")
     ).not.toBeInTheDocument();
@@ -1284,7 +1296,7 @@ describe("WorkoutBuilderHub", () => {
               sourceKind: "manual",
               environment: "open_water",
               poolLengthM: null,
-              previewText: "Open water aerobic session\n\nTot: ~45 min",
+              previewText: "Open water aerobic session\n\nTotal: ~45 min",
             }),
           ],
         })}
@@ -1324,7 +1336,17 @@ describe("WorkoutBuilderHub", () => {
   });
 
   it("switches the saved builder into a clean view mode without edit controls", async () => {
-    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({ sourceFingerprint: "manual-view-mode" }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
@@ -1342,7 +1364,10 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("session-draft-add-repeat")).not.toBeInTheDocument();
     expect(screen.queryByTestId("workout-editor-metadata-toggle")).not.toBeInTheDocument();
     expect(screen.queryByTestId("session-draft-step-toggle-0")).not.toBeInTheDocument();
-    expect(screen.getByTestId("session-draft-step-summary-0")).toBeVisible();
+    expect(screen.getByText("Session steps")).toBeVisible();
+    expect(screen.getByText("Warmup")).toBeVisible();
+    expect(screen.getByText("400m · Freestyle · Easy")).toBeVisible();
+    expect(screen.queryByText("Edit step")).not.toBeInTheDocument();
   });
 
   it("shows clearer kick and drill taxonomy guidance inside the step form", async () => {
@@ -1429,7 +1454,7 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
 
-    expect(screen.getByText("Session builder")).toBeVisible();
+    expect(screen.getByText("Session steps")).toBeVisible();
     expect(screen.getByLabelText("Step Type")).toBeVisible();
     expect(screen.getByLabelText("Stroke Type")).toBeVisible();
     expect(screen.getByLabelText("Drill Type")).toBeVisible();
@@ -1659,7 +1684,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-2"));
 
     const restTimeInput = screen.getByTestId("session-draft-step-rest-time-2");
-    expect(restTimeInput).toHaveValue("1:00");
+    expect(restTimeInput).toHaveValue("0:30");
 
     fireEvent.focus(restTimeInput);
     fireEvent.change(restTimeInput, {
@@ -1897,7 +1922,7 @@ describe("WorkoutBuilderHub", () => {
               title: "Old QA cleanup workout",
               totalDistanceM: 1600,
               estimatedDurationMin: 37,
-              previewText: "8 x 25m Kick · Easy\nP: 20 sec\n\nTot: 1600m",
+              previewText: "8 x 25m Kick · Easy\nP: 20 sec\n\nTotal: 1600m",
             }),
           ],
         })}
@@ -2121,7 +2146,14 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("workout-builder-view-sessions-link")).not.toBeInTheDocument();
   });
 
-  it("shows only the first three saved sessions in browse mode until the owner loads the rest", async () => {
+  it("shows all saved sessions immediately in browse mode and supports bulk delete cleanup", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+      }),
+    } as Response);
+
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
@@ -2162,16 +2194,27 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("saved-workout-card-workout-1")).toBeVisible();
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
     expect(screen.getByTestId("saved-workout-card-workout-3")).toBeVisible();
-    expect(screen.queryByTestId("saved-workout-card-workout-4")).not.toBeInTheDocument();
-    expect(screen.getByTestId("workout-builder-saved-sessions-load-more")).toHaveTextContent(
-      "Load 1 more session"
-    );
-
-    fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-load-more"));
-
     expect(screen.getByTestId("saved-workout-card-workout-4")).toBeVisible();
     expect(
       screen.queryByTestId("workout-builder-saved-sessions-load-more")
     ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-select-toggle"));
+    fireEvent.click(screen.getByTestId("saved-workout-select-workout-2"));
+    fireEvent.click(screen.getByTestId("saved-workout-select-workout-4"));
+    fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-delete"));
+
+    expect(screen.getByText("Delete 2 saved sessions from My Library?")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-confirm-delete"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith("/api/my-library/workouts/workout-2", {
+        method: "DELETE",
+      });
+      expect(fetch).toHaveBeenCalledWith("/api/my-library/workouts/workout-4", {
+        method: "DELETE",
+      });
+    });
   });
 });

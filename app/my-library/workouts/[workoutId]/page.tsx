@@ -67,6 +67,13 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
           isPrimary: focus.isPrimary,
         }))
       : [];
+  const builderHeading =
+    workoutLibrary.selectedWorkout?.draft.environment === "pool" || entryMode === "manual-pool"
+      ? "Pool session builder"
+      : workoutLibrary.selectedWorkout?.draft.environment === "open_water" ||
+          entryMode === "manual-open-water"
+        ? "Open-water session builder"
+        : "Swim session builder";
 
   return (
     <SiteChrome>
@@ -86,7 +93,7 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
                 My Library
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
-                Swim session builder
+                {builderHeading}
               </h1>
             </div>
             <div className="flex flex-wrap gap-2">
