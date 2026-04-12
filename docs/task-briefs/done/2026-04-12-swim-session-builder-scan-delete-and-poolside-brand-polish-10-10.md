@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-12-swim-session-builder-scan-delete-and-poolside-brand-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-12`
 - `updated`: `2026-04-12`
@@ -382,3 +382,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-12 | in progress | brief created after consolidating all owner-reported builder findings into one execution slice: session-step read mode, mode-toggle clarity, truthful saved-session deletion and bulk cleanup, local inline builder delete confirm, MM:SS time entry, rest differentiation, and premium poolside-note builder/output polish | next: implement list truthfulness + bulk delete + builder interaction changes, then patch poolside output and run validation`
 - `2026-04-12 | in progress | implementation completed across builder list, builder read/edit UX, delete flows, time entry, and poolside portrait/landscape output; targeted unit/e2e runs passed and full \`npm run verify:pre-pr\` passed (97 passed, 323 skipped) | next: stage, commit, push, update PR, run \`npm run verify:pre-merge\`, and confirm merge readiness`
+- `2026-04-12 | done | merged via PR #417 as commit \`2a6b799\`; local \`npm run verify:pre-merge\` passed, GitHub required checks passed, and branch cleanup completed | next: continue with next builder findings as a new scoped slice`
