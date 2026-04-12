@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-11`
-- `updated`: `2026-04-11`
+- `updated`: `2026-04-12`
 
 ## Goal
 
@@ -176,3 +176,6 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-11 | in-progress | opened a dedicated tooling/governance slice after repeated docs-closeout PRs showed that full pre-PR/pre-merge verification is disproportionate for pure docs diffs; direction locked: keep existing command names, auto-select a conservative docs-only lane only for explicit docs/governance file scope, and preserve full gates for everything else | next: finish lane detection/scripts/docs updates, add targeted tests, and validate with full repo gates on this code-touching slice`
 - `2026-04-11 | in-progress | full docs-only lane/tooling implementation is in place; added conservative artifact ignoring so local perf/verify outputs do not force false full-lane classification, and hardened two flaky Playwright gates (`admin-contextual-notes`request probe + dryland delete redirect wait) after transient`ECONNRESET`/App Router timing failures during validation | latest evidence: full \`npm run verify:pre-pr\` passed on current worktree | next: commit, run \`npm run verify:pre-merge\`, push, and open/update PR`
+- `2026-04-12 | in-progress | local pre-PR/pre-merge docs-only lane is working, but PR #419 exposed that GitHub CI still runs full runtime verification for a pure docs/governance diff; opened child brief \`2026-04-12-docs-only-ci-verification-alignment-10-10\` to align CI with the existing lane contract without changing required check names | next: implement the CI child slice, rerun gates, and then close this broader verification-lane brief with local + CI behavior aligned`
+- `2026-04-12 | in-progress | child slice \`2026-04-12-docs-only-ci-verification-alignment-10-10\` is now implemented: CI computes a repo-native PR lane plan, docs-only PRs can stay on the docs-only lane without renaming required checks, and code-touching PRs still fail closed to the full lane; latest local evidence on the child branch: targeted lane-planner tests, \`npm run lint:briefs\`, and full-lane \`npm run verify:pre-pr\` all passed | next: finish local \`npm run verify:pre-merge\`, push the PR update, and confirm GitHub checks now reflect the aligned docs-only behavior`
+- `2026-04-12 | in-progress | the CI alignment child slice is locally merge-ready: both full-lane \`npm run verify:pre-pr\` and \`npm run verify:pre-merge\` passed on the current workflow/script/test diff, so the broader docs-only verification-lane brief now has aligned local + GitHub workflow behavior on this branch | next: commit and push the PR update, watch required GitHub checks, then close out both verification-lane briefs after merge`
