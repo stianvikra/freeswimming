@@ -21,13 +21,26 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Resolve verification lane
+        id: verification-plan
+        run: |
+          node ./scripts/ci-verification-plan.mjs --summary --event "${{ github.event_name }}" --base "${{ github.base_ref || 'main' }}"
+          echo "lane=$(node ./scripts/ci-verification-plan.mjs --lane --event "${{ github.event_name }}" --base "${{ github.base_ref || 'main' }}")" >> "$GITHUB_OUTPUT"
+
+      - name: Skip docs-only smoke suite
+        if: steps.verification-plan.outputs.lane == 'docs-only'
+        run: echo "[e2e-smoke] Docs-only PR detected; skipping runtime smoke suite."
+
       - name: Install dependencies
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         run: npm ci
 
       - name: Install Playwright browsers (chromium only)
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E smoke suite
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
           SITE_LOCK_ENABLED: "0"
           NEXT_PUBLIC_SUPABASE_URL: https://example.com
@@ -36,7 +49,7 @@ jobs:
         run: npm run test:e2e:smoke
 
       - name: Upload smoke artifacts
-        if: always()
+        if: always() && steps.verification-plan.outputs.lane != 'docs-only'
         uses: actions/upload-artifact@v6
         with:
           name: ci-e2e-smoke-artifacts
@@ -59,13 +72,26 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Resolve verification lane
+        id: verification-plan
+        run: |
+          node ./scripts/ci-verification-plan.mjs --summary --event "${{ github.event_name }}" --base "${{ github.base_ref || 'main' }}"
+          echo "lane=$(node ./scripts/ci-verification-plan.mjs --lane --event "${{ github.event_name }}" --base "${{ github.base_ref || 'main' }}")" >> "$GITHUB_OUTPUT"
+
+      - name: Skip docs-only site-lock suite
+        if: steps.verification-plan.outputs.lane == 'docs-only'
+        run: echo "[site-lock-smoke] Docs-only PR detected; skipping site-lock smoke suite."
+
       - name: Install dependencies
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         run: npm ci
 
       - name: Install Playwright browsers (chromium only)
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         run: npx playwright install --with-deps chromium
 
       - name: Run site-lock smoke suite
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
           SITE_LOCK_ENABLED: "1"
           SITE_LOCK_MODE: password
@@ -78,7 +104,7 @@ jobs:
         run: npm run test:e2e:site-lock
 
       - name: Upload site-lock artifacts
-        if: always()
+        if: always() && steps.verification-plan.outputs.lane != 'docs-only'
         uses: actions/upload-artifact@v6
         with:
           name: ci-site-lock-artifacts
@@ -106,6 +132,12 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Resolve verification lane
+        id: verification-plan
+        run: |
+          node ./scripts/ci-verification-plan.mjs --summary --event "${{ github.event_name }}" --base "${{ github.base_ref || 'main' }}"
+          echo "lane=$(node ./scripts/ci-verification-plan.mjs --lane --event "${{ github.event_name }}" --base "${{ github.base_ref || 'main' }}")" >> "$GITHUB_OUTPUT"
+
       - name: Validate PR body required sections
         if: github.event_name == 'pull_request'
         run: node ./scripts/lint-pr-body-sections.mjs
@@ -114,6 +146,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         # Verify runs Chromium, WebKit, and Firefox across the full public
         # matrix. GitHub's hosted Ubuntu image does not reliably include the
         # shared system libraries those browsers need, so keep `--with-deps`
@@ -121,7 +154,12 @@ jobs:
         # the actual verify/build gates.
         run: npx playwright install --with-deps chromium webkit firefox
 
+      - name: Run docs-only verification suite
+        if: steps.verification-plan.outputs.lane == 'docs-only'
+        run: npm run verify:docs-only
+
       - name: Run verification suite
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
           SITE_LOCK_ENABLED: "0"
           PERF_BUDGET_OUTPUT: artifacts/perf-budget-report.json
@@ -130,7 +168,12 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
         run: npm run verify:public
 
+      - name: Skip webpack production build check for docs-only PRs
+        if: steps.verification-plan.outputs.lane == 'docs-only'
+        run: echo "[verify] Docs-only PR detected; skipping webpack production build check."
+
       - name: Run webpack production build check
+        if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.com
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
@@ -144,6 +187,7 @@ jobs:
           name: ci-verify-artifacts
           path: |
             artifacts/perf-budget-report.json
+            artifacts/test-runs
             playwright-report
             test-results
           if-no-files-found: ignore

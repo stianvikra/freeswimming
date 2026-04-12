@@ -41,7 +41,7 @@ Make the manual pool swim-session builder and Poolside Note feel materially clos
 ## Dependencies And Boundaries
 
 - Parent live-review builder brief:
-  - [2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md)
+- [2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md)
 - Parent builder/runtime foundation:
   - [2026-02-28-workout-builder-and-poolside-execution-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md)
 - Related shipped builder slices that must stay structurally truthful:
@@ -52,7 +52,7 @@ Make the manual pool swim-session builder and Poolside Note feel materially clos
   - [2026-04-02-workout-builder-drill-kick-taxonomy-followup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-02-workout-builder-drill-kick-taxonomy-followup-10-10.md)
   - rationale: that slice made `drill` and `kick` explicit top-level builder categories; this new pre-live brief may intentionally remove those top-level pool step types in favor of a cleaner Garmin-5 model if existing pre-live data can be reset.
 - Related poolside print/preview surface lineage:
-  - [2026-04-01-workout-builder-poolside-note-print-and-surface-clarity-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-01-workout-builder-poolside-note-print-and-surface-clarity-10-10.md)
+- [2026-04-01-workout-builder-poolside-note-print-and-surface-clarity-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-01-workout-builder-poolside-note-print-and-surface-clarity-10-10.md)
 - Primary code surfaces expected in scope:
   - `/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutEditor.tsx`
   - `/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutBuilderHub.tsx`

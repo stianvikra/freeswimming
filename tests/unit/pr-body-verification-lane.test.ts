@@ -91,4 +91,23 @@ describe("generate-pr-body verification lane evidence", () => {
     expect(evidence.line).toContain("lane: docs-only");
     expect(evidence.line).toContain("mode: skipped-docs-only");
   });
+
+  it("keeps pending pre-merge evidence free of PASS wording when the last green marker is stale", () => {
+    const evidence = buildPreMergeEvidenceLine(
+      {
+        status: "PASS",
+        shortSha: "1234abc",
+        timestampUtc: "2026-04-12T16:17:10Z",
+        verificationLane: "full",
+        privateGateMode: "skipped-private-gate",
+        shaMatches: false,
+      },
+      "112f07d"
+    );
+
+    expect(evidence.checked).toBe(false);
+    expect(evidence.line).toContain("**PENDING**");
+    expect(evidence.line).toContain("last green marker");
+    expect(evidence.line).not.toContain("latest PASS was");
+  });
 });

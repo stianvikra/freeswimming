@@ -219,7 +219,7 @@ export function buildPreMergeEvidenceLine(preMergeMarker, headShaShort) {
 
   if (preMergeMarker.status === "PASS") {
     return {
-      line: `- \`npm run verify:pre-merge\`: **PENDING** for \`${safeHead}\` (latest PASS was \`${markerShort}\` at ${markerTime}; rerun on current HEAD).`,
+      line: `- \`npm run verify:pre-merge\`: **PENDING** for \`${safeHead}\` (last green marker: \`${markerShort}\` at ${markerTime}; rerun on current HEAD).`,
       checked: false,
     };
   }

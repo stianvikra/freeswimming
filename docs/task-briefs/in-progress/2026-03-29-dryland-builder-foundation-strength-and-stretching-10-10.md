@@ -26,8 +26,8 @@ Ship a clean first dryland builder foundation in My Library so the owner can cre
 
 ## Dependencies And Boundaries
 
-- Adjacent swim-builder work that remains paused-but-open:
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+- Adjacent swim-builder lineage already closed through:
+  - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Adjacent program-builder work that must not be reopened by this slice:
   - `/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
 - Existing My Library foundation:
@@ -44,8 +44,8 @@ Ship a clean first dryland builder foundation in My Library so the owner can cre
 Production admin notes reviewed against this scope on `2026-03-29`.
 
 - Current open production notes do **not** contain a dryland-specific builder request.
-- The current open workout-builder follow-ups remain owned by:
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+- Delivered swim-session-builder follow-ups now live in the closed swim-builder brief lineage and later dedicated child briefs:
+  - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - The current open notes-ergonomics follow-ups remain owned by:
   - `/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-03-27-admin-notes-ergonomics-multi-image-and-route-surface-followup-10-10.md`
 - Disposition for this brief:

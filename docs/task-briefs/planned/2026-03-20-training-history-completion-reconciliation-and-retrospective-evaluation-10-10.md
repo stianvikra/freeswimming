@@ -30,7 +30,7 @@ Establish a canonical training-history system so planned sessions can move into 
 - Upstream manual program builder:
   - `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
 - Upstream manual session builder:
-  - `docs/task-briefs/planned/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
+- `docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
 - Upstream AI-generated future-plan creation:
   - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
 - This brief owns historical outcome truth and reconciliation behavior.

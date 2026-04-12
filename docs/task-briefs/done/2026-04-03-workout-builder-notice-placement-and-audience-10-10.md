@@ -30,7 +30,7 @@ Keep the manual `Swim session builder` form primary while moving export/handoff 
 - Parent umbrella:
   - `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Parent builder brief:
-  - `docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+- `docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Main product surfaces in scope:
   - `components/my-library/workouts/WorkoutEditor.tsx`
   - `tests/unit/workout-builder-hub.test.tsx`
@@ -66,33 +66,33 @@ Critical target categories for `10/10` claim in this brief:
 - `Business logic correctness and data integrity`
 - `Testing and QA automation`
 
-| Category                                      | Mapping      | Target Threshold (if `target`)                                                                                                                     | Evidence                                 |
-| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Category                                      | Mapping      | Target Threshold (if `target`)                                                                                                                    | Evidence                                 |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | Product goals and IA                          | `target`     | The manual builder route keeps the session form and primary save/print actions visually ahead of secondary export/handoff diagnostics.            | UI review + unit/e2e                     |
 | UX flow clarity                               | `target`     | Owners can tell in one scan that export/handoff tools are optional support tools and that opening/downloading them does not save or publish work. | targeted unit/e2e + copy review          |
 | Visual design quality                         | `target`     | Support notices feel materially calmer than the current always-expanded block and fit the existing builder visual language.                       | screenshot review + manual QA            |
 | Business logic correctness and data integrity | `target`     | The new disclosure changes only placement/copy; canonical workout IDs, saved-session state, and export payload behavior remain unchanged.         | unit tests + code review                 |
-| Admin editor ergonomics                       | `supporting` | Supporting only: the owner can still reach readiness, Garmin export, and handoff tools quickly when needed.                                      | manual QA + targeted e2e                 |
+| Admin editor ergonomics                       | `supporting` | Supporting only: the owner can still reach readiness, Garmin export, and handoff tools quickly when needed.                                       | manual QA + targeted e2e                 |
 | Accessibility (a11y)                          | `supporting` | Supporting only: the new disclosure remains keyboard accessible with correct `aria-expanded` semantics.                                           | Testing Library + Playwright             |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: the disclosure adds no material route payload or blocking network work.                                                          | `verify:pre-pr` + diff review            |
 | Data placement and sync boundaries            | `target`     | Disclosure open/closed state stays local-only UI state; support outputs continue to reflect the existing draft/canonical source contract.         | brief contract + code review             |
 | Caching and invalidation strategy             | `N/A`        | N/A because the slice adds no new fetch path, cache key, or invalidation rule.                                                                    | explicit scope rationale                 |
 | Reliability and failure handling              | `target`     | Support notices remain visible when the section is opened, and success/error feedback stays deterministic after copy/download/open actions.       | unit tests + targeted e2e                |
 | Security and authz                            | `supporting` | Supporting only: the slice does not widen access beyond the existing authenticated owner-scoped workout builder.                                  | existing auth coverage + scope rationale |
-| Privacy and compliance                        | `N/A`        | N/A because the slice changes private builder copy/placement only and does not alter personal-data handling or exposure.                         | explicit scope rationale                 |
+| Privacy and compliance                        | `N/A`        | N/A because the slice changes private builder copy/placement only and does not alter personal-data handling or exposure.                          | explicit scope rationale                 |
 | Content governance                            | `supporting` | Supporting only: support-tool wording must stay aligned with the truthful Garmin/export contracts already shipped.                                | copy review + parent-brief alignment     |
 | Admin workflow and editability                | `supporting` | Supporting only: the owner still has deterministic access to support exports while the main editing surface stays calmer.                         | targeted QA                              |
 | SEO and crawlability                          | `N/A`        | N/A because the swim-session builder is an authenticated/private route with no public crawl/index change.                                         | explicit scope rationale                 |
 | AI discoverability                            | `N/A`        | N/A because the slice changes no public route metadata, schema, or AI-facing contract.                                                            | explicit scope rationale                 |
 | Analytics and KPI observability               | `N/A`        | N/A because the slice adds no new instrumentation and keeps existing builder/export behavior intact.                                              | explicit scope rationale                 |
 | Commerce and revenue ops                      | `N/A`        | N/A because no pricing, entitlement, or billing behavior changes.                                                                                 | explicit scope rationale                 |
-| Incident response and support operations      | `supporting` | Supporting only: the runbook must note that PDF stays primary while Garmin/handoff support now sits behind a dedicated disclosure.               | runbook update + QA checklist            |
-| Finance and reporting operations              | `N/A`        | N/A because no finance or reporting workflow changes.                                                                                              | explicit scope rationale                 |
+| Incident response and support operations      | `supporting` | Supporting only: the runbook must note that PDF stays primary while Garmin/handoff support now sits behind a dedicated disclosure.                | runbook update + QA checklist            |
+| Finance and reporting operations              | `N/A`        | N/A because no finance or reporting workflow changes.                                                                                             | explicit scope rationale                 |
 | i18n operational readiness                    | `N/A`        | N/A because the slice only changes small English private-route labels and does not alter locale infrastructure.                                   | explicit scope rationale                 |
 | Stack-fit and dependency discipline           | `target`     | Reuse the existing `WorkoutEditor` structure without new dependencies or a second support-tool model.                                             | dependency diff + code review            |
-| Testing and QA automation                     | `target`     | Coverage proves the calm layout defaults to collapsed support tools, preserves export/handoff behavior after expansion, and passes verify gates. | unit tests + targeted e2e + gate output  |
+| Testing and QA automation                     | `target`     | Coverage proves the calm layout defaults to collapsed support tools, preserves export/handoff behavior after expansion, and passes verify gates.  | unit tests + targeted e2e + gate output  |
 | Scalability and cost efficiency               | `N/A`        | N/A because no new storage, background job, or repeated network cost is introduced.                                                               | explicit scope rationale                 |
-| DevOps and rollback readiness                 | `supporting` | Supporting only: the slice remains reversible in one component path plus tests/docs, with no schema or data migration.                           | rollback note + PR summary               |
+| DevOps and rollback readiness                 | `supporting` | Supporting only: the slice remains reversible in one component path plus tests/docs, with no schema or data migration.                            | rollback note + PR summary               |
 
 ## Data Placement And Sync Contract
 

@@ -27,7 +27,7 @@ Make drill and kick handling in the manual swim-session builder explicit enough 
 - Parent umbrella:
   - `docs/task-briefs/done/2026-04-01-production-admin-notes-remaining-work-umbrella-10-10.md`
 - Parent builder brief:
-  - `docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+- `docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Main product surfaces in scope:
   - `components/my-library/workouts/WorkoutEditor.tsx`
   - `tests/unit/workout-builder-hub.test.tsx`
@@ -60,33 +60,33 @@ Critical target categories for `10/10` claim in this brief:
 - `Business logic correctness and data integrity`
 - `Testing and QA automation`
 
-| Category                                      | Mapping      | Target Threshold (if `target`)                                                                                                        | Evidence                                |
-| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| Product goals and IA                          | `target`     | Step authoring clearly separates category, stroke pattern, and focus tag without implying hidden taxonomy rules.                    | UI review + unit coverage               |
-| UX flow clarity                               | `target`     | Authors can understand how `kick` and `drill` steps should be tagged in one pass through the step editor.                           | targeted unit tests + manual QA         |
-| Visual design quality                         | `supporting` | Supporting only: updated labels/help text must feel like a natural continuation of the existing builder language.                   | screenshot review + copy review         |
-| Business logic correctness and data integrity | `target`     | Kick/drill defaults stay deterministic, do not remove inputs, and do not create duplicate summary labels for implied tags.          | unit tests + typecheck                  |
-| Admin editor ergonomics                       | `supporting` | Supporting only: the builder remains easier to edit without introducing a second taxonomy control or extra workflow steps.          | scope review + manual QA                |
-| Accessibility (a11y)                          | `supporting` | Supporting only: changed labels remain explicit and screen-reader friendly with existing form semantics.                             | Testing Library queries + code review   |
-| Performance (CWV + payloads)                  | `N/A`        | N/A because this slice changes step-form labels/defaults only and adds no route payload, async fetch, or rendering fan-out.        | explicit scope rationale                |
-| Data placement and sync boundaries            | `target`     | Taxonomy defaults stay local until save; canonical workout persistence and IDs remain unchanged.                                     | brief contract + code review            |
-| Caching and invalidation strategy             | `N/A`        | N/A because the slice changes no fetch path, cache boundary, or invalidation rule.                                                   | explicit scope rationale                |
-| Reliability and failure handling              | `supporting` | Supporting only: deterministic defaults must avoid silent state confusion when the author changes category or stroke.               | unit tests + manual QA                  |
-| Security and authz                            | `N/A`        | N/A because no auth boundary, role check, or protected API behavior changes in this taxonomy-only slice.                            | explicit scope rationale                |
-| Privacy and compliance                        | `N/A`        | N/A because this slice only adjusts owner-scoped workout authoring labels/defaults and does not change personal-data handling.      | explicit scope rationale                |
-| Content governance                            | `supporting` | Supporting only: label changes must stay aligned with the canonical workout authoring model.                                         | copy review + parent-brief alignment    |
-| Admin workflow and editability                | `supporting` | Supporting only: the owner can keep using the same step editor without relearning where kick/drill notation lives.                  | targeted QA                             |
-| SEO and crawlability                          | `N/A`        | N/A because the swim-session builder is an authenticated/private route and the slice adds no crawl surface.                         | explicit scope rationale                |
-| AI discoverability                            | `N/A`        | N/A because the slice changes no public content, schema, or metadata.                                                                | explicit scope rationale                |
-| Analytics and KPI observability               | `N/A`        | N/A because no event taxonomy or KPI wiring changes in this step-editor-only follow-up.                                              | explicit scope rationale                |
-| Commerce and revenue ops                      | `N/A`        | N/A because no pricing, entitlement, or billing behavior changes.                                                                    | explicit scope rationale                |
-| Incident response and support operations      | `N/A`        | N/A because this slice changes no support workflow or runbook boundary beyond private builder labels.                                | explicit scope rationale                |
-| Finance and reporting operations              | `N/A`        | N/A because no finance or reporting workflow is affected by the step-taxonomy clarification.                                         | explicit scope rationale                |
-| i18n operational readiness                    | `N/A`        | N/A because the slice is confined to small English builder labels and does not change locale infrastructure or content contracts.    | explicit scope rationale                |
-| Stack-fit and dependency discipline           | `target`     | Reuse the existing session-draft model and builder UI with no new dependencies or parallel taxonomy state.                          | dependency diff + code review           |
-| Testing and QA automation                     | `target`     | Coverage proves label clarity, kick/drill default behavior, and regression safety, and the slice passes `npm run verify:pre-pr`.   | unit tests + gate output                |
-| Scalability and cost efficiency               | `N/A`        | N/A because no new storage, background job, or repeated network cost is introduced.                                                  | explicit scope rationale                |
-| DevOps and rollback readiness                 | `supporting` | Supporting only: taxonomy changes remain reversible in one editor component path with no schema drift.                               | rollback note + PR summary              |
+| Category                                      | Mapping      | Target Threshold (if `target`)                                                                                                    | Evidence                              |
+| --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Product goals and IA                          | `target`     | Step authoring clearly separates category, stroke pattern, and focus tag without implying hidden taxonomy rules.                  | UI review + unit coverage             |
+| UX flow clarity                               | `target`     | Authors can understand how `kick` and `drill` steps should be tagged in one pass through the step editor.                         | targeted unit tests + manual QA       |
+| Visual design quality                         | `supporting` | Supporting only: updated labels/help text must feel like a natural continuation of the existing builder language.                 | screenshot review + copy review       |
+| Business logic correctness and data integrity | `target`     | Kick/drill defaults stay deterministic, do not remove inputs, and do not create duplicate summary labels for implied tags.        | unit tests + typecheck                |
+| Admin editor ergonomics                       | `supporting` | Supporting only: the builder remains easier to edit without introducing a second taxonomy control or extra workflow steps.        | scope review + manual QA              |
+| Accessibility (a11y)                          | `supporting` | Supporting only: changed labels remain explicit and screen-reader friendly with existing form semantics.                          | Testing Library queries + code review |
+| Performance (CWV + payloads)                  | `N/A`        | N/A because this slice changes step-form labels/defaults only and adds no route payload, async fetch, or rendering fan-out.       | explicit scope rationale              |
+| Data placement and sync boundaries            | `target`     | Taxonomy defaults stay local until save; canonical workout persistence and IDs remain unchanged.                                  | brief contract + code review          |
+| Caching and invalidation strategy             | `N/A`        | N/A because the slice changes no fetch path, cache boundary, or invalidation rule.                                                | explicit scope rationale              |
+| Reliability and failure handling              | `supporting` | Supporting only: deterministic defaults must avoid silent state confusion when the author changes category or stroke.             | unit tests + manual QA                |
+| Security and authz                            | `N/A`        | N/A because no auth boundary, role check, or protected API behavior changes in this taxonomy-only slice.                          | explicit scope rationale              |
+| Privacy and compliance                        | `N/A`        | N/A because this slice only adjusts owner-scoped workout authoring labels/defaults and does not change personal-data handling.    | explicit scope rationale              |
+| Content governance                            | `supporting` | Supporting only: label changes must stay aligned with the canonical workout authoring model.                                      | copy review + parent-brief alignment  |
+| Admin workflow and editability                | `supporting` | Supporting only: the owner can keep using the same step editor without relearning where kick/drill notation lives.                | targeted QA                           |
+| SEO and crawlability                          | `N/A`        | N/A because the swim-session builder is an authenticated/private route and the slice adds no crawl surface.                       | explicit scope rationale              |
+| AI discoverability                            | `N/A`        | N/A because the slice changes no public content, schema, or metadata.                                                             | explicit scope rationale              |
+| Analytics and KPI observability               | `N/A`        | N/A because no event taxonomy or KPI wiring changes in this step-editor-only follow-up.                                           | explicit scope rationale              |
+| Commerce and revenue ops                      | `N/A`        | N/A because no pricing, entitlement, or billing behavior changes.                                                                 | explicit scope rationale              |
+| Incident response and support operations      | `N/A`        | N/A because this slice changes no support workflow or runbook boundary beyond private builder labels.                             | explicit scope rationale              |
+| Finance and reporting operations              | `N/A`        | N/A because no finance or reporting workflow is affected by the step-taxonomy clarification.                                      | explicit scope rationale              |
+| i18n operational readiness                    | `N/A`        | N/A because the slice is confined to small English builder labels and does not change locale infrastructure or content contracts. | explicit scope rationale              |
+| Stack-fit and dependency discipline           | `target`     | Reuse the existing session-draft model and builder UI with no new dependencies or parallel taxonomy state.                        | dependency diff + code review         |
+| Testing and QA automation                     | `target`     | Coverage proves label clarity, kick/drill default behavior, and regression safety, and the slice passes `npm run verify:pre-pr`.  | unit tests + gate output              |
+| Scalability and cost efficiency               | `N/A`        | N/A because no new storage, background job, or repeated network cost is introduced.                                               | explicit scope rationale              |
+| DevOps and rollback readiness                 | `supporting` | Supporting only: taxonomy changes remain reversible in one editor component path with no schema drift.                            | rollback note + PR summary            |
 
 ## Data Placement And Sync Contract
 

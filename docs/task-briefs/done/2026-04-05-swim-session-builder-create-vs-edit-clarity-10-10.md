@@ -31,7 +31,7 @@ The swim-session experience makes it immediately clear whether the user is brows
 ## Dependencies And Boundaries
 
 - Parent brief that remains authoritative for the larger builder UX wave:
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+- `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Current builder/runtime foundations to reuse rather than replace:
   - `/Users/stianvikra/freeswimming/app/my-library/page.tsx`
   - `/Users/stianvikra/freeswimming/app/my-library/workouts/page.tsx`
