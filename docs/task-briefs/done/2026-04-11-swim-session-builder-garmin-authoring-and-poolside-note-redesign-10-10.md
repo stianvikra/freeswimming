@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-11-swim-session-builder-garmin-authoring-and-poolside-note-redesign-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-11`
-- `updated`: `2026-04-11`
+- `updated`: `2026-04-12`
 
 ## Goal
 
@@ -401,6 +401,16 @@ The following owner decisions are already locked for implementation:
 
 ## Checkpoint Log
 
+- 2026-04-12
+  - latest merge commit: `b283544`
+  - completed scope:
+    - brief closed after merge of the swim-builder Garmin authoring and poolside redesign work via PR `#415`
+    - local `npm run verify:pre-pr` and `npm run verify:pre-merge` were green before merge recommendation
+    - required CI checks were green before merge
+  - blocker:
+    - none
+  - next step:
+    - move brief to `done`
 - 2026-04-12
   - latest base commit: `96c5202`
   - completed scope:

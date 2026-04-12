@@ -1,5 +1,12 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { createElement, useState } from "react";
 import { describe, expect, it } from "vitest";
-import { isIOSUserAgent, isMacSafariUserAgent } from "@/components/install/install-context";
+
+import {
+  isIOSUserAgent,
+  isMacSafariUserAgent,
+  useInstallContext,
+} from "@/components/install/install-context";
 
 describe("install context user agent detection", () => {
   it("detects iOS phones and iPadOS desktop-class user agents", () => {
@@ -34,5 +41,39 @@ describe("install context user agent detection", () => {
     expect(isMacSafariUserAgent(macSafariUA, "MacIntel", 0)).toBe(true);
     expect(isMacSafariUserAgent(macChromeUA, "MacIntel", 0)).toBe(false);
     expect(isMacSafariUserAgent(iOSSafariUA, "iPhone", 0)).toBe(false);
+  });
+
+  it("fails soft with unsupported install state when provider is absent", async () => {
+    function Probe() {
+      const { canInstall, isInstalled, requestInstall } = useInstallContext();
+      const [result, setResult] = useState("idle");
+
+      return createElement("div", null, [
+        createElement(
+          "button",
+          {
+            key: "trigger",
+            type: "button",
+            onClick: async () => {
+              const nextResult = await requestInstall();
+              setResult(nextResult);
+            },
+          },
+          `${String(canInstall)}:${String(isInstalled)}`
+        ),
+        createElement("span", { key: "result" }, result),
+      ]);
+    }
+
+    render(createElement(Probe));
+
+    const button = screen.getByRole("button", { name: "false:false" });
+    expect(button).toBeTruthy();
+
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText("unsupported")).toBeTruthy();
+    });
   });
 });

@@ -239,6 +239,18 @@ export function buildVerifyPrePrLine(verifyRun) {
   return `- \`npm run verify:pre-pr\`: **${verifyRun.status}** (${verifyRun.runDir}${laneSuffix})`;
 }
 
+export function buildVerifyDocsOnlyLine(verifyRun, docsOnlyChecklist) {
+  if (!docsOnlyChecklist) {
+    return null;
+  }
+
+  if (!verifyRun || verifyRun.lane !== "docs-only") {
+    return "- `npm run verify:docs-only`: **NOT RUN** (run locally when this PR stays in the docs-only lane).";
+  }
+
+  return `- \`npm run verify:docs-only\`: **${verifyRun.status}** (${verifyRun.runDir})`;
+}
+
 export function buildCommandChecklist({
   docsOnlyChecklist,
   verifyRun,
@@ -458,6 +470,7 @@ function buildBody({
   const inferredVerificationLane = classifyVerificationLane(changedFiles);
   const docsOnlyChecklist =
     verifyRun?.lane === "docs-only" || (!verifyRun?.lane && inferredVerificationLane === "docs-only");
+  const verifyDocsOnlyLine = buildVerifyDocsOnlyLine(verifyRun, docsOnlyChecklist);
   const verifyPrePrLine = buildVerifyPrePrLine(verifyRun);
   const verifyPreMergeEvidence = buildPreMergeEvidenceLine(preMergeMarker, headShaShort);
   const verifyPreMergeLine = verifyPreMergeEvidence.line;
@@ -506,6 +519,7 @@ function buildBody({
   const testEvidence = [
     "## Test Evidence",
     "",
+    ...(verifyDocsOnlyLine ? [verifyDocsOnlyLine] : []),
     verifyPrePrLine,
     verifyPreMergeLine,
     `- Policy-impact checklist: ${policyImpact.checklistLine}`,

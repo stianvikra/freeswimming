@@ -150,6 +150,34 @@ async function waitForNotesSectionReady(page: Page) {
   }
 }
 
+async function waitForDashboardQuickCaptureTrigger(page: Page) {
+  const activeSectionLabel = page.getByTestId("admin-active-section-label");
+  const trigger = page.getByTestId("admin-workspace-quick-note-trigger");
+
+  await expect(page.getByRole("heading", { name: "Admin console" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(activeSectionLabel).toBeVisible({ timeout: 15_000 });
+
+  const triggerVisible = await expect(trigger)
+    .toBeVisible({ timeout: 10_000 })
+    .then(
+      () => true,
+      () => false
+    );
+
+  if (triggerVisible) {
+    return;
+  }
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "Admin console" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(activeSectionLabel).toBeVisible({ timeout: 15_000 });
+  await expect(trigger).toBeVisible({ timeout: 15_000 });
+}
+
 async function toggleDoneAndWait(page: Page, item: ReturnType<Page["getByTestId"]>) {
   const doneCheckbox = item.getByRole("checkbox");
   await expect(doneCheckbox).toBeEnabled({ timeout: 10_000 });
@@ -718,6 +746,7 @@ test.describe("admin notes workflow", () => {
       unique,
     });
 
+    await waitForDashboardQuickCaptureTrigger(page);
     await page.getByTestId("admin-workspace-quick-note-trigger").click();
     const quickCaptureDialog = page.getByTestId("admin-note-quick-capture-dialog");
     await expect(quickCaptureDialog).toBeVisible({ timeout: 10_000 });

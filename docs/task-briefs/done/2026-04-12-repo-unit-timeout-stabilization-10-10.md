@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-12-repo-unit-timeout-stabilization-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-12`
 - `updated`: `2026-04-12`
@@ -135,6 +135,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-12 | done | merged with the swim-builder follow-up via PR #415; local npm run verify:pre-pr and npm run verify:pre-merge were green before merge recommendation, and required CI checks passed before merge | next: move brief to done`
 - `2026-04-12 | in-progress | opened focused follow-up slice after swim-builder work proved green in targeted coverage but full repo verify stayed blocked by isolated unit-test timeouts in admin-context-notes-panel and session-generator-panel | next: stabilize the two tests, rerun targeted unit coverage, then retry full verify`
 - `2026-04-12 | in-progress | unit-timeout blockers fixed and targeted vitest runs passed; first full pre-PR rerun then exposed two remaining admin-notes E2E blockers in cleanup fetch stability and quick-capture overlay transition into Notes | next: fix the two admin-notes blockers, rerun targeted Playwright, then rerun full verify`
 - `2026-04-12 | in-progress | follow-up verification stabilization is green locally: targeted vitest + targeted Playwright passed, then full npm run verify:pre-pr and npm run verify:pre-merge both passed after the quick-capture closeout fix and transient cleanup retry hardening | next: commit, push, open PR, and confirm CI merge readiness`

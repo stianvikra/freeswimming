@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildCommandChecklist,
+  buildVerifyDocsOnlyLine,
   buildPreMergeEvidenceLine,
   buildVerifyPrePrLine,
 } from "../../scripts/generate-pr-body.mjs";
@@ -16,6 +17,20 @@ describe("generate-pr-body verification lane evidence", () => {
     });
 
     expect(line).toContain("lane: docs-only");
+  });
+
+  it("includes docs-only evidence line when docs-only lane ran", () => {
+    const line = buildVerifyDocsOnlyLine(
+      {
+        status: "PASS",
+        lane: "docs-only",
+        runDir: "artifacts/test-runs/latest",
+        summaryLines: [],
+      },
+      true
+    );
+
+    expect(line).toBe("- `npm run verify:docs-only`: **PASS** (artifacts/test-runs/latest)");
   });
 
   it("builds docs-only checklist without runtime gates", () => {

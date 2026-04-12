@@ -33,6 +33,14 @@ type InstallContextValue = {
 };
 
 const InstallContext = createContext<InstallContextValue | null>(null);
+const FALLBACK_INSTALL_CONTEXT: InstallContextValue = {
+  isInstalled: false,
+  isIOS: false,
+  isMacSafari: false,
+  canNativePrompt: false,
+  canInstall: false,
+  requestInstall: async () => "unsupported",
+};
 
 function detectStandaloneMode() {
   if (typeof window === "undefined") return false;
@@ -175,7 +183,7 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
 export function useInstallContext() {
   const context = useContext(InstallContext);
   if (!context) {
-    throw new Error("useInstallContext must be used within an InstallProvider.");
+    return FALLBACK_INSTALL_CONTEXT;
   }
   return context;
 }
