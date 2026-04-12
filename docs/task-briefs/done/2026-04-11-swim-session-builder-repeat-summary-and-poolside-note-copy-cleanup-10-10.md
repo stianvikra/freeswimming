@@ -28,13 +28,13 @@ Remove the remaining low-value repeat-summary helper copy and make Poolside Note
 ## Dependencies And Boundaries
 
 - Parent saved swim-session builder brief:
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+- `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Related shipped builder cleanup that must remain intact:
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-10-swim-session-builder-helper-copy-and-delete-copy-cleanup-10-10.md`
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-09-pool-swim-builder-repeat-rest-and-pool-size-clarity-10-10.md`
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-08-swim-session-builder-support-tools-pool-size-and-poolside-focus-polish-10-10.md`
 - Related poolside print brief that stays broader than this slice:
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-01-workout-builder-poolside-note-print-and-surface-clarity-10-10.md`
+- `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-01-workout-builder-poolside-note-print-and-surface-clarity-10-10.md`
 - Core implementation files in scope:
   - `/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutEditor.tsx`
   - `/Users/stianvikra/freeswimming/lib/workouts/shared.ts`

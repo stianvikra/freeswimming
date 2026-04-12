@@ -33,7 +33,7 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Upstream canonical workout contract:
   - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
 - Downstream editing handoff:
-  - `docs/task-briefs/planned/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
+- `docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
 - This brief owns:
   - one-session AI generation,
   - single-run user input UX for that generation,

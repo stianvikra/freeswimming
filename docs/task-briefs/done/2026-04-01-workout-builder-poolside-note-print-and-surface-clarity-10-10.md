@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-01-workout-builder-poolside-note-print-and-surface-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-01`
-- `updated`: `2026-04-01`
+- `updated`: `2026-04-12`
 
 ## Goal
 
@@ -300,6 +300,7 @@ Score gate policy:
 
 ## Checkpoint Log
 
+- `2026-04-12 | docs reconciliation | closed this brief as delivered and superseded by later merged swim-session-builder poolside redesign/polish slices, especially the 2026-04-11 redesign brief and the 2026-04-12 scan/delete/poolside brand brief; it remains historical lineage, not the current authority`
 - `2026-04-01 | planning | brief created from live review findings covering poolside print scaling, print-style controls, explicit focus selection, derived logo asset, and calmer existing-session builder hierarchy | next: decide exact UI shape for pre-print controls and the collapsed metadata surface before implementation starts`
 - `2026-04-01 | in-progress | implementation started on feat/poolside-note-print-clarity-2026-04-01; mapped builder, export route, poolside HTML, and current test coverage before UI/print changes | next: implement collapsible metadata surface, explicit poolside options, and print-safe asset wiring`
 - `2026-04-01 | in-progress | base head f0b4cdf; implemented compact poolside print layout, derived print-safe logo asset, focus/style pre-print controls, calmer collapsible workout metadata, and matching unit/e2e coverage; full npm run verify:pre-pr passed locally | next: commit, push, and open PR for manual visual QA + review`

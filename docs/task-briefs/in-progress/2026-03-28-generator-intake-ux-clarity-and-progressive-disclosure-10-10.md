@@ -33,7 +33,7 @@ Make `/my-library/generator` understandable on first use by treating it as a tru
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10.md`
 - Existing session-builder/workout-builder downstream surfaces that must stay compatible:
   - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md`
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+- `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Locked boundary decisions unless explicitly changed later:
   - generator handoff remains canonical and deterministic,
   - notes still stay out of default generator prefill in this slice,

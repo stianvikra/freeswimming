@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-24`
+- `updated`: `2026-04-12`
 
 ## Goal
 
@@ -30,7 +30,7 @@ Ship a Garmin-familiar manual session builder with truthful Garmin/export handof
   - add contextual insert-after actions for single steps and repeat blocks so new starter scaffolds can be placed exactly where the next set belongs,
   - surface truthful Garmin/export readiness diagnostics inside the canonical builder so convenience strokes, drill metadata, and equipment metadata are reviewed before later export/send handoff,
   - add a structured text handoff preview plus copy/download actions so the current workout can be used in manual Garmin Connect entry, coach review, or offline notes before direct provider delivery exists,
-  - keep poolside execution deferred while the richer step contract continues to stabilize.
+  - keep poolside execution deferred; the current product priority is dryland foundation and AI session/program work, not a new interactive deck-side execute mode.
 
 - Manual workout/session authoring for user-built training sessions.
 - Editing surface for accepted single-session AI drafts after they become canonical workouts, without moving generation logic into this brief.
@@ -185,6 +185,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 ## Checkpoint Log
 
+- `2026-04-12 | docs reconciliation | the manual swim-session-builder wave is now largely delivered through later child briefs, while interactive \`poolside execution\` remains explicitly deferred and is not the recommended next slice; higher-priority adjacent tracks are dryland / land training and AI-created sessions/programs | next: only reopen this brief for a new child slice if a true live follow-along poolside mode becomes an explicit product need`
 - `2026-03-19 | planning | clarified that this brief owns manual workout/session building and poolside execution only; AI generation and weekly program authoring remain separate briefs | next: request owner detail later on exact manual-builder ergonomics, save model, and Garmin-export handoff expectations before implementation starts`
 - `2026-03-20 | planning | tightened this brief into the explicit manual session builder track, added Garmin-familiar target/duration/repeat authoring requirements, and aligned swim-intensity editing to the shared threshold-based zone method | next: request owner detail later on exact builder editing ergonomics and how much compatibility guidance should be visible before export/send exists`
 - `2026-03-20 | planning | clarified that accepted AI-generated single-session drafts should hand off into this same editor after canonical save, while horizon selection and competition intent remain upstream generator concerns | next: keep later implementation focused on canonical workout editing and avoid mixing generation controls into the manual builder UI`

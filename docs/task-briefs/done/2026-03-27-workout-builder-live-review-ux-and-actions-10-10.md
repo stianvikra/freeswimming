@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-27-workout-builder-live-review-ux-and-actions-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-27`
-- `updated`: `2026-04-02`
+- `updated`: `2026-04-12`
 
 ## Goal
 
@@ -307,6 +307,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-12` — docs reconciliation closed this umbrella as delivered through its merged child slices and later dedicated swim-session-builder briefs; future swim-builder work should not reopen this file as an active catch-all owner.
 - `2026-04-03` — child slice shipped through [2026-04-03-workout-builder-notice-placement-and-audience-10-10.md](/private/tmp/freeswimming-admin-notes-umbrella-reconcile-2026-04-03/docs/task-briefs/done/2026-04-03-workout-builder-notice-placement-and-audience-10-10.md) and merged in PR `#343`; this pass landed calmer export/handoff placement, truthful optional-support copy, and explicit persistence language without removing any manual swim-session builder input fields.
 - `2026-04-02` — slice 10 started on branch `feat/workout-builder-sessions-density-2026-04-02` to close production note `d76825bd` by limiting the dedicated `My sessions` browse route to the first `3` saved sessions until the owner explicitly loads the rest. Targeted `vitest`, `typecheck`, and brief lint are green, and the targeted desktop-chromium workout-builder Playwright spec remained schema-gated/skipped after rerunning with the shared `.env.local`. Next step: run `npm run verify:pre-pr`, then commit/push/open PR if green.
 - `2026-03-29` — slice 6 expanded on branch `fix/swim-sessions-and-generator-ia-cleanup-2026-03-29`; live review tightened the builder-owned IA again by removing latest-session preview text from the My Library swim/dryland cards, renaming the browse route to `My sessions`, and stripping duplicate browse-mode explainer copy so the saved-session list can do the work. Next step: finish the paired generator cleanup in the child generator brief, run targeted validation, and then `npm run verify:pre-pr`.

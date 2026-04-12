@@ -24,7 +24,7 @@ Apply the new containment and border-hierarchy standard to the swim workout buil
 - Parent containment audit:
   - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-09-platform-containment-and-border-hierarchy-audit-10-10.md`
 - Existing workout-builder UX parent that still owns broader workflow decisions:
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
+- `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-03-27-workout-builder-live-review-ux-and-actions-10-10.md`
 - Preserve shipped pool-builder semantics from:
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-09-pool-swim-builder-repeat-rest-and-pool-size-clarity-10-10.md`
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-08-swim-session-builder-support-tools-pool-size-and-poolside-focus-polish-10-10.md`
