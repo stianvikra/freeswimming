@@ -1265,6 +1265,10 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByRole("button", { name: "50m" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "33.33m" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Exact pool size (m)")).toHaveValue("25");
+    expect(screen.getByTestId("workout-editor-pool-size-inline-row")).toHaveAttribute(
+      "data-layout",
+      "compact-inline"
+    );
     expect(
       within(screen.getByTestId("workout-editor-pool-size-panel")).queryByText("Unit")
     ).not.toBeInTheDocument();
@@ -2203,11 +2207,15 @@ describe("WorkoutBuilderHub", () => {
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-select-toggle"));
+    expect(screen.queryByText("Select session")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Select Threshold follow-up")).toBeVisible();
     fireEvent.click(screen.getByTestId("saved-workout-select-workout-2"));
     fireEvent.click(screen.getByTestId("saved-workout-select-workout-4"));
+    expect(screen.getByText("Delete selected sessions")).toBeVisible();
     fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-delete"));
 
     expect(screen.getByText("Delete 2 saved sessions from My Library?")).toBeVisible();
+    expect(screen.getAllByText("Delete selected sessions")).toHaveLength(2);
 
     fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-confirm-delete"));
 

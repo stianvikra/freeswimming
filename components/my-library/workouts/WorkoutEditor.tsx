@@ -1530,9 +1530,8 @@ export default function WorkoutEditor({
   const mobileActionPanelClass = "mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-2.5";
   const mobileSecondaryActionClass =
     "inline-flex min-h-10 w-full items-center justify-start rounded-xl border px-3 py-2 text-sm font-medium transition";
-  const desktopHeaderStackClass =
-    "flex items-start justify-between gap-3 sm:flex-col sm:justify-start";
-  const desktopSummaryBlockClass = "min-w-0 flex-1 sm:w-full";
+  const desktopHeaderStackClass = "flex items-start justify-between gap-3";
+  const desktopSummaryBlockClass = "min-w-0 flex-1";
   const desktopRepeatControlRowClass = "grid gap-3";
   const isViewMode = builderViewMode === "view";
   const manualPoolViewSections = isManualPoolMode
@@ -3491,11 +3490,15 @@ export default function WorkoutEditor({
           <p className="text-sm font-medium text-slate-900">
             {isManualPoolMode ? "Pool Size" : "Pool length"}
           </p>
-          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-4">
+          <div
+            data-testid="workout-editor-pool-size-inline-row"
+            data-layout="compact-inline"
+            className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3"
+          >
             <div
               role="group"
               aria-label={isManualPoolMode ? "Pool size unit" : "Pool length unit"}
-              className="flex flex-wrap items-center gap-2"
+              className="flex shrink-0 flex-wrap items-center gap-2"
             >
               {(
                 [
@@ -3526,7 +3529,7 @@ export default function WorkoutEditor({
             <div
               role="group"
               aria-label={isManualPoolMode ? "Common pool sizes" : "Common pool lengths"}
-              className="flex flex-wrap items-center gap-2"
+              className="flex shrink-0 flex-wrap items-center gap-2"
             >
               {poolLengthQuickChoices.map((value) => {
                 const isSelected = isPoolLengthQuickChoiceSelected(
@@ -3553,8 +3556,8 @@ export default function WorkoutEditor({
               })}
             </div>
 
-            <div className="min-w-0 xl:ml-auto xl:w-[15rem]">
-              <div className="relative">
+            <div className="min-w-0 shrink-0">
+              <div className="relative w-[8.75rem] sm:w-[9.25rem]">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -3566,7 +3569,7 @@ export default function WorkoutEditor({
                   value={poolLengthInput}
                   onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
                   data-testid="session-draft-pool-length-input"
-                  className={`block h-11 w-full rounded-xl border bg-white px-3 pr-12 text-base text-slate-900 shadow-sm outline-none transition ${
+                  className={`block h-11 w-full rounded-xl border bg-white px-3 pr-10 text-base text-slate-900 shadow-sm outline-none transition ${
                     poolSizeInputInvalid
                       ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
                       : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
