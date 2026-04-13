@@ -115,6 +115,10 @@ function buildWorkoutLibrary(overrides?: Partial<WorkoutLibrarySnapshot>): Worko
 }
 
 function readPreviewDraft() {
+  if (!screen.queryByTestId("session-generator-draft-preview")) {
+    openSupportToolsPanel();
+  }
+
   return JSON.parse(
     screen.getByTestId("session-generator-draft-preview").textContent ?? "{}"
   ) as SessionDraft;
@@ -163,7 +167,7 @@ describe("WorkoutBuilderHub", () => {
     vi.clearAllMocks();
   });
 
-  it("keeps export and handoff support collapsed by default in the calm builder layout", async () => {
+  it("keeps advanced support tools collapsed by default in the calm builder layout", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
     await waitFor(() => {
@@ -179,14 +183,10 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent("Ready");
     expect(
-      screen.queryByText(
-        "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface."
-      )
+      screen.queryByText("Advanced export and support tools stay here when you need them.")
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(
-        "Opening or downloading anything here does not send or publish anything. It only opens or downloads support output for this saved session."
-      )
+      screen.queryByText("Open, copy, or download here without saving.")
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
 
@@ -194,15 +194,9 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toBeVisible();
     expect(
-      screen.getByText(
-        "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface."
-      )
+      screen.getByText("Advanced export and support tools stay here when you need them.")
     ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Opening or downloading anything here does not send or publish anything. It only opens or downloads support output for this saved session."
-      )
-    ).toBeVisible();
+    expect(screen.getByText("Open, copy, or download here without saving.")).toBeVisible();
   });
 
   it("uses the flatter containment markers for the calm workout builder layout", async () => {
@@ -1271,6 +1265,15 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByRole("button", { name: "50m" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "33.33m" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Exact pool size (m)")).toHaveValue("25");
+    expect(
+      within(screen.getByTestId("workout-editor-pool-size-panel")).queryByText("Unit")
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("workout-editor-pool-size-panel")).queryByText("Common sizes")
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("workout-editor-pool-size-panel")).queryByText("Exact size")
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Session type" })).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Effort" })).not.toBeInTheDocument();
     expect(screen.queryByText("Training profile")).not.toBeInTheDocument();

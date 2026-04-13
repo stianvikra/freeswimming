@@ -18,15 +18,87 @@ function runOnceOnMobileChromium(projectName: string) {
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
 }
 
+async function prewarmRoute(page: Page, href: string, timeoutMs = 90_000) {
+  return page.request
+    .get(href, {
+      timeout: timeoutMs,
+      failOnStatusCode: false,
+    })
+    .catch(() => null);
+}
+
+async function gotoWithTransientRetry(page: Page, href: string, initialTimeoutMs = 90_000) {
+  await prewarmRoute(page, href, initialTimeoutMs);
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await page.goto(href, {
+        waitUntil: "domcontentloaded",
+        timeout: attempt === 0 ? initialTimeoutMs : 60_000,
+      });
+      return;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isTransientGotoError =
+        /ERR_ABORTED|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(errorMessage);
+
+      if (!isTransientGotoError || attempt === 2) {
+        throw error;
+      }
+
+      await page.waitForTimeout(1_000);
+    }
+  }
+}
+
+async function waitForRouteToSettle(page: Page) {
+  const compilingIndicator = page.getByText("Compiling", { exact: true });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
+    await page.waitForTimeout(750);
+    if ((await compilingIndicator.count()) === 0) {
+      break;
+    }
+  }
+
+  await page.waitForTimeout(300);
+}
+
 async function loginToMyLibraryViaDevBypass(page: Page) {
-  await page.goto(`/dev/login?next=${encodeURIComponent("/my-library")}`);
+  const loginHref = `/dev/login?next=${encodeURIComponent("/my-library")}`;
+  const loginProbe = await prewarmRoute(page, loginHref);
+  if (!loginProbe || loginProbe.status() >= 500) {
+    test.skip(true, "Dev auth bypass is not reachable in this environment.");
+  }
+
+  await gotoWithTransientRetry(page, loginHref);
   const pathAfterLogin = new URL(page.url()).pathname;
 
   if (pathAfterLogin !== "/my-library") {
     test.skip(true, "Dev auth bypass is not enabled in this environment.");
   }
 
+  await waitForRouteToSettle(page);
   await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+}
+
+async function refreshDevSessionForCurrentRoute(page: Page) {
+  const currentUrl = new URL(page.url());
+  const nextPath = `${currentUrl.pathname}${currentUrl.search}`;
+  const loginHref = `/dev/login?next=${encodeURIComponent(nextPath)}`;
+  const loginProbe = await prewarmRoute(page, loginHref);
+  if (!loginProbe || loginProbe.status() >= 500) {
+    test.skip(true, "Dev auth bypass is not reachable in this environment.");
+  }
+
+  await gotoWithTransientRetry(page, loginHref);
+
+  if (new URL(page.url()).pathname !== currentUrl.pathname) {
+    test.skip(true, "Dev auth bypass is not enabled in this environment.");
+  }
+
+  await waitForRouteToSettle(page);
 }
 
 async function waitForWorkoutBuilderClientReady(page: Page) {
@@ -243,6 +315,17 @@ test.describe("my library workout builder", () => {
     await expect(page.getByText("Pool Size", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Meters" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Yards" })).toBeVisible();
+    await expect(
+      page.getByTestId("workout-editor-pool-size-panel").getByText("Unit", { exact: true })
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("workout-editor-pool-size-panel").getByText("Common sizes", {
+        exact: true,
+      })
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("workout-editor-pool-size-panel").getByText("Exact size", { exact: true })
+    ).toHaveCount(0);
     await expect(page.getByLabel("Exact pool size (m)")).toHaveValue("25");
     await expect(page.getByRole("group", { name: "Environment" })).toHaveCount(0);
     await expect(page.getByText("Training profile")).toHaveCount(0);
@@ -330,11 +413,13 @@ test.describe("my library workout builder", () => {
     );
     await expect(page.getByTestId("workout-editor-support-tools-status")).toHaveText("Ready");
     await expect(
-      page.getByText(
-        "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface."
-      )
+      page.getByText("Advanced export and support tools stay here when you need them.")
     ).toHaveCount(0);
     await openSupportToolsPanel(page);
+    await expect(
+      page.getByText("Advanced export and support tools stay here when you need them.")
+    ).toBeVisible();
+    await expect(page.getByText("Open, copy, or download here without saving.")).toBeVisible();
     await page.getByTestId("workout-editor-garmin-export-toggle").click();
     await page.getByTestId("workout-editor-handoff-toggle").click();
     await expect(page.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
@@ -530,6 +615,7 @@ test.describe("my library workout builder", () => {
       "local_draft"
     );
     await expect(page.getByTestId("workout-editor-pdf-open")).toBeVisible();
+    await expect(page.getByRole("button", { name: "View PDF" })).toBeVisible();
     await expect(page.getByTestId("workout-editor-poolside-pdf-open")).toBeVisible();
     await page.getByTestId("workout-editor-poolside-style-ink-saver").click();
     await page.getByTestId("workout-editor-poolside-layout-landscape").click();
@@ -669,6 +755,7 @@ test.describe("my library workout builder", () => {
       timeout: 20_000,
       waitUntil: "domcontentloaded",
     });
+    await refreshDevSessionForCurrentRoute(page);
     await waitForWorkoutBuilderClientReady(page);
 
     const deleteResponsePromise = page.waitForResponse(
@@ -678,7 +765,11 @@ test.describe("my library workout builder", () => {
     );
 
     await page.getByTestId("workout-builder-delete-current-workout").click();
-    await page.getByTestId("workout-builder-confirm-delete-current-workout").click();
+    const confirmDeleteButton = page.getByTestId("workout-builder-confirm-delete-current-workout");
+    await confirmDeleteButton.scrollIntoViewIfNeeded();
+    await expect(confirmDeleteButton).toBeVisible();
+    await expect(confirmDeleteButton).toBeEnabled();
+    await Promise.all([deleteResponsePromise, confirmDeleteButton.click({ timeout: 15_000 })]);
 
     const deleteResponse = await deleteResponsePromise;
     const deletePayload = (await deleteResponse.json().catch(() => null)) as {

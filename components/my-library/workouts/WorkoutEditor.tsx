@@ -905,9 +905,11 @@ function buildManualPoolRestInlineSummary(step: SessionDraftStep, basePaceSecond
   const summary = buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
     environment: "pool",
   });
-  return summary.startsWith("Fixed Rest Time ")
-    ? `Rest ${summary.replace("Fixed Rest Time ", "")}`
-    : summary;
+  if (summary.startsWith("Fixed Rest Time ")) {
+    return `Rest: ${summary.replace("Fixed Rest Time ", "")}`;
+  }
+
+  return summary === "Fixed Rest Time not set" ? "Rest: not set" : summary;
 }
 
 function buildManualPoolDisplaySummary(
@@ -917,6 +919,11 @@ function buildManualPoolDisplaySummary(
   linkedRestStep?: SessionDraftStep | null
 ) {
   const normalizedStep = normalizeManualPoolStepForEditor(step);
+
+  if (normalizedStep.category === "rest") {
+    return buildManualPoolRestInlineSummary(normalizedStep, basePaceSecondsPer100m);
+  }
+
   const parts = buildManualPoolStepSummary(
     normalizedStep,
     basePaceSecondsPer100m,
@@ -924,7 +931,6 @@ function buildManualPoolDisplaySummary(
   ).split(" · ");
 
   if (
-    normalizedStep.category !== "rest" &&
     linkedRestStep &&
     linkedRestStep.category === "rest" &&
     linkedRestStep.postSetRestForRepeatGroupId == null
@@ -1076,7 +1082,7 @@ function buildManualPoolViewLine(
   }
 
   const restSummary = buildManualPoolRestInlineSummary(linkedRestStep, basePaceSecondsPer100m);
-  return `${stepSummary} · ${restSummary.replace(/^Rest /, "Rest: ")}`;
+  return `${stepSummary} · ${restSummary}`;
 }
 
 function buildManualPoolRepeatViewSection(
@@ -1438,7 +1444,6 @@ export default function WorkoutEditor({
         draftTotals.totalDistanceM
           ? formatDistanceMetersLabel(draftTotals.totalDistanceM, poolLengthUnit)
           : null,
-        draftTotals.estimatedDurationMin ? `~${draftTotals.estimatedDurationMin} min` : null,
         draft.poolLengthM === null
           ? "Set pool size"
           : formatPoolLengthUnitLabel(draft.poolLengthM, poolLengthUnit),
@@ -1450,21 +1455,21 @@ export default function WorkoutEditor({
         totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
         estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
       });
-  const workoutPdfHeadingLabel = "PDF";
+  const workoutPdfHeadingLabel = "View PDF";
   const workoutPdfStateLabel =
     handoffDraftState === "canonical"
       ? "Canonical full-session PDF"
       : "Local draft full-session PDF";
   const workoutPdfStateDescription = savedWorkout
     ? hasUnsavedChanges
-      ? "Full-session PDF reflects your unsaved local edits. Save first if you want the canonical workout and this PDF to match exactly."
+      ? "Full-session PDF reflects unsaved edits on screen."
       : "Full-session PDF matches the saved canonical workout."
-    : "Full-session PDF reflects the current local draft before canonical save.";
+    : "Full-session PDF reflects the current draft on screen.";
   const workoutPdfBodyCopy =
     handoffDraftState === "canonical"
-      ? "Use PDF for the full-session sheet, or Print Preview for the compact lane-side note."
-      : "Both PDF views reflect the unsaved draft currently on screen.";
-  const workoutPdfButtonLabel = "PDF";
+      ? "Open the full-session sheet for this workout."
+      : "Open the full-session sheet for the draft on screen.";
+  const workoutPdfButtonLabel = "View PDF";
   const workoutPoolsidePdfButtonLabel = "Print Preview";
   const garminExportStateLabel =
     handoffDraftState === "canonical"
@@ -1489,7 +1494,7 @@ export default function WorkoutEditor({
       : "Handoff preview matches the saved canonical workout."
     : "Handoff preview reflects the current local draft before canonical save.";
   const supportToolsAudienceDescription =
-    "Optional export and handoff tools stay here so the workout itself can remain the primary editing surface.";
+    "Advanced export and support tools stay here when you need them.";
   const shouldHideAutoPoolBuilderTitle =
     isManualPoolMode &&
     !manualPoolTitleEdited &&
@@ -1498,18 +1503,14 @@ export default function WorkoutEditor({
   const displayedTitle = shouldHideAutoPoolBuilderTitle ? "" : draft.title;
   const supportToolsDraftStateDescription =
     handoffDraftState === "canonical"
-      ? "These support tools currently reflect the saved session."
-      : "These support tools currently reflect the unsaved draft on screen.";
-  const supportToolsPersistenceDescription = savedWorkout
-    ? hasUnsavedChanges
-      ? "Opening or downloading anything here does not save changes. Save first if you want these support outputs to match the canonical session."
-      : "Opening or downloading anything here does not send or publish anything. It only opens or downloads support output for this saved session."
-    : "Opening or downloading anything here does not accept or save this draft. It only opens or downloads support output for the current draft on screen.";
+      ? "Support output reflects the saved workout."
+      : "Support output reflects unsaved edits on screen.";
+  const supportToolsPersistenceDescription = "Open, copy, or download here without saving.";
   const supportToolsWarningSummary =
     draft.warnings.length > 0
       ? `${draft.warnings.length} builder warning${
           draft.warnings.length === 1 ? "" : "s"
-        } also stay inside this section.`
+        } still need review here.`
       : null;
   const supportToolsStatusLabel =
     garminReadiness.status === "ready"
@@ -1517,6 +1518,7 @@ export default function WorkoutEditor({
       : `${garminReadiness.issues.length} review ${
           garminReadiness.issues.length === 1 ? "item" : "items"
         }`;
+  const showInlinePdfAction = showCalmBuilderLayout || !showPdfPanel;
   const integratedSupportSectionClass = "border-t border-slate-200/80 pt-4";
   const supportPreviewShellClass =
     "mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950";
@@ -3489,94 +3491,94 @@ export default function WorkoutEditor({
           <p className="text-sm font-medium text-slate-900">
             {isManualPoolMode ? "Pool Size" : "Pool length"}
           </p>
-          <div className="mt-4 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.9fr)] xl:items-start">
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Unit</p>
-                <div
-                  role="group"
-                  aria-label={isManualPoolMode ? "Pool size unit" : "Pool length unit"}
-                  className="mt-3 flex flex-wrap items-center gap-2"
-                >
-                  {(
-                    [
-                      ["m", "Meters"],
-                      ["yd", "Yards"],
-                    ] as const
-                  ).map(([unit, label]) => {
-                    const isSelected = poolLengthUnit === unit;
-                    return (
-                      <button
-                        key={unit}
-                        type="button"
-                        aria-pressed={isSelected}
-                        data-testid={`workout-editor-pool-length-unit-${unit}`}
-                        onClick={() => updatePoolLengthUnit(unit)}
-                        className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
-                          isSelected
-                            ? "border-blue-600 bg-blue-50 text-blue-700"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Common sizes
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {poolLengthQuickChoices.map((value) => {
-                    const isSelected = isPoolLengthQuickChoiceSelected(
-                      draft.poolLengthM,
-                      value,
-                      poolLengthUnit
-                    );
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => choosePoolLengthQuickChoice(value)}
-                        className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
-                          isSelected
-                            ? "border-blue-600 bg-blue-50 text-blue-700"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {poolLengthUnit === "yd"
-                          ? `${value}yd`
-                          : formatPoolLengthLabel(value, poolLengthUnit)}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-4">
+            <div
+              role="group"
+              aria-label={isManualPoolMode ? "Pool size unit" : "Pool length unit"}
+              className="flex flex-wrap items-center gap-2"
+            >
+              {(
+                [
+                  ["m", "Meters"],
+                  ["yd", "Yards"],
+                ] as const
+              ).map(([unit, label]) => {
+                const isSelected = poolLengthUnit === unit;
+                return (
+                  <button
+                    key={unit}
+                    type="button"
+                    aria-pressed={isSelected}
+                    data-testid={`workout-editor-pool-length-unit-${unit}`}
+                    onClick={() => updatePoolLengthUnit(unit)}
+                    className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
+                      isSelected
+                        ? "border-blue-600 bg-blue-50 text-blue-700"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="space-y-2 xl:border-l xl:border-slate-200 xl:pl-6">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Exact size
-              </p>
-              <input
-                type="text"
-                inputMode="decimal"
-                aria-label={
-                  isManualPoolMode
-                    ? `Exact pool size (${poolLengthUnit})`
-                    : `Exact pool length (${poolLengthUnit})`
-                }
-                value={poolLengthInput}
-                onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
-                data-testid="session-draft-pool-length-input"
-                className={`block h-11 w-full rounded-xl border bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition ${
-                  poolSizeInputInvalid
-                    ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
-                    : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                }`}
-              />
+            <div
+              role="group"
+              aria-label={isManualPoolMode ? "Common pool sizes" : "Common pool lengths"}
+              className="flex flex-wrap items-center gap-2"
+            >
+              {poolLengthQuickChoices.map((value) => {
+                const isSelected = isPoolLengthQuickChoiceSelected(
+                  draft.poolLengthM,
+                  value,
+                  poolLengthUnit
+                );
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => choosePoolLengthQuickChoice(value)}
+                    className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
+                      isSelected
+                        ? "border-blue-600 bg-blue-50 text-blue-700"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {poolLengthUnit === "yd"
+                      ? `${value}yd`
+                      : formatPoolLengthLabel(value, poolLengthUnit)}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="min-w-0 xl:ml-auto xl:w-[15rem]">
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  aria-label={
+                    isManualPoolMode
+                      ? `Exact pool size (${poolLengthUnit})`
+                      : `Exact pool length (${poolLengthUnit})`
+                  }
+                  value={poolLengthInput}
+                  onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
+                  data-testid="session-draft-pool-length-input"
+                  className={`block h-11 w-full rounded-xl border bg-white px-3 pr-12 text-base text-slate-900 shadow-sm outline-none transition ${
+                    poolSizeInputInvalid
+                      ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                      : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  }`}
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-slate-500"
+                >
+                  {poolLengthUnit}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -3737,7 +3739,7 @@ export default function WorkoutEditor({
         ) : null}
       </div>
 
-      {showPdfPanel ? (
+      {showPdfPanel && !showCalmBuilderLayout ? (
         <section className={integratedSupportSectionClass}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -3947,6 +3949,32 @@ export default function WorkoutEditor({
         ) : null}
       </section>
 
+      <section className={integratedSupportSectionClass}>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Draft JSON</p>
+          <p className="mt-2 text-sm font-medium text-slate-900">
+            Raw builder draft for support review only.
+          </p>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+          <pre
+            data-testid="session-generator-draft-preview"
+            className="max-h-[420px] overflow-auto px-4 py-4 text-xs leading-relaxed text-slate-100"
+          >
+            {JSON.stringify(
+              {
+                ...draft,
+                totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
+                estimatedDurationMin:
+                  draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
+              },
+              null,
+              2
+            )}
+          </pre>
+        </div>
+      </section>
+
       <div className="grid gap-3 border-t border-slate-200/80 pt-4 md:grid-cols-3">
         <div className={supportSummaryItemClass}>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
@@ -4119,20 +4147,12 @@ export default function WorkoutEditor({
     <section
       data-testid="workout-editor-support-tools-panel"
       data-containment-style="sectioned"
-      className={`rounded-2xl border p-4 sm:p-5 ${
-        garminReadiness.status === "ready"
-          ? "border-emerald-200 bg-emerald-50/60"
-          : "border-amber-200 bg-amber-50/60"
-      }`}
+      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p
-            className={`text-xs font-semibold uppercase tracking-wide ${
-              garminReadiness.status === "ready" ? "text-emerald-700" : "text-amber-700"
-            }`}
-          >
-            Export and handoff support
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Advanced tools
           </p>
           {supportToolsOpen ? (
             <>
@@ -4161,9 +4181,9 @@ export default function WorkoutEditor({
             aria-expanded={supportToolsOpen}
             data-testid="workout-editor-support-tools-toggle"
             onClick={() => setSupportToolsOpen((current) => !current)}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-white bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-white/80 active:bg-white/70"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
           >
-            {supportToolsOpen ? "Hide support details" : "Show support details"}
+            {supportToolsOpen ? "Hide advanced tools" : "Show advanced tools"}
           </button>
         </div>
       </div>
@@ -4213,16 +4233,17 @@ export default function WorkoutEditor({
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
                   <p className="mt-1 text-sm text-slate-600">
-                    {workout.totalDistanceM
-                      ? formatDistanceMetersLabel(
-                          workout.totalDistanceM,
-                          resolveSessionDraftPoolLengthUnit(workout.poolLengthUnit)
-                        )
-                      : null}
-                    {workout.totalDistanceM && workout.estimatedDurationMin ? " · " : null}
-                    {workout.estimatedDurationMin ? `~${workout.estimatedDurationMin} min` : null}
-                    {workout.totalDistanceM || workout.estimatedDurationMin ? " · " : null}
-                    {getSessionTypeLabel(workout.sessionType)}
+                    {[
+                      workout.totalDistanceM
+                        ? formatDistanceMetersLabel(
+                            workout.totalDistanceM,
+                            resolveSessionDraftPoolLengthUnit(workout.poolLengthUnit)
+                          )
+                        : null,
+                      getSessionTypeLabel(workout.sessionType),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 </div>
                 <Link
@@ -4799,25 +4820,27 @@ export default function WorkoutEditor({
 
       {poolsideNotePanel}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
-        <div>
-          <p className="text-sm text-slate-600">
-            {savedWorkout ? editorCopy.savedWorkoutDescription : editorCopy.unsavedDraftDescription}
-          </p>
-          <p
-            data-testid="workout-editor-save-state"
-            className={`mt-2 text-sm font-medium ${
-              hasUnsavedChanges ? "text-amber-700" : "text-emerald-700"
-            }`}
-          >
-            {savedWorkout
-              ? hasUnsavedChanges
-                ? editorCopy.savedWorkoutPendingState
-                : editorCopy.savedWorkoutSavedState
-              : editorCopy.unsavedDraftPendingState}
-          </p>
-          {!showPdfPanel ? (
-            <>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                {savedWorkout ? "Saved workout" : "Draft"}
+              </span>
+              <p
+                data-testid="workout-editor-save-state"
+                className={`text-sm font-medium ${
+                  hasUnsavedChanges ? "text-amber-700" : "text-emerald-700"
+                }`}
+              >
+                {savedWorkout
+                  ? hasUnsavedChanges
+                    ? editorCopy.savedWorkoutPendingState
+                    : editorCopy.savedWorkoutSavedState
+                  : editorCopy.unsavedDraftPendingState}
+              </p>
+            </div>
+            {showInlinePdfAction ? (
               <p
                 data-testid="workout-editor-pdf-source"
                 data-pdf-state={handoffDraftState}
@@ -4825,69 +4848,68 @@ export default function WorkoutEditor({
               >
                 {workoutPdfStateLabel}
               </p>
-              <p className="mt-1 text-sm text-slate-600">{workoutPdfBodyCopy}</p>
-            </>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {!showPdfPanel ? (
-            <button
-              type="button"
-              onClick={() => openWorkoutPdfPrintView("standard")}
-              data-testid="workout-editor-pdf-open"
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              {workoutPdfButtonLabel}
-            </button>
-          ) : null}
-          {!showPdfPanel && !showCalmBuilderLayout ? (
-            <button
-              type="button"
-              onClick={() => openWorkoutPdfPrintView("poolside")}
-              data-testid="workout-editor-poolside-pdf-open"
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
-            >
-              {workoutPoolsidePdfButtonLabel}
-            </button>
-          ) : null}
-          {savedWorkout && onResetToSaved ? (
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {showInlinePdfAction ? (
+              <button
+                type="button"
+                onClick={() => openWorkoutPdfPrintView("standard")}
+                data-testid="workout-editor-pdf-open"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              >
+                {workoutPdfButtonLabel}
+              </button>
+            ) : null}
+            {!showPdfPanel && !showCalmBuilderLayout ? (
+              <button
+                type="button"
+                onClick={() => openWorkoutPdfPrintView("poolside")}
+                data-testid="workout-editor-poolside-pdf-open"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+              >
+                {workoutPoolsidePdfButtonLabel}
+              </button>
+            ) : null}
+            {savedWorkout && onResetToSaved ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingRemoval(null);
+                  setLastRemovedBlock(null);
+                  onResetToSaved();
+                }}
+                disabled={isSaving || !hasUnsavedChanges || pendingRemoval !== null}
+                data-testid="workout-editor-reset"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Reset to last saved
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
                 setPendingRemoval(null);
                 setLastRemovedBlock(null);
-                onResetToSaved();
+                onSave();
               }}
-              disabled={isSaving || !hasUnsavedChanges || pendingRemoval !== null}
-              data-testid="workout-editor-reset"
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={
+                isSaving ||
+                !canonicalSaveReady ||
+                poolSizeInputInvalid ||
+                pendingRemoval !== null ||
+                (savedWorkout ? !hasUnsavedChanges : false)
+              }
+              data-testid={saveButtonTestId}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Reset to last saved
+              {isSaving ? "Saving..." : savedWorkout ? "Save changes" : "Accept and save workout"}
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              setPendingRemoval(null);
-              setLastRemovedBlock(null);
-              onSave();
-            }}
-            disabled={
-              isSaving ||
-              !canonicalSaveReady ||
-              poolSizeInputInvalid ||
-              pendingRemoval !== null ||
-              (savedWorkout ? !hasUnsavedChanges : false)
-            }
-            data-testid={saveButtonTestId}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSaving ? "Saving..." : savedWorkout ? "Save changes" : "Accept and save workout"}
-          </button>
+          </div>
         </div>
       </div>
 
-      {!showPdfPanel && workoutPdfNotice ? (
+      {showInlinePdfAction && workoutPdfNotice ? (
         <p
           data-testid="workout-editor-pdf-notice"
           className="mt-3 text-sm font-medium text-emerald-700"
@@ -4898,28 +4920,11 @@ export default function WorkoutEditor({
 
       {showCalmBuilderLayout ? supportToolsPanel : null}
 
-      {!showPdfPanel && workoutPdfError ? (
+      {showInlinePdfAction && workoutPdfError ? (
         <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
           {workoutPdfError}
         </p>
       ) : null}
-
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-        <pre
-          data-testid="session-generator-draft-preview"
-          className="max-h-[420px] overflow-auto px-4 py-4 text-xs leading-relaxed text-slate-100"
-        >
-          {JSON.stringify(
-            {
-              ...draft,
-              totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
-              estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
-            },
-            null,
-            2
-          )}
-        </pre>
-      </div>
     </div>
   );
 }

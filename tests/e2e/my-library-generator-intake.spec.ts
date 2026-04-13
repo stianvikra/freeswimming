@@ -186,6 +186,17 @@ async function ensureWorkoutMetadataOpen(page: Page) {
   await expect(page.getByTestId("session-draft-title")).toBeVisible({ timeout: 15_000 });
 }
 
+async function openAdvancedToolsIfCollapsed(page: Page) {
+  const toggle = page.getByTestId("workout-editor-support-tools-toggle");
+  await expect(toggle).toBeVisible({ timeout: 15_000 });
+
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await toggle.click();
+  }
+
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+}
+
 async function waitForWorkoutLibraryBrowseReady(page: Page) {
   await expect(page.getByTestId("workout-builder-hub")).toBeVisible({ timeout: 15_000 });
   await expect(
@@ -364,6 +375,12 @@ test.describe("my library generator intake", () => {
     await patchResponsePromise;
 
     await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
+    await expect(page.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await expect(page.getByTestId("session-generator-draft-preview")).toHaveCount(0);
+    await openAdvancedToolsIfCollapsed(page);
     await expect(page.getByTestId("session-generator-draft-preview")).toContainText(
       "Edited in the dedicated workout builder route."
     );
