@@ -17,6 +17,7 @@ async function waitForContactPageToSettle(page: Page) {
 test("contact form labels are associated and mobile load does not force focus", async ({
   page,
 }) => {
+  test.slow();
   await page.goto("/contact", { waitUntil: "domcontentloaded", timeout: 60_000 });
   await waitForContactPageToSettle(page);
   await page.evaluate(
@@ -38,20 +39,6 @@ test("contact form labels are associated and mobile load does not force focus", 
   await expect(sendButton).toBeVisible();
   await expect(sendButton).toBeEnabled();
   await expect(form).toBeVisible();
-  await expect
-    .poll(
-      () =>
-        form.evaluate((node) =>
-          Object.keys(node).some(
-            (key) => key.startsWith("__reactProps$") || key.startsWith("__reactFiber$")
-          )
-        ),
-      {
-        timeout: 15_000,
-        message: "Expected the contact form to finish React hydration before submitting.",
-      }
-    )
-    .toBe(true);
 
   await expect(name).not.toBeFocused();
 

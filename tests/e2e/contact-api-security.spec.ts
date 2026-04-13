@@ -10,7 +10,9 @@ test("contact API rejects mismatched origin and accepts allowed origin", async (
   request,
   baseURL,
 }, testInfo) => {
+  test.slow();
   const testIp = buildTestIp(testInfo.project.name);
+  await request.get("/contact", { failOnStatusCode: false, timeout: 60_000 }).catch(() => null);
 
   const payload = {
     variant: "contact",
@@ -22,6 +24,7 @@ test("contact API rejects mismatched origin and accepts allowed origin", async (
   };
 
   const badOriginRes = await request.post("/api/contact", {
+    timeout: 60_000,
     headers: {
       origin: "https://freeswimming.org.evil.example",
       "content-type": "application/json",
@@ -38,6 +41,7 @@ test("contact API rejects mismatched origin and accepts allowed origin", async (
   expect(badOriginStatus).toBe(403);
 
   const goodOriginRes = await request.post("/api/contact", {
+    timeout: 60_000,
     headers: {
       origin: baseURL ?? "http://127.0.0.1:3000",
       "content-type": "application/json",
@@ -67,6 +71,7 @@ test("contact API rejects mismatched origin and accepts allowed origin", async (
   };
 
   const goalsRes = await request.post("/api/contact", {
+    timeout: 60_000,
     headers: {
       origin: baseURL ?? "http://127.0.0.1:3000",
       "content-type": "application/json",

@@ -311,11 +311,9 @@ export default function SavedWorkoutsPanel({
                       ) : null}
                     </div>
                     <p className="mt-1 text-sm text-slate-600">
-                      {workoutDistanceLabel}
-                      {workoutDistanceLabel && workout.estimatedDurationMin ? " · " : null}
-                      {workout.estimatedDurationMin ? `~${workout.estimatedDurationMin} min` : null}
-                      {workoutDistanceLabel || workout.estimatedDurationMin ? " · " : null}
-                      {getSessionTypeLabel(workout.sessionType)}
+                      {[workoutDistanceLabel, getSessionTypeLabel(workout.sessionType)]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                     <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
                       Updated {updatedLabel}
@@ -353,7 +351,7 @@ export default function SavedWorkoutsPanel({
                         data-testid={printButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
                       >
-                        PDF
+                        View PDF
                       </Link>
                     ) : null}
                     {workoutPoolsidePdfHref ? (
