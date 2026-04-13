@@ -47,6 +47,28 @@ describe("CreateManualWorkoutButton", () => {
       );
     });
 
+    const [requestUrl, requestInit] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(requestUrl).toBe("/api/my-library/workouts");
+    const requestBody = JSON.parse(String(requestInit?.body ?? "{}")) as {
+      draft?: {
+        steps?: Array<{
+          category?: string;
+          repeatGroupId?: string | null;
+          postSetRestForRepeatGroupId?: string | null;
+          timeMin?: number | null;
+        }>;
+      };
+    };
+    expect(requestBody.draft?.steps).toHaveLength(7);
+    expect(requestBody.draft?.steps?.[0]?.category).toBe("warmup");
+    expect(requestBody.draft?.steps?.filter((step) => step.repeatGroupId)).toHaveLength(2);
+    expect(requestBody.draft?.steps?.some((step) => step.postSetRestForRepeatGroupId)).toBe(true);
+    expect(
+      requestBody.draft?.steps
+        ?.filter((step) => step.category === "rest")
+        .every((step) => step.timeMin === 0.5)
+    ).toBe(true);
+
     await waitFor(() => {
       expect(navigationState.push).toHaveBeenCalledWith(
         "/my-library/workouts/11111111-1111-4111-8111-111111111111?entry=manual-pool"

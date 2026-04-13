@@ -151,13 +151,31 @@ describe("workouts server", () => {
   it("supports manual source kind for clean scratch session scaffolds", () => {
     const emptyDraft = buildManualWorkoutEmptyDraft(new Date("2026-03-22T12:00:00.000Z"));
     const insert = buildWorkoutInsert("user-1", emptyDraft, "manual");
+    const steps = Array.isArray(insert.steps)
+      ? (insert.steps as Array<{
+          category?: string;
+          repeatGroupId?: string | null;
+          repeatCount?: number | null;
+          repeatEndingRestMode?: string | null;
+          postSetRestForRepeatGroupId?: string | null;
+        }>)
+      : [];
+    const repeatSteps = steps.filter((step) => step.repeatGroupId);
+    const postSetRestSteps = steps.filter((step) => step.postSetRestForRepeatGroupId);
 
     expect(insert.source_kind).toBe("manual");
     expect(insert.title).toBe("Untitled pool session");
     expect(Array.isArray(insert.steps)).toBe(true);
-    expect(insert.steps).toHaveLength(1);
-    expect(insert.total_distance_m).toBe(100);
-    expect(insert.estimated_duration_min).toBe(2);
+    expect(steps).toHaveLength(7);
+    expect(steps[0]?.category).toBe("warmup");
+    expect(steps.at(-2)?.category).toBe("cooldown");
+    expect(steps.at(-1)?.category).toBe("rest");
+    expect(repeatSteps).toHaveLength(2);
+    expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
+    expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(true);
+    expect(postSetRestSteps).toHaveLength(1);
+    expect(insert.total_distance_m).toBe(1000);
+    expect(insert.estimated_duration_min).toBeGreaterThan(0);
   });
 
   it("persists and reloads custom pool lengths for manual builder workouts", () => {

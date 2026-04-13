@@ -210,7 +210,7 @@ export default function SavedWorkoutsPanel({
                       data-testid={`${testId}-bulk-delete`}
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {bulkDeleting ? "Deleting..." : "Delete selected"}
+                      {bulkDeleting ? "Deleting..." : "Delete selected sessions"}
                     </button>
                   </>
                 )}
@@ -282,9 +282,10 @@ export default function SavedWorkoutsPanel({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     {bulkSelectionMode ? (
-                      <label className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <label className="mb-3 inline-flex items-center">
                         <input
                           type="checkbox"
+                          aria-label={`Select ${workout.title}`}
                           checked={isSelected}
                           onChange={() =>
                             setSelectedWorkoutIds((current) =>
@@ -296,7 +297,6 @@ export default function SavedWorkoutsPanel({
                           data-testid={`saved-workout-select-${workout.id}`}
                           className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
                         />
-                        Select session
                       </label>
                     ) : null}
                     <div className="flex flex-wrap items-center gap-2">

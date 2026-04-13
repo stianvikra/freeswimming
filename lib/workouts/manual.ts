@@ -14,10 +14,43 @@ function buildStepId(seed: string, index: number) {
   return `manual-step-${seed}-${index + 1}`;
 }
 
+function buildRepeatGroupId(seed: string, index: number) {
+  return `manual-repeat-${seed}-${index + 1}`;
+}
+
+function buildManualStep(
+  seed: string,
+  index: number,
+  overrides: Partial<SessionDraftStep> = {}
+): SessionDraftStep {
+  return {
+    id: buildStepId(seed, index),
+    category: "main",
+    name: "Custom step",
+    stroke: "choice",
+    drillType: "none",
+    equipment: "none",
+    intensity: "moderate",
+    durationMode: "distance",
+    distanceM: 100,
+    timeMin: null,
+    targetMode: "effort",
+    effortTarget: "moderate",
+    targetSummary: "",
+    notes: "",
+    repeatGroupId: null,
+    repeatCount: null,
+    repeatEndingRestMode: null,
+    postSetRestForRepeatGroupId: null,
+    ...overrides,
+  };
+}
+
 function buildStarterSteps(seed: string): SessionDraftStep[] {
+  const repeatGroupId = buildRepeatGroupId(seed, 0);
+
   return [
-    {
-      id: buildStepId(seed, 0),
+    buildManualStep(seed, 0, {
       category: "warmup",
       name: "Warmup swim",
       stroke: "freestyle",
@@ -31,9 +64,8 @@ function buildStarterSteps(seed: string): SessionDraftStep[] {
       effortTarget: "easy",
       targetSummary: "Easy freestyle to settle into the session.",
       notes: "Keep the first 200m relaxed and long.",
-    },
-    {
-      id: buildStepId(seed, 1),
+    }),
+    buildManualStep(seed, 1, {
       category: "rest",
       name: "Reset rest",
       stroke: "choice",
@@ -42,44 +74,68 @@ function buildStarterSteps(seed: string): SessionDraftStep[] {
       intensity: "easy",
       durationMode: "fixed_rest",
       distanceM: null,
-      timeMin: 1,
+      timeMin: 0.5,
       targetMode: "none",
+      effortTarget: null,
       targetSummary: "Easy reset before the main set.",
       notes: "Use this as a simple fixed rest block.",
-    },
-    {
-      id: buildStepId(seed, 2),
+    }),
+    buildManualStep(seed, 2, {
+      id: `${repeatGroupId}-step-1`,
       category: "main",
-      name: "Main swim set",
+      name: "Main repeat swim",
       stroke: "freestyle",
       drillType: "none",
       equipment: "none",
       intensity: "moderate",
       durationMode: "distance",
-      distanceM: 1000,
+      distanceM: 100,
       timeMin: null,
       targetMode: "effort",
       effortTarget: "moderate",
-      targetSummary: "Steady aerobic main work.",
+      targetSummary: "Steady aerobic main work inside the repeat set.",
       notes: "Replace this with your exact set structure.",
-    },
-    {
-      id: buildStepId(seed, 3),
+      repeatGroupId,
+      repeatCount: 4,
+      repeatEndingRestMode: "skip_last_rest",
+    }),
+    buildManualStep(seed, 3, {
+      id: `${repeatGroupId}-step-2`,
       category: "rest",
-      name: "Recovery rest",
+      name: "Between-round rest",
       stroke: "choice",
       drillType: "none",
       equipment: "none",
       intensity: "easy",
       durationMode: "fixed_rest",
       distanceM: null,
-      timeMin: 1,
+      timeMin: 0.5,
       targetMode: "none",
-      targetSummary: "Short recovery before cooldown.",
+      effortTarget: null,
+      targetSummary: "Short recovery before the next round.",
       notes: "Adjust or remove when you refine the workout.",
-    },
-    {
-      id: buildStepId(seed, 4),
+      repeatGroupId,
+      repeatCount: 4,
+      repeatEndingRestMode: "skip_last_rest",
+    }),
+    buildManualStep(seed, 4, {
+      id: `${repeatGroupId}-post-set-rest`,
+      category: "rest",
+      name: "Post-set rest",
+      stroke: "choice",
+      drillType: "none",
+      equipment: "none",
+      intensity: "easy",
+      durationMode: "fixed_rest",
+      distanceM: null,
+      timeMin: 0.5,
+      targetMode: "none",
+      effortTarget: null,
+      targetSummary: "Reset before cooldown.",
+      notes: "",
+      postSetRestForRepeatGroupId: repeatGroupId,
+    }),
+    buildManualStep(seed, 5, {
       category: "cooldown",
       name: "Cooldown swim",
       stroke: "choice",
@@ -93,14 +149,28 @@ function buildStarterSteps(seed: string): SessionDraftStep[] {
       effortTarget: "easy",
       targetSummary: "Easy swim to finish calmer than you started.",
       notes: "Swap stroke or distance as needed.",
-    },
+    }),
+    buildManualStep(seed, 6, {
+      category: "rest",
+      name: "Finish rest",
+      stroke: "choice",
+      drillType: "none",
+      equipment: "none",
+      intensity: "easy",
+      durationMode: "fixed_rest",
+      distanceM: null,
+      timeMin: 0.5,
+      targetMode: "none",
+      effortTarget: null,
+      targetSummary: "Final reset after cooldown.",
+      notes: "",
+    }),
   ];
 }
 
 function buildCleanStarterSteps(seed: string): SessionDraftStep[] {
   return [
-    {
-      id: buildStepId(seed, 0),
+    buildManualStep(seed, 0, {
       category: "main",
       name: "First step",
       stroke: "freestyle",
@@ -111,9 +181,10 @@ function buildCleanStarterSteps(seed: string): SessionDraftStep[] {
       distanceM: 100,
       timeMin: null,
       targetMode: "none",
+      effortTarget: null,
       targetSummary: "",
       notes: "",
-    },
+    }),
   ];
 }
 
@@ -137,7 +208,7 @@ export function buildManualWorkoutStarterDraft(now = new Date()): SessionDraft {
     sessionType: "endurance",
     effort: "moderate",
     sizeMode: "distance",
-    targetDistanceM: 1600,
+    targetDistanceM: 1000,
     targetTimeMin: null,
     totalDistanceM: null,
     estimatedDurationMin: null,
@@ -218,7 +289,7 @@ function buildManualWorkoutEmptyDraftForMode(
     goalTitle: null,
     constraintText: null,
     warnings: [],
-    steps: buildCleanStarterSteps(seed),
+    steps: mode === "pool" ? buildStarterSteps(seed) : buildCleanStarterSteps(seed),
   };
   const totals = computeSessionDraftDerivedTotals(baseDraft);
 
