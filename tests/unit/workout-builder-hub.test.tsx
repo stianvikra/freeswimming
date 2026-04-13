@@ -530,6 +530,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
     expect(screen.getByTestId("session-draft-step-distance-0")).toHaveValue("custom");
     expect(screen.getByTestId("session-draft-step-distance-custom-0")).toHaveValue("333");
+    fireEvent.click(screen.getByTestId("session-draft-repeat-toggle-1"));
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-1"));
     expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Repeat swim focus");
     expect(screen.getByTestId("session-draft-step-distance-1")).toHaveValue("200");
@@ -717,7 +718,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
       "skip_last_rest"
     );
-    expect(screen.getByText(/4 rounds/)).toBeVisible();
+    expect(screen.getAllByText(/4 rounds/)[0]).toBeVisible();
     expect(
       screen.queryByText(
         "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
@@ -778,7 +779,9 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
     fireEvent.click(screen.getByTestId("session-draft-repeat-duplicate-1"));
 
+    fireEvent.click(screen.getByTestId("session-draft-repeat-toggle-1"));
     expect(screen.getByTestId("session-draft-repeat-count-1")).toHaveValue("4");
+    fireEvent.click(screen.getByTestId("session-draft-repeat-toggle-2"));
     expect(screen.getByTestId("session-draft-repeat-count-2")).toHaveValue("4");
     expect(screen.getByTestId("session-draft-step-name-4")).toHaveValue("Repeat swim");
 
@@ -1342,7 +1345,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("workout-editor-metadata-profile-toggle")).not.toBeInTheDocument();
   });
 
-  it("switches the saved builder into a clean view mode without edit controls", async () => {
+  it("switches the saved builder into a clean view mode with targeted edit entry points", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
@@ -1375,6 +1378,21 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("Warmup")).toBeVisible();
     expect(screen.getByText("400m · Freestyle · Easy")).toBeVisible();
     expect(screen.queryByText("Edit step")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /400m · Freestyle · Easy/i }));
+
+    expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(screen.getByLabelText("Step Type")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
+    fireEvent.click(screen.getByRole("button", { name: /Repeat block/i }));
+
+    expect(screen.getByLabelText("Repeat count")).toBeVisible();
+    expect(screen.queryByLabelText("Step Type")).not.toBeInTheDocument();
   });
 
   it("shows clearer kick and drill taxonomy guidance inside the step form", async () => {
