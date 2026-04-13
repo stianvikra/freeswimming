@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-12-swim-session-builder-pool-size-rest-and-support-surface-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-12`
-- `updated`: `2026-04-12`
+- `updated`: `2026-04-13`
 
 ## Goal
 
@@ -276,3 +276,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-12 | in-progress | execution started on branch feat/swim-session-builder-pool-size-rest-support-polish-2026-04-12; scope was tightened to explicitly own the still-visible raw draft/support JSON preview inside the same support-surface cleanup slice so the standard builder flow ends up fully calm by default | next: implement WorkoutEditor and SavedWorkoutsPanel cleanup, then update unit/e2e coverage`
 - `2026-04-12 | in-progress | implemented the builder polish slice, updated unit/e2e coverage, and verified the changed swim-builder paths locally; targeted runs passed for workout-builder hub, workout shared logic, generator-intake, program-export, and workout-builder desktop coverage, but full \`npm run verify:pre-pr\` remains blocked by unrelated desktop-Chromium failures in \`admin-contextual-notes\`, \`my-library-athlete-profile\`, and long-suite program export readiness drift | next: decide whether to keep this slice parked as functionally ready but gate-blocked, or open a separate repo-stability pass for the unrelated failing specs before PR/merge work continues`
 - `2026-04-13 | in-progress | stabilized the unrelated long-suite E2E drift inside the same worktree, finished the builder support-surface polish, and passed full \`npm run verify:pre-pr\` locally with log at \`artifacts/test-runs/20260413-054307/verify.log\`; shipped state now includes one-piece pool-size authoring, calmer save/support chrome, hidden-by-default draft JSON, clearer rest summaries, and \`View PDF\` wording across builder surfaces; performance-budget trend is held, not tightened, because this slice does not own the public AW-010 budget routes | next: commit, push, open/update PR, monitor CI, then run \`npm run verify:pre-merge\` before merge recommendation`
+- `2026-04-13 | done | merged via PR \`#420\` as squash commit \`e0e4a72\`; local \`npm run verify:pre-merge\` passed with marker \`artifacts/verify-pre-merge/20260413-043645.json\`, required CI checks were green, and the brief was moved from \`in-progress\` to \`done\` in a docs-only closeout | next: none`
