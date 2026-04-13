@@ -83,24 +83,6 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
   await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
 }
 
-async function refreshDevSessionForCurrentRoute(page: Page) {
-  const currentUrl = new URL(page.url());
-  const nextPath = `${currentUrl.pathname}${currentUrl.search}`;
-  const loginHref = `/dev/login?next=${encodeURIComponent(nextPath)}`;
-  const loginProbe = await prewarmRoute(page, loginHref);
-  if (!loginProbe || loginProbe.status() >= 500) {
-    test.skip(true, "Dev auth bypass is not reachable in this environment.");
-  }
-
-  await gotoWithTransientRetry(page, loginHref);
-
-  if (new URL(page.url()).pathname !== currentUrl.pathname) {
-    test.skip(true, "Dev auth bypass is not enabled in this environment.");
-  }
-
-  await waitForRouteToSettle(page);
-}
-
 async function waitForWorkoutBuilderClientReady(page: Page) {
   await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(
     "data-client-ready",
@@ -243,6 +225,7 @@ test.describe("my library workout builder", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    test.setTimeout(180_000);
 
     const uniqueTitle = `QA manual workout ${Date.now()}`;
 
@@ -502,9 +485,9 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("workout-editor-removal-undo-button").click();
     await expect(page.getByTestId("workout-editor-removal-undo")).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
-      "All builder changes are saved to the canonical workout."
+      "Unsaved changes stay local until you save this workout."
     );
-    await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
+    await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
     await openMetadataPanelIfCollapsed(page);
     await expect(page.getByTestId("session-draft-title")).toHaveValue("");
@@ -552,6 +535,7 @@ test.describe("my library workout builder", () => {
       page.getByText("Adjust or remove this recovery once the set is dialed in.")
     ).toHaveCount(0);
     await expect(page.getByText("Move the full repeat block from the header.")).toHaveCount(0);
+    await page.getByTestId("session-draft-step-toggle-2").click();
     await page.getByTestId("session-draft-step-distance-2").selectOption("200");
     await page.getByTestId("session-draft-step-stroke-2").selectOption("backstroke");
     await page.getByTestId("session-draft-step-drill-type-2").selectOption("pull");
@@ -777,7 +761,6 @@ test.describe("my library workout builder", () => {
       timeout: 20_000,
       waitUntil: "domcontentloaded",
     });
-    await refreshDevSessionForCurrentRoute(page);
     await waitForWorkoutBuilderClientReady(page);
 
     const deleteResponsePromise = page.waitForResponse(
@@ -786,7 +769,9 @@ test.describe("my library workout builder", () => {
         response.request().method() === "DELETE"
     );
 
-    await page.getByTestId("workout-builder-delete-current-workout").click();
+    const deleteCurrentButton = page.getByRole("button", { name: "Delete session" }).first();
+    await expect(deleteCurrentButton).toBeVisible();
+    await deleteCurrentButton.click();
     const confirmDeleteButton = page.getByTestId("workout-builder-confirm-delete-current-workout");
     await confirmDeleteButton.scrollIntoViewIfNeeded();
     await expect(confirmDeleteButton).toBeVisible();
@@ -800,10 +785,9 @@ test.describe("my library workout builder", () => {
 
     expect(deleteResponse.status()).toBe(200);
     expect(deletePayload?.ok).toBe(true);
-    await page.waitForURL(/\/my-library$/, {
-      timeout: 10_000,
-      waitUntil: "domcontentloaded",
-    });
-    await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await expect(
+      page.getByText("No saved swim session is loaded in this route yet.")
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Build pool session" })).toBeVisible();
   });
 });

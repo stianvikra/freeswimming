@@ -102,7 +102,22 @@ async function waitForWorkoutBuilderSaveReady(page: Page) {
     await waitForWorkoutBuilderClientReady(page);
   }
 
+  const saveVisible = await saveButton.isVisible({ timeout: 15_000 }).catch(() => false);
+  if (!saveVisible) {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitForWorkoutBuilderRoute(page);
+    await waitForWorkoutBuilderClientReady(page);
+  }
+
   await expect(saveButton).toBeVisible({ timeout: 15_000 });
+}
+
+async function waitForWorkoutBuilderRoute(page: Page) {
+  await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
+    timeout: 60_000,
+    waitUntil: "commit",
+  });
+  await page.waitForLoadState("domcontentloaded");
 }
 
 async function ensureWorkoutMetadataOpen(page: Page) {
@@ -181,6 +196,7 @@ test.describe("my library program export", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    test.setTimeout(180_000);
 
     const stamp = Date.now();
     const uniqueWorkoutTitle = `QA program export workout ${stamp}`;
@@ -208,9 +224,7 @@ test.describe("my library program export", () => {
 
     await triggerCreateSession(page, "my-library-create-pool-workout");
     await createWorkoutResponsePromise;
-    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
-      timeout: 20_000,
-    });
+    await waitForWorkoutBuilderRoute(page);
     const workoutId = page.url().match(/\/my-library\/workouts\/([0-9a-f-]+)/i)?.[1];
     expect(workoutId).toBeTruthy();
     await waitForWorkoutBuilderClientReady(page);

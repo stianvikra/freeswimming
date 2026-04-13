@@ -80,15 +80,15 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
           credentials: "same-origin",
           cache: "no-store",
         });
-        const payload = (await response.json()) as {
+        const payload = (await response.json().catch(() => null)) as {
           ok?: boolean;
           flags?: {
             dashboardVisible?: boolean;
           };
-        };
+        } | null;
 
         if (cancelled) return;
-        if (!response.ok || !payload.ok) return;
+        if (!response.ok || !payload?.ok) return;
 
         if (typeof payload.flags?.dashboardVisible === "boolean") {
           setDashboardVisible(payload.flags.dashboardVisible);
