@@ -176,6 +176,7 @@ type LastRemovedBlock = {
   steps: SessionDraftStep[];
   insertIndex: number;
   restoreOpenStepId: string | null;
+  restoreOpenRepeatGroupId: string | null;
 };
 
 type AutoGrowingTextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
@@ -1027,14 +1028,34 @@ function buildRepeatSummary(
 type ManualPoolViewSectionLine = {
   text: string;
   tone?: "default" | "rest" | "subtle";
+  target?:
+    | {
+        kind: "step";
+        stepId: string;
+      }
+    | {
+        kind: "repeat";
+        repeatGroupId: string;
+      };
 };
 
 type ManualPoolViewSection = {
   key: string;
   title: string;
+  badge?: string | null;
   lines: ManualPoolViewSectionLine[];
   numbered: boolean;
   variant: "default" | "rest" | "repeat";
+  target?: {
+    kind: "repeat";
+    repeatGroupId: string;
+  } | null;
+};
+
+type ManualPoolTopLevelSectionDescriptor = {
+  label: string;
+  title: string;
+  isRepeat: boolean;
 };
 
 function findTopLevelLinkedRestStep(
@@ -1088,23 +1109,29 @@ function buildManualPoolViewLine(
 function buildManualPoolRepeatViewSection(
   group: Extract<StepRenderGroup, { kind: "repeat" }>,
   basePaceSecondsPer100m: number,
-  poolLengthUnit: SessionDraftPoolLengthUnit
+  poolLengthUnit: SessionDraftPoolLengthUnit,
+  titleOverride?: string | null
 ): ManualPoolViewSection {
   const workStep = group.entries[0]?.step ?? null;
   const betweenStep = group.entries[1]?.step ?? null;
   const normalizedWorkStep = workStep ? normalizeManualPoolStepForEditor(workStep) : null;
   const repeatCountLabel = group.repeatCount ? `${group.repeatCount} x ` : "";
-  const title = normalizedWorkStep
-    ? getSessionStepCategoryLabel(normalizedWorkStep.category)
-    : "Repeat";
+  const title =
+    titleOverride ??
+    (normalizedWorkStep ? getSessionStepCategoryLabel(normalizedWorkStep.category) : "Repeat");
 
   if (!normalizedWorkStep) {
     return {
       key: group.repeatGroupId,
       title,
+      badge: "Repeat block",
       lines: [{ text: "Set the work interval for this repeat block." }],
       numbered: false,
       variant: "repeat",
+      target: {
+        kind: "repeat",
+        repeatGroupId: group.repeatGroupId,
+      },
     };
   }
 
@@ -1145,10 +1172,38 @@ function buildManualPoolRepeatViewSection(
   return {
     key: group.repeatGroupId,
     title,
+    badge: "Repeat block",
     lines,
     numbered: false,
     variant: "repeat",
+    target: {
+      kind: "repeat",
+      repeatGroupId: group.repeatGroupId,
+    },
   };
+}
+
+function buildManualPoolTopLevelSectionDescriptors(
+  stepGroups: StepRenderGroup[]
+): ManualPoolTopLevelSectionDescriptor[] {
+  const categories = stepGroups.map(
+    (group) => normalizeManualPoolStepForEditor(group.entries[0].step).category
+  );
+
+  return stepGroups.map((group, index) => {
+    const category = categories[index];
+    const title = getSessionStepCategoryLabel(category);
+    const sameTypeTotal = categories.filter((value) => value === category).length;
+    const sameTypePosition = categories
+      .slice(0, index + 1)
+      .filter((value) => value === category).length;
+
+    return {
+      label: sameTypeTotal > 1 ? `${title} ${sameTypePosition} of ${sameTypeTotal}` : title,
+      title,
+      isRepeat: group.kind === "repeat",
+    };
+  });
 }
 
 function buildManualPoolViewSections(
@@ -1159,11 +1214,17 @@ function buildManualPoolViewSections(
 ) {
   const sections: ManualPoolViewSection[] = [];
   const consumedRestStepIds = new Set<string>();
+  const topLevelDescriptors = buildManualPoolTopLevelSectionDescriptors(stepGroups);
 
-  stepGroups.forEach((group) => {
+  stepGroups.forEach((group, groupIndex) => {
     if (group.kind === "repeat") {
       sections.push(
-        buildManualPoolRepeatViewSection(group, basePaceSecondsPer100m, poolLengthUnit)
+        buildManualPoolRepeatViewSection(
+          group,
+          basePaceSecondsPer100m,
+          poolLengthUnit,
+          topLevelDescriptors[groupIndex]?.label ?? null
+        )
       );
       return;
     }
@@ -1187,6 +1248,10 @@ function buildManualPoolViewSections(
         linkedRestStep
       ),
       tone: normalizedStep.category === "rest" ? "rest" : "default",
+      target: {
+        kind: "step",
+        stepId: entry.step.id,
+      },
     };
     const lastSection = sections[sections.length - 1] ?? null;
 
@@ -1204,9 +1269,11 @@ function buildManualPoolViewSections(
     sections.push({
       key: entry.step.id,
       title,
+      badge: null,
       lines: [nextLine],
       numbered: false,
       variant: normalizedStep.category === "rest" ? "rest" : "default",
+      target: null,
     });
   });
 
@@ -1319,6 +1386,7 @@ export default function WorkoutEditor({
   const autoPoolBuilderTitle = getPoolBuilderAutoTitle(draft.environment);
   const timeDurationInputFocusRef = useRef<Record<string, boolean>>({});
   const [openStepId, setOpenStepId] = useState<string | null>(null);
+  const [openRepeatGroupId, setOpenRepeatGroupId] = useState<string | null>(null);
   const [openMobileActionKey, setOpenMobileActionKey] = useState<string | null>(null);
   const poolLengthUnit = resolveSessionDraftPoolLengthUnit(draft.poolLengthUnit);
   const [poolLengthInput, setPoolLengthInput] = useState(() =>
@@ -1455,6 +1523,12 @@ export default function WorkoutEditor({
         totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
         estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
       });
+  const saveStateMessage = savedWorkout
+    ? hasUnsavedChanges
+      ? editorCopy.savedWorkoutPendingState
+      : editorCopy.savedWorkoutSavedState
+    : editorCopy.unsavedDraftPendingState;
+  const saveStateToneClass = hasUnsavedChanges ? "text-amber-700" : "text-emerald-700";
   const workoutPdfHeadingLabel = "View PDF";
   const workoutPdfStateLabel =
     handoffDraftState === "canonical"
@@ -1534,6 +1608,9 @@ export default function WorkoutEditor({
   const desktopSummaryBlockClass = "min-w-0 flex-1";
   const desktopRepeatControlRowClass = "grid gap-3";
   const isViewMode = builderViewMode === "view";
+  const manualPoolTopLevelSectionDescriptors = isManualPoolMode
+    ? buildManualPoolTopLevelSectionDescriptors(stepGroups)
+    : [];
   const manualPoolViewSections = isManualPoolMode
     ? buildManualPoolViewSections(
         stepGroups,
@@ -1556,6 +1633,17 @@ export default function WorkoutEditor({
       setOpenStepId(null);
     }
   }, [draft.steps, openStepId]);
+
+  useEffect(() => {
+    if (
+      openRepeatGroupId &&
+      !stepGroups.some(
+        (group) => group.kind === "repeat" && group.repeatGroupId === openRepeatGroupId
+      )
+    ) {
+      setOpenRepeatGroupId(null);
+    }
+  }, [openRepeatGroupId, stepGroups]);
 
   useEffect(() => {
     if (!openMobileActionKey) return;
@@ -1608,6 +1696,7 @@ export default function WorkoutEditor({
     if (!isViewMode) return;
 
     setOpenStepId(null);
+    setOpenRepeatGroupId(null);
     setOpenMobileActionKey(null);
     setMetadataOpen(false);
   }, [isViewMode]);
@@ -1800,6 +1889,49 @@ export default function WorkoutEditor({
     );
   }
 
+  function openTargetedStepEditor(stepId: string) {
+    const targetStep = draft.steps.find((step) => step.id === stepId);
+    if (!targetStep) return;
+
+    setBuilderViewMode("edit");
+    setMetadataOpen(false);
+    setPendingRemoval(null);
+    setLastRemovedBlock(null);
+    setOpenMobileActionKey(null);
+    setOpenRepeatGroupId(targetStep.repeatGroupId ?? null);
+    setOpenStepId(stepId);
+  }
+
+  function openTargetedRepeatEditor(repeatGroupId: string) {
+    const hasRepeatGroup = draft.steps.some((step) => step.repeatGroupId === repeatGroupId);
+    if (!hasRepeatGroup) return;
+
+    setBuilderViewMode("edit");
+    setMetadataOpen(false);
+    setPendingRemoval(null);
+    setLastRemovedBlock(null);
+    setOpenMobileActionKey(null);
+    setOpenRepeatGroupId(repeatGroupId);
+    setOpenStepId(null);
+  }
+
+  function toggleRepeatEditor(repeatGroupId: string) {
+    setOpenMobileActionKey(null);
+    setOpenRepeatGroupId((current) => {
+      const nextOpen = current === repeatGroupId ? null : repeatGroupId;
+
+      if (nextOpen === null) {
+        setOpenStepId((currentOpenStepId) => {
+          if (!currentOpenStepId) return null;
+          const openStep = draft.steps.find((step) => step.id === currentOpenStepId);
+          return openStep?.repeatGroupId === repeatGroupId ? null : currentOpenStepId;
+        });
+      }
+
+      return nextOpen;
+    });
+  }
+
   function insertStepAt(
     insertIndex: number,
     overrides: Partial<SessionDraftStep> = {},
@@ -1823,6 +1955,7 @@ export default function WorkoutEditor({
     nextSteps.splice(safeInsertIndex, 0, ...insertedSteps);
     setPendingRemoval(null);
     setLastRemovedBlock(null);
+    setOpenRepeatGroupId(nextStep.repeatGroupId ?? null);
     setOpenStepId(nextStep.id);
     onDraftChange(
       syncDraftSelections({
@@ -1840,6 +1973,7 @@ export default function WorkoutEditor({
     nextDraftSteps.splice(safeInsertIndex, 0, ...nextSteps);
     setPendingRemoval(null);
     setLastRemovedBlock(null);
+    setOpenRepeatGroupId(nextSteps[0]?.repeatGroupId ?? null);
     setOpenStepId(nextSteps[0]?.id ?? null);
     onDraftChange(
       syncDraftSelections({
@@ -1916,6 +2050,7 @@ export default function WorkoutEditor({
 
     setPendingRemoval(null);
     setLastRemovedBlock(null);
+    setOpenRepeatGroupId(sourceStep.repeatGroupId ?? null);
     setOpenStepId(duplicatedStep.id);
     onDraftChange(
       syncDraftSelections({
@@ -1958,6 +2093,7 @@ export default function WorkoutEditor({
 
     setPendingRemoval(null);
     setLastRemovedBlock(null);
+    setOpenRepeatGroupId(nextRepeatGroupId);
     setOpenStepId(duplicatedSteps[0]?.id ?? null);
     onDraftChange(
       syncDraftSelections({
@@ -2029,6 +2165,10 @@ export default function WorkoutEditor({
         steps: [removedStep],
         insertIndex: removeIndex,
         restoreOpenStepId: removedOpenStep ? removedStep.id : openStepId,
+        restoreOpenRepeatGroupId:
+          removedOpenStep && removedStep.repeatGroupId
+            ? removedStep.repeatGroupId
+            : openRepeatGroupId,
       });
       if (removedOpenStep) {
         setOpenStepId(null);
@@ -2069,9 +2209,17 @@ export default function WorkoutEditor({
       steps: removedSteps,
       insertIndex,
       restoreOpenStepId: removedOpenStep ? (removedSteps[0]?.id ?? null) : openStepId,
+      restoreOpenRepeatGroupId:
+        removedSteps[0]?.repeatGroupId === pendingRemoval.repeatGroupId ||
+        openRepeatGroupId === pendingRemoval.repeatGroupId
+          ? pendingRemoval.repeatGroupId
+          : openRepeatGroupId,
     });
     if (removedOpenStep) {
       setOpenStepId(null);
+    }
+    if (openRepeatGroupId === pendingRemoval.repeatGroupId) {
+      setOpenRepeatGroupId(null);
     }
     onDraftChange(
       syncDraftSelections({
@@ -2094,6 +2242,7 @@ export default function WorkoutEditor({
         steps: nextSteps,
       })
     );
+    setOpenRepeatGroupId(lastRemovedBlock.restoreOpenRepeatGroupId);
     setOpenStepId(lastRemovedBlock.restoreOpenStepId);
     setLastRemovedBlock(null);
   }
@@ -2434,25 +2583,10 @@ export default function WorkoutEditor({
           !nextDraftStep.postSetRestForRepeatGroupId))
         ? nextDraftStep
         : null;
-    const topLevelSingleEntries = isManualPoolMode
-      ? stepGroups.filter(
-          (group): group is Extract<StepRenderGroup, { kind: "single" }> => group.kind === "single"
-        )
-      : [];
-    const sameTypeTotal = isManualPoolMode
-      ? topLevelSingleEntries.filter(
-          (group) =>
-            normalizeManualPoolStepForEditor(group.entries[0].step).category ===
-            normalizedStep.category
-        ).length
-      : 0;
-    const sameTypePosition = isManualPoolMode
-      ? topLevelSingleEntries.filter(
-          (group) =>
-            normalizeManualPoolStepForEditor(group.entries[0].step).category ===
-              normalizedStep.category && group.entries[0].index <= index
-        ).length
-      : 0;
+    const topLevelDescriptor =
+      isManualPoolMode && !insideRepeatGroup
+        ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
+        : null;
     const stepLabel =
       options?.labelOverride ??
       (insideRepeatGroup
@@ -2460,9 +2594,7 @@ export default function WorkoutEditor({
           ? `Repeat rest step ${options?.repeatStepNumber ?? 1}`
           : `Repeat step ${options?.repeatStepNumber ?? 1}`
         : isManualPoolMode
-          ? sameTypeTotal > 1
-            ? `${getSessionStepCategoryLabel(normalizedStep.category)} ${sameTypePosition} of ${sameTypeTotal}`
-            : getSessionStepCategoryLabel(normalizedStep.category)
+          ? (topLevelDescriptor?.label ?? getSessionStepCategoryLabel(normalizedStep.category))
           : `Step ${index + 1}`);
     const selectedDistancePreset = SESSION_DRAFT_STEP_DISTANCE_PRESETS.find((value) =>
       isDistanceQuickChoiceSelected(normalizedStep.distanceM, value, poolLengthUnit)
@@ -2560,6 +2692,9 @@ export default function WorkoutEditor({
                 onClick={() => {
                   setOpenMobileActionKey(null);
                   setOpenStepId((current) => (current === step.id ? null : step.id));
+                  if (insideRepeatGroup && normalizedStep.repeatGroupId) {
+                    setOpenRepeatGroupId(normalizedStep.repeatGroupId);
+                  }
                 }}
                 aria-expanded={isOpen}
                 aria-controls={panelId}
@@ -2582,7 +2717,12 @@ export default function WorkoutEditor({
             <div className="hidden shrink-0 sm:flex">
               <button
                 type="button"
-                onClick={() => setOpenStepId((current) => (current === step.id ? null : step.id))}
+                onClick={() => {
+                  setOpenStepId((current) => (current === step.id ? null : step.id));
+                  if (insideRepeatGroup && normalizedStep.repeatGroupId) {
+                    setOpenRepeatGroupId(normalizedStep.repeatGroupId);
+                  }
+                }}
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 data-testid={`session-draft-step-toggle-${index}`}
@@ -4285,6 +4425,21 @@ export default function WorkoutEditor({
               <p className="mt-2 text-base font-semibold text-slate-900">
                 {draft.title || autoPoolBuilderTitle || "Untitled swim session"}
               </p>
+              <p
+                data-testid="workout-editor-save-state"
+                className={`mt-2 text-sm font-medium ${saveStateToneClass}`}
+              >
+                {saveStateMessage}
+              </p>
+              {showInlinePdfAction ? (
+                <p
+                  data-testid="workout-editor-pdf-source"
+                  data-pdf-state={handoffDraftState}
+                  className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                >
+                  {workoutPdfStateLabel}
+                </p>
+              ) : null}
               {!metadataOpen || isViewMode ? (
                 <p
                   data-testid="workout-editor-metadata-summary"
@@ -4294,31 +4449,98 @@ export default function WorkoutEditor({
                 </p>
               ) : null}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {!isViewMode ? (
+            <div className="flex min-w-0 flex-col gap-2 sm:items-end">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                {!isViewMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setMetadataOpen((current) => !current)}
+                    aria-expanded={metadataOpen}
+                    data-testid="workout-editor-metadata-toggle"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  >
+                    {metadataOpen ? "Hide details" : "Show details"}
+                  </button>
+                ) : null}
+                {showInlinePdfAction ? (
+                  <button
+                    type="button"
+                    onClick={() => openWorkoutPdfPrintView("standard")}
+                    data-testid="workout-editor-pdf-open"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  >
+                    {workoutPdfButtonLabel}
+                  </button>
+                ) : null}
+                {savedWorkout && onResetToSaved ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingRemoval(null);
+                      setLastRemovedBlock(null);
+                      onResetToSaved();
+                    }}
+                    disabled={isSaving || !hasUnsavedChanges || pendingRemoval !== null}
+                    data-testid="workout-editor-reset"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Reset to last saved
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  onClick={() => setMetadataOpen((current) => !current)}
-                  aria-expanded={metadataOpen}
-                  data-testid="workout-editor-metadata-toggle"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  onClick={() => {
+                    setPendingRemoval(null);
+                    setLastRemovedBlock(null);
+                    onSave();
+                  }}
+                  disabled={
+                    isSaving ||
+                    !canonicalSaveReady ||
+                    poolSizeInputInvalid ||
+                    pendingRemoval !== null ||
+                    (savedWorkout ? !hasUnsavedChanges : false)
+                  }
+                  data-testid={saveButtonTestId}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {metadataOpen ? "Hide details" : "Show details"}
+                  {isSaving
+                    ? "Saving..."
+                    : savedWorkout
+                      ? "Save changes"
+                      : "Accept and save workout"}
                 </button>
-              ) : null}
+              </div>
               {savedWorkout && onRequestDeleteCurrent ? (
-                <button
-                  type="button"
-                  onClick={onRequestDeleteCurrent}
-                  disabled={isDeletingCurrent}
-                  data-testid="workout-builder-delete-current-workout"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isDeletingCurrent ? "Deleting..." : "Delete session"}
-                </button>
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={onRequestDeleteCurrent}
+                    disabled={isDeletingCurrent}
+                    data-testid="workout-builder-delete-current-workout"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isDeletingCurrent ? "Deleting..." : "Delete session"}
+                  </button>
+                </div>
               ) : null}
             </div>
           </div>
+
+          {showInlinePdfAction && workoutPdfNotice ? (
+            <p
+              data-testid="workout-editor-pdf-notice"
+              className="mt-3 text-sm font-medium text-emerald-700"
+            >
+              {workoutPdfNotice}
+            </p>
+          ) : null}
+
+          {showInlinePdfAction && workoutPdfError ? (
+            <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
+              {workoutPdfError}
+            </p>
+          ) : null}
 
           {!isViewMode && metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
         </section>
@@ -4429,47 +4651,121 @@ export default function WorkoutEditor({
           ) : null}
 
           {isViewMode && isManualPoolMode
-            ? manualPoolViewSections.map((section) => (
-                <section
-                  key={section.key}
-                  className={`rounded-2xl border p-4 ${
-                    section.variant === "repeat"
-                      ? "border-blue-200 bg-gradient-to-b from-blue-50/70 to-white"
-                      : section.variant === "rest"
-                        ? "border-blue-100 bg-blue-50/55"
-                        : "border-slate-200 bg-slate-50/70"
-                  }`}
-                >
-                  <p
-                    className={`text-xs font-semibold uppercase tracking-wide ${
-                      section.variant === "repeat" ? "text-blue-700" : "text-slate-500"
-                    }`}
+            ? manualPoolViewSections.map((section) => {
+                const sectionCardClass = `rounded-2xl border p-4 text-left transition ${
+                  section.variant === "repeat"
+                    ? "border-blue-200 bg-gradient-to-b from-blue-50/70 to-white hover:border-blue-300 hover:bg-blue-50/80"
+                    : section.variant === "rest"
+                      ? "border-blue-100 bg-blue-50/55"
+                      : "border-slate-200 bg-slate-50/70"
+                }`;
+                const sectionHeadingClass = `text-xs font-semibold uppercase tracking-wide ${
+                  section.variant === "repeat" ? "text-blue-700" : "text-slate-500"
+                }`;
+
+                if (section.target?.kind === "repeat") {
+                  return (
+                    <button
+                      key={section.key}
+                      type="button"
+                      data-testid={`workout-editor-view-repeat-${section.key}`}
+                      onClick={() => openTargetedRepeatEditor(section.target!.repeatGroupId)}
+                      className={`${sectionCardClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300`}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className={sectionHeadingClass}>{section.title}</p>
+                          {section.badge ? (
+                            <p className="mt-2">
+                              <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                                {section.badge}
+                              </span>
+                            </p>
+                          ) : null}
+                        </div>
+                        <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-800">
+                          Edit repeat
+                        </span>
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        {section.lines.map((line, lineIndex) => (
+                          <div
+                            key={`${section.key}-line-${lineIndex}`}
+                            className={`text-base leading-6 ${
+                              line.tone === "rest"
+                                ? "font-semibold text-blue-900"
+                                : line.tone === "subtle"
+                                  ? "text-slate-600"
+                                  : "text-slate-900"
+                            }`}
+                          >
+                            <span>{line.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </button>
+                  );
+                }
+
+                return (
+                  <section
+                    key={section.key}
+                    data-testid={`workout-editor-view-section-${section.key}`}
+                    className={sectionCardClass}
                   >
-                    {section.title}
-                  </p>
-                  <div className="mt-2 space-y-2">
-                    {section.lines.map((line, lineIndex) => (
-                      <div
-                        key={`${section.key}-line-${lineIndex}`}
-                        className={`text-base leading-6 ${
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className={sectionHeadingClass}>{section.title}</p>
+                        {section.badge ? (
+                          <p className="mt-2">
+                            <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                              {section.badge}
+                            </span>
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="mt-2 space-y-2">
+                      {section.lines.map((line, lineIndex) => {
+                        const lineTarget = line.target;
+                        const lineClass = `text-base leading-6 ${
                           line.tone === "rest"
                             ? "font-semibold text-blue-900"
                             : line.tone === "subtle"
                               ? "text-slate-600"
                               : "text-slate-900"
-                        }`}
-                      >
-                        {section.numbered ? (
-                          <span className="mr-2 font-semibold text-slate-500">
-                            {lineIndex + 1}.
-                          </span>
-                        ) : null}
-                        <span>{line.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))
+                        }`;
+
+                        return lineTarget?.kind === "step" ? (
+                          <button
+                            key={`${section.key}-line-${lineIndex}`}
+                            type="button"
+                            data-testid={`workout-editor-view-line-${section.key}-${lineIndex}`}
+                            onClick={() => openTargetedStepEditor(lineTarget.stepId)}
+                            className={`${lineClass} flex w-full items-start rounded-xl px-2 py-1.5 text-left transition hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300`}
+                          >
+                            {section.numbered ? (
+                              <span className="mr-2 font-semibold text-slate-500">
+                                {lineIndex + 1}.
+                              </span>
+                            ) : null}
+                            <span>{line.text}</span>
+                          </button>
+                        ) : (
+                          <div key={`${section.key}-line-${lineIndex}`} className={lineClass}>
+                            {section.numbered ? (
+                              <span className="mr-2 font-semibold text-slate-500">
+                                {lineIndex + 1}.
+                              </span>
+                            ) : null}
+                            <span>{line.text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })
             : stepGroups.map((group, groupIndex) =>
                 group.kind === "single" ? (
                   renderStepEditorCard(group.entries[0].step, group.entries[0].index, groupIndex)
@@ -4488,6 +4784,14 @@ export default function WorkoutEditor({
                         group.repeatEndingRestMode,
                         poolLengthUnit
                       );
+                      const repeatDescriptor = isManualPoolMode
+                        ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
+                        : null;
+                      const repeatLabel = isManualPoolMode
+                        ? (repeatDescriptor?.label ?? "Repeat")
+                        : "Repeat set";
+                      const isRepeatOpen = !isViewMode && openRepeatGroupId === group.repeatGroupId;
+                      const repeatToggleLabel = isRepeatOpen ? "Done" : "Edit";
                       const hasEditableRepeatEndingRest = Boolean(
                         draft.environment === "pool" &&
                         (() => {
@@ -4497,61 +4801,98 @@ export default function WorkoutEditor({
                       );
                       const repeatMobileActionKey = `repeat:${group.repeatGroupId}`;
                       const repeatMobileActionsOpen = openMobileActionKey === repeatMobileActionKey;
+                      const repeatSummaryContent = (
+                        <>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                            {repeatLabel}
+                          </p>
+                          {isManualPoolMode ? (
+                            <p className="mt-2">
+                              <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                                Repeat block
+                              </span>
+                            </p>
+                          ) : null}
+                          <p className="mt-2 text-sm font-medium text-slate-900">{repeatSummary}</p>
+                        </>
+                      );
 
                       return (
                         <div className="space-y-3">
                           <div className={desktopHeaderStackClass}>
-                            <div
-                              data-testid={`session-draft-repeat-summary-${groupIndex}`}
-                              className={desktopSummaryBlockClass}
-                            >
-                              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                                Repeat set
-                              </p>
-                              <p className="mt-1 text-sm font-medium text-slate-900">
-                                {repeatSummary}
-                              </p>
-                              {isManualPoolMode ? null : (
-                                <>
-                                  <p className="mt-1 text-xs text-slate-600">
-                                    Edit the repeated steps below instead of duplicating every round
-                                    by hand.
-                                  </p>
-                                  <p className="mt-1 text-xs text-slate-500">
-                                    Repeat counts currently support {SESSION_DRAFT_REPEAT_MIN}-
-                                    {SESSION_DRAFT_REPEAT_MAX} rounds per block.
-                                  </p>
-                                </>
-                              )}
+                            <div className={desktopSummaryBlockClass}>
+                              <button
+                                type="button"
+                                onClick={() => toggleRepeatEditor(group.repeatGroupId)}
+                                aria-expanded={isRepeatOpen}
+                                data-testid={`session-draft-repeat-mobile-summary-${groupIndex}`}
+                                className={`${mobileSummaryToggleClass} sm:hidden`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0 flex-1">{repeatSummaryContent}</div>
+                                  <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
+                                    {isRepeatOpen ? (
+                                      <ChevronUp className="size-4" />
+                                    ) : (
+                                      <ChevronDown className="size-4" />
+                                    )}
+                                  </span>
+                                </div>
+                              </button>
+                              <div
+                                data-testid={`session-draft-repeat-summary-${groupIndex}`}
+                                className="hidden sm:block"
+                              >
+                                {repeatSummaryContent}
+                              </div>
                             </div>
                             {!isViewMode ? (
-                              <div className="flex shrink-0 sm:hidden">
+                              <div className="hidden shrink-0 sm:flex">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    setOpenMobileActionKey((current) =>
-                                      current === repeatMobileActionKey
-                                        ? null
-                                        : repeatMobileActionKey
-                                    )
-                                  }
-                                  aria-expanded={repeatMobileActionsOpen}
-                                  aria-controls={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
-                                  data-testid={`session-draft-repeat-mobile-actions-toggle-${groupIndex}`}
-                                  className={mobileActionToggleClass}
+                                  onClick={() => toggleRepeatEditor(group.repeatGroupId)}
+                                  aria-expanded={isRepeatOpen}
+                                  data-testid={`session-draft-repeat-toggle-${groupIndex}`}
+                                  className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm transition ${
+                                    isRepeatOpen
+                                      ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
+                                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                  }`}
                                 >
-                                  <Ellipsis className="size-5" />
-                                  <span className="sr-only">
-                                    {repeatMobileActionsOpen
-                                      ? "Hide repeat actions"
-                                      : "Show repeat actions"}
-                                  </span>
+                                  {repeatToggleLabel}
                                 </button>
+                              </div>
+                            ) : null}
+                            {!isViewMode ? (
+                              <div className="flex shrink-0 sm:hidden">
+                                {isRepeatOpen ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setOpenMobileActionKey((current) =>
+                                        current === repeatMobileActionKey
+                                          ? null
+                                          : repeatMobileActionKey
+                                      )
+                                    }
+                                    aria-expanded={repeatMobileActionsOpen}
+                                    aria-controls={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
+                                    data-testid={`session-draft-repeat-mobile-actions-toggle-${groupIndex}`}
+                                    className={mobileActionToggleClass}
+                                  >
+                                    <Ellipsis className="size-5" />
+                                    <span className="sr-only">
+                                      {repeatMobileActionsOpen
+                                        ? "Hide repeat actions"
+                                        : "Show repeat actions"}
+                                    </span>
+                                  </button>
+                                ) : null}
                               </div>
                             ) : null}
                           </div>
 
-                          {!isViewMode ? (
+                          {!isViewMode && isRepeatOpen ? (
                             <div className={desktopRepeatControlRowClass}>
                               <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
                                 <label className="text-sm text-slate-700">
@@ -4598,7 +4939,7 @@ export default function WorkoutEditor({
                             </div>
                           ) : null}
 
-                          {!isViewMode ? (
+                          {!isViewMode && isRepeatOpen ? (
                             <div className="sm:hidden">
                               <button
                                 type="button"
@@ -4614,7 +4955,7 @@ export default function WorkoutEditor({
                             </div>
                           ) : null}
 
-                          {!isViewMode && repeatMobileActionsOpen ? (
+                          {!isViewMode && isRepeatOpen && repeatMobileActionsOpen ? (
                             <div
                               id={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
                               data-testid={`session-draft-repeat-mobile-actions-panel-${groupIndex}`}
@@ -4687,78 +5028,78 @@ export default function WorkoutEditor({
                       );
                     })()}
 
-                    <div className="mt-4 space-y-3">
-                      {group.entries.map((entry, repeatIndex) =>
-                        renderStepEditorCard(entry.step, entry.index, groupIndex, {
-                          insideRepeatGroup: true,
-                          repeatStepNumber: repeatIndex + 1,
-                          labelOverride:
-                            repeatIndex === 0
-                              ? "Work interval"
-                              : repeatIndex === 1
-                                ? "Between-interval recovery"
-                                : undefined,
-                        })
-                      )}
-                      {group.postSetRestEntry
-                        ? renderStepEditorCard(
-                            group.postSetRestEntry.step,
-                            group.postSetRestEntry.index,
-                            groupIndex,
-                            {
-                              labelOverride: "Post-set rest",
-                              descriptionOverride:
-                                group.repeatEndingRestMode === "use_last_rest" &&
-                                Boolean(
-                                  group.entries[group.entries.length - 1] &&
-                                  isSessionDraftRepeatEndingRestStep(
-                                    group.entries[group.entries.length - 1].step
+                    {!isViewMode && openRepeatGroupId === group.repeatGroupId ? (
+                      <div className="mt-4 space-y-3">
+                        {group.entries.map((entry, repeatIndex) =>
+                          renderStepEditorCard(entry.step, entry.index, groupIndex, {
+                            insideRepeatGroup: true,
+                            repeatStepNumber: repeatIndex + 1,
+                            labelOverride:
+                              repeatIndex === 0
+                                ? "Work interval"
+                                : repeatIndex === 1
+                                  ? "Between-interval recovery"
+                                  : undefined,
+                          })
+                        )}
+                        {group.postSetRestEntry
+                          ? renderStepEditorCard(
+                              group.postSetRestEntry.step,
+                              group.postSetRestEntry.index,
+                              groupIndex,
+                              {
+                                labelOverride: "Post-set rest",
+                                descriptionOverride:
+                                  group.repeatEndingRestMode === "use_last_rest" &&
+                                  Boolean(
+                                    group.entries[group.entries.length - 1] &&
+                                    isSessionDraftRepeatEndingRestStep(
+                                      group.entries[group.entries.length - 1].step
+                                    )
                                   )
-                                )
-                                  ? "Separate canonical rest after the set. It is preserved here, but active execution and export suppress it because the last internal rest interval is used after the final rep."
-                                  : "Separate canonical rest after the set, outside the repeat block itself.",
-                              isLinkedPostSetRest: true,
-                            }
-                          )
-                        : null}
-                      {pendingRemoval?.kind === "repeat" &&
-                      pendingRemoval.repeatGroupId === group.repeatGroupId ? (
-                        <div
-                          data-testid="workout-editor-removal-confirm"
-                          className="rounded-2xl border border-rose-200 bg-rose-50/90 p-3"
-                        >
-                          <p className="text-sm font-medium text-rose-950">
-                            Delete{" "}
-                            <span className="font-semibold">
-                              {pendingRemoval?.label ?? "this repeat block"}
-                            </span>
-                            ?
-                          </p>
-                          <p className="mt-1 text-sm text-rose-900">
-                            This builder change stays local until you save, and you can still undo
-                            it right after deletion.
-                          </p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={confirmPendingRemoval}
-                              data-testid="workout-editor-removal-confirm-button"
-                              className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
-                            >
-                              Delete now
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelPendingRemoval}
-                              data-testid="workout-editor-removal-cancel-button"
-                              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-900 transition hover:bg-rose-100 active:bg-rose-200"
-                            >
-                              Keep it
-                            </button>
+                                    ? "Separate canonical rest after the set. It is preserved here, but active execution and export suppress it because the last internal rest interval is used after the final rep."
+                                    : "Separate canonical rest after the set, outside the repeat block itself.",
+                                isLinkedPostSetRest: true,
+                              }
+                            )
+                          : null}
+                        {pendingRemoval?.kind === "repeat" &&
+                        pendingRemoval.repeatGroupId === group.repeatGroupId ? (
+                          <div
+                            data-testid="workout-editor-removal-confirm"
+                            className="rounded-2xl border border-rose-200 bg-rose-50/90 p-3"
+                          >
+                            <p className="text-sm font-medium text-rose-950">
+                              Delete{" "}
+                              <span className="font-semibold">
+                                {pendingRemoval?.label ?? "this repeat block"}
+                              </span>
+                              ?
+                            </p>
+                            <p className="mt-1 text-sm text-rose-900">
+                              This builder change stays local until you save, and you can still undo
+                              it right after deletion.
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={confirmPendingRemoval}
+                                data-testid="workout-editor-removal-confirm-button"
+                                className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
+                              >
+                                Delete now
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelPendingRemoval}
+                                data-testid="workout-editor-removal-cancel-button"
+                                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-900 transition hover:bg-rose-100 active:bg-rose-200"
+                              >
+                                Keep it
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ) : null}
-                      {!isViewMode ? (
+                        ) : null}
                         <div
                           data-testid={`session-draft-repeat-desktop-actions-${groupIndex}`}
                           data-desktop-layout="bottom"
@@ -4813,8 +5154,8 @@ export default function WorkoutEditor({
                             Delete repeat
                           </button>
                         </div>
-                      ) : null}
-                    </div>
+                      </div>
+                    ) : null}
                   </section>
                 )
               )}
@@ -4823,107 +5164,109 @@ export default function WorkoutEditor({
 
       {poolsideNotePanel}
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                {savedWorkout ? "Saved workout" : "Draft"}
-              </span>
-              <p
-                data-testid="workout-editor-save-state"
-                className={`text-sm font-medium ${
-                  hasUnsavedChanges ? "text-amber-700" : "text-emerald-700"
-                }`}
-              >
-                {savedWorkout
-                  ? hasUnsavedChanges
-                    ? editorCopy.savedWorkoutPendingState
-                    : editorCopy.savedWorkoutSavedState
-                  : editorCopy.unsavedDraftPendingState}
-              </p>
+      {!showCalmBuilderLayout ? (
+        <>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    {savedWorkout ? "Saved workout" : "Draft"}
+                  </span>
+                  <p
+                    data-testid="workout-editor-save-state"
+                    className={`text-sm font-medium ${saveStateToneClass}`}
+                  >
+                    {saveStateMessage}
+                  </p>
+                </div>
+                {showInlinePdfAction ? (
+                  <p
+                    data-testid="workout-editor-pdf-source"
+                    data-pdf-state={handoffDraftState}
+                    className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    {workoutPdfStateLabel}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {showInlinePdfAction ? (
+                  <button
+                    type="button"
+                    onClick={() => openWorkoutPdfPrintView("standard")}
+                    data-testid="workout-editor-pdf-open"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  >
+                    {workoutPdfButtonLabel}
+                  </button>
+                ) : null}
+                {!showPdfPanel && !showCalmBuilderLayout ? (
+                  <button
+                    type="button"
+                    onClick={() => openWorkoutPdfPrintView("poolside")}
+                    data-testid="workout-editor-poolside-pdf-open"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+                  >
+                    {workoutPoolsidePdfButtonLabel}
+                  </button>
+                ) : null}
+                {savedWorkout && onResetToSaved ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingRemoval(null);
+                      setLastRemovedBlock(null);
+                      onResetToSaved();
+                    }}
+                    disabled={isSaving || !hasUnsavedChanges || pendingRemoval !== null}
+                    data-testid="workout-editor-reset"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Reset to last saved
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingRemoval(null);
+                    setLastRemovedBlock(null);
+                    onSave();
+                  }}
+                  disabled={
+                    isSaving ||
+                    !canonicalSaveReady ||
+                    poolSizeInputInvalid ||
+                    pendingRemoval !== null ||
+                    (savedWorkout ? !hasUnsavedChanges : false)
+                  }
+                  data-testid={saveButtonTestId}
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSaving
+                    ? "Saving..."
+                    : savedWorkout
+                      ? "Save changes"
+                      : "Accept and save workout"}
+                </button>
+              </div>
             </div>
-            {showInlinePdfAction ? (
-              <p
-                data-testid="workout-editor-pdf-source"
-                data-pdf-state={handoffDraftState}
-                className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
-              >
-                {workoutPdfStateLabel}
-              </p>
-            ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {showInlinePdfAction ? (
-              <button
-                type="button"
-                onClick={() => openWorkoutPdfPrintView("standard")}
-                data-testid="workout-editor-pdf-open"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                {workoutPdfButtonLabel}
-              </button>
-            ) : null}
-            {!showPdfPanel && !showCalmBuilderLayout ? (
-              <button
-                type="button"
-                onClick={() => openWorkoutPdfPrintView("poolside")}
-                data-testid="workout-editor-poolside-pdf-open"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
-              >
-                {workoutPoolsidePdfButtonLabel}
-              </button>
-            ) : null}
-            {savedWorkout && onResetToSaved ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setPendingRemoval(null);
-                  setLastRemovedBlock(null);
-                  onResetToSaved();
-                }}
-                disabled={isSaving || !hasUnsavedChanges || pendingRemoval !== null}
-                data-testid="workout-editor-reset"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Reset to last saved
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => {
-                setPendingRemoval(null);
-                setLastRemovedBlock(null);
-                onSave();
-              }}
-              disabled={
-                isSaving ||
-                !canonicalSaveReady ||
-                poolSizeInputInvalid ||
-                pendingRemoval !== null ||
-                (savedWorkout ? !hasUnsavedChanges : false)
-              }
-              data-testid={saveButtonTestId}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSaving ? "Saving..." : savedWorkout ? "Save changes" : "Accept and save workout"}
-            </button>
-          </div>
-        </div>
-      </div>
 
-      {showInlinePdfAction && workoutPdfNotice ? (
-        <p
-          data-testid="workout-editor-pdf-notice"
-          className="mt-3 text-sm font-medium text-emerald-700"
-        >
-          {workoutPdfNotice}
-        </p>
+          {showInlinePdfAction && workoutPdfNotice ? (
+            <p
+              data-testid="workout-editor-pdf-notice"
+              className="mt-3 text-sm font-medium text-emerald-700"
+            >
+              {workoutPdfNotice}
+            </p>
+          ) : null}
+        </>
       ) : null}
 
       {showCalmBuilderLayout ? supportToolsPanel : null}
 
-      {showInlinePdfAction && workoutPdfError ? (
+      {!showCalmBuilderLayout && showInlinePdfAction && workoutPdfError ? (
         <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
           {workoutPdfError}
         </p>

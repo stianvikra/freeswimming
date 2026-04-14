@@ -132,6 +132,13 @@ async function openMetadataPanelIfCollapsed(page: Page) {
   }
 }
 
+async function openRepeatGroupIfCollapsed(page: Page, groupIndex: number) {
+  const toggle = page.getByTestId(`session-draft-repeat-toggle-${groupIndex}`);
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await toggle.click();
+  }
+}
+
 async function triggerCreateSession(page: Page, testId: string) {
   const createButton = page.getByTestId(testId);
   await expect(createButton).toHaveAttribute("data-client-ready", "true", {
@@ -209,6 +216,15 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-mobile-actions-panel-0")).toBeVisible();
     await expect(page.getByTestId("session-draft-step-mobile-remove-0")).toBeVisible();
 
+    await expect(page.getByTestId("session-draft-repeat-mobile-summary-2")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await page.getByTestId("session-draft-repeat-mobile-summary-2").click();
+    await expect(page.getByTestId("session-draft-repeat-mobile-summary-2")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
     await expect(page.getByTestId("session-draft-repeat-count-2")).toBeVisible();
     await expect(
       page.getByTestId("session-draft-repeat-mobile-primary-add-step-after-2")
@@ -290,6 +306,19 @@ test.describe("my library workout builder", () => {
     await expect(
       page.getByTestId("workout-editor-metadata-panel").getByText("Untitled pool session")
     ).toBeVisible();
+    await expect(
+      page.getByTestId("workout-editor-metadata-panel").getByRole("button", {
+        name: "View PDF",
+      })
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("workout-editor-metadata-panel").getByRole("button", {
+        name: "Reset to last saved",
+      })
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("workout-editor-metadata-panel").getByTestId("workout-builder-save")
+    ).toBeVisible();
     await expect(page.getByText("Title through equipment")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toBeVisible();
     await expect(page.getByText("Session details")).toBeVisible();
@@ -328,7 +357,8 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("combobox", { name: "Effort" })).toHaveCount(0);
     await expect(page.getByTestId("session-draft-step-summary-0")).toBeVisible();
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
-    await expect(page.getByText("Repeat set")).toBeVisible();
+    await expect(page.getByTestId("session-draft-repeat-summary-2")).toContainText("Main");
+    await expect(page.getByTestId("session-draft-repeat-summary-2")).toContainText("Repeat block");
     const collapsedStepSummaryBox = await page
       .getByTestId("session-draft-step-summary-0")
       .boundingBox();
@@ -497,6 +527,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByLabel("Exact pool size (yd)")).toHaveValue("25");
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
+    await openRepeatGroupIfCollapsed(page, 2);
     await expect(page.getByTestId("session-draft-repeat-desktop-actions-2")).toHaveAttribute(
       "data-desktop-layout",
       "bottom"
@@ -726,6 +757,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-step-toggle-0").click();
     await expect(page.getByTestId("session-draft-step-distance-0")).toHaveValue("custom");
     await expect(page.getByTestId("session-draft-step-distance-custom-0")).toHaveValue("333");
+    await openRepeatGroupIfCollapsed(page, 2);
     await expect(page.getByTestId("session-draft-repeat-count-2")).toHaveValue("6");
     await page.getByTestId("session-draft-step-toggle-2").click();
     await expect(page.getByTestId("session-draft-step-distance-2")).toHaveValue("200");
