@@ -208,6 +208,7 @@ gh auth login
 3. Before merge:
    - `npm run verify:pre-merge`
    - `npm run merge:preflight` (or `npm run gate:pre-merge`)
+   - same-HEAD local PASS artifacts are reused automatically for the public/docs-only step only when lane + SHA still match
 
 ## Automated test runs (GitHub Actions)
 

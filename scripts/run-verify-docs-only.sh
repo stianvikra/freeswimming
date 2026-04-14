@@ -15,6 +15,32 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 127
 fi
 
+write_run_metadata() {
+  local verification_lane="${1:-docs-only}"
+  local exit_status="${2:-1}"
+  local source_command="${3:-verify:docs-only}"
+  local timestamp_utc
+  local head_sha
+  local short_sha
+
+  timestamp_utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  head_sha="$(git rev-parse HEAD 2>/dev/null || printf '')"
+  short_sha="$(git rev-parse --short HEAD 2>/dev/null || printf '')"
+
+  cat > "${run_dir}/meta.json" <<EOF
+{
+  "status": "$([ "${exit_status}" -eq 0 ] && printf 'PASS' || printf 'FAIL')",
+  "timestampUtc": "${timestamp_utc}",
+  "headSha": "${head_sha}",
+  "shortSha": "${short_sha}",
+  "verificationLane": "${verification_lane}",
+  "exitCode": ${exit_status},
+  "sourceCommand": "${source_command}",
+  "runDir": "${run_dir}"
+}
+EOF
+}
+
 timestamp="$(date +"%Y%m%d-%H%M%S")"
 runs_root="artifacts/test-runs"
 run_dir="${runs_root}/${timestamp}"
@@ -40,6 +66,7 @@ else
 fi
 
 printf "%s\n" "${status}" > "${run_dir}/exit-code.txt"
+write_run_metadata "docs-only" "${status}" "verify:docs-only"
 ln -sfn "${timestamp}" "${runs_root}/latest"
 
 if [ "${status}" -eq 0 ]; then

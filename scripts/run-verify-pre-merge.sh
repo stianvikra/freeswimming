@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+read_reuse_decision_field() {
+  local decision_output="${1:-}"
+  local field_name="${2:-}"
+  printf '%s\n' "${decision_output}" | grep -E "^${field_name}=" | head -n1 | cut -d= -f2- || true
+}
+
 read_env_file_value() {
   local key="$1"
   local file="$2"
@@ -24,6 +30,8 @@ read_env_file_value() {
 record_pre_merge_pass() {
   local verification_lane="${1:-full}"
   local private_gate_mode_override="${2:-}"
+  local verification_source="${3:-fresh-run}"
+  local verify_run_dir="${4:-}"
   local runs_root="artifacts/verify-pre-merge"
   local timestamp_utc
   local iso_utc
@@ -62,7 +70,9 @@ record_pre_merge_pass() {
   "shortSha": "${short_sha}",
   "verificationLane": "${verification_lane}",
   "siteLockEnabled": "${SITE_LOCK_ENABLED:-0}",
-  "privateGateMode": "${private_gate_mode}"
+  "privateGateMode": "${private_gate_mode}",
+  "verificationSource": "${verification_source}",
+  "verifyRunDir": "${verify_run_dir}"
 }
 EOF
 
@@ -87,18 +97,48 @@ fi
 
 node ./scripts/verification-scope.mjs --summary
 verification_lane="$(node ./scripts/verification-scope.mjs --lane)"
+head_sha="$(git rev-parse HEAD 2>/dev/null || printf '')"
+verify_step_source="fresh-run"
+verify_step_run_dir=""
 
 if [ "${verification_lane}" = "docs-only" ]; then
-  echo "[verify-pre-merge] Step 1/2: Docs-only verification"
-  npm run verify:docs-only
+  reuse_decision_output="$(node ./scripts/verify-run-metadata.mjs --decision --head "${head_sha}" --lane "docs-only")"
+  reuse_decision="$(read_reuse_decision_field "${reuse_decision_output}" "decision")"
+  reuse_reason="$(read_reuse_decision_field "${reuse_decision_output}" "reason")"
+  reuse_run_dir="$(read_reuse_decision_field "${reuse_decision_output}" "run_dir")"
+
+  if [ "${reuse_decision}" = "reuse" ]; then
+    echo "[verify-pre-merge] Step 1/2: Reusing docs-only verification PASS from ${reuse_run_dir:-artifacts/test-runs/latest} (${reuse_reason})"
+    verify_step_source="reused-current-head"
+    verify_step_run_dir="${reuse_run_dir}"
+  else
+    echo "[verify-pre-merge] Step 1/2: Docs-only verification (${reuse_reason})"
+    npm run verify:docs-only
+    verify_step_source="fresh-run"
+    verify_step_run_dir="artifacts/test-runs/latest"
+  fi
+
   echo "[verify-pre-merge] Step 2/2: Skipped private-gate regression (docs-only lane)."
-  record_pre_merge_pass "docs-only" "skipped-docs-only"
+  record_pre_merge_pass "docs-only" "skipped-docs-only" "${verify_step_source}" "${verify_step_run_dir}"
   echo "[verify-pre-merge] PASS"
   exit 0
 fi
 
-echo "[verify-pre-merge] Step 1/2: Public-mode full verification"
-SITE_LOCK_ENABLED=0 npm run verify
+reuse_decision_output="$(node ./scripts/verify-run-metadata.mjs --decision --head "${head_sha}" --lane "full-public")"
+reuse_decision="$(read_reuse_decision_field "${reuse_decision_output}" "decision")"
+reuse_reason="$(read_reuse_decision_field "${reuse_decision_output}" "reason")"
+reuse_run_dir="$(read_reuse_decision_field "${reuse_decision_output}" "run_dir")"
+
+if [ "${reuse_decision}" = "reuse" ]; then
+  echo "[verify-pre-merge] Step 1/2: Reusing public verify PASS from ${reuse_run_dir:-artifacts/test-runs/latest} (${reuse_reason})"
+  verify_step_source="reused-current-head"
+  verify_step_run_dir="${reuse_run_dir}"
+else
+  echo "[verify-pre-merge] Step 1/2: Public-mode full verification (${reuse_reason})"
+  SITE_LOCK_ENABLED=0 npm run verify
+  verify_step_source="fresh-run"
+  verify_step_run_dir="artifacts/test-runs/latest"
+fi
 
 if [ "${SITE_LOCK_ENABLED:-0}" = "1" ]; then
   # Automation default: wire private-gate bypass token with zero manual setup when available.
@@ -139,6 +179,6 @@ else
   echo "[verify-pre-merge] If target environment is private-gated, rerun with SITE_LOCK_ENABLED=1 and PW_SITE_LOCK_PASSWORD or PW_SITE_LOCK_BYPASS_TOKEN set."
 fi
 
-record_pre_merge_pass "full"
+record_pre_merge_pass "full" "" "${verify_step_source}" "${verify_step_run_dir}"
 
 echo "[verify-pre-merge] PASS"

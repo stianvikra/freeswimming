@@ -68,6 +68,7 @@ Optional overrides:
   - `verify.log`
   - `exit-code.txt`
   - `mode.txt` (`docs-only` or `full-public`)
+  - `meta.json` (HEAD SHA + lane + status metadata for local reuse decisions)
   - copied Playwright output if present:
     - `test-results/`
     - `playwright-report/`
@@ -96,7 +97,9 @@ Pre-merge evidence marker (for PR body refresh automation):
   - `npm run test:unit`
   - `npm run test:e2e:mobile` (if touching mobile/nav/auth/guide flows)
 - Before merge:
-  - run full `npm run verify:pre-merge`.
+  - run `npm run verify:pre-merge`.
+  - if the latest local verify artifact is already a PASS for the same HEAD and lane, pre-merge now reuses that step-1 result instead of rerunning it.
+  - if HEAD, lane, or status do not match, pre-merge reruns the full step-1 verification as before.
   - run `npm run merge:preflight` (or `npm run gate:pre-merge`) so the merge handoff is based on current-head local evidence.
   - if validating private unlock UX, force password mode:
     - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
