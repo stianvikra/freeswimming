@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { gotoWithTransientRetry } from "./utils/transient-navigation";
 
 function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Auth e2e is desktop-only.");
@@ -14,7 +15,7 @@ test.describe("auth sign-in ux", () => {
       sent: "1",
       email: "test@freeswimming.org",
     });
-    await page.goto(`/auth/sign-in?${params.toString()}`);
+    await gotoWithTransientRetry(page, `/auth/sign-in?${params.toString()}`);
 
     await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
       "What works on this device"
@@ -48,7 +49,7 @@ test.describe("auth sign-in ux", () => {
       error: "Please wait before retrying.",
       cooldownUntil: String(Date.now() + 90_000),
     });
-    await page.goto(`/auth/sign-in?${params.toString()}`);
+    await gotoWithTransientRetry(page, `/auth/sign-in?${params.toString()}`);
 
     await expect(page.getByTestId("auth-request-status")).toContainText(
       /Please wait .* before requesting a new login code\./
@@ -66,7 +67,7 @@ test.describe("auth sign-in ux", () => {
       next: "/my-library",
       error: "Enter a valid email address.",
     });
-    await page.goto(`/auth/sign-in?${params.toString()}`);
+    await gotoWithTransientRetry(page, `/auth/sign-in?${params.toString()}`);
 
     await expect(page.getByRole("heading", { name: "Get a code" })).toBeVisible();
     await expect(page.getByTestId("auth-passkey-readiness")).toContainText(

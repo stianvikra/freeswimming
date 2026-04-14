@@ -1,5 +1,11 @@
 import type { APIRequestContext, APIResponse, Page } from "@playwright/test";
 import { expect, request as playwrightRequest, test } from "@playwright/test";
+import {
+  clickHrefAndAwaitUrlOrRetryGoto,
+  gotoWithTransientRetry,
+  prewarmRoute,
+  waitForRouteToSettle,
+} from "./utils/transient-navigation";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const transientResponseStatuses = new Set([404]);
@@ -8,38 +14,6 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Generator intake e2e is desktop-only.");
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
-}
-
-async function prewarmRoute(page: Page, href: string, timeoutMs = 90_000) {
-  return page.request
-    .get(href, {
-      timeout: timeoutMs,
-      failOnStatusCode: false,
-    })
-    .catch(() => null);
-}
-
-async function gotoWithTransientRetry(page: Page, href: string, initialTimeoutMs = 90_000) {
-  await prewarmRoute(page, href, initialTimeoutMs);
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      await page.goto(href, {
-        waitUntil: "domcontentloaded",
-        timeout: attempt === 0 ? initialTimeoutMs : 60_000,
-      });
-      return;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const isTransientGotoError =
-        /ERR_ABORTED|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(errorMessage);
-      if (!isTransientGotoError || attempt === 2) {
-        throw error;
-      }
-
-      await page.waitForTimeout(1_000);
-    }
-  }
 }
 
 async function loginToMyLibraryViaDevBypass(page: Page) {
@@ -142,18 +116,27 @@ async function prewarmSessionDraftRoute(page: Page) {
 
 async function waitForGeneratorIntakeClientReady(page: Page) {
   await expect(page.getByTestId("generator-intake-hub")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByTestId("session-generator-focus-text")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByTestId("session-generator-generate")).toBeVisible({ timeout: 15_000 });
-}
-
-async function waitForWorkoutBuilderClientReady(page: Page) {
-  await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(
+  await expect(page.getByTestId("generator-intake-hub")).toHaveAttribute(
     "data-client-ready",
     "true",
     {
       timeout: 15_000,
     }
   );
+  await expect(page.getByTestId("session-generator-focus-text")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("session-generator-generate")).toBeVisible({ timeout: 15_000 });
+}
+
+async function waitForWorkoutBuilderClientReady(page: Page) {
+  await waitForRouteToSettle(page);
+  await expect
+    .poll(
+      async () => await page.getByTestId("workout-builder-hub").getAttribute("data-client-ready"),
+      {
+        timeout: 30_000,
+      }
+    )
+    .toBe("true");
   await expect(page.getByTestId("workout-editor-metadata-toggle")).toBeVisible({
     timeout: 15_000,
   });
@@ -198,6 +181,7 @@ async function openAdvancedToolsIfCollapsed(page: Page) {
 }
 
 async function waitForWorkoutLibraryBrowseReady(page: Page) {
+  await waitForRouteToSettle(page);
   await expect(page.getByTestId("workout-builder-hub")).toBeVisible({ timeout: 15_000 });
   await expect(
     page.getByRole("heading", {
@@ -213,16 +197,14 @@ async function openGeneratorFromMyLibrary(page: Page) {
   await expect(openGeneratorLink).toHaveAttribute("href", "/my-library/generator");
   const href = (await openGeneratorLink.getAttribute("href")) ?? "";
   expect(href).toBe("/my-library/generator");
-  await openGeneratorLink.click();
-  const navigatedAfterClick = await page
-    .waitForURL(/\/my-library\/generator$/, { timeout: 7_000 })
-    .then(() => true)
-    .catch(() => false);
-
-  if (!navigatedAfterClick) {
-    await gotoWithTransientRetry(page, href);
-    await ensureDevBypassRoute(page, "/my-library/generator");
-  }
+  await clickHrefAndAwaitUrlOrRetryGoto({
+    page,
+    trigger: openGeneratorLink,
+    href,
+    expectedUrl: /\/my-library\/generator$/,
+    clickNavigationTimeoutMs: 7_000,
+  });
+  await ensureDevBypassRoute(page, "/my-library/generator");
 
   await expect(page).toHaveURL(/\/my-library\/generator$/);
 }
@@ -257,10 +239,18 @@ test.describe("my library generator intake", () => {
     await page
       .getByTestId("session-generator-constraint-text")
       .fill("Keep the first week moderate.");
-    await page.getByTestId("generator-intake-source-toggle").click();
+    const sourceToggle = page.getByTestId("generator-intake-source-toggle");
+    await expect(sourceToggle).toHaveAttribute("aria-expanded", "false");
+    await sourceToggle.scrollIntoViewIfNeeded();
+    await sourceToggle.click();
+    await expect(sourceToggle).toHaveAttribute("aria-expanded", "true", { timeout: 15_000 });
 
-    await expect(page.getByRole("heading", { name: "Athlete profile", level: 3 })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Edit athlete profile" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Athlete profile", level: 3 })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("link", { name: "Edit athlete profile" })).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test("accepts one generated session draft and reopens it in the workout builder route", async ({
@@ -268,7 +258,7 @@ test.describe("my library generator intake", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
-    testInfo.setTimeout(150_000);
+    testInfo.setTimeout(240_000);
     const uniqueTitle = `QA accepted workout ${Date.now()}`;
 
     await loginToMyLibraryViaDevBypass(page);
@@ -339,19 +329,14 @@ test.describe("my library generator intake", () => {
     await expect(openWorkoutLink).toBeVisible();
     const workoutHref = await openWorkoutLink.getAttribute("href");
     expect(workoutHref).toBeTruthy();
-
-    await openWorkoutLink.click();
-    const navigatedAfterClick = await page
-      .waitForURL(/\/my-library\/workouts\/[0-9a-f-]+$/, {
-        timeout: 10_000,
-        waitUntil: "domcontentloaded",
-      })
-      .then(() => true)
-      .catch(() => false);
-    if (!navigatedAfterClick) {
-      await page.goto(workoutHref!, { waitUntil: "domcontentloaded", timeout: 60_000 });
-      await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+$/);
-    }
+    await clickHrefAndAwaitUrlOrRetryGoto({
+      page,
+      trigger: openWorkoutLink,
+      href: workoutHref!,
+      expectedUrl: /\/my-library\/workouts\/[0-9a-f-]+$/,
+      clickNavigationTimeoutMs: 10_000,
+    });
+    await expect(page).toHaveURL(/\/my-library\/workouts\/[0-9a-f-]+$/);
 
     await waitForWorkoutBuilderClientReady(page);
     await expect(

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { isDesktopProject } from "./project-guards";
+import { gotoWithTransientRetry } from "./utils/transient-navigation";
 
 test.use({
   viewport: { width: 1280, height: 720 },
@@ -42,7 +43,7 @@ test("drawer traps keyboard focus and restores trigger focus on close", async ({
 }, testInfo) => {
   test.skip(!isDesktopProject(testInfo), "Keyboard focus trap coverage runs on desktop projects.");
 
-  await page.goto("/contact");
+  await gotoWithTransientRetry(page, "/contact", 60_000);
   await waitForDrawerTriggerToSettle(page);
 
   const trigger = page.getByTestId("header-menu-toggle");

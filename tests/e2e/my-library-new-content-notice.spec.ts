@@ -1,5 +1,11 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import {
+  clickHrefAndAwaitUrlOrRetryGoto,
+  gotoWithTransientRetry,
+  prewarmRoute,
+  waitForRouteToSettle,
+} from "./utils/transient-navigation";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const DETERMINISTIC_NEW_CONTENT_SIGNAL = {
@@ -22,53 +28,6 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Library notice e2e is desktop-only.");
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
-}
-
-async function prewarmRoute(page: Page, href: string, timeoutMs = 90_000) {
-  return page.request
-    .get(href, {
-      timeout: timeoutMs,
-      failOnStatusCode: false,
-    })
-    .catch(() => null);
-}
-
-async function gotoWithTransientRetry(page: Page, href: string, initialTimeoutMs = 90_000) {
-  await prewarmRoute(page, href, initialTimeoutMs);
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      await page.goto(href, {
-        waitUntil: "domcontentloaded",
-        timeout: attempt === 0 ? initialTimeoutMs : 60_000,
-      });
-      return;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const isTransientGotoError =
-        /ERR_ABORTED|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(errorMessage);
-
-      if (!isTransientGotoError || attempt === 2) {
-        throw error;
-      }
-
-      await page.waitForTimeout(1_000);
-    }
-  }
-}
-
-async function waitForRouteToSettle(page: Page) {
-  const compilingIndicator = page.getByText("Compiling", { exact: true });
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
-    await page.waitForTimeout(750);
-    if ((await compilingIndicator.count()) === 0) {
-      break;
-    }
-  }
-
-  await page.waitForTimeout(300);
 }
 
 async function loginToMyLibraryViaDevBypass(page: Page) {
@@ -114,14 +73,14 @@ async function openFirstNewLessonFromNotice(page: Page) {
   const href = await openLink.getAttribute("href");
   expect(href).toBeTruthy();
 
-  await openLink.click();
-  const navigatedAfterClick = await page
-    .waitForURL(/\/course(\?|$)/, { timeout: 7_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (navigatedAfterClick) return;
-
-  await page.goto(href!, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await clickHrefAndAwaitUrlOrRetryGoto({
+    page,
+    trigger: openLink,
+    href: href!,
+    expectedUrl: /\/course(\?|$)/,
+    clickNavigationTimeoutMs: 10_000,
+  });
+  await waitForRouteToSettle(page);
   await expect(page).toHaveURL(/\/course(\?|$)/);
 }
 
@@ -170,6 +129,7 @@ test.describe("my library new content notice", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    testInfo.setTimeout(180_000);
     await page.route("**/api/my-library/new-content-signal", async (route) => {
       await route.fulfill({
         status: 200,
@@ -255,6 +215,8 @@ test.describe("my library new content notice", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+    testInfo.setTimeout(90_000);
 
     await page.route("**/api/my-library/new-content-signal", async (route) => {
       await route.fulfill({

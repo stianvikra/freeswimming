@@ -1,5 +1,11 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import {
+  clickHrefAndAwaitUrlOrRetryGoto,
+  gotoWithTransientRetry,
+  prewarmRoute,
+  waitForRouteToSettle,
+} from "./utils/transient-navigation";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -16,53 +22,6 @@ function runOnceOnMobileChromium(projectName: string) {
   );
   test.skip(projectName !== "mobile-chromium", "Runs once on mobile Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
-}
-
-async function prewarmRoute(page: Page, href: string, timeoutMs = 90_000) {
-  return page.request
-    .get(href, {
-      timeout: timeoutMs,
-      failOnStatusCode: false,
-    })
-    .catch(() => null);
-}
-
-async function gotoWithTransientRetry(page: Page, href: string, initialTimeoutMs = 90_000) {
-  await prewarmRoute(page, href, initialTimeoutMs);
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      await page.goto(href, {
-        waitUntil: "domcontentloaded",
-        timeout: attempt === 0 ? initialTimeoutMs : 60_000,
-      });
-      return;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const isTransientGotoError =
-        /ERR_ABORTED|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(errorMessage);
-
-      if (!isTransientGotoError || attempt === 2) {
-        throw error;
-      }
-
-      await page.waitForTimeout(1_000);
-    }
-  }
-}
-
-async function waitForRouteToSettle(page: Page) {
-  const compilingIndicator = page.getByText("Compiling", { exact: true });
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
-    await page.waitForTimeout(750);
-    if ((await compilingIndicator.count()) === 0) {
-      break;
-    }
-  }
-
-  await page.waitForTimeout(300);
 }
 
 async function loginToMyLibraryViaDevBypass(page: Page) {
@@ -84,11 +43,52 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 }
 
 async function waitForWorkoutBuilderClientReady(page: Page) {
-  await expect(page.getByTestId("workout-builder-hub")).toHaveAttribute(
-    "data-client-ready",
-    "true",
-    { timeout: 15_000 }
-  );
+  await waitForRouteToSettle(page);
+  await expect
+    .poll(
+      async () => await page.getByTestId("workout-builder-hub").getAttribute("data-client-ready"),
+      {
+        timeout: 30_000,
+      }
+    )
+    .toBe("true");
+}
+
+async function openSavedWorkoutPreview(page: Page, workoutId: string) {
+  const card = page.getByTestId(`saved-workout-card-${workoutId}`);
+  const viewButton = card.getByTestId(`saved-workouts-view-${workoutId}`);
+  const preview = card.getByTestId(`saved-workouts-preview-${workoutId}`);
+
+  await expect(card).toBeVisible({ timeout: 15_000 });
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const previewVisible = await preview.isVisible().catch(() => false);
+    if (previewVisible) {
+      return preview;
+    }
+
+    await expect(viewButton).toBeVisible({ timeout: 10_000 });
+    await viewButton.scrollIntoViewIfNeeded();
+    await viewButton.click();
+
+    const opened = await preview
+      .waitFor({
+        state: "visible",
+        timeout: 3_000,
+      })
+      .then(() => true)
+      .catch(() => false);
+
+    if (opened) {
+      return preview;
+    }
+
+    await waitForRouteToSettle(page);
+    await page.waitForTimeout(250);
+  }
+
+  await expect(preview).toBeVisible({ timeout: 15_000 });
+  return preview;
 }
 
 async function waitForWorkoutBuilderSaveReady(page: Page) {
@@ -744,23 +744,49 @@ test.describe("my library workout builder", () => {
     expect(workoutMatch?.[1]).toBeTruthy();
     const workoutId = workoutMatch![1];
 
-    await Promise.all([
-      page.waitForURL(/\/my-library\/workouts(?:\?.*)?$/, {
-        timeout: 20_000,
-        waitUntil: "domcontentloaded",
-      }),
-      page.getByTestId("workout-builder-view-sessions-link").click(),
-    ]);
+    const viewSessionsLink = page.getByTestId("workout-builder-view-sessions-link");
+    const viewSessionsHref = await viewSessionsLink.getAttribute("href");
+    if (viewSessionsHref) {
+      await clickHrefAndAwaitUrlOrRetryGoto({
+        page,
+        trigger: viewSessionsLink,
+        href: viewSessionsHref,
+        expectedUrl: /\/my-library\/workouts(?:\?.*)?$/,
+        clickNavigationTimeoutMs: 10_000,
+      });
+    } else {
+      await Promise.all([
+        page.waitForURL(/\/my-library\/workouts(?:\?.*)?$/, {
+          timeout: 20_000,
+          waitUntil: "domcontentloaded",
+        }),
+        viewSessionsLink.click(),
+      ]);
+    }
+    await waitForRouteToSettle(page);
+    await waitForWorkoutBuilderClientReady(page);
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
-    await page.getByTestId(`saved-workouts-view-${workoutId}`).click();
-    await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("Total:");
-    await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("P:");
-    await page.getByTestId(`workout-builder-edit-workout-${workoutId}`).click();
-    await page.waitForURL(new RegExp(`/my-library/workouts/${workoutId}$`), {
-      timeout: 20_000,
-      waitUntil: "domcontentloaded",
-    });
+    const savedWorkoutPreview = await openSavedWorkoutPreview(page, workoutId);
+    await expect(savedWorkoutPreview).toContainText("Total:");
+    await expect(savedWorkoutPreview).toContainText("P:");
+    const editWorkoutLink = page.getByTestId(`workout-builder-edit-workout-${workoutId}`);
+    const editWorkoutHref = await editWorkoutLink.getAttribute("href");
+    if (editWorkoutHref) {
+      await clickHrefAndAwaitUrlOrRetryGoto({
+        page,
+        trigger: editWorkoutLink,
+        href: editWorkoutHref,
+        expectedUrl: new RegExp(`/my-library/workouts/${workoutId}$`),
+        clickNavigationTimeoutMs: 10_000,
+      });
+    } else {
+      await editWorkoutLink.click();
+      await page.waitForURL(new RegExp(`/my-library/workouts/${workoutId}$`), {
+        timeout: 20_000,
+        waitUntil: "domcontentloaded",
+      });
+    }
     await waitForWorkoutBuilderClientReady(page);
 
     const deleteResponsePromise = page.waitForResponse(

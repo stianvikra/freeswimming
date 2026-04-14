@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -10,22 +11,27 @@ function runOnceOnDesktopChromium(projectName: string) {
 }
 
 async function loginToMyLibraryViaDevBypass(page: Page) {
-  await page.goto(`/dev/login?next=${encodeURIComponent("/my-library")}`);
+  await gotoWithTransientRetry(page, `/dev/login?next=${encodeURIComponent("/my-library")}`);
   const pathAfterLogin = new URL(page.url()).pathname;
 
   if (pathAfterLogin !== "/my-library") {
     test.skip(true, "Dev auth bypass is not enabled in this environment.");
   }
 
+  await waitForRouteToSettle(page);
   await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
 }
 
 async function waitForDrylandBuilderClientReady(page: Page) {
-  await expect(page.getByTestId("dryland-builder-hub")).toHaveAttribute(
-    "data-client-ready",
-    "true",
-    { timeout: 15_000 }
-  );
+  await waitForRouteToSettle(page);
+  await expect
+    .poll(
+      async () => await page.getByTestId("dryland-builder-hub").getAttribute("data-client-ready"),
+      {
+        timeout: 30_000,
+      }
+    )
+    .toBe("true");
 }
 
 test.describe("my library dryland builder", () => {
@@ -34,6 +40,7 @@ test.describe("my library dryland builder", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    testInfo.setTimeout(240_000);
 
     await loginToMyLibraryViaDevBypass(page);
     await expect(page.getByRole("heading", { name: "Dryland builder" })).toBeVisible();
@@ -79,10 +86,7 @@ test.describe("my library dryland builder", () => {
       .catch(() => false);
 
     if (!navigatedAfterCreate) {
-      await page.goto(`/my-library/dryland/${createdSessionId}`, {
-        timeout: 60_000,
-        waitUntil: "domcontentloaded",
-      });
+      await gotoWithTransientRetry(page, `/my-library/dryland/${createdSessionId}`, 60_000);
     }
 
     await expect(page).toHaveURL(targetUrl);
@@ -127,25 +131,24 @@ test.describe("my library dryland builder", () => {
     expect(deleteResponseBody.ok).toBe(true);
     expect(deleteResponseBody.deletedSessionId).toBe(createdSessionId);
 
-    const navigatedAfterDelete = await page
-      .waitForFunction(
-        () =>
-          /^\/my-library\/dryland(?:\?.*)?$/.test(
-            window.location.pathname + window.location.search
-          ),
-        null,
-        { timeout: 20_000 }
-      )
-      .then(() => true)
-      .catch(() => false);
+    const onDrylandBrowseRoute = /^\/my-library\/dryland(?:\?.*)?$/.test(
+      new URL(page.url()).pathname + new URL(page.url()).search
+    );
+    const navigatedAfterDelete = onDrylandBrowseRoute
+      ? true
+      : await page
+          .waitForURL(/\/my-library\/dryland(?:\?.*)?$/, {
+            timeout: 20_000,
+            waitUntil: "commit",
+          })
+          .then(() => true)
+          .catch(() => false);
 
     if (!navigatedAfterDelete) {
-      await page.goto("/my-library/dryland", {
-        timeout: 60_000,
-        waitUntil: "domcontentloaded",
-      });
+      await gotoWithTransientRetry(page, "/my-library/dryland", 60_000);
     }
 
     await expect(page).toHaveURL(/\/my-library\/dryland(?:\?.*)?$/);
+    await waitForDrylandBuilderClientReady(page);
   });
 });

@@ -33,6 +33,7 @@ import {
   shouldShowAutoInstallPrompt,
 } from "@/components/install/install-rules";
 import {
+  areCourseProgressRowsEqual,
   buildCourseProgressRowsFromLocal,
   buildLocalCourseProgressFromRows,
   mergeCourseProgressRows,
@@ -578,16 +579,28 @@ function CoursePageClient() {
 
       courseSyncInFlightRef.current = true;
       setCourseSyncStatus("syncing");
+      const syncedLessonIds = new Set(rows.map((row) => row.lessonId));
 
       try {
         await persistCourseProgressRows(rows);
-        if (options?.force) {
-          courseSyncDirtyLessonIdsRef.current.clear();
-        } else {
-          for (const row of rows) {
-            courseSyncDirtyLessonIdsRef.current.delete(row.lessonId);
-          }
+
+        const latestRowsByLessonId = new Map(
+          buildSyncRows().map((row) => [row.lessonId, row] as const)
+        );
+
+        for (const row of rows) {
+          const latestRow = latestRowsByLessonId.get(row.lessonId);
+          if (!latestRow) continue;
+          if (!areCourseProgressRowsEqual([latestRow], [row])) continue;
+          courseSyncDirtyLessonIdsRef.current.delete(row.lessonId);
         }
+
+        for (const dirtyLessonId of Array.from(courseSyncDirtyLessonIdsRef.current)) {
+          if (!syncedLessonIds.has(dirtyLessonId)) continue;
+          if (latestRowsByLessonId.has(dirtyLessonId)) continue;
+          courseSyncDirtyLessonIdsRef.current.delete(dirtyLessonId);
+        }
+
         courseSyncDirtyRef.current = courseSyncDirtyLessonIdsRef.current.size > 0;
         setCourseSyncStatus("synced");
         setLastCourseSyncAtMs(Date.now());
@@ -596,6 +609,9 @@ function CoursePageClient() {
         setCourseSyncStatus("error");
       } finally {
         courseSyncInFlightRef.current = false;
+        if (courseSyncDirtyRef.current) {
+          void syncCourseProgressNow({ force: true });
+        }
       }
     },
     [
@@ -1378,7 +1394,10 @@ function CoursePageClient() {
   function toggleDoneGateCriterion(criterion: string) {
     setDoneGateFeedback(null);
     setDoneGateChecksByLessonId((prev) => {
-      const existing = normalizeCourseLessonCriteriaChecks(activeLesson, prev[activeLesson.id] ?? []);
+      const existing = normalizeCourseLessonCriteriaChecks(
+        activeLesson,
+        prev[activeLesson.id] ?? []
+      );
       const nextSet = new Set(existing);
       if (nextSet.has(criterion)) {
         nextSet.delete(criterion);
@@ -1593,7 +1612,12 @@ function CoursePageClient() {
 
   const doneLessonIdSet = useMemo(() => new Set(doneLessonIds), [doneLessonIds]);
   const lessonProgressStatusById = useMemo(
-    () => buildCourseLessonProgressStatusMap(courseLessonsFlat, doneLessonIdSet, doneGateChecksByLessonId),
+    () =>
+      buildCourseLessonProgressStatusMap(
+        courseLessonsFlat,
+        doneLessonIdSet,
+        doneGateChecksByLessonId
+      ),
     [courseLessonsFlat, doneGateChecksByLessonId, doneLessonIdSet]
   );
   const doneLessonsCount = useMemo(
@@ -1601,7 +1625,8 @@ function CoursePageClient() {
     [courseLessonsFlat, doneLessonIdSet]
   );
   const inProgressLessonsCount = useMemo(
-    () => Object.values(lessonProgressStatusById).filter((status) => status === "in_progress").length,
+    () =>
+      Object.values(lessonProgressStatusById).filter((status) => status === "in_progress").length,
     [lessonProgressStatusById]
   );
   const totalLessons = Math.max(1, moduleInfo.totalLessons);
@@ -1659,7 +1684,11 @@ function CoursePageClient() {
     (lessonType === "learn" ? "Learn" : lessonType === "swim" ? "Swim" : "Drill");
   const passCriteria = getCourseLessonPassCriteria(activeLesson);
   const doneGateChecks = useMemo(
-    () => normalizeCourseLessonCriteriaChecks(activeLesson, doneGateChecksByLessonId[activeLesson.id] ?? []),
+    () =>
+      normalizeCourseLessonCriteriaChecks(
+        activeLesson,
+        doneGateChecksByLessonId[activeLesson.id] ?? []
+      ),
     [activeLesson, doneGateChecksByLessonId]
   );
   const doneGateChecksSet = useMemo(() => new Set(doneGateChecks), [doneGateChecks]);
@@ -2665,7 +2694,8 @@ function CoursePageClient() {
                 <div className="flex h-[10px] w-full overflow-hidden rounded-full bg-slate-200/95">
                   {courseLessonsFlat.map((lesson, index) => {
                     const isCurrentSegment = index === currentLessonIndex;
-                    const lessonProgressStatus = lessonProgressStatusById[lesson.id] ?? "not_started";
+                    const lessonProgressStatus =
+                      lessonProgressStatusById[lesson.id] ?? "not_started";
                     const isDoneSegment = lessonProgressStatus === "done";
                     const isInProgressSegment = lessonProgressStatus === "in_progress";
                     const isFirstSegment = index === 0;
@@ -2686,7 +2716,7 @@ function CoursePageClient() {
                               ? "bg-blue-500"
                               : isInProgressSegment
                                 ? "bg-amber-400/90"
-                              : "bg-slate-300/78"
+                                : "bg-slate-300/78"
                         )}
                       />
                     );
@@ -2737,9 +2767,10 @@ function CoursePageClient() {
                               ? "bg-blue-50 text-blue-700 ring-blue-100/80"
                               : lessonProgressStatusById[previewLessonMeta.lesson.id] === "done"
                                 ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
-                                : lessonProgressStatusById[previewLessonMeta.lesson.id] === "in_progress"
+                                : lessonProgressStatusById[previewLessonMeta.lesson.id] ===
+                                    "in_progress"
                                   ? "bg-amber-50 text-amber-700 ring-amber-200/80"
-                                : "bg-white text-slate-700 ring-slate-200/75",
+                                  : "bg-white text-slate-700 ring-slate-200/75",
                             isOverviewJumpDragging &&
                               "scale-[1.03] shadow-[0_8px_20px_rgba(37,99,235,0.16)]"
                           )}

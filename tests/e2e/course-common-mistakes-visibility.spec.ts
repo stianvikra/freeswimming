@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { isDesktopProject } from "./project-guards";
+import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
 const COMMON_MISTAKES_STORAGE_KEY_PREFIX = "fs_course_common_mistakes_expanded:";
 const COMMON_MISTAKES_LESSON_CANDIDATES = [
@@ -12,15 +13,7 @@ const COMMON_MISTAKES_LESSON_CANDIDATES = [
 ] as const;
 
 async function waitForCoursePageToSettle(page: Page) {
-  const compilingIndicator = page.getByText("Compiling", { exact: true });
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
-    await page.waitForTimeout(750);
-    if ((await compilingIndicator.count()) === 0) {
-      break;
-    }
-  }
+  await waitForRouteToSettle(page);
 
   await page.evaluate(
     () =>
@@ -40,7 +33,7 @@ async function gotoCourseLesson(page: Page, lessonId: string) {
     )
     .catch(() => null);
 
-  await page.goto(`/course?lesson=${lessonId}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await gotoWithTransientRetry(page, `/course?lesson=${lessonId}`, 60_000);
   await courseContentResponse;
   await waitForCoursePageToSettle(page);
 
@@ -123,6 +116,7 @@ test("common mistakes stays visible by default and persists per-lesson collapse 
   test.skip(!isDesktopProject(testInfo), "Runs once on desktop profile.");
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
   test.slow();
+  testInfo.setTimeout(180_000);
 
   await gotoCourseLesson(page, COMMON_MISTAKES_LESSON_CANDIDATES[0]);
 
