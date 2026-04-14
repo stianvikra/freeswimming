@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[pre-merge-gate] Step 1/2: Run local pre-merge verification"
+echo "[pre-merge-gate] Step 1/3: Run local pre-merge verification"
 npm run verify:pre-merge
 
-echo "[pre-merge-gate] Step 2/2: Refresh PR body with latest pre-merge evidence"
+echo "[pre-merge-gate] Step 2/3: Refresh PR body with latest pre-merge evidence"
 npm run pr:create:safari -- --refresh-body
+
+echo "[pre-merge-gate] Step 3/3: Validate merge preflight on current HEAD"
+npm run merge:preflight -- --assert-ready
 
 echo "[pre-merge-gate] PASS"

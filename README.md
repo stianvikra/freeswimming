@@ -159,6 +159,13 @@ Pre-PR and pre-merge shortcuts:
 ```bash
 npm run verify:pre-pr
 npm run verify:pre-merge
+npm run merge:preflight
+```
+
+Pre-merge all-in-one handoff:
+
+```bash
+npm run gate:pre-merge
 ```
 
 ## PR automation (Safari + optional gh CLI)
@@ -200,6 +207,7 @@ gh auth login
    - `npm run verify:pre-pr`
 3. Before merge:
    - `npm run verify:pre-merge`
+   - `npm run merge:preflight` (or `npm run gate:pre-merge`)
 
 ## Automated test runs (GitHub Actions)
 

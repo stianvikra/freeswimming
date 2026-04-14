@@ -17,7 +17,7 @@ Use this for PRs targeting `main`.
   - if out of scope, leave unchecked or mark `N/A` with rationale.
 - Required checks are green.
 - `npm run verify:pre-merge` has been run on latest local branch state.
-- Recommended automation: `npm run gate:pre-merge` (runs pre-merge verify and refreshes PR body evidence on current HEAD SHA).
+- Recommended automation: `npm run gate:pre-merge` (runs pre-merge verify, refreshes PR body evidence on current HEAD SHA, and prints merge-preflight status).
 - For policy-impacting scope (auth/analytics/user-data rights/third-party processor changes), run:
   - `docs/checklists/policy-impact-release-review.md`
 - Local manual QA is completed for changed flows (record URL + browser/device in PR).
@@ -47,6 +47,7 @@ Use this for PRs targeting `main`.
 - Run local sync immediately:
   - `git checkout main`
   - `git pull --ff-only origin main`
+  - `npm run post-merge:preflight`
   - `git branch -d <merged-branch>`
 - Optional cleanup:
   - `git fetch --prune`

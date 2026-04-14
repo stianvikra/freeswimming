@@ -11,6 +11,7 @@ From repo root:
 ```bash
 git checkout main
 git pull --ff-only origin main
+npm run post-merge:preflight
 git branch -d <merged-branch>
 ```
 
@@ -19,6 +20,7 @@ Example:
 ```bash
 git checkout main
 git pull --ff-only origin main
+npm run post-merge:preflight
 git branch -d feat/mac-safari-install-guidance
 ```
 
@@ -32,5 +34,6 @@ git branch -vv
 ## Why This Is Required
 
 - Ensures you code from latest `main`.
+- Surfaces pending `in-progress` brief closeout commands from the just-synced merge commit.
 - Avoids accidentally continuing work on an old feature branch.
 - Reduces merge conflicts and stale branch clutter.

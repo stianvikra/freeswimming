@@ -20,9 +20,10 @@ Use this runbook for reliable local validation when private-access (site lock) i
 - Run release gates with one command:
   - pre-PR: `npm run verify:pre-pr`
   - pre-merge: `npm run verify:pre-merge`
+  - merge-preflight summary only: `npm run merge:preflight`
   - pure docs/governance diffs may auto-select `docs-only` inside those commands
   - code/scripts/tests/config/workflow/runtime diffs still run the full lane
-  - pre-merge + PR evidence refresh: `npm run gate:pre-merge`
+  - pre-merge + PR evidence refresh + merge preflight: `npm run gate:pre-merge`
   - private-gate env when lock is enabled:
     - automation default (auto-wires token when available): `SITE_LOCK_ENABLED=1 npm run verify:pre-merge`
     - force password-flow coverage: `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
@@ -96,8 +97,11 @@ Pre-merge evidence marker (for PR body refresh automation):
   - `npm run test:e2e:mobile` (if touching mobile/nav/auth/guide flows)
 - Before merge:
   - run full `npm run verify:pre-merge`.
+  - run `npm run merge:preflight` (or `npm run gate:pre-merge`) so the merge handoff is based on current-head local evidence.
   - if validating private unlock UX, force password mode:
     - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
+- After merge and local `main` sync:
+  - run `npm run post-merge:preflight` before moving briefs to `done`.
 
 ## CI and Nightly Automation
 
