@@ -135,7 +135,7 @@ if [ "${reuse_decision}" = "reuse" ]; then
   verify_step_run_dir="${reuse_run_dir}"
 else
   echo "[verify-pre-merge] Step 1/2: Public-mode full verification (${reuse_reason})"
-  SITE_LOCK_ENABLED=0 npm run verify
+  bash ./scripts/run-verify-open.sh
   verify_step_source="fresh-run"
   verify_step_run_dir="artifacts/test-runs/latest"
 fi
