@@ -291,6 +291,17 @@ test.describe("my library program export", () => {
       "canonical"
     );
 
+    const exportPreview = page.getByTestId("program-editor-garmin-export-preview").first();
+    await expect(exportPreview).toBeVisible({ timeout: 15_000 });
+    await expect(exportPreview).not.toContainText("Loading canonical export preview...", {
+      timeout: 30_000,
+    });
+    await expect(exportPreview).toContainText('"kind": "freeswimming_garmin_ready_program_v1"', {
+      timeout: 15_000,
+    });
+    await expect(exportPreview).toContainText(uniqueProgramTitle, { timeout: 15_000 });
+    await expect(exportPreview).toContainText(uniqueWorkoutTitle, { timeout: 15_000 });
+
     const downloadPromise = page.waitForEvent("download");
     await page.getByTestId("program-editor-garmin-export-download").click();
     const download = await downloadPromise;
@@ -299,13 +310,6 @@ test.describe("my library program export", () => {
     await expect(page.getByTestId("program-editor-garmin-export-notice")).toContainText(
       expectedJsonFileName
     );
-    const exportPreview = page.getByTestId("program-editor-garmin-export-preview").first();
-    await expect(exportPreview).toBeVisible({ timeout: 15_000 });
-    await expect(exportPreview).toContainText('"kind": "freeswimming_garmin_ready_program_v1"', {
-      timeout: 15_000,
-    });
-    await expect(exportPreview).toContainText(uniqueProgramTitle, { timeout: 15_000 });
-    await expect(exportPreview).toContainText(uniqueWorkoutTitle, { timeout: 15_000 });
 
     const pdfPopupPromise = page.waitForEvent("popup");
     await page.getByTestId("program-editor-pdf-open").click();

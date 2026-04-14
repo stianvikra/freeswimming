@@ -54,6 +54,43 @@ async function waitForWorkoutBuilderClientReady(page: Page) {
     .toBe("true");
 }
 
+async function openSavedWorkoutPreview(page: Page, workoutId: string) {
+  const card = page.getByTestId(`saved-workout-card-${workoutId}`);
+  const viewButton = card.getByTestId(`saved-workouts-view-${workoutId}`);
+  const preview = card.getByTestId(`saved-workouts-preview-${workoutId}`);
+
+  await expect(card).toBeVisible({ timeout: 15_000 });
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const previewVisible = await preview.isVisible().catch(() => false);
+    if (previewVisible) {
+      return preview;
+    }
+
+    await expect(viewButton).toBeVisible({ timeout: 10_000 });
+    await viewButton.scrollIntoViewIfNeeded();
+    await viewButton.click();
+
+    const opened = await preview
+      .waitFor({
+        state: "visible",
+        timeout: 3_000,
+      })
+      .then(() => true)
+      .catch(() => false);
+
+    if (opened) {
+      return preview;
+    }
+
+    await waitForRouteToSettle(page);
+    await page.waitForTimeout(250);
+  }
+
+  await expect(preview).toBeVisible({ timeout: 15_000 });
+  return preview;
+}
+
 async function waitForWorkoutBuilderSaveReady(page: Page) {
   const schemaWarning = page.getByText(
     "Canonical workout save is still syncing in this environment."
@@ -726,11 +763,13 @@ test.describe("my library workout builder", () => {
         viewSessionsLink.click(),
       ]);
     }
+    await waitForRouteToSettle(page);
+    await waitForWorkoutBuilderClientReady(page);
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
-    await page.getByTestId(`saved-workouts-view-${workoutId}`).click();
-    await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("Total:");
-    await expect(page.getByTestId(`saved-workouts-preview-${workoutId}`)).toContainText("P:");
+    const savedWorkoutPreview = await openSavedWorkoutPreview(page, workoutId);
+    await expect(savedWorkoutPreview).toContainText("Total:");
+    await expect(savedWorkoutPreview).toContainText("P:");
     const editWorkoutLink = page.getByTestId(`workout-builder-edit-workout-${workoutId}`);
     const editWorkoutHref = await editWorkoutLink.getAttribute("href");
     if (editWorkoutHref) {
