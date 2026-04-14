@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-14-recent-brief-lifecycle-closeout-reconcile-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-14`
 - `updated`: `2026-04-14`
@@ -94,3 +94,4 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-04-14 | in-progress | opened a narrow docs-only reconcile slice after PRs #423, #424, and #425 merged and several recent implementation briefs still remained in in-progress alongside older docs-only verification briefs that were already delivered on main | next: move the stale briefs to done, update closeout checkpoints and links, run docs-only gates, then open a small closeout PR`
+- `2026-04-14 | done | merged via PR #426 on commit 4ddbe5d, which closed out the stale recent briefs and restored truthful lifecycle state across the active swim-session-builder docs track | next: keep later builder work in their own scoped briefs and close each brief in the same merge window when feasible`
