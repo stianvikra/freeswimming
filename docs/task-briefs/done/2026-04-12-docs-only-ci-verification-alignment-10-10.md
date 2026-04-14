@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-12-docs-only-ci-verification-alignment-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-12`
-- `updated`: `2026-04-12`
+- `updated`: `2026-04-14`
 
 ## Goal
 
@@ -22,7 +22,7 @@ Make GitHub PR CI use the same conservative docs-only verification lane that loc
 ## Dependencies And Boundaries
 
 - Existing local lane contract:
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-11-docs-only-verification-lane-10-10.md`
+  - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-11-docs-only-verification-lane-10-10.md`
 - CI/workflow surfaces:
   - `/Users/stianvikra/freeswimming/.github/workflows/ci.yml`
 - Existing scope detection + docs-only runner:
@@ -144,3 +144,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-12 | in-progress | implemented a repo-native CI lane resolver, wired \`.github/workflows/ci.yml\` to use the same conservative docs-only-vs-full plan for PR jobs, added unit coverage for the new planner, and confirmed local \`npx vitest run tests/unit/ci-verification-plan.test.ts tests/unit/verification-scope.test.ts tests/unit/pr-body-verification-lane.test.ts\`, \`npm run lint:briefs\`, and \`npm run verify:pre-pr\` all pass on the child slice; current branch still correctly selects the full lane because the diff includes workflow/script/test files | next: run \`npm run verify:pre-merge\`, commit, push, update PR #419, and watch required GitHub checks`
 - `2026-04-12 | in-progress | local validation is now complete for the child slice: \`npm run verify:pre-pr\` and \`npm run verify:pre-merge\` both passed on the workflow/script/test diff, with pre-merge explicitly recording PASS and skipping the private-gate regression only because \`SITE_LOCK_ENABLED!=1\`; scope is ready for commit/push and GitHub check observation on PR #419 | next: commit, push, update PR metadata if needed, and confirm required CI checks stay green with the aligned lane behavior`
 - `2026-04-12 | in-progress | PR #419 CI then exposed a follow-up mismatch between PR-body generation and SHA-aware PR-body lint: stale-head pre-merge evidence rendered as \`PENDING\` while still containing the phrase \`latest PASS was\`, which the linter correctly treated as invalid PASS evidence for the current head; updated the PR-body generator to use neutral stale-marker wording and added a unit regression plus \`npm run lint:pr-body:generated\` coverage so the aligned docs-only CI lane is not blocked by invalid generated PR metadata | next: commit, push, refresh PR #419 body/title, rerun the failing verify job, and then finish current-head pre-merge evidence`
+- `2026-04-14 | done | delivered on main through PR #419 via commit 51d242a together with the merged PR-body evidence follow-up in the same workstream; leaving this child brief open was stale lifecycle drift only | closeout: move brief to done`

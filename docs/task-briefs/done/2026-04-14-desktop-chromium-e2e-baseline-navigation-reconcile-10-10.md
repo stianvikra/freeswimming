@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-14-desktop-chromium-e2e-baseline-navigation-reconcile-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-14`
 - `updated`: `2026-04-14`
@@ -17,7 +17,7 @@ Restore local `verify:pre-merge` stability by fixing the current desktop-Chromiu
 - Triggering blocker:
   - local `npm run verify:pre-merge` after PR `#424` passed GitHub CI but failed on unrelated desktop-Chromium Playwright coverage outside the swim-builder slice.
 - Adjacent but out-of-scope slice:
-  - [2026-04-13-swim-session-builder-repeat-container-targeted-edit-and-session-actions-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-13-swim-session-builder-repeat-container-targeted-edit-and-session-actions-10-10.md)
+  - [2026-04-13-swim-session-builder-repeat-container-targeted-edit-and-session-actions-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-13-swim-session-builder-repeat-container-targeted-edit-and-session-actions-10-10.md)
 - Locked scope decisions for this slice:
   - keep swim-builder UI/code unchanged unless a direct shared test-helper dependency requires a harmless adjustment,
   - fix route/navigation flake only where the current baseline is red,
@@ -185,3 +185,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-14 | in-progress | full \`npm run verify:pre-pr\` is now green (\`94 passed\`, \`326 skipped\`, \`0 failed\`) after expanding the shared transient-navigation helper into remaining red baseline specs including contact-form-a11y, course-common-mistakes-visibility, drawer-focus-trap, soft-launch-banner, and my-library-workout-builder | next: lint the updated brief if needed, stage the reconcile diff, commit/push, update the PR, then run \`npm run verify:pre-merge\` before merge recommendation`
 - `2026-04-14 | in-progress | the post-commit verify rerun exposed a real course-progress undo race in \`app/course/page.tsx\`: a second mutation could arrive while a force-sync was in flight, then get dropped when the dirty lesson set was cleared too aggressively; the same rerun also showed the course done-gate checklist path still needed direct checkbox interaction in Playwright | next: rerun the isolated desktop-Chromium course-progress-sync spec, then rerun full \`npm run verify:pre-pr\` on the updated tree before push`
 - `2026-04-14 | in-progress | the final reconcile pass fixed three remaining full-lane blockers: course-progress-sync now preserves dirty lesson mutations that arrive during an in-flight force sync, my-library-program-export now waits for canonical export-preview readiness before asserting download behavior, and my-library-workout-builder now waits for the saved-sessions browse view to become client-ready before opening inline previews with card-scoped toggles; full \`npm run verify:pre-pr\` is green again (\`94 passed\`, \`326 skipped\`, \`0 failed\`), and perf budgets still report a separate follow-up recommendation to tighten one stretch target step rather than any regression in this slice | next: stage the remaining reconcile diff, commit/push, update the PR, then run \`npm run verify:pre-merge\` before merge recommendation`
+- `2026-04-14 | done | merged to main in PR #425 via commit 7b41f3a after local \`verify:pre-pr\`, local \`verify:pre-merge\`, and required GitHub checks all passed; this brief no longer owns active baseline work | closeout: move brief to done`
