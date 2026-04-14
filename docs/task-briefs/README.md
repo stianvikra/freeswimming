@@ -75,6 +75,7 @@ Agent should explicitly ask owner before final lifecycle actions:
 
 - `Do you want to move this brief to done now?`
 - `Do you want me to run post-merge local sync + branch cleanup now?`
+- After merge and local `main` sync, run `npm run post-merge:preflight` before moving any just-merged brief to `done/`.
 
 ## Naming Convention
 
@@ -102,6 +103,7 @@ Use this cadence to keep repository branches clean and predictable:
 1. After each merged PR (same session):
    - `git checkout main`
    - `git pull --ff-only origin main`
+   - `npm run post-merge:preflight`
    - `git branch -d <merged-branch>`
    - if remote branch remains: `git push origin --delete <merged-branch>`
    - `git fetch --prune origin`

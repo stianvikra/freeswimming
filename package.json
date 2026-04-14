@@ -43,6 +43,8 @@
     "verify:open:log": "bash ./scripts/run-verify-open.sh",
     "verify:last": "bash ./scripts/show-last-verify-summary.sh",
     "gate:pre-merge": "bash ./scripts/run-pre-merge-gate.sh",
+    "merge:preflight": "node ./scripts/merge-preflight.mjs --summary",
+    "post-merge:preflight": "node ./scripts/post-merge-preflight.mjs --summary",
     "pr:open:safari": "bash ./scripts/open-pr-safari.sh",
     "pr:create:safari": "bash ./scripts/pr-create-safari.sh",
     "screenshots:mobile": "playwright test tests/e2e/mobile-screenshots.spec.ts --project=mobile-chromium",
