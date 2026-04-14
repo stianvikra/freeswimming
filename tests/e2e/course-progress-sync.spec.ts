@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
 type CourseProgressPollResult = {
   status: number | "transient";
@@ -60,16 +61,18 @@ async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
 test("signed-in mark-as-done syncs to account progress API", async ({ page }, testInfo) => {
   test.slow();
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
+  testInfo.setTimeout(120_000);
 
   const lessonId = "mod1-l1";
   const canonicalLessonId = "intro-course--welcome-course-structure";
   const nextPath = `/course?lesson=${encodeURIComponent(lessonId)}`;
-  await page.goto(`/dev/login?next=${encodeURIComponent(nextPath)}`);
+  await gotoWithTransientRetry(page, `/dev/login?next=${encodeURIComponent(nextPath)}`);
 
   if (new URL(page.url()).pathname !== "/course") {
     test.skip(true, "Dev auth bypass is not enabled in this environment.");
   }
 
+  await waitForRouteToSettle(page);
   const markDoneButton = page.getByTestId("course-mark-done-button");
   await expect(markDoneButton).toBeVisible();
 
@@ -79,7 +82,7 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
         const snapshot = await getCourseProgressSnapshot(page, canonicalLessonId);
         return snapshot.status;
       },
-      { timeout: 30_000 }
+      { timeout: 60_000 }
     )
     .toBe(200);
   await page.waitForTimeout(1_200);

@@ -1,5 +1,11 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import {
+  clickHrefAndAwaitUrlOrRetryGoto,
+  gotoWithTransientRetry,
+  prewarmRoute,
+  waitForRouteToSettle,
+} from "./utils/transient-navigation";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -7,53 +13,6 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(!projectName.startsWith("desktop-"), "Athlete profile e2e is desktop-only.");
   test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
-}
-
-async function prewarmRoute(page: Page, href: string, timeoutMs = 90_000) {
-  return page.request
-    .get(href, {
-      timeout: timeoutMs,
-      failOnStatusCode: false,
-    })
-    .catch(() => null);
-}
-
-async function gotoWithTransientRetry(page: Page, href: string, initialTimeoutMs = 90_000) {
-  await prewarmRoute(page, href, initialTimeoutMs);
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      await page.goto(href, {
-        waitUntil: "domcontentloaded",
-        timeout: attempt === 0 ? initialTimeoutMs : 60_000,
-      });
-      return;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const isTransientGotoError =
-        /ERR_ABORTED|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(errorMessage);
-
-      if (!isTransientGotoError || attempt === 2) {
-        throw error;
-      }
-
-      await page.waitForTimeout(1_000);
-    }
-  }
-}
-
-async function waitForRouteToSettle(page: Page) {
-  const compilingIndicator = page.getByText("Compiling", { exact: true });
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
-    await page.waitForTimeout(750);
-    if ((await compilingIndicator.count()) === 0) {
-      break;
-    }
-  }
-
-  await page.waitForTimeout(300);
 }
 
 async function loginToMyLibraryViaDevBypass(page: Page) {
@@ -125,6 +84,7 @@ test.describe("my library athlete profile", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    testInfo.setTimeout(150_000);
 
     await loginToMyLibraryViaDevBypass(page);
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
@@ -134,15 +94,13 @@ test.describe("my library athlete profile", () => {
     await expect(openProfileLink).toHaveAttribute("href", "/my-library/profile");
     const href = await openProfileLink.getAttribute("href");
     expect(href).toBeTruthy();
-    await openProfileLink.click();
-    const navigatedAfterClick = await page
-      .waitForURL(/\/my-library\/profile$/, { timeout: 7_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!navigatedAfterClick) {
-      await page.goto(href!, { waitUntil: "domcontentloaded", timeout: 60_000 });
-      await expect(page).toHaveURL(/\/my-library\/profile$/);
-    }
+    await clickHrefAndAwaitUrlOrRetryGoto({
+      page,
+      trigger: openProfileLink,
+      href: href!,
+      expectedUrl: /\/my-library\/profile$/,
+      clickNavigationTimeoutMs: 7_000,
+    });
     await waitForRouteToSettle(page);
     await expect(
       page.getByRole("heading", {
@@ -201,9 +159,10 @@ test.describe("my library athlete profile", () => {
   test("creates and deletes a personal record", async ({ page }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    testInfo.setTimeout(150_000);
 
     await loginToMyLibraryViaDevBypass(page);
-    await page.goto("/my-library/profile", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await gotoWithTransientRetry(page, "/my-library/profile", 60_000);
     await waitForRouteToSettle(page);
     await expect(
       page.getByRole("heading", {

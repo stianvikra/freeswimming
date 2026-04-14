@@ -1,24 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
+import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
 async function waitForContactPageToSettle(page: Page) {
-  const compilingIndicator = page.getByText("Compiling", { exact: true });
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
-    await page.waitForTimeout(750);
-    if ((await compilingIndicator.count()) === 0) {
-      return;
-    }
-  }
-
-  await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
+  await waitForRouteToSettle(page);
 }
 
 test("contact form labels are associated and mobile load does not force focus", async ({
   page,
 }) => {
   test.slow();
-  await page.goto("/contact", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await gotoWithTransientRetry(page, "/contact", 60_000);
   await waitForContactPageToSettle(page);
   await page.evaluate(
     () =>
@@ -49,10 +40,13 @@ test("contact form labels are associated and mobile load does not force focus", 
     await waitForContactPageToSettle(page);
     await sendButton.scrollIntoViewIfNeeded();
     await sendButton.click();
-    await expect(formError)
+    const invalidStateVisible = await expect(formError)
       .toContainText("Please enter your name.", { timeout: 4_000 })
-      .catch(() => {});
-    if ((await formError.textContent())?.includes("Please enter your name.")) {
+      .then(() => true)
+      .catch(async () => {
+        return (await name.getAttribute("aria-invalid").catch(() => null)) === "true";
+      });
+    if (invalidStateVisible) {
       submitted = true;
       break;
     }
@@ -60,6 +54,7 @@ test("contact form labels are associated and mobile load does not force focus", 
   }
 
   expect(submitted).toBe(true);
+  await expect(formError).toContainText("Please enter your name.");
   await expect(name).toBeFocused();
   await expect(name).toHaveAttribute("aria-invalid", "true");
   await expect(name).toHaveAttribute("aria-describedby", "contact-form-error");

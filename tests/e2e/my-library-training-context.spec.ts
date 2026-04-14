@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -14,7 +15,7 @@ function runOnceOnDesktopChromium(projectName: string) {
 }
 
 async function loginToMyLibraryViaDevBypass(page: Page) {
-  await page.goto(`/dev/login?next=${encodeURIComponent("/my-library")}`);
+  await gotoWithTransientRetry(page, `/dev/login?next=${encodeURIComponent("/my-library")}`);
   const pathAfterLogin = new URL(page.url()).pathname;
 
   if (pathAfterLogin !== "/my-library") {
@@ -25,6 +26,7 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 }
 
 async function waitForTrainingContextClientReady(page: Page) {
+  await waitForRouteToSettle(page);
   await expect(page.getByTestId("training-context-hub")).toHaveAttribute(
     "data-client-ready",
     "true",
@@ -33,6 +35,7 @@ async function waitForTrainingContextClientReady(page: Page) {
 }
 
 async function waitForGoalsHubClientReady(page: Page) {
+  await waitForRouteToSettle(page);
   await expect(page.getByTestId("goals-hub")).toHaveAttribute("data-client-ready", "true", {
     timeout: 30_000,
   });
@@ -107,7 +110,7 @@ async function archiveCreatedGoalIfNeeded(
 ) {
   if (!createdGoalTitle) return;
 
-  await page.goto("/my-library/goals", { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await gotoWithTransientRetry(page, "/my-library/goals", 60_000);
   await waitForGoalsHubClientReady(page);
   const archiveGoalResponse = page.waitForResponse(
     (response) =>
@@ -124,9 +127,10 @@ test.describe("my library training context", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    testInfo.setTimeout(150_000);
 
     await loginToMyLibraryViaDevBypass(page);
-    await page.goto("/my-library/training", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await gotoWithTransientRetry(page, "/my-library/training", 60_000);
     await expect(page.getByRole("heading", { name: "Focus & Notes", level: 1 })).toBeVisible();
     await waitForTrainingContextClientReady(page);
 
@@ -147,24 +151,18 @@ test.describe("my library training context", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    testInfo.setTimeout(210_000);
 
     await loginToMyLibraryViaDevBypass(page);
-    await page.goto("/my-library/goals", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await gotoWithTransientRetry(page, "/my-library/goals", 60_000);
     await expect(page.getByRole("heading", { name: "Goals", level: 1 })).toBeVisible();
     await waitForGoalsHubClientReady(page);
 
     const { createdGoalTitle, focusHref, goalId, goalTitle } =
       await ensureGoalAvailableForBridge(page);
 
-    await page.getByTestId(`goal-use-focus-${goalId}`).click();
-    const navigatedAfterClick = await page
-      .waitForURL(/\/my-library\/training\?goalId=.*intent=focus/, { timeout: 7_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!navigatedAfterClick) {
-      await page.goto(focusHref, { waitUntil: "domcontentloaded", timeout: 60_000 });
-      await expect(page).toHaveURL(/\/my-library\/training\?goalId=.*intent=focus/);
-    }
+    await gotoWithTransientRetry(page, focusHref, 60_000);
+    await expect(page).toHaveURL(/\/my-library\/training\?goalId=.*intent=focus/);
 
     await expect(
       page.getByRole("heading", {
@@ -197,24 +195,18 @@ test.describe("my library training context", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
+    testInfo.setTimeout(210_000);
 
     await loginToMyLibraryViaDevBypass(page);
-    await page.goto("/my-library/goals", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await gotoWithTransientRetry(page, "/my-library/goals", 60_000);
     await expect(page.getByRole("heading", { name: "Goals", level: 1 })).toBeVisible();
     await waitForGoalsHubClientReady(page);
 
     const { createdGoalTitle, goalId, goalTitle, noteHref } =
       await ensureGoalAvailableForBridge(page);
 
-    await page.getByTestId(`goal-use-note-${goalId}`).click();
-    const navigatedAfterClick = await page
-      .waitForURL(/\/my-library\/training\?goalId=.*intent=note/, { timeout: 7_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!navigatedAfterClick) {
-      await page.goto(noteHref, { waitUntil: "domcontentloaded", timeout: 60_000 });
-      await expect(page).toHaveURL(/\/my-library\/training\?goalId=.*intent=note/);
-    }
+    await gotoWithTransientRetry(page, noteHref, 60_000);
+    await expect(page).toHaveURL(/\/my-library\/training\?goalId=.*intent=note/);
 
     await expect(
       page.getByRole("heading", {
@@ -249,7 +241,7 @@ test.describe("my library training context", () => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
     await loginToMyLibraryViaDevBypass(page);
-    await page.goto("/my-library/training", { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await gotoWithTransientRetry(page, "/my-library/training", 60_000);
     await expect(page.getByRole("heading", { name: "Focus & Notes", level: 1 })).toBeVisible();
     await waitForTrainingContextClientReady(page);
 

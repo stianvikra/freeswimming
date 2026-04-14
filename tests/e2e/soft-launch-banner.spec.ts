@@ -1,38 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-
-async function waitForRouteToSettle(page: Page) {
-  const compilingIndicator = page.getByText("Compiling", { exact: true });
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
-    await page.waitForTimeout(750);
-    if ((await compilingIndicator.count()) === 0) {
-      return;
-    }
-  }
-
-  await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
-}
+import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
 async function gotoStable(page: Page, href: string) {
-  let lastError: unknown = null;
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      await page.goto(href, { waitUntil: "domcontentloaded", timeout: 60_000 });
-      await waitForRouteToSettle(page);
-      return;
-    } catch (error) {
-      lastError = error;
-      const message = error instanceof Error ? error.message : String(error);
-      if (!/ERR_ABORTED|frame was detached/i.test(message) || attempt === 2) {
-        throw error;
-      }
-      await page.waitForTimeout(750);
-    }
-  }
-
-  throw lastError;
+  await gotoWithTransientRetry(page, href, 60_000);
+  await waitForRouteToSettle(page);
 }
 
 test("public pages do not render legacy under-construction banner", async ({ page }) => {
