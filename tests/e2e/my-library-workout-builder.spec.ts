@@ -521,9 +521,14 @@ test.describe("my library workout builder", () => {
 
     await openMetadataPanelIfCollapsed(page);
     await expect(page.getByTestId("session-draft-title")).toHaveValue("");
+    await page.getByLabel("Exact pool size (m)").fill("33.33");
+    await expect(page.getByLabel("Exact pool size (m)")).toHaveValue("33.33");
     await page.getByTestId("workout-editor-pool-length-unit-yd").click();
     await expect(page.getByLabel("Exact pool size (yd)")).toBeVisible();
-    await page.getByRole("button", { name: "25yd" }).click();
+    await expect(page.getByLabel("Exact pool size (yd)")).toHaveValue("25");
+    await page.getByTestId("workout-editor-pool-length-unit-m").click();
+    await expect(page.getByLabel("Exact pool size (m)")).toHaveValue("25");
+    await page.getByTestId("workout-editor-pool-length-unit-yd").click();
     await expect(page.getByLabel("Exact pool size (yd)")).toHaveValue("25");
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");

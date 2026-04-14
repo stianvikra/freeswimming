@@ -322,6 +322,10 @@ function formatPoolLengthUnitLabel(value: number, unit: SessionDraftPoolLengthUn
   return `${formatEditablePoolLength(value, unit)}${unit}`;
 }
 
+function getDefaultPoolLengthQuickChoice(unit: SessionDraftPoolLengthUnit) {
+  return unit === "yd" ? YARD_POOL_SIZE_QUICK_CHOICES[0] : MANUAL_POOL_SIZE_QUICK_CHOICES[0];
+}
+
 function isPoolLengthQuickChoiceSelected(
   currentValueMeters: number | null | undefined,
   quickChoiceValue: number,
@@ -2430,7 +2434,22 @@ export default function WorkoutEditor({
   }
 
   function updatePoolLengthUnit(nextUnit: SessionDraftPoolLengthUnit) {
-    updateDraft("poolLengthUnit", nextUnit);
+    if (nextUnit === poolLengthUnit) {
+      return;
+    }
+
+    const nextPoolLength = convertPoolUnitValueToMeters(
+      getDefaultPoolLengthQuickChoice(nextUnit),
+      nextUnit
+    );
+    setPoolLengthInput(formatEditablePoolLength(nextPoolLength, nextUnit));
+    onDraftChange(
+      syncDraftSelections({
+        ...draft,
+        poolLengthUnit: nextUnit,
+        poolLengthM: nextPoolLength,
+      })
+    );
   }
 
   function choosePoolLengthQuickChoice(value: number) {

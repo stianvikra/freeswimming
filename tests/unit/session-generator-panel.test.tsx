@@ -479,4 +479,49 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
     expect(screen.queryByTestId("session-generator-prepare-needed")).not.toBeInTheDocument();
   });
+
+  it("applies the same pool-unit default reset behavior in the shared saved-session editor", () => {
+    render(
+      <SessionGeneratorPanel
+        payload={buildPayload()}
+        selection={{
+          profile: true,
+          css: true,
+          preferences: true,
+          personal_records: false,
+          goals: true,
+          focus: true,
+        }}
+        overrides={{
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "",
+          constraintText: "Keep the first half controlled.",
+        }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord(),
+          recentWorkouts: [buildWorkoutSummary()],
+        })}
+      />
+    );
+
+    const metadataToggle = screen.queryByTestId("workout-editor-metadata-toggle");
+    if (metadataToggle?.getAttribute("aria-expanded") === "false") {
+      fireEvent.click(metadataToggle);
+    }
+
+    fireEvent.change(screen.getByLabelText("Exact pool length (m)"), {
+      target: { value: "33.33" },
+    });
+    expect(screen.getByLabelText("Exact pool length (m)")).toHaveValue("33.33");
+
+    fireEvent.click(screen.getByTestId("workout-editor-pool-length-unit-yd"));
+    expect(screen.getByLabelText("Exact pool length (yd)")).toHaveValue("25");
+
+    fireEvent.click(screen.getByTestId("workout-editor-pool-length-unit-m"));
+    expect(screen.getByLabelText("Exact pool length (m)")).toHaveValue("25");
+  });
 });

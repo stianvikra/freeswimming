@@ -1,7 +1,20 @@
+import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { buildMergePreflightReport } from "../../scripts/merge-preflight.mjs";
 import { buildPostMergePreflightReport } from "../../scripts/post-merge-preflight.mjs";
+
+const existingInProgressBriefName = readdirSync("docs/task-briefs/in-progress")
+  .filter((fileName) => fileName.endsWith(".md"))
+  .sort((left, right) => left.localeCompare(right))[0];
+
+if (!existingInProgressBriefName) {
+  throw new Error(
+    "Expected at least one in-progress task brief fixture for merge preflight tests."
+  );
+}
+
+const existingInProgressBriefPath = `docs/task-briefs/in-progress/${existingInProgressBriefName}`;
 
 describe("merge preflight", () => {
   it("passes when current-head pre-merge evidence exists and tracked drift is absent", () => {
@@ -80,17 +93,12 @@ describe("post-merge preflight", () => {
       branch: "main",
       baseBranch: "main",
       ref: "HEAD",
-      changedFiles: [
-        "docs/task-briefs/in-progress/2026-04-14-global-pr-merge-discipline-and-post-merge-preflight-10-10.md",
-        "scripts/merge-preflight.mjs",
-      ],
+      changedFiles: [existingInProgressBriefPath, "scripts/merge-preflight.mjs"],
     });
 
-    expect(report.pendingCloseoutBriefs).toEqual([
-      "docs/task-briefs/in-progress/2026-04-14-global-pr-merge-discipline-and-post-merge-preflight-10-10.md",
-    ]);
+    expect(report.pendingCloseoutBriefs).toEqual([existingInProgressBriefPath]);
     expect(report.actions).toContain(
-      "npm run task-brief:move -- 2026-04-14-global-pr-merge-discipline-and-post-merge-preflight-10-10.md done"
+      `npm run task-brief:move -- ${existingInProgressBriefName} done`
     );
   });
 

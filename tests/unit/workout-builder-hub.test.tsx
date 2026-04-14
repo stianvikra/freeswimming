@@ -1288,6 +1288,39 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByText("Equipment")).not.toBeInTheDocument();
   });
 
+  it("resets pool-size unit switches to fresh defaults instead of converting the current exact value", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({ sourceFingerprint: "manual-pool-unit-defaults" }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.change(screen.getByLabelText("Exact pool size (m)"), {
+      target: { value: "33.33" },
+    });
+    expect(screen.getByLabelText("Exact pool size (m)")).toHaveValue("33.33");
+
+    fireEvent.click(screen.getByTestId("workout-editor-pool-length-unit-yd"));
+    expect(screen.getByLabelText("Exact pool size (yd)")).toHaveValue("25");
+
+    fireEvent.click(screen.getByTestId("workout-editor-pool-length-unit-m"));
+    expect(screen.getByLabelText("Exact pool size (m)")).toHaveValue("25");
+  });
+
   it("locks open-water manual workouts to the open-water builder surface", async () => {
     render(
       <WorkoutBuilderHub
