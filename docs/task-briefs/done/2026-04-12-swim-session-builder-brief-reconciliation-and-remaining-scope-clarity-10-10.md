@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-12-swim-session-builder-brief-reconciliation-and-remaining-scope-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-12`
-- `updated`: `2026-04-12`
+- `updated`: `2026-04-14`
 
 ## Goal
 
@@ -188,3 +188,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-12 | planning | created a docs-only reconciliation slice after confirming that multiple swim-session-builder briefs remained open even though later child slices had already merged; the owner also clarified that dryland and AI work should stay ahead of any future interactive poolside-execution mode | next: reconcile lifecycle state, update lineage paths, then run docs-only validation gates`
 - `2026-04-12 | in-progress | moved the older live-review umbrella and older poolside-note print brief into done, removed the stale in-progress metadata-panel duplicate, refreshed affected lineage links, and clarified in the foundational builder brief that interactive poolside execution stays deferred behind dryland and AI priorities; \`npm run lint:briefs:all\`, \`npm run verify:docs-only\`, \`npm run verify:pre-pr\`, and \`npm run verify:pre-merge\` all passed locally | next: commit, push, open the docs-only PR, and hold for merge approval`
+- `2026-04-14 | done | the reconciliation intent is now fully reflected on main across merged docs and follow-up swim-session-builder closeout workstreams, including #419, #423, #424, and #425; this brief remained open only because its recent child slices had not yet been lifecycle-closed | closeout: move brief to done`

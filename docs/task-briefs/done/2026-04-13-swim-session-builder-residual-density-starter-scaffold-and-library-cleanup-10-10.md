@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-13-swim-session-builder-residual-density-starter-scaffold-and-library-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-13`
-- `updated`: `2026-04-13`
+- `updated`: `2026-04-14`
 
 ## Goal
 
@@ -31,7 +31,7 @@ Finish the remaining high-value swim-session-builder seams by tightening read-ca
 ## Dependencies And Boundaries
 
 - Parent/lineage:
-  - `/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-12-swim-session-builder-brief-reconciliation-and-remaining-scope-clarity-10-10.md`
+  - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-12-swim-session-builder-brief-reconciliation-and-remaining-scope-clarity-10-10.md`
 - Recent shipped child briefs this slice extends rather than duplicates:
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-12-swim-session-builder-pool-size-rest-and-support-surface-polish-10-10.md`
   - `/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-11-swim-session-builder-garmin-authoring-and-poolside-note-redesign-10-10.md`
@@ -257,3 +257,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-13 | blocked-by-external-gate | targeted vitest passed for workout builder/server/create flows; targeted builder mobile E2E passed; full verify:pre-pr rerun passed unit/build/perf and builder E2E checks but was later blocked by unrelated desktop E2E failures in my-library-new-content-notice, my-library-program-export, and my-library-training-context; isolated rerun of those three desktop spec files passed (7/7) | next: commit/push this slice and treat full-suite desktop E2E instability as external merge blocker unless a fresh clean-room rerun clears it`
 - `2026-04-13 | note | perf-budget trend recommended "tighten" after 2 consecutive weekly green runs with 36.2% margin; no perf-budget threshold change made in this slice because it is outside the scoped builder/library residual cleanup work | next: record tighten/hold decision in the next relevant perf-focused checkpoint or PR summary`
 - `2026-04-13 | in-progress | post-1798cca stability pass added runtime-flags JSON fallback in SiteChrome plus Playwright route/save-state hardening for my-library-program-export and my-library-workout-builder; local lint and typecheck passed, isolated desktop reruns for both affected specs passed, and a warm-server verify:pre-merge rerun kept all swim-builder/program-export/training-context coverage green but still failed on 5 unrelated desktop-chromium specs outside this slice (course-common-mistakes-visibility, drawer-focus-trap, my-library-athlete-profile, my-library-dryland-builder, my-library-new-content-notice) | next: commit/push final stability patch and use PR CI as the merge-readiness gate for this scoped work`
+- `2026-04-14 | done | merged to main in PR #423 via commit 288ca3c; the remaining stale open status reflected lifecycle drift rather than unfinished product scope | closeout: move brief to done`

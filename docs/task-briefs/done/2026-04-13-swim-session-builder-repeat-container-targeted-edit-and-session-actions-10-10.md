@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-13-swim-session-builder-repeat-container-targeted-edit-and-session-actions-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-13`
 - `updated`: `2026-04-14`
@@ -17,7 +17,7 @@ Make repeat blocks scan and edit as first-class session sections, let view-mode 
 - Parent lineage:
   - [2026-02-28-workout-builder-and-poolside-execution-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md)
 - Recently merged residual cleanup slice:
-  - [2026-04-13-swim-session-builder-residual-density-starter-scaffold-and-library-cleanup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-13-swim-session-builder-residual-density-starter-scaffold-and-library-cleanup-10-10.md)
+  - [2026-04-13-swim-session-builder-residual-density-starter-scaffold-and-library-cleanup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-13-swim-session-builder-residual-density-starter-scaffold-and-library-cleanup-10-10.md)
 - Relevant delivered swim-builder slices:
   - [2026-04-11-swim-session-builder-garmin-authoring-and-poolside-note-redesign-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-11-swim-session-builder-garmin-authoring-and-poolside-note-redesign-10-10.md)
   - [2026-04-12-swim-session-builder-scan-delete-and-poolside-brand-polish-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-12-swim-session-builder-scan-delete-and-poolside-brand-polish-10-10.md)
@@ -190,3 +190,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-13 | in-progress | WorkoutEditor now gives repeat containers first-class section summaries/collapse state, view-mode targeted edit entry, and session-level actions inside Session details; targeted typecheck, unit, builder Playwright, and brief lint are green | next: commit and open PR, but note that full verify:pre-pr is currently blocked by unrelated untouched desktop Chromium e2e failures in admin-notes, course-progress, and athlete-profile suites`
 - `2026-04-13 | in-progress | commit 1b14686 captured the scoped builder slice after targeted validation; full verify:pre-pr still hit unrelated untouched repo E2E blockers outside builder scope | next: push branch, update/open PR, and report merge readiness as blocked by baseline red suites until those are resolved or waived`
 - `2026-04-14 | in-progress | rebased branch cleanly onto main after merge commit 7b41f3a from PR #425 resolved the shared desktop Chromium baseline instability; this slice no longer has the previously recorded repo-baseline blocker and should now be revalidated through the standard gates | next: run lint:briefs plus verify:pre-pr on the rebased branch, force-push PR #424, then run verify:pre-merge before final merge recommendation`
+- `2026-04-14 | done | merged to main in PR #424 via commit 48f20cd after rebased pre-pr and pre-merge validation both passed locally and all required GitHub checks were green | closeout: move brief to done`
