@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-14-swim-session-builder-pool-unit-toggle-defaults-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-14`
-- `updated`: `2026-04-14`
+- `updated`: `2026-04-15`
 
 ## Goal
 
@@ -234,3 +234,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-14 | planning | created a dedicated child brief for pool-unit-toggle defaults after owner feedback clarified that the current meter/yard switch reads like a pointless conversion tool instead of a clear authoring-mode choice | next: implement the toggle-default contract as a narrow shared-editor slice with targeted builder tests`
 - `2026-04-14 | in-progress | moved the brief into execution, updated the shared workout editor so unit switches reset to explicit 25m/25yd defaults instead of converting the current exact value, and added targeted hub/generator/e2e coverage for the new toggle contract | next: run targeted validation, full verify gates, then prepare PR handoff`
 - `2026-04-14 | in-progress | validation passed across targeted vitest, targeted desktop Playwright, lint:briefs:all, and npm run verify:pre-pr; refreshed one stale merge-preflight unit fixture so repo-wide verification reflects the current brief lifecycle on main | next: commit, push, open the PR, watch CI, run npm run verify:pre-merge, and summarize merge readiness`
+- `2026-04-15 | done | PR #431 merged to main as squash commit fe5234e, local main synced, post-merge preflight confirmed brief closeout was still pending, and the brief was moved to done as follow-up cleanup | next: keep action-clarity-and-safe-discard as the next separate execution slice`
