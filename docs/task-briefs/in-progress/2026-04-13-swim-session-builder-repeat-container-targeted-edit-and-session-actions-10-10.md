@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-13`
-- `updated`: `2026-04-13`
+- `updated`: `2026-04-14`
 
 ## Goal
 
@@ -189,3 +189,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-13 | in-progress | brief created after owner review of residual swim-session-builder findings: repeat containers need top-level section identity and collapse behavior, view cards should enter targeted edit, and save/PDF/reset actions should move into Session details; drag-and-drop remains explicitly deferred | next: implement WorkoutEditor interaction/layout updates, then update targeted tests and run verification gates`
 - `2026-04-13 | in-progress | WorkoutEditor now gives repeat containers first-class section summaries/collapse state, view-mode targeted edit entry, and session-level actions inside Session details; targeted typecheck, unit, builder Playwright, and brief lint are green | next: commit and open PR, but note that full verify:pre-pr is currently blocked by unrelated untouched desktop Chromium e2e failures in admin-notes, course-progress, and athlete-profile suites`
 - `2026-04-13 | in-progress | commit 1b14686 captured the scoped builder slice after targeted validation; full verify:pre-pr still hit unrelated untouched repo E2E blockers outside builder scope | next: push branch, update/open PR, and report merge readiness as blocked by baseline red suites until those are resolved or waived`
+- `2026-04-14 | in-progress | rebased branch cleanly onto main after merge commit 7b41f3a from PR #425 resolved the shared desktop Chromium baseline instability; this slice no longer has the previously recorded repo-baseline blocker and should now be revalidated through the standard gates | next: run lint:briefs plus verify:pre-pr on the rebased branch, force-push PR #424, then run verify:pre-merge before final merge recommendation`
