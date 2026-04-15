@@ -3572,19 +3572,11 @@ function buildWorkoutEnvironmentSummary(draft: SessionDraft) {
 
 function buildWorkoutHandoffGroups(steps: SessionDraftStep[]): WorkoutHandoffGroup[] {
   const groups: WorkoutHandoffGroup[] = [];
-  const suppressedPostSetRestGroupIds = collectSuppressedWorkoutPostSetRestGroupIds(steps);
 
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index];
 
     if (!step) continue;
-
-    if (
-      isSessionDraftRepeatPostSetRestStep(step) &&
-      suppressedPostSetRestGroupIds.has(step.postSetRestForRepeatGroupId ?? "")
-    ) {
-      continue;
-    }
 
     if (!step.repeatGroupId) {
       groups.push({
@@ -3619,55 +3611,12 @@ function buildWorkoutHandoffGroups(steps: SessionDraftStep[]): WorkoutHandoffGro
   return groups;
 }
 
-function collectSuppressedWorkoutPostSetRestGroupIds(steps: SessionDraftStep[]) {
-  const groupIds = new Set<string>();
-
-  for (let index = 0; index < steps.length; index += 1) {
-    const step = steps[index];
-    if (!step?.repeatGroupId) continue;
-
-    const entries: WorkoutHandoffEntry[] = [{ step, index }];
-    let nextIndex = index + 1;
-    while (nextIndex < steps.length && steps[nextIndex]?.repeatGroupId === step.repeatGroupId) {
-      const nextStep = steps[nextIndex];
-      if (!nextStep) break;
-      entries.push({ step: nextStep, index: nextIndex });
-      nextIndex += 1;
-    }
-
-    if (
-      shouldSuppressWorkoutRepeatPostSetRest(
-        entries,
-        resolveSessionDraftRepeatEndingRestMode(step.repeatEndingRestMode ?? null)
-      )
-    ) {
-      groupIds.add(step.repeatGroupId);
-    }
-
-    index = nextIndex - 1;
-  }
-
-  return groupIds;
-}
-
 function shouldSkipWorkoutRepeatEndingRest(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
   repeatEndingRestMode: SessionDraftRepeatEndingRestMode
 ) {
   if (repeatEndingRestMode !== "skip_last_rest" || !repeatCount || repeatCount <= 1) {
-    return false;
-  }
-
-  const lastEntry = entries[entries.length - 1];
-  return Boolean(lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step));
-}
-
-function shouldSuppressWorkoutRepeatPostSetRest(
-  entries: WorkoutHandoffEntry[],
-  repeatEndingRestMode: SessionDraftRepeatEndingRestMode
-) {
-  if (repeatEndingRestMode !== "use_last_rest") {
     return false;
   }
 

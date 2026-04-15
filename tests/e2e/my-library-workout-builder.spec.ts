@@ -361,7 +361,10 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-summary-0")).toBeVisible();
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     await expect(page.getByTestId("session-draft-repeat-summary-2")).toContainText("Main");
-    await expect(page.getByTestId("session-draft-repeat-summary-2")).toContainText("Repeat block");
+    await expect(page.getByTestId("session-draft-repeat-summary-2")).toContainText("Freestyle");
+    await expect(page.getByTestId("session-draft-repeat-summary-2")).not.toContainText(
+      "Repeat block"
+    );
     const collapsedStepSummaryBox = await page
       .getByTestId("session-draft-step-summary-0")
       .boundingBox();
@@ -396,7 +399,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByLabel("Drill Type")).toBeVisible();
     await expect(page.getByLabel("Duration")).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Target" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Notes" })).toBeVisible();
+    await expect(page.getByLabel("Notes", { exact: true })).toBeVisible();
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText("Distance");
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText("Time");
     await expect(page.getByTestId("session-draft-step-duration-mode-0")).toContainText(
@@ -565,6 +568,10 @@ test.describe("my library workout builder", () => {
       )
     ).toHaveCount(0);
     await expect(repeatSummary.getByText("Final rest skipped")).toHaveCount(0);
+    await expect(repeatSummary).toContainText(
+      "6 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+    );
+    await expect(repeatSummary).not.toContainText("109.36yd");
     await expect(page.getByText("Keeps the blue surfaces")).toBeVisible();
     await expect(page.getByText("Uses white surfaces.")).toBeVisible();
     await expect(page.getByText("Edit this into the exact repeat you want to hold.")).toHaveCount(
@@ -574,7 +581,21 @@ test.describe("my library workout builder", () => {
       page.getByText("Adjust or remove this recovery once the set is dialed in.")
     ).toHaveCount(0);
     await expect(page.getByText("Move the full repeat block from the header.")).toHaveCount(0);
+    await page.getByRole("button", { name: "Meters" }).click();
+    await expect(page.getByTestId("session-draft-step-summary-0")).toContainText(
+      "333yd · Freestyle · Easy"
+    );
+    await expect(page.getByTestId("session-draft-step-summary-0")).not.toContainText(
+      /304(?:\.49|\.5)m/
+    );
+    await expect(page.getByTestId("session-draft-repeat-summary-2")).toContainText(
+      "6 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+    );
+    await expect(page.getByTestId("session-draft-repeat-summary-2")).not.toContainText("109.36yd");
     await page.getByTestId("session-draft-step-toggle-2").click();
+    await expect(
+      page.getByTestId("session-draft-repeat-summary-2").getByText("Repeat block")
+    ).toBeVisible();
     await page.getByTestId("session-draft-step-distance-2").selectOption("200");
     await page.getByTestId("session-draft-step-stroke-2").selectOption("backstroke");
     await page.getByTestId("session-draft-step-drill-type-2").selectOption("pull");
@@ -588,7 +609,7 @@ test.describe("my library workout builder", () => {
     await page
       .getByTestId("session-draft-step-summary-3")
       .locator("xpath=ancestor::article[1]")
-      .getByRole("textbox", { name: "Notes" })
+      .getByLabel("Notes", { exact: true })
       .fill("Leave on the top and count strokes.");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
     await expect(page.getByRole("button", { name: "Discard changes" })).toBeVisible();
@@ -702,7 +723,7 @@ test.describe("my library workout builder", () => {
     await expect(pdfPopup.locator('[data-testid="workout-pdf-title"]')).toContainText(uniqueTitle);
     await expect(pdfPopup.locator("body")).toContainText("Workout PDF");
     await expect(pdfPopup.locator("body")).toContainText("Print / Save PDF");
-    await expect(pdfPopup.locator("body")).toContainText("200yd");
+    await expect(pdfPopup.locator("body")).toContainText("200m");
     await expect(pdfPopup.locator("body")).toContainText("Backstroke");
     await pdfPopup.close();
 

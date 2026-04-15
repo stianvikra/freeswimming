@@ -726,7 +726,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
   });
 
-  it("shows repeat summary and final-rest clarification in the manual pool builder while defaulting to skip last rest", async () => {
+  it("shows repeat summary and final-interval-rest wording in the manual pool builder", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
@@ -748,19 +748,23 @@ describe("WorkoutBuilderHub", () => {
     });
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
-    expect(screen.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
-      "skip_last_rest"
+    const repeatEndingRestMode = screen.getAllByTestId(/session-draft-repeat-ending-rest-mode-/)[0];
+    const repeatSummary = screen.getAllByTestId(/session-draft-repeat-summary-/)[0];
+
+    expect(repeatEndingRestMode).toHaveValue("skip_last_rest");
+    expect(repeatSummary).toHaveTextContent(
+      "4 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
     );
-    expect(screen.getByTestId("session-draft-repeat-summary-1")).toHaveTextContent(
-      "4 x 100m · Interval rest 0:30 · Set rest 0:30"
-    );
+    expect(repeatSummary).toHaveTextContent("Repeat block");
     expect(
       screen.queryByText(
         "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
       )
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/Final rest skipped/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("session-draft-repeat-toggle-1"));
+    expect(screen.getByText("Final interval rest")).toBeVisible();
+    expect(screen.getByRole("option", { name: "Skip final interval rest" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Include final interval rest" })).toBeVisible();
     expect(
       screen.queryByText("Adjust or remove when you refine the workout.")
     ).not.toBeInTheDocument();
@@ -775,7 +779,7 @@ describe("WorkoutBuilderHub", () => {
     expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(true);
   });
 
-  it("links standalone rest cards to their parent step labels in the manual pool builder", async () => {
+  it("shows attached rest inline in parent summaries and edits it inside the parent card", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary({
@@ -850,17 +854,190 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent("Warmup");
     expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent(
+      "400m · Freestyle · Easy · Rest 0:30"
+    );
+    expect(screen.queryByTestId("session-draft-step-summary-1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-step-summary-2")).toHaveTextContent("Cooldown");
+    expect(screen.getByTestId("session-draft-step-summary-2")).toHaveTextContent("Rest 1:00");
+    expect(screen.queryByTestId("session-draft-step-summary-3")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    expect(screen.getByTestId("session-draft-step-linked-rest-panel-0")).toBeVisible();
+    expect(screen.getByTestId("session-draft-step-linked-rest-time-0")).toHaveValue("0:30");
+
+    fireEvent.click(screen.getByTestId("session-draft-step-linked-rest-remove-0"));
+    expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent(
       "400m · Freestyle · Easy"
     );
-    expect(screen.getByTestId("session-draft-step-summary-0")).not.toHaveTextContent("Rest:");
-    expect(screen.getByTestId("session-draft-step-summary-1")).toHaveTextContent("Warmup Rest");
-    expect(screen.getByTestId("session-draft-step-summary-1")).toHaveTextContent("0:30");
-    expect(screen.getByTestId("session-draft-step-summary-1")).not.toHaveTextContent(
-      "Use this as a simple fixed rest block."
+    expect(screen.getByTestId("session-draft-step-summary-0")).not.toHaveTextContent("Rest 0:30");
+    expect(screen.getByTestId("session-draft-step-linked-rest-add-0")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-linked-rest-add-0"));
+    expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent(
+      "400m · Freestyle · Easy · Rest 0:30"
     );
-    expect(screen.getByTestId("session-draft-step-summary-2")).toHaveTextContent("Cooldown");
-    expect(screen.getByTestId("session-draft-step-summary-3")).toHaveTextContent("Cooldown Rest");
-    expect(screen.getByTestId("session-draft-step-summary-3")).toHaveTextContent("1:00");
+  });
+
+  it("keeps attached rest tied to the parent block for delete and add-after actions", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({
+              sourceFingerprint: "manual-attached-rest-actions",
+              steps: [
+                {
+                  id: "warmup-1",
+                  category: "warmup",
+                  name: "Warmup swim",
+                  stroke: "freestyle",
+                  intensity: "easy",
+                  durationMode: "distance",
+                  distanceM: 400,
+                  timeMin: null,
+                  targetSummary: "",
+                  notes: "",
+                },
+                {
+                  id: "warmup-rest-1",
+                  category: "rest",
+                  name: "Warmup rest",
+                  stroke: "choice",
+                  intensity: "easy",
+                  durationMode: "fixed_rest",
+                  distanceM: null,
+                  timeMin: 0.5,
+                  targetSummary: "",
+                  notes: "",
+                },
+                {
+                  id: "main-1",
+                  category: "main",
+                  name: "Main swim",
+                  stroke: "freestyle",
+                  intensity: "moderate",
+                  durationMode: "distance",
+                  distanceM: 200,
+                  timeMin: null,
+                  targetSummary: "",
+                  notes: "",
+                },
+              ],
+            }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.click(screen.getByTestId("session-draft-step-add-after-0"));
+
+    let previewDraft = readPreviewDraft();
+    expect(previewDraft.steps.map((step) => step.id)).toEqual([
+      "warmup-1",
+      "warmup-rest-1",
+      expect.stringMatching(/^step-/),
+      "main-1",
+    ]);
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.click(screen.getByTestId("session-draft-step-remove-0"));
+    fireEvent.click(screen.getByTestId("workout-editor-removal-confirm-button"));
+
+    previewDraft = readPreviewDraft();
+    expect(previewDraft.steps).toHaveLength(2);
+    expect(previewDraft.steps.some((step) => step.id === "warmup-1")).toBe(false);
+    expect(previewDraft.steps.some((step) => step.id === "warmup-rest-1")).toBe(false);
+  });
+
+  it("does not auto-create a trailing rest when adding a new top-level step at the end", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({ sourceFingerprint: "manual-add-step-no-rest" }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-add-step"));
+
+    const previewDraft = readPreviewDraft();
+    const lastStep = previewDraft.steps.at(-1);
+
+    expect(lastStep?.category).not.toBe("rest");
+    expect(
+      previewDraft.steps.filter((step) => !step.repeatGroupId && !step.postSetRestForRepeatGroupId)
+    ).toHaveLength(2);
+    expect(screen.getByTestId("session-draft-step-linked-rest-add-1")).toBeVisible();
+  });
+
+  it("shows inline conflict handling before removing post-set rest from repeats", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({ sourceFingerprint: "manual-repeat-rest-conflict" }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    const repeatEndingRestMode = screen.getAllByTestId(/session-draft-repeat-ending-rest-mode-/)[0];
+    const repeatSummary = screen.getAllByTestId(/session-draft-repeat-summary-/)[0];
+
+    fireEvent.change(repeatEndingRestMode, {
+      target: { value: "use_last_rest" },
+    });
+
+    expect(screen.getByText("This creates two rests in a row.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Keep set rest only" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Use final interval rest instead" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Keep both" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Use final interval rest instead" }));
+    expect(
+      screen.getByText("Delete the separate set rest and keep final interval rest?")
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete set rest" }));
+
+    const previewDraft = readPreviewDraft();
+    expect(previewDraft.steps.some((step) => step.postSetRestForRepeatGroupId)).toBe(false);
+    expect(screen.queryByText("This creates two rests in a row.")).not.toBeInTheDocument();
+    expect(repeatSummary).toHaveTextContent("4 x 100m · Freestyle · Interval rest 0:30");
   });
 
   it("does not seed scaffold note copy into a fresh manual pool session", async () => {
@@ -1180,7 +1357,7 @@ describe("WorkoutBuilderHub", () => {
       .spyOn(URL, "createObjectURL")
       .mockReturnValueOnce("blob:http://127.0.0.1/mock-workout-pdf")
       .mockReturnValueOnce("blob:http://127.0.0.1/mock-poolside-pdf");
-    const revokeUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
     const openSpy = vi.spyOn(window, "open").mockReturnValue(printWindow as unknown as Window);
 
     render(
@@ -1285,8 +1462,6 @@ describe("WorkoutBuilderHub", () => {
     expect(poolsideHtml.indexOf('<section class="poolside-steps">')).toBeLessThan(
       poolsideHtml.indexOf('<aside class="poolside-meta">')
     );
-    expect(revokeUrlSpy).toHaveBeenCalledTimes(0);
-
     expect(screen.getByText("Keeps the blue surfaces")).toBeVisible();
     expect(screen.getByText("Uses white surfaces.")).toBeVisible();
     expect(screen.getByText("Print options")).toBeVisible();
@@ -1581,10 +1756,94 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
     fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
-    fireEvent.click(screen.getByRole("button", { name: /Repeat block/i }));
+    fireEvent.click(screen.getByTestId(/workout-editor-view-repeat-/));
 
     expect(screen.getByLabelText("Repeat count")).toBeVisible();
     expect(screen.queryByLabelText("Step Type")).not.toBeInTheDocument();
+  });
+
+  it("keeps existing step summaries stable when switching pool units", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent(
+      "400m · Freestyle · Easy"
+    );
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+
+    const repeatSummary = screen.getAllByTestId(/session-draft-repeat-summary-/)[0];
+
+    expect(repeatSummary).toHaveTextContent(
+      "4 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Yards" }));
+
+    expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent(
+      "400m · Freestyle · Easy"
+    );
+    expect(screen.getByTestId("session-draft-step-summary-0")).not.toHaveTextContent("437.45yd");
+    expect(screen.getAllByTestId(/session-draft-repeat-summary-/)[0]).toHaveTextContent(
+      "4 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+    );
+    expect(screen.getAllByTestId(/session-draft-repeat-summary-/)[0]).not.toHaveTextContent(
+      "109.36yd"
+    );
+  });
+
+  it("keeps custom step distance inputs in their authored unit after a global unit switch", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Yards" }));
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.change(screen.getByTestId("session-draft-step-distance-0"), {
+      target: { value: "custom" },
+    });
+    fireEvent.change(screen.getByTestId("session-draft-step-distance-custom-0"), {
+      target: { value: "333" },
+    });
+
+    expect(screen.getByLabelText("Custom distance (yd)")).toHaveValue("333");
+    expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent(
+      "333yd · Freestyle · Easy"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Meters" }));
+
+    expect(screen.getByLabelText("Custom distance (yd)")).toHaveValue("333");
+    expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent(
+      "333yd · Freestyle · Easy"
+    );
+    expect(screen.getByTestId("session-draft-step-summary-0")).not.toHaveTextContent("304.5m");
   });
 
   it("shows clearer kick and drill taxonomy guidance inside the step form", async () => {
