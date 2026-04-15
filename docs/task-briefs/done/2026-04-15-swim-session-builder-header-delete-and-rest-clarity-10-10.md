@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-15-swim-session-builder-header-delete-and-rest-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
 - `updated`: `2026-04-15`
@@ -229,3 +229,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-15 | planning | created combined builder cleanup brief from owner-approved follow-up scope: remove visible details narration, remove the always-visible danger zone, restore compact delete placement with confirm, clean up manual-pool rest naming/summaries, and remove scaffold note filler from fresh pool drafts without touching Garmin structure | next: implement the UI cleanup and verify with targeted unit/e2e plus full gates`
 - `2026-04-15 | implementation | completed builder-header cleanup, compact delete action placement, parent-linked rest naming/summary cleanup, and removal of seeded scaffold note copy from fresh manual pool drafts; targeted unit/e2e plus full verify:pre-pr passed locally | next: commit, push, open/update PR, then run verify:pre-merge and monitor CI`
+- `2026-04-15 | done | merged to main in PR #440 via commit f476bd8 after local verify:pre-pr, local verify:pre-merge, and all required GitHub checks passed; this brief now reflects shipped builder cleanup rather than active scope | closeout: move brief to done`
