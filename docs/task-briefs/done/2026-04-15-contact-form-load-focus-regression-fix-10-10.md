@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-15-contact-form-load-focus-regression-fix-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
 - `updated`: `2026-04-15`
@@ -26,7 +26,7 @@ Make the contact form stop stealing focus on initial page load while preserving 
 ## Dependencies And Boundaries
 
 - Blocking parent PR/workstream:
-  - [2026-04-15-poolside-note-header-clarity-and-landscape-parity-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-15-poolside-note-header-clarity-and-landscape-parity-10-10.md)
+  - [2026-04-15-poolside-note-header-clarity-and-landscape-parity-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-15-poolside-note-header-clarity-and-landscape-parity-10-10.md)
 - Primary implementation surfaces:
   - [ContactForm.tsx](/Users/stianvikra/freeswimming/components/ContactForm.tsx)
   - [contact-form-a11y.spec.ts](/Users/stianvikra/freeswimming/tests/e2e/contact-form-a11y.spec.ts)
@@ -157,7 +157,29 @@ Strict `10/10` mode for this brief:
 - Rationale:
   - this slice changes no user-facing workflow guidance or help-center contract.
 
+## Closeout
+
+- Shipped via PR `#437`, merged to `main` as `01debcd` on `2026-04-15`.
+- Achieved all declared target categories at `5/5`:
+  - `UX flow clarity`
+  - `Accessibility (a11y)`
+  - `Reliability and failure handling`
+  - `Stack-fit and dependency discipline`
+  - `Testing and QA automation`
+- Critical `10/10` gate confirmed at `5/5`:
+  - `UX flow clarity`
+  - `Accessibility (a11y)`
+  - `Testing and QA automation`
+- Supporting release-safe closeout stayed at `4/5` or better for the remaining in-scope non-`N/A` categories.
+- Release evidence for the implementation slice:
+  - targeted unit coverage passed,
+  - targeted Playwright coverage passed,
+  - local `npm run verify:pre-pr` passed,
+  - local `npm run verify:pre-merge` passed,
+  - required GitHub checks for PR `#437` passed green before merge.
+
 ## Checkpoint Log
 
 - `2026-04-15 | implementation start | created a scoped merge-blocker brief after local pre-merge verification found deterministic desktop Chromium autofocus on /contact load | next: remove the initial autofocus path, add regression coverage, rerun targeted checks, and close the merge gate`
-- `2026-04-15 | commit e1b510d | removed mount-time autofocus from ContactForm, added targeted unit regression coverage, and passed targeted vitest, targeted Playwright, npm run verify:pre-pr, and npm run lint:briefs:all | next: push the PR #437 follow-up, rerun npm run verify:pre-merge, and confirm merge readiness`
+- `2026-04-15 | commit a0783b5 | removed mount-time autofocus from ContactForm, added targeted unit regression coverage, and passed targeted vitest, targeted Playwright, npm run verify:pre-pr, and npm run lint:briefs:all | next: push the PR #437 follow-up, rerun npm run verify:pre-merge, and confirm merge readiness`
+- `2026-04-15 | closeout ca992b1 | PR #437 merged to main as \`01debcd\` after local \`npm run verify:pre-pr\`, local \`npm run verify:pre-merge\`, and green required GitHub checks; this docs-only follow-up moved the brief from \`in-progress\` to \`done\` so lifecycle state matches shipped reality | next: none`
