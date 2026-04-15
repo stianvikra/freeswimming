@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-15-poolside-note-brand-surface-reframe-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
 - `updated`: `2026-04-15`
@@ -350,6 +350,30 @@ Required for the later implementation PR:
 - `N/A` for this planning slice.
 - If implementation changes the owner-facing preview labels or workflow materially, the implementation PR must either update the relevant builder guidance/runbook in the same PR or record an explicit `N/A` rationale.
 
+## Closeout
+
+- Shipped via PR `#435`, merged to `main` as `373c242` on `2026-04-15`.
+- Achieved critical target categories at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Business logic correctness and data integrity`
+  - `Reliability and failure handling`
+  - `Security and authz`
+  - `Content governance`
+  - `Testing and QA automation`
+- Supporting target closeout stayed release-safe:
+  - `Admin editor ergonomics` at `4/5`
+  - `Performance (CWV + payloads)` at `4/5`
+  - `Scalability and cost efficiency` at `4/5`
+  - `DevOps and rollback readiness` at `4/5`
+- Release evidence for the implementation slice:
+  - local targeted unit coverage passed,
+  - local targeted Playwright coverage passed,
+  - local `npm run verify:pre-pr` passed,
+  - local `npm run verify:pre-merge` passed,
+  - required GitHub checks for PR `#435` passed green before merge.
+
 ## Checkpoint Log
 
 - `2026-04-15 | planning | captured a pre-implementation 10/10 score audit for the current poolside artifact, locked the direction away from flyer-style marketing copy, and split the poolside brand-surface redesign into its own brief before any code changes | next: confirm the brief direction, then implement in a separate execution slice`
@@ -357,3 +381,4 @@ Required for the later implementation PR:
 - `2026-04-15 | implementation checkpoint | finished the poolside brand-surface rewrite, added the stronger color lockup, converted rest rows into plain-language swimmer-facing labels, collapsed sparse landscape meta into a compact top strip, and patched contact-form error focus timing so the desktop WebKit contact a11y check passes again | next: rerun the full pre-pr gate to get one uninterrupted green run after a flaky desktop Chromium training-context failure that passed on isolated rerun`
 - `2026-04-15 | verification checkpoint @ 5b272d1 | completed targeted unit coverage, reran the full pre-pr gate green, confirmed the earlier desktop Chromium training-context flake passed inside the full matrix, and verified the desktop WebKit contact-form focus regression is fixed | next: commit the scoped changes, push the branch, open/update the PR, and run the pre-merge gate`
 - `2026-04-15 | commit checkpoint @ 19097fb | committed the scoped poolside brand-surface rewrite and supporting contact-form focus fix after a green full pre-pr run, leaving only untracked local QA screenshots outside the commit | next: push the branch, open or update the PR, and run the full pre-merge gate before merge recommendation`
+- `2026-04-15 | done | PR #435 merged to main as \`373c242\` after local \`npm run verify:pre-pr\`, local \`npm run verify:pre-merge\`, and green required GitHub checks; this docs-only follow-up moved the brief from \`in-progress\` to \`done\` so lifecycle state matches shipped reality | next: none`
