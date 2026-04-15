@@ -296,7 +296,7 @@ test.describe("my library workout builder", () => {
       "aria-expanded",
       "true"
     );
-    await expect(page.getByTestId("workout-editor-danger-zone")).toBeVisible();
+    await expect(page.getByTestId("workout-editor-danger-zone")).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-delete-current-workout")).toHaveText(
       "Delete session"
     );
@@ -735,6 +735,7 @@ test.describe("my library workout builder", () => {
     await expect(poolsidePopup.locator("body")).toContainText("Total");
     await expect(poolsidePopup.locator("body")).toContainText(/rest/i);
     await expect(poolsidePopup.locator('[data-testid="workout-pdf-total"]')).toBeVisible();
+    await expect(poolsidePopup.locator('link[rel="icon"]')).toHaveAttribute("href", "/favicon.ico");
     await expect(poolsidePopup.locator("body")).not.toContainText("P:");
     await expect(poolsidePopup.locator("body")).not.toContainText("~");
     await page.waitForTimeout(300);
@@ -852,7 +853,7 @@ test.describe("my library workout builder", () => {
     }
     await waitForWorkoutBuilderClientReady(page);
     await openMetadataPanelIfCollapsed(page);
-    await expect(page.getByTestId("workout-editor-danger-zone")).toBeVisible();
+    await expect(page.getByTestId("workout-editor-danger-zone")).toHaveCount(0);
 
     const deleteResponsePromise = page.waitForResponse(
       (response) =>

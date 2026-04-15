@@ -45,7 +45,7 @@ import {
   type SessionGeneratorEnvironment,
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
-import { BRAND_FONT_PUBLIC_PATH } from "@/lib/brand";
+import { BRAND_APP_ICON_PATHS, BRAND_FONT_PUBLIC_PATH } from "@/lib/brand";
 
 export const WORKOUT_SOURCE_KINDS = ["ai_session_v1", "manual"] as const;
 export const WORKOUT_STATUSES = ["accepted"] as const;
@@ -1556,6 +1556,13 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
   const bodyClass =
     hasFocusPoints && isLandscape ? "body body-landscape" : "body body-single-column";
   const metaHtml = hasFocusPoints ? `<aside class="poolside-meta">${focusPointsHtml}</aside>` : "";
+  const stepsHtml = `
+          <section class="poolside-steps">
+            <ol class="poolside-line-list">
+              ${model.poolsideLineItems.map(renderWorkoutPoolsideLineHtml).join("")}
+            </ol>
+          </section>
+        `;
   const heroHtml = isLandscape
     ? `
         <div class="hero-landscape-main">
@@ -1592,6 +1599,9 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(model.fileName)} - FreeSwimming</title>
+    <link rel="icon" href="${escapeHtml(BRAND_APP_ICON_PATHS.favicon)}" sizes="any" />
+    <link rel="shortcut icon" href="${escapeHtml(BRAND_APP_ICON_PATHS.favicon)}" />
+    <link rel="apple-touch-icon" href="${escapeHtml(BRAND_APP_ICON_PATHS.appleTouchIcon)}" />
     <style>
       :root {
         color-scheme: light;
@@ -1823,11 +1833,11 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .hero-tagline-portrait {
-        font-size: 13px;
+        font-size: 15px;
       }
 
       .hero-tagline-landscape {
-        font-size: 18px;
+        font-size: 17px;
       }
 
       .hero-tagline-accent {
@@ -1884,7 +1894,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .body-landscape {
         align-items: start;
-        grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+        grid-template-columns: minmax(0, 1.32fr) minmax(0, 0.68fr);
         gap: 12px;
       }
 
@@ -1894,6 +1904,14 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: grid;
         gap: 10px;
         align-content: start;
+      }
+
+      .body-landscape .poolside-steps {
+        order: 1;
+      }
+
+      .body-landscape .poolside-meta {
+        order: 2;
       }
 
       .callout,
@@ -2112,12 +2130,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
           ${heroHtml}
         </header>
         <div class="${bodyClass}">
+          ${stepsHtml}
           ${metaHtml}
-          <section class="poolside-steps">
-            <ol class="poolside-line-list">
-              ${model.poolsideLineItems.map(renderWorkoutPoolsideLineHtml).join("")}
-            </ol>
-          </section>
         </div>
       </article>
     </main>

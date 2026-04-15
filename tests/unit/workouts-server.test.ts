@@ -154,6 +154,7 @@ describe("workouts server", () => {
     const steps = Array.isArray(insert.steps)
       ? (insert.steps as Array<{
           category?: string;
+          notes?: string;
           repeatGroupId?: string | null;
           repeatCount?: number | null;
           repeatEndingRestMode?: string | null;
@@ -174,6 +175,7 @@ describe("workouts server", () => {
     expect(repeatSteps.every((step) => step.repeatCount === 4)).toBe(true);
     expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(true);
     expect(postSetRestSteps).toHaveLength(1);
+    expect(steps.every((step) => !step.notes)).toBe(true);
     expect(insert.total_distance_m).toBe(1000);
     expect(insert.estimated_duration_min).toBeGreaterThan(0);
   });
