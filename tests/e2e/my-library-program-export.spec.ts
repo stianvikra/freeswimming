@@ -242,7 +242,7 @@ test.describe("my library program export", () => {
 
     await page.getByTestId("workout-builder-save").click();
     await saveWorkoutResponsePromise;
-    await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
+    await expect(page.getByText("Changes saved to this session.")).toBeVisible();
 
     await gotoWithTransientRetry(page, "/my-library", 60_000);
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();

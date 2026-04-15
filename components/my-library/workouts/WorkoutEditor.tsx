@@ -89,7 +89,9 @@ type Props = {
   hasUnsavedChanges?: boolean;
   onSave: () => void;
   onDraftChange: (draft: SessionDraft) => void;
-  onResetToSaved?: (() => void) | null;
+  onDiscardChanges?: (() => void) | null;
+  showDiscardUndoNotice?: boolean;
+  onUndoDiscardChanges?: (() => void) | null;
   startNewDraftHref?: string | null;
   startNewDraftLabel?: string;
   showLoadedBanner?: boolean;
@@ -1360,7 +1362,9 @@ export default function WorkoutEditor({
   hasUnsavedChanges = true,
   onSave,
   onDraftChange,
-  onResetToSaved = null,
+  onDiscardChanges = null,
+  showDiscardUndoNotice = false,
+  onUndoDiscardChanges = null,
   startNewDraftHref = null,
   startNewDraftLabel = "Start new draft",
   showLoadedBanner = true,
@@ -1464,10 +1468,9 @@ export default function WorkoutEditor({
             "This workout is canonical now. Saving here updates the same workout instead of creating a new copy.",
           unsavedDraftDescription:
             "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it.",
-          savedWorkoutPendingState: "Unsaved changes stay local until you save this workout.",
-          savedWorkoutSavedState: "All builder changes are saved to the canonical workout.",
-          unsavedDraftPendingState:
-            "This draft still needs to be accepted into the canonical workout layer.",
+          savedWorkoutPendingState: "Unsaved changes stay local until you save this session.",
+          savedWorkoutSavedState: "All changes are saved to this session.",
+          unsavedDraftPendingState: "This session is not saved yet.",
         };
   const poolLengthQuickChoices =
     poolLengthUnit === "yd" ? YARD_POOL_SIZE_QUICK_CHOICES : MANUAL_POOL_SIZE_QUICK_CHOICES;
@@ -1536,8 +1539,10 @@ export default function WorkoutEditor({
   const workoutPdfHeadingLabel = "View PDF";
   const workoutPdfStateLabel =
     handoffDraftState === "canonical"
-      ? "Canonical full-session PDF"
-      : "Local draft full-session PDF";
+      ? "Saved session PDF"
+      : savedWorkout
+        ? "Current session PDF"
+        : "Current draft PDF";
   const workoutPdfStateDescription = savedWorkout
     ? hasUnsavedChanges
       ? "Full-session PDF reflects unsaved edits on screen."
@@ -4491,19 +4496,19 @@ export default function WorkoutEditor({
                     {workoutPdfButtonLabel}
                   </button>
                 ) : null}
-                {savedWorkout && onResetToSaved ? (
+                {savedWorkout && onDiscardChanges && hasUnsavedChanges ? (
                   <button
                     type="button"
                     onClick={() => {
                       setPendingRemoval(null);
                       setLastRemovedBlock(null);
-                      onResetToSaved();
+                      onDiscardChanges();
                     }}
-                    disabled={isSaving || !hasUnsavedChanges || pendingRemoval !== null}
+                    disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-editor-reset"
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Reset to last saved
+                    Discard changes
                   </button>
                 ) : null}
                 <button
@@ -4530,19 +4535,6 @@ export default function WorkoutEditor({
                       : "Accept and save workout"}
                 </button>
               </div>
-              {savedWorkout && onRequestDeleteCurrent ? (
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={onRequestDeleteCurrent}
-                    disabled={isDeletingCurrent}
-                    data-testid="workout-builder-delete-current-workout"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isDeletingCurrent ? "Deleting..." : "Delete session"}
-                  </button>
-                </div>
-              ) : null}
             </div>
           </div>
 
@@ -4562,6 +4554,35 @@ export default function WorkoutEditor({
           ) : null}
 
           {!isViewMode && metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
+
+          {!isViewMode && metadataOpen && savedWorkout && onRequestDeleteCurrent ? (
+            <div
+              data-testid="workout-editor-danger-zone"
+              className="mt-4 border-t border-rose-100 pt-4"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
+                Danger zone
+              </p>
+              <div className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-rose-100 bg-rose-50/55 p-3">
+                <div className="max-w-[52ch]">
+                  <p className="text-sm font-semibold text-slate-900">Delete this saved session</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Remove it from My Swim Sessions permanently. Discard changes if you only want to
+                    undo local edits.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onRequestDeleteCurrent}
+                  disabled={isDeletingCurrent}
+                  data-testid="workout-builder-delete-current-workout"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isDeletingCurrent ? "Deleting..." : "Delete session"}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : (
         metadataFields
@@ -5230,19 +5251,19 @@ export default function WorkoutEditor({
                     {workoutPoolsidePdfButtonLabel}
                   </button>
                 ) : null}
-                {savedWorkout && onResetToSaved ? (
+                {savedWorkout && onDiscardChanges && hasUnsavedChanges ? (
                   <button
                     type="button"
                     onClick={() => {
                       setPendingRemoval(null);
                       setLastRemovedBlock(null);
-                      onResetToSaved();
+                      onDiscardChanges();
                     }}
-                    disabled={isSaving || !hasUnsavedChanges || pendingRemoval !== null}
+                    disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-editor-reset"
                     className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Reset to last saved
+                    Discard changes
                   </button>
                 ) : null}
                 <button
@@ -5289,6 +5310,27 @@ export default function WorkoutEditor({
         <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
           {workoutPdfError}
         </p>
+      ) : null}
+
+      {showDiscardUndoNotice && onUndoDiscardChanges ? (
+        <div className="fixed inset-x-0 bottom-4 z-[85] flex justify-center px-4">
+          <div
+            data-testid="workout-editor-discard-undo"
+            className="flex w-full max-w-[560px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.18)]"
+          >
+            <p className="text-sm font-medium text-emerald-900" aria-live="polite">
+              Changes discarded.
+            </p>
+            <button
+              type="button"
+              onClick={onUndoDiscardChanges}
+              data-testid="workout-editor-discard-undo-button"
+              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
       ) : null}
     </div>
   );

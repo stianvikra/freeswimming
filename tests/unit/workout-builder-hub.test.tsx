@@ -341,7 +341,7 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
-      "All builder changes are saved to the canonical workout."
+      "All changes are saved to this session."
     );
     expect(screen.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
       "aria-expanded",
@@ -358,7 +358,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
     fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
-    expect(screen.getByTestId("workout-editor-reset")).toBeDisabled();
+    expect(screen.queryByTestId("workout-editor-reset")).not.toBeInTheDocument();
 
     openWorkoutMetadataPanel();
     fireEvent.change(screen.getByTestId("session-draft-title"), {
@@ -427,7 +427,7 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
-      "Unsaved changes stay local until you save this workout."
+      "Unsaved changes stay local until you save this session."
     );
     expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
       "3 review items"
@@ -474,18 +474,18 @@ describe("WorkoutBuilderHub", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
+      expect(screen.getByText("Changes saved to this session.")).toBeVisible();
     });
     openSupportToolsPanel();
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
-      "All builder changes are saved to the canonical workout."
+      "All changes are saved to this session."
     );
     expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
       "data-readiness-status",
       "review"
     );
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
-    expect(screen.getByTestId("workout-editor-reset")).toBeDisabled();
+    expect(screen.queryByTestId("workout-editor-reset")).not.toBeInTheDocument();
 
     const fetchBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
       draft: SessionDraft;
@@ -542,7 +542,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-stroke-4")).toHaveValue("im_by_round");
   }, 30_000);
 
-  it("can reset unsaved edits back to the last saved workout", async () => {
+  it("can discard unsaved edits and undo the discard locally", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
     await waitFor(() => {
@@ -561,15 +561,15 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
-      "Unsaved changes stay local until you save this workout."
+      "Unsaved changes stay local until you save this session."
     );
     expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
 
     fireEvent.click(screen.getByTestId("workout-editor-reset"));
 
-    expect(
-      screen.getByText("Unsaved builder edits were reset to the last saved workout.")
-    ).toBeVisible();
+    expect(screen.getByTestId("workout-editor-discard-undo")).toHaveTextContent(
+      "Changes discarded."
+    );
     openWorkoutMetadataPanel();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
     expect(screen.getByTestId("session-draft-description")).toHaveValue(
@@ -577,8 +577,22 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
-      "All builder changes are saved to the canonical workout."
+      "All changes are saved to this session."
     );
+    expect(screen.queryByTestId("workout-editor-reset")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("workout-editor-discard-undo-button"));
+
+    expect(screen.queryByTestId("workout-editor-discard-undo")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Temporary builder title");
+    expect(screen.getByTestId("session-draft-description")).toHaveValue(
+      "Temporary builder description."
+    );
+    expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "Unsaved changes stay local until you save this session."
+    );
+    expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
   }, 30000);
 
   it("requires confirmation and supports undo for destructive single-step removal", async () => {
@@ -614,7 +628,7 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
-      "Unsaved changes stay local until you save this workout."
+      "Unsaved changes stay local until you save this session."
     );
 
     fireEvent.click(screen.getByTestId("workout-editor-removal-undo-button"));
@@ -623,7 +637,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
-      "All builder changes are saved to the canonical workout."
+      "All changes are saved to this session."
     );
   });
 
@@ -643,7 +657,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-name-1")).toHaveValue("Easy warmup swim");
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
-      "Unsaved changes stay local until you save this workout."
+      "Unsaved changes stay local until you save this session."
     );
 
     const previewDraft = readPreviewDraft();
@@ -2053,6 +2067,8 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("workout-builder-create-pool")).not.toBeInTheDocument();
     expect(screen.queryByTestId("workout-builder-create-open-water")).not.toBeInTheDocument();
 
+    openWorkoutMetadataPanel();
+    expect(screen.getByTestId("workout-editor-danger-zone")).toBeVisible();
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
     expect(screen.getByText("Delete this saved session?")).toBeVisible();

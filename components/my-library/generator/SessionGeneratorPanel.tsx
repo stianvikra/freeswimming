@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
+import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
 import type {
   GeneratorIntakeHandoffPayload,
   GeneratorIntakeOverrides,
@@ -64,6 +65,9 @@ export default function SessionGeneratorPanel({
   const [success, setSuccess] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [discardUndoDraft, setDiscardUndoDraft] = useState<WorkoutEditorRecord["draft"] | null>(
+    null
+  );
 
   useEffect(() => {
     if (workoutLibrary.selectedWorkout) {
@@ -71,6 +75,7 @@ export default function SessionGeneratorPanel({
       setDraft(workoutLibrary.selectedWorkout.draft);
       setError("");
       setSuccess("");
+      setDiscardUndoDraft(null);
       return;
     }
 
@@ -78,12 +83,25 @@ export default function SessionGeneratorPanel({
     setDraft(null);
     setError("");
     setSuccess("");
+    setDiscardUndoDraft(null);
   }, [workoutLibrary.selectedWorkout]);
 
   useEffect(() => {
     if (workoutLibrary.selectedWorkout) return;
     setFormState(getDefaultSessionGeneratorFormState(payload));
   }, [payload, workoutLibrary.selectedWorkout]);
+
+  useEffect(() => {
+    if (!discardUndoDraft) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setDiscardUndoDraft(null);
+    }, WORKOUT_NOTICE_AUTO_DISMISS_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [discardUndoDraft]);
 
   const sessionReady = payload.overrides.targetType === "session";
   const canonicalSaveReady = workoutLibrary.schemaReady;
@@ -145,6 +163,7 @@ export default function SessionGeneratorPanel({
     setIsGenerating(true);
     setError("");
     setSuccess("");
+    setDiscardUndoDraft(null);
 
     try {
       const response = await fetch("/api/my-library/generator/session-draft", {
@@ -195,6 +214,7 @@ export default function SessionGeneratorPanel({
     setIsSaving(true);
     setError("");
     setSuccess("");
+    setDiscardUndoDraft(null);
 
     try {
       const response = await fetch(
@@ -234,12 +254,37 @@ export default function SessionGeneratorPanel({
     }
   }
 
-  function resetDraftToSavedWorkout() {
-    if (!savedWorkout) return;
+  function handleDraftChange(nextDraft: WorkoutEditorRecord["draft"]) {
+    setDraft(nextDraft);
+    setSuccess("");
 
+    if (
+      discardUndoDraft &&
+      savedWorkout &&
+      !haveWorkoutDraftChanges(nextDraft, savedWorkout.draft)
+    ) {
+      return;
+    }
+
+    setDiscardUndoDraft(null);
+  }
+
+  function discardDraftChanges() {
+    if (!savedWorkout || !draft || !hasUnsavedChanges) return;
+
+    setDiscardUndoDraft(draft);
     setDraft(savedWorkout.draft);
     setError("");
-    setSuccess("Unsaved builder edits were reset to the last saved workout.");
+    setSuccess("");
+  }
+
+  function undoDiscardDraftChanges() {
+    if (!discardUndoDraft) return;
+
+    setDraft(discardUndoDraft);
+    setDiscardUndoDraft(null);
+    setError("");
+    setSuccess("");
   }
 
   return (
@@ -597,11 +642,10 @@ export default function SessionGeneratorPanel({
             isSaving={isSaving}
             onSave={saveWorkout}
             hasUnsavedChanges={hasUnsavedChanges}
-            onDraftChange={(nextDraft) => {
-              setDraft(nextDraft);
-              setSuccess("");
-            }}
-            onResetToSaved={resetDraftToSavedWorkout}
+            onDraftChange={handleDraftChange}
+            onDiscardChanges={discardDraftChanges}
+            showDiscardUndoNotice={discardUndoDraft !== null}
+            onUndoDiscardChanges={undoDiscardDraftChanges}
             copyVariant="generator"
             startNewDraftHref="/my-library/generator"
             startNewDraftLabel="Start a fresh AI session"
