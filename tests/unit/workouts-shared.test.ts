@@ -513,8 +513,8 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Target summary: Stay tall through the turn.");
     expect(html).toContain("Notes: Count strokes off every wall.");
     expect(pdfModel.poolsideLines).toContain("Lap Button Press · Freestyle · Moderate");
-    expect(pdfModel.poolsideLines).toContain("P: Lap Button Press");
-    expect(pdfModel.poolsideLines).toContain("P: Send-Off 2:00");
+    expect(pdfModel.poolsideLines).toContain("Lap Button Press");
+    expect(pdfModel.poolsideLines).toContain("Send-Off 2:00");
 
     if (exportPayload.blocks[0]?.kind !== "single") {
       throw new Error("Expected first block to be a single-step export.");
@@ -921,12 +921,9 @@ describe("workouts shared readiness", () => {
       kind: "repeat",
       summary: "4 rounds · 100m + 2:00 per round · Final rest skipped",
     });
-    expect(pdfModel.poolsideLines).toContain(
-      "P: Send-Off 2:00 between rounds (final rest skipped)"
-    );
-    expect(poolsideHtml).toContain("Rest between rounds");
+    expect(pdfModel.poolsideLines).toContain("4 x 100m · Freestyle · Moderate");
     expect(poolsideHtml).toContain("Send-Off 2:00");
-    expect(poolsideHtml).toContain("Final rest skipped");
+    expect(poolsideHtml).not.toContain("Final rest skipped");
     expect(poolsideHtml).not.toContain("P:");
 
     if (exportPayload.blocks[0]?.kind !== "repeat") {
@@ -1019,9 +1016,12 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Calm exhale");
     expect(html).toContain("400m");
     expect(html).toContain("Total");
-    expect(html).toContain('metric-value">400m<');
+    expect(html).toContain('data-testid="workout-pdf-total"');
+    expect(html).toContain('hero-total-value">400m<');
     expect(html).toContain("lockup-domain-ink.png");
     expect(html).toContain(">Print Preview<");
+    expect(html).toContain("Learn.");
+    expect(html).toContain("Swim.");
     expect(html).not.toContain(">Poolside Note<");
     expect(html).not.toContain("Pool session execution");
     expect(html).not.toContain("Source: Local draft");
@@ -1030,11 +1030,12 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain(">Portrait<");
     expect(html).not.toContain(">Landscape<");
     expect(html).not.toContain("Compact lane-side note");
+    expect(html).not.toContain("~10 min");
     expect(html).toContain("400m · Freestyle · Easy");
     expect(html).not.toContain("P:");
   });
 
-  it("collapses sparse landscape poolside meta into a compact top strip", () => {
+  it("uses a dedicated landscape header composition without the old summary pill", () => {
     const html = buildWorkoutPdfHtmlDocument(
       {
         ...buildDraft(),
@@ -1049,9 +1050,143 @@ describe("workouts shared readiness", () => {
       }
     );
 
-    expect(html).toContain('<div class="body body-landscape body-landscape-minimal-meta">');
+    expect(html).toContain('<header class="hero hero-landscape">');
+    expect(html).toContain('<div class="body body-single-column">');
     expect(html).not.toContain('data-testid="workout-pdf-focus-points"');
     expect(html).toContain('data-poolside-print-layout="landscape"');
+    expect(html).toContain('hero-total-value">400m<');
+    expect(html).not.toContain("~10 min");
+  });
+
+  it("deduplicates effort labels and inlines ordinary recovery for poolside lines", () => {
+    const poolsideModel = buildWorkoutPdfModel(
+      {
+        ...buildDraft(),
+        steps: [
+          {
+            id: "step-1",
+            category: "swim",
+            name: "Main swim",
+            stroke: "freestyle",
+            intensity: "easy",
+            durationMode: "distance",
+            distanceM: 400,
+            timeMin: null,
+            targetMode: "effort",
+            effortTarget: "easy",
+            targetSummary: "",
+            notes: "",
+          },
+          {
+            id: "step-2",
+            category: "rest",
+            name: "Main rest",
+            stroke: "choice",
+            intensity: "easy",
+            durationMode: "fixed_rest",
+            distanceM: null,
+            timeMin: 0.5,
+            targetSummary: "",
+            notes: "",
+          },
+          {
+            id: "step-3",
+            category: "main",
+            name: "Repeat swim",
+            stroke: "freestyle",
+            intensity: "moderate",
+            durationMode: "distance",
+            distanceM: 100,
+            timeMin: null,
+            targetSummary: "",
+            notes: "",
+            repeatGroupId: "repeat-1",
+            repeatCount: 4,
+            repeatEndingRestMode: "skip_last_rest",
+          },
+          {
+            id: "step-4",
+            category: "rest",
+            name: "Repeat rest",
+            stroke: "choice",
+            intensity: "easy",
+            durationMode: "fixed_rest",
+            distanceM: null,
+            timeMin: 0.5,
+            targetSummary: "",
+            notes: "",
+            repeatGroupId: "repeat-1",
+            repeatCount: 4,
+            repeatEndingRestMode: "skip_last_rest",
+          },
+          {
+            id: "step-5",
+            category: "rest",
+            name: "Post set rest",
+            stroke: "choice",
+            intensity: "easy",
+            durationMode: "fixed_rest",
+            distanceM: null,
+            timeMin: 0.67,
+            targetSummary: "",
+            notes: "",
+            postSetRestForRepeatGroupId: "repeat-1",
+          },
+        ],
+      },
+      {
+        draftState: "canonical",
+        variant: "poolside",
+      }
+    );
+
+    expect(poolsideModel.poolsideLines).toContain("400m · Freestyle · Easy · Rest 0:30");
+    expect(poolsideModel.poolsideLines).not.toContain("400m · Freestyle · Easy · Easy");
+    expect(poolsideModel.poolsideLines).toContain(
+      "4 x 100m · Freestyle · Moderate · Interval rest 0:30"
+    );
+    expect(poolsideModel.poolsideLines).toContain("Rest 0:40");
+  });
+
+  it("ignores machine-formatted step names when building poolside descriptors", () => {
+    const poolsideModel = buildWorkoutPdfModel(
+      {
+        ...buildDraft(),
+        totalDistanceM: 200,
+        steps: [
+          {
+            id: "step-1",
+            category: "swim",
+            name: "200m · Choice · Easy",
+            stroke: "choice",
+            intensity: "easy",
+            durationMode: "distance",
+            distanceM: 200,
+            timeMin: null,
+            targetSummary: "",
+            notes: "",
+          },
+          {
+            id: "step-2",
+            category: "rest",
+            name: "Recover",
+            stroke: "choice",
+            intensity: "easy",
+            durationMode: "fixed_rest",
+            distanceM: null,
+            timeMin: 0.5,
+            targetSummary: "",
+            notes: "",
+          },
+        ],
+      },
+      {
+        draftState: "canonical",
+        variant: "poolside",
+      }
+    );
+
+    expect(poolsideModel.poolsideLines).toEqual(["200m · Choice · Easy · Rest 0:30"]);
   });
 
   it("prefers the primary poolside focus by default and resolves titles from explicit ids", () => {

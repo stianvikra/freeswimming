@@ -730,7 +730,9 @@ test.describe("my library workout builder", () => {
     await expect(poolsidePopup.locator("body")).not.toContainText("Pool session execution");
     await expect(poolsidePopup.locator("body")).toContainText("Total");
     await expect(poolsidePopup.locator("body")).toContainText("Rest");
+    await expect(poolsidePopup.locator('[data-testid="workout-pdf-total"]')).toBeVisible();
     await expect(poolsidePopup.locator("body")).not.toContainText("P:");
+    await expect(poolsidePopup.locator("body")).not.toContainText("~");
     await poolsidePopup.close();
 
     const patchResponsePromise = page.waitForResponse(
@@ -824,7 +826,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
     const savedWorkoutPreview = await openSavedWorkoutPreview(page, workoutId);
     await expect(savedWorkoutPreview).toContainText("Total:");
-    await expect(savedWorkoutPreview).toContainText("P:");
+    await expect(savedWorkoutPreview).toContainText("Rest");
     const editWorkoutLink = page.getByTestId(`workout-builder-edit-workout-${workoutId}`);
     const editWorkoutHref = await editWorkoutLink.getAttribute("href");
     if (editWorkoutHref) {
