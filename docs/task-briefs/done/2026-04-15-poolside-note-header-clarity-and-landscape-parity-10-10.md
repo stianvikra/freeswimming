@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-15-poolside-note-header-clarity-and-landscape-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
 - `updated`: `2026-04-15`
@@ -235,8 +235,34 @@ Strict `10/10` mode for this brief:
 - Rationale:
   - this slice changes print composition only and does not change owner-facing workflow labels, recovery behavior, or operational guidance.
 
+## Closeout
+
+- Shipped via PR `#437`, merged to `main` as `01debcd` on `2026-04-15`.
+- Achieved all declared target categories at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Data placement and sync boundaries`
+  - `Content governance`
+  - `Stack-fit and dependency discipline`
+  - `Testing and QA automation`
+- Critical `10/10` gate confirmed at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Content governance`
+  - `Testing and QA automation`
+- Supporting release-safe closeout stayed at `4/5` or better for the remaining in-scope non-`N/A` categories.
+- Release evidence for the implementation slice:
+  - targeted unit coverage passed,
+  - targeted Playwright coverage passed,
+  - local `npm run verify:pre-pr` passed,
+  - local `npm run verify:pre-merge` passed,
+  - required GitHub checks for PR `#437` passed green before merge.
+
 ## Checkpoint Log
 
 - `2026-04-15 | implementation start | created a scoped follow-up brief after owner review rejected ambiguous estimated-time hero copy for the poolside note and requested portrait/landscape-specific header composition with a toned-down tagline | next: implement the updated poolside header contract, run visual QA, and take the slice through full verification`
 - `2026-04-15 | scope update | locked the poolside line contract to remove duplicated effort labels, inline interval rest where semantically attached, keep standalone recovery as its own compact line, and drop \`Final rest skipped\` from the output | next: implement the updated header + line contract together so portrait and landscape can be reviewed as one coherent print slice`
 - `2026-04-15 | local validation complete | updated the poolside renderer to move total into the header, remove estimated-duration hero copy, give landscape its own composition, compress recovery wording, and harden descriptor deduplication; visual QA screenshots and full \`verify:pre-pr\` passed locally | next: commit, push, open the PR, monitor CI, and run \`verify:pre-merge\` before merge recommendation`
+- `2026-04-15 | closeout ca992b1 | PR #437 merged to main as \`01debcd\` after local \`npm run verify:pre-pr\`, local \`npm run verify:pre-merge\`, and green required GitHub checks; this docs-only follow-up moved the brief from \`in-progress\` to \`done\` so lifecycle state matches shipped reality | next: none`
