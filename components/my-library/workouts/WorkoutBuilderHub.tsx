@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import SavedWorkoutsPanel from "@/components/my-library/workouts/SavedWorkoutsPanel";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
-import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
+import {
+  useAutoDismissNotice,
+  WORKOUT_NOTICE_AUTO_DISMISS_MS,
+} from "@/components/my-library/workouts/useAutoDismissNotice";
 import type {
   WorkoutDeleteApiResponse,
   WorkoutEditorRecord,
@@ -58,6 +61,9 @@ export default function WorkoutBuilderHub({
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [pendingCurrentDelete, setPendingCurrentDelete] = useState(false);
+  const [discardUndoDraft, setDiscardUndoDraft] = useState<WorkoutEditorRecord["draft"] | null>(
+    null
+  );
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
 
@@ -73,6 +79,7 @@ export default function WorkoutBuilderHub({
     setRecentWorkouts(workoutLibrary.recentWorkouts);
     setError("");
     setSuccess("");
+    setDiscardUndoDraft(null);
     setPendingDeleteWorkoutId(null);
     setDeletingWorkoutId(null);
     setBulkDeleting(false);
@@ -83,12 +90,25 @@ export default function WorkoutBuilderHub({
     workoutLibrary.selectedWorkoutMissing,
   ]);
 
+  useEffect(() => {
+    if (!discardUndoDraft) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setDiscardUndoDraft(null);
+    }, WORKOUT_NOTICE_AUTO_DISMISS_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [discardUndoDraft]);
+
   async function saveWorkout() {
     if (!draft || !savedWorkout) return;
 
     setIsSaving(true);
     setError("");
     setSuccess("");
+    setDiscardUndoDraft(null);
 
     try {
       const response = await fetch(`/api/my-library/workouts/${savedWorkout.id}`, {
@@ -114,7 +134,7 @@ export default function WorkoutBuilderHub({
       setSavedWorkout(responseBody.workout);
       setDraft(responseBody.workout.draft);
       setRecentWorkouts((current) => upsertRecentWorkoutSummary(current, responseBody.summary));
-      setSuccess("Workout changes saved to the canonical workout.");
+      setSuccess("Changes saved to this session.");
     } catch {
       setError("Could not save workout right now.");
     } finally {
@@ -122,18 +142,45 @@ export default function WorkoutBuilderHub({
     }
   }
 
-  function resetDraftToSavedWorkout() {
-    if (!savedWorkout) return;
+  function handleDraftChange(nextDraft: WorkoutEditorRecord["draft"]) {
+    setDraft(nextDraft);
+    setSuccess("");
 
+    if (
+      discardUndoDraft &&
+      savedWorkout &&
+      !haveWorkoutDraftChanges(nextDraft, savedWorkout.draft)
+    ) {
+      return;
+    }
+
+    setDiscardUndoDraft(null);
+  }
+
+  function discardDraftChanges() {
+    if (!savedWorkout || !draft || !hasUnsavedChanges) return;
+
+    setDiscardUndoDraft(draft);
     setDraft(savedWorkout.draft);
     setError("");
-    setSuccess("Unsaved builder edits were reset to the last saved workout.");
+    setSuccess("");
+    setPendingCurrentDelete(false);
+  }
+
+  function undoDiscardDraftChanges() {
+    if (!discardUndoDraft) return;
+
+    setDraft(discardUndoDraft);
+    setDiscardUndoDraft(null);
+    setError("");
+    setSuccess("");
   }
 
   async function confirmDeleteWorkout(workout: Pick<WorkoutSummary, "id" | "title">) {
     setDeletingWorkoutId(workout.id);
     setError("");
     setSuccess("");
+    setDiscardUndoDraft(null);
 
     try {
       const response = await fetch(`/api/my-library/workouts/${workout.id}`, {
@@ -180,6 +227,7 @@ export default function WorkoutBuilderHub({
     setPendingCurrentDelete(false);
     setError("");
     setSuccess("");
+    setDiscardUndoDraft(null);
 
     try {
       const results = await Promise.all(
@@ -486,16 +534,16 @@ export default function WorkoutBuilderHub({
               isSaving={isSaving}
               onSave={saveWorkout}
               hasUnsavedChanges={hasUnsavedChanges}
-              onDraftChange={(nextDraft) => {
-                setDraft(nextDraft);
-                setSuccess("");
-              }}
-              onResetToSaved={resetDraftToSavedWorkout}
+              onDraftChange={handleDraftChange}
+              onDiscardChanges={discardDraftChanges}
+              showDiscardUndoNotice={discardUndoDraft !== null}
+              onUndoDiscardChanges={undoDiscardDraftChanges}
               startNewDraftHref={null}
               showLoadedBanner={false}
               showPdfPanel={false}
               forceMetadataOpenOnLoad={preferExpandedDetailsOnLoad}
               onRequestDeleteCurrent={() => {
+                setDiscardUndoDraft(null);
                 setPendingCurrentDelete(true);
                 setPendingDeleteWorkoutId(null);
                 setError("");

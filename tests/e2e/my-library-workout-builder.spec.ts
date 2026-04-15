@@ -296,6 +296,7 @@ test.describe("my library workout builder", () => {
       "aria-expanded",
       "true"
     );
+    await expect(page.getByTestId("workout-editor-danger-zone")).toBeVisible();
     await expect(page.getByTestId("workout-builder-delete-current-workout")).toHaveText(
       "Delete session"
     );
@@ -313,12 +314,14 @@ test.describe("my library workout builder", () => {
     ).toBeVisible();
     await expect(
       page.getByTestId("workout-editor-metadata-panel").getByRole("button", {
-        name: "Reset to last saved",
+        name: "Discard changes",
       })
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       page.getByTestId("workout-editor-metadata-panel").getByTestId("workout-builder-save")
     ).toBeVisible();
+    await expect(page.getByText("Canonical full-session PDF")).toHaveCount(0);
+    await expect(page.getByText("canonical workout")).toHaveCount(0);
     await expect(page.getByText("Title through equipment")).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toBeVisible();
     await expect(page.getByText("Session details")).toBeVisible();
@@ -441,7 +444,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-step-time-0")).toHaveValue("1:30");
     await page.getByTestId("session-draft-step-duration-mode-0").selectOption("distance");
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
-      "Unsaved changes stay local until you save this workout."
+      "Unsaved changes stay local until you save this session."
     );
     await expect(page.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
       "aria-expanded",
@@ -510,12 +513,12 @@ test.describe("my library workout builder", () => {
       "Deleted 100m · Freestyle"
     );
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
-      "Unsaved changes stay local until you save this workout."
+      "Unsaved changes stay local until you save this session."
     );
     await page.getByTestId("workout-editor-removal-undo-button").click();
     await expect(page.getByTestId("workout-editor-removal-undo")).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
-      "Unsaved changes stay local until you save this workout."
+      "Unsaved changes stay local until you save this session."
     );
     await expect(page.getByTestId("workout-builder-save")).toBeEnabled();
 
@@ -588,8 +591,19 @@ test.describe("my library workout builder", () => {
       .getByRole("textbox", { name: "Notes" })
       .fill("Leave on the top and count strokes.");
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
+    await expect(page.getByRole("button", { name: "Discard changes" })).toBeVisible();
+    await page.getByRole("button", { name: "Discard changes" }).click();
+    await expect(page.getByTestId("workout-editor-discard-undo")).toContainText(
+      "Changes discarded."
+    );
+    await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled pool session");
+    await expect(page.getByRole("button", { name: "Discard changes" })).toHaveCount(0);
+    await page.getByTestId("workout-editor-discard-undo-button").click();
+    await expect(page.getByTestId("workout-editor-discard-undo")).toHaveCount(0);
+    await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
+    await expect(page.getByRole("button", { name: "Discard changes" })).toBeVisible();
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
-      "Unsaved changes stay local until you save this workout."
+      "Unsaved changes stay local until you save this session."
     );
     await expect(page.getByTestId("workout-editor-support-tools-status")).toHaveText(
       "1 review item"
@@ -729,10 +743,10 @@ test.describe("my library workout builder", () => {
     expect(patchResponse.status()).toBe(200);
     expect(patchPayload?.ok).toBe(true);
 
-    await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
+    await expect(page.getByText("Changes saved to this session.")).toBeVisible();
     await openSupportToolsPanel(page);
     await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
-      "All builder changes are saved to the canonical workout."
+      "All changes are saved to this session."
     );
     await expect(page.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
       "data-readiness-status",
@@ -757,6 +771,7 @@ test.describe("my library workout builder", () => {
       `"title": "${uniqueTitle}"`
     );
     await expect(page.getByTestId("workout-builder-save")).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Discard changes" })).toHaveCount(0);
     await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
     await expect(page.getByTestId("session-draft-pool-length-input")).toHaveValue("25");
     await page.getByTestId("session-draft-step-toggle-0").click();
@@ -825,6 +840,8 @@ test.describe("my library workout builder", () => {
       });
     }
     await waitForWorkoutBuilderClientReady(page);
+    await openMetadataPanelIfCollapsed(page);
+    await expect(page.getByTestId("workout-editor-danger-zone")).toBeVisible();
 
     const deleteResponsePromise = page.waitForResponse(
       (response) =>

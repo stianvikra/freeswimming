@@ -359,7 +359,7 @@ test.describe("my library generator intake", () => {
     await page.getByTestId("workout-builder-save").click();
     await patchResponsePromise;
 
-    await expect(page.getByText("Workout changes saved to the canonical workout.")).toBeVisible();
+    await expect(page.getByText("Changes saved to this session.")).toBeVisible();
     await expect(page.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
       "aria-expanded",
       "false"

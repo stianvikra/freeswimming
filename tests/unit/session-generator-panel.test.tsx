@@ -477,7 +477,67 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByText("Saved session loaded.")).toBeVisible();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Previously accepted workout");
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Discard changes" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("session-generator-prepare-needed")).not.toBeInTheDocument();
+  });
+
+  it("supports discard and undo in the shared saved-session editor", () => {
+    render(
+      <SessionGeneratorPanel
+        payload={buildPayload()}
+        selection={{
+          profile: true,
+          css: true,
+          preferences: true,
+          personal_records: false,
+          goals: true,
+          focus: true,
+        }}
+        overrides={{
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "",
+          constraintText: "Keep the first half controlled.",
+        }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            draft: {
+              ...buildDraft(),
+              title: "Previously accepted workout",
+            },
+          }),
+          recentWorkouts: [buildWorkoutSummary({ title: "Previously accepted workout" })],
+        })}
+      />
+    );
+
+    const metadataToggle = screen.queryByTestId("workout-editor-metadata-toggle");
+    if (metadataToggle?.getAttribute("aria-expanded") === "false") {
+      fireEvent.click(metadataToggle);
+    }
+
+    fireEvent.change(screen.getByTestId("session-draft-title"), {
+      target: { value: "Temporary generator title" },
+    });
+
+    expect(screen.getByRole("button", { name: "Discard changes" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+
+    expect(screen.getByTestId("workout-editor-discard-undo")).toHaveTextContent(
+      "Changes discarded."
+    );
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Previously accepted workout");
+    expect(screen.queryByRole("button", { name: "Discard changes" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("workout-editor-discard-undo-button"));
+
+    expect(screen.queryByTestId("workout-editor-discard-undo")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Temporary generator title");
+    expect(screen.getByRole("button", { name: "Discard changes" })).toBeVisible();
   });
 
   it("applies the same pool-unit default reset behavior in the shared saved-session editor", () => {
