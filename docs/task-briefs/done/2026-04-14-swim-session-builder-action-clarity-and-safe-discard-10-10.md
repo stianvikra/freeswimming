@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-14-swim-session-builder-action-clarity-and-safe-discard-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-14`
 - `updated`: `2026-04-15`
@@ -260,3 +260,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-14 | planning | created a dedicated child brief for builder action clarity after owner feedback confirmed that the current action row still leaks implementation language and that `Reset to last saved`should become`Discard changes` with a better local undo recovery pattern | next: implement the shared-editor action rewrite and test discard/undo/delete separation end to end`
 - `2026-04-15 | implementation | rewrote the saved-session action area to use user-facing save/PDF copy, made `Discard changes`visible only for dirty state, added a local undo toast, moved`Delete session`into a separate danger zone, and updated unit + builder e2e coverage to lock the new contract | next: run`npm run verify:pre-pr`, push the branch, and open the PR`
 - `2026-04-15 | validation | `npm run verify:pre-pr`passed on the full lane, including build, perf budgets, and full Playwright; perf trend recommended tightening one stretch target step, and the decision for this slice is`hold` because no route-budget target changed here and the recommendation should be handled in the dedicated performance-governance thread/PR summary | next: commit, push, and open the PR`
+- `2026-04-15 | done | PR #433 merged to main as squash commit `a464d7f`, local main synced cleanly, and post-merge preflight identified the brief closeout move that this follow-up docs-only cleanup branch completes | next: keep later builder follow-ups as separate slices`
