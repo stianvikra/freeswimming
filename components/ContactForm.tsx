@@ -82,11 +82,6 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
   useEffect(() => {
     startedAtRef.current = Date.now();
-    // Avoid auto-opening keyboard on touch devices.
-    const desktopLike = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (desktopLike) {
-      focusFieldOnNextFrame(nameRef);
-    }
   }, []);
 
   useEffect(() => {
