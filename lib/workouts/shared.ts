@@ -229,6 +229,7 @@ export type WorkoutPdfModel = {
 type WorkoutPoolsideLineItem = {
   kind: "interval" | "recovery";
   text: string;
+  secondaryText?: string | null;
 };
 
 type WorkoutStepDetailLabels = {
@@ -768,7 +769,7 @@ export function buildWorkoutPdfModel(
   const sourceLabel = draftState === "canonical" ? "Canonical workout" : "Local draft";
   const focusPoints = buildWorkoutPdfFocusPoints(draft, options?.focusPoints);
   const poolsideLineItems = buildWorkoutPoolsideLineItemsForDraft(draft);
-  const poolsideLines = poolsideLineItems.map((item) => item.text);
+  const poolsideLines = poolsideLineItems.map(formatWorkoutPoolsideLineItemText);
   const swimmerName = normalizeWorkoutSwimmerName(options?.swimmerName);
 
   if (!draft) {
@@ -1687,21 +1688,21 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .shell {
-        padding: 18px 14px 28px;
+        padding: 14px 12px 20px;
       }
 
       .page {
         width: min(100%, ${isLandscape ? "244mm" : "112mm"});
         margin: 0 auto;
         border: 1px solid rgba(16, 33, 60, 0.08);
-        border-radius: 26px;
+        border-radius: 20px;
         background: var(--surface);
         box-shadow: 0 20px 48px rgba(16, 33, 60, 0.14);
         overflow: hidden;
       }
 
       .hero {
-        padding: 18px 20px 16px;
+        padding: 14px 16px 12px;
         background: ${
           isInkSaver ? "#ffffff" : "linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%)"
         };
@@ -1715,8 +1716,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .brand-logo {
         display: block;
-        width: min(100%, 210px);
-        max-width: min(58vw, 210px);
+        width: min(100%, 190px);
+        max-width: min(52vw, 190px);
         height: auto;
       }
 
@@ -1734,27 +1735,27 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       h1 {
         margin: 0;
-        font-size: 30px;
+        font-size: 26px;
         font-weight: 800;
-        letter-spacing: -0.02em;
-        line-height: 1.08;
+        letter-spacing: 0;
+        line-height: 1.04;
       }
 
       .hero-portrait {
         display: grid;
-        gap: 16px;
+        gap: 12px;
       }
 
       .hero-landscape {
         display: grid;
-        gap: 12px;
+        gap: 10px;
       }
 
       .hero-top-row {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 16px;
+        gap: 12px;
       }
 
       .hero-brand-lockup {
@@ -1762,12 +1763,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-items: flex-start;
         min-width: 0;
         flex: 1 1 auto;
-        max-width: ${isLandscape ? "250px" : "220px"};
+        max-width: ${isLandscape ? "220px" : "190px"};
       }
 
       .hero-heading {
         display: grid;
-        gap: 12px;
+        gap: 8px;
       }
 
       .hero-heading-portrait {
@@ -1782,20 +1783,20 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: flex;
         align-items: flex-end;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
         flex-wrap: wrap;
       }
 
       .hero-landscape-main {
         display: grid;
-        grid-template-columns: minmax(0, 1.35fr) minmax(200px, 0.65fr);
-        gap: 20px;
+        grid-template-columns: minmax(0, 1.55fr) minmax(160px, 0.45fr);
+        gap: 14px;
         align-items: end;
       }
 
       .hero-landscape-left {
         display: grid;
-        gap: 18px;
+        gap: 12px;
         min-width: 0;
       }
 
@@ -1803,7 +1804,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: grid;
         justify-items: end;
         align-content: space-between;
-        gap: 18px;
+        gap: 10px;
         min-width: 0;
       }
 
@@ -1815,18 +1816,18 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: grid;
         gap: 0;
         justify-items: end;
-        line-height: 0.84;
-        font-weight: 760;
-        letter-spacing: -0.02em;
-        color: rgba(16, 33, 60, 0.9);
+        line-height: 0.88;
+        font-weight: 720;
+        letter-spacing: 0;
+        color: rgba(16, 33, 60, 0.72);
       }
 
       .hero-tagline-portrait {
-        font-size: 16px;
+        font-size: 13px;
       }
 
       .hero-tagline-landscape {
-        font-size: 24px;
+        font-size: 18px;
       }
 
       .hero-tagline-accent {
@@ -1836,16 +1837,16 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       .hero-total-pill {
         display: inline-flex;
         align-items: baseline;
-        gap: 12px;
-        border-radius: 14px;
+        gap: 10px;
+        border-radius: 10px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
-        padding: 10px 14px;
+        padding: 7px 10px;
         min-width: fit-content;
       }
 
       .hero-total-label {
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 800;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -1853,9 +1854,9 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .hero-total-value {
-        font-size: 22px;
+        font-size: 18px;
         font-weight: 800;
-        letter-spacing: -0.02em;
+        letter-spacing: 0;
         color: var(--ink);
       }
 
@@ -1864,8 +1865,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         border-radius: 999px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
-        padding: 8px 12px;
-        font-size: 10px;
+        padding: 6px 10px;
+        font-size: 9px;
         font-weight: 700;
         color: var(--ink);
         white-space: nowrap;
@@ -1873,8 +1874,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .body {
         display: grid;
-        gap: 14px;
-        padding: 16px;
+        gap: 10px;
+        padding: 12px;
       }
 
       .body-single-column {
@@ -1883,22 +1884,22 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .body-landscape {
         align-items: start;
-        grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
-        gap: 18px;
+        grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+        gap: 12px;
       }
 
       .poolside-meta,
       .poolside-steps {
         min-width: 0;
         display: grid;
-        gap: 12px;
+        gap: 10px;
         align-content: start;
       }
 
       .callout,
       .review-note {
-        border-radius: 18px;
-        padding: 14px 16px;
+        border-radius: 14px;
+        padding: 12px 14px;
       }
 
       .callout {
@@ -1921,12 +1922,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .focus-list {
-        margin: 8px 0 0;
+        margin: 6px 0 0;
         padding-left: 18px;
         display: grid;
-        gap: 6px;
-        font-size: 13px;
-        line-height: 1.5;
+        gap: 4px;
+        font-size: 12.5px;
+        line-height: 1.45;
       }
 
       .section-title {
@@ -1971,13 +1972,13 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         margin: 0;
         padding: 0;
         border: 1px solid rgba(16, 33, 60, 0.08);
-        border-radius: 20px;
+        border-radius: 16px;
         background: rgba(255, 255, 255, 0.88);
       }
 
       .poolside-line {
         display: block;
-        padding: 14px 16px;
+        padding: 11px 12px;
         border-top: 1px solid rgba(16, 33, 60, 0.08);
       }
 
@@ -1985,20 +1986,40 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         border-top: none;
       }
 
-      .poolside-line-text {
-        font-size: 15px;
-        line-height: 1.5;
+      .poolside-line-content {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 4px 10px;
+      }
+
+      .poolside-line-primary {
+        font-size: 14px;
+        line-height: 1.4;
+        font-weight: 600;
         color: var(--ink);
+      }
+
+      .poolside-line-secondary {
+        flex: 1 1 220px;
+        max-width: 100%;
+        color: var(--accent-strong);
+      }
+
+      .poolside-line-secondary-text {
+        display: block;
+        font-size: 12.5px;
+        line-height: 1.4;
+        font-weight: 700;
       }
 
       .poolside-line-recovery {
         background: var(--accent-soft);
-        padding-top: 10px;
-        padding-bottom: 10px;
+        padding-top: 9px;
+        padding-bottom: 9px;
       }
 
-      .poolside-line-recovery .poolside-line-text {
-        display: block;
+      .poolside-line-recovery .poolside-line-primary {
         font-size: 13px;
         font-weight: 700;
         color: var(--accent-strong);
@@ -2048,6 +2069,14 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
         .hero-landscape-right {
           justify-items: start;
+        }
+
+        .hero-tagline {
+          justify-items: start;
+        }
+
+        .hero-support-row {
+          align-items: flex-start;
         }
 
         .swimmer-pill {
@@ -2832,9 +2861,20 @@ function renderWorkoutPdfBlockHtml(
 function renderWorkoutPoolsideLineHtml(line: WorkoutPoolsideLineItem) {
   return `
     <li class="poolside-line ${line.kind === "recovery" ? "poolside-line-recovery" : ""}">
-      <span class="poolside-line-text">${escapeHtml(line.text)}</span>
+      <span class="poolside-line-content">
+        <span class="poolside-line-primary">${escapeHtml(line.text)}</span>
+        ${
+          line.secondaryText
+            ? `<span class="poolside-line-secondary"><span class="poolside-line-secondary-text">${escapeHtml(line.secondaryText)}</span></span>`
+            : ""
+        }
+      </span>
     </li>
   `;
+}
+
+function formatWorkoutPoolsideLineItemText(item: WorkoutPoolsideLineItem) {
+  return [item.text, item.secondaryText].filter(Boolean).join(" · ");
 }
 
 function renderWorkoutPdfDetailList(
@@ -2992,7 +3032,7 @@ export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | unde
 }
 
 function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
-  return buildWorkoutPoolsideLineItemsForDraft(draft).map((item) => item.text);
+  return buildWorkoutPoolsideLineItemsForDraft(draft).map(formatWorkoutPoolsideLineItemText);
 }
 
 function buildWorkoutPoolsideLineItemsForDraft(draft: SessionDraft | null | undefined) {
@@ -3011,27 +3051,31 @@ function buildWorkoutPoolsideLineItemsForDraft(draft: SessionDraft | null | unde
     if (group.kind === "single") {
       const result = buildWorkoutPoolsideSingleGroupLineItems(
         group.entries[0],
-        groups[groupIndex + 1],
+        groups.slice(groupIndex + 1),
         draft.basePaceSecondsPer100m,
         draft.environment,
         poolLengthUnit
       );
       lineItems.push(...result.items);
-      if (result.consumedNextGroup) {
-        groupIndex += 1;
+      if (result.consumedFollowingGroups > 0) {
+        groupIndex += result.consumedFollowingGroups;
       }
       continue;
     }
 
-    lineItems.push(
-      ...buildWorkoutPoolsideRepeatGroupLineItems(
-        group.entries,
-        group.repeatCount,
-        draft.basePaceSecondsPer100m,
-        draft.environment,
-        poolLengthUnit
-      )
+    const result = buildWorkoutPoolsideRepeatGroupLineItems(
+      group.entries,
+      group.repeatCount,
+      group.repeatGroupId,
+      groups.slice(groupIndex + 1),
+      draft.basePaceSecondsPer100m,
+      draft.environment,
+      poolLengthUnit
     );
+    lineItems.push(...result.items);
+    if (result.consumedFollowingGroups > 0) {
+      groupIndex += result.consumedFollowingGroups;
+    }
   }
 
   return lineItems;
@@ -3039,13 +3083,13 @@ function buildWorkoutPoolsideLineItemsForDraft(draft: SessionDraft | null | unde
 
 function buildWorkoutPoolsideSingleGroupLineItems(
   entry: WorkoutHandoffEntry | undefined,
-  nextGroup: WorkoutHandoffGroup | undefined,
+  followingGroups: WorkoutHandoffGroup[],
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   if (!entry) {
-    return { items: [] as WorkoutPoolsideLineItem[], consumedNextGroup: false };
+    return { items: [] as WorkoutPoolsideLineItem[], consumedFollowingGroups: 0 };
   }
 
   if (isWorkoutPoolsideRecoveryStep(entry.step, environment)) {
@@ -3058,47 +3102,61 @@ function buildWorkoutPoolsideSingleGroupLineItems(
           poolLengthUnit
         ),
       ],
-      consumedNextGroup: false,
+      consumedFollowingGroups: 0,
     };
   }
 
-  const nextEntry = nextGroup?.kind === "single" ? nextGroup.entries[0] : null;
-  const inlineRecoveryStep =
-    nextEntry &&
-    shouldInlineWorkoutPoolsideRecoveryStep(nextEntry.step, environment) &&
-    !isSessionDraftRepeatPostSetRestStep(nextEntry.step)
-      ? nextEntry.step
-      : null;
+  const inlineRecoverySteps: SessionDraftStep[] = [];
+  let consumedFollowingGroups = 0;
+
+  for (const nextGroup of followingGroups) {
+    if (nextGroup.kind !== "single") {
+      break;
+    }
+
+    const nextEntry = nextGroup.entries[0];
+    const nextStep = nextEntry?.step;
+
+    if (
+      !nextStep ||
+      !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment) ||
+      isSessionDraftRepeatPostSetRestStep(nextStep)
+    ) {
+      break;
+    }
+
+    inlineRecoverySteps.push(nextStep);
+    consumedFollowingGroups += 1;
+  }
+
+  const trailingRecoveryText = buildWorkoutPoolsideRecoverySummary(
+    inlineRecoverySteps,
+    basePaceSecondsPer100m,
+    environment,
+    poolLengthUnit,
+    "standalone"
+  );
 
   return {
     items: [
-      {
-        kind: "interval" as const,
-        text: buildWorkoutPoolsideLineText(
-          entry.step,
-          null,
-          inlineRecoveryStep
-            ? buildWorkoutPoolsideRecoveryText(
-                inlineRecoveryStep,
-                basePaceSecondsPer100m,
-                environment,
-                poolLengthUnit,
-                "standalone"
-              )
-            : null,
-          basePaceSecondsPer100m,
-          environment,
-          poolLengthUnit
-        ),
-      },
+      buildWorkoutPoolsideIntervalLineItem(
+        entry.step,
+        null,
+        trailingRecoveryText,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit
+      ),
     ],
-    consumedNextGroup: Boolean(inlineRecoveryStep),
+    consumedFollowingGroups,
   };
 }
 
 function buildWorkoutPoolsideRepeatGroupLineItems(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
+  repeatGroupId: string,
+  followingGroups: WorkoutHandoffGroup[],
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
@@ -3121,39 +3179,100 @@ function buildWorkoutPoolsideRepeatGroupLineItems(
       continue;
     }
 
-    const nextStep = entries[index + 1]?.step;
-    const inlineRecoveryStep =
-      nextStep && shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment) ? nextStep : null;
+    const trailingRecoverySteps: SessionDraftStep[] = [];
+    let nextIndex = index + 1;
 
-    lineItems.push({
-      kind: "interval",
-      text: buildWorkoutPoolsideLineText(
+    while (nextIndex < entries.length) {
+      const nextStep = entries[nextIndex]?.step;
+      if (!nextStep || !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment)) {
+        break;
+      }
+      trailingRecoverySteps.push(nextStep);
+      nextIndex += 1;
+    }
+
+    const trailingRecoveryText = buildWorkoutPoolsideRecoverySummary(
+      trailingRecoverySteps,
+      basePaceSecondsPer100m,
+      environment,
+      poolLengthUnit,
+      "repeat"
+    );
+
+    lineItems.push(
+      buildWorkoutPoolsideIntervalLineItem(
         step,
         repeatCount,
-        inlineRecoveryStep
-          ? buildWorkoutPoolsideRecoveryText(
-              inlineRecoveryStep,
-              basePaceSecondsPer100m,
-              environment,
-              poolLengthUnit,
-              "interval"
-            )
-          : null,
+        trailingRecoveryText,
         basePaceSecondsPer100m,
         environment,
         poolLengthUnit
-      ),
-    });
+      )
+    );
 
-    if (inlineRecoveryStep) {
-      index += 1;
+    if (trailingRecoverySteps.length > 0) {
+      index = nextIndex - 1;
     }
   }
 
-  return lineItems;
+  const trailingPostSetRestSteps: SessionDraftStep[] = [];
+  let consumedFollowingGroups = 0;
+
+  for (const nextGroup of followingGroups) {
+    if (nextGroup.kind !== "single") {
+      break;
+    }
+
+    const nextStep = nextGroup.entries[0]?.step;
+    if (
+      !nextStep ||
+      !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment) ||
+      nextStep.postSetRestForRepeatGroupId !== repeatGroupId
+    ) {
+      break;
+    }
+
+    trailingPostSetRestSteps.push(nextStep);
+    consumedFollowingGroups += 1;
+  }
+
+  const trailingPostSetRestText = buildWorkoutPoolsideRecoverySummary(
+    trailingPostSetRestSteps,
+    basePaceSecondsPer100m,
+    environment,
+    poolLengthUnit,
+    "repeat"
+  );
+
+  if (trailingPostSetRestText) {
+    const lastIntervalIndex = [...lineItems]
+      .map((lineItem, index) => ({ lineItem, index }))
+      .reverse()
+      .find(({ lineItem }) => lineItem.kind === "interval")?.index;
+
+    if (typeof lastIntervalIndex === "number") {
+      const lastInterval = lineItems[lastIntervalIndex];
+      lineItems[lastIntervalIndex] = {
+        ...lastInterval,
+        secondaryText: [lastInterval.secondaryText, trailingPostSetRestText]
+          .filter(Boolean)
+          .join(" · "),
+      };
+    } else {
+      lineItems.push({
+        kind: "recovery",
+        text: trailingPostSetRestText,
+      });
+    }
+  }
+
+  return {
+    items: lineItems,
+    consumedFollowingGroups,
+  };
 }
 
-function buildWorkoutPoolsideLineText(
+function buildWorkoutPoolsideIntervalLineItem(
   step: SessionDraftStep,
   repeatCount: number | null,
   trailingRecoveryText: string | null,
@@ -3162,17 +3281,44 @@ function buildWorkoutPoolsideLineText(
   poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   const prefix = repeatCount ? `${repeatCount} x ` : "";
-  const parts = [
-    `${prefix}${buildWorkoutPoolsideIntervalLabel(
-      step,
-      basePaceSecondsPer100m,
-      environment,
-      poolLengthUnit
-    )}`,
-    trailingRecoveryText,
-  ].filter(Boolean);
+  const text = `${prefix}${buildWorkoutPoolsideIntervalLabel(
+    step,
+    basePaceSecondsPer100m,
+    environment,
+    poolLengthUnit
+  )}`;
 
-  return parts.join(" · ");
+  return {
+    kind: "interval" as const,
+    text,
+    secondaryText: trailingRecoveryText,
+  };
+}
+
+function buildWorkoutPoolsideRecoverySummary(
+  steps: SessionDraftStep[],
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit,
+  context: "repeat" | "standalone"
+) {
+  const parts = steps
+    .map((step) =>
+      buildWorkoutPoolsideRecoveryText(
+        step,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit,
+        context === "repeat"
+          ? isSessionDraftRepeatPostSetRestStep(step)
+            ? "set"
+            : "interval"
+          : "standalone"
+      )
+    )
+    .filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 function isWorkoutPoolsideRecoveryStep(
@@ -3224,8 +3370,10 @@ function buildWorkoutPoolsideRecoveryText(
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit,
-  mode: "interval" | "standalone"
+  mode: "interval" | "set" | "standalone"
 ) {
+  const restLabel = mode === "interval" ? "Interval rest" : mode === "set" ? "Set rest" : "Rest";
+
   switch (step.durationMode) {
     case "lap_button":
       return "Lap Button Press";
@@ -3239,11 +3387,7 @@ function buildWorkoutPoolsideRecoveryText(
       return step.timeMin ? `Send-Off ${formatClockDurationLabel(step.timeMin)}` : "Send-Off";
     case "time":
     case "fixed_rest":
-      return step.timeMin
-        ? `${mode === "interval" ? "Interval rest" : "Rest"} ${formatClockDurationLabel(step.timeMin)}`
-        : mode === "interval"
-          ? "Interval rest"
-          : "Rest";
+      return step.timeMin ? `${restLabel} ${formatClockDurationLabel(step.timeMin)}` : restLabel;
     default:
       return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
         environment,

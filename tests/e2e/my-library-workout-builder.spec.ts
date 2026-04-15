@@ -692,8 +692,10 @@ test.describe("my library workout builder", () => {
     const pdfPopupPromise = page.waitForEvent("popup");
     await page.getByTestId("workout-editor-pdf-open").click();
     const pdfPopup = await pdfPopupPromise;
+    await pdfPopup.waitForLoadState("domcontentloaded");
     await expect(page.getByTestId("workout-editor-pdf-notice")).toContainText("Opened PDF");
     await expect(pdfPopup.locator('[data-testid="workout-pdf-print-view"]')).toBeVisible();
+    await expect.poll(async () => pdfPopup.title()).toContain("FreeSwimming");
     await expect(pdfPopup.locator('[data-testid="workout-pdf-source"]')).toContainText(
       "Source: Local draft"
     );
@@ -707,10 +709,12 @@ test.describe("my library workout builder", () => {
     const poolsidePopupPromise = page.waitForEvent("popup");
     await page.getByTestId("workout-editor-poolside-pdf-open").click();
     const poolsidePopup = await poolsidePopupPromise;
+    await poolsidePopup.waitForLoadState("domcontentloaded");
     await expect(poolsidePopup.locator('[data-testid="workout-pdf-print-view"]')).toHaveAttribute(
       "data-pdf-variant",
       "poolside"
     );
+    await expect.poll(async () => poolsidePopup.title()).toContain("FreeSwimming");
     await expect(poolsidePopup.locator('[data-testid="workout-pdf-print-view"]')).toHaveAttribute(
       "data-poolside-print-style",
       "ink_saver"
@@ -729,10 +733,12 @@ test.describe("my library workout builder", () => {
     await expect(poolsidePopup.locator("body")).not.toContainText("Source: Local draft");
     await expect(poolsidePopup.locator("body")).not.toContainText("Pool session execution");
     await expect(poolsidePopup.locator("body")).toContainText("Total");
-    await expect(poolsidePopup.locator("body")).toContainText("Rest");
+    await expect(poolsidePopup.locator("body")).toContainText(/rest/i);
     await expect(poolsidePopup.locator('[data-testid="workout-pdf-total"]')).toBeVisible();
     await expect(poolsidePopup.locator("body")).not.toContainText("P:");
     await expect(poolsidePopup.locator("body")).not.toContainText("~");
+    await page.waitForTimeout(300);
+    await expect(poolsidePopup.locator('[data-testid="workout-pdf-print-view"]')).toBeVisible();
     await poolsidePopup.close();
 
     const patchResponsePromise = page.waitForResponse(

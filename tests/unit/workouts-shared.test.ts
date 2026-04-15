@@ -1059,93 +1059,98 @@ describe("workouts shared readiness", () => {
   });
 
   it("deduplicates effort labels and inlines ordinary recovery for poolside lines", () => {
-    const poolsideModel = buildWorkoutPdfModel(
-      {
-        ...buildDraft(),
-        steps: [
-          {
-            id: "step-1",
-            category: "swim",
-            name: "Main swim",
-            stroke: "freestyle",
-            intensity: "easy",
-            durationMode: "distance",
-            distanceM: 400,
-            timeMin: null,
-            targetMode: "effort",
-            effortTarget: "easy",
-            targetSummary: "",
-            notes: "",
-          },
-          {
-            id: "step-2",
-            category: "rest",
-            name: "Main rest",
-            stroke: "choice",
-            intensity: "easy",
-            durationMode: "fixed_rest",
-            distanceM: null,
-            timeMin: 0.5,
-            targetSummary: "",
-            notes: "",
-          },
-          {
-            id: "step-3",
-            category: "main",
-            name: "Repeat swim",
-            stroke: "freestyle",
-            intensity: "moderate",
-            durationMode: "distance",
-            distanceM: 100,
-            timeMin: null,
-            targetSummary: "",
-            notes: "",
-            repeatGroupId: "repeat-1",
-            repeatCount: 4,
-            repeatEndingRestMode: "skip_last_rest",
-          },
-          {
-            id: "step-4",
-            category: "rest",
-            name: "Repeat rest",
-            stroke: "choice",
-            intensity: "easy",
-            durationMode: "fixed_rest",
-            distanceM: null,
-            timeMin: 0.5,
-            targetSummary: "",
-            notes: "",
-            repeatGroupId: "repeat-1",
-            repeatCount: 4,
-            repeatEndingRestMode: "skip_last_rest",
-          },
-          {
-            id: "step-5",
-            category: "rest",
-            name: "Post set rest",
-            stroke: "choice",
-            intensity: "easy",
-            durationMode: "fixed_rest",
-            distanceM: null,
-            timeMin: 0.67,
-            targetSummary: "",
-            notes: "",
-            postSetRestForRepeatGroupId: "repeat-1",
-          },
-        ],
-      },
-      {
-        draftState: "canonical",
-        variant: "poolside",
-      }
-    );
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      steps: [
+        {
+          id: "step-1",
+          category: "swim",
+          name: "Main swim",
+          stroke: "freestyle",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 400,
+          timeMin: null,
+          targetMode: "effort",
+          effortTarget: "easy",
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Main rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-3",
+          category: "main",
+          name: "Repeat swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-4",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-5",
+          category: "rest",
+          name: "Post set rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.67,
+          targetSummary: "",
+          notes: "",
+          postSetRestForRepeatGroupId: "repeat-1",
+        },
+      ],
+    };
+    const poolsideModel = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+    });
+    const poolsideHtml = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+    });
 
     expect(poolsideModel.poolsideLines).toContain("400m · Freestyle · Easy · Rest 0:30");
     expect(poolsideModel.poolsideLines).not.toContain("400m · Freestyle · Easy · Easy");
     expect(poolsideModel.poolsideLines).toContain(
-      "4 x 100m · Freestyle · Moderate · Interval rest 0:30"
+      "4 x 100m · Freestyle · Moderate · Interval rest 0:30 · Set rest 0:40"
     );
-    expect(poolsideModel.poolsideLines).toContain("Rest 0:40");
+    expect(poolsideModel.poolsideLines).not.toContain("Rest 0:40");
+    expect(poolsideHtml).toContain("poolside-line-secondary-text");
+    expect(poolsideHtml).toContain("Interval rest 0:30 · Set rest 0:40");
+    expect(poolsideHtml).not.toContain(">Rest 0:40<");
   });
 
   it("ignores machine-formatted step names when building poolside descriptors", () => {
