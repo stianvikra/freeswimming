@@ -1125,10 +1125,10 @@ describe("WorkoutBuilderHub", () => {
         expect.stringContaining("Calm exhale: Start the exhale before the head turns to breathe.")
       );
       expect(printWindow.document.write).toHaveBeenCalledWith(
-        expect.stringContaining("Poolside Note")
+        expect.stringContaining("lockup-domain-ink.png")
       );
       expect(printWindow.document.write).toHaveBeenCalledWith(
-        expect.stringContaining("lockup-domain-ink.png")
+        expect.stringContaining("Print Preview")
       );
     });
 

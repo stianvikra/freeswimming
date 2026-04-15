@@ -719,7 +719,9 @@ test.describe("my library workout builder", () => {
       "data-poolside-print-layout",
       "landscape"
     );
-    await expect(poolsidePopup.locator("body")).toContainText("Poolside Note");
+    await expect(poolsidePopup.locator("body")).toContainText(uniqueTitle);
+    await expect(poolsidePopup.locator("body")).toContainText("Print Preview");
+    await expect(poolsidePopup.locator("body")).not.toContainText("Poolside Note");
     await expect(poolsidePopup.locator("body")).not.toContainText("Color mode");
     await expect(poolsidePopup.locator("body")).not.toContainText("Ink saver");
     await expect(poolsidePopup.locator("body")).not.toContainText("Portrait");
@@ -727,7 +729,8 @@ test.describe("my library workout builder", () => {
     await expect(poolsidePopup.locator("body")).not.toContainText("Source: Local draft");
     await expect(poolsidePopup.locator("body")).not.toContainText("Pool session execution");
     await expect(poolsidePopup.locator("body")).toContainText("Total");
-    await expect(poolsidePopup.locator("body")).toContainText("P: Fixed Rest Time 0:45");
+    await expect(poolsidePopup.locator("body")).toContainText("Rest");
+    await expect(poolsidePopup.locator("body")).not.toContainText("P:");
     await poolsidePopup.close();
 
     const patchResponsePromise = page.waitForResponse(

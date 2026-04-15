@@ -1,7 +1,7 @@
 // components/ContactForm.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import PressButton from "@/components/ui/PressButton";
 import PageIntro from "@/components/PageIntro";
@@ -23,6 +23,14 @@ const GOALS_COACHING_LEVEL_OPTIONS = [
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+}
+
+function focusFieldOnNextFrame<T extends HTMLElement>(ref: RefObject<T | null>) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      ref.current?.focus();
+    });
+  });
 }
 
 export default function ContactForm({ variant = "contact" }: Props) {
@@ -77,9 +85,37 @@ export default function ContactForm({ variant = "contact" }: Props) {
     // Avoid auto-opening keyboard on touch devices.
     const desktopLike = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     if (desktopLike) {
-      requestAnimationFrame(() => nameRef.current?.focus());
+      focusFieldOnNextFrame(nameRef);
     }
   }, []);
+
+  useEffect(() => {
+    switch (fieldError) {
+      case "name":
+        focusFieldOnNextFrame(nameRef);
+        break;
+      case "email":
+        focusFieldOnNextFrame(emailRef);
+        break;
+      case "message":
+        focusFieldOnNextFrame(messageRef);
+        break;
+      case "primary_goal":
+        focusFieldOnNextFrame(primaryGoalRef);
+        break;
+      case "level":
+        focusFieldOnNextFrame(levelRef);
+        break;
+      case "training_days":
+        focusFieldOnNextFrame(trainingDaysRef);
+        break;
+      case "weekly_volume":
+        focusFieldOnNextFrame(weeklyVolumeRef);
+        break;
+      default:
+        break;
+    }
+  }, [fieldError]);
 
   const copy = useMemo(() => {
     if (variant === "analysis") {
@@ -206,19 +242,19 @@ export default function ContactForm({ variant = "contact" }: Props) {
     startedAtRef.current = Date.now();
 
     window.scrollTo({ top: 0, behavior: "smooth" });
-    requestAnimationFrame(() => nameRef.current?.focus());
+    focusFieldOnNextFrame(nameRef);
   }
 
   function goEmail() {
-    requestAnimationFrame(() => emailRef.current?.focus());
+    focusFieldOnNextFrame(emailRef);
   }
 
   function goMessage() {
-    requestAnimationFrame(() => messageRef.current?.focus());
+    focusFieldOnNextFrame(messageRef);
   }
 
   function goPrimaryGoal() {
-    requestAnimationFrame(() => primaryGoalRef.current?.focus());
+    focusFieldOnNextFrame(primaryGoalRef);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -241,28 +277,24 @@ export default function ContactForm({ variant = "contact" }: Props) {
       setStatus("error");
       setError("Please enter your name.");
       setFieldError("name");
-      nameRef.current?.focus();
       return;
     }
     if (!isValidEmail(trimmedEmail)) {
       setStatus("error");
       setError("Please enter a valid email.");
       setFieldError("email");
-      emailRef.current?.focus();
       return;
     }
     if (isGoalsCoaching && trimmedPrimaryGoal.length < 3) {
       setStatus("error");
       setError("Please enter your primary goal.");
       setFieldError("primary_goal");
-      primaryGoalRef.current?.focus();
       return;
     }
     if (isGoalsCoaching && !GOALS_COACHING_LEVEL_OPTIONS.some((option) => option.value === level)) {
       setStatus("error");
       setError("Please choose your current level.");
       setFieldError("level");
-      levelRef.current?.focus();
       return;
     }
     if (
@@ -272,21 +304,18 @@ export default function ContactForm({ variant = "contact" }: Props) {
       setStatus("error");
       setError("Please choose how many training days you have per week.");
       setFieldError("training_days");
-      trainingDaysRef.current?.focus();
       return;
     }
     if (isGoalsCoaching && trimmedWeeklyVolume.length < 2) {
       setStatus("error");
       setError("Please enter your current weekly volume.");
       setFieldError("weekly_volume");
-      weeklyVolumeRef.current?.focus();
       return;
     }
     if (copy.messageRequired && trimmedMessage.length < 10) {
       setStatus("error");
       setError("Please write a short message.");
       setFieldError("message");
-      messageRef.current?.focus();
       return;
     }
 

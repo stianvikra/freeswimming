@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Ellipsis } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type TextareaHTMLAttributes } from "react";
-import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
+import { BRAND_FONT_PUBLIC_PATH, getWorkoutPdfLogoPath } from "@/lib/brand";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
 import {
   SESSION_DRAFT_STEP_CATEGORIES,
@@ -1506,8 +1506,11 @@ export default function WorkoutEditor({
         : new URL(BRAND_FONT_PUBLIC_PATH, window.location.origin).toString(),
     logoUrl:
       typeof window === "undefined"
-        ? BRAND_PDF_LOGO_PATH
-        : new URL(BRAND_PDF_LOGO_PATH, window.location.origin).toString(),
+        ? getWorkoutPdfLogoPath({ variant: "standard" })
+        : new URL(
+            getWorkoutPdfLogoPath({ variant: "standard" }),
+            window.location.origin
+          ).toString(),
   });
   const selectedPoolsideFocusPoints = selectWorkoutPoolsideFocusPoints(
     trainingFocusOptions,
@@ -2551,7 +2554,13 @@ export default function WorkoutEditor({
               poolsidePrintStyle,
               poolsidePrintLayout,
               swimmerName,
-              logoUrl: new URL(BRAND_PDF_LOGO_PATH, window.location.origin).toString(),
+              logoUrl: new URL(
+                getWorkoutPdfLogoPath({
+                  variant: "poolside",
+                  poolsidePrintStyle,
+                }),
+                window.location.origin
+              ).toString(),
               fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, window.location.origin).toString(),
             })
           : workoutPdfHtml;

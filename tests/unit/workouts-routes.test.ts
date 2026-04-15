@@ -399,7 +399,8 @@ describe("workouts routes", () => {
     const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toContain("Poolside Note");
+    expect(body).toContain("Print Preview");
+    expect(body).not.toContain(">Poolside Note<");
     expect(body).toContain('data-pdf-variant="poolside"');
     expect(body).toContain('data-poolside-print-style="ink_saver"');
     expect(body).toContain("Calm exhale: Start the exhale before the head turns to breathe.");
