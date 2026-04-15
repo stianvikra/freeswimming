@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
+import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import type {
   WorkoutEditorRecord,
@@ -359,6 +360,8 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "All changes are saved to this session."
     );
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveClass("sr-only");
+    expect(screen.getByTestId("workout-editor-pdf-source")).toHaveClass("sr-only");
     expect(screen.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
       "aria-expanded",
       "false"
@@ -748,19 +751,148 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-repeat-ending-rest-mode-1")).toHaveValue(
       "skip_last_rest"
     );
-    expect(screen.getAllByText(/4 rounds/)[0]).toBeVisible();
+    expect(screen.getByTestId("session-draft-repeat-summary-1")).toHaveTextContent(
+      "4 x 100m · Interval rest 0:30 · Set rest 0:30"
+    );
     expect(
       screen.queryByText(
         "Fixed Rest Time 1:00 still runs between rounds. It is skipped only after the final round."
       )
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/Final rest skipped/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("session-draft-repeat-toggle-1"));
+    expect(
+      screen.queryByText("Adjust or remove when you refine the workout.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Separate canonical rest after the set, outside the repeat block itself.")
+    ).not.toBeInTheDocument();
 
     const previewDraft = readPreviewDraft();
     const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
 
     expect(repeatSteps).toHaveLength(2);
     expect(repeatSteps.every((step) => step.repeatEndingRestMode === "skip_last_rest")).toBe(true);
+  });
+
+  it("links standalone rest cards to their parent step labels in the manual pool builder", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({
+              sourceFingerprint: "manual-rest-labels",
+              steps: [
+                {
+                  id: "warmup-1",
+                  category: "warmup",
+                  name: "Warmup swim",
+                  stroke: "freestyle",
+                  intensity: "easy",
+                  durationMode: "distance",
+                  distanceM: 400,
+                  timeMin: null,
+                  targetSummary: "",
+                  notes: "Start smooth.",
+                },
+                {
+                  id: "warmup-rest-1",
+                  category: "rest",
+                  name: "Warmup rest",
+                  stroke: "choice",
+                  intensity: "easy",
+                  durationMode: "fixed_rest",
+                  distanceM: null,
+                  timeMin: 0.5,
+                  targetSummary: "",
+                  notes: "Use this as a simple fixed rest block.",
+                },
+                {
+                  id: "cooldown-1",
+                  category: "cooldown",
+                  name: "Cooldown swim",
+                  stroke: "choice",
+                  intensity: "easy",
+                  durationMode: "distance",
+                  distanceM: 200,
+                  timeMin: null,
+                  targetSummary: "",
+                  notes: "Finish easy.",
+                },
+                {
+                  id: "cooldown-rest-1",
+                  category: "rest",
+                  name: "Cooldown rest",
+                  stroke: "choice",
+                  intensity: "easy",
+                  durationMode: "fixed_rest",
+                  distanceM: null,
+                  timeMin: 1,
+                  targetSummary: "",
+                  notes: "",
+                },
+              ],
+            }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent("Warmup");
+    expect(screen.getByTestId("session-draft-step-summary-0")).toHaveTextContent(
+      "400m · Freestyle · Easy"
+    );
+    expect(screen.getByTestId("session-draft-step-summary-0")).not.toHaveTextContent("Rest:");
+    expect(screen.getByTestId("session-draft-step-summary-1")).toHaveTextContent("Warmup Rest");
+    expect(screen.getByTestId("session-draft-step-summary-1")).toHaveTextContent("0:30");
+    expect(screen.getByTestId("session-draft-step-summary-1")).not.toHaveTextContent(
+      "Use this as a simple fixed rest block."
+    );
+    expect(screen.getByTestId("session-draft-step-summary-2")).toHaveTextContent("Cooldown");
+    expect(screen.getByTestId("session-draft-step-summary-3")).toHaveTextContent("Cooldown Rest");
+    expect(screen.getByTestId("session-draft-step-summary-3")).toHaveTextContent("1:00");
+  });
+
+  it("does not seed scaffold note copy into a fresh manual pool session", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildManualWorkoutEmptyDraft(new Date("2026-04-15T08:00:00.000Z")),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.queryByText("Keep the first 200m relaxed and long.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Use this as a simple fixed rest block.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Replace this with your exact set structure.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Adjust or remove when you refine the workout.")
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Swap stroke or distance as needed.")).not.toBeInTheDocument();
   });
 
   it("supports confirm and undo when removing a repeat block", async () => {
@@ -1138,6 +1270,8 @@ describe("WorkoutBuilderHub", () => {
     expect(poolsideHtml).toContain("Print Preview");
     expect(poolsideHtml).toContain("Total");
     expect(poolsideHtml).toContain('data-testid="workout-pdf-total"');
+    expect(poolsideHtml).toContain('<link rel="icon" href="/favicon.ico" sizes="any" />');
+    expect(poolsideHtml).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />');
     expect(poolsideHtml).not.toContain("Pool session execution");
     expect(poolsideHtml).not.toContain("Source: Local draft");
     expect(poolsideHtml).not.toContain(">Color mode<");
@@ -1147,6 +1281,9 @@ describe("WorkoutBuilderHub", () => {
     expect(poolsideHtml).not.toContain("~");
     expect(poolsideHtml).toContain(
       "<title>freeswimming-local-pdf-workout-poolside-note-draft.pdf - FreeSwimming</title>"
+    );
+    expect(poolsideHtml.indexOf('<section class="poolside-steps">')).toBeLessThan(
+      poolsideHtml.indexOf('<aside class="poolside-meta">')
     );
     expect(revokeUrlSpy).toHaveBeenCalledTimes(0);
 
@@ -2073,7 +2210,8 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("workout-builder-create-open-water")).not.toBeInTheDocument();
 
     openWorkoutMetadataPanel();
-    expect(screen.getByTestId("workout-editor-danger-zone")).toBeVisible();
+    expect(screen.queryByTestId("workout-editor-danger-zone")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-builder-delete-current-workout")).toBeVisible();
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
     expect(screen.getByText("Delete this saved session?")).toBeVisible();

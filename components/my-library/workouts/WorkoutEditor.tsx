@@ -920,33 +920,29 @@ function buildManualPoolRestInlineSummary(step: SessionDraftStep, basePaceSecond
   return summary === "Fixed Rest Time not set" ? "Rest: not set" : summary;
 }
 
+function buildManualPoolRestValueSummary(step: SessionDraftStep, basePaceSecondsPer100m: number) {
+  const summary = buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+    environment: "pool",
+  });
+  if (summary.startsWith("Fixed Rest Time ")) {
+    return summary.replace("Fixed Rest Time ", "");
+  }
+
+  return summary === "Fixed Rest Time not set" ? "Not set" : summary;
+}
+
 function buildManualPoolDisplaySummary(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number,
-  poolLengthUnit: SessionDraftPoolLengthUnit,
-  linkedRestStep?: SessionDraftStep | null
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   const normalizedStep = normalizeManualPoolStepForEditor(step);
 
   if (normalizedStep.category === "rest") {
-    return buildManualPoolRestInlineSummary(normalizedStep, basePaceSecondsPer100m);
+    return buildManualPoolRestValueSummary(normalizedStep, basePaceSecondsPer100m);
   }
 
-  const parts = buildManualPoolStepSummary(
-    normalizedStep,
-    basePaceSecondsPer100m,
-    poolLengthUnit
-  ).split(" · ");
-
-  if (
-    linkedRestStep &&
-    linkedRestStep.category === "rest" &&
-    linkedRestStep.postSetRestForRepeatGroupId == null
-  ) {
-    parts.push(buildManualPoolRestInlineSummary(linkedRestStep, basePaceSecondsPer100m));
-  }
-
-  return parts.filter(Boolean).join(" · ");
+  return buildManualPoolStepSummary(normalizedStep, basePaceSecondsPer100m, poolLengthUnit);
 }
 
 function syncManualPoolEditableStep(
@@ -986,47 +982,53 @@ function buildRepeatSummary(
   repeatCount: number | null,
   basePaceSecondsPer100m: number,
   repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
-  poolLengthUnit: SessionDraftPoolLengthUnit
+  poolLengthUnit: SessionDraftPoolLengthUnit,
+  postSetRestStep?: SessionDraftStep | null
 ) {
   if (repeatCount === null) {
     return "Set a repeat count to keep this block valid.";
   }
 
-  let roundDistanceM = 0;
-  let roundDurationSeconds = 0;
+  const workStep = entries[0]?.step ?? null;
+  const betweenStep = entries[1]?.step ?? null;
 
-  for (const { step } of entries) {
-    if (step.durationMode === "distance" && step.distanceM) {
-      roundDistanceM += step.distanceM;
+  if (!workStep) {
+    return "Set the work interval for this repeat block.";
+  }
+
+  const normalizedWorkStep = normalizeManualPoolStepForEditor(workStep);
+  const workLabel = buildWorkoutStepDurationOutputSummary(
+    normalizedWorkStep,
+    basePaceSecondsPer100m,
+    {
+      environment: "pool",
+      poolLengthUnit,
     }
-    if (
-      (step.durationMode === "time" ||
-        step.durationMode === "fixed_rest" ||
-        step.durationMode === "send_off") &&
-      step.timeMin
-    ) {
-      roundDurationSeconds += getClockTotalSeconds(step.timeMin);
-    }
-    if (step.durationMode === "css_send_off" && typeof step.cssSendOffOffsetSeconds === "number") {
-      roundDurationSeconds += Math.max(1, basePaceSecondsPer100m + step.cssSendOffOffsetSeconds);
+  );
+  const parts = [`${repeatCount} x ${workLabel}`];
+
+  if (betweenStep) {
+    if (betweenStep.category === "rest") {
+      const restValue = buildManualPoolRestValueSummary(betweenStep, basePaceSecondsPer100m);
+      parts.push(`Interval rest ${restValue}`);
+    } else {
+      parts.push(
+        `Recovery ${buildManualPoolStepSummary(
+          betweenStep,
+          basePaceSecondsPer100m,
+          poolLengthUnit
+        )}`
+      );
     }
   }
 
-  const parts = [`${repeatCount} rounds`];
-  const roundParts: string[] = [];
-
-  if (roundDistanceM > 0)
-    roundParts.push(formatDistanceMetersLabel(roundDistanceM, poolLengthUnit));
-  if (roundDurationSeconds > 0) {
-    roundParts.push(formatClockDurationLabelFromSeconds(roundDurationSeconds));
-  }
-  if (roundParts.length > 0) {
-    parts.push(`${roundParts.join(" + ")} per round`);
-  }
-  if (roundDistanceM > 0) {
-    parts.push(
-      `${formatDistanceMetersLabel(roundDistanceM * repeatCount, poolLengthUnit)} repeated distance`
-    );
+  if (
+    postSetRestStep &&
+    repeatEndingRestMode !== "use_last_rest" &&
+    postSetRestStep.category === "rest"
+  ) {
+    const restValue = buildManualPoolRestValueSummary(postSetRestStep, basePaceSecondsPer100m);
+    parts.push(`Set rest ${restValue}`);
   }
 
   return parts.join(" · ");
@@ -1064,6 +1066,17 @@ type ManualPoolTopLevelSectionDescriptor = {
   title: string;
   isRepeat: boolean;
 };
+
+function getManualPoolTopLevelCategory(group: StepRenderGroup) {
+  return normalizeManualPoolStepForEditor(group.entries[0].step).category;
+}
+
+function buildLinkedRestLabel(parentLabel: string, restKind: "rest" | "interval" | "set") {
+  const suffix =
+    restKind === "interval" ? "Interval Rest" : restKind === "set" ? "Set Rest" : "Rest";
+
+  return /\d of \d/.test(parentLabel) ? `${parentLabel} - ${suffix}` : `${parentLabel} ${suffix}`;
+}
 
 function findTopLevelLinkedRestStep(
   steps: SessionDraftStep[],
@@ -1193,20 +1206,51 @@ function buildManualPoolRepeatViewSection(
 function buildManualPoolTopLevelSectionDescriptors(
   stepGroups: StepRenderGroup[]
 ): ManualPoolTopLevelSectionDescriptor[] {
-  const categories = stepGroups.map(
-    (group) => normalizeManualPoolStepForEditor(group.entries[0].step).category
-  );
+  const totalByCategory = new Map<string, number>();
+  const seenByCategory = new Map<string, number>();
+  let lastPrimaryLabel: string | null = null;
+
+  for (const group of stepGroups) {
+    const category = getManualPoolTopLevelCategory(group);
+    if (category === "rest") continue;
+    totalByCategory.set(category, (totalByCategory.get(category) ?? 0) + 1);
+  }
 
   return stepGroups.map((group, index) => {
-    const category = categories[index];
+    const category = getManualPoolTopLevelCategory(group);
     const title = getSessionStepCategoryLabel(category);
-    const sameTypeTotal = categories.filter((value) => value === category).length;
-    const sameTypePosition = categories
-      .slice(0, index + 1)
-      .filter((value) => value === category).length;
+    const previousGroup = stepGroups[index - 1] ?? null;
+
+    if (
+      category === "rest" &&
+      previousGroup &&
+      getManualPoolTopLevelCategory(previousGroup) !== "rest" &&
+      lastPrimaryLabel
+    ) {
+      return {
+        label: buildLinkedRestLabel(lastPrimaryLabel, "rest"),
+        title,
+        isRepeat: false,
+      };
+    }
+
+    if (category === "rest") {
+      return {
+        label: title,
+        title,
+        isRepeat: false,
+      };
+    }
+
+    const nextSeen = (seenByCategory.get(category) ?? 0) + 1;
+    const sameTypeTotal = totalByCategory.get(category) ?? 1;
+    const label = sameTypeTotal > 1 ? `${title} ${nextSeen} of ${sameTypeTotal}` : title;
+
+    seenByCategory.set(category, nextSeen);
+    lastPrimaryLabel = label;
 
     return {
-      label: sameTypeTotal > 1 ? `${title} ${sameTypePosition} of ${sameTypeTotal}` : title,
+      label,
       title,
       isRepeat: group.kind === "repeat",
     };
@@ -2629,18 +2673,6 @@ export default function WorkoutEditor({
     const toggleLabel = isOpen ? "Done" : "Edit";
     const panelId = `session-draft-step-panel-${step.id}`;
     const normalizedStep = isManualPoolMode ? normalizeManualPoolStepForEditor(step) : step;
-    const nextDraftStep = draft.steps[index + 1] ?? null;
-    const linkedRestStep =
-      isManualPoolMode &&
-      normalizedStep.category !== "rest" &&
-      nextDraftStep?.category === "rest" &&
-      ((normalizedStep.repeatGroupId &&
-        nextDraftStep.repeatGroupId === normalizedStep.repeatGroupId) ||
-        (!normalizedStep.repeatGroupId &&
-          !nextDraftStep.repeatGroupId &&
-          !nextDraftStep.postSetRestForRepeatGroupId))
-        ? nextDraftStep
-        : null;
     const topLevelDescriptor =
       isManualPoolMode && !insideRepeatGroup
         ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
@@ -2660,12 +2692,7 @@ export default function WorkoutEditor({
     const isMinimalRestEditor = isManualPoolMode && normalizedStep.category === "rest";
     const isRestStepCard = normalizedStep.category === "rest";
     const stepTitle = isManualPoolMode
-      ? buildManualPoolDisplaySummary(
-          normalizedStep,
-          draft.basePaceSecondsPer100m,
-          poolLengthUnit,
-          linkedRestStep
-        )
+      ? buildManualPoolDisplaySummary(normalizedStep, draft.basePaceSecondsPer100m, poolLengthUnit)
       : step.name || getSessionStepCategoryLabel(step.category);
     const mobileActionKey = `step:${step.id}`;
     const mobileActionsOpen = openMobileActionKey === mobileActionKey;
@@ -2693,6 +2720,7 @@ export default function WorkoutEditor({
       ? (normalizedStep.effortTarget ?? normalizedStep.intensity)
       : (step.effortTarget ?? step.intensity);
     const pendingDelete = pendingRemoval?.kind === "step" && pendingRemoval.stepId === step.id;
+    const stepNotes = isManualPoolMode && isRestStepCard ? "" : step.notes;
     const stepSummaryContent = (
       <>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stepLabel}</p>
@@ -2718,7 +2746,7 @@ export default function WorkoutEditor({
         {!isManualPoolMode && step.targetSummary ? (
           <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
         ) : null}
-        {step.notes ? <p className="mt-1 text-xs text-slate-400">{step.notes}</p> : null}
+        {stepNotes ? <p className="mt-1 text-xs text-slate-400">{stepNotes}</p> : null}
       </>
     );
 
@@ -4485,7 +4513,7 @@ export default function WorkoutEditor({
               </p>
               <p
                 data-testid="workout-editor-save-state"
-                className={`mt-2 text-sm font-medium ${saveStateToneClass}`}
+                className={`sr-only mt-2 text-sm font-medium ${saveStateToneClass}`}
               >
                 {saveStateMessage}
               </p>
@@ -4493,7 +4521,7 @@ export default function WorkoutEditor({
                 <p
                   data-testid="workout-editor-pdf-source"
                   data-pdf-state={handoffDraftState}
-                  className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  className="sr-only mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500"
                 >
                   {workoutPdfStateLabel}
                 </p>
@@ -4545,6 +4573,17 @@ export default function WorkoutEditor({
                     Discard changes
                   </button>
                 ) : null}
+                {!isViewMode && savedWorkout && onRequestDeleteCurrent ? (
+                  <button
+                    type="button"
+                    onClick={onRequestDeleteCurrent}
+                    disabled={isDeletingCurrent}
+                    data-testid="workout-builder-delete-current-workout"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isDeletingCurrent ? "Deleting..." : "Delete session"}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {
@@ -4588,35 +4627,6 @@ export default function WorkoutEditor({
           ) : null}
 
           {!isViewMode && metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
-
-          {!isViewMode && metadataOpen && savedWorkout && onRequestDeleteCurrent ? (
-            <div
-              data-testid="workout-editor-danger-zone"
-              className="mt-4 border-t border-rose-100 pt-4"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
-                Danger zone
-              </p>
-              <div className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-rose-100 bg-rose-50/55 p-3">
-                <div className="max-w-[52ch]">
-                  <p className="text-sm font-semibold text-slate-900">Delete this saved session</p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Remove it from My Swim Sessions permanently. Discard changes if you only want to
-                    undo local edits.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onRequestDeleteCurrent}
-                  disabled={isDeletingCurrent}
-                  data-testid="workout-builder-delete-current-workout"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isDeletingCurrent ? "Deleting..." : "Delete session"}
-                </button>
-              </div>
-            </div>
-          ) : null}
         </section>
       ) : (
         metadataFields
@@ -4856,7 +4866,8 @@ export default function WorkoutEditor({
                         group.repeatCount,
                         draft.basePaceSecondsPer100m,
                         group.repeatEndingRestMode,
-                        poolLengthUnit
+                        poolLengthUnit,
+                        group.postSetRestEntry?.step ?? null
                       );
                       const repeatDescriptor = isManualPoolMode
                         ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
@@ -5110,10 +5121,21 @@ export default function WorkoutEditor({
                             repeatStepNumber: repeatIndex + 1,
                             labelOverride:
                               repeatIndex === 0
-                                ? "Work interval"
-                                : repeatIndex === 1
-                                  ? "Between-interval recovery"
+                                ? isManualPoolMode
+                                  ? (manualPoolTopLevelSectionDescriptors[groupIndex]?.label ??
+                                    "Repeat")
+                                  : "Work interval"
+                                : entry.step.category === "rest"
+                                  ? isManualPoolMode
+                                    ? buildLinkedRestLabel(
+                                        manualPoolTopLevelSectionDescriptors[groupIndex]?.label ??
+                                          "Repeat",
+                                        "interval"
+                                      )
+                                    : "Between-interval recovery"
                                   : undefined,
+                            descriptionOverride:
+                              entry.step.category === "rest" && isManualPoolMode ? null : undefined,
                           })
                         )}
                         {group.postSetRestEntry
@@ -5122,17 +5144,14 @@ export default function WorkoutEditor({
                               group.postSetRestEntry.index,
                               groupIndex,
                               {
-                                labelOverride: "Post-set rest",
-                                descriptionOverride:
-                                  group.repeatEndingRestMode === "use_last_rest" &&
-                                  Boolean(
-                                    group.entries[group.entries.length - 1] &&
-                                    isSessionDraftRepeatEndingRestStep(
-                                      group.entries[group.entries.length - 1].step
+                                labelOverride: isManualPoolMode
+                                  ? buildLinkedRestLabel(
+                                      manualPoolTopLevelSectionDescriptors[groupIndex]?.label ??
+                                        "Repeat",
+                                      "set"
                                     )
-                                  )
-                                    ? "Separate canonical rest after the set. It is preserved here, but active execution and export suppress it because the last internal rest interval is used after the final rep."
-                                    : "Separate canonical rest after the set, outside the repeat block itself.",
+                                  : "Post-set rest",
+                                descriptionOverride: null,
                                 isLinkedPostSetRest: true,
                               }
                             )
