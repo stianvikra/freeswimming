@@ -221,12 +221,13 @@ export type WorkoutPdfModel = {
   warnings: string[];
   readiness: WorkoutGarminReadinessReport;
   blocks: WorkoutPdfModelBlock[];
+  poolsideLineItems: WorkoutPoolsideLineItem[];
   poolsideLines: string[];
   totalDistanceLabel: string | null;
 };
 
 type WorkoutPoolsideLineItem = {
-  kind: "interval" | "pause";
+  kind: "interval" | "recovery";
   text: string;
 };
 
@@ -766,7 +767,8 @@ export function buildWorkoutPdfModel(
   const fileName = buildWorkoutPdfFileName(draft, { draftState, variant });
   const sourceLabel = draftState === "canonical" ? "Canonical workout" : "Local draft";
   const focusPoints = buildWorkoutPdfFocusPoints(draft, options?.focusPoints);
-  const poolsideLines = buildWorkoutPoolsideLines(draft);
+  const poolsideLineItems = buildWorkoutPoolsideLineItemsForDraft(draft);
+  const poolsideLines = poolsideLineItems.map((item) => item.text);
   const swimmerName = normalizeWorkoutSwimmerName(options?.swimmerName);
 
   if (!draft) {
@@ -793,6 +795,7 @@ export function buildWorkoutPdfModel(
       warnings: [],
       readiness,
       blocks: [],
+      poolsideLineItems,
       poolsideLines,
       totalDistanceLabel: null,
     };
@@ -892,6 +895,7 @@ export function buildWorkoutPdfModel(
     warnings: draft.warnings,
     readiness,
     blocks,
+    poolsideLineItems,
     poolsideLines,
     totalDistanceLabel,
   };
@@ -1517,10 +1521,16 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
   const isInkSaver = model.poolsidePrintStyle === "ink_saver";
   const isLandscape = model.poolsidePrintLayout === "landscape";
   const hasFocusPoints = model.focusPoints.length > 0;
-  const usesMinimalLandscapeMeta = isLandscape && !hasFocusPoints;
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
   const totalDistanceValue = model.totalDistanceLabel?.replace(/^Total:\s*/, "") ?? null;
+  const heroTaglineHtml = `
+        <div class="hero-tagline ${isLandscape ? "hero-tagline-landscape" : "hero-tagline-portrait"}" aria-hidden="true">
+          <span>Learn.</span>
+          <span>Drill.</span>
+          <span class="hero-tagline-accent">Swim.</span>
+        </div>
+      `;
   const focusPointsHtml = hasFocusPoints
     ? `
         <section class="callout">
@@ -1531,17 +1541,49 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         </section>
       `
     : "";
-  const totalDistanceHtml = totalDistanceValue
+  const heroTotalHtml = totalDistanceValue
     ? `
-        <section class="metric-card">
-          <p class="metric-label">Total</p>
-          <p class="metric-value">${escapeHtml(totalDistanceValue)}</p>
-        </section>
+        <div class="hero-total-pill" data-testid="workout-pdf-total">
+          <span class="hero-total-label">Total</span>
+          <span class="hero-total-value">${escapeHtml(totalDistanceValue)}</span>
+        </div>
       `
     : "";
   const swimmerNameHtml = model.swimmerName
     ? `<p class="swimmer-pill">Swimmer: ${escapeHtml(model.swimmerName)}</p>`
     : "";
+  const bodyClass =
+    hasFocusPoints && isLandscape ? "body body-landscape" : "body body-single-column";
+  const metaHtml = hasFocusPoints ? `<aside class="poolside-meta">${focusPointsHtml}</aside>` : "";
+  const heroHtml = isLandscape
+    ? `
+        <div class="hero-landscape-main">
+          <div class="hero-landscape-left">
+            <div class="hero-brand-lockup">${logoHtml}</div>
+            <div class="hero-heading hero-heading-landscape">
+              <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
+              ${heroTotalHtml}
+            </div>
+          </div>
+          <div class="hero-landscape-right">
+            ${heroTaglineHtml}
+            ${swimmerNameHtml}
+          </div>
+        </div>
+      `
+    : `
+        <div class="hero-top-row">
+          <div class="hero-brand-lockup">${logoHtml}</div>
+          ${heroTaglineHtml}
+        </div>
+        <div class="hero-heading hero-heading-portrait">
+          <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
+        </div>
+        <div class="hero-support-row">
+          ${heroTotalHtml}
+          ${swimmerNameHtml}
+        </div>
+      `;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1613,8 +1655,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .toolbar-kicker,
-      .callout-label,
-      .session-pill {
+      .callout-label {
         color: var(--accent-strong);
       }
 
@@ -1665,8 +1706,6 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
           isInkSaver ? "#ffffff" : "linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%)"
         };
         border-bottom: 1px solid rgba(16, 33, 60, 0.08);
-        display: grid;
-        gap: 14px;
       }
 
       .brand-mark {
@@ -1695,15 +1734,25 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       h1 {
         margin: 0;
-        font-size: 26px;
+        font-size: 30px;
         font-weight: 800;
         letter-spacing: -0.02em;
         line-height: 1.08;
       }
 
+      .hero-portrait {
+        display: grid;
+        gap: 16px;
+      }
+
+      .hero-landscape {
+        display: grid;
+        gap: 12px;
+      }
+
       .hero-top-row {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 16px;
       }
@@ -1713,11 +1762,101 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-items: flex-start;
         min-width: 0;
         flex: 1 1 auto;
+        max-width: ${isLandscape ? "250px" : "220px"};
       }
 
       .hero-heading {
         display: grid;
-        gap: 10px;
+        gap: 12px;
+      }
+
+      .hero-heading-portrait {
+        max-width: 100%;
+      }
+
+      .hero-heading-landscape {
+        max-width: 520px;
+      }
+
+      .hero-support-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .hero-landscape-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(200px, 0.65fr);
+        gap: 20px;
+        align-items: end;
+      }
+
+      .hero-landscape-left {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .hero-landscape-right {
+        display: grid;
+        justify-items: end;
+        align-content: space-between;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .hero-landscape .swimmer-pill {
+        justify-self: end;
+      }
+
+      .hero-tagline {
+        display: grid;
+        gap: 0;
+        justify-items: end;
+        line-height: 0.84;
+        font-weight: 760;
+        letter-spacing: -0.02em;
+        color: rgba(16, 33, 60, 0.9);
+      }
+
+      .hero-tagline-portrait {
+        font-size: 16px;
+      }
+
+      .hero-tagline-landscape {
+        font-size: 24px;
+      }
+
+      .hero-tagline-accent {
+        color: var(--accent);
+      }
+
+      .hero-total-pill {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 12px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        padding: 10px 14px;
+        min-width: fit-content;
+      }
+
+      .hero-total-label {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent-strong);
+      }
+
+      .hero-total-value {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--ink);
       }
 
       .swimmer-pill {
@@ -1726,33 +1865,20 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
         padding: 8px 12px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
         color: var(--ink);
         white-space: nowrap;
       }
 
-      .hero-meta-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .session-pill {
-        display: inline-flex;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        padding: 7px 11px;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-      }
-
       .body {
         display: grid;
-        gap: 12px;
+        gap: 14px;
         padding: 16px;
+      }
+
+      .body-single-column {
+        grid-template-columns: 1fr;
       }
 
       .body-landscape {
@@ -1761,45 +1887,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         gap: 18px;
       }
 
-      .body-landscape-minimal-meta {
-        gap: 14px;
-        grid-template-columns: 1fr;
-      }
-
       .poolside-meta,
       .poolside-steps {
         min-width: 0;
         display: grid;
         gap: 12px;
         align-content: start;
-      }
-
-      .body-landscape-minimal-meta .poolside-meta {
-        grid-template-columns: minmax(0, 220px);
-      }
-
-      .metric-card {
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 14px 16px;
-      }
-
-      .metric-label {
-        margin: 0;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--accent-strong);
-      }
-
-      .metric-value {
-        margin: 8px 0 0;
-        font-size: 20px;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        color: var(--ink);
       }
 
       .callout,
@@ -1898,33 +1991,16 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         color: var(--ink);
       }
 
-      .poolside-line-pause {
+      .poolside-line-recovery {
         background: var(--accent-soft);
+        padding-top: 10px;
+        padding-bottom: 10px;
       }
 
-      .poolside-line-label,
-      .poolside-line-note {
+      .poolside-line-recovery .poolside-line-text {
         display: block;
-      }
-
-      .poolside-line-label {
-        margin-bottom: 4px;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--accent-strong);
-      }
-
-      .poolside-line-pause .poolside-line-text {
-        display: block;
+        font-size: 13px;
         font-weight: 700;
-      }
-
-      .poolside-line-note {
-        margin-top: 4px;
-        font-size: 12px;
-        font-weight: 600;
         color: var(--accent-strong);
       }
 
@@ -1966,6 +2042,14 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
           flex-direction: column;
         }
 
+        .hero-landscape-main {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-landscape-right {
+          justify-items: start;
+        }
+
         .swimmer-pill {
           white-space: normal;
         }
@@ -1995,35 +2079,14 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         data-poolside-print-style="${escapeHtml(model.poolsidePrintStyle)}"
         data-poolside-print-layout="${escapeHtml(model.poolsidePrintLayout)}"
       >
-        <header class="hero">
-          <div class="hero-top-row">
-            <div class="hero-brand-lockup">${logoHtml}</div>
-            ${swimmerNameHtml}
-          </div>
-          <div class="hero-heading">
-            <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
-            <div class="hero-meta-row">
-              <span class="session-pill">${escapeHtml(model.sessionSummary)}</span>
-            </div>
-          </div>
+        <header class="hero ${isLandscape ? "hero-landscape" : "hero-portrait"}">
+          ${heroHtml}
         </header>
-        <div class="body ${isLandscape ? "body-landscape" : "body-portrait"} ${
-          usesMinimalLandscapeMeta ? "body-landscape-minimal-meta" : ""
-        }">
-          <aside class="poolside-meta">
-            ${totalDistanceHtml}
-            ${focusPointsHtml}
-          </aside>
+        <div class="${bodyClass}">
+          ${metaHtml}
           <section class="poolside-steps">
             <ol class="poolside-line-list">
-              ${model.poolsideLines
-                .map((line) =>
-                  renderWorkoutPoolsideLineHtml({
-                    kind: line.startsWith("P:") ? "pause" : "interval",
-                    text: line,
-                  })
-                )
-                .join("")}
+              ${model.poolsideLineItems.map(renderWorkoutPoolsideLineHtml).join("")}
             </ol>
           </section>
         </div>
@@ -2767,43 +2830,11 @@ function renderWorkoutPdfBlockHtml(
 }
 
 function renderWorkoutPoolsideLineHtml(line: WorkoutPoolsideLineItem) {
-  if (line.kind === "pause") {
-    const pause = parseWorkoutPoolsidePausePresentation(line.text);
-    return `
-      <li class="poolside-line poolside-line-pause">
-        <span class="poolside-line-label">${escapeHtml(pause.label)}</span>
-        <span class="poolside-line-text">${escapeHtml(pause.detail)}</span>
-        ${pause.note ? `<span class="poolside-line-note">${escapeHtml(pause.note)}</span>` : ""}
-      </li>
-    `;
-  }
-
   return `
-    <li class="poolside-line">
+    <li class="poolside-line ${line.kind === "recovery" ? "poolside-line-recovery" : ""}">
       <span class="poolside-line-text">${escapeHtml(line.text)}</span>
     </li>
   `;
-}
-
-function parseWorkoutPoolsidePausePresentation(text: string) {
-  const normalized = text.replace(/^P:\s*/, "").trim();
-  const betweenRoundsMatch = normalized.match(
-    /^(.*?)(?: between rounds(?: \((final rest skipped)\))?)$/i
-  );
-
-  if (betweenRoundsMatch) {
-    return {
-      label: "Rest between rounds",
-      detail: betweenRoundsMatch[1]?.trim() || "Rest",
-      note: betweenRoundsMatch[2] ? "Final rest skipped" : null,
-    };
-  }
-
-  return {
-    label: "Rest",
-    detail: normalized || "Rest",
-    note: null,
-  };
 }
 
 function renderWorkoutPdfDetailList(
@@ -2961,84 +2992,190 @@ export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | unde
 }
 
 function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
+  return buildWorkoutPoolsideLineItemsForDraft(draft).map((item) => item.text);
+}
+
+function buildWorkoutPoolsideLineItemsForDraft(draft: SessionDraft | null | undefined) {
   if (!draft) {
     return [];
   }
 
   const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
+  const groups = buildWorkoutHandoffGroups(draft.steps);
+  const lineItems: WorkoutPoolsideLineItem[] = [];
 
-  const lineItems = buildWorkoutHandoffGroups(draft.steps).flatMap((group) => {
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+    const group = groups[groupIndex];
+    if (!group) continue;
+
     if (group.kind === "single") {
-      return buildWorkoutPoolsideLineItems(
-        group.entries,
-        null,
-        "use_last_rest",
+      const result = buildWorkoutPoolsideSingleGroupLineItems(
+        group.entries[0],
+        groups[groupIndex + 1],
         draft.basePaceSecondsPer100m,
         draft.environment,
         poolLengthUnit
       );
+      lineItems.push(...result.items);
+      if (result.consumedNextGroup) {
+        groupIndex += 1;
+      }
+      continue;
     }
 
-    return buildWorkoutPoolsideLineItems(
-      group.entries,
-      group.repeatCount,
-      group.repeatEndingRestMode,
-      draft.basePaceSecondsPer100m,
-      draft.environment,
-      poolLengthUnit
+    lineItems.push(
+      ...buildWorkoutPoolsideRepeatGroupLineItems(
+        group.entries,
+        group.repeatCount,
+        draft.basePaceSecondsPer100m,
+        draft.environment,
+        poolLengthUnit
+      )
     );
-  });
+  }
 
-  return lineItems.map((item) => item.text);
+  return lineItems;
 }
 
-function buildWorkoutPoolsideLineItems(
+function buildWorkoutPoolsideSingleGroupLineItems(
+  entry: WorkoutHandoffEntry | undefined,
+  nextGroup: WorkoutHandoffGroup | undefined,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  if (!entry) {
+    return { items: [] as WorkoutPoolsideLineItem[], consumedNextGroup: false };
+  }
+
+  if (isWorkoutPoolsideRecoveryStep(entry.step, environment)) {
+    return {
+      items: [
+        buildWorkoutPoolsideStandaloneRecoveryLineItem(
+          entry.step,
+          basePaceSecondsPer100m,
+          environment,
+          poolLengthUnit
+        ),
+      ],
+      consumedNextGroup: false,
+    };
+  }
+
+  const nextEntry = nextGroup?.kind === "single" ? nextGroup.entries[0] : null;
+  const inlineRecoveryStep =
+    nextEntry &&
+    shouldInlineWorkoutPoolsideRecoveryStep(nextEntry.step, environment) &&
+    !isSessionDraftRepeatPostSetRestStep(nextEntry.step)
+      ? nextEntry.step
+      : null;
+
+  return {
+    items: [
+      {
+        kind: "interval" as const,
+        text: buildWorkoutPoolsideLineText(
+          entry.step,
+          null,
+          inlineRecoveryStep
+            ? buildWorkoutPoolsideRecoveryText(
+                inlineRecoveryStep,
+                basePaceSecondsPer100m,
+                environment,
+                poolLengthUnit,
+                "standalone"
+              )
+            : null,
+          basePaceSecondsPer100m,
+          environment,
+          poolLengthUnit
+        ),
+      },
+    ],
+    consumedNextGroup: Boolean(inlineRecoveryStep),
+  };
+}
+
+function buildWorkoutPoolsideRepeatGroupLineItems(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
-  repeatEndingRestMode: SessionDraftRepeatEndingRestMode,
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   const lineItems: WorkoutPoolsideLineItem[] = [];
 
-  for (const [entryIndex, entry] of entries.entries()) {
-    const step = entry.step;
+  for (let index = 0; index < entries.length; index += 1) {
+    const step = entries[index]?.step;
+    if (!step) continue;
 
-    if (isWorkoutPoolsidePauseStep(step, environment)) {
-      const skipFinalRestNote =
-        shouldSkipWorkoutRepeatEndingRest(entries, repeatCount, repeatEndingRestMode) &&
-        entryIndex === entries.length - 1
-          ? " between rounds (final rest skipped)"
-          : "";
-      lineItems.push({
-        kind: "pause",
-        text: `P: ${buildWorkoutPoolsidePauseLabel(
+    if (isWorkoutPoolsideRecoveryStep(step, environment)) {
+      lineItems.push(
+        buildWorkoutPoolsideStandaloneRecoveryLineItem(
           step,
           basePaceSecondsPer100m,
           environment,
           poolLengthUnit
-        )}${skipFinalRestNote}`,
-      });
+        )
+      );
       continue;
     }
 
-    const prefix = repeatCount ? `${repeatCount} x ` : "";
+    const nextStep = entries[index + 1]?.step;
+    const inlineRecoveryStep =
+      nextStep && shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment) ? nextStep : null;
+
     lineItems.push({
       kind: "interval",
-      text: `${prefix}${buildWorkoutPoolsideIntervalLabel(
+      text: buildWorkoutPoolsideLineText(
         step,
+        repeatCount,
+        inlineRecoveryStep
+          ? buildWorkoutPoolsideRecoveryText(
+              inlineRecoveryStep,
+              basePaceSecondsPer100m,
+              environment,
+              poolLengthUnit,
+              "interval"
+            )
+          : null,
         basePaceSecondsPer100m,
         environment,
         poolLengthUnit
-      )}`,
+      ),
     });
+
+    if (inlineRecoveryStep) {
+      index += 1;
+    }
   }
 
   return lineItems;
 }
 
-function isWorkoutPoolsidePauseStep(
+function buildWorkoutPoolsideLineText(
+  step: SessionDraftStep,
+  repeatCount: number | null,
+  trailingRecoveryText: string | null,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  const prefix = repeatCount ? `${repeatCount} x ` : "";
+  const parts = [
+    `${prefix}${buildWorkoutPoolsideIntervalLabel(
+      step,
+      basePaceSecondsPer100m,
+      environment,
+      poolLengthUnit
+    )}`,
+    trailingRecoveryText,
+  ].filter(Boolean);
+
+  return parts.join(" · ");
+}
+
+function isWorkoutPoolsideRecoveryStep(
   step: SessionDraftStep,
   environment: SessionGeneratorEnvironment
 ) {
@@ -3053,11 +3190,41 @@ function isWorkoutPoolsidePauseStep(
   );
 }
 
-function buildWorkoutPoolsidePauseLabel(
+function shouldInlineWorkoutPoolsideRecoveryStep(
+  step: SessionDraftStep,
+  environment: SessionGeneratorEnvironment
+) {
+  if (!isWorkoutPoolsideRecoveryStep(step, environment)) {
+    return false;
+  }
+
+  return step.durationMode === "time" || step.durationMode === "fixed_rest";
+}
+
+function buildWorkoutPoolsideStandaloneRecoveryLineItem(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  return {
+    kind: "recovery" as const,
+    text: buildWorkoutPoolsideRecoveryText(
+      step,
+      basePaceSecondsPer100m,
+      environment,
+      poolLengthUnit,
+      "standalone"
+    ),
+  };
+}
+
+function buildWorkoutPoolsideRecoveryText(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit,
+  mode: "interval" | "standalone"
 ) {
   switch (step.durationMode) {
     case "lap_button":
@@ -3072,7 +3239,11 @@ function buildWorkoutPoolsidePauseLabel(
       return step.timeMin ? `Send-Off ${formatClockDurationLabel(step.timeMin)}` : "Send-Off";
     case "time":
     case "fixed_rest":
-      return step.timeMin ? formatClockDurationLabel(step.timeMin) : "Rest";
+      return step.timeMin
+        ? `${mode === "interval" ? "Interval rest" : "Rest"} ${formatClockDurationLabel(step.timeMin)}`
+        : mode === "interval"
+          ? "Interval rest"
+          : "Rest";
     default:
       return buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
         environment,
@@ -3087,14 +3258,18 @@ function buildWorkoutPoolsideIntervalLabel(
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
-  return [
-    buildWorkoutPoolsideDurationLabel(step, basePaceSecondsPer100m, environment, poolLengthUnit),
-    buildWorkoutPoolsideDescriptor(step),
-    getSessionStepIntensityLabel(step.intensity),
-    buildWorkoutPoolsideTargetLabel(step, basePaceSecondsPer100m, poolLengthUnit),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const durationLabel = buildWorkoutPoolsideDurationLabel(
+    step,
+    basePaceSecondsPer100m,
+    environment,
+    poolLengthUnit
+  );
+  const primaryTargetLabel =
+    buildWorkoutPoolsideTargetLabel(step, basePaceSecondsPer100m, poolLengthUnit) ??
+    getSessionStepIntensityLabel(step.intensity);
+  const descriptor = buildWorkoutPoolsideDescriptor(step, durationLabel, primaryTargetLabel);
+
+  return [durationLabel, descriptor, primaryTargetLabel].filter(Boolean).join(" · ");
 }
 
 function buildWorkoutPoolsideDurationLabel(
@@ -3138,7 +3313,11 @@ function buildWorkoutPoolsideDurationLabel(
   }
 }
 
-function buildWorkoutPoolsideDescriptor(step: SessionDraftStep) {
+function buildWorkoutPoolsideDescriptor(
+  step: SessionDraftStep,
+  durationLabel: string,
+  primaryTargetLabel: string | null
+) {
   const parts: string[] = [];
 
   if (step.category === "kick") {
@@ -3151,7 +3330,9 @@ function buildWorkoutPoolsideDescriptor(step: SessionDraftStep) {
       parts.push(getSessionStepDrillTypeLabel(step.drillType));
     }
     parts.push("Drill");
-  } else if (step.stroke && step.stroke !== "choice") {
+  } else if (step.stroke === "choice") {
+    parts.push("Choice");
+  } else if (step.stroke) {
     parts.push(getSessionStepStrokeLabel(step.stroke));
   }
 
@@ -3167,7 +3348,23 @@ function buildWorkoutPoolsideDescriptor(step: SessionDraftStep) {
     parts.push(getSessionStepEquipmentLabel(step.equipment));
   }
 
-  return parts.length > 0 ? parts.join(" · ") : step.name;
+  if (parts.length > 0) {
+    return parts.join(" · ");
+  }
+
+  const name = typeof step.name === "string" ? step.name.trim() : "";
+  if (!name || name.includes("·")) {
+    return null;
+  }
+
+  const normalizedName = name.toLowerCase();
+  const duplicateLabels = [
+    durationLabel,
+    primaryTargetLabel,
+    getSessionStepIntensityLabel(step.intensity),
+  ].filter(Boolean) as string[];
+
+  return duplicateLabels.some((label) => normalizedName === label.toLowerCase()) ? null : name;
 }
 
 function buildWorkoutPoolsideTargetLabel(

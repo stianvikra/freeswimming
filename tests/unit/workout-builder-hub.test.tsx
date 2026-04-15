@@ -1135,12 +1135,14 @@ describe("WorkoutBuilderHub", () => {
     const poolsideHtml = String(printWindow.document.write.mock.calls.at(-1)?.[0] ?? "");
 
     expect(poolsideHtml).toContain("Total");
+    expect(poolsideHtml).toContain('data-testid="workout-pdf-total"');
     expect(poolsideHtml).not.toContain("Pool session execution");
     expect(poolsideHtml).not.toContain("Source: Local draft");
     expect(poolsideHtml).not.toContain(">Color mode<");
     expect(poolsideHtml).not.toContain(">Ink saver<");
     expect(poolsideHtml).not.toContain(">Portrait<");
     expect(poolsideHtml).not.toContain(">Landscape<");
+    expect(poolsideHtml).not.toContain("~");
 
     expect(screen.getByText("Keeps the blue surfaces")).toBeVisible();
     expect(screen.getByText("Uses white surfaces.")).toBeVisible();
@@ -1994,7 +1996,7 @@ describe("WorkoutBuilderHub", () => {
               title: "Old QA cleanup workout",
               totalDistanceM: 1600,
               estimatedDurationMin: 37,
-              previewText: "8 x 25m Kick · Easy\nP: 20 sec\n\nTotal: 1600m",
+              previewText: "8 x 25m Kick · Easy\nRest 0:20\n\nTotal: 1600m",
             }),
           ],
         })}
@@ -2018,7 +2020,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent(
       "8 x 25m Kick · Easy"
     );
-    expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("P: 20 sec");
+    expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("Rest 0:20");
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
 

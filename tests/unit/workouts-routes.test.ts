@@ -403,8 +403,10 @@ describe("workouts routes", () => {
     expect(body).not.toContain(">Poolside Note<");
     expect(body).toContain('data-pdf-variant="poolside"');
     expect(body).toContain('data-poolside-print-style="ink_saver"');
+    expect(body).toContain('data-testid="workout-pdf-total"');
     expect(body).toContain("Calm exhale: Start the exhale before the head turns to breathe.");
     expect(body).not.toContain("High elbow catch");
+    expect(body).not.toContain("~");
     expect(body).toContain("Breathing timing");
     expect(body).toContain("lockup-domain-ink.png");
     expect(from).toHaveBeenCalledWith("athlete_profiles");
