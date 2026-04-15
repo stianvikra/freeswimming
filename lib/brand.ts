@@ -26,6 +26,18 @@ export const BRAND_USAGE = {
 } as const satisfies Record<string, BrandAssetId>;
 
 export const BRAND_PDF_LOGO_PATH = brandManifest[BRAND_USAGE.pdfLockup].src_png;
+export const BRAND_POOLSIDE_COLOR_LOGO_PATH = brandManifest["lockup-domain-primary"].src_png;
+
+export function getWorkoutPdfLogoPath(options?: {
+  variant?: "standard" | "poolside";
+  poolsidePrintStyle?: "color" | "ink_saver";
+}) {
+  if (options?.variant === "poolside" && options?.poolsidePrintStyle === "color") {
+    return BRAND_POOLSIDE_COLOR_LOGO_PATH;
+  }
+
+  return BRAND_PDF_LOGO_PATH;
+}
 
 export function getBrandAsset(assetId: BrandAssetId): BrandAsset {
   return BRAND_ASSETS[assetId];

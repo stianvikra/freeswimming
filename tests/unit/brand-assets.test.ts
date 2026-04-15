@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import {
   BRAND_APP_ICON_PATHS,
   BRAND_ASSETS,
+  BRAND_POOLSIDE_COLOR_LOGO_PATH,
   BRAND_USAGE,
   getBrandAsset,
   getBrandAssetAlt,
+  getWorkoutPdfLogoPath,
 } from "@/lib/brand";
 
 describe("brand assets", () => {
@@ -47,6 +49,17 @@ describe("brand assets", () => {
     expect(getBrandAsset(BRAND_USAGE.heroTagline).src_png).toContain("tagline-stacked-primary.png");
     expect(getBrandAsset(BRAND_USAGE.methodLockup).src_png).toContain("lockup-tagline-primary.png");
     expect(getBrandAsset(BRAND_USAGE.pdfLockup).src_png).toContain("lockup-domain-ink.png");
+  });
+
+  it("uses a stronger domain lockup for color poolside artifacts while keeping ink-safe output", () => {
+    expect(BRAND_POOLSIDE_COLOR_LOGO_PATH).toContain("lockup-domain-primary.png");
+    expect(getWorkoutPdfLogoPath({ variant: "poolside", poolsidePrintStyle: "color" })).toContain(
+      "lockup-domain-primary.png"
+    );
+    expect(
+      getWorkoutPdfLogoPath({ variant: "poolside", poolsidePrintStyle: "ink_saver" })
+    ).toContain("lockup-domain-ink.png");
+    expect(getWorkoutPdfLogoPath({ variant: "standard" })).toContain("lockup-domain-ink.png");
   });
 
   it("provides larger transparent apparel masters for every generated lockup family", () => {

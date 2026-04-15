@@ -514,7 +514,7 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Notes: Count strokes off every wall.");
     expect(pdfModel.poolsideLines).toContain("Lap Button Press · Freestyle · Moderate");
     expect(pdfModel.poolsideLines).toContain("P: Lap Button Press");
-    expect(pdfModel.poolsideLines).toContain("P: Send-Off Time 2:00");
+    expect(pdfModel.poolsideLines).toContain("P: Send-Off 2:00");
 
     if (exportPayload.blocks[0]?.kind !== "single") {
       throw new Error("Expected first block to be a single-step export.");
@@ -907,6 +907,10 @@ describe("workouts shared readiness", () => {
       draftState: "canonical",
       variant: "poolside",
     });
+    const poolsideHtml = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+    });
     const exportPayload = buildWorkoutGarminReadyExport(draft, {
       draftState: "canonical",
       workoutId: "workout-3",
@@ -918,8 +922,12 @@ describe("workouts shared readiness", () => {
       summary: "4 rounds · 100m + 2:00 per round · Final rest skipped",
     });
     expect(pdfModel.poolsideLines).toContain(
-      "P: Send-Off Time 2:00 between rounds (final rest skipped)"
+      "P: Send-Off 2:00 between rounds (final rest skipped)"
     );
+    expect(poolsideHtml).toContain("Rest between rounds");
+    expect(poolsideHtml).toContain("Send-Off 2:00");
+    expect(poolsideHtml).toContain("Final rest skipped");
+    expect(poolsideHtml).not.toContain("P:");
 
     if (exportPayload.blocks[0]?.kind !== "repeat") {
       throw new Error("Expected repeat block export.");
@@ -1007,13 +1015,14 @@ describe("workouts shared readiness", () => {
     ).toBe("freeswimming-garmin-readiness-draft-poolside-note.pdf");
     expect(html).toContain('data-pdf-variant="poolside"');
     expect(html).toContain('data-poolside-print-style="ink_saver"');
-    expect(html).toContain("Poolside Note");
     expect(html).toContain("High elbow catch");
     expect(html).toContain("Calm exhale");
     expect(html).toContain("400m");
     expect(html).toContain("Total");
     expect(html).toContain('metric-value">400m<');
     expect(html).toContain("lockup-domain-ink.png");
+    expect(html).toContain(">Print Preview<");
+    expect(html).not.toContain(">Poolside Note<");
     expect(html).not.toContain("Pool session execution");
     expect(html).not.toContain("Source: Local draft");
     expect(html).not.toContain(">Color mode<");
@@ -1021,6 +1030,28 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain(">Portrait<");
     expect(html).not.toContain(">Landscape<");
     expect(html).not.toContain("Compact lane-side note");
+    expect(html).toContain("400m · Freestyle · Easy");
+    expect(html).not.toContain("P:");
+  });
+
+  it("collapses sparse landscape poolside meta into a compact top strip", () => {
+    const html = buildWorkoutPdfHtmlDocument(
+      {
+        ...buildDraft(),
+        focusText: "",
+      },
+      {
+        draftState: "canonical",
+        variant: "poolside",
+        poolsidePrintLayout: "landscape",
+        poolsidePrintStyle: "ink_saver",
+        focusPoints: [],
+      }
+    );
+
+    expect(html).toContain('<div class="body body-landscape body-landscape-minimal-meta">');
+    expect(html).not.toContain('data-testid="workout-pdf-focus-points"');
+    expect(html).toContain('data-poolside-print-layout="landscape"');
   });
 
   it("prefers the primary poolside focus by default and resolves titles from explicit ids", () => {

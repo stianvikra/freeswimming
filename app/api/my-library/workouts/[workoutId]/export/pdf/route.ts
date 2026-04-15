@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
+import { BRAND_FONT_PUBLIC_PATH, getWorkoutPdfLogoPath } from "@/lib/brand";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
@@ -123,7 +123,13 @@ export async function GET(request: Request, context: RouteContext) {
         poolsidePrintStyle,
         poolsidePrintLayout,
         swimmerName: athleteProfileSnapshot?.profile?.primaryName ?? null,
-        logoUrl: new URL(BRAND_PDF_LOGO_PATH, requestUrl).toString(),
+        logoUrl: new URL(
+          getWorkoutPdfLogoPath({
+            variant: pdfVariant,
+            poolsidePrintStyle,
+          }),
+          requestUrl
+        ).toString(),
         fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, requestUrl).toString(),
       })
     )
