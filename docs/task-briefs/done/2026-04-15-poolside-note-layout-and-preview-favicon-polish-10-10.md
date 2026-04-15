@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-15-poolside-note-layout-and-preview-favicon-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
 - `updated`: `2026-04-15`
@@ -198,3 +198,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-15 | planning | created final poolside polish brief from owner-approved follow-up scope: restore favicon/tab identity and lock portrait/landscape placement around steps-first readability | next: patch generated poolside HTML/CSS, add assertions, and validate through targeted tests plus full pre-PR gate`
 - `2026-04-15 | implementation | completed poolside preview favicon/head metadata plus portrait/landscape ordering polish so steps lead the reading flow; targeted unit/e2e plus full verify:pre-pr passed locally | next: commit, push, open/update PR, then run verify:pre-merge and monitor CI`
+- `2026-04-15 | done | merged to main in PR #440 via commit f476bd8 after local verify:pre-pr, local verify:pre-merge, and all required GitHub checks passed; the poolside favicon/layout polish is shipped and no longer owns active work | closeout: move brief to done`
