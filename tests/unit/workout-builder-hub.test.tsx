@@ -310,7 +310,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-mobile-actions-toggle-0"));
 
     expect(screen.getByTestId("session-draft-step-mobile-actions-panel-0")).toBeVisible();
-    expect(screen.getByTestId("session-draft-step-mobile-move-up-0")).toBeDisabled();
+    expect(screen.queryByTestId("session-draft-step-mobile-move-up-0")).not.toBeInTheDocument();
     expect(screen.getByTestId("session-draft-step-mobile-remove-0")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
@@ -789,9 +789,9 @@ describe("WorkoutBuilderHub", () => {
       )
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/Final rest skipped/)).not.toBeInTheDocument();
-    expect(screen.getByText("Final interval rest")).toBeVisible();
-    expect(screen.getByRole("option", { name: "Skip final interval rest" })).toBeVisible();
-    expect(screen.getByRole("option", { name: "Include final interval rest" })).toBeVisible();
+    expect(screen.getByText("Rest after last repeat")).toBeVisible();
+    expect(screen.getByRole("option", { name: "Use separate rest step" })).toBeVisible();
+    expect(screen.getByRole("option", { name: "Use repeat rest time" })).toBeVisible();
     expect(
       screen.queryByText("Adjust or remove when you refine the workout.")
     ).not.toBeInTheDocument();
@@ -1054,16 +1054,16 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.getByText("This creates two rests in a row.")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Keep set rest only" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Use final interval rest instead" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Use separate rest step" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Use repeat rest time" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Keep both" })).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Use final interval rest instead" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use repeat rest time" }));
     expect(
-      screen.getByText("Delete the separate set rest and keep final interval rest?")
+      screen.getByText("Delete the separate rest step and use repeat rest time?")
     ).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete set rest" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete rest step" }));
 
     const previewDraft = readPreviewDraft();
     expect(previewDraft.steps.some((step) => step.postSetRestForRepeatGroupId)).toBe(false);
@@ -1764,6 +1764,7 @@ describe("WorkoutBuilderHub", () => {
     });
 
     expect(screen.getByTestId("workout-editor-builder-mode-edit")).toBeVisible();
+    expect(screen.getByTestId("workout-editor-builder-mode-rearrange")).toBeVisible();
     expect(screen.getByTestId("workout-editor-builder-mode-view")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
@@ -1776,6 +1777,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("Warmup")).toBeVisible();
     expect(screen.getByText("400m · Freestyle · Easy")).toBeVisible();
     expect(screen.queryByText("Edit step")).not.toBeInTheDocument();
+    expect(screen.queryByText("Edit repeat")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /400m · Freestyle · Easy/i }));
 
@@ -1787,10 +1789,58 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
     fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
-    fireEvent.click(screen.getByTestId(/workout-editor-view-repeat-/));
+    const repeatViewCard = screen.getByTestId(/workout-editor-view-repeat-/);
+    expect(repeatViewCard).toHaveClass("block", "w-full");
+    fireEvent.click(repeatViewCard);
 
     expect(screen.getByLabelText("Repeat count")).toBeVisible();
     expect(screen.queryByLabelText("Step Type")).not.toBeInTheDocument();
+  });
+
+  it("uses rearrange as a separate ordering mode without opening edit and keeps top-level moves in one place", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({ sourceFingerprint: "manual-rearrange-mode" }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    openWorkoutMetadataPanel();
+    expect(screen.getByTestId("session-draft-title")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    fireEvent.click(screen.getByTestId("workout-editor-builder-mode-rearrange"));
+
+    expect(screen.queryByTestId("session-draft-title")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-metadata-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-draft-add-step")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-draft-add-repeat")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-draft-step-toggle-0")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-draft-repeat-toggle-1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-step-rearrange-controls-0")).toBeVisible();
+    expect(screen.getByTestId("session-draft-repeat-rearrange-controls-1")).toBeVisible();
+
+    fireEvent.click(getDesktopSummaryCard("session-draft-step-summary-0"));
+    expect(screen.queryByLabelText("Step Type")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-rearrange-move-down-0"));
+
+    const previewDraft = readPreviewDraft();
+    expect(previewDraft.steps[0]?.repeatGroupId).not.toBeNull();
+    expect(previewDraft.steps.at(-1)?.id).toBe("step-1");
   });
 
   it("keeps existing step summaries stable when switching pool units", async () => {

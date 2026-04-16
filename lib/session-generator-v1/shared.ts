@@ -335,8 +335,8 @@ const STEP_TARGET_MODE_LABELS: Record<SessionDraftStepTargetMode, string> = {
 };
 
 const REPEAT_ENDING_REST_MODE_LABELS: Record<SessionDraftRepeatEndingRestMode, string> = {
-  use_last_rest: "Include final interval rest",
-  skip_last_rest: "Skip final interval rest",
+  use_last_rest: "Use repeat rest time",
+  skip_last_rest: "Use separate rest step",
 };
 
 export function getSessionEnvironmentLabel(value: SessionGeneratorEnvironment) {
