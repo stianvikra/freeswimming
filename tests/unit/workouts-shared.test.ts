@@ -1018,7 +1018,10 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Total");
     expect(html).toContain('data-testid="workout-pdf-total"');
     expect(html).toContain('hero-total-value">400m<');
-    expect(html).toContain("lockup-domain-ink.png");
+    expect(html).toContain('class="brand-inline-lockup"');
+    expect(html).toContain('class="brand-inline-symbol"');
+    expect(html).toContain('brand-inline-wordmark-primary">freeswimming<');
+    expect(html).toContain('brand-inline-wordmark-org">.org<');
     expect(html).toContain(">Print Preview<");
     expect(html).toContain("Learn.");
     expect(html).toContain("Swim.");
@@ -1062,6 +1065,7 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain('data-testid="workout-pdf-focus-points"');
     expect(html).toContain('data-poolside-print-layout="landscape"');
     expect(html).toContain('hero-total-value">400m<');
+    expect(html).toContain('class="brand-inline-lockup"');
     expect(html).not.toContain("~10 min");
   });
 
