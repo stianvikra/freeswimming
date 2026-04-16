@@ -10,7 +10,7 @@
 
 ## Goal
 
-Make the poolside note preview stay visible and printable in both portrait and landscape while tightening page density enough that normal sessions use A4 height more efficiently without hurting readability.
+Make the poolside note preview stay visible and printable in both portrait and landscape while cutting vertical whitespace as aggressively as possible so portrait notes trend toward roughly half an A4 page before real workout content forces extra height.
 
 ## Why This Brief Exists
 
@@ -56,14 +56,16 @@ Make the poolside note preview stay visible and printable in both portrait and l
 1. The poolside note is a working lane-side sheet first, not a poster.
 2. Print preview must stay visibly open and nonblank long enough to print reliably.
 3. Portrait and landscape may use different layout geometry, but both must preserve the same visual system.
-4. The poolside note should use A4 height more efficiently by reducing unnecessary vertical whitespace.
-5. Density improvements must not make the sheet cramped or harm scan speed.
-6. The browser print dialog orientation remains user/browser controlled unless a stable covered override is proven.
-7. Layout selection inside the builder may change the preview composition, but it must not silently force a mismatched browser print setting.
-8. Longer sessions should fit materially better before spilling onto additional pages.
-9. In landscape, `Focus` and the workout body must be height-balanced rather than leaving one very short column and one very tall column.
-10. Landscape should begin with the main workout flow on the left and `Focus` on the right, but workout lines may continue below `Focus` on the right side when needed to keep the composition balanced.
-11. Until the content naturally needs to break, the bottom edge of the `Focus` block should sit roughly level with the bottom edge of the first visible workout block on the left.
+4. The primary density lever is aggressive removal of unnecessary vertical whitespace, not reduced truthfulness or cramped typography.
+5. Portrait should aim for roughly half an A4 page whenever the actual workout content allows it.
+6. If a note grows beyond that, it should be because of real workout content, not header height, block padding, gaps, or decorative air.
+7. Density improvements must not make the sheet cramped or harm scan speed.
+8. The browser print dialog orientation remains user/browser controlled unless a stable covered override is proven.
+9. Layout selection inside the builder may change the preview composition, but it must not silently force a mismatched browser print setting.
+10. Longer sessions should fit materially better before spilling onto additional pages.
+11. In landscape, `Focus` and the workout body must be height-balanced rather than leaving one very short column and one very tall column.
+12. Landscape should begin with the main workout flow on the left and `Focus` on the right, but workout lines may continue below `Focus` on the right side when needed to keep the composition balanced.
+13. Until the content naturally needs to break, the bottom edge of the `Focus` block should sit roughly level with the bottom edge of the first visible workout block on the left.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -81,33 +83,33 @@ Strict `10/10` mode for this brief:
 
 - every declared `target` category must close at `5/5`
 
-| Category                                      | Mapping      | Threshold For This Brief                                                                                                                                                                   | Evidence                                           | Expected Closeout |
-| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- | ----------------- |
-| Product goals and IA                          | `target`     | Portrait and landscape poolside sheets must read as operational lane-side artifacts where title, total, focus, and step list remain easy to scan while using page height more efficiently. | screenshot review + print-preview QA + code review | `5/5`             |
-| UX flow clarity                               | `target`     | Opening the poolside preview must yield one stable, titled, printable tab, and density changes must preserve immediate scan order without making the sheet feel cramped.                   | targeted e2e + browser QA                          | `5/5`             |
-| Visual design quality                         | `target`     | Vertical rhythm must be tightened in both portrait and landscape, with no wasted blocks that push common workouts over one A4 page unnecessarily.                                          | screenshot review + print-preview QA               | `5/5`             |
-| Business logic correctness and data integrity | `supporting` | Preview and print output must remain truthful to the current local draft, selected layout, selected style, and saved workout semantics.                                                    | unit + e2e + code review                           | `4/5`             |
-| Admin editor ergonomics                       | `supporting` | Builder preview controls must remain understandable after any preview-delivery or density adjustments.                                                                                     | builder QA + targeted e2e                          | `4/5`             |
-| Accessibility (a11y)                          | `supporting` | Denser layout must remain readable, high-contrast, and semantically grouped, with no illegible shrinkage or confusing print-title behavior.                                                | browser QA + screenshot review                     | `4/5`             |
-| Performance (CWV + payloads)                  | `supporting` | Preview hardening and density polish must stay within the current HTML/CSS renderer and add no new heavy dependency.                                                                       | diff review + `npm run build` via verify lane      | `4/5`             |
-| Data placement and sync boundaries            | `target`     | Preview-delivery and layout fixes must stay local-only and must not persist state just to make printing work.                                                                              | brief contract + code review                       | `5/5`             |
-| Caching and invalidation strategy             | `supporting` | Each preview open must reflect current draft and current print options immediately, with no stale cached blank or stale-layout artifact.                                                   | manual QA + targeted e2e                           | `4/5`             |
-| Reliability and failure handling              | `target`     | In covered browser QA and regression tests, preview tabs must remain visible/nonblank and print-ready in both portrait and landscape.                                                      | targeted unit + targeted e2e + browser QA          | `5/5`             |
-| Security and authz                            | `N/A`        | N/A because this slice changes no auth gate, entitlement, or authorization rule.                                                                                                           | explicit scope rationale                           | `N/A`             |
-| Privacy and compliance                        | `N/A`        | N/A because the slice changes print delivery and composition only, not data handling or exposure rules.                                                                                    | explicit scope rationale                           | `N/A`             |
-| Content governance                            | `supporting` | Density changes must not create a second divergent poolside content contract or duplicate shadow renderer.                                                                                 | code review                                        | `4/5`             |
-| Admin workflow and editability                | `N/A`        | N/A because no admin publishing or mutable content workflow changes in this slice.                                                                                                         | explicit scope rationale                           | `N/A`             |
-| SEO and crawlability                          | `N/A`        | N/A because this remains an owner-only preview/print surface, not a public crawl target.                                                                                                   | explicit scope rationale                           | `N/A`             |
-| AI discoverability                            | `N/A`        | N/A because the slice changes no public retrieval, metadata, or discoverability contract.                                                                                                  | explicit scope rationale                           | `N/A`             |
-| Analytics and KPI observability               | `N/A`        | N/A because no analytics event or KPI contract change is required for this preview-density slice.                                                                                          | explicit scope rationale                           | `N/A`             |
-| Commerce and revenue ops                      | `N/A`        | N/A because there is no billing, plan, or entitlement impact.                                                                                                                              | explicit scope rationale                           | `N/A`             |
-| Incident response and support operations      | `N/A`        | N/A because the slice adds no new incident/runbook workflow; it reduces preview/print failure risk on an existing owner surface.                                                           | explicit scope rationale                           | `N/A`             |
-| Finance and reporting operations              | `N/A`        | N/A because the work has no reporting or finance-system effect.                                                                                                                            | explicit scope rationale                           | `N/A`             |
-| i18n operational readiness                    | `N/A`        | N/A because the slice preserves the current English poolside contract and adds no locale-routing behavior.                                                                                 | explicit scope rationale                           | `N/A`             |
-| Stack-fit and dependency discipline           | `target`     | The fix must remain inside the existing Next.js/browser print-preview stack and poolside renderer, with no new dependency.                                                                 | diff review + validation evidence                  | `5/5`             |
-| Testing and QA automation                     | `target`     | Coverage must lock stable preview delivery plus denser portrait/landscape rendering without weakening existing poolside/builder tests.                                                     | updated tests + verify gates                       | `5/5`             |
-| Scalability and cost efficiency               | `supporting` | The result should reduce future ad hoc print exceptions by clarifying orientation and density rules instead of layering more one-off fixes.                                                | code review + brief contract                       | `4/5`             |
-| DevOps and rollback readiness                 | `supporting` | The slice must remain a reversible code-only change with no schema migration or rollout choreography.                                                                                      | PR diff + rollback simplicity                      | `4/5`             |
+| Category                                      | Mapping      | Threshold For This Brief                                                                                                                                                                              | Evidence                                           | Expected Closeout |
+| --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ----------------- |
+| Product goals and IA                          | `target`     | Portrait and landscape poolside sheets must read as operational lane-side artifacts where title, total, focus, and step list remain easy to scan while cutting non-content height aggressively.       | screenshot review + print-preview QA + code review | `5/5`             |
+| UX flow clarity                               | `target`     | Opening the poolside preview must yield one stable, titled, printable tab, and density changes must preserve immediate scan order while removing nonessential vertical whitespace first.              | targeted e2e + browser QA                          | `5/5`             |
+| Visual design quality                         | `target`     | Vertical rhythm must be tightened in both portrait and landscape, with portrait trending toward roughly half an A4 page for normal notes and with overflow driven by real content, not loose spacing. | screenshot review + print-preview QA               | `5/5`             |
+| Business logic correctness and data integrity | `supporting` | Preview and print output must remain truthful to the current local draft, selected layout, selected style, and saved workout semantics.                                                               | unit + e2e + code review                           | `4/5`             |
+| Admin editor ergonomics                       | `supporting` | Builder preview controls must remain understandable after any preview-delivery or density adjustments.                                                                                                | builder QA + targeted e2e                          | `4/5`             |
+| Accessibility (a11y)                          | `supporting` | Denser layout must remain readable, high-contrast, and semantically grouped, with no illegible shrinkage or confusing print-title behavior.                                                           | browser QA + screenshot review                     | `4/5`             |
+| Performance (CWV + payloads)                  | `supporting` | Preview hardening and density polish must stay within the current HTML/CSS renderer and add no new heavy dependency.                                                                                  | diff review + `npm run build` via verify lane      | `4/5`             |
+| Data placement and sync boundaries            | `target`     | Preview-delivery and layout fixes must stay local-only and must not persist state just to make printing work.                                                                                         | brief contract + code review                       | `5/5`             |
+| Caching and invalidation strategy             | `supporting` | Each preview open must reflect current draft and current print options immediately, with no stale cached blank or stale-layout artifact.                                                              | manual QA + targeted e2e                           | `4/5`             |
+| Reliability and failure handling              | `target`     | In covered browser QA and regression tests, preview tabs must remain visible/nonblank and print-ready in both portrait and landscape.                                                                 | targeted unit + targeted e2e + browser QA          | `5/5`             |
+| Security and authz                            | `N/A`        | N/A because this slice changes no auth gate, entitlement, or authorization rule.                                                                                                                      | explicit scope rationale                           | `N/A`             |
+| Privacy and compliance                        | `N/A`        | N/A because the slice changes print delivery and composition only, not data handling or exposure rules.                                                                                               | explicit scope rationale                           | `N/A`             |
+| Content governance                            | `supporting` | Density changes must not create a second divergent poolside content contract or duplicate shadow renderer.                                                                                            | code review                                        | `4/5`             |
+| Admin workflow and editability                | `N/A`        | N/A because no admin publishing or mutable content workflow changes in this slice.                                                                                                                    | explicit scope rationale                           | `N/A`             |
+| SEO and crawlability                          | `N/A`        | N/A because this remains an owner-only preview/print surface, not a public crawl target.                                                                                                              | explicit scope rationale                           | `N/A`             |
+| AI discoverability                            | `N/A`        | N/A because the slice changes no public retrieval, metadata, or discoverability contract.                                                                                                             | explicit scope rationale                           | `N/A`             |
+| Analytics and KPI observability               | `N/A`        | N/A because no analytics event or KPI contract change is required for this preview-density slice.                                                                                                     | explicit scope rationale                           | `N/A`             |
+| Commerce and revenue ops                      | `N/A`        | N/A because there is no billing, plan, or entitlement impact.                                                                                                                                         | explicit scope rationale                           | `N/A`             |
+| Incident response and support operations      | `N/A`        | N/A because the slice adds no new incident/runbook workflow; it reduces preview/print failure risk on an existing owner surface.                                                                      | explicit scope rationale                           | `N/A`             |
+| Finance and reporting operations              | `N/A`        | N/A because the work has no reporting or finance-system effect.                                                                                                                                       | explicit scope rationale                           | `N/A`             |
+| i18n operational readiness                    | `N/A`        | N/A because the slice preserves the current English poolside contract and adds no locale-routing behavior.                                                                                            | explicit scope rationale                           | `N/A`             |
+| Stack-fit and dependency discipline           | `target`     | The fix must remain inside the existing Next.js/browser print-preview stack and poolside renderer, with no new dependency.                                                                            | diff review + validation evidence                  | `5/5`             |
+| Testing and QA automation                     | `target`     | Coverage must lock stable preview delivery plus denser portrait/landscape rendering without weakening existing poolside/builder tests.                                                                | updated tests + verify gates                       | `5/5`             |
+| Scalability and cost efficiency               | `supporting` | The result should reduce future ad hoc print exceptions by clarifying orientation and density rules instead of layering more one-off fixes.                                                           | code review + brief contract                       | `4/5`             |
+| DevOps and rollback readiness                 | `supporting` | The slice must remain a reversible code-only change with no schema migration or rollout choreography.                                                                                                 | PR diff + rollback simplicity                      | `4/5`             |
 
 ## Data Placement And Sync Contract
 
@@ -134,7 +136,13 @@ Strict `10/10` mode for this brief:
 
 - Stabilize poolside preview delivery so the opened tab stays visible and printable.
 - Verify the preview remains nonblank in portrait and landscape.
-- Tighten poolside note vertical spacing in portrait and landscape so common sessions use page height more efficiently.
+- Tighten poolside note vertical spacing in portrait and landscape so common sessions use page height far more efficiently.
+- Remove as much nonessential vertical whitespace as possible from:
+  - header height,
+  - top/bottom padding,
+  - gaps between title/total/swimmer/focus/steps,
+  - padding inside the focus block,
+  - padding and row-height inside the step list.
 - Keep focus, total, swimmer identity, and work/rest scan order readable after density tightening.
 - Rework landscape column flow so `Focus` and workout steps stay visually balanced:
   - workout starts on the left,
@@ -159,8 +167,8 @@ Strict `10/10` mode for this brief:
 1. Opening the poolside note no longer results in a disappearing, blank, or black preview in covered browser QA.
 2. The poolside preview remains visibly present long enough to print or save as PDF reliably.
 3. Portrait and landscape previews both remain nonblank and use the correct selected layout styling.
-4. Vertical spacing is reduced enough that common multi-set sessions fit materially better within A4 height.
-5. Density changes do not make the poolside note cramped or harder to scan.
+4. Vertical spacing is reduced as aggressively as possible without harming scan readability.
+5. Typical portrait notes trend toward roughly half of one A4 page after whitespace reduction.
 6. Focus, total, swimmer identity, and steps remain clearly readable in both portrait and landscape.
 7. Landscape no longer leaves `Focus` isolated in one short column while the workout becomes a long single-sided column.
 8. In landscape, workout content may continue under `Focus` on the right to keep the overall page height more balanced.
@@ -207,11 +215,13 @@ Strict `10/10` mode for this brief:
 - Do not weaken current rest semantics or poolside truthfulness to gain density.
 - Do not add a new dependency.
 - Do not force browser print orientation unless there is explicit covered proof that it is stable across the supported browser QA matrix.
+- If a portrait note still becomes tall after this slice, the remaining height must come from real workout content rather than avoidable whitespace.
 
 ## 10/10 Quality Bar
 
 - The owner should open the poolside note once and get a real stable print surface, not a transient disappearing tab.
-- The note should feel operational and dense enough to use on deck without wasting half the page.
+- The note should feel operational and dense enough to use on deck without wasting vertical space.
+- Portrait should push toward roughly half an A4 page whenever the content allows it.
 - Portrait and landscape should both look intentional, readable, and professional.
 - Tighter spacing must improve page economy without turning the sheet cramped or brittle.
 - The implementation must stay maintainable and easy to rollback.
@@ -225,3 +235,4 @@ Strict `10/10` mode for this brief:
 ## Checkpoint Log
 
 - `2026-04-16 | planning | created the dedicated next-step brief after builder closeout to isolate the remaining poolside note problems: disappearing/blank preview behavior, excessive vertical spacing, and orientation-contract clarity for print flows | next: implement the poolside preview hardening + density reconciliation in one scoped follow-up PR`
+- `2026-04-16 | planning refinement | tightened the brief around whitespace-first portrait compaction: cut nonessential vertical height before touching readability, use roughly half an A4 page as the target for normal portrait notes, and keep landscape balanced by letting workout content continue beneath Focus on the right when needed | next: implement preview stability and density reduction without weakening poolside truthfulness`
