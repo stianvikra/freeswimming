@@ -68,6 +68,12 @@ export type WorkoutSummary = {
   sourceKind: WorkoutSourceKind;
   status: WorkoutStatus;
   previewText?: string | null;
+  previewLineItems?: WorkoutSummaryPreviewLineItem[] | null;
+};
+
+export type WorkoutSummaryPreviewLineItem = {
+  text: string;
+  secondaryText?: string | null;
 };
 
 export type WorkoutEditorRecord = {
@@ -3207,6 +3213,13 @@ export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | unde
       : null;
 
   return [...lines, ...(totalDistanceLabel ? ["", totalDistanceLabel] : [])].join("\n");
+}
+
+export function buildWorkoutSummaryPreviewLineItems(draft: SessionDraft | null | undefined) {
+  return buildWorkoutPoolsideLineItemsForDraft(draft).map((lineItem) => ({
+    text: lineItem.text,
+    secondaryText: lineItem.secondaryText ?? null,
+  }));
 }
 
 function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {

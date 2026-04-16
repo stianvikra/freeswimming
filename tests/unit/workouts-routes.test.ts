@@ -417,6 +417,120 @@ describe("workouts routes", () => {
     expect(from).toHaveBeenCalledWith("personal_records");
   });
 
+  it("returns a poolside note without focus points when custom focus mode clears all selections", async () => {
+    const workoutMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildWorkoutRow({
+        title: "Poolside QA workout",
+      }),
+      error: null,
+    });
+    const athleteProfileMaybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    const trainingMetricMaybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    const trainingPreferencesMaybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    const personalRecordsEq = vi.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    });
+    const from = vi.fn((table: string) => {
+      if (table === "workouts") {
+        const eqId = vi.fn(() => ({ maybeSingle: workoutMaybeSingle }));
+        const eqUser = vi.fn(() => ({ eq: eqId }));
+        return {
+          select: vi.fn(() => ({ eq: eqUser })),
+        };
+      }
+      if (table === "athlete_profiles") {
+        const eqUser = vi.fn(() => ({ maybeSingle: athleteProfileMaybeSingle }));
+        return {
+          select: vi.fn(() => ({ eq: eqUser })),
+        };
+      }
+      if (table === "training_metrics") {
+        const eqMetricKey = vi.fn(() => ({ maybeSingle: trainingMetricMaybeSingle }));
+        const eqUser = vi.fn(() => ({ eq: eqMetricKey }));
+        return {
+          select: vi.fn(() => ({ eq: eqUser })),
+        };
+      }
+      if (table === "training_preferences") {
+        const eqUser = vi.fn(() => ({ maybeSingle: trainingPreferencesMaybeSingle }));
+        return {
+          select: vi.fn(() => ({ eq: eqUser })),
+        };
+      }
+      if (table === "personal_records") {
+        return {
+          select: vi.fn(() => ({ eq: personalRecordsEq })),
+        };
+      }
+      throw new Error(`Unexpected table mock: ${table}`);
+    });
+
+    loadTrainingContextSnapshotMock.mockResolvedValue({
+      schemaReady: true,
+      loadError: null,
+      activeFocus: null,
+      primaryFocus: null,
+      openFocuses: [
+        {
+          id: "focus-1",
+          title: "High elbow catch",
+          details: "Keep the forearm vertical before pressing back.",
+          isPrimary: true,
+        },
+        {
+          id: "focus-2",
+          title: "Calm exhale",
+          details: "Start the exhale before the head turns to breathe.",
+          isPrimary: false,
+        },
+      ],
+      focusHistory: [],
+      focusNeedsPrimarySelection: false,
+      recentNotes: [],
+      unresolvedObservationCount: 0,
+      unansweredQuestionCount: 0,
+      goalOptions: [],
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getWorkoutPdf(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111/export/pdf?variant=poolside&focusMode=custom"
+      ),
+      {
+        params: Promise.resolve({
+          workoutId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('data-pdf-variant="poolside"');
+    expect(body).not.toContain("High elbow catch");
+    expect(body).not.toContain("Calm exhale");
+    expect(body).toContain("Breathing timing");
+  });
+
   it("creates manual canonical workouts when the request source kind is manual", async () => {
     const body = buildDraftBody({ sourceKind: "manual" });
     body.draft.title = "Manual pool workout";

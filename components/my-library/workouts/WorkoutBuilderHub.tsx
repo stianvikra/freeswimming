@@ -457,6 +457,8 @@ export default function WorkoutBuilderHub({
               pendingDeleteWorkoutId={pendingDeleteWorkoutId}
               deletingWorkoutId={deletingWorkoutId}
               bulkDeleting={bulkDeleting}
+              trainingFocusOptions={trainingFocusOptions}
+              swimmerName={swimmerName}
             />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">

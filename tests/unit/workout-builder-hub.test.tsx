@@ -654,6 +654,13 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-removal-confirm")).toHaveTextContent(
       "Delete Easy warmup swim?"
     );
+    expect(getDesktopSummaryCard("session-draft-step-summary-0")).toHaveClass(
+      "border-dashed",
+      "border-rose-300"
+    );
+    expect(getDesktopSummaryCard("session-draft-step-summary-0")).toHaveTextContent(
+      "Will be removed"
+    );
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
 
     fireEvent.click(screen.getByTestId("workout-editor-removal-cancel-button"));
@@ -1118,6 +1125,13 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByTestId("workout-editor-removal-confirm")).toHaveTextContent(
       "Repeat block (3 steps, 4 rounds)"
+    );
+    expect(screen.getByTestId("workout-editor-repeat-group-1")).toHaveClass(
+      "border-dashed",
+      "border-rose-300"
+    );
+    expect(screen.getByTestId("workout-editor-repeat-group-1")).toHaveTextContent(
+      "Will be removed"
     );
 
     fireEvent.click(screen.getByTestId("workout-editor-removal-confirm-button"));
@@ -1765,6 +1779,8 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    expect(screen.getByTestId("workout-editor-session-total")).toHaveTextContent("400m");
+
     expect(screen.getByTestId("workout-editor-builder-mode-edit")).toBeVisible();
     expect(screen.getByTestId("workout-editor-builder-mode-rearrange")).toBeVisible();
     expect(screen.getByTestId("workout-editor-builder-mode-view")).toBeVisible();
@@ -1780,6 +1796,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("400m · Freestyle · Easy")).toBeVisible();
     expect(screen.queryByText("Edit step")).not.toBeInTheDocument();
     expect(screen.queryByText("Edit repeat")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId(/workout-editor-view-section-/)).toHaveLength(1);
 
     fireEvent.click(screen.getByRole("button", { name: /400m · Freestyle · Easy/i }));
 
@@ -1791,8 +1808,8 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
     fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
+    expect(screen.getAllByTestId(/workout-editor-view-section-/).length).toBeGreaterThanOrEqual(2);
     const repeatViewCard = screen.getByTestId(/workout-editor-view-repeat-/);
-    expect(repeatViewCard).toHaveClass("block", "w-full");
     fireEvent.click(repeatViewCard);
 
     expect(screen.getByLabelText("Repeat count")).toBeVisible();
@@ -2604,6 +2621,8 @@ describe("WorkoutBuilderHub", () => {
           ],
         })}
         browseOnly
+        trainingFocusOptions={buildTrainingFocusOptions()}
+        swimmerName="Stian Vikra"
       />
     );
 
@@ -2618,12 +2637,27 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("saved-workout-current-workout-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
     expect(screen.getByTestId("saved-workouts-view-workout-2")).toBeVisible();
+    expect(
+      within(screen.getByTestId("saved-workout-card-workout-2")).getByRole("button", {
+        name: "Quick View",
+      })
+    ).toBeVisible();
 
     fireEvent.click(screen.getByTestId("saved-workouts-view-workout-2"));
     expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent(
       "8 x 25m Kick · Easy"
     );
     expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("Rest 0:20");
+    expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("Total");
+    expect(screen.queryByText("Select session")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("saved-workouts-poolside-workout-2"));
+    expect(screen.getByTestId("saved-workout-poolside-workout-2-panel")).toBeVisible();
+    expect(screen.getByText("Swimmer: Stian Vikra")).toBeVisible();
+    expect(screen.getByTestId("saved-workout-poolside-workout-2-print-preview")).toHaveAttribute(
+      "href",
+      expect.stringContaining("focusMode=custom")
+    );
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
 
