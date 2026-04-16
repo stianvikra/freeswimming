@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-15-swim-session-builder-attached-rest-grouping-and-final-interval-guardrails-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
-- `updated`: `2026-04-15`
+- `updated`: `2026-04-16`
 
 ## Goal
 
@@ -258,3 +258,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-15 | implementation | attached top-level rest is now grouped under its parent step in manual pool edit mode, repeat wording/guardrails were updated, and downstream summaries keep both rests truthful when chosen | validation: npx vitest run tests/unit/workout-builder-hub.test.tsx tests/unit/workouts-shared.test.ts; npx playwright test tests/e2e/my-library-workout-builder.spec.ts; npm run lint:briefs:all; npm run verify:pre-pr | next: commit, push, open/update PR, monitor CI, and run verify:pre-merge before merge recommendation`
 - `2026-04-15 | implementation | added explicit repeat-work stroke summaries, hid the passive repeat pill outside open repeat editing, and preserved authored step units in both summaries and custom distance inputs across global pool-unit toggles | validation: npx eslint components/my-library/workouts/WorkoutEditor.tsx tests/unit/workout-builder-hub.test.tsx tests/e2e/my-library-workout-builder.spec.ts; npx vitest run tests/unit/workout-builder-hub.test.tsx tests/unit/workouts-shared.test.ts; env NEXT_DIST_DIR=.next-playwright-builder-full-rerun npx playwright test tests/e2e/my-library-workout-builder.spec.ts | next: run npm run verify:pre-pr, then commit/push/update PR`
 - `2026-04-15 | validation | full builder-targeted validation is green; npm run verify:pre-pr reached the full lane and only failed on an unrelated flaky rerun of tests/e2e/my-library-program-export.spec.ts while all builder coverage passed; isolated rerun of that export spec then passed cleanly, so builder scope is PR-ready but the broader repo gate should still be watched on CI | validation: npm run verify:pre-pr; env NEXT_DIST_DIR=.next-playwright-program-export-rerun npx playwright test tests/e2e/my-library-program-export.spec.ts --project=desktop-chromium | next: stage scoped files, open/update PR, and monitor CI before merge recommendation`
+- `2026-04-16 | merged | PR #442 merged to main as commit f9c2db3; GitHub required checks passed, local npm run verify:pre-merge passed on head 4e57c70ca138c45c61a7f2f98676c457992b6a3a, and the brief lifecycle moved from in-progress to done while the separate Workout PDF parity brief stayed planned | next: execute the dedicated Workout PDF visual parity brief as its own follow-up slice when approved`
