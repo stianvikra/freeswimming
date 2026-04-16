@@ -789,7 +789,9 @@ test.describe("my library workout builder", () => {
     await expect(poolsidePopup.locator('link[rel="icon"]')).toHaveAttribute("href", "/favicon.ico");
     await expect(poolsidePopup.locator("body")).not.toContainText("P:");
     await expect(poolsidePopup.locator("body")).not.toContainText("~");
-    await page.waitForTimeout(300);
+    await expect(poolsidePopup.locator("main.shell")).toBeVisible();
+    await expect(poolsidePopup.locator("article.page")).toBeVisible();
+    await page.waitForTimeout(1200);
     await expect(poolsidePopup.locator('[data-testid="workout-pdf-print-view"]')).toBeVisible();
     await poolsidePopup.close();
 

@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-16-poolside-note-print-stability-and-density-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-16`
 - `updated`: `2026-04-16`
@@ -236,3 +236,6 @@ Strict `10/10` mode for this brief:
 
 - `2026-04-16 | planning | created the dedicated next-step brief after builder closeout to isolate the remaining poolside note problems: disappearing/blank preview behavior, excessive vertical spacing, and orientation-contract clarity for print flows | next: implement the poolside preview hardening + density reconciliation in one scoped follow-up PR`
 - `2026-04-16 | planning refinement | tightened the brief around whitespace-first portrait compaction: cut nonessential vertical height before touching readability, use roughly half an A4 page as the target for normal portrait notes, and keep landscape balanced by letting workout content continue beneath Focus on the right when needed | next: implement preview stability and density reduction without weakening poolside truthfulness`
+- `2026-04-16 | implementation start | moved the brief to in-progress and began the scoped implementation branch for preview stability, whitespace-first compaction, and landscape focus/workout balancing | next: replace the fragile preview delivery path, tighten the poolside print layout, and update targeted coverage`
+- `2026-04-16 | implementation checkpoint | replaced blob-backed preview tabs with direct popup document injection, tightened portrait/landscape poolside spacing, removed forced print orientation, and balanced landscape by letting workout lines continue under Focus on the right rail when needed | next: close out validation, commit, and open/update the PR`
+- `2026-04-16 | local validation | targeted eslint + targeted vitest + targeted poolside Playwright smoke passed, then full \`npm run verify:pre-pr\` passed including lint, typecheck, unit, build, perf budgets, and the repo e2e matrix | next: commit, push, and update the implementation PR with merge readiness evidence`

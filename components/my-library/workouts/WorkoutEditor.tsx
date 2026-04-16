@@ -184,7 +184,6 @@ const WORKOUT_VIEW_MODE_LABELS: Record<(typeof WORKOUT_VIEW_MODES)[number], stri
   rearrange: "Rearrange",
   view: "View",
 };
-const WORKOUT_PREVIEW_OBJECT_URL_REVOKE_DELAY_MS = 60_000;
 
 type LastRemovedBlock = {
   kind: "step" | "repeat";
@@ -1604,7 +1603,6 @@ export default function WorkoutEditor({
   const isManualPoolMode = manualBuilderMode === "pool";
   const autoPoolBuilderTitle = getPoolBuilderAutoTitle(draft.environment);
   const timeDurationInputFocusRef = useRef<Record<string, boolean>>({});
-  const workoutPreviewObjectUrlsRef = useRef<string[]>([]);
   const [openStepId, setOpenStepId] = useState<string | null>(null);
   const [openRepeatGroupId, setOpenRepeatGroupId] = useState<string | null>(null);
   const [openMobileActionKey, setOpenMobileActionKey] = useState<string | null>(null);
@@ -1875,25 +1873,9 @@ export default function WorkoutEditor({
     [draft.basePaceSecondsPer100m, draft.steps, isManualPoolMode, poolLengthUnit, stepGroups]
   );
 
-  const revokeWorkoutPreviewObjectUrl = useCallback((objectUrl: string) => {
-    URL.revokeObjectURL(objectUrl);
-    workoutPreviewObjectUrlsRef.current = workoutPreviewObjectUrlsRef.current.filter(
-      (currentUrl) => currentUrl !== objectUrl
-    );
-  }, []);
-
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
   useAutoDismissNotice(handoffNotice, setHandoffNotice);
-
-  useEffect(() => {
-    return () => {
-      for (const objectUrl of workoutPreviewObjectUrlsRef.current) {
-        URL.revokeObjectURL(objectUrl);
-      }
-      workoutPreviewObjectUrlsRef.current = [];
-    };
-  }, []);
 
   useEffect(() => {
     setPoolLengthInput(formatEditablePoolLength(draft.poolLengthM, poolLengthUnit));
@@ -3132,22 +3114,15 @@ export default function WorkoutEditor({
           : workoutPdfHtml;
       const fileName = variant === "poolside" ? workoutPoolsidePdfFileName : workoutPdfFileName;
       const variantLabel = variant === "poolside" ? "Print Preview" : "PDF";
-      const objectUrl = URL.createObjectURL(
-        new Blob([html], {
-          type: "text/html;charset=utf-8",
-        })
-      );
-      const printWindow = window.open(objectUrl, "_blank");
+      const printWindow = window.open("", "_blank");
 
-      if (!printWindow) {
-        URL.revokeObjectURL(objectUrl);
+      if (!printWindow?.document) {
         throw new Error("Popup blocked.");
       }
 
-      workoutPreviewObjectUrlsRef.current.push(objectUrl);
-      window.setTimeout(() => {
-        revokeWorkoutPreviewObjectUrl(objectUrl);
-      }, WORKOUT_PREVIEW_OBJECT_URL_REVOKE_DELAY_MS);
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
       printWindow.focus?.();
       setWorkoutPdfNotice(
         `Opened ${variantLabel} for ${fileName}. Use Print / Save PDF in that tab.`
