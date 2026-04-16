@@ -1194,6 +1194,82 @@ describe("workouts shared readiness", () => {
     expect(poolsideModel.poolsideLines).toEqual(["200m · Choice · Easy · Rest 0:30"]);
   });
 
+  it("keeps both interval rest and set rest truthful when repeats include both", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      title: "Keep both repeat rests",
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Repeat work",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-3",
+          category: "rest",
+          name: "Post set rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.67,
+          targetSummary: "",
+          notes: "",
+          postSetRestForRepeatGroupId: "repeat-1",
+        },
+      ],
+    };
+
+    const poolsideModel = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+    });
+    const exportPayload = buildWorkoutGarminReadyExport(draft, {
+      draftState: "canonical",
+      workoutId: "workout-keep-both",
+    });
+
+    expect(poolsideModel.poolsideLines).toContain(
+      "4 x 100m · Freestyle · Moderate · Interval rest 0:30 · Set rest 0:40"
+    );
+
+    if (exportPayload.blocks[0]?.kind !== "repeat") {
+      throw new Error("Expected first block to be a repeat export.");
+    }
+
+    if (exportPayload.blocks[1]?.kind !== "single") {
+      throw new Error("Expected second block to be a single-step export.");
+    }
+
+    expect(exportPayload.blocks[0].roundSummary).toBe("4 rounds · 100m + 0:30 per round");
+    expect(exportPayload.blocks[1].step.duration.summary).toBe("Fixed Rest Time 0:40");
+  });
+
   it("prefers the primary poolside focus by default and resolves titles from explicit ids", () => {
     expect(
       getDefaultWorkoutPoolsideFocusIds([
