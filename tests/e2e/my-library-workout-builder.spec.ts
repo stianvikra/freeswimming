@@ -327,6 +327,8 @@ test.describe("my library workout builder", () => {
     await expect(page.getByText("Session details")).toBeVisible();
     await expect(page.getByText("Session note")).toBeVisible();
     await expect(page.getByText("Pool Size", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("workout-editor-builder-mode-rearrange")).toBeVisible();
+    await expect(page.getByTestId("workout-editor-builder-mode-view")).toBeVisible();
     await expect(page.getByRole("button", { name: "Meters" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Yards" })).toBeVisible();
     await expect(
@@ -377,6 +379,32 @@ test.describe("my library workout builder", () => {
     expect(collapsedStepToggleBox!.y).toBeLessThan(
       collapsedStepSummaryBox!.y + collapsedStepSummaryBox!.height
     );
+    await page.getByTestId("workout-editor-builder-mode-view").click();
+    await expect(page.getByTestId("session-draft-add-step")).toHaveCount(0);
+    await expect(page.getByTestId("session-draft-add-repeat")).toHaveCount(0);
+    await expect(page.getByTestId("workout-editor-metadata-toggle")).toHaveCount(0);
+    await expect(page.getByText("Edit repeat")).toHaveCount(0);
+    const viewRepeatCard = page.getByTestId(/workout-editor-view-repeat-/);
+    const viewSectionCard = page.locator('[data-testid^="workout-editor-view-section-"]').first();
+    const viewRepeatCardBox = await viewRepeatCard.boundingBox();
+    const viewSectionCardBox = await viewSectionCard.boundingBox();
+    expect(viewRepeatCardBox).not.toBeNull();
+    expect(viewSectionCardBox).not.toBeNull();
+    expect(Math.abs(viewRepeatCardBox!.width - viewSectionCardBox!.width)).toBeLessThanOrEqual(20);
+    await viewRepeatCard.click();
+    await expect(page.getByTestId("session-draft-repeat-count-2")).toBeVisible();
+    await expect(page.getByLabel("Step Type")).toHaveCount(0);
+    await page.getByTestId("workout-editor-builder-mode-rearrange").click();
+    await expect(page.getByTestId("session-draft-add-step")).toHaveCount(0);
+    await expect(page.getByTestId("session-draft-add-repeat")).toHaveCount(0);
+    await expect(page.getByTestId("session-draft-step-toggle-0")).toHaveCount(0);
+    await expect(page.getByTestId("session-draft-repeat-toggle-2")).toHaveCount(0);
+    await expect(page.getByTestId("session-draft-step-rearrange-controls-0")).toBeVisible();
+    await expect(page.getByTestId("session-draft-repeat-rearrange-controls-2")).toBeVisible();
+    await page.getByTestId("session-draft-step-summary-0").click();
+    await expect(page.getByLabel("Step Type")).toHaveCount(0);
+    await page.getByTestId("workout-editor-builder-mode-edit").click();
+    await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible();
     await page.getByTestId("session-draft-step-summary-0").click();
     await expect(page.getByTestId("session-draft-step-desktop-actions-0")).toHaveAttribute(
       "data-desktop-layout",
@@ -557,6 +585,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-repeat-ending-rest-mode-2")).toHaveValue(
       "skip_last_rest"
     );
+    await expect(page.getByText("Rest after last repeat")).toBeVisible();
     const repeatSummary = page.getByTestId("session-draft-repeat-summary-2");
     await expect(
       repeatSummary.getByText(

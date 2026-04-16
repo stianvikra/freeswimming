@@ -178,7 +178,12 @@ const MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS = [
   "ascending",
   "descending",
 ] as const satisfies readonly SessionDraftStepIntensityPreset[];
-const WORKOUT_VIEW_MODES = ["edit", "view"] as const;
+const WORKOUT_VIEW_MODES = ["edit", "rearrange", "view"] as const;
+const WORKOUT_VIEW_MODE_LABELS: Record<(typeof WORKOUT_VIEW_MODES)[number], string> = {
+  edit: "Edit",
+  rearrange: "Rearrange",
+  view: "View",
+};
 const WORKOUT_PREVIEW_OBJECT_URL_REVOKE_DELAY_MS = 60_000;
 
 type LastRemovedBlock = {
@@ -1845,7 +1850,10 @@ export default function WorkoutEditor({
   const desktopHeaderStackClass = "flex items-start justify-between gap-3";
   const desktopSummaryBlockClass = "min-w-0 flex-1";
   const desktopRepeatControlRowClass = "grid gap-3";
+  const isEditMode = builderViewMode === "edit";
+  const isRearrangeMode = builderViewMode === "rearrange";
   const isViewMode = builderViewMode === "view";
+  const isSummaryOnlyMode = !isEditMode;
   const manualPoolTopLevelSectionDescriptors = useMemo(
     () => (isManualPoolMode ? buildManualPoolTopLevelSectionDescriptors(stepGroups) : []),
     [isManualPoolMode, stepGroups]
@@ -2059,13 +2067,13 @@ export default function WorkoutEditor({
   }, [savedWorkoutId, showCalmBuilderLayout]);
 
   useEffect(() => {
-    if (!isViewMode) return;
+    if (isEditMode) return;
 
     setOpenStepId(null);
     setOpenRepeatGroupId(null);
     setOpenMobileActionKey(null);
     setMetadataOpen(false);
-  }, [isViewMode]);
+  }, [isEditMode]);
 
   useEffect(() => {
     setManualPoolTitleEdited(false);
@@ -3166,7 +3174,7 @@ export default function WorkoutEditor({
   ) {
     const insideRepeatGroup = options?.insideRepeatGroup ?? false;
     const isLinkedPostSetRest = options?.isLinkedPostSetRest ?? false;
-    const isOpen = !isViewMode && openStepId === step.id;
+    const isOpen = isEditMode && openStepId === step.id;
     const toggleLabel = isOpen ? "Done" : "Edit";
     const panelId = `session-draft-step-panel-${step.id}`;
     const normalizedStep = isManualPoolMode ? normalizeManualPoolStepForEditor(step) : step;
@@ -3221,7 +3229,7 @@ export default function WorkoutEditor({
       : step.name || getSessionStepCategoryLabel(step.category);
     const mobileActionKey = `step:${step.id}`;
     const mobileActionsOpen = openMobileActionKey === mobileActionKey;
-    const showMobilePrimaryAddAfter = !isViewMode && isOpen && !isLinkedPostSetRest;
+    const showMobilePrimaryAddAfter = isEditMode && isOpen && !isLinkedPostSetRest;
     const showMobilePrimaryAddRepeatAfter = showMobilePrimaryAddAfter && !insideRepeatGroup;
     const stepCategoryValue = isManualPoolMode ? normalizedStep.category : step.category;
     const stepStrokeValue = isManualPoolMode
@@ -3465,7 +3473,8 @@ export default function WorkoutEditor({
           ) : null}
         </div>
       ) : null;
-    const canUseDesktopCardOpen = desktopCardEditEnabled && !isViewMode && !isOpen;
+    const showRearrangeControls = isRearrangeMode && !insideRepeatGroup && !isLinkedPostSetRest;
+    const canUseDesktopCardOpen = desktopCardEditEnabled && isEditMode && !isOpen;
     const openStepCard = () => {
       setOpenMobileActionKey(null);
       setOpenStepId(step.id);
@@ -3508,7 +3517,7 @@ export default function WorkoutEditor({
       >
         <div className={desktopHeaderStackClass}>
           <div className={desktopSummaryBlockClass}>
-            {isViewMode ? (
+            {isSummaryOnlyMode ? (
               <div data-testid={`session-draft-step-mobile-summary-${index}`} className="sm:hidden">
                 {stepSummaryContent}
               </div>
@@ -3539,7 +3548,7 @@ export default function WorkoutEditor({
               {stepSummaryContent}
             </div>
           </div>
-          {!isViewMode ? (
+          {isEditMode ? (
             <div className="hidden shrink-0 sm:flex">
               <button
                 type="button"
@@ -3562,7 +3571,31 @@ export default function WorkoutEditor({
               </button>
             </div>
           ) : null}
-          {!isViewMode ? (
+          {showRearrangeControls ? (
+            <div
+              data-testid={`session-draft-step-rearrange-controls-${index}`}
+              className="flex shrink-0 flex-wrap gap-2"
+            >
+              <button
+                type="button"
+                onClick={handleMoveUp}
+                disabled={moveUpDisabled}
+                data-testid={`session-draft-step-rearrange-move-up-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Move up
+              </button>
+              <button
+                type="button"
+                onClick={handleMoveDown}
+                disabled={moveDownDisabled}
+                data-testid={`session-draft-step-rearrange-move-down-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Move down
+              </button>
+            </div>
+          ) : isEditMode ? (
             <div className="flex shrink-0 sm:hidden">
               <button
                 type="button"
@@ -3585,34 +3618,12 @@ export default function WorkoutEditor({
           ) : null}
         </div>
 
-        {!isViewMode && mobileActionsOpen ? (
+        {isEditMode && mobileActionsOpen ? (
           <div
             id={`session-draft-step-mobile-actions-panel-${step.id}`}
             data-testid={`session-draft-step-mobile-actions-panel-${index}`}
             className={`${mobileActionPanelClass} sm:hidden`}
           >
-            {!insideRepeatGroup && !isLinkedPostSetRest ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={handleMoveUp}
-                  disabled={moveUpDisabled}
-                  data-testid={`session-draft-step-mobile-move-up-${index}`}
-                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  Move up
-                </button>
-                <button
-                  type="button"
-                  onClick={handleMoveDown}
-                  disabled={moveDownDisabled}
-                  data-testid={`session-draft-step-mobile-move-down-${index}`}
-                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  Move down
-                </button>
-              </div>
-            ) : null}
             <div className="mt-2 grid gap-2">
               {!showMobilePrimaryAddAfter && !isLinkedPostSetRest ? (
                 <button
@@ -3661,7 +3672,7 @@ export default function WorkoutEditor({
           </div>
         ) : null}
 
-        {!isViewMode && showMobilePrimaryAddAfter ? (
+        {isEditMode && showMobilePrimaryAddAfter ? (
           <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
             <button
               type="button"
@@ -4272,32 +4283,12 @@ export default function WorkoutEditor({
 
             {attachedRestEditor}
 
-            {!isViewMode ? (
+            {isEditMode ? (
               <div
                 data-testid={`session-draft-step-desktop-actions-${index}`}
                 data-desktop-layout="bottom"
                 className="hidden flex-wrap items-center gap-2 border-t border-slate-200 pt-3 sm:flex md:col-span-2"
               >
-                {insideRepeatGroup || isLinkedPostSetRest ? null : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleMoveUp}
-                      disabled={moveUpDisabled}
-                      className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Move up
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleMoveDown}
-                      disabled={moveDownDisabled}
-                      className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Move down
-                    </button>
-                  </>
-                )}
                 {isLinkedPostSetRest ? null : (
                   <button
                     type="button"
@@ -5248,7 +5239,7 @@ export default function WorkoutEditor({
                   {workoutPdfStateLabel}
                 </p>
               ) : null}
-              {!metadataOpen || isViewMode ? (
+              {!metadataOpen || isSummaryOnlyMode ? (
                 <p
                   data-testid="workout-editor-metadata-summary"
                   className="mt-2 text-sm font-medium text-slate-900"
@@ -5259,7 +5250,7 @@ export default function WorkoutEditor({
             </div>
             <div className="flex min-w-0 flex-col gap-2 sm:items-end">
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                {!isViewMode ? (
+                {isEditMode ? (
                   <button
                     type="button"
                     onClick={() => setMetadataOpen((current) => !current)}
@@ -5295,7 +5286,7 @@ export default function WorkoutEditor({
                     Discard changes
                   </button>
                 ) : null}
-                {!isViewMode && savedWorkout && onRequestDeleteCurrent ? (
+                {isEditMode && savedWorkout && onRequestDeleteCurrent ? (
                   <button
                     type="button"
                     onClick={onRequestDeleteCurrent}
@@ -5348,7 +5339,7 @@ export default function WorkoutEditor({
             </p>
           ) : null}
 
-          {!isViewMode && metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
+          {isEditMode && metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
         </section>
       ) : (
         metadataFields
@@ -5380,13 +5371,13 @@ export default function WorkoutEditor({
                           : "text-blue-900/70 hover:text-blue-900"
                       }`}
                     >
-                      {mode === "edit" ? "Edit" : "View"}
+                      {WORKOUT_VIEW_MODE_LABELS[mode]}
                     </button>
                   );
                 })}
               </div>
             ) : null}
-            {!isViewMode ? (
+            {isEditMode ? (
               <div className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-3">
                 <button
                   type="button"
@@ -5476,9 +5467,9 @@ export default function WorkoutEditor({
                       type="button"
                       data-testid={`workout-editor-view-repeat-${section.key}`}
                       onClick={() => openTargetedRepeatEditor(section.target!.repeatGroupId)}
-                      className={`${sectionCardClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300`}
+                      className={`${sectionCardClass} block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300`}
                     >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-start gap-3">
                         <div>
                           <p className={sectionHeadingClass}>{section.title}</p>
                           {section.badge ? (
@@ -5489,9 +5480,6 @@ export default function WorkoutEditor({
                             </p>
                           ) : null}
                         </div>
-                        <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-800">
-                          Edit repeat
-                        </span>
                       </div>
                       <div className="mt-3 space-y-2">
                         {section.lines.map((line, lineIndex) => (
@@ -5610,14 +5598,14 @@ export default function WorkoutEditor({
                     data-containment-style="calm"
                     data-desktop-card-clickable={
                       desktopCardEditEnabled &&
-                      !isViewMode &&
+                      isEditMode &&
                       openRepeatGroupId !== group.repeatGroupId
                         ? "true"
                         : "false"
                     }
                     onClick={
                       desktopCardEditEnabled &&
-                      !isViewMode &&
+                      isEditMode &&
                       openRepeatGroupId !== group.repeatGroupId
                         ? (event) => {
                             if (shouldIgnoreCardEditClick(event.target)) {
@@ -5632,7 +5620,7 @@ export default function WorkoutEditor({
                     }
                     className={`rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-3 ring-1 ring-inset ring-blue-100 sm:p-4 ${
                       desktopCardEditEnabled &&
-                      !isViewMode &&
+                      isEditMode &&
                       openRepeatGroupId !== group.repeatGroupId
                         ? "cursor-pointer hover:shadow-sm"
                         : ""
@@ -5653,7 +5641,7 @@ export default function WorkoutEditor({
                       const repeatLabel = isManualPoolMode
                         ? (repeatDescriptor?.label ?? "Repeat")
                         : "Repeat set";
-                      const isRepeatOpen = !isViewMode && openRepeatGroupId === group.repeatGroupId;
+                      const isRepeatOpen = isEditMode && openRepeatGroupId === group.repeatGroupId;
                       const repeatToggleLabel = isRepeatOpen ? "Done" : "Edit";
                       const hasEditableRepeatEndingRest = Boolean(
                         draft.environment === "pool" &&
@@ -5675,6 +5663,8 @@ export default function WorkoutEditor({
                         hasRepeatRestConflict && !repeatConflictKeptBoth;
                       const showRepeatRestReplacementConfirm =
                         repeatConflictPendingReplacement === group.repeatGroupId;
+                      const repeatMoveUpDisabled = groupIndex === 0;
+                      const repeatMoveDownDisabled = groupIndex === stepGroups.length - 1;
                       const repeatSummaryContent = (
                         <>
                           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
@@ -5720,7 +5710,7 @@ export default function WorkoutEditor({
                                 {repeatSummaryContent}
                               </div>
                             </div>
-                            {!isViewMode ? (
+                            {isEditMode ? (
                               <div className="hidden shrink-0 sm:flex">
                                 <button
                                   type="button"
@@ -5737,7 +5727,31 @@ export default function WorkoutEditor({
                                 </button>
                               </div>
                             ) : null}
-                            {!isViewMode ? (
+                            {isRearrangeMode ? (
+                              <div
+                                data-testid={`session-draft-repeat-rearrange-controls-${groupIndex}`}
+                                className="flex shrink-0 flex-wrap gap-2"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => moveDraftGroup(groupIndex, -1)}
+                                  disabled={repeatMoveUpDisabled}
+                                  data-testid={`session-draft-repeat-rearrange-move-up-${groupIndex}`}
+                                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Move up
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveDraftGroup(groupIndex, 1)}
+                                  disabled={repeatMoveDownDisabled}
+                                  data-testid={`session-draft-repeat-rearrange-move-down-${groupIndex}`}
+                                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Move down
+                                </button>
+                              </div>
+                            ) : isEditMode ? (
                               <div className="flex shrink-0 sm:hidden">
                                 {isRepeatOpen ? (
                                   <button
@@ -5766,7 +5780,7 @@ export default function WorkoutEditor({
                             ) : null}
                           </div>
 
-                          {!isViewMode && isRepeatOpen ? (
+                          {isEditMode && isRepeatOpen ? (
                             <div className={desktopRepeatControlRowClass}>
                               <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
                                 <label className="text-sm text-slate-700">
@@ -5789,7 +5803,7 @@ export default function WorkoutEditor({
                                 </label>
                                 {hasEditableRepeatEndingRest ? (
                                   <label className="text-sm text-slate-700">
-                                    Final interval rest
+                                    Rest after last repeat
                                     <select
                                       value={group.repeatEndingRestMode}
                                       onChange={(event) =>
@@ -5826,7 +5840,7 @@ export default function WorkoutEditor({
                                       }
                                       className="inline-flex h-9 items-center justify-center rounded-xl border border-amber-200 bg-white px-3 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
                                     >
-                                      Keep set rest only
+                                      Use separate rest step
                                     </button>
                                     <button
                                       type="button"
@@ -5835,7 +5849,7 @@ export default function WorkoutEditor({
                                       }
                                       className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
                                     >
-                                      Use final interval rest instead
+                                      Use repeat rest time
                                     </button>
                                     <button
                                       type="button"
@@ -5856,7 +5870,7 @@ export default function WorkoutEditor({
                                   {showRepeatRestReplacementConfirm ? (
                                     <div className="mt-3 rounded-xl border border-rose-200 bg-white p-3">
                                       <p className="text-sm font-medium text-rose-950">
-                                        Delete the separate set rest and keep final interval rest?
+                                        Delete the separate rest step and use repeat rest time?
                                       </p>
                                       <div className="mt-3 flex flex-wrap gap-2">
                                         <button
@@ -5866,7 +5880,7 @@ export default function WorkoutEditor({
                                           }
                                           className="inline-flex h-9 items-center justify-center rounded-xl bg-rose-600 px-3 text-sm font-semibold text-white transition hover:bg-rose-500"
                                         >
-                                          Delete set rest
+                                          Delete rest step
                                         </button>
                                         <button
                                           type="button"
@@ -5887,7 +5901,7 @@ export default function WorkoutEditor({
                             </div>
                           ) : null}
 
-                          {!isViewMode && isRepeatOpen ? (
+                          {isEditMode && isRepeatOpen ? (
                             <div className="sm:hidden">
                               <button
                                 type="button"
@@ -5903,38 +5917,12 @@ export default function WorkoutEditor({
                             </div>
                           ) : null}
 
-                          {!isViewMode && isRepeatOpen && repeatMobileActionsOpen ? (
+                          {isEditMode && isRepeatOpen && repeatMobileActionsOpen ? (
                             <div
                               id={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
                               data-testid={`session-draft-repeat-mobile-actions-panel-${groupIndex}`}
                               className={`${mobileActionPanelClass} sm:hidden`}
                             >
-                              <div className="grid grid-cols-2 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    moveDraftGroup(groupIndex, -1);
-                                    setOpenMobileActionKey(null);
-                                  }}
-                                  disabled={groupIndex === 0}
-                                  data-testid={`session-draft-repeat-mobile-move-up-${groupIndex}`}
-                                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
-                                >
-                                  Move up
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    moveDraftGroup(groupIndex, 1);
-                                    setOpenMobileActionKey(null);
-                                  }}
-                                  disabled={groupIndex === stepGroups.length - 1}
-                                  data-testid={`session-draft-repeat-mobile-move-down-${groupIndex}`}
-                                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60`}
-                                >
-                                  Move down
-                                </button>
-                              </div>
                               <div className="mt-2 grid gap-2">
                                 <button
                                   type="button"
@@ -5976,7 +5964,7 @@ export default function WorkoutEditor({
                       );
                     })()}
 
-                    {!isViewMode && openRepeatGroupId === group.repeatGroupId ? (
+                    {isEditMode && openRepeatGroupId === group.repeatGroupId ? (
                       <div className="mt-4 space-y-3">
                         {group.entries.map((entry, repeatIndex) =>
                           renderStepEditorCard(entry.step, entry.index, groupIndex, {
@@ -6061,22 +6049,6 @@ export default function WorkoutEditor({
                           data-desktop-layout="bottom"
                           className="hidden flex-wrap items-end gap-2 border-t border-blue-100 pt-3 sm:flex"
                         >
-                          <button
-                            type="button"
-                            onClick={() => moveDraftGroup(groupIndex, -1)}
-                            disabled={groupIndex === 0}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Move up
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveDraftGroup(groupIndex, 1)}
-                            disabled={groupIndex === stepGroups.length - 1}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Move down
-                          </button>
                           <button
                             type="button"
                             onClick={() => insertStepAfterGroup(groupIndex)}
