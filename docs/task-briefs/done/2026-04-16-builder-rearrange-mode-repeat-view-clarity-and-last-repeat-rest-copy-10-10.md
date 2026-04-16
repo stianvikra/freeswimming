@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-16-builder-rearrange-mode-repeat-view-clarity-and-last-repeat-rest-copy-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-16`
 - `updated`: `2026-04-16`
@@ -222,7 +222,36 @@ Critical target categories for `10/10` claim in this brief:
 - Ordering controls must be obvious, deterministic, and low-risk at list boundaries.
 - All touched states must remain keyboard-usable, focus-visible, and test-covered.
 
+## Closeout
+
+- Shipped via PR `#446`, merged to `main` as `ae2ebcc` on `2026-04-16`.
+- Critical `10/10` gate confirmed at `5/5`:
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Accessibility (a11y)`
+  - `Business logic correctness and data integrity`
+  - `Testing and QA automation`
+- Additional target categories closed at `5/5` for this slice:
+  - `Product goals and IA`
+  - `Data placement and sync boundaries`
+  - `Reliability and failure handling`
+  - `Stack-fit and dependency discipline`
+- Release evidence:
+  - targeted `eslint` passed for the touched builder/runtime/test files,
+  - targeted `vitest` passed for the builder hub + shared workout summaries,
+  - targeted `playwright` passed for `tests/e2e/my-library-workout-builder.spec.ts`,
+  - local `npm run verify:pre-pr` passed,
+  - required PR checks passed in CI, including `verify`, `e2e-smoke`, `site-lock-smoke`, `CodeQL`, `size-check`, and Vercel preview.
+- Local `npm run verify:pre-merge` completed `lint`, `typecheck`, `unit`, `build`, and perf-budget gates, then surfaced unrelated full-suite local Playwright instability in existing non-diff admin/install coverage.
+- To verify merge safety after that unrelated local suite noise:
+  - isolated rerun passed for `tests/e2e/install-prompt.spec.ts` on `mobile-iphone-13-pro-max` (`guest sees free-account backup prompt after completing three lessons`),
+  - isolated rerun passed for `tests/e2e/admin-help-center.spec.ts` on `desktop-chromium`,
+  - PR CI remained fully green on the exact merged diff.
+- Remaining gap for this brief:
+  - none in builder scope; if the broader local full-suite instability recurs, track it as a separate repo-level test-hardening issue rather than against this builder slice.
+
 ## Checkpoint Log
 
 - `2026-04-16 | planning | created the agreed follow-up brief for builder ordering and repeat readability: dedicated rearrange mode, no visible repeat edit leakage in view, full-width repeat cards in view, and clearer last-repeat-rest copy | next: implement the mode split, update copy, add tests, and run targeted validation before full repo gates`
 - `2026-04-16 | implementation + validation | added the dedicated Rearrange mode, removed top-level move controls from edit surfaces, fixed repeat view-card leakage/width, renamed last-repeat-rest copy and conflict prompts, and updated unit + e2e coverage; targeted eslint/vitest/playwright plus full verify:pre-pr passed locally | next: commit, push, open PR, watch CI, then run verify:pre-merge before merge`
+- `2026-04-16 | closeout | PR #446 merged to main as ae2ebcc; required CI checks passed, builder-targeted validation stayed green, and representative isolated reruns confirmed the unrelated local full-suite failures were outside this diff | next: move this brief to done and open the next poolside note planning slice separately`
