@@ -1468,7 +1468,10 @@ describe("WorkoutBuilderHub", () => {
     expect(poolsideHtml).toContain(
       "Calm exhale: Start the exhale before the head turns to breathe."
     );
-    expect(poolsideHtml).toContain("lockup-domain-ink.png");
+    expect(poolsideHtml).toContain('class="brand-inline-lockup"');
+    expect(poolsideHtml).toContain('class="brand-inline-symbol"');
+    expect(poolsideHtml).toContain('brand-inline-wordmark-primary">freeswimming<');
+    expect(poolsideHtml).toContain('brand-inline-wordmark-org">.org<');
     expect(poolsideHtml).toContain("Print Preview");
     expect(poolsideHtml).toContain("Total");
     expect(poolsideHtml).toContain('data-testid="workout-pdf-total"');

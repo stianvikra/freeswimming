@@ -941,7 +941,36 @@ function buildPdfBrandFontFaceCss(fontUrl: string | null | undefined) {
     `;
 }
 
-function buildPdfBrandLockupHtml(logoUrl: string | null) {
+function buildPoolsideInlineBrandLockupHtml() {
+  return `
+      <div class="brand-inline-lockup" aria-label="freeswimming.org">
+        <svg
+          class="brand-inline-symbol"
+          viewBox="0 0 88 56"
+          role="img"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="M10 34 L37 10 L64 34" />
+          <circle cx="30" cy="44" r="8" />
+        </svg>
+        <span class="brand-inline-wordmark">
+          <span class="brand-inline-wordmark-primary">freeswimming</span><span class="brand-inline-wordmark-org">.org</span>
+        </span>
+      </div>
+    `;
+}
+
+function buildPdfBrandLockupHtml(
+  logoUrl: string | null,
+  options?: {
+    variant?: "standard" | "poolside";
+  }
+) {
+  if (options?.variant === "poolside") {
+    return buildPoolsideInlineBrandLockupHtml();
+  }
+
   if (logoUrl) {
     return `
         <div class="brand-mark" data-logo-state="image">
@@ -1523,7 +1552,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
   const isLandscape = model.poolsidePrintLayout === "landscape";
   const hasFocusPoints = model.focusPoints.length > 0;
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
-  const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
+  const logoHtml = buildPdfBrandLockupHtml(model.logoUrl, { variant: "poolside" });
   const totalDistanceValue = model.totalDistanceLabel?.replace(/^Total:\s*/, "") ?? null;
   const heroTaglineHtml = `
         <div class="hero-tagline ${isLandscape ? "hero-tagline-landscape" : "hero-tagline-portrait"}" aria-hidden="true">
@@ -1751,6 +1780,52 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-items: center;
       }
 
+      .brand-inline-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .brand-inline-symbol {
+        width: ${isLandscape ? "42px" : "44px"};
+        height: auto;
+        flex: 0 0 auto;
+        color: var(--accent);
+      }
+
+      .brand-inline-symbol path {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .brand-inline-symbol circle {
+        fill: currentColor;
+      }
+
+      .brand-inline-wordmark {
+        display: inline-flex;
+        align-items: baseline;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        font-size: ${isLandscape ? "18px" : "19px"};
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .brand-inline-wordmark-primary {
+        color: var(--ink);
+        font-weight: 800;
+      }
+
+      .brand-inline-wordmark-org {
+        color: var(--muted);
+        font-weight: 700;
+      }
+
       .brand-logo {
         display: block;
         width: min(100%, 190px);
@@ -1800,7 +1875,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-items: flex-start;
         min-width: 0;
         flex: 1 1 auto;
-        max-width: ${isLandscape ? "208px" : "184px"};
+        max-width: ${isLandscape ? "248px" : "236px"};
       }
 
       .hero-heading {
