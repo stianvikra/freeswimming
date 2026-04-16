@@ -1553,16 +1553,43 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
   const swimmerNameHtml = model.swimmerName
     ? `<p class="swimmer-pill">Swimmer: ${escapeHtml(model.swimmerName)}</p>`
     : "";
-  const bodyClass =
-    hasFocusPoints && isLandscape ? "body body-landscape" : "body body-single-column";
-  const metaHtml = hasFocusPoints ? `<aside class="poolside-meta">${focusPointsHtml}</aside>` : "";
-  const stepsHtml = `
-          <section class="poolside-steps">
-            <ol class="poolside-line-list">
-              ${model.poolsideLineItems.map(renderWorkoutPoolsideLineHtml).join("")}
-            </ol>
-          </section>
-        `;
+  const landscapeLineSplit =
+    hasFocusPoints && isLandscape
+      ? splitWorkoutPoolsideLandscapeLineItems(model.poolsideLineItems, model.focusPoints)
+      : null;
+  const stepsHtml = renderWorkoutPoolsideLineListHtml(
+    landscapeLineSplit ? landscapeLineSplit.primaryItems : model.poolsideLineItems,
+    landscapeLineSplit ? "poolside-steps poolside-steps-primary" : "poolside-steps"
+  );
+  const sideRailHtml =
+    landscapeLineSplit && hasFocusPoints
+      ? `
+          <aside class="poolside-side-rail">
+            ${focusPointsHtml}
+            ${
+              landscapeLineSplit.overflowItems.length > 0
+                ? renderWorkoutPoolsideLineListHtml(
+                    landscapeLineSplit.overflowItems,
+                    "poolside-steps poolside-steps-overflow"
+                  )
+                : ""
+            }
+          </aside>
+        `
+      : "";
+  const bodyHtml = landscapeLineSplit
+    ? `
+        <div class="body body-landscape-balanced">
+          ${stepsHtml}
+          ${sideRailHtml}
+        </div>
+      `
+    : `
+        <div class="body body-single-column">
+          ${stepsHtml}
+          ${hasFocusPoints ? `<div class="poolside-meta">${focusPointsHtml}</div>` : ""}
+        </div>
+      `;
   const heroHtml = isLandscape
     ? `
         <div class="hero-landscape-main">
@@ -1698,21 +1725,21 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .shell {
-        padding: 14px 12px 20px;
+        padding: 8px 8px 12px;
       }
 
       .page {
-        width: min(100%, ${isLandscape ? "244mm" : "112mm"});
+        width: min(100%, ${isLandscape ? "240mm" : "144mm"});
         margin: 0 auto;
         border: 1px solid rgba(16, 33, 60, 0.08);
-        border-radius: 20px;
+        border-radius: 18px;
         background: var(--surface);
         box-shadow: 0 20px 48px rgba(16, 33, 60, 0.14);
         overflow: hidden;
       }
 
       .hero {
-        padding: 14px 16px 12px;
+        padding: 10px 12px 9px;
         background: ${
           isInkSaver ? "#ffffff" : "linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%)"
         };
@@ -1745,7 +1772,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       h1 {
         margin: 0;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 800;
         letter-spacing: 0;
         line-height: 1.04;
@@ -1753,19 +1780,19 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .hero-portrait {
         display: grid;
-        gap: 12px;
+        gap: 9px;
       }
 
       .hero-landscape {
         display: grid;
-        gap: 10px;
+        gap: 8px;
       }
 
       .hero-top-row {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
       }
 
       .hero-brand-lockup {
@@ -1773,12 +1800,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-items: flex-start;
         min-width: 0;
         flex: 1 1 auto;
-        max-width: ${isLandscape ? "220px" : "190px"};
+        max-width: ${isLandscape ? "208px" : "184px"};
       }
 
       .hero-heading {
         display: grid;
-        gap: 8px;
+        gap: 6px;
       }
 
       .hero-heading-portrait {
@@ -1793,20 +1820,20 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: flex;
         align-items: flex-end;
         justify-content: space-between;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
       }
 
       .hero-landscape-main {
         display: grid;
-        grid-template-columns: minmax(0, 1.55fr) minmax(160px, 0.45fr);
-        gap: 14px;
+        grid-template-columns: minmax(0, 1.58fr) minmax(160px, 0.52fr);
+        gap: 10px;
         align-items: end;
       }
 
       .hero-landscape-left {
         display: grid;
-        gap: 12px;
+        gap: 8px;
         min-width: 0;
       }
 
@@ -1814,7 +1841,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: grid;
         justify-items: end;
         align-content: space-between;
-        gap: 10px;
+        gap: 8px;
         min-width: 0;
       }
 
@@ -1847,16 +1874,16 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       .hero-total-pill {
         display: inline-flex;
         align-items: baseline;
-        gap: 10px;
-        border-radius: 10px;
+        gap: 8px;
+        border-radius: 8px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
-        padding: 7px 10px;
+        padding: 6px 8px;
         min-width: fit-content;
       }
 
       .hero-total-label {
-        font-size: 9px;
+        font-size: 8.5px;
         font-weight: 800;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -1864,7 +1891,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .hero-total-value {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 800;
         letter-spacing: 0;
         color: var(--ink);
@@ -1875,8 +1902,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         border-radius: 999px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
-        padding: 6px 10px;
-        font-size: 9px;
+        padding: 5px 9px;
+        font-size: 9.5px;
         font-weight: 700;
         color: var(--ink);
         white-space: nowrap;
@@ -1884,45 +1911,40 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .body {
         display: grid;
-        gap: 10px;
-        padding: 12px;
+        gap: 8px;
+        padding: 8px;
       }
 
       .body-single-column {
         grid-template-columns: 1fr;
       }
 
-      .body-landscape {
+      .body-landscape-balanced {
         align-items: start;
-        grid-template-columns: minmax(0, 1.32fr) minmax(0, 0.68fr);
-        gap: 12px;
+        grid-template-columns: minmax(0, 1.16fr) minmax(0, 0.84fr);
+        gap: 8px;
       }
 
       .poolside-meta,
+      .poolside-side-rail,
       .poolside-steps {
         min-width: 0;
         display: grid;
-        gap: 10px;
+        gap: 8px;
         align-content: start;
-      }
-
-      .body-landscape .poolside-steps {
-        order: 1;
-      }
-
-      .body-landscape .poolside-meta {
-        order: 2;
       }
 
       .callout,
       .review-note {
-        border-radius: 14px;
-        padding: 12px 14px;
+        border-radius: 12px;
+        padding: 8px 10px;
       }
 
       .callout {
         border: 1px solid var(--line);
         background: var(--surface-soft);
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
 
       .review-note {
@@ -1940,12 +1962,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .focus-list {
-        margin: 6px 0 0;
-        padding-left: 18px;
+        margin: 4px 0 0;
+        padding-left: 16px;
         display: grid;
-        gap: 4px;
-        font-size: 12.5px;
-        line-height: 1.45;
+        gap: 3px;
+        font-size: 11.75px;
+        line-height: 1.35;
       }
 
       .section-title {
@@ -1990,14 +2012,18 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         margin: 0;
         padding: 0;
         border: 1px solid rgba(16, 33, 60, 0.08);
-        border-radius: 16px;
+        border-radius: 14px;
         background: rgba(255, 255, 255, 0.88);
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
 
       .poolside-line {
         display: block;
-        padding: 11px 12px;
+        padding: 8px 10px;
         border-top: 1px solid rgba(16, 33, 60, 0.08);
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
 
       .poolside-line:first-child {
@@ -2008,33 +2034,33 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: flex;
         flex-wrap: wrap;
         align-items: baseline;
-        gap: 4px 10px;
+        gap: 4px 8px;
       }
 
       .poolside-line-primary {
-        font-size: 14px;
-        line-height: 1.4;
+        font-size: 13.25px;
+        line-height: 1.32;
         font-weight: 600;
         color: var(--ink);
       }
 
       .poolside-line-secondary {
-        flex: 1 1 220px;
+        flex: 1 1 160px;
         max-width: 100%;
         color: var(--accent-strong);
       }
 
       .poolside-line-secondary-text {
         display: block;
-        font-size: 12.5px;
-        line-height: 1.4;
+        font-size: 11.5px;
+        line-height: 1.32;
         font-weight: 700;
       }
 
       .poolside-line-recovery {
         background: var(--accent-soft);
-        padding-top: 9px;
-        padding-bottom: 9px;
+        padding-top: 7px;
+        padding-bottom: 7px;
       }
 
       .poolside-line-recovery .poolside-line-primary {
@@ -2062,17 +2088,17 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         }
 
         .page {
-          width: ${isLandscape ? "100%" : "104mm"};
-          max-width: ${isLandscape ? "100%" : "104mm"};
-          min-width: ${isLandscape ? "100%" : "104mm"};
-          border-radius: 20px;
+          width: ${isLandscape ? "100%" : "140mm"};
+          max-width: 100%;
+          min-width: 0;
+          border-radius: 16px;
           box-shadow: none;
         }
       }
 
       @page {
-        size: A4 ${isLandscape ? "landscape" : "portrait"};
-        margin: 12mm;
+        size: A4;
+        margin: 8mm;
       }
 
       @media (max-width: 900px) {
@@ -2129,10 +2155,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         <header class="hero ${isLandscape ? "hero-landscape" : "hero-portrait"}">
           ${heroHtml}
         </header>
-        <div class="${bodyClass}">
-          ${stepsHtml}
-          ${metaHtml}
-        </div>
+        ${bodyHtml}
       </article>
     </main>
   </body>
@@ -2885,6 +2908,72 @@ function renderWorkoutPoolsideLineHtml(line: WorkoutPoolsideLineItem) {
       </span>
     </li>
   `;
+}
+
+function renderWorkoutPoolsideLineListHtml(
+  items: WorkoutPoolsideLineItem[],
+  className = "poolside-steps"
+) {
+  if (items.length === 0) {
+    return "";
+  }
+
+  return `
+    <section class="${className}">
+      <ol class="poolside-line-list">
+        ${items.map(renderWorkoutPoolsideLineHtml).join("")}
+      </ol>
+    </section>
+  `;
+}
+
+function estimatePoolsideWrappedLineCount(text: string, charactersPerLine: number) {
+  if (text.trim().length === 0) {
+    return 0;
+  }
+
+  return Math.max(1, Math.ceil(text.length / charactersPerLine));
+}
+
+function estimateWorkoutPoolsideFocusRows(points: string[]) {
+  return points.reduce((rows, point) => rows + estimatePoolsideWrappedLineCount(point, 38), 0);
+}
+
+function estimateWorkoutPoolsideLineRows(line: WorkoutPoolsideLineItem) {
+  return (
+    estimatePoolsideWrappedLineCount(line.text, 34) +
+    estimatePoolsideWrappedLineCount(line.secondaryText ?? "", 28)
+  );
+}
+
+function splitWorkoutPoolsideLandscapeLineItems(
+  items: WorkoutPoolsideLineItem[],
+  focusPoints: string[]
+) {
+  if (items.length <= 2 || focusPoints.length === 0) {
+    return { primaryItems: items, overflowItems: [] as WorkoutPoolsideLineItem[] };
+  }
+
+  const minimumPrimaryItemCount = Math.min(2, items.length - 1);
+  const targetRows = Math.max(2, estimateWorkoutPoolsideFocusRows(focusPoints));
+  let accumulatedRows = 0;
+  let splitIndex = minimumPrimaryItemCount;
+
+  for (let index = 0; index < items.length - 1; index += 1) {
+    accumulatedRows += estimateWorkoutPoolsideLineRows(items[index]!);
+    splitIndex = Math.max(minimumPrimaryItemCount, index + 1);
+
+    if (accumulatedRows >= targetRows) {
+      break;
+    }
+  }
+
+  splitIndex = Math.min(items.length - 1, splitIndex);
+
+  return {
+    primaryItems: items.slice(0, splitIndex),
+    overflowItems: items.slice(splitIndex),
+  };
 }
 
 function formatWorkoutPoolsideLineItemText(item: WorkoutPoolsideLineItem) {

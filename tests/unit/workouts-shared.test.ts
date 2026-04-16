@@ -1033,6 +1033,13 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain("~10 min");
     expect(html).toContain("400m · Freestyle · Easy");
     expect(html).not.toContain("P:");
+    expect(html).toContain("size: A4;");
+    expect(html).not.toContain("size: A4 portrait");
+    expect(html).not.toContain("size: A4 landscape");
+    expect(html).toContain("width: min(100%, 144mm)");
+    expect(html).toContain("margin: 8mm;");
+    expect(html).not.toContain("width: min(100%, 112mm)");
+    expect(html).not.toContain("margin: 12mm;");
   });
 
   it("uses a dedicated landscape header composition without the old summary pill", () => {
@@ -1056,6 +1063,112 @@ describe("workouts shared readiness", () => {
     expect(html).toContain('data-poolside-print-layout="landscape"');
     expect(html).toContain('hero-total-value">400m<');
     expect(html).not.toContain("~10 min");
+  });
+
+  it("balances landscape focus by continuing later workout lines below the focus rail", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      totalDistanceM: 700,
+      steps: [
+        {
+          id: "step-1",
+          category: "warmup",
+          name: "Warmup swim",
+          stroke: "freestyle",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 400,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Warmup rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-3",
+          category: "main",
+          name: "Repeat swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-4",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-5",
+          category: "cooldown",
+          name: "Cooldown swim",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 200,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-6",
+          category: "rest",
+          name: "Cooldown rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+        },
+      ],
+    };
+
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsidePrintLayout: "landscape",
+      poolsidePrintStyle: "ink_saver",
+      focusPoints: ["High elbow catch", "Calm exhale before the breath starts"],
+    });
+
+    expect(html).toContain("body-landscape-balanced");
+    expect(html).toContain("poolside-steps-primary");
+    expect(html).toContain("poolside-side-rail");
+    expect(html).toContain("poolside-steps-overflow");
+    expect(html.indexOf('<section class="poolside-steps poolside-steps-primary">')).toBeLessThan(
+      html.indexOf('<aside class="poolside-side-rail">')
+    );
+    expect(html.indexOf("workout-pdf-focus-points")).toBeLessThan(
+      html.indexOf('<section class="poolside-steps poolside-steps-overflow">')
+    );
   });
 
   it("deduplicates effort labels and inlines ordinary recovery for poolside lines", () => {

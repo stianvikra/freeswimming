@@ -71,20 +71,17 @@ function buildDraft(overrides?: Partial<SessionDraft>): SessionDraft {
   };
 }
 
-async function readBlobText(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error ?? new Error("Failed to read blob text."));
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-        return;
-      }
-
-      resolve(new TextDecoder().decode(reader.result ?? undefined));
-    };
-    reader.readAsText(blob);
-  });
+function buildMockPrintWindow(writtenDocuments: string[]) {
+  return {
+    document: {
+      open: vi.fn(),
+      write: vi.fn((html: string) => {
+        writtenDocuments.push(html);
+      }),
+      close: vi.fn(),
+    },
+    focus: vi.fn(),
+  };
 }
 
 function buildWorkoutSummary(overrides?: Partial<WorkoutSummary>): WorkoutSummary {
@@ -1380,16 +1377,14 @@ describe("WorkoutBuilderHub", () => {
   });
 
   it("opens truthful PDF and poolside note views for the current draft state", async () => {
-    const printWindow = {
-      focus: vi.fn(),
-    };
-
-    const createObjectUrlSpy = vi
-      .spyOn(URL, "createObjectURL")
-      .mockReturnValueOnce("blob:http://127.0.0.1/mock-workout-pdf")
-      .mockReturnValueOnce("blob:http://127.0.0.1/mock-poolside-pdf");
-    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(printWindow as unknown as Window);
+    const writtenDocuments: string[] = [];
+    const pdfWindow = buildMockPrintWindow(writtenDocuments);
+    const poolsideWindow = buildMockPrintWindow(writtenDocuments);
+    const createObjectUrlSpy = vi.spyOn(URL, "createObjectURL");
+    const openSpy = vi
+      .spyOn(window, "open")
+      .mockReturnValueOnce(pdfWindow as unknown as Window)
+      .mockReturnValueOnce(poolsideWindow as unknown as Window);
 
     render(
       <WorkoutBuilderHub
@@ -1424,12 +1419,10 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
 
     await waitFor(() => {
-      expect(openSpy).toHaveBeenCalledWith("blob:http://127.0.0.1/mock-workout-pdf", "_blank");
+      expect(openSpy).toHaveBeenCalledWith("", "_blank");
     });
 
-    const pdfHtmlBlob = createObjectUrlSpy.mock.calls[0]?.[0];
-    expect(pdfHtmlBlob).toBeInstanceOf(Blob);
-    const pdfHtml = await readBlobText(pdfHtmlBlob as Blob);
+    const pdfHtml = writtenDocuments[0] ?? "";
 
     expect(pdfHtml).toContain("Local PDF workout");
     expect(pdfHtml).toContain("Workout PDF");
@@ -1439,7 +1432,10 @@ describe("WorkoutBuilderHub", () => {
     expect(pdfHtml).toContain(
       "<title>freeswimming-local-pdf-workout-draft.pdf - FreeSwimming</title>"
     );
-    expect(printWindow.focus).toHaveBeenCalledTimes(1);
+    expect(pdfWindow.document.open).toHaveBeenCalledTimes(1);
+    expect(pdfWindow.document.close).toHaveBeenCalledTimes(1);
+    expect(pdfWindow.focus).toHaveBeenCalledTimes(1);
+    expect(createObjectUrlSpy).not.toHaveBeenCalled();
     expect(screen.getByTestId("workout-editor-pdf-notice")).toHaveTextContent(
       `Opened PDF for ${buildWorkoutPdfFileName(
         {
@@ -1456,12 +1452,10 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("workout-editor-poolside-pdf-open"));
 
     await waitFor(() => {
-      expect(openSpy).toHaveBeenCalledWith("blob:http://127.0.0.1/mock-poolside-pdf", "_blank");
+      expect(openSpy).toHaveBeenCalledTimes(2);
     });
 
-    const poolsideHtmlBlob = createObjectUrlSpy.mock.calls[1]?.[0];
-    expect(poolsideHtmlBlob).toBeInstanceOf(Blob);
-    const poolsideHtml = await readBlobText(poolsideHtmlBlob as Blob);
+    const poolsideHtml = writtenDocuments[1] ?? "";
 
     expect(poolsideHtml).toContain('data-pdf-variant="poolside"');
     expect(poolsideHtml).toContain('data-poolside-print-style="ink_saver"');
@@ -1490,9 +1484,14 @@ describe("WorkoutBuilderHub", () => {
     expect(poolsideHtml).toContain(
       "<title>freeswimming-local-pdf-workout-poolside-note-draft.pdf - FreeSwimming</title>"
     );
-    expect(poolsideHtml.indexOf('<section class="poolside-steps">')).toBeLessThan(
-      poolsideHtml.indexOf('<aside class="poolside-meta">')
-    );
+    expect(
+      poolsideHtml.indexOf('<section class="poolside-steps poolside-steps-primary">')
+    ).toBeLessThan(poolsideHtml.indexOf('<aside class="poolside-side-rail">'));
+    expect(poolsideHtml).toContain("size: A4;");
+    expect(poolsideHtml).not.toContain("size: A4 landscape");
+    expect(poolsideWindow.document.open).toHaveBeenCalledTimes(1);
+    expect(poolsideWindow.document.close).toHaveBeenCalledTimes(1);
+    expect(poolsideWindow.focus).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Keeps the blue surfaces")).toBeVisible();
     expect(screen.getByText("Uses white surfaces.")).toBeVisible();
     expect(screen.getByText("Print options")).toBeVisible();
@@ -2553,12 +2552,8 @@ describe("WorkoutBuilderHub", () => {
   });
 
   it("auto-dismisses workout pdf notices after a short delay", async () => {
-    const printWindow = {
-      focus: vi.fn(),
-    };
+    const printWindow = buildMockPrintWindow([]);
 
-    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:http://127.0.0.1/mock-preview");
-    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
     vi.spyOn(window, "open").mockReturnValue(printWindow as unknown as Window);
 
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
