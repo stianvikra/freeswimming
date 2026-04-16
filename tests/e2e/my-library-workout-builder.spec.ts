@@ -377,7 +377,7 @@ test.describe("my library workout builder", () => {
     expect(collapsedStepToggleBox!.y).toBeLessThan(
       collapsedStepSummaryBox!.y + collapsedStepSummaryBox!.height
     );
-    await page.getByTestId("session-draft-step-toggle-0").click();
+    await page.getByTestId("session-draft-step-summary-0").click();
     await expect(page.getByTestId("session-draft-step-desktop-actions-0")).toHaveAttribute(
       "data-desktop-layout",
       "bottom"
@@ -537,6 +537,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("workout-editor-pool-length-unit-yd").click();
     await expect(page.getByLabel("Exact pool size (yd)")).toHaveValue("25");
     await page.getByTestId("session-draft-step-distance-0").selectOption("custom");
+    await expect(page.getByTestId("session-draft-step-distance-custom-0")).toBeFocused();
     await page.getByTestId("session-draft-step-distance-custom-0").fill("333");
     await openRepeatGroupIfCollapsed(page, 2);
     await expect(page.getByTestId("session-draft-repeat-desktop-actions-2")).toHaveAttribute(

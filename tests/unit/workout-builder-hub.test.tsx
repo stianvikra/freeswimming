@@ -172,6 +172,33 @@ function openSupportToolsPanel() {
   }
 }
 
+function stubMatchMedia(matches: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockImplementation(() => ({
+      matches,
+      media: "(hover: hover) and (pointer: fine)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
+  );
+}
+
+function getDesktopSummaryCard(testId: string) {
+  const summary = screen.getByTestId(testId);
+  const card = summary.closest("article, section");
+
+  if (!card) {
+    throw new Error(`No desktop summary card found for ${testId}.`);
+  }
+
+  return card as HTMLElement;
+}
+
 describe("WorkoutBuilderHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -771,6 +798,10 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.queryByText("Separate canonical rest after the set, outside the repeat block itself.")
     ).not.toBeInTheDocument();
+    expect(screen.getAllByText("REST BETWEEN REPEATS").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("REST AFTER SET").length).toBeGreaterThan(0);
+    expect(screen.queryByText("MAIN INTERVAL REST")).not.toBeInTheDocument();
+    expect(screen.queryByText("MAIN SET REST")).not.toBeInTheDocument();
 
     const previewDraft = readPreviewDraft();
     const repeatSteps = previewDraft.steps.filter((step) => step.repeatGroupId);
@@ -1828,6 +1859,11 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.change(screen.getByTestId("session-draft-step-distance-0"), {
       target: { value: "custom" },
     });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-draft-step-distance-custom-0")).toHaveFocus();
+    });
+
     fireEvent.change(screen.getByTestId("session-draft-step-distance-custom-0"), {
       target: { value: "333" },
     });
@@ -1844,6 +1880,126 @@ describe("WorkoutBuilderHub", () => {
       "333yd · Freestyle · Easy"
     );
     expect(screen.getByTestId("session-draft-step-summary-0")).not.toHaveTextContent("304.5m");
+  });
+
+  it("shows custom distance only when selected and hides it again when a preset is restored", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+
+    expect(screen.queryByTestId("session-draft-step-distance-custom-0")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("session-draft-step-distance-0"), {
+      target: { value: "custom" },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-draft-step-distance-custom-0")).toHaveFocus();
+    });
+
+    fireEvent.change(screen.getByTestId("session-draft-step-distance-0"), {
+      target: { value: "200" },
+    });
+
+    expect(screen.queryByTestId("session-draft-step-distance-custom-0")).not.toBeInTheDocument();
+  });
+
+  it("opens desktop step and repeat cards from the card body on fine-pointer layouts", async () => {
+    stubMatchMedia(true);
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    await waitFor(() => {
+      expect(getDesktopSummaryCard("session-draft-step-summary-0")).toHaveAttribute(
+        "data-desktop-card-clickable",
+        "true"
+      );
+    });
+
+    fireEvent.click(getDesktopSummaryCard("session-draft-step-summary-0"));
+    expect(screen.getByLabelText("Step Type")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    fireEvent.click(screen.getByTestId("session-draft-repeat-toggle-1"));
+
+    await waitFor(() => {
+      expect(getDesktopSummaryCard("session-draft-repeat-summary-1")).toHaveAttribute(
+        "data-desktop-card-clickable",
+        "true"
+      );
+    });
+
+    fireEvent.click(getDesktopSummaryCard("session-draft-repeat-summary-1"));
+
+    expect(screen.getByLabelText("Repeat count")).toBeVisible();
+
+    fireEvent.click(getDesktopSummaryCard("session-draft-step-summary-1"));
+    expect(screen.getByTestId("session-draft-step-duration-mode-1")).toBeVisible();
+  });
+
+  it("keeps desktop full-card edit disabled on coarse-pointer layouts", async () => {
+    stubMatchMedia(false);
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    await waitFor(() => {
+      expect(getDesktopSummaryCard("session-draft-step-summary-0")).toHaveAttribute(
+        "data-desktop-card-clickable",
+        "false"
+      );
+    });
+
+    fireEvent.click(getDesktopSummaryCard("session-draft-step-summary-0"));
+    expect(screen.queryByLabelText("Step Type")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    expect(screen.getByLabelText("Step Type")).toBeVisible();
   });
 
   it("shows clearer kick and drill taxonomy guidance inside the step form", async () => {

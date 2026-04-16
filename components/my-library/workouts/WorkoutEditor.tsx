@@ -199,9 +199,16 @@ type SupportSectionKey = "readiness" | "garminExport" | "handoff";
 
 const CUSTOM_DISTANCE_VALUE = "custom";
 const EMPTY_WORKOUT_POOLSIDE_FOCUS_OPTIONS: WorkoutPoolsideFocusOption[] = [];
+const DESKTOP_CARD_EDIT_MEDIA_QUERY = "(hover: hover) and (pointer: fine)";
+const CARD_EDIT_IGNORE_SELECTOR =
+  "button, a, input, select, textarea, summary, [role='button'], [role='link'], [data-card-edit-ignore='true']";
 
 function getPoolBuilderAutoTitle(environment: SessionGeneratorEnvironment | null | undefined) {
   return environment === "pool" ? "Untitled pool session" : null;
+}
+
+function shouldIgnoreCardEditClick(target: EventTarget | null) {
+  return target instanceof Element && Boolean(target.closest(CARD_EDIT_IGNORE_SELECTOR));
 }
 
 function syncAutoGrowingTextareaHeight(node: HTMLTextAreaElement, minRows: number) {
@@ -1152,11 +1159,16 @@ function getManualPoolTopLevelCategory(group: StepRenderGroup) {
   return normalizeManualPoolStepForEditor(group.entries[0].step).category;
 }
 
-function buildLinkedRestLabel(parentLabel: string, restKind: "rest" | "interval" | "set") {
-  const suffix =
-    restKind === "interval" ? "Interval Rest" : restKind === "set" ? "Set Rest" : "Rest";
+function buildLinkedRestLabel(_parentLabel: string, restKind: "rest" | "interval" | "set") {
+  if (restKind === "interval") {
+    return "REST BETWEEN REPEATS";
+  }
 
-  return /\d of \d/.test(parentLabel) ? `${parentLabel} - ${suffix}` : `${parentLabel} ${suffix}`;
+  if (restKind === "set") {
+    return "REST AFTER SET";
+  }
+
+  return "REST";
 }
 
 function findTopLevelLinkedRestStep(
@@ -1635,6 +1647,20 @@ export default function WorkoutEditor({
     handoff: false,
   });
   const [supportToolsOpen, setSupportToolsOpen] = useState(() => copyVariant !== "default");
+  const [pendingCustomDistanceFocusStepId, setPendingCustomDistanceFocusStepId] = useState<
+    string | null
+  >(null);
+  const [desktopCardEditEnabled, setDesktopCardEditEnabled] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    if (typeof window.matchMedia !== "function") {
+      return true;
+    }
+
+    return window.matchMedia(DESKTOP_CARD_EDIT_MEDIA_QUERY).matches;
+  });
   const savedWorkoutId = savedWorkout?.id ?? null;
   const isManualSourceDraft = draft.sourceFingerprint.startsWith("manual-");
   const simplifyManualMetadata = showCalmBuilderLayout && isManualSourceDraft;
@@ -1643,6 +1669,7 @@ export default function WorkoutEditor({
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions).join("|");
   const metadataStartsCollapsed =
     showCalmBuilderLayout && savedWorkoutId !== null && !forceMetadataOpenOnLoad;
+  const customDistanceInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const editorCopy =
     copyVariant === "generator"
       ? {
@@ -1886,6 +1913,57 @@ export default function WorkoutEditor({
       setOpenStepId(parentBlock.entry.step.id);
     }
   }, [isManualPoolMode, manualPoolEditBlocks, openStepId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (typeof window.matchMedia !== "function") {
+      setDesktopCardEditEnabled(true);
+      return;
+    }
+
+    const mediaQueryList = window.matchMedia(DESKTOP_CARD_EDIT_MEDIA_QUERY);
+    const syncDesktopCardEdit = () => {
+      setDesktopCardEditEnabled(mediaQueryList.matches);
+    };
+
+    syncDesktopCardEdit();
+
+    if (typeof mediaQueryList.addEventListener === "function") {
+      mediaQueryList.addEventListener("change", syncDesktopCardEdit);
+      return () => {
+        mediaQueryList.removeEventListener("change", syncDesktopCardEdit);
+      };
+    }
+
+    mediaQueryList.addListener(syncDesktopCardEdit);
+    return () => {
+      mediaQueryList.removeListener(syncDesktopCardEdit);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pendingCustomDistanceFocusStepId) {
+      return;
+    }
+
+    if (!draft.steps.some((step) => step.id === pendingCustomDistanceFocusStepId)) {
+      setPendingCustomDistanceFocusStepId(null);
+      return;
+    }
+
+    const targetInput = customDistanceInputRefs.current[pendingCustomDistanceFocusStepId];
+
+    if (!targetInput) {
+      return;
+    }
+
+    targetInput.focus();
+    targetInput.select();
+    setPendingCustomDistanceFocusStepId(null);
+  }, [draft.steps, openStepId, pendingCustomDistanceFocusStepId]);
 
   useEffect(() => {
     if (
@@ -2873,6 +2951,8 @@ export default function WorkoutEditor({
   ) {
     const editorUnit = unitOverride ?? poolLengthUnit;
 
+    setPendingCustomDistanceFocusStepId(value === CUSTOM_DISTANCE_VALUE ? stepId : null);
+
     updateDraftStep(stepId, (current) => ({
       ...current,
       distanceM:
@@ -3252,9 +3332,7 @@ export default function WorkoutEditor({
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                Rest after step
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Rest</p>
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {linkedTopLevelRestStep
                   ? buildManualPoolDisplaySummary(
@@ -3387,11 +3465,31 @@ export default function WorkoutEditor({
           ) : null}
         </div>
       ) : null;
+    const canUseDesktopCardOpen = desktopCardEditEnabled && !isViewMode && !isOpen;
+    const openStepCard = () => {
+      setOpenMobileActionKey(null);
+      setOpenStepId(step.id);
+      if (insideRepeatGroup && normalizedStep.repeatGroupId) {
+        setOpenRepeatGroupId(normalizedStep.repeatGroupId);
+      }
+    };
 
     return (
       <article
         key={step.id}
         data-mobile-actions="progressive"
+        data-desktop-card-clickable={canUseDesktopCardOpen ? "true" : "false"}
+        onClick={
+          canUseDesktopCardOpen
+            ? (event) => {
+                if (shouldIgnoreCardEditClick(event.target)) {
+                  return;
+                }
+
+                openStepCard();
+              }
+            : undefined
+        }
         className={`rounded-2xl border p-3 transition sm:p-4 ${
           isOpen
             ? isRestStepCard
@@ -3402,6 +3500,10 @@ export default function WorkoutEditor({
               : insideRepeatGroup
                 ? "border-blue-200 bg-white"
                 : "border-slate-200 bg-slate-50/70"
+        } ${
+          canUseDesktopCardOpen
+            ? "cursor-pointer hover:border-blue-200 hover:bg-white hover:shadow-sm"
+            : ""
         }`}
       >
         <div className={desktopHeaderStackClass}>
@@ -3798,7 +3900,7 @@ export default function WorkoutEditor({
             </label>
 
             {step.durationMode === "distance" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-2">
                 <label className="text-sm text-slate-700">
                   Distance
                   <select
@@ -3827,6 +3929,9 @@ export default function WorkoutEditor({
                   <label className="text-sm text-slate-700">
                     {`Custom distance (${stepDistanceUnit})`}
                     <input
+                      ref={(node) => {
+                        customDistanceInputRefs.current[step.id] = node;
+                      }}
                       type="text"
                       inputMode="decimal"
                       value={formatEditableDistance(step.distanceM, stepDistanceUnit)}
@@ -3840,13 +3945,7 @@ export default function WorkoutEditor({
                       className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                     />
                   </label>
-                ) : (
-                  <div className="self-end text-sm text-slate-500">
-                    {typeof step.distanceM === "number"
-                      ? formatDistanceMetersLabel(step.distanceM, stepDistanceUnit)
-                      : null}
-                  </div>
-                )}
+                ) : null}
               </div>
             ) : step.durationMode === "fixed_rest" && isManualPoolMode ? (
               <label className="text-sm text-slate-700">
@@ -5509,7 +5608,35 @@ export default function WorkoutEditor({
                     key={group.repeatGroupId}
                     data-testid={`workout-editor-repeat-group-${groupIndex}`}
                     data-containment-style="calm"
-                    className="rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-3 ring-1 ring-inset ring-blue-100 sm:p-4"
+                    data-desktop-card-clickable={
+                      desktopCardEditEnabled &&
+                      !isViewMode &&
+                      openRepeatGroupId !== group.repeatGroupId
+                        ? "true"
+                        : "false"
+                    }
+                    onClick={
+                      desktopCardEditEnabled &&
+                      !isViewMode &&
+                      openRepeatGroupId !== group.repeatGroupId
+                        ? (event) => {
+                            if (shouldIgnoreCardEditClick(event.target)) {
+                              return;
+                            }
+
+                            setOpenMobileActionKey(null);
+                            setOpenStepId(null);
+                            setOpenRepeatGroupId(group.repeatGroupId);
+                          }
+                        : undefined
+                    }
+                    className={`rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-3 ring-1 ring-inset ring-blue-100 sm:p-4 ${
+                      desktopCardEditEnabled &&
+                      !isViewMode &&
+                      openRepeatGroupId !== group.repeatGroupId
+                        ? "cursor-pointer hover:shadow-sm"
+                        : ""
+                    }`}
                   >
                     {(() => {
                       const repeatSummary = buildRepeatSummary(
