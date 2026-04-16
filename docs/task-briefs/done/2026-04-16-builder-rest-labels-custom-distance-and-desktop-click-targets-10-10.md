@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-16-builder-rest-labels-custom-distance-and-desktop-click-targets-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-16`
 - `updated`: `2026-04-16`
@@ -211,3 +211,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-16 | planning | created the brief for the agreed builder cleanup slice: generic nested rest labels, conditional custom-distance input with autofocus, removal of redundant preset text, and desktop-only full-card edit affordances | next: implement the UI changes, update tests, and run targeted validation before full repo gates`
 - `2026-04-16 | validation | implemented the agreed builder cleanup slice: nested repeat rests now use generic contextual labels, fixed distance presets no longer show duplicate passive text, custom-distance input is conditional with autofocus, and fine-pointer desktop cards open edit from the full card body while coarse-pointer/mobile stays button-driven | validation: npm run lint:briefs:all; npx vitest run tests/unit/workout-builder-hub.test.tsx tests/unit/workouts-shared.test.ts; env NEXT_DIST_DIR=.next-playwright-builder-rest-labels npx playwright test tests/e2e/my-library-workout-builder.spec.ts; npm run verify:pre-pr | next: commit, push, open PR, monitor CI, and merge once pre-merge gate + required checks are green`
+- `2026-04-16 | done | merged via PR #444 as squash commit e3eabd1; local npm run verify:pre-merge passed on 5198970 with marker artifacts/verify-pre-merge/20260416-083803.json, required GitHub checks were green, and the brief was moved from in-progress to done in a docs-only closeout | next: none`
