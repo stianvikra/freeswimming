@@ -30,24 +30,24 @@ export default async function HomePage() {
     <SiteChrome>
       <PageTemplate showBack={false} withBottomSafeArea={false} topInset="tight">
         <div className="space-y-5 sm:space-y-6">
-          <section className="flex flex-col items-center space-y-4 text-center sm:items-start sm:space-y-5 sm:text-left">
+          <section className="flex flex-col items-center space-y-4 text-center sm:space-y-5">
             <BrandImage
               asset={BRAND_USAGE.methodLockup}
               priority
-              className="mx-auto h-9 w-auto sm:mx-0 sm:h-11"
+              className="mx-auto h-9 w-auto sm:h-11"
               sizes="(max-width: 640px) 260px, 340px"
             />
 
-            <div className="mx-auto max-w-[34rem] sm:mx-0">
+            <div className="mx-auto max-w-[34rem]">
               <p className="text-[15px] font-medium leading-6 text-slate-700 sm:text-[16px]">
                 Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
               </p>
 
-              <h1 className="mx-auto mt-2 max-w-[13ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mx-0 sm:mt-2.5 sm:text-[40px]">
+              <h1 className="mx-auto mt-2 max-w-[13ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mt-2.5 sm:text-[40px]">
                 Adult learner?
               </h1>
 
-              <p className="mx-auto mt-2 max-w-[34ch] text-[15px] leading-6 text-slate-700 sm:mx-0 sm:max-w-[32ch] sm:text-[17px] sm:leading-7">
+              <p className="mx-auto mt-2 max-w-[34ch] text-[15px] leading-6 text-slate-700 sm:max-w-[32ch] sm:text-[17px] sm:leading-7">
                 You&apos;re exactly where you should be.
               </p>
             </div>
