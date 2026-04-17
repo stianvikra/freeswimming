@@ -57,10 +57,10 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
   const notifyHref = "/contact?source=preview_access_notify";
 
   return (
-    <section className="min-h-screen bg-[radial-gradient(960px_420px_at_50%_0%,rgba(94,146,255,0.20),rgba(255,255,255,0)_68%),linear-gradient(180deg,#edf4ff_0%,#ffffff_100%)]">
-      <div className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 py-16">
+    <section className="min-h-svh bg-[radial-gradient(960px_420px_at_50%_0%,rgba(94,146,255,0.20),rgba(255,255,255,0)_68%),linear-gradient(180deg,#edf4ff_0%,#ffffff_100%)] sm:min-h-screen">
+      <div className="mx-auto flex min-h-svh w-full max-w-[760px] items-start px-5 py-10 sm:min-h-screen sm:items-center sm:px-6 sm:py-16">
         <div className="w-full">
-          <div className="text-center sm:text-left">
+          <div className="text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">
               Private preview
             </p>
@@ -68,16 +68,16 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
             <BrandImage
               asset={BRAND_USAGE.heroLockup}
               priority
-              className="mx-auto mt-4 h-9 w-auto sm:mx-0 sm:h-10"
+              className="mt-4 h-8 w-auto sm:h-10"
               sizes="(max-width: 640px) 240px, 320px"
             />
 
-            <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mt-7 flex flex-col gap-5 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
               <div className="min-w-0">
-                <h1 className="max-w-[12ch] text-[34px] font-semibold leading-[1.02] text-slate-900 sm:text-[44px]">
+                <h1 className="max-w-[10ch] text-[26px] font-semibold leading-[0.98] text-slate-900 sm:max-w-[12ch] sm:text-[44px] sm:leading-[1.02]">
                   Adult freestyle learning, opening carefully.
                 </h1>
-                <p className="mt-4 max-w-[34ch] text-[17px] leading-7 text-slate-700">
+                <p className="mt-3 max-w-[32ch] text-[16px] leading-7 text-slate-700 sm:mt-4 sm:max-w-[34ch] sm:text-[17px]">
                   If you already have the shared preview password, enter it below to continue. If
                   not, leave your email and we&apos;ll let you know when preview opens.
                 </p>
@@ -86,13 +86,13 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
               <BrandImage
                 asset={BRAND_USAGE.heroTagline}
                 decorative
-                className="mx-auto h-20 w-auto sm:mx-0 sm:h-24"
+                className="h-16 w-auto sm:h-24"
                 sizes="(max-width: 640px) 120px, 160px"
               />
             </div>
           </div>
 
-          <div className="relative mt-8 overflow-hidden rounded-[24px] border border-blue-100/70 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.90))] p-6 shadow-[0_18px_48px_rgba(15,23,42,0.10)] sm:p-7">
+          <div className="relative mt-7 overflow-hidden rounded-[24px] border border-blue-100/70 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.90))] p-5 shadow-[0_18px_48px_rgba(15,23,42,0.10)] sm:mt-8 sm:p-7">
             <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
             <div className="relative">
               <h2 className="text-[22px] font-semibold text-slate-900">Open preview</h2>
