@@ -24,6 +24,7 @@ test("contact form labels are associated and mobile load does not force focus", 
   const sendButton = page.getByRole("button", { name: "Send" });
   const form = page.locator("form");
 
+  await expect(page.getByAltText("Learn. Drill. Swim.")).toBeVisible();
   await expect(name).toBeVisible();
   await expect(email).toBeVisible();
   await expect(message).toBeVisible();
@@ -66,15 +67,16 @@ test("preview notify contact stays minimal and uses the library lockup", async (
   await gotoWithTransientRetry(page, "/contact?source=preview_access_notify", 60_000);
   await waitForContactPageToSettle(page);
 
-  await expect(page.getByRole("heading", { name: "Preview Updates" })).toBeVisible();
-  await expect(page.getByAltText("freeswimming.org")).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Get notified when preview opens" })
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Apply for early access" })).toBeVisible();
+  await expect(page.getByAltText("Learn. Drill. Swim.")).toBeVisible();
   await expect(page.getByLabel("NAME")).toBeVisible();
   await expect(page.getByLabel("EMAIL")).toBeVisible();
   await expect(page.getByLabel("OPTIONAL NOTE")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Join notify list" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Apply for early access" })).toBeVisible();
+  await expect(page.getByText("Your details")).toHaveCount(0);
+  await expect(
+    page.getByText("Leave your name and email. Add a note only if it helps.")
+  ).toHaveCount(0);
   await expect(page.getByText("What to include")).toHaveCount(0);
   await expect(page.getByText("Optional note ideas")).toHaveCount(0);
 });

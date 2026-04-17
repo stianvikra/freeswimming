@@ -6,9 +6,7 @@ test("home has no serious or critical accessibility violations", async ({ page }
 
   await page.goto("/");
   await page.waitForLoadState("domcontentloaded");
-  await expect(
-    page.getByRole("heading", { name: "Learn freestyle without the pressure." })
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Adult learner?" })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();
   const seriousOrCritical = results.violations.filter((violation) =>

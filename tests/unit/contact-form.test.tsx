@@ -20,6 +20,7 @@ describe("ContactForm", () => {
   it("does not autofocus the name field on initial load", () => {
     render(<ContactForm variant="contact" />);
 
+    expect(screen.getByAltText("Learn. Drill. Swim.")).toBeInTheDocument();
     expect(screen.getByLabelText("NAME")).not.toHaveFocus();
   });
 
@@ -51,15 +52,20 @@ describe("ContactForm", () => {
 
     render(<ContactForm variant="preview_access_notify" />);
 
-    expect(screen.getByRole("heading", { name: "Preview Updates" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Apply for early access" })).toBeInTheDocument();
+    expect(screen.getByAltText("Learn. Drill. Swim.")).toBeInTheDocument();
     expect(screen.getByLabelText("OPTIONAL NOTE")).toBeInTheDocument();
+    expect(screen.queryByText("Your details")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Leave your name and email. Add a note only if it helps.")
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("What to include")).not.toBeInTheDocument();
     expect(screen.queryByText("Optional note ideas")).not.toBeInTheDocument();
     expect(screen.queryByText("No password is sent from this form.")).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText("NAME"), "Test User");
     await user.type(screen.getByLabelText("EMAIL"), "test@example.com");
-    await user.click(screen.getByRole("button", { name: "Join notify list" }));
+    await user.click(screen.getByRole("button", { name: "Apply for early access" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -71,7 +77,7 @@ describe("ContactForm", () => {
     expect(requestInit.body).toContain('"message":""');
 
     await waitFor(() => {
-      expect(screen.getByText("You’re on the list")).toBeInTheDocument();
+      expect(screen.getByText("Application received")).toBeInTheDocument();
     });
   });
 });

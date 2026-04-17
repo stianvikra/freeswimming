@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requestPreviewAccess } from "@/app/preview-access/actions";
 import BrandImage from "@/components/brand/BrandImage";
@@ -60,45 +59,35 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
     <section className="min-h-svh bg-[radial-gradient(960px_420px_at_50%_0%,rgba(94,146,255,0.20),rgba(255,255,255,0)_68%),linear-gradient(180deg,#edf4ff_0%,#ffffff_100%)] sm:min-h-screen">
       <div className="mx-auto flex min-h-svh w-full max-w-[760px] items-start px-5 py-8 sm:min-h-screen sm:items-center sm:px-6 sm:py-16">
         <div className="w-full">
-          <div className="text-left">
+          <div className="text-center sm:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">
-              Private preview
+              Under construction
             </p>
 
             <BrandImage
-              asset={BRAND_USAGE.heroLockup}
+              asset={BRAND_USAGE.methodLockup}
               priority
-              className="mt-4 h-7 w-auto sm:h-10"
-              sizes="(max-width: 640px) 240px, 320px"
+              className="mx-auto mt-4 h-9 w-auto sm:mx-0 sm:h-11"
+              sizes="(max-width: 640px) 260px, 340px"
             />
 
-            <div className="mt-6 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
-              <div className="min-w-0 max-w-[31rem]">
-                <h1 className="max-w-[11ch] text-[24px] font-semibold leading-[0.98] text-slate-900 sm:max-w-[12ch] sm:text-[44px] sm:leading-[1.02]">
-                  Adult freestyle learning, opening carefully.
-                </h1>
-                <p className="mt-3 max-w-[29ch] text-[15px] leading-7 text-slate-700 sm:mt-4 sm:max-w-[34ch] sm:text-[17px]">
-                  If you already have the shared preview password, enter it below to continue. If
-                  not, leave your email and we&apos;ll let you know when preview opens.
-                </p>
-              </div>
-
-              <BrandImage
-                asset={BRAND_USAGE.heroTagline}
-                decorative
-                className="hidden h-20 w-auto sm:block sm:h-24"
-                sizes="(max-width: 640px) 120px, 160px"
-              />
+            <div className="mx-auto mt-6 max-w-[34rem] sm:mx-0">
+              <p className="text-[15px] font-medium leading-6 text-slate-700 sm:text-[16px]">
+                Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
+              </p>
+              <h1 className="mx-auto mt-2.5 max-w-[12ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mx-0 sm:text-[40px]">
+                Adult learner?
+              </h1>
+              <p className="mx-auto mt-2 max-w-[28ch] text-[16px] leading-7 text-slate-700 sm:mx-0 sm:max-w-[32ch] sm:text-[17px]">
+                You&apos;re exactly where you should be.
+              </p>
             </div>
           </div>
 
           <div className="relative mt-6 overflow-hidden rounded-[24px] border border-blue-100/70 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.90))] p-5 shadow-[0_18px_48px_rgba(15,23,42,0.10)] sm:mt-8 sm:p-7">
             <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
             <div className="relative">
-              <h2 className="text-[22px] font-semibold text-slate-900">Open preview</h2>
-              <p className="mt-2 max-w-[42ch] text-[15px] leading-6 text-slate-700">
-                Use the shared preview password to unlock this browser.
-              </p>
+              <h2 className="text-[22px] font-semibold text-slate-900">Early access</h2>
 
               {errorMessage ? (
                 <p className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
@@ -122,25 +111,23 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
                     autoComplete="current-password"
                     required
                     className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
-                    placeholder="Enter password"
                   />
                 </div>
                 <button
                   type="submit"
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Open preview
+                  Enter early access
                 </button>
               </form>
 
               <div className="mt-6 border-t border-slate-200/80 pt-4">
-                <p className="text-sm text-slate-600">No password yet?</p>
-                <Link
+                <a
                   href={notifyHref}
-                  className="mt-2 inline-flex items-center text-sm font-semibold text-blue-700 transition hover:text-blue-600"
+                  className="inline-flex items-center text-sm font-semibold text-blue-700 transition hover:text-blue-600"
                 >
-                  Get notified when preview opens
-                </Link>
+                  Apply for early access
+                </a>
               </div>
             </div>
           </div>

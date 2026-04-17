@@ -14,19 +14,25 @@ test.describe("private access gate", () => {
   test("redirects public users to preview access and unlocks", async ({ page, request }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/preview-access\?/);
-    await expect(page.getByAltText("freeswimming.org")).toBeVisible();
-    await expect(page.getByRole("heading", { name: /opening carefully/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Open preview" })).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: "Get notified when preview opens" })
-    ).toHaveAttribute("href", "/contact?source=preview_access_notify");
+    await expect(page.getByAltText("Learn. Drill. Swim.")).toBeVisible();
+    await expect(page.getByText("Under construction")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Adult learner?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Early access" })).toBeVisible();
+    await expect(page.getByLabel("Access password")).not.toHaveAttribute(
+      "placeholder",
+      "Enter password"
+    );
+    await expect(page.getByRole("link", { name: "Apply for early access" })).toHaveAttribute(
+      "href",
+      "/contact?source=preview_access_notify"
+    );
     await expect(page.getByText("Admin preview access")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Sign in as admin" })).toHaveCount(0);
     await expect(page.getByText(/signed in as/i)).toHaveCount(0);
 
-    await page.getByRole("link", { name: "Get notified when preview opens" }).click();
+    await page.getByRole("link", { name: "Apply for early access" }).click();
     await expect(page).toHaveURL(/\/contact\?source=preview_access_notify$/);
-    await expect(page.getByRole("heading", { name: "Preview Updates" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Apply for early access" })).toBeVisible();
     await page.goto("/preview-access?next=%2F");
 
     // Automation default: bypass token path first for deterministic local/CI runs.
@@ -43,7 +49,7 @@ test.describe("private access gate", () => {
 
     if (previewPassword) {
       await page.getByLabel("Access password").fill(previewPassword);
-      await page.getByRole("button", { name: "Open preview" }).click();
+      await page.getByRole("button", { name: "Enter early access" }).click();
       await expect(page).toHaveURL(/\/$/);
       return;
     }
