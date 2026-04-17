@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-16-my-swim-sessions-quick-view-and-builder-view-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-16`
-- `updated`: `2026-04-16`
+- `updated`: `2026-04-17`
 
 ## Goal
 
@@ -250,3 +250,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-16 | planning | created the implementation brief for saved-session quick-view/poolside browse improvements, grouped builder view, category rails, and targeted delete marking after scope was fully agreed in chat | next: implement the shared UI changes, update tests/runbook, run targeted validation, then complete pre-pr and pre-merge gates`
 - `2026-04-16 | implementation + pre-pr gate | shipped inline row-level Poolside Note controls, structured Quick View rows, session-total surfacing in Session details, grouped builder View sections, category rails, and exact pending-delete targeting; updated route/test/runbook coverage; targeted vitest and targeted playwright passed; full \`npm run verify:pre-pr\` passed | next: stage scoped files, run \`npm run lint:briefs\`, commit, push, open/update PR, monitor CI, then run \`npm run verify:pre-merge\` before merge recommendation`
+- `2026-04-17 | merged + closeout | PR #450 merged to \`main\` as commit \`4bc5346\`; required PR checks were green and local \`npm run verify:pre-merge\` passed before merge; brief moved from \`in-progress\` to \`done\` to match shipped scope | next: none`
