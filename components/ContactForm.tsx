@@ -193,25 +193,24 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
     if (variant === "preview_access_notify") {
       return {
-        pageTitle: "Preview Updates",
-        pageSubtitle: "Get notified when freeswimming opens preview access more broadly.",
+        pageTitle: "Apply for early access",
+        pageSubtitle: "Apply for earlier access to freeswimming.",
 
         helperTitle: "",
         helperBullets: [] as string[],
         helperLine1: "",
         helperLine2: "",
 
-        formTitle: "Get notified when preview opens",
-        formSubtitle: "Leave your name and email. Add a note only if it helps.",
+        formTitle: "",
+        formSubtitle: "",
 
-        messagePlaceholder:
-          "Optional: tell us what you want to use freeswimming for, or whether you'd like earlier tester access.",
+        messagePlaceholder: "Optional: whether you'd like earlier tester access.",
 
         exampleTitle: "",
         exampleLines: [] as string[],
 
-        successTitle: "You’re on the list",
-        successBody: "Thanks! We’ll email you when preview access opens more broadly.",
+        successTitle: "Application received",
+        successBody: "Thanks! We’ll reply when early access opens more broadly.",
         successHint: "You can safely close this page — or tap X to send another request.",
 
         micro: "",
@@ -397,32 +396,48 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const btnIcon =
     "inline-flex h-10 w-10 items-center justify-center rounded-full " +
     "border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm";
+  const isContact = variant === "contact";
   const isPreviewNotify = variant === "preview_access_notify";
   const showHelperCard = variant !== "contact" && !isPreviewNotify;
   const showExampleCard = copy.exampleLines.length > 0 && !isPreviewNotify;
+  const showFormIntro = Boolean(copy.formTitle || copy.formSubtitle);
   const messageLabel = isPreviewNotify
     ? "OPTIONAL NOTE"
     : copy.messageRequired
       ? "MESSAGE"
       : "MESSAGE (OPTIONAL)";
-  const submitLabel = isPreviewNotify ? "Join notify list" : "Send";
+  const submitLabel = isPreviewNotify ? "Apply for early access" : "Send";
   const intro = isPreviewNotify ? (
     <div className="pt-1">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
         Early access
       </p>
       <BrandImage
-        asset={BRAND_USAGE.heroLockup}
-        className="mt-3 h-8 w-auto sm:h-9"
-        sizes="(max-width: 640px) 220px, 300px"
+        asset={BRAND_USAGE.methodLockup}
+        className="mt-3 h-9 w-auto sm:h-10"
+        sizes="(max-width: 640px) 260px, 340px"
         priority
       />
       <h1 className="mt-5 max-w-[12ch] text-[30px] font-semibold leading-[1.04] tracking-[-0.02em] text-slate-900 sm:text-[34px]">
-        Preview Updates
+        Apply for early access
       </h1>
       <p className="mt-3 max-w-[34ch] text-[16px] leading-7 text-slate-700">
-        Leave your name and email now. Add a short note only if you want earlier tester access or
-        want to tell us how you&apos;d use freeswimming.
+        Leave your name and email now. Add a short note only if you want earlier tester access.
+      </p>
+    </div>
+  ) : isContact ? (
+    <div className="pt-1">
+      <BrandImage
+        asset={BRAND_USAGE.methodLockup}
+        className="h-9 w-auto sm:h-10"
+        sizes="(max-width: 640px) 260px, 340px"
+        priority
+      />
+      <h1 className="mt-5 text-[30px] font-semibold leading-[1.04] tracking-[-0.02em] text-slate-900 sm:text-[34px]">
+        Contact
+      </h1>
+      <p className="mt-3 max-w-[30ch] text-[16px] leading-7 text-slate-700">
+        Questions, early access, or feedback.
       </p>
     </div>
   ) : (
@@ -495,22 +510,28 @@ export default function ContactForm({ variant = "contact" }: Props) {
       {/* Form card */}
       <div className="relative mt-5 overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:p-6">
         <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
-        <div className={isPreviewNotify ? "text-left" : "text-center"}>
-          <h2 className="text-[20px] font-semibold text-slate-900">{copy.formTitle}</h2>
-          <p className="mt-2 text-[15px] leading-6 text-slate-700">{copy.formSubtitle}</p>
-        </div>
+        {showFormIntro ? (
+          <div className={isPreviewNotify ? "text-left" : "text-center"}>
+            {copy.formTitle ? (
+              <h2 className="text-[20px] font-semibold text-slate-900">{copy.formTitle}</h2>
+            ) : null}
+            {copy.formSubtitle ? (
+              <p className="mt-2 text-[15px] leading-6 text-slate-700">{copy.formSubtitle}</p>
+            ) : null}
+          </div>
+        ) : null}
 
         {status === "error" && error && (
           <div
             id={errorId}
-            className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] leading-6 text-rose-700"
+            className={`${showFormIntro ? "mt-5" : "mt-0"} rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] leading-6 text-rose-700`}
             aria-live="polite"
           >
             {error}
           </div>
         )}
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-5">
+        <form onSubmit={onSubmit} className={`${showFormIntro ? "mt-6" : "mt-0"} space-y-5`}>
           {/* honeypot */}
           <input
             value={company}
