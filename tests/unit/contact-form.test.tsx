@@ -21,6 +21,13 @@ describe("ContactForm", () => {
     render(<ContactForm variant="contact" />);
 
     expect(screen.getByAltText("Learn. Drill. Swim.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Send a message" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Send us a short message and we’ll reply by email.")
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Example")).not.toBeInTheDocument();
+    expect(screen.queryByText("We usually reply within 24–48 hours.")).not.toBeInTheDocument();
     expect(screen.getByLabelText("NAME")).not.toHaveFocus();
   });
 
@@ -30,7 +37,7 @@ describe("ContactForm", () => {
     render(<ContactForm variant="contact" />);
 
     const nameInput = screen.getByLabelText("NAME");
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    await user.click(screen.getByRole("button", { name: "Send message" }));
 
     await waitFor(() => {
       expect(screen.getByText("Please enter your name.")).toBeInTheDocument();

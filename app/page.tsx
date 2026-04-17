@@ -28,9 +28,9 @@ export default async function HomePage() {
 
   return (
     <SiteChrome>
-      <PageTemplate showBack={false} withBottomSafeArea={false} topInset="compact">
-        <div className="space-y-6">
-          <section className="flex flex-col items-center space-y-5 text-center sm:items-start sm:text-left">
+      <PageTemplate showBack={false} withBottomSafeArea={false} topInset="tight">
+        <div className="space-y-5 sm:space-y-6">
+          <section className="flex flex-col items-center space-y-4 text-center sm:items-start sm:space-y-5 sm:text-left">
             <BrandImage
               asset={BRAND_USAGE.methodLockup}
               priority
@@ -43,11 +43,11 @@ export default async function HomePage() {
                 Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
               </p>
 
-              <h1 className="mx-auto mt-2.5 max-w-[13ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mx-0 sm:text-[40px]">
+              <h1 className="mx-auto mt-2 max-w-[13ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mx-0 sm:mt-2.5 sm:text-[40px]">
                 Adult learner?
               </h1>
 
-              <p className="mx-auto mt-2 max-w-[26ch] text-[16px] leading-7 text-slate-700 sm:mx-0 sm:max-w-[32ch] sm:text-[17px]">
+              <p className="mx-auto mt-2 max-w-[34ch] text-[15px] leading-6 text-slate-700 sm:mx-0 sm:max-w-[32ch] sm:text-[17px] sm:leading-7">
                 You&apos;re exactly where you should be.
               </p>
             </div>
@@ -88,7 +88,7 @@ export default async function HomePage() {
             />
           </section>
 
-          <div className="flex items-center justify-start sm:justify-center">
+          <div className="flex items-center justify-center">
             <div className="flex flex-wrap items-center gap-2 sm:justify-center">
               <PressLink
                 tier="nav"

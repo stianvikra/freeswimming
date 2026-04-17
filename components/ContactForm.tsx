@@ -228,24 +228,19 @@ export default function ContactForm({ variant = "contact" }: Props) {
       helperLine1: "",
       helperLine2: "",
 
-      formTitle: "Send a message",
-      formSubtitle: "Send us a short message and we’ll reply by email.",
+      formTitle: "",
+      formSubtitle: "",
 
       messagePlaceholder: "Write your message…",
 
-      exampleTitle: "Example",
-      exampleLines: [
-        "What you struggle with",
-        "Your goal (1000m, open water, technique)",
-        "Optional: link to a video (YouTube/Drive)",
-      ],
+      exampleTitle: "",
+      exampleLines: [] as string[],
 
       successTitle: "Message sent",
-      successBody:
-        "Thanks! We’ve received your message and will reply by email within 24–48 hours.",
+      successBody: "Thanks! We’ve received your message and will reply by email when we can.",
       successHint: "You can safely close this page — or tap X to send another message.",
 
-      micro: "We usually reply within 24–48 hours.",
+      micro: "",
       messageRequired: true,
       showGoalsIntake: false,
     };
@@ -406,7 +401,11 @@ export default function ContactForm({ variant = "contact" }: Props) {
     : copy.messageRequired
       ? "MESSAGE"
       : "MESSAGE (OPTIONAL)";
-  const submitLabel = isPreviewNotify ? "Apply for early access" : "Send";
+  const submitLabel = isPreviewNotify
+    ? "Apply for early access"
+    : isContact
+      ? "Send message"
+      : "Send";
   const intro = isPreviewNotify ? (
     <div className="pt-1">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
