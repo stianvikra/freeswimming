@@ -21,7 +21,7 @@ test("contact form labels are associated and mobile load does not force focus", 
   const name = page.getByLabel("NAME");
   const email = page.getByLabel("EMAIL");
   const message = page.getByLabel("MESSAGE");
-  const sendButton = page.getByRole("button", { name: "Send" });
+  const sendButton = page.getByRole("button", { name: "Send message" });
   const form = page.locator("form");
 
   await expect(page.getByAltText("Learn. Drill. Swim.")).toBeVisible();
@@ -31,6 +31,10 @@ test("contact form labels are associated and mobile load does not force focus", 
   await expect(sendButton).toBeVisible();
   await expect(sendButton).toBeEnabled();
   await expect(form).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Send a message" })).toHaveCount(0);
+  await expect(page.getByText("Send us a short message and we’ll reply by email.")).toHaveCount(0);
+  await expect(page.getByText("Example")).toHaveCount(0);
+  await expect(page.getByText("We usually reply within 24–48 hours.")).toHaveCount(0);
 
   await expect(name).not.toBeFocused();
 

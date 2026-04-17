@@ -25,7 +25,7 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
 
   return (
     <SiteChrome>
-      <PageTemplate>
+      <PageTemplate topInset="tight">
         <ContactForm variant={variant} />
       </PageTemplate>
     </SiteChrome>

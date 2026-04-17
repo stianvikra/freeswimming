@@ -25,10 +25,18 @@ export default function ActionButton({
   compact = false,
   disabled = false,
 }: Props) {
+  const heightClass = compact
+    ? note
+      ? "min-h-[76px] sm:min-h-[80px]"
+      : "min-h-[72px] sm:min-h-[76px]"
+    : note
+      ? "min-h-[82px] sm:min-h-[86px]"
+      : "min-h-[78px] sm:min-h-[82px]";
+
   // Base = structure + interaction system
   const base =
     `group relative w-full rounded-2xl ${compact ? "px-5" : "px-6"} ` +
-    `${compact ? "min-h-[72px] sm:min-h-[76px]" : "min-h-[78px] sm:min-h-[82px]"} ` +
+    `${heightClass} ` +
     "flex items-center justify-center";
 
   // Skins only (colors/shadows/rings) — hover/press lives in globals via ui-press
@@ -50,6 +58,7 @@ export default function ActionButton({
     <div
       className={[
         "flex w-full flex-col items-center justify-center text-center",
+        note ? "pb-0.5" : "",
         disabled
           ? ""
           : [
@@ -85,7 +94,7 @@ export default function ActionButton({
       {note ? (
         <div
           className={[
-            "mt-2 text-[12px] font-medium leading-4 tracking-wide",
+            "mt-2.5 text-[12px] font-medium leading-4 tracking-wide",
             variant === "primary" ? "text-white/72" : "text-slate-500",
           ].join(" ")}
         >

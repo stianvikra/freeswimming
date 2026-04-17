@@ -7,7 +7,7 @@ type Props = {
   children: React.ReactNode;
   size?: "default" | "wide";
   showBack?: boolean;
-  topInset?: "default" | "compact";
+  topInset?: "default" | "compact" | "tight";
 
   /**
    * Best practice:
@@ -39,7 +39,11 @@ export default function PageTemplate({
     <div
       className={[
         "mx-auto w-full px-4",
-        topInset === "compact" ? "pt-20 sm:pt-24" : "pt-24 sm:pt-28",
+        topInset === "tight"
+          ? "pt-[4.5rem] sm:pt-24"
+          : topInset === "compact"
+            ? "pt-20 sm:pt-24"
+            : "pt-24 sm:pt-28",
         // keep content above any fixed bottom UI (default nav or custom bottom bar)
         withBottomSafeArea ? "pb-[calc(7rem+env(safe-area-inset-bottom))] sm:pb-10" : "pb-10",
         // helps pages with little content not feel “floating”
