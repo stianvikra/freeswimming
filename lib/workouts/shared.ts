@@ -69,11 +69,18 @@ export type WorkoutSummary = {
   status: WorkoutStatus;
   previewText?: string | null;
   previewLineItems?: WorkoutSummaryPreviewLineItem[] | null;
+  previewSections?: WorkoutSummaryPreviewSection[] | null;
 };
 
 export type WorkoutSummaryPreviewLineItem = {
   text: string;
   secondaryText?: string | null;
+};
+
+export type WorkoutSummaryPreviewSection = {
+  key: string;
+  title: string;
+  rows: WorkoutSummaryPreviewLineItem[];
 };
 
 export type WorkoutEditorRecord = {
@@ -167,9 +174,25 @@ export type WorkoutHandoffDraftState = "canonical" | "local_draft";
 export type WorkoutPdfVariant = "standard" | "poolside";
 export const WORKOUT_POOLSIDE_PRINT_STYLES = ["color", "ink_saver"] as const;
 export const WORKOUT_POOLSIDE_PRINT_LAYOUTS = ["portrait", "landscape"] as const;
+export const WORKOUT_POOLSIDE_NOTATION_MODES = ["auto", "full", "abbreviated"] as const;
+export const WORKOUT_POOLSIDE_REST_LAYOUTS = ["auto", "inline", "below_step"] as const;
+
+export const WORKOUT_POOLSIDE_ABBREVIATION_LEGEND = [
+  { short: "Free", full: "Freestyle" },
+  { short: "Back", full: "Backstroke" },
+  { short: "Breast", full: "Breaststroke" },
+  { short: "Fly", full: "Butterfly" },
+  { short: "IR", full: "Interval rest" },
+  { short: "SR", full: "Set rest" },
+  { short: "R", full: "Rest" },
+  { short: "K", full: "Kick" },
+  { short: "KB", full: "Kickboard" },
+] as const;
 
 export type WorkoutPoolsidePrintStyle = (typeof WORKOUT_POOLSIDE_PRINT_STYLES)[number];
 export type WorkoutPoolsidePrintLayout = (typeof WORKOUT_POOLSIDE_PRINT_LAYOUTS)[number];
+export type WorkoutPoolsideNotationMode = (typeof WORKOUT_POOLSIDE_NOTATION_MODES)[number];
+export type WorkoutPoolsideRestLayout = (typeof WORKOUT_POOLSIDE_REST_LAYOUTS)[number];
 export type WorkoutPoolsideFocusOption = {
   id: string;
   title: string;
@@ -211,6 +234,8 @@ export type WorkoutPdfModel = {
   variant: WorkoutPdfVariant;
   poolsidePrintStyle: WorkoutPoolsidePrintStyle;
   poolsidePrintLayout: WorkoutPoolsidePrintLayout;
+  poolsideNotationMode: WorkoutPoolsideNotationMode;
+  poolsideRestLayout: WorkoutPoolsideRestLayout;
   logoUrl: string | null;
   swimmerName: string | null;
   sourceLabel: string;
@@ -763,6 +788,8 @@ export function buildWorkoutPdfModel(
     focusPoints?: string[];
     poolsidePrintStyle?: WorkoutPoolsidePrintStyle;
     poolsidePrintLayout?: WorkoutPoolsidePrintLayout;
+    poolsideNotationMode?: WorkoutPoolsideNotationMode;
+    poolsideRestLayout?: WorkoutPoolsideRestLayout;
     swimmerName?: string | null;
     logoUrl?: string | null;
   }
@@ -771,10 +798,21 @@ export function buildWorkoutPdfModel(
   const variant = options?.variant ?? "standard";
   const poolsidePrintStyle = normalizeWorkoutPoolsidePrintStyle(options?.poolsidePrintStyle);
   const poolsidePrintLayout = normalizeWorkoutPoolsidePrintLayout(options?.poolsidePrintLayout);
+  const poolsideNotationMode =
+    options?.poolsideNotationMode == null
+      ? "full"
+      : normalizeWorkoutPoolsideNotationMode(options.poolsideNotationMode);
+  const poolsideRestLayout =
+    options?.poolsideRestLayout == null
+      ? "below_step"
+      : normalizeWorkoutPoolsideRestLayout(options.poolsideRestLayout);
   const fileName = buildWorkoutPdfFileName(draft, { draftState, variant });
   const sourceLabel = draftState === "canonical" ? "Canonical workout" : "Local draft";
   const focusPoints = buildWorkoutPdfFocusPoints(draft, options?.focusPoints);
-  const poolsideLineItems = buildWorkoutPoolsideLineItemsForDraft(draft);
+  const poolsideLineItems = buildWorkoutPoolsideLineItemsForDraft(draft, {
+    notationMode: poolsideNotationMode,
+    restLayout: poolsideRestLayout,
+  });
   const poolsideLines = poolsideLineItems.map(formatWorkoutPoolsideLineItemText);
   const swimmerName = normalizeWorkoutSwimmerName(options?.swimmerName);
 
@@ -786,6 +824,8 @@ export function buildWorkoutPdfModel(
       variant,
       poolsidePrintStyle,
       poolsidePrintLayout,
+      poolsideNotationMode,
+      poolsideRestLayout,
       logoUrl: options?.logoUrl ?? null,
       swimmerName,
       sourceLabel,
@@ -886,6 +926,8 @@ export function buildWorkoutPdfModel(
     variant,
     poolsidePrintStyle,
     poolsidePrintLayout,
+    poolsideNotationMode,
+    poolsideRestLayout,
     logoUrl: options?.logoUrl ?? null,
     swimmerName,
     sourceLabel,
@@ -916,6 +958,8 @@ export function buildWorkoutPdfHtmlDocument(
     focusPoints?: string[];
     poolsidePrintStyle?: WorkoutPoolsidePrintStyle;
     poolsidePrintLayout?: WorkoutPoolsidePrintLayout;
+    poolsideNotationMode?: WorkoutPoolsideNotationMode;
+    poolsideRestLayout?: WorkoutPoolsideRestLayout;
     swimmerName?: string | null;
     logoUrl?: string | null;
     fontUrl?: string | null;
@@ -2232,6 +2276,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         data-pdf-variant="poolside"
         data-poolside-print-style="${escapeHtml(model.poolsidePrintStyle)}"
         data-poolside-print-layout="${escapeHtml(model.poolsidePrintLayout)}"
+        data-poolside-notation-mode="${escapeHtml(model.poolsideNotationMode)}"
+        data-poolside-rest-layout="${escapeHtml(model.poolsideRestLayout)}"
       >
         <header class="hero ${isLandscape ? "hero-landscape" : "hero-portrait"}">
           ${heroHtml}
@@ -3129,8 +3175,153 @@ export function normalizeWorkoutPoolsidePrintLayout(
   return value === "landscape" ? "landscape" : "portrait";
 }
 
+export function normalizeWorkoutPoolsideNotationMode(
+  value: string | null | undefined
+): WorkoutPoolsideNotationMode {
+  if (value === "full" || value === "abbreviated") {
+    return value;
+  }
+
+  return "auto";
+}
+
+export function normalizeWorkoutPoolsideRestLayout(
+  value: string | null | undefined
+): WorkoutPoolsideRestLayout {
+  if (value === "inline" || value === "below_step") {
+    return value;
+  }
+
+  return "auto";
+}
+
 function normalizeWorkoutSwimmerName(value: string | null | undefined) {
   return normalizeNullableText(value, 120);
+}
+
+const WORKOUT_POOLSIDE_PRIMARY_CHAR_BUDGET = 52;
+const WORKOUT_POOLSIDE_INLINE_CHAR_BUDGET = 70;
+
+function abbreviateWorkoutPoolsideText(value: string | null | undefined) {
+  if (!value) {
+    return value ?? null;
+  }
+
+  const replacements: Array<[RegExp, string]> = [
+    [/\bKickboard\b/g, "KB"],
+    [/\bFreestyle\b/g, "Free"],
+    [/\bBackstroke\b/g, "Back"],
+    [/\bBreaststroke\b/g, "Breast"],
+    [/\bButterfly\b/g, "Fly"],
+    [/\bInterval rest\b/gi, "IR"],
+    [/\bSet rest\b/gi, "SR"],
+    [/\bRest\b/gi, "R"],
+    [/\bKick\b/g, "K"],
+  ];
+
+  return replacements.reduce(
+    (current, [pattern, replacement]) => current.replace(pattern, replacement),
+    value
+  );
+}
+
+function estimateWorkoutPoolsideInlineLength(text: string, secondaryText: string | null) {
+  return text.length + (secondaryText ? secondaryText.length + 3 : 0);
+}
+
+function shouldAbbreviateWorkoutPoolsideLine(
+  item: WorkoutPoolsideLineItem,
+  options: {
+    notationMode: WorkoutPoolsideNotationMode;
+    restLayout: WorkoutPoolsideRestLayout;
+  }
+) {
+  if (options.notationMode === "full") {
+    return false;
+  }
+
+  if (options.notationMode === "abbreviated") {
+    return true;
+  }
+
+  const primaryLength = item.text.length;
+  const inlineLength = estimateWorkoutPoolsideInlineLength(item.text, item.secondaryText ?? null);
+  const secondaryLength = item.secondaryText?.length ?? 0;
+
+  if (options.restLayout === "inline") {
+    return inlineLength > WORKOUT_POOLSIDE_INLINE_CHAR_BUDGET;
+  }
+
+  if (options.restLayout === "below_step") {
+    return primaryLength > WORKOUT_POOLSIDE_PRIMARY_CHAR_BUDGET || secondaryLength > 24;
+  }
+
+  return (
+    inlineLength > WORKOUT_POOLSIDE_INLINE_CHAR_BUDGET ||
+    primaryLength > WORKOUT_POOLSIDE_PRIMARY_CHAR_BUDGET ||
+    secondaryLength > 24
+  );
+}
+
+function shouldInlineWorkoutPoolsideSecondary(
+  item: WorkoutPoolsideLineItem,
+  restLayout: WorkoutPoolsideRestLayout
+) {
+  if (!item.secondaryText) {
+    return false;
+  }
+
+  if (restLayout === "inline") {
+    return true;
+  }
+
+  if (restLayout === "below_step") {
+    return false;
+  }
+
+  return estimateWorkoutPoolsideInlineLength(item.text, item.secondaryText) <=
+    WORKOUT_POOLSIDE_INLINE_CHAR_BUDGET;
+}
+
+function formatWorkoutPoolsideLineItem(
+  item: WorkoutPoolsideLineItem,
+  options?: WorkoutPoolsideFormattingOptions
+) {
+  const notationMode = normalizeWorkoutPoolsideNotationMode(options?.notationMode);
+  const restLayout = normalizeWorkoutPoolsideRestLayout(options?.restLayout);
+  const useAbbreviatedNotation = shouldAbbreviateWorkoutPoolsideLine(item, {
+    notationMode,
+    restLayout,
+  });
+  const primaryText = useAbbreviatedNotation
+    ? abbreviateWorkoutPoolsideText(item.text) ?? item.text
+    : item.text;
+  const secondaryText = item.secondaryText
+    ? useAbbreviatedNotation
+      ? abbreviateWorkoutPoolsideText(item.secondaryText) ?? item.secondaryText
+      : item.secondaryText
+    : null;
+
+  if (secondaryText && shouldInlineWorkoutPoolsideSecondary({ ...item, text: primaryText, secondaryText }, restLayout)) {
+    return {
+      ...item,
+      text: [primaryText, secondaryText].join(" · "),
+      secondaryText: null,
+    };
+  }
+
+  return {
+    ...item,
+    text: primaryText,
+    secondaryText,
+  };
+}
+
+function formatWorkoutPoolsideLineItems(
+  items: WorkoutPoolsideLineItem[],
+  options?: WorkoutPoolsideFormattingOptions
+) {
+  return items.map((item) => formatWorkoutPoolsideLineItem(item, options));
 }
 
 export function getDefaultWorkoutPoolsideFocusIds(
@@ -3215,6 +3406,17 @@ export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | unde
   return [...lines, ...(totalDistanceLabel ? ["", totalDistanceLabel] : [])].join("\n");
 }
 
+export function buildWorkoutSummaryPreviewSections(draft: SessionDraft | null | undefined) {
+  return buildRawWorkoutPoolsideSectionsForDraft(draft).map((section) => ({
+    key: section.key,
+    title: section.title,
+    rows: section.items.map((lineItem) => ({
+      text: lineItem.text,
+      secondaryText: lineItem.secondaryText ?? null,
+    })),
+  }));
+}
+
 export function buildWorkoutSummaryPreviewLineItems(draft: SessionDraft | null | undefined) {
   return buildWorkoutPoolsideLineItemsForDraft(draft).map((lineItem) => ({
     text: lineItem.text,
@@ -3226,18 +3428,66 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
   return buildWorkoutPoolsideLineItemsForDraft(draft).map(formatWorkoutPoolsideLineItemText);
 }
 
-function buildWorkoutPoolsideLineItemsForDraft(draft: SessionDraft | null | undefined) {
+type WorkoutPoolsideFormattingOptions = {
+  notationMode?: WorkoutPoolsideNotationMode;
+  restLayout?: WorkoutPoolsideRestLayout;
+};
+
+type WorkoutPoolsideSection = {
+  key: string;
+  title: string;
+  items: WorkoutPoolsideLineItem[];
+};
+
+function buildWorkoutPoolsideLineItemsForDraft(
+  draft: SessionDraft | null | undefined,
+  options?: WorkoutPoolsideFormattingOptions
+) {
+  return buildRawWorkoutPoolsideSectionsForDraft(draft).flatMap((section) =>
+    formatWorkoutPoolsideLineItems(section.items, options)
+  );
+}
+
+function getWorkoutPoolsideGroupCategory(group: WorkoutHandoffGroup) {
+  const firstWorkEntry = group.entries.find((entry) => entry.step.category !== "rest");
+  return firstWorkEntry?.step.category ?? group.entries[0]?.step.category ?? "main";
+}
+
+function pushWorkoutPoolsideSection(
+  sections: WorkoutPoolsideSection[],
+  title: string,
+  items: WorkoutPoolsideLineItem[]
+) {
+  if (items.length === 0) {
+    return;
+  }
+
+  const previousSection = sections[sections.length - 1];
+  if (previousSection?.title === title) {
+    previousSection.items.push(...items);
+    return;
+  }
+
+  sections.push({
+    key: `${title.toLowerCase().replace(/\s+/g, "-")}-${sections.length}`,
+    title,
+    items: [...items],
+  });
+}
+
+function buildRawWorkoutPoolsideSectionsForDraft(draft: SessionDraft | null | undefined) {
   if (!draft) {
     return [];
   }
 
   const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
   const groups = buildWorkoutHandoffGroups(draft.steps);
-  const lineItems: WorkoutPoolsideLineItem[] = [];
+  const sections: WorkoutPoolsideSection[] = [];
 
   for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
     const group = groups[groupIndex];
     if (!group) continue;
+    const sectionTitle = getSessionStepCategoryLabel(getWorkoutPoolsideGroupCategory(group));
 
     if (group.kind === "single") {
       const result = buildWorkoutPoolsideSingleGroupLineItems(
@@ -3247,7 +3497,7 @@ function buildWorkoutPoolsideLineItemsForDraft(draft: SessionDraft | null | unde
         draft.environment,
         poolLengthUnit
       );
-      lineItems.push(...result.items);
+      pushWorkoutPoolsideSection(sections, sectionTitle, result.items);
       if (result.consumedFollowingGroups > 0) {
         groupIndex += result.consumedFollowingGroups;
       }
@@ -3263,13 +3513,13 @@ function buildWorkoutPoolsideLineItemsForDraft(draft: SessionDraft | null | unde
       draft.environment,
       poolLengthUnit
     );
-    lineItems.push(...result.items);
+    pushWorkoutPoolsideSection(sections, sectionTitle, result.items);
     if (result.consumedFollowingGroups > 0) {
       groupIndex += result.consumedFollowingGroups;
     }
   }
 
-  return lineItems;
+  return sections;
 }
 
 function buildWorkoutPoolsideSingleGroupLineItems(

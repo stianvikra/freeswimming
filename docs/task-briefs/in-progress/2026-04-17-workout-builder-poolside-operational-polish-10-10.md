@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-04-17-workout-builder-poolside-operational-polish-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-17`
 - `updated`: `2026-04-17`
 
 ## Goal
 
-Make the manual workout builder and poolside note feel more operational and scan-friendly by stabilizing active-editor completion, enriching repeat summaries, promoting total distance in the builder, and adding width-aware poolside notation controls.
+Make the manual workout builder, saved-session library, quick view, and poolside note feel more operational and scan-friendly by stabilizing active-editor completion, enriching repeat summaries, simplifying saved-session rows, grouping quick view by ordered section, promoting total distance in the builder, and adding width-aware poolside notation controls.
 
 ## Why This Brief Exists
 
@@ -20,6 +20,10 @@ Make the manual workout builder and poolside note feel more operational and scan
   - [/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutEditor.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutEditor.tsx)
 - The builder already computes total distance, but the current display is too visually minor for a key operational metric:
   - [/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutEditor.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutEditor.tsx)
+- Saved workouts still show secondary metadata that the owner does not want in the collapsed library rows, where scan speed should come from title-first density:
+  - [/Users/stianvikra/freeswimming/components/my-library/workouts/SavedWorkoutsPanel.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/SavedWorkoutsPanel.tsx)
+- Quick View currently uses a generic heading and one-card-per-line-item presentation instead of ordered section grouping, which makes workout structure harder to scan:
+  - [/Users/stianvikra/freeswimming/components/my-library/workouts/SavedWorkoutsPanel.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/SavedWorkoutsPanel.tsx)
 - The poolside note already has print options and a line-item model with `secondaryText`, but it still lacks explicit notation and rest-layout controls for width-sensitive output:
   - [/Users/stianvikra/freeswimming/components/my-library/workouts/PoolsideNotePanel.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/PoolsideNotePanel.tsx)
   - [/Users/stianvikra/freeswimming/lib/workouts/shared.ts](/Users/stianvikra/freeswimming/lib/workouts/shared.ts)
@@ -27,6 +31,10 @@ Make the manual workout builder and poolside note feel more operational and scan
   - use stable, non-smart `Done` placement instead of cursor/viewport-relative logic,
   - make repeat summaries reflect stroke + drill + equipment + effort + rests,
   - show builder total distance like a real metric,
+  - keep saved-session rows to title only,
+  - group Quick View by ordered sections without merging repeated labels across the whole workout,
+  - remove the `Quick preview` heading,
+  - default poolside notation/rest layout to `Auto`, with manual override,
   - give poolside note output a width-aware notation/rest fallback system rather than leaving line-width management to the user.
 
 ## Dependencies And Boundaries
@@ -39,8 +47,10 @@ Make the manual workout builder and poolside note feel more operational and scan
   - [/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-15-poolside-note-layout-and-preview-favicon-polish-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-15-poolside-note-layout-and-preview-favicon-polish-10-10.md)
 - Primary implementation surfaces:
   - [/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutEditor.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/WorkoutEditor.tsx)
+  - [/Users/stianvikra/freeswimming/components/my-library/workouts/SavedWorkoutsPanel.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/SavedWorkoutsPanel.tsx)
   - [/Users/stianvikra/freeswimming/components/my-library/workouts/PoolsideNotePanel.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/PoolsideNotePanel.tsx)
   - [/Users/stianvikra/freeswimming/lib/workouts/shared.ts](/Users/stianvikra/freeswimming/lib/workouts/shared.ts)
+  - [/Users/stianvikra/freeswimming/lib/workouts/server.ts](/Users/stianvikra/freeswimming/lib/workouts/server.ts)
   - [/Users/stianvikra/freeswimming/tests/unit/workout-builder-hub.test.tsx](/Users/stianvikra/freeswimming/tests/unit/workout-builder-hub.test.tsx)
   - [/Users/stianvikra/freeswimming/tests/unit/workouts-shared.test.ts](/Users/stianvikra/freeswimming/tests/unit/workouts-shared.test.ts)
   - [/Users/stianvikra/freeswimming/tests/unit/workouts-routes.test.ts](/Users/stianvikra/freeswimming/tests/unit/workouts-routes.test.ts)
@@ -49,6 +59,8 @@ Make the manual workout builder and poolside note feel more operational and scan
   - active editor completion ergonomics,
   - repeat summary truthfulness,
   - builder total-distance presentation,
+  - saved-session row density,
+  - quick-view grouping and copy simplification,
   - poolside notation/rest-layout options,
   - abbreviations legend and width-aware poolside fallback policy.
 - This slice does not own:
@@ -77,10 +89,10 @@ Strict `10/10` mode for this brief:
 
 | Category                                      | Mapping      | Threshold For This Brief                                                                                                                                            | Evidence                         | Expected Closeout |
 | --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------- |
-| Product goals and IA                          | `target`     | The builder must surface its operational priorities clearly: title, total, active edit action, and poolside formatting choices should all read in one scan.         | code review + browser QA         | `5/5`             |
-| UX flow clarity                               | `target`     | Active step editing must no longer depend on long scroll-back to find `Done`, and poolside controls must express notation/rest policy in plain operator language.   | browser QA + targeted assertions | `5/5`             |
-| Visual design quality                         | `target`     | Total distance, bottom `Done`, and poolside controls must feel integrated with the existing builder system, not bolted-on or over-explained.                        | screenshot QA + code review      | `5/5`             |
-| Business logic correctness and data integrity | `target`     | Repeat summaries and poolside output must remain truthful to the underlying workout semantics, with correct drill/equipment/effort/rest meaning and no duplication. | unit coverage + code review      | `5/5`             |
+| Product goals and IA                          | `target`     | The builder must surface its operational priorities clearly: title, total, active edit action, quick-view structure, and poolside formatting choices should all read in one scan. | code review + browser QA         | `5/5`             |
+| UX flow clarity                               | `target`     | Active step editing must no longer depend on long scroll-back to find `Done`, saved-session rows must scan title-first, and poolside controls must express notation/rest policy in plain operator language. | browser QA + targeted assertions | `5/5`             |
+| Visual design quality                         | `target`     | Total distance, bottom `Done`, simplified session rows, grouped Quick View, and poolside controls must feel integrated with the existing builder system, not bolted-on or over-explained. | screenshot QA + code review      | `5/5`             |
+| Business logic correctness and data integrity | `target`     | Repeat summaries, Quick View grouping, and poolside output must remain truthful to the underlying workout semantics, with correct drill/equipment/effort/rest meaning, preserved order, and no duplication. | unit coverage + code review      | `5/5`             |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice changes the authenticated workout builder for the owner, not an admin/editor publishing workflow.                                            | explicit scope rationale         | `N/A`             |
 | Accessibility (a11y)                          | `target`     | Added controls and bottom actions must remain keyboard-reachable, labeled, and visually clear, with no hidden-only completion path.                                 | targeted tests + browser QA      | `5/5`             |
 | Performance (CWV + payloads)                  | `supporting` | The slice must stay within existing builder/poolside architecture, add no dependency, and avoid heavy client/runtime expansion.                                     | diff review + verify gates       | `4/5`             |
@@ -111,8 +123,9 @@ Strict `10/10` mode for this brief:
 - Local-only:
   - open editor state,
   - bottom `Done` visibility for the currently active editor,
+  - collapsed Quick View open/closed state,
   - poolside print style/layout,
-  - planned notation mode and rest-layout mode,
+  - notation mode and rest-layout mode,
   - abbreviations legend open/closed state.
 - Sync policy:
   - builder content continues to save only through existing explicit save actions,
@@ -137,9 +150,12 @@ Strict `10/10` mode for this brief:
 - Apply the same stable-completion principle to repeat-block editing where relevant.
 - Expand repeat summaries so they can reflect stroke, drill type, equipment, effort, interval rest, and set rest with sane deduplication.
 - Promote total distance in the builder metadata area as a compact, first-class total pill/stat.
+- Reduce collapsed saved-session rows to session title only, with no secondary metadata or badges.
+- Replace flat Quick View cards with ordered section grouping that preserves workout order and does not merge repeated labels across the entire workout.
+- Remove the generic `Quick preview` heading from the expanded preview surface.
 - Extend Poolside Note print options with:
-  - `Notation`: `Full` / `Abbreviated`
-  - `Rest layout`: `Inline` / `Below step` / `Auto`
+  - `Notation`: `Auto` / `Full` / `Abbreviated`
+  - `Rest layout`: `Auto` / `Inline` / `Below step`
 - Add a collapsible abbreviations legend in the poolside note builder UI.
 - Implement width-aware poolside fallback policy:
   - prefer truthful full wording,
@@ -162,9 +178,11 @@ Strict `10/10` mode for this brief:
 3. Repeat summaries accurately reflect the set identity, including drill/equipment/effort/rest details when they materially define the work.
 4. Repeat summaries do not show noisy duplicate labels such as repeated `Kick` semantics.
 5. The builder metadata area surfaces total distance as a clear compact metric instead of minor gray helper text.
-6. Poolside note print options include notation and rest-layout controls, plus a collapsible abbreviations legend.
-7. Poolside output uses width-aware fallback instead of relying on the user to manually tune line width.
-8. New controls and summaries remain truthful to the underlying draft and do not mutate saved workout data unless the user explicitly saves workout content as before.
+6. Saved-session rows show only the session title in the collapsed list state.
+7. Quick View removes the generic heading and groups steps by ordered section labels while preserving repeated later sections as new blocks when they recur.
+8. Poolside note print options include notation and rest-layout controls, both defaulting to `Auto`, plus a collapsible abbreviations legend.
+9. Poolside output uses width-aware fallback instead of relying on the user to manually tune line width.
+10. New controls and summaries remain truthful to the underlying draft and do not mutate saved workout data unless the user explicitly saves workout content as before.
 
 ## Validation
 
@@ -199,6 +217,7 @@ Strict `10/10` mode for this brief:
 - Do not create a second poolside render path; reuse the current shared render pipeline.
 - Keep abbreviations canonical and limited to clear swimmer/operator shorthand.
 - Avoid over-explaining the poolside controls in the main UI.
+- Preserve workout order in Quick View; do not globally merge non-contiguous `Warmup`, `Main`, or `Cooldown` sections.
 
 ## 10/10 Quality Bar
 
@@ -244,3 +263,4 @@ Strict `10/10` mode for this brief:
 ## Checkpoint Log
 
 - `2026-04-17 | planning | split the next builder/poolside follow-up into a dedicated brief covering active-editor ergonomics, repeat-summary truthfulness, builder total prominence, and width-aware poolside notation controls so this work can ship without mixing in public/mobile page polish | next: if approved for execution, move this brief to in-progress, implement the builder/poolside slice, and validate with targeted builder tests plus full verify gates`
+- `2026-04-17 | in-progress | moved brief to in-progress and locked the latest owner decisions: saved-session rows are title-only, Quick View stays grouped in workout order without cross-workout merging, and poolside notation/rest layout default to Auto with manual override | next: implement SavedWorkoutsPanel + shared summary/poolside changes, then validate with targeted builder tests and full verify gates`

@@ -82,6 +82,8 @@ import {
   type WorkoutEditorRecord,
   type WorkoutHandoffDraftState,
   type WorkoutPoolsideFocusOption,
+  type WorkoutPoolsideNotationMode,
+  type WorkoutPoolsideRestLayout,
   type WorkoutPoolsidePrintLayout,
   type WorkoutPoolsidePrintStyle,
   type WorkoutSummary,
@@ -1065,23 +1067,12 @@ function buildRepeatSummary(
   }
 
   const normalizedWorkStep = normalizeManualPoolStepForEditor(workStep);
-  const workLabel = buildWorkoutStepDurationOutputSummary(
+  const workLabel = buildManualPoolStepSummary(
     normalizedWorkStep,
     basePaceSecondsPer100m,
-    {
-      environment: "pool",
-      poolLengthUnit: resolveManualPoolSummaryUnit(normalizedWorkStep, poolLengthUnit),
-    }
+    resolveManualPoolSummaryUnit(normalizedWorkStep, poolLengthUnit)
   );
   const parts = [`${repeatCount} x ${workLabel}`];
-  const workStrokeLabel =
-    normalizedWorkStep.stroke !== "choice" && normalizedWorkStep.stroke !== "mixed"
-      ? getSessionStepStrokeLabel(normalizedWorkStep.stroke)
-      : "";
-
-  if (workStrokeLabel) {
-    parts.push(workStrokeLabel);
-  }
 
   if (betweenStep) {
     if (betweenStep.category === "rest") {
@@ -1663,6 +1654,10 @@ export default function WorkoutEditor({
   const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
   const [poolsidePrintLayout, setPoolsidePrintLayout] =
     useState<WorkoutPoolsidePrintLayout>("portrait");
+  const [poolsideNotationMode, setPoolsideNotationMode] =
+    useState<WorkoutPoolsideNotationMode>("auto");
+  const [poolsideRestLayout, setPoolsideRestLayout] =
+    useState<WorkoutPoolsideRestLayout>("auto");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions)
   );
@@ -2115,6 +2110,8 @@ export default function WorkoutEditor({
     setBuilderViewMode("edit");
     setPoolsidePrintStyle("color");
     setPoolsidePrintLayout("portrait");
+    setPoolsideNotationMode("auto");
+    setPoolsideRestLayout("auto");
     setSelectedPoolsideFocusIds(parseSignatureValues(defaultPoolsideFocusIdSignature));
   }, [
     copyVariant,
@@ -2148,6 +2145,8 @@ export default function WorkoutEditor({
     savedWorkout?.updatedAt,
     poolsidePrintStyle,
     poolsidePrintLayout,
+    poolsideNotationMode,
+    poolsideRestLayout,
     selectedPoolsideFocusSignature,
     swimmerName,
   ]);
@@ -3126,6 +3125,8 @@ export default function WorkoutEditor({
               focusPoints: selectedPoolsideFocusPoints,
               poolsidePrintStyle,
               poolsidePrintLayout,
+              poolsideNotationMode,
+              poolsideRestLayout,
               swimmerName,
               logoUrl: new URL(
                 getWorkoutPdfLogoPath({
@@ -4358,6 +4359,14 @@ export default function WorkoutEditor({
                     Delete
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setOpenStepId(null)}
+                  data-testid={`session-draft-step-done-bottom-${index}`}
+                  className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 sm:ml-auto"
+                >
+                  Done
+                </button>
               </div>
             ) : null}
           </div>
@@ -4985,6 +4994,10 @@ export default function WorkoutEditor({
       onPrintStyleChange={setPoolsidePrintStyle}
       printLayout={poolsidePrintLayout}
       onPrintLayoutChange={setPoolsidePrintLayout}
+      notationMode={poolsideNotationMode}
+      onNotationModeChange={setPoolsideNotationMode}
+      restLayout={poolsideRestLayout}
+      onRestLayoutChange={setPoolsideRestLayout}
       actionSlot={
         <button
           type="button"
@@ -5139,12 +5152,12 @@ export default function WorkoutEditor({
                   {draft.title || autoPoolBuilderTitle || "Untitled swim session"}
                 </p>
                 {sessionTotalLabel ? (
-                  <p
+                  <span
                     data-testid="workout-editor-session-total"
-                    className="text-sm font-medium text-slate-600"
+                    className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800"
                   >
                     {sessionTotalLabel}
-                  </p>
+                  </span>
                 ) : null}
               </div>
               <p
@@ -6005,6 +6018,14 @@ export default function WorkoutEditor({
                             className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
                           >
                             Delete repeat
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleRepeatEditor(group.repeatGroupId)}
+                            data-testid={`session-draft-repeat-done-bottom-${groupIndex}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 sm:ml-auto"
+                          >
+                            Done
                           </button>
                         </div>
                       </div>

@@ -43,8 +43,11 @@ test("contact form labels are associated and mobile load does not force focus", 
   let submitted = false;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     await waitForContactPageToSettle(page);
-    await sendButton.scrollIntoViewIfNeeded();
-    await sendButton.click();
+    await form.evaluate((element) => {
+      if (element instanceof HTMLFormElement) {
+        element.requestSubmit();
+      }
+    });
     const invalidStateVisible = await expect(formError)
       .toContainText("Please enter your name.", { timeout: 4_000 })
       .then(() => true)

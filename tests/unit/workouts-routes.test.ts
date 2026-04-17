@@ -388,7 +388,7 @@ describe("workouts routes", () => {
 
     const response = await getWorkoutPdf(
       new Request(
-        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111/export/pdf?variant=poolside&printStyle=ink_saver&focusId=focus-2"
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111/export/pdf?variant=poolside&printStyle=ink_saver&notationMode=abbreviated&restLayout=inline&focusId=focus-2"
       ),
       {
         params: Promise.resolve({
@@ -403,6 +403,8 @@ describe("workouts routes", () => {
     expect(body).not.toContain(">Poolside Note<");
     expect(body).toContain('data-pdf-variant="poolside"');
     expect(body).toContain('data-poolside-print-style="ink_saver"');
+    expect(body).toContain('data-poolside-notation-mode="abbreviated"');
+    expect(body).toContain('data-poolside-rest-layout="inline"');
     expect(body).toContain('data-testid="workout-pdf-total"');
     expect(body).toContain("Calm exhale: Start the exhale before the head turns to breathe.");
     expect(body).not.toContain("High elbow catch");
