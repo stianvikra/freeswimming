@@ -51,11 +51,15 @@ describe("ContactForm", () => {
 
     render(<ContactForm variant="preview_access_notify" />);
 
-    expect(screen.getByLabelText("MESSAGE (OPTIONAL)")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Preview Updates" })).toBeInTheDocument();
+    expect(screen.getByLabelText("OPTIONAL NOTE")).toBeInTheDocument();
+    expect(screen.queryByText("What to include")).not.toBeInTheDocument();
+    expect(screen.queryByText("Optional note ideas")).not.toBeInTheDocument();
+    expect(screen.queryByText("No password is sent from this form.")).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText("NAME"), "Test User");
     await user.type(screen.getByLabelText("EMAIL"), "test@example.com");
-    await user.click(screen.getByRole("button", { name: "Send" }));
+    await user.click(screen.getByRole("button", { name: "Join notify list" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(1);

@@ -56,7 +56,9 @@ test("capture mobile full-page screenshots for core app flow", async ({ page }, 
 
   await page.goto("/");
   await waitForStableUi(page);
-  await expect(page.getByRole("heading", { name: "Adult learner?" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Learn freestyle without the pressure." })
+  ).toBeVisible();
   await saveFullPage(page, outputDir, "01-home");
 
   await page.goto(`/course?lesson=${encodeURIComponent(DEFAULT_LESSON_ID)}`);

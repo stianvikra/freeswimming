@@ -3,8 +3,10 @@
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { CheckCircle2, X } from "lucide-react";
+import BrandImage from "@/components/brand/BrandImage";
 import PressButton from "@/components/ui/PressButton";
 import PageIntro from "@/components/PageIntro";
+import { BRAND_USAGE } from "@/lib/brand";
 
 type Variant = "contact" | "analysis" | "goals_coaching" | "preview_access_notify";
 type Status = "idle" | "sending" | "success" | "error";
@@ -194,34 +196,25 @@ export default function ContactForm({ variant = "contact" }: Props) {
         pageTitle: "Preview Updates",
         pageSubtitle: "Get notified when freeswimming opens preview access more broadly.",
 
-        helperTitle: "What to include",
-        helperBullets: [
-          "Your name and best email",
-          "Optional: what you want to use freeswimming for",
-          "Optional: whether you'd like earlier tester access",
-        ],
-        helperLine1: "Keep it short. Name + email is enough if you only want the notification.",
-        helperLine2: "We use this to reply when preview access opens more broadly.",
+        helperTitle: "",
+        helperBullets: [] as string[],
+        helperLine1: "",
+        helperLine2: "",
 
         formTitle: "Get notified when preview opens",
-        formSubtitle:
-          "Leave your email and an optional note. We’ll reply when preview access opens more broadly.",
+        formSubtitle: "Leave your name and email. Add a note only if it helps.",
 
         messagePlaceholder:
           "Optional: tell us what you want to use freeswimming for, or whether you'd like earlier tester access.",
 
-        exampleTitle: "Optional note ideas",
-        exampleLines: [
-          "I’d like an email when preview opens.",
-          "I’m an adult beginner and want to follow the course.",
-          "Happy to test early if you need feedback.",
-        ],
+        exampleTitle: "",
+        exampleLines: [] as string[],
 
         successTitle: "You’re on the list",
         successBody: "Thanks! We’ll email you when preview access opens more broadly.",
         successHint: "You can safely close this page — or tap X to send another request.",
 
-        micro: "No password is sent from this form.",
+        micro: "",
         messageRequired: false,
         showGoalsIntake: false,
       };
@@ -404,12 +397,43 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const btnIcon =
     "inline-flex h-10 w-10 items-center justify-center rounded-full " +
     "border border-emerald-200 bg-white/70 text-emerald-900 shadow-sm";
+  const isPreviewNotify = variant === "preview_access_notify";
+  const showHelperCard = variant !== "contact" && !isPreviewNotify;
+  const showExampleCard = copy.exampleLines.length > 0 && !isPreviewNotify;
+  const messageLabel = isPreviewNotify
+    ? "OPTIONAL NOTE"
+    : copy.messageRequired
+      ? "MESSAGE"
+      : "MESSAGE (OPTIONAL)";
+  const submitLabel = isPreviewNotify ? "Join notify list" : "Send";
+  const intro = isPreviewNotify ? (
+    <div className="pt-1">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+        Early access
+      </p>
+      <BrandImage
+        asset={BRAND_USAGE.heroLockup}
+        className="mt-3 h-8 w-auto sm:h-9"
+        sizes="(max-width: 640px) 220px, 300px"
+        priority
+      />
+      <h1 className="mt-5 max-w-[12ch] text-[30px] font-semibold leading-[1.04] tracking-[-0.02em] text-slate-900 sm:text-[34px]">
+        Preview Updates
+      </h1>
+      <p className="mt-3 max-w-[34ch] text-[16px] leading-7 text-slate-700">
+        Leave your name and email now. Add a short note only if you want earlier tester access or
+        want to tell us how you&apos;d use freeswimming.
+      </p>
+    </div>
+  ) : (
+    <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
+  );
 
   // ✅ Success view
   if (status === "success") {
     return (
       <div>
-        <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
+        {intro}
 
         <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/75 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(52,211,153,0.12),rgba(255,255,255,0)_70%),linear-gradient(180deg,rgba(236,253,245,0.94),rgba(236,253,245,0.84))] p-7 shadow-[0_14px_34px_rgba(16,185,129,0.12)]">
           <PressButton
@@ -446,11 +470,10 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
   return (
     <div>
-      {/* Header */}
-      <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
+      {intro}
 
       {/* Helper card (analysis + goals coaching) */}
-      {variant !== "contact" && (
+      {showHelperCard && (
         <div className="relative mt-5 overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)]">
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
           <h2 className="text-[18px] font-semibold text-slate-900">{copy.helperTitle}</h2>
@@ -470,9 +493,9 @@ export default function ContactForm({ variant = "contact" }: Props) {
       )}
 
       {/* Form card */}
-      <div className="relative mt-5 overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
+      <div className="relative mt-5 overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:p-6">
         <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
-        <div className="text-center">
+        <div className={isPreviewNotify ? "text-left" : "text-center"}>
           <h2 className="text-[20px] font-semibold text-slate-900">{copy.formTitle}</h2>
           <p className="mt-2 text-[15px] leading-6 text-slate-700">{copy.formSubtitle}</p>
         </div>
@@ -658,7 +681,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
           <div>
             <label htmlFor={messageId} className="ui-field-label">
-              {copy.messageRequired ? "MESSAGE" : "MESSAGE (OPTIONAL)"}
+              {messageLabel}
             </label>
             <textarea
               id={messageId}
@@ -668,28 +691,32 @@ export default function ContactForm({ variant = "contact" }: Props) {
               disabled={isSending}
               aria-invalid={fieldError === "message" ? true : undefined}
               aria-describedby={fieldError === "message" ? errorId : undefined}
-              className="ui-field mt-2 min-h-[150px] resize-none leading-6"
+              className={`ui-field mt-2 resize-none leading-6 ${isPreviewNotify ? "min-h-[120px]" : "min-h-[150px]"}`}
               placeholder={copy.messagePlaceholder}
             />
 
-            <div className="bg-white/78 mt-3 rounded-2xl border border-blue-100/70 p-4">
-              <p className="text-[13px] font-semibold text-slate-700">{copy.exampleTitle}</p>
-              <ul className="mt-2 space-y-1 text-[13px] leading-5 text-slate-600">
-                {copy.exampleLines.map((line) => (
-                  <li key={line} className="flex gap-2">
-                    <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {showExampleCard ? (
+              <div className="bg-white/78 mt-3 rounded-2xl border border-blue-100/70 p-4">
+                <p className="text-[13px] font-semibold text-slate-700">{copy.exampleTitle}</p>
+                <ul className="mt-2 space-y-1 text-[13px] leading-5 text-slate-600">
+                  {copy.exampleLines.map((line) => (
+                    <li key={line} className="flex gap-2">
+                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
 
           <PressButton tier="cta" type="submit" disabled={isSending} className={btnPrimary}>
-            {isSending ? "Sending…" : "Send"}
+            {isSending ? "Sending…" : submitLabel}
           </PressButton>
 
-          <p className="text-center text-[13px] text-slate-500">{copy.micro}</p>
+          {copy.micro ? (
+            <p className="text-center text-[13px] text-slate-500">{copy.micro}</p>
+          ) : null}
         </form>
       </div>
     </div>
