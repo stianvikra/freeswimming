@@ -10,6 +10,7 @@ import {
   useState,
   type TextareaHTMLAttributes,
 } from "react";
+import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
 import { BRAND_FONT_PUBLIC_PATH, getWorkoutPdfLogoPath } from "@/lib/brand";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
 import {
@@ -1106,8 +1107,10 @@ function buildRepeatSummary(
 }
 
 type ManualPoolViewSectionLine = {
-  text: string;
-  tone?: "default" | "rest" | "subtle";
+  key: string;
+  label?: string | null;
+  primaryText: string;
+  secondaryText?: string | null;
   target?:
     | {
         kind: "step";
@@ -1122,20 +1125,16 @@ type ManualPoolViewSectionLine = {
 type ManualPoolViewSection = {
   key: string;
   title: string;
-  badge?: string | null;
   lines: ManualPoolViewSectionLine[];
-  numbered: boolean;
-  variant: "default" | "rest" | "repeat";
-  target?: {
-    kind: "repeat";
-    repeatGroupId: string;
-  } | null;
+  category: SessionDraftStep["category"];
 };
 
 type ManualPoolTopLevelSectionDescriptor = {
   label: string;
   title: string;
   isRepeat: boolean;
+  indexWithinCategory: number | null;
+  totalWithinCategory: number;
 };
 
 type ManualPoolEditBlock =
@@ -1197,7 +1196,7 @@ function findTopLevelLinkedRestStep(
   return nextStep;
 }
 
-function buildManualPoolViewLine(
+function buildManualPoolViewLineParts(
   step: SessionDraftStep,
   basePaceSecondsPer100m: number,
   poolLengthUnit: SessionDraftPoolLengthUnit,
@@ -1206,45 +1205,47 @@ function buildManualPoolViewLine(
   const normalizedStep = normalizeManualPoolStepForEditor(step);
 
   if (normalizedStep.category === "rest") {
-    return buildManualPoolRestInlineSummary(normalizedStep, basePaceSecondsPer100m);
+    return {
+      primaryText: buildManualPoolRestInlineSummary(normalizedStep, basePaceSecondsPer100m),
+      secondaryText: null,
+    };
   }
 
-  const stepSummary = buildManualPoolStepSummary(
+  const primaryText = buildManualPoolStepSummary(
     normalizedStep,
     basePaceSecondsPer100m,
     poolLengthUnit
   );
 
   if (!linkedRestStep || linkedRestStep.category !== "rest") {
-    return stepSummary;
+    return {
+      primaryText,
+      secondaryText: null,
+    };
   }
 
-  const restSummary = buildManualPoolRestInlineSummary(linkedRestStep, basePaceSecondsPer100m);
-  return `${stepSummary} · ${restSummary}`;
+  return {
+    primaryText,
+    secondaryText: buildManualPoolRestInlineSummary(linkedRestStep, basePaceSecondsPer100m),
+  };
 }
 
-function buildManualPoolRepeatViewSection(
+function buildManualPoolRepeatViewLine(
   group: Extract<StepRenderGroup, { kind: "repeat" }>,
   basePaceSecondsPer100m: number,
   poolLengthUnit: SessionDraftPoolLengthUnit,
-  titleOverride?: string | null
-): ManualPoolViewSection {
+  lineLabel?: string | null
+): ManualPoolViewSectionLine {
   const workStep = group.entries[0]?.step ?? null;
   const betweenStep = group.entries[1]?.step ?? null;
   const normalizedWorkStep = workStep ? normalizeManualPoolStepForEditor(workStep) : null;
-  const repeatCountLabel = group.repeatCount ? `${group.repeatCount} x ` : "";
-  const title =
-    titleOverride ??
-    (normalizedWorkStep ? getSessionStepCategoryLabel(normalizedWorkStep.category) : "Repeat");
 
   if (!normalizedWorkStep) {
     return {
       key: group.repeatGroupId,
-      title,
-      badge: null,
-      lines: [{ text: "Set the work interval for this repeat block." }],
-      numbered: false,
-      variant: "repeat",
+      label: lineLabel,
+      primaryText: "Set the work interval for this repeat block.",
+      secondaryText: null,
       target: {
         kind: "repeat",
         repeatGroupId: group.repeatGroupId,
@@ -1252,31 +1253,24 @@ function buildManualPoolRepeatViewSection(
     };
   }
 
-  const lines: ManualPoolViewSectionLine[] = [
-    {
-      text: `${repeatCountLabel}${buildManualPoolStepSummary(
-        normalizedWorkStep,
-        basePaceSecondsPer100m,
-        poolLengthUnit
-      )}`,
-    },
-  ];
+  const repeatCountLabel = group.repeatCount ? `${group.repeatCount} x ` : "";
+  let primaryText = `${repeatCountLabel}${buildManualPoolStepSummary(
+    normalizedWorkStep,
+    basePaceSecondsPer100m,
+    poolLengthUnit
+  )}`;
+  let secondaryText: string | null = null;
 
   if (betweenStep) {
     if (betweenStep.category === "rest") {
       const restValue = buildManualPoolRestValueSummary(betweenStep, basePaceSecondsPer100m);
-      lines[0] = {
-        text: `${lines[0].text} · Interval rest ${restValue}`,
-      };
+      primaryText = `${primaryText} · Interval rest ${restValue}`;
     } else {
-      lines.push({
-        text: `Recovery: ${buildManualPoolStepSummary(
-          betweenStep,
-          basePaceSecondsPer100m,
-          poolLengthUnit
-        )}`,
-        tone: "subtle",
-      });
+      primaryText = `${primaryText} · Recovery ${buildManualPoolStepSummary(
+        betweenStep,
+        basePaceSecondsPer100m,
+        poolLengthUnit
+      )}`;
     }
   }
 
@@ -1285,19 +1279,14 @@ function buildManualPoolRepeatViewSection(
       group.postSetRestEntry.step,
       basePaceSecondsPer100m
     );
-    lines.push({
-      text: `Set rest ${restValue}`,
-      tone: "rest",
-    });
+    secondaryText = `Set rest ${restValue}`;
   }
 
   return {
     key: group.repeatGroupId,
-    title,
-    badge: null,
-    lines,
-    numbered: false,
-    variant: "repeat",
+    label: lineLabel,
+    primaryText,
+    secondaryText,
     target: {
       kind: "repeat",
       repeatGroupId: group.repeatGroupId,
@@ -1333,6 +1322,8 @@ function buildManualPoolTopLevelSectionDescriptors(
         label: buildLinkedRestLabel(lastPrimaryLabel, "rest"),
         title,
         isRepeat: false,
+        indexWithinCategory: null,
+        totalWithinCategory: 0,
       };
     }
 
@@ -1341,6 +1332,8 @@ function buildManualPoolTopLevelSectionDescriptors(
         label: title,
         title,
         isRepeat: false,
+        indexWithinCategory: null,
+        totalWithinCategory: 0,
       };
     }
 
@@ -1355,6 +1348,8 @@ function buildManualPoolTopLevelSectionDescriptors(
       label,
       title,
       isRepeat: group.kind === "repeat",
+      indexWithinCategory: nextSeen,
+      totalWithinCategory: sameTypeTotal,
     };
   });
 }
@@ -1366,18 +1361,35 @@ function buildManualPoolViewSections(
   poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   const sections: ManualPoolViewSection[] = [];
+  const sectionByTitle = new Map<string, ManualPoolViewSection>();
   const consumedRestStepIds = new Set<string>();
   const topLevelDescriptors = buildManualPoolTopLevelSectionDescriptors(stepGroups);
 
   stepGroups.forEach((group, groupIndex) => {
+    const descriptor = topLevelDescriptors[groupIndex] ?? null;
+    const title =
+      descriptor?.title ?? getSessionStepCategoryLabel(getManualPoolTopLevelCategory(group));
+    const lineLabel =
+      descriptor?.indexWithinCategory && descriptor.totalWithinCategory > 1
+        ? `${descriptor.indexWithinCategory} of ${descriptor.totalWithinCategory}`
+        : null;
+    const category = getManualPoolTopLevelCategory(group);
+    let section = sectionByTitle.get(title);
+
+    if (!section) {
+      section = {
+        key: `${title.toLowerCase()}-${sections.length}`,
+        title,
+        lines: [],
+        category,
+      };
+      sectionByTitle.set(title, section);
+      sections.push(section);
+    }
+
     if (group.kind === "repeat") {
-      sections.push(
-        buildManualPoolRepeatViewSection(
-          group,
-          basePaceSecondsPer100m,
-          poolLengthUnit,
-          topLevelDescriptors[groupIndex]?.label ?? null
-        )
+      section.lines.push(
+        buildManualPoolRepeatViewLine(group, basePaceSecondsPer100m, poolLengthUnit, lineLabel)
       );
       return;
     }
@@ -1392,45 +1404,55 @@ function buildManualPoolViewSections(
     }
 
     const normalizedStep = normalizeManualPoolStepForEditor(entry.step);
-    const title = getSessionStepCategoryLabel(normalizedStep.category);
-    const nextLine: ManualPoolViewSectionLine = {
-      text: buildManualPoolViewLine(
-        normalizedStep,
-        basePaceSecondsPer100m,
-        poolLengthUnit,
-        linkedRestStep
-      ),
-      tone: normalizedStep.category === "rest" ? "rest" : "default",
+    const viewLineParts = buildManualPoolViewLineParts(
+      normalizedStep,
+      basePaceSecondsPer100m,
+      poolLengthUnit,
+      linkedRestStep
+    );
+    section.lines.push({
+      key: entry.step.id,
+      label: lineLabel,
+      primaryText: viewLineParts.primaryText,
+      secondaryText: viewLineParts.secondaryText,
       target: {
         kind: "step",
         stepId: entry.step.id,
       },
-    };
-    const lastSection = sections[sections.length - 1] ?? null;
-
-    if (
-      lastSection &&
-      lastSection.variant !== "repeat" &&
-      lastSection.title === title &&
-      normalizedStep.category !== "rest"
-    ) {
-      lastSection.lines.push(nextLine);
-      lastSection.numbered = true;
-      return;
-    }
-
-    sections.push({
-      key: entry.step.id,
-      title,
-      badge: null,
-      lines: [nextLine],
-      numbered: false,
-      variant: normalizedStep.category === "rest" ? "rest" : "default",
-      target: null,
     });
   });
 
   return sections;
+}
+
+function getManualPoolCategoryRailClass(category: SessionDraftStep["category"]) {
+  switch (category) {
+    case "warmup":
+      return "border-l-sky-400";
+    case "main":
+      return "border-l-blue-500";
+    case "cooldown":
+      return "border-l-teal-500";
+    case "rest":
+      return "border-l-slate-400";
+    default:
+      return "border-l-slate-300";
+  }
+}
+
+function getManualPoolCategoryLabelClass(category: SessionDraftStep["category"]) {
+  switch (category) {
+    case "warmup":
+      return "text-sky-700";
+    case "main":
+      return "text-blue-700";
+    case "cooldown":
+      return "text-teal-700";
+    case "rest":
+      return "text-slate-600";
+    default:
+      return "text-slate-500";
+  }
 }
 
 function buildManualPoolEditBlocks(
@@ -1762,6 +1784,9 @@ export default function WorkoutEditor({
         totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
         estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
       });
+  const sessionTotalLabel = draftTotals.totalDistanceM
+    ? formatDistanceMetersLabel(draftTotals.totalDistanceM, poolLengthUnit)
+    : null;
   const saveStateMessage = savedWorkout
     ? hasUnsavedChanges
       ? editorCopy.savedWorkoutPendingState
@@ -3145,6 +3170,7 @@ export default function WorkoutEditor({
       descriptionOverride?: string | null;
       isLinkedPostSetRest?: boolean;
       linkedTopLevelRestEntry?: StepRenderEntry | null;
+      pendingInlineDelete?: boolean;
     }
   ) {
     const insideRepeatGroup = options?.insideRepeatGroup ?? false;
@@ -3188,14 +3214,20 @@ export default function WorkoutEditor({
     );
     const isMinimalRestEditor = isManualPoolMode && normalizedStep.category === "rest";
     const isRestStepCard = normalizedStep.category === "rest";
-    const stepTitle = isManualPoolMode
-      ? !isRestStepCard && linkedTopLevelRestStep
-        ? buildManualPoolViewLine(
+    const linkedManualPoolTitleParts =
+      isManualPoolMode && !isRestStepCard && linkedTopLevelRestStep
+        ? buildManualPoolViewLineParts(
             normalizedStep,
             draft.basePaceSecondsPer100m,
             poolLengthUnit,
             linkedTopLevelRestStep
           )
+        : null;
+    const stepTitle = isManualPoolMode
+      ? linkedManualPoolTitleParts
+        ? [linkedManualPoolTitleParts.primaryText, linkedManualPoolTitleParts.secondaryText]
+            .filter(Boolean)
+            .join(" · ")
         : buildManualPoolDisplaySummary(
             normalizedStep,
             draft.basePaceSecondsPer100m,
@@ -3228,11 +3260,20 @@ export default function WorkoutEditor({
       ? (normalizedStep.effortTarget ?? normalizedStep.intensity)
       : (step.effortTarget ?? step.intensity);
     const pendingDelete =
-      pendingRemoval?.kind === "step" && pendingRemoval.stepIds.includes(step.id);
+      options?.pendingInlineDelete === true ||
+      (pendingRemoval?.kind === "step" && pendingRemoval.stepIds.includes(step.id));
+    const topLevelCategoryLabelClass =
+      isTopLevelManualPoolBlock && !pendingDelete
+        ? getManualPoolCategoryLabelClass(normalizedStep.category)
+        : "text-slate-500";
     const stepNotes = isManualPoolMode && isRestStepCard ? "" : step.notes;
     const stepSummaryContent = (
       <>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{stepLabel}</p>
+        <p
+          className={`text-xs font-semibold uppercase tracking-wide ${topLevelCategoryLabelClass}`}
+        >
+          {stepLabel}
+        </p>
         <p className="mt-1 text-base font-medium text-slate-900 sm:text-sm">{stepTitle}</p>
         {!isManualPoolMode ? (
           <p className="mt-1 text-xs font-medium text-slate-600">
@@ -3254,6 +3295,11 @@ export default function WorkoutEditor({
         ) : null}
         {!isManualPoolMode && step.targetSummary ? (
           <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
+        ) : null}
+        {pendingDelete ? (
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-700">
+            Will be removed
+          </p>
         ) : null}
         {stepNotes ? <p className="mt-1 text-xs text-slate-400">{stepNotes}</p> : null}
       </>
@@ -3450,6 +3496,21 @@ export default function WorkoutEditor({
       ) : null;
     const showRearrangeControls = isRearrangeMode && !insideRepeatGroup && !isLinkedPostSetRest;
     const canUseDesktopCardOpen = desktopCardEditEnabled && isEditMode && !isOpen;
+    const topLevelCategoryRailClass =
+      !pendingDelete && isTopLevelManualPoolBlock
+        ? `border-l-4 ${getManualPoolCategoryRailClass(normalizedStep.category)}`
+        : "";
+    const cardStateClass = pendingDelete
+      ? "border-dashed border-rose-300 bg-rose-50/70 ring-1 ring-rose-100"
+      : isOpen
+        ? isRestStepCard
+          ? "border-blue-300 bg-blue-50/70 shadow-sm ring-1 ring-blue-100"
+          : "border-blue-300 bg-white shadow-sm ring-1 ring-blue-100"
+        : isRestStepCard
+          ? "border-blue-100 bg-blue-50/55"
+          : insideRepeatGroup
+            ? "border-blue-200 bg-white"
+            : "border-slate-200 bg-slate-50/70";
     const openStepCard = () => {
       setOpenMobileActionKey(null);
       setOpenStepId(step.id);
@@ -3462,6 +3523,9 @@ export default function WorkoutEditor({
       <article
         key={step.id}
         data-mobile-actions="progressive"
+        data-manual-pool-category={
+          isTopLevelManualPoolBlock && !pendingDelete ? normalizedStep.category : undefined
+        }
         data-desktop-card-clickable={canUseDesktopCardOpen ? "true" : "false"}
         onClick={
           canUseDesktopCardOpen
@@ -3474,18 +3538,8 @@ export default function WorkoutEditor({
               }
             : undefined
         }
-        className={`rounded-2xl border p-3 transition sm:p-4 ${
-          isOpen
-            ? isRestStepCard
-              ? "border-blue-300 bg-blue-50/70 shadow-sm ring-1 ring-blue-100"
-              : "border-blue-300 bg-white shadow-sm ring-1 ring-blue-100"
-            : isRestStepCard
-              ? "border-blue-100 bg-blue-50/55"
-              : insideRepeatGroup
-                ? "border-blue-200 bg-white"
-                : "border-slate-200 bg-slate-50/70"
-        } ${
-          canUseDesktopCardOpen
+        className={`rounded-2xl border p-3 transition sm:p-4 ${cardStateClass} ${topLevelCategoryRailClass} ${
+          canUseDesktopCardOpen && !pendingDelete
             ? "cursor-pointer hover:border-blue-200 hover:bg-white hover:shadow-sm"
             : ""
         }`}
@@ -4920,144 +4974,28 @@ export default function WorkoutEditor({
   );
 
   const poolsideNotePanel = showCalmBuilderLayout ? (
-    <div
+    <PoolsideNotePanel
       className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 sm:p-5"
-      data-testid="workout-editor-poolside-panel"
-      data-containment-style="split"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-            Poolside Note
-          </p>
-          {swimmerName ? (
-            <p className="mt-2 text-sm font-medium text-slate-900">Swimmer: {swimmerName}</p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => openWorkoutPdfPrintView("poolside")}
-            data-testid="workout-editor-poolside-pdf-open"
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
-          >
-            Print Preview
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] lg:items-start">
-        <div className="min-w-0 space-y-3 lg:border-r lg:border-blue-200/70 lg:pr-5">
-          <p className="text-sm font-semibold text-slate-900">Session Focus</p>
-          {trainingFocusOptions.length > 0 ? (
-            <div
-              data-testid="workout-editor-poolside-focus-list"
-              className="grid max-h-72 gap-3 overflow-y-auto pr-1"
-            >
-              {trainingFocusOptions.map((focus) => (
-                <label
-                  key={focus.id}
-                  className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedPoolsideFocusIds.includes(focus.id)}
-                    onChange={() => togglePoolsideFocusSelection(focus.id)}
-                    data-testid={`workout-editor-poolside-focus-${focus.id}`}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium text-slate-900">{focus.title}</span>
-                    {focus.description ? (
-                      <span className="mt-1 block text-xs text-slate-500">{focus.description}</span>
-                    ) : null}
-                  </span>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-600">
-              No open focuses are available, so the poolside note will only include the workout and
-              totals.
-            </p>
-          )}
-        </div>
-
-        <div className="min-w-0 space-y-4 lg:pl-5">
-          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-900">Print options</p>
-
-            <fieldset className="space-y-3">
-              <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Style
-              </legend>
-              <div className="grid gap-3">
-                <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                  <input
-                    type="radio"
-                    name="workout-poolside-print-style"
-                    checked={poolsidePrintStyle === "color"}
-                    onChange={() => setPoolsidePrintStyle("color")}
-                    data-testid="workout-editor-poolside-style-color"
-                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <span>
-                    <span className="block font-medium text-slate-900">Color mode</span>
-                    <span className="mt-1 block text-xs text-slate-500">
-                      Keeps the blue surfaces
-                    </span>
-                  </span>
-                </label>
-                <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                  <input
-                    type="radio"
-                    name="workout-poolside-print-style"
-                    checked={poolsidePrintStyle === "ink_saver"}
-                    onChange={() => setPoolsidePrintStyle("ink_saver")}
-                    data-testid="workout-editor-poolside-style-ink-saver"
-                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <span>
-                    <span className="block font-medium text-slate-900">Ink saver</span>
-                    <span className="mt-1 block text-xs text-slate-500">Uses white surfaces.</span>
-                  </span>
-                </label>
-              </div>
-            </fieldset>
-
-            <fieldset className="space-y-3">
-              <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Layout
-              </legend>
-              <div className="grid gap-3">
-                <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                  <input
-                    type="radio"
-                    name="workout-poolside-print-layout"
-                    checked={poolsidePrintLayout === "portrait"}
-                    onChange={() => setPoolsidePrintLayout("portrait")}
-                    data-testid="workout-editor-poolside-layout-portrait"
-                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <span className="block font-medium text-slate-900">Portrait</span>
-                </label>
-                <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                  <input
-                    type="radio"
-                    name="workout-poolside-print-layout"
-                    checked={poolsidePrintLayout === "landscape"}
-                    onChange={() => setPoolsidePrintLayout("landscape")}
-                    data-testid="workout-editor-poolside-layout-landscape"
-                    className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <span className="block font-medium text-slate-900">Landscape</span>
-                </label>
-              </div>
-            </fieldset>
-          </div>
-        </div>
-      </div>
-    </div>
+      testIdPrefix="workout-editor-poolside"
+      swimmerName={swimmerName}
+      focusOptions={trainingFocusOptions}
+      selectedFocusIds={selectedPoolsideFocusIds}
+      onToggleFocus={togglePoolsideFocusSelection}
+      printStyle={poolsidePrintStyle}
+      onPrintStyleChange={setPoolsidePrintStyle}
+      printLayout={poolsidePrintLayout}
+      onPrintLayoutChange={setPoolsidePrintLayout}
+      actionSlot={
+        <button
+          type="button"
+          onClick={() => openWorkoutPdfPrintView("poolside")}
+          data-testid="workout-editor-poolside-pdf-open"
+          className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
+        >
+          Print Preview
+        </button>
+      }
+    />
   ) : null;
   const supportStatusSectionList = <div className="space-y-4">{supportStatusSections}</div>;
   const supportToolsPanel = showCalmBuilderLayout ? (
@@ -5196,9 +5134,19 @@ export default function WorkoutEditor({
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Session details
               </p>
-              <p className="mt-2 text-base font-semibold text-slate-900">
-                {draft.title || autoPoolBuilderTitle || "Untitled swim session"}
-              </p>
+              <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-3">
+                <p className="text-base font-semibold text-slate-900">
+                  {draft.title || autoPoolBuilderTitle || "Untitled swim session"}
+                </p>
+                {sessionTotalLabel ? (
+                  <p
+                    data-testid="workout-editor-session-total"
+                    className="text-sm font-medium text-slate-600"
+                  >
+                    {sessionTotalLabel}
+                  </p>
+                ) : null}
+              </div>
               <p
                 data-testid="workout-editor-save-state"
                 className={`sr-only mt-2 text-sm font-medium ${saveStateToneClass}`}
@@ -5424,110 +5372,67 @@ export default function WorkoutEditor({
 
           {isViewMode && isManualPoolMode
             ? manualPoolViewSections.map((section) => {
-                const sectionCardClass = `rounded-2xl border p-4 text-left transition ${
-                  section.variant === "repeat"
-                    ? "border-blue-200 bg-gradient-to-b from-blue-50/70 to-white hover:border-blue-300 hover:bg-blue-50/80"
-                    : section.variant === "rest"
-                      ? "border-blue-100 bg-blue-50/55"
-                      : "border-slate-200 bg-slate-50/70"
-                }`;
-                const sectionHeadingClass = `text-xs font-semibold uppercase tracking-wide ${
-                  section.variant === "repeat" ? "text-blue-700" : "text-slate-500"
-                }`;
-
-                if (section.target?.kind === "repeat") {
-                  return (
-                    <button
-                      key={section.key}
-                      type="button"
-                      data-testid={`workout-editor-view-repeat-${section.key}`}
-                      onClick={() => openTargetedRepeatEditor(section.target!.repeatGroupId)}
-                      className={`${sectionCardClass} block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300`}
-                    >
-                      <div className="flex flex-wrap items-start gap-3">
-                        <div>
-                          <p className={sectionHeadingClass}>{section.title}</p>
-                          {section.badge ? (
-                            <p className="mt-2">
-                              <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
-                                {section.badge}
-                              </span>
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        {section.lines.map((line, lineIndex) => (
-                          <div
-                            key={`${section.key}-line-${lineIndex}`}
-                            className={`text-base leading-6 ${
-                              line.tone === "rest"
-                                ? "font-semibold text-blue-900"
-                                : line.tone === "subtle"
-                                  ? "text-slate-600"
-                                  : "text-slate-900"
-                            }`}
-                          >
-                            <span>{line.text}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </button>
-                  );
-                }
-
                 return (
                   <section
                     key={section.key}
                     data-testid={`workout-editor-view-section-${section.key}`}
-                    className={sectionCardClass}
+                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
                   >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className={sectionHeadingClass}>{section.title}</p>
-                        {section.badge ? (
-                          <p className="mt-2">
-                            <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
-                              {section.badge}
-                            </span>
-                          </p>
-                        ) : null}
-                      </div>
+                    <div className="border-b border-slate-200/80 px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {section.title}
+                      </p>
                     </div>
-                    <div className="mt-2 space-y-2">
-                      {section.lines.map((line, lineIndex) => {
+                    <div className="divide-y divide-slate-200/80">
+                      {section.lines.map((line) => {
                         const lineTarget = line.target;
-                        const lineClass = `text-base leading-6 ${
-                          line.tone === "rest"
-                            ? "font-semibold text-blue-900"
-                            : line.tone === "subtle"
-                              ? "text-slate-600"
-                              : "text-slate-900"
-                        }`;
+                        const lineContent = (
+                          <div className="space-y-2">
+                            {line.label ? (
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                {line.label}
+                              </p>
+                            ) : null}
+                            <p className="text-base leading-6 text-slate-900">{line.primaryText}</p>
+                            {line.secondaryText ? (
+                              <p className="text-sm font-semibold text-blue-800">
+                                {line.secondaryText}
+                              </p>
+                            ) : null}
+                          </div>
+                        );
 
-                        return lineTarget?.kind === "step" ? (
-                          <button
-                            key={`${section.key}-line-${lineIndex}`}
-                            type="button"
-                            data-testid={`workout-editor-view-line-${section.key}-${lineIndex}`}
-                            onClick={() => openTargetedStepEditor(lineTarget.stepId)}
-                            className={`${lineClass} flex w-full items-start rounded-xl px-2 py-1.5 text-left transition hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300`}
-                          >
-                            {section.numbered ? (
-                              <span className="mr-2 font-semibold text-slate-500">
-                                {lineIndex + 1}.
-                              </span>
-                            ) : null}
-                            <span>{line.text}</span>
-                          </button>
-                        ) : (
-                          <div key={`${section.key}-line-${lineIndex}`} className={lineClass}>
-                            {section.numbered ? (
-                              <span className="mr-2 font-semibold text-slate-500">
-                                {lineIndex + 1}.
-                              </span>
-                            ) : null}
-                            <span>{line.text}</span>
+                        if (lineTarget?.kind === "repeat") {
+                          return (
+                            <button
+                              key={line.key}
+                              type="button"
+                              data-testid={`workout-editor-view-repeat-${lineTarget.repeatGroupId}`}
+                              onClick={() => openTargetedRepeatEditor(lineTarget.repeatGroupId)}
+                              className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                            >
+                              {lineContent}
+                            </button>
+                          );
+                        }
+
+                        if (lineTarget?.kind === "step") {
+                          return (
+                            <button
+                              key={line.key}
+                              type="button"
+                              data-testid={`workout-editor-view-line-${section.key}-${line.key}`}
+                              onClick={() => openTargetedStepEditor(lineTarget.stepId)}
+                              className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                            >
+                              {lineContent}
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <div key={line.key} className="px-4 py-3">
+                            {lineContent}
                           </div>
                         );
                       })}
@@ -5571,6 +5476,15 @@ export default function WorkoutEditor({
                     key={group.repeatGroupId}
                     data-testid={`workout-editor-repeat-group-${groupIndex}`}
                     data-containment-style="calm"
+                    data-manual-pool-category={
+                      isManualPoolMode &&
+                      !(
+                        pendingRemoval?.kind === "repeat" &&
+                        pendingRemoval.repeatGroupId === group.repeatGroupId
+                      )
+                        ? getManualPoolTopLevelCategory(group)
+                        : undefined
+                    }
                     data-desktop-card-clickable={
                       desktopCardEditEnabled &&
                       isEditMode &&
@@ -5593,10 +5507,25 @@ export default function WorkoutEditor({
                           }
                         : undefined
                     }
-                    className={`rounded-2xl bg-gradient-to-b from-blue-50/70 to-white p-3 ring-1 ring-inset ring-blue-100 sm:p-4 ${
+                    className={`rounded-2xl border p-3 sm:p-4 ${
+                      pendingRemoval?.kind === "repeat" &&
+                      pendingRemoval.repeatGroupId === group.repeatGroupId
+                        ? "border-dashed border-rose-300 bg-rose-50/70 ring-1 ring-inset ring-rose-100"
+                        : `border-blue-100 bg-gradient-to-b from-blue-50/70 to-white ring-1 ring-inset ring-blue-100 ${
+                            isManualPoolMode
+                              ? `border-l-4 ${getManualPoolCategoryRailClass(
+                                  getManualPoolTopLevelCategory(group)
+                                )}`
+                              : ""
+                          }`
+                    } ${
                       desktopCardEditEnabled &&
                       isEditMode &&
-                      openRepeatGroupId !== group.repeatGroupId
+                      openRepeatGroupId !== group.repeatGroupId &&
+                      !(
+                        pendingRemoval?.kind === "repeat" &&
+                        pendingRemoval.repeatGroupId === group.repeatGroupId
+                      )
                         ? "cursor-pointer hover:shadow-sm"
                         : ""
                     }`}
@@ -5613,6 +5542,17 @@ export default function WorkoutEditor({
                       const repeatDescriptor = isManualPoolMode
                         ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
                         : null;
+                      const repeatCategory = isManualPoolMode
+                        ? getManualPoolTopLevelCategory(group)
+                        : "main";
+                      const repeatLabelToneClass =
+                        isManualPoolMode &&
+                        !(
+                          pendingRemoval?.kind === "repeat" &&
+                          pendingRemoval.repeatGroupId === group.repeatGroupId
+                        )
+                          ? getManualPoolCategoryLabelClass(repeatCategory)
+                          : "text-blue-700";
                       const repeatLabel = isManualPoolMode
                         ? (repeatDescriptor?.label ?? "Repeat")
                         : "Repeat set";
@@ -5642,7 +5582,9 @@ export default function WorkoutEditor({
                       const repeatMoveDownDisabled = groupIndex === stepGroups.length - 1;
                       const repeatSummaryContent = (
                         <>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                          <p
+                            className={`text-xs font-semibold uppercase tracking-wide ${repeatLabelToneClass}`}
+                          >
                             {repeatLabel}
                           </p>
                           {isManualPoolMode && isRepeatOpen ? (
@@ -5653,6 +5595,12 @@ export default function WorkoutEditor({
                             </p>
                           ) : null}
                           <p className="mt-2 text-sm font-medium text-slate-900">{repeatSummary}</p>
+                          {pendingRemoval?.kind === "repeat" &&
+                          pendingRemoval.repeatGroupId === group.repeatGroupId ? (
+                            <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-700">
+                              Will be removed
+                            </p>
+                          ) : null}
                         </>
                       );
 
@@ -5979,6 +5927,8 @@ export default function WorkoutEditor({
                                   : "Post-set rest",
                                 descriptionOverride: null,
                                 isLinkedPostSetRest: true,
+                                pendingInlineDelete:
+                                  repeatConflictPendingReplacement === group.repeatGroupId,
                               }
                             )
                           : null}

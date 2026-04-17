@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
 import {
   formatDistanceMetersLabel,
   getSessionTypeLabel,
   resolveSessionDraftPoolLengthUnit,
 } from "@/lib/session-generator-v1/shared";
-import type { WorkoutSummary } from "@/lib/workouts/shared";
+import type {
+  WorkoutPoolsideFocusOption,
+  WorkoutPoolsidePrintLayout,
+  WorkoutPoolsidePrintStyle,
+  WorkoutSummary,
+} from "@/lib/workouts/shared";
 
 type Props = {
   workouts: WorkoutSummary[];
@@ -39,7 +45,70 @@ type Props = {
   previewTestIdBuilder?: (workoutId: string) => string;
   showHeader?: boolean;
   initialVisibleCount?: number | null;
+  trainingFocusOptions?: WorkoutPoolsideFocusOption[];
+  swimmerName?: string | null;
 };
+
+type QuickPreviewRow = {
+  key: string;
+  primaryText: string;
+  secondaryText?: string | null;
+};
+
+function buildQuickPreviewRows(workout: WorkoutSummary): QuickPreviewRow[] {
+  if (workout.previewLineItems && workout.previewLineItems.length > 0) {
+    return workout.previewLineItems.map((lineItem, index) => ({
+      key: `${workout.id}-preview-${index}`,
+      primaryText: lineItem.text,
+      secondaryText: lineItem.secondaryText ?? null,
+    }));
+  }
+
+  if (!workout.previewText) {
+    return [];
+  }
+
+  return workout.previewText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !/^Total:/i.test(line))
+    .map((line, index) => {
+      const setRestIndex = line.indexOf(" · Set rest ");
+      if (setRestIndex >= 0) {
+        return {
+          key: `${workout.id}-preview-${index}`,
+          primaryText: line.slice(0, setRestIndex).trim(),
+          secondaryText: line.slice(setRestIndex + 3).trim(),
+        };
+      }
+
+      return {
+        key: `${workout.id}-preview-${index}`,
+        primaryText: line,
+        secondaryText: null,
+      };
+    });
+}
+
+function buildPoolsidePreviewHref(
+  baseHref: string,
+  options: {
+    selectedFocusIds: string[];
+    printStyle: WorkoutPoolsidePrintStyle;
+    printLayout: WorkoutPoolsidePrintLayout;
+  }
+) {
+  const url = new URL(baseHref, "http://localhost");
+  url.searchParams.set("focusMode", "custom");
+  url.searchParams.set("printStyle", options.printStyle);
+  url.searchParams.set("printLayout", options.printLayout);
+  url.searchParams.delete("focusId");
+  options.selectedFocusIds.forEach((focusId) => {
+    url.searchParams.append("focusId", focusId);
+  });
+  return `${url.pathname}${url.search}`;
+}
 
 export default function SavedWorkoutsPanel({
   workouts,
@@ -71,13 +140,22 @@ export default function SavedWorkoutsPanel({
   previewTestIdBuilder = (workoutId) => `saved-workouts-preview-${workoutId}`,
   showHeader = true,
   initialVisibleCount = null,
+  trainingFocusOptions = [],
+  swimmerName = null,
 }: Props) {
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
   const [previewWorkoutId, setPreviewWorkoutId] = useState<string | null>(null);
+  const [poolsideWorkoutId, setPoolsideWorkoutId] = useState<string | null>(null);
   const [showAllWorkouts, setShowAllWorkouts] = useState(() => initialVisibleCount == null);
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false);
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
   const [selectedWorkoutIds, setSelectedWorkoutIds] = useState<string[]>([]);
+  const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
+  const [poolsidePrintLayout, setPoolsidePrintLayout] =
+    useState<WorkoutPoolsidePrintLayout>("portrait");
+  const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
+    trainingFocusOptions.map((focus) => focus.id)
+  );
   const visibleLimit = initialVisibleCount ?? undefined;
 
   const hasHiddenWorkouts =
@@ -97,6 +175,7 @@ export default function SavedWorkoutsPanel({
   useEffect(() => {
     if (pendingDeleteWorkoutId) {
       setPreviewWorkoutId(null);
+      setPoolsideWorkoutId(null);
     }
   }, [pendingDeleteWorkoutId]);
 
@@ -107,10 +186,27 @@ export default function SavedWorkoutsPanel({
   }, [previewWorkoutId, workouts]);
 
   useEffect(() => {
+    if (poolsideWorkoutId && !workouts.some((workout) => workout.id === poolsideWorkoutId)) {
+      setPoolsideWorkoutId(null);
+    }
+  }, [poolsideWorkoutId, workouts]);
+
+  useEffect(() => {
     setSelectedWorkoutIds((current) =>
       current.filter((workoutId) => workouts.some((workout) => workout.id === workoutId))
     );
   }, [workouts]);
+
+  useEffect(() => {
+    const availableFocusIds = trainingFocusOptions.map((focus) => focus.id);
+    setSelectedPoolsideFocusIds((current) => {
+      const filtered = current.filter((focusId) => availableFocusIds.includes(focusId));
+      if (filtered.length > 0 || availableFocusIds.length === 0) {
+        return filtered;
+      }
+      return availableFocusIds;
+    });
+  }, [trainingFocusOptions]);
 
   useEffect(() => {
     if (selectedWorkoutIds.length === 0) {
@@ -256,6 +352,7 @@ export default function SavedWorkoutsPanel({
             const workoutPoolsidePdfHref = workoutPoolsidePdfHrefBuilder?.(workout.id) ?? null;
             const isCurrentWorkout = currentWorkoutId === workout.id;
             const previewOpen = previewWorkoutId === workout.id;
+            const poolsideOpen = poolsideWorkoutId === workout.id;
             const isSelected = selectedWorkoutIds.includes(workout.id);
             const workoutDistanceLabel = workout.totalDistanceM
               ? workout.environment === "pool"
@@ -272,6 +369,22 @@ export default function SavedWorkoutsPanel({
               hour: "2-digit",
               minute: "2-digit",
             }).format(new Date(workout.updatedAt));
+            const quickPreviewRows = buildQuickPreviewRows(workout);
+            const totalDistanceQuickLabel = workout.totalDistanceM
+              ? workout.environment === "pool"
+                ? formatDistanceMetersLabel(
+                    workout.totalDistanceM,
+                    resolveSessionDraftPoolLengthUnit(workout.poolLengthUnit)
+                  )
+                : `${workout.totalDistanceM}m`
+              : null;
+            const workoutPoolsidePreviewHref = workoutPoolsidePdfHref
+              ? buildPoolsidePreviewHref(workoutPoolsidePdfHref, {
+                  selectedFocusIds: selectedPoolsideFocusIds,
+                  printStyle: poolsidePrintStyle,
+                  printLayout: poolsidePrintLayout,
+                })
+              : null;
 
             return (
               <div
@@ -281,8 +394,8 @@ export default function SavedWorkoutsPanel({
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    {bulkSelectionMode ? (
-                      <label className="mb-3 inline-flex items-center">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {bulkSelectionMode ? (
                         <input
                           type="checkbox"
                           aria-label={`Select ${workout.title}`}
@@ -297,9 +410,7 @@ export default function SavedWorkoutsPanel({
                           data-testid={`saved-workout-select-${workout.id}`}
                           className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
                         />
-                      </label>
-                    ) : null}
-                    <div className="flex flex-wrap items-center gap-2">
+                      ) : null}
                       <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
                       {isCurrentWorkout ? (
                         <span
@@ -320,18 +431,20 @@ export default function SavedWorkoutsPanel({
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    {showInlinePreview && workout.previewText ? (
+                    {showInlinePreview &&
+                    (quickPreviewRows.length > 0 || totalDistanceQuickLabel) ? (
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
+                          setPoolsideWorkoutId(null);
                           setPreviewWorkoutId((current) =>
                             current === workout.id ? null : workout.id
-                          )
-                        }
+                          );
+                        }}
                         data-testid={viewButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                       >
-                        {previewOpen ? "Hide" : "View"}
+                        {previewOpen ? "Hide" : "Quick View"}
                       </button>
                     ) : null}
                     {!isCurrentWorkout ? (
@@ -355,15 +468,19 @@ export default function SavedWorkoutsPanel({
                       </Link>
                     ) : null}
                     {workoutPoolsidePdfHref ? (
-                      <Link
-                        href={workoutPoolsidePdfHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewWorkoutId(null);
+                          setPoolsideWorkoutId((current) =>
+                            current === workout.id ? null : workout.id
+                          );
+                        }}
                         data-testid={poolsidePdfButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
                       >
-                        Poolside Note
-                      </Link>
+                        {poolsideOpen ? "Hide Poolside" : "Poolside Note"}
+                      </button>
                     ) : null}
                     {!bulkSelectionMode &&
                     !isCurrentWorkout &&
@@ -381,18 +498,72 @@ export default function SavedWorkoutsPanel({
                   </div>
                 </div>
 
-                {previewOpen && workout.previewText ? (
+                {previewOpen && (quickPreviewRows.length > 0 || totalDistanceQuickLabel) ? (
                   <div
                     data-testid={previewTestIdBuilder(workout.id)}
-                    className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+                    className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
                   >
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Session preview
+                      Quick preview
                     </p>
-                    <pre className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
-                      {workout.previewText}
-                    </pre>
+                    <div className="mt-3 space-y-3">
+                      {quickPreviewRows.map((line) => (
+                        <div
+                          key={line.key}
+                          className="rounded-xl border border-white/80 bg-white px-3 py-3"
+                        >
+                          <p className="text-sm leading-6 text-slate-800">{line.primaryText}</p>
+                          {line.secondaryText ? (
+                            <p className="mt-2 text-sm font-semibold text-blue-800">
+                              {line.secondaryText}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                    {totalDistanceQuickLabel ? (
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                          Total
+                        </p>
+                        <p className="text-lg font-semibold text-slate-900">
+                          {totalDistanceQuickLabel}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
+                ) : null}
+
+                {poolsideOpen && workoutPoolsidePreviewHref ? (
+                  <PoolsideNotePanel
+                    className="mt-3 rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 sm:p-5"
+                    testIdPrefix={`saved-workout-poolside-${workout.id}`}
+                    swimmerName={swimmerName}
+                    focusOptions={trainingFocusOptions}
+                    selectedFocusIds={selectedPoolsideFocusIds}
+                    onToggleFocus={(focusId) =>
+                      setSelectedPoolsideFocusIds((current) =>
+                        current.includes(focusId)
+                          ? current.filter((currentId) => currentId !== focusId)
+                          : [...current, focusId]
+                      )
+                    }
+                    printStyle={poolsidePrintStyle}
+                    onPrintStyleChange={setPoolsidePrintStyle}
+                    printLayout={poolsidePrintLayout}
+                    onPrintLayoutChange={setPoolsidePrintLayout}
+                    actionSlot={
+                      <Link
+                        href={workoutPoolsidePreviewHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid={`saved-workout-poolside-${workout.id}-print-preview`}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
+                      >
+                        Print Preview
+                      </Link>
+                    }
+                  />
                 ) : null}
 
                 {pendingDelete ? (

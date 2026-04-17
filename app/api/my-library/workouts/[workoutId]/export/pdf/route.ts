@@ -48,6 +48,7 @@ export async function GET(request: Request, context: RouteContext) {
   const pdfVariant =
     requestUrl.searchParams.get("variant") === "poolside" ? "poolside" : "standard";
   const requestedFocusIds = requestUrl.searchParams.getAll("focusId");
+  const useExplicitPoolsideFocusSelection = requestUrl.searchParams.get("focusMode") === "custom";
   const poolsidePrintStyle = normalizeWorkoutPoolsidePrintStyle(
     requestUrl.searchParams.get("printStyle")
   );
@@ -108,7 +109,7 @@ export async function GET(request: Request, context: RouteContext) {
         }))
       : [];
   const focusPoints =
-    requestedFocusIds.length > 0
+    requestedFocusIds.length > 0 || useExplicitPoolsideFocusSelection
       ? selectWorkoutPoolsideFocusPoints(focusOptions, requestedFocusIds)
       : focusOptions.map((focus) =>
           focus.description ? `${focus.title}: ${focus.description}` : focus.title

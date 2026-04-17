@@ -384,13 +384,17 @@ test.describe("my library workout builder", () => {
     await expect(page.getByTestId("session-draft-add-repeat")).toHaveCount(0);
     await expect(page.getByTestId("workout-editor-metadata-toggle")).toHaveCount(0);
     await expect(page.getByText("Edit repeat")).toHaveCount(0);
+    const viewSections = page.locator('[data-testid^="workout-editor-view-section-"]');
+    await expect(viewSections.first()).toBeVisible();
+    expect(await viewSections.count()).toBeGreaterThanOrEqual(3);
+    const firstViewSectionBox = await viewSections.nth(0).boundingBox();
+    const secondViewSectionBox = await viewSections.nth(1).boundingBox();
+    expect(firstViewSectionBox).not.toBeNull();
+    expect(secondViewSectionBox).not.toBeNull();
+    expect(Math.abs(firstViewSectionBox!.width - secondViewSectionBox!.width)).toBeLessThanOrEqual(
+      20
+    );
     const viewRepeatCard = page.getByTestId(/workout-editor-view-repeat-/);
-    const viewSectionCard = page.locator('[data-testid^="workout-editor-view-section-"]').first();
-    const viewRepeatCardBox = await viewRepeatCard.boundingBox();
-    const viewSectionCardBox = await viewSectionCard.boundingBox();
-    expect(viewRepeatCardBox).not.toBeNull();
-    expect(viewSectionCardBox).not.toBeNull();
-    expect(Math.abs(viewRepeatCardBox!.width - viewSectionCardBox!.width)).toBeLessThanOrEqual(20);
     await viewRepeatCard.click();
     await expect(page.getByTestId("session-draft-repeat-count-2")).toBeVisible();
     await expect(page.getByLabel("Step Type")).toHaveCount(0);
@@ -885,8 +889,13 @@ test.describe("my library workout builder", () => {
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
     const savedWorkoutPreview = await openSavedWorkoutPreview(page, workoutId);
-    await expect(savedWorkoutPreview).toContainText("Total:");
+    await expect(savedWorkoutPreview).toContainText("Total");
     await expect(savedWorkoutPreview).toContainText("Rest");
+    await page.getByTestId(`saved-workouts-poolside-${workoutId}`).click();
+    await expect(page.getByTestId(`saved-workout-poolside-${workoutId}-panel`)).toBeVisible();
+    await expect(
+      page.getByTestId(`saved-workout-poolside-${workoutId}-print-preview`)
+    ).toHaveAttribute("href", /focusMode=custom/);
     const editWorkoutLink = page.getByTestId(`workout-builder-edit-workout-${workoutId}`);
     const editWorkoutHref = await editWorkoutLink.getAttribute("href");
     if (editWorkoutHref) {
