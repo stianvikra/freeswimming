@@ -40,4 +40,34 @@ describe("ContactForm", () => {
     expect(nameInput).toHaveAttribute("aria-invalid", "true");
     expect(nameInput).toHaveAttribute("aria-describedby", "contact-form-error");
   });
+
+  it("allows preview notify submissions without a message", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ContactForm variant="preview_access_notify" />);
+
+    expect(screen.getByLabelText("MESSAGE (OPTIONAL)")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("NAME"), "Test User");
+    await user.type(screen.getByLabelText("EMAIL"), "test@example.com");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    const [, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(requestInit.method).toBe("POST");
+    expect(requestInit.body).toContain('"variant":"preview_access_notify"');
+    expect(requestInit.body).toContain('"message":""');
+
+    await waitFor(() => {
+      expect(screen.getByText("You’re on the list")).toBeInTheDocument();
+    });
+  });
 });

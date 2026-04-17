@@ -20,6 +20,13 @@
 }
 ```
 
+- Supported `variant` values:
+  - `contact`
+  - `analysis`
+  - `goals_coaching`
+  - `preview_access_notify`
+- `preview_access_notify` may send an empty `message` when the visitor only wants notification.
+
 ### Response
 
 - Success:

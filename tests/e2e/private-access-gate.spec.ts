@@ -14,12 +14,20 @@ test.describe("private access gate", () => {
   test("redirects public users to preview access and unlocks", async ({ page, request }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/preview-access\?/);
+    await expect(page.getByAltText("freeswimming.org")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /opening carefully/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Open preview" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "freeswimming.org is currently private" })
-    ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Shared preview password" })).toBeVisible();
-    await expect(page.getByText("Fallback access password")).toHaveCount(0);
-    await expect(page.getByText(/device-based admin sign-in remains deferred/i)).toHaveCount(0);
+      page.getByRole("link", { name: "Get notified when preview opens" })
+    ).toHaveAttribute("href", "/contact?source=preview_access_notify");
+    await expect(page.getByText("Admin preview access")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Sign in as admin" })).toHaveCount(0);
+    await expect(page.getByText(/signed in as/i)).toHaveCount(0);
+
+    await page.getByRole("link", { name: "Get notified when preview opens" }).click();
+    await expect(page).toHaveURL(/\/contact\?source=preview_access_notify$/);
+    await expect(page.getByRole("heading", { name: "Preview Updates" })).toBeVisible();
+    await page.goto("/preview-access?next=%2F");
 
     // Automation default: bypass token path first for deterministic local/CI runs.
     if (previewBypassToken && !forcePasswordUnlock) {

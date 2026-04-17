@@ -83,4 +83,27 @@ test("contact API rejects mismatched origin and accepts allowed origin", async (
 
   const goalsJson = (await goalsRes.json()) as { ok?: boolean };
   expect(goalsJson.ok).toBeTruthy();
+
+  const previewNotifyPayload = {
+    variant: "preview_access_notify",
+    name: "Test User",
+    email: "test@example.com",
+    message: "",
+    company: "",
+    startedAt: Date.now() - 5000,
+  };
+
+  const previewNotifyRes = await request.post("/api/contact", {
+    timeout: 60_000,
+    headers: {
+      origin: baseURL ?? "http://127.0.0.1:3000",
+      "content-type": "application/json",
+      "x-forwarded-for": testIp,
+    },
+    data: previewNotifyPayload,
+  });
+  expect(previewNotifyRes.ok()).toBeTruthy();
+
+  const previewNotifyJson = (await previewNotifyRes.json()) as { ok?: boolean };
+  expect(previewNotifyJson.ok).toBeTruthy();
 });

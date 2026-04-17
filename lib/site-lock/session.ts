@@ -9,6 +9,7 @@ const NONCE_BYTE_LENGTH = 16;
 
 const BYPASSED_EXACT_PATHS = new Set<string>([
   "/preview-access",
+  "/contact",
   "/robots.txt",
   "/sitemap.xml",
   "/manifest.webmanifest",
@@ -17,6 +18,7 @@ const BYPASSED_EXACT_PATHS = new Set<string>([
 const BYPASSED_PREFIX_PATHS = [
   "/preview-access/",
   "/auth/",
+  "/api/contact",
   "/api/stripe/webhook",
   "/api/dev-login",
   "/dev/login",

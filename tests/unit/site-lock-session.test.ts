@@ -39,9 +39,11 @@ describe("site lock session", () => {
     expect(isSiteLockBypassTokenValid(null, "abc123")).toBe(false);
   });
 
-  it("marks preview/auth/stripe webhook paths as bypassed", () => {
+  it("marks preview/contact/auth/contact-api/stripe webhook paths as bypassed", () => {
     expect(isSiteLockPathBypassed("/preview-access")).toBe(true);
+    expect(isSiteLockPathBypassed("/contact")).toBe(true);
     expect(isSiteLockPathBypassed("/auth/sign-in")).toBe(true);
+    expect(isSiteLockPathBypassed("/api/contact")).toBe(true);
     expect(isSiteLockPathBypassed("/api/stripe/webhook")).toBe(true);
     expect(isSiteLockPathBypassed("/my-library")).toBe(false);
   });
