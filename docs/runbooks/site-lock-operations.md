@@ -54,9 +54,12 @@ Run safe, auditable lock/unlock operations without manual Vercel env editing.
 ## Admin Unlock During Private Mode
 
 - Public visitors stay on `/preview-access` until they have a valid site-lock cookie.
-- Signed-in admins currently unlock the site from `/preview-access` with the shared access
-  password after their admin email sign-in has established who they are.
-- Device-based admin unlock is deferred until a future auth stack supports it cleanly.
+- The visitor-facing notify flow may still send visitors to `/contact?source=preview_access_notify`, which remains reachable during private mode so they can request preview updates.
+- `/preview-access` is intentionally visitor-facing: it shows the shared password entry path first and does not expose signed-in admin status on the route itself.
+- Admin operators can still use the current sign-in-then-password flow when needed:
+  - sign in through the normal admin email flow,
+  - then open `/preview-access`,
+  - then use the shared access password.
 - Current operator flow:
   1. sign in with the admin email first,
   2. open `/preview-access`,

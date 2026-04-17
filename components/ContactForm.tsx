@@ -6,7 +6,7 @@ import { CheckCircle2, X } from "lucide-react";
 import PressButton from "@/components/ui/PressButton";
 import PageIntro from "@/components/PageIntro";
 
-type Variant = "contact" | "analysis" | "goals_coaching";
+type Variant = "contact" | "analysis" | "goals_coaching" | "preview_access_notify";
 type Status = "idle" | "sending" | "success" | "error";
 
 type Props = {
@@ -186,6 +186,44 @@ export default function ContactForm({ variant = "contact" }: Props) {
         micro: "Structured coaching replies are usually sent within 24–48 hours.",
         messageRequired: false,
         showGoalsIntake: true,
+      };
+    }
+
+    if (variant === "preview_access_notify") {
+      return {
+        pageTitle: "Preview Updates",
+        pageSubtitle: "Get notified when freeswimming opens preview access more broadly.",
+
+        helperTitle: "What to include",
+        helperBullets: [
+          "Your name and best email",
+          "Optional: what you want to use freeswimming for",
+          "Optional: whether you'd like earlier tester access",
+        ],
+        helperLine1: "Keep it short. Name + email is enough if you only want the notification.",
+        helperLine2: "We use this to reply when preview access opens more broadly.",
+
+        formTitle: "Get notified when preview opens",
+        formSubtitle:
+          "Leave your email and an optional note. We’ll reply when preview access opens more broadly.",
+
+        messagePlaceholder:
+          "Optional: tell us what you want to use freeswimming for, or whether you'd like earlier tester access.",
+
+        exampleTitle: "Optional note ideas",
+        exampleLines: [
+          "I’d like an email when preview opens.",
+          "I’m an adult beginner and want to follow the course.",
+          "Happy to test early if you need feedback.",
+        ],
+
+        successTitle: "You’re on the list",
+        successBody: "Thanks! We’ll email you when preview access opens more broadly.",
+        successHint: "You can safely close this page — or tap X to send another request.",
+
+        micro: "No password is sent from this form.",
+        messageRequired: false,
+        showGoalsIntake: false,
       };
     }
 

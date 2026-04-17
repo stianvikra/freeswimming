@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 
 type Payload = {
-  variant?: "contact" | "analysis" | "goals_coaching";
+  variant?: "contact" | "analysis" | "goals_coaching" | "preview_access_notify";
   name?: string;
   email?: string;
   message?: string;
@@ -282,7 +282,9 @@ export async function POST(req: Request) {
       ? "analysis"
       : body?.variant === "goals_coaching"
         ? "goals_coaching"
-        : "contact";
+        : body?.variant === "preview_access_notify"
+          ? "preview_access_notify"
+          : "contact";
   const name = clampString(String(body?.name || ""), 80);
   const email = clampString(String(body?.email || ""), 120);
   const message = clampString(String(body?.message || ""), 2000);
@@ -300,7 +302,7 @@ export async function POST(req: Request) {
       { status: 400, headers: rateHeaders }
     );
   }
-  if (variant !== "goals_coaching" && message.length < 10) {
+  if (variant !== "goals_coaching" && variant !== "preview_access_notify" && message.length < 10) {
     return NextResponse.json(
       { ok: false, error: "Please write a short message." },
       { status: 400, headers: rateHeaders }
@@ -373,7 +375,9 @@ export async function POST(req: Request) {
       ? `Freeswimming — Video analysis request (${name})`
       : variant === "goals_coaching"
         ? `Freeswimming — Goals coaching intake (${name})`
-        : `Freeswimming — New contact message (${name})`;
+        : variant === "preview_access_notify"
+          ? `Freeswimming — Preview notify request (${name})`
+          : `Freeswimming — New contact message (${name})`;
 
   const text =
     `Variant: ${variant}\n` +

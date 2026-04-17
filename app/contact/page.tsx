@@ -16,7 +16,12 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
       : Array.isArray(resolvedSearchParams.source)
         ? (resolvedSearchParams.source[0] ?? "")
         : "";
-  const variant = source === "goals_coaching" ? "goals_coaching" : "contact";
+  const variant =
+    source === "goals_coaching"
+      ? "goals_coaching"
+      : source === "preview_access_notify"
+        ? "preview_access_notify"
+        : "contact";
 
   return (
     <SiteChrome>

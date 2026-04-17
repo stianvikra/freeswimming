@@ -59,6 +59,8 @@ Ops alternative:
 - Public visitor redirected from `/` to `/preview-access`.
 - Invalid password keeps user on preview page with clear error.
 - Valid password redirects to requested `next` path.
+- `/preview-access` keeps the shared preview password as the primary unlock action and any notify-interest CTA as a clearly secondary path.
+- `/contact?source=preview_access_notify` stays reachable while private mode is enabled so visitors can request preview updates.
 - API endpoints (except explicit bypasses) return locked response while private mode is enabled.
 - `robots.txt` disallows all and `sitemap.xml` is empty while lock is enabled.
 
