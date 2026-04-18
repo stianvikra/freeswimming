@@ -75,9 +75,11 @@ test("preview notify contact stays minimal and uses the library lockup", async (
   await waitForContactPageToSettle(page);
 
   await expect(page.getByRole("heading", { name: "Apply for early access" })).toBeVisible();
+  await expect(page.getByRole("heading")).toHaveCount(1);
   await expect(page.getByAltText("Learn. Drill. Swim.")).toBeVisible();
   await expect(page.getByLabel("NAME")).toBeVisible();
   await expect(page.getByLabel("EMAIL")).toBeVisible();
+  await expect(page.getByLabel("EMAIL")).toHaveAttribute("placeholder", "your@email.com");
   await expect(page.getByLabel("OPTIONAL NOTE")).toBeVisible();
   await expect(page.getByRole("button", { name: "Apply for early access" })).toBeVisible();
   await expect(page.getByText("Your details")).toHaveCount(0);

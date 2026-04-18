@@ -57,7 +57,7 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
 
   return (
     <section className="min-h-svh bg-[radial-gradient(960px_420px_at_50%_0%,rgba(94,146,255,0.20),rgba(255,255,255,0)_68%),linear-gradient(180deg,#edf4ff_0%,#ffffff_100%)] sm:min-h-screen">
-      <div className="mx-auto flex min-h-svh w-full max-w-[760px] items-start px-5 py-8 sm:min-h-screen sm:items-center sm:px-6 sm:py-16">
+      <div className="mx-auto flex min-h-svh w-full max-w-[760px] items-center px-5 py-10 sm:min-h-screen sm:px-6 sm:py-16">
         <div className="mx-auto w-full max-w-[31rem] sm:max-w-none">
           <div className="text-center sm:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">
@@ -67,24 +67,24 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
             <BrandImage
               asset={BRAND_USAGE.methodLockup}
               priority
-              className="mx-auto mt-4 h-9 w-auto sm:mx-0 sm:h-11"
+              className="mx-auto mt-3 h-9 w-auto sm:mx-0 sm:h-11"
               sizes="(max-width: 640px) 260px, 340px"
             />
 
-            <div className="mx-auto mt-6 max-w-[34rem] sm:mx-0">
+            <div className="mx-auto mt-5 max-w-[34rem] sm:mx-0">
               <p className="text-[15px] font-medium leading-6 text-slate-700 sm:text-[16px]">
                 Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
               </p>
-              <h1 className="mx-auto mt-2.5 max-w-[12ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mx-0 sm:text-[40px]">
+              <h1 className="mx-auto mt-2 max-w-[12ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mx-0 sm:text-[40px]">
                 Adult learner?
               </h1>
-              <p className="mx-auto mt-2 max-w-[28ch] text-[16px] leading-7 text-slate-700 sm:mx-0 sm:max-w-[32ch] sm:text-[17px]">
+              <p className="mx-auto mt-1.5 max-w-[28ch] text-[16px] leading-7 text-slate-700 sm:mx-0 sm:mt-2 sm:max-w-[32ch] sm:text-[17px]">
                 You&apos;re exactly where you should be.
               </p>
             </div>
           </div>
 
-          <div className="relative mx-auto mt-6 max-w-[31rem] overflow-hidden rounded-[24px] border border-blue-100/70 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.90))] p-5 shadow-[0_18px_48px_rgba(15,23,42,0.10)] sm:mx-0 sm:mt-8 sm:max-w-none sm:p-7">
+          <div className="relative mx-auto mt-5 max-w-[31rem] overflow-hidden rounded-[24px] border border-blue-100/70 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.90))] p-5 shadow-[0_18px_48px_rgba(15,23,42,0.10)] sm:mx-0 sm:mt-7 sm:max-w-none sm:p-7">
             <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
             <div className="relative">
               <h2 className="text-[22px] font-semibold text-slate-900">Early access</h2>

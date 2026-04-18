@@ -396,6 +396,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const showHelperCard = variant !== "contact" && !isPreviewNotify;
   const showExampleCard = copy.exampleLines.length > 0 && !isPreviewNotify;
   const showFormIntro = Boolean(copy.formTitle || copy.formSubtitle);
+  const formCardTopMargin = isPreviewNotify ? "mt-4" : "mt-5";
   const messageLabel = isPreviewNotify
     ? "OPTIONAL NOTE"
     : copy.messageRequired
@@ -408,21 +409,15 @@ export default function ContactForm({ variant = "contact" }: Props) {
       : "Send";
   const intro = isPreviewNotify ? (
     <div className="pt-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
-        Early access
-      </p>
+      <h1 className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+        Apply for early access
+      </h1>
       <BrandImage
         asset={BRAND_USAGE.methodLockup}
         className="mt-3 h-9 w-auto sm:h-10"
         sizes="(max-width: 640px) 260px, 340px"
         priority
       />
-      <h1 className="mt-5 max-w-[12ch] text-[30px] font-semibold leading-[1.04] tracking-[-0.02em] text-slate-900 sm:text-[34px]">
-        Apply for early access
-      </h1>
-      <p className="mt-3 max-w-[34ch] text-[16px] leading-7 text-slate-700">
-        Leave your name and email now. Add a short note only if you want earlier tester access.
-      </p>
     </div>
   ) : isContact ? (
     <div className="pt-1">
@@ -507,7 +502,9 @@ export default function ContactForm({ variant = "contact" }: Props) {
       )}
 
       {/* Form card */}
-      <div className="relative mt-5 overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:p-6">
+      <div
+        className={`relative ${formCardTopMargin} overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:p-6`}
+      >
         <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
         {showFormIntro ? (
           <div className={isPreviewNotify ? "text-left" : "text-center"}>
@@ -580,7 +577,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
               aria-invalid={fieldError === "email" ? true : undefined}
               aria-describedby={fieldError === "email" ? errorId : undefined}
               className="ui-field mt-2"
-              placeholder="you@email.com"
+              placeholder="your@email.com"
               type="email"
               inputMode="email"
               autoComplete="email"

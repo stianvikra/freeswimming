@@ -60,7 +60,9 @@ describe("ContactForm", () => {
     render(<ContactForm variant="preview_access_notify" />);
 
     expect(screen.getByRole("heading", { name: "Apply for early access" })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading")).toHaveLength(1);
     expect(screen.getByAltText("Learn. Drill. Swim.")).toBeInTheDocument();
+    expect(screen.getByLabelText("EMAIL")).toHaveAttribute("placeholder", "your@email.com");
     expect(screen.getByLabelText("OPTIONAL NOTE")).toBeInTheDocument();
     expect(screen.queryByText("Your details")).not.toBeInTheDocument();
     expect(

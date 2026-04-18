@@ -40,7 +40,7 @@ export default function PageTemplate({
       className={[
         "mx-auto w-full px-4",
         topInset === "tight"
-          ? "pt-[4.5rem] sm:pt-24"
+          ? "pt-[4.25rem] sm:pt-20"
           : topInset === "compact"
             ? "pt-20 sm:pt-24"
             : "pt-24 sm:pt-28",
