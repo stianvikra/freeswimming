@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-17-home-contact-mobile-followup-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-17`
-- `updated`: `2026-04-17`
+- `updated`: `2026-04-18`
 
 ## Goal
 
@@ -36,8 +36,8 @@ Tighten the mobile quality of `/` and `/contact` so both routes read higher, cal
 ## Dependencies And Boundaries
 
 - Related shipped/public-surface lineage:
-  - [/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-17-home-preview-contact-hero-revert-early-access-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-17-home-preview-contact-hero-revert-early-access-10-10.md)
-  - [/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-17-mobile-polish-preview-contact-home-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-17-mobile-polish-preview-contact-home-10-10.md)
+  - [/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-17-home-preview-contact-hero-revert-early-access-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-17-home-preview-contact-hero-revert-early-access-10-10.md)
+  - [/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-17-mobile-polish-preview-contact-home-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-17-mobile-polish-preview-contact-home-10-10.md)
 - Existing contact submission contract remains authoritative:
   - [/Users/stianvikra/freeswimming/app/api/contact/route.ts](/Users/stianvikra/freeswimming/app/api/contact/route.ts)
   - [/Users/stianvikra/freeswimming/docs/api-contracts.md](/Users/stianvikra/freeswimming/docs/api-contracts.md)
@@ -240,3 +240,4 @@ Strict `10/10` mode for this brief:
 
 - `2026-04-17 | implementation start | moved the brief into in-progress and began the agreed home/contact mobile follow-up so tighter top spacing, lighter contact copy, and lone-CTA alignment can ship as one small public-surface polish slice | next: patch the page/template/form surfaces, update targeted tests, and run the narrowed mobile validation set before the full verify gates`
 - `2026-04-17 | planning | split the next public-surface follow-up into a dedicated home/contact brief so mobile spacing, lighter contact copy, and lone-CTA alignment can ship without dragging builder/poolside work into the same PR | next: if approved for execution, move this brief to in-progress, implement the narrow UI polish, and validate with targeted mobile checks plus full verify gates`
+- `2026-04-18 | housekeeping closeout | moved brief to done after the scoped home/contact mobile follow-up landed on main in merged PR #456 | next: none`

@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-17-preview-home-centering-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-17`
-- `updated`: `2026-04-17`
+- `updated`: `2026-04-18`
 
 ## Goal
 
@@ -30,8 +30,8 @@ Make `/preview-access` read as a centered mobile hero plus centered card composi
 ## Dependencies And Boundaries
 
 - Related public-surface lineage:
-  - [/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-17-home-preview-contact-hero-revert-early-access-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-17-home-preview-contact-hero-revert-early-access-10-10.md)
-  - [/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-17-preview-access-brand-forward-visitor-facing-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-17-preview-access-brand-forward-visitor-facing-10-10.md)
+  - [/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-17-home-preview-contact-hero-revert-early-access-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-17-home-preview-contact-hero-revert-early-access-10-10.md)
+  - [/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-17-preview-access-brand-forward-visitor-facing-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-17-preview-access-brand-forward-visitor-facing-10-10.md)
 - Existing brand assets remain authoritative:
   - [/Users/stianvikra/freeswimming/lib/brand.ts](/Users/stianvikra/freeswimming/lib/brand.ts)
   - [/Users/stianvikra/freeswimming/public/logos/brand/manifest.json](/Users/stianvikra/freeswimming/public/logos/brand/manifest.json)
@@ -216,3 +216,4 @@ Strict `10/10` mode for this brief:
 - `2026-04-17 | planning | split a dedicated public follow-up brief for preview mobile centering and home desktop intro centering so the work can ship separately from builder/library/poolside changes | next: move brief to in-progress, implement the layout pass, run targeted public/private-gate validation, then complete pre-pr and pre-merge gates`
 - `2026-04-17 | implementation start | moved the brief to in-progress and started the scoped layout pass for preview mobile composition and home desktop hero centering on a dedicated branch | next: finish the route updates, run targeted playwright coverage including password-backed preview gate validation, then run pre-pr gate`
 - `2026-04-17 | targeted validation | implemented the centered preview mobile card/hero composition and centered home hero block; targeted public playwright and password-backed private-access-gate runs passed locally | next: run npm run verify:pre-pr, then commit, push, and open the public-polish PR`
+- `2026-04-18 | housekeeping closeout | moved brief to done after the centering follow-up landed on main in merged PR #457 | next: none`
