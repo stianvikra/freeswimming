@@ -38,6 +38,10 @@ const RISK_PLACEHOLDERS = new Set([
 ]);
 const ROLLBACK_PLACEHOLDERS = new Set(["tbd", "todo", "n/a", "na", "<fill-in>"]);
 const POLICY_CHECKLIST_STATUSES = new Set(["PASS", "FAIL", "PENDING", "N/A"]);
+const RETRYABLE_PR_BODY_ERROR_PATTERNS = [
+  /same evidence line must include current pr head sha/i,
+  /requires pass evidence line containing current head sha/i,
+];
 const POLICY_IMPACT_RULES = [
   {
     id: "auth",
@@ -390,6 +394,21 @@ function lineContainsHeadSha(line, headSha) {
   return normalized.includes(headSha.toLowerCase()) || normalized.includes(shortSha.toLowerCase());
 }
 
+function sleep(ms) {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryablePullRequestBodyError(error) {
+  if (!error) return false;
+  return RETRYABLE_PR_BODY_ERROR_PATTERNS.some((pattern) => pattern.test(error));
+}
+
+export function shouldRetryPullRequestBodyValidation(errors) {
+  if (!Array.isArray(errors) || errors.length === 0) return false;
+  return errors.every((error) => isRetryablePullRequestBodyError(error));
+}
+
 export function validatePullRequestBody(body, options = {}) {
   const errors = [];
   const sections = extractSections(body);
@@ -602,6 +621,53 @@ export function validatePullRequestBody(body, options = {}) {
   return errors;
 }
 
+export async function validatePullRequestBodyWithApiRefresh(pullRequest, options = {}) {
+  const maxAttempts = Math.max(1, options.maxAttempts ?? 4);
+  const refreshDelayMs = Math.max(0, options.refreshDelayMs ?? 3000);
+  const env = options.env ?? process.env;
+  const onRetry = typeof options.onRetry === "function" ? options.onRetry : null;
+  const fetchImpl = options.fetchImpl;
+  const changedFilesOverride = options.changedFiles;
+  let currentPullRequest = pullRequest;
+  let attempts = 0;
+  let errors = [];
+
+  while (attempts < maxAttempts) {
+    attempts += 1;
+    currentPullRequest = await hydratePullRequestFromApi(currentPullRequest, {
+      fetchImpl,
+      env,
+    });
+    const changedFiles = changedFilesOverride ?? listChangedFilesForPullRequest(currentPullRequest);
+    errors = validatePullRequestBody(currentPullRequest.body ?? "", {
+      headSha: currentPullRequest.head?.sha ?? "",
+      changedFiles,
+    });
+
+    if (errors.length === 0 || !shouldRetryPullRequestBodyValidation(errors) || attempts >= maxAttempts) {
+      return {
+        errors,
+        attempts,
+        pullRequest: currentPullRequest,
+      };
+    }
+
+    onRetry?.({
+      attempt: attempts,
+      maxAttempts,
+      errors,
+      headSha: currentPullRequest.head?.sha ?? "",
+    });
+    await sleep(refreshDelayMs);
+  }
+
+  return {
+    errors,
+    attempts,
+    pullRequest: currentPullRequest,
+  };
+}
+
 async function main() {
   const payload = parseEventPayload();
   let pullRequest = payload?.pull_request;
@@ -611,12 +677,12 @@ async function main() {
     return;
   }
 
-  pullRequest = await hydratePullRequestFromApi(pullRequest);
-
-  const changedFiles = listChangedFilesForPullRequest(pullRequest);
-  const errors = validatePullRequestBody(pullRequest.body ?? "", {
-    headSha: pullRequest.head?.sha ?? "",
-    changedFiles,
+  const { errors } = await validatePullRequestBodyWithApiRefresh(pullRequest, {
+    onRetry: ({ attempt, maxAttempts }) => {
+      console.log(
+        `[pr-body-lint] Detected a stale PR body snapshot after push; retrying GitHub API refresh (${attempt}/${maxAttempts - 1}).`
+      );
+    },
   });
   if (errors.length === 0) {
     console.log("[pr-body-lint] PASS");
