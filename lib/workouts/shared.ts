@@ -182,6 +182,7 @@ export const WORKOUT_POOLSIDE_ABBREVIATION_LEGEND = [
   { short: "Back", full: "Backstroke" },
   { short: "Breast", full: "Breaststroke" },
   { short: "Fly", full: "Butterfly" },
+  { short: "Mod", full: "Moderate" },
   { short: "IR", full: "Interval rest" },
   { short: "SR", full: "Set rest" },
   { short: "R", full: "Rest" },
@@ -3213,6 +3214,7 @@ function abbreviateWorkoutPoolsideText(value: string | null | undefined) {
     [/\bBackstroke\b/g, "Back"],
     [/\bBreaststroke\b/g, "Breast"],
     [/\bButterfly\b/g, "Fly"],
+    [/\bModerate\b/g, "Mod"],
     [/\bInterval rest\b/gi, "IR"],
     [/\bSet rest\b/gi, "SR"],
     [/\bRest\b/gi, "R"],
@@ -3279,8 +3281,10 @@ function shouldInlineWorkoutPoolsideSecondary(
     return false;
   }
 
-  return estimateWorkoutPoolsideInlineLength(item.text, item.secondaryText) <=
-    WORKOUT_POOLSIDE_INLINE_CHAR_BUDGET;
+  return (
+    estimateWorkoutPoolsideInlineLength(item.text, item.secondaryText) <=
+    WORKOUT_POOLSIDE_INLINE_CHAR_BUDGET
+  );
 }
 
 function formatWorkoutPoolsideLineItem(
@@ -3294,15 +3298,18 @@ function formatWorkoutPoolsideLineItem(
     restLayout,
   });
   const primaryText = useAbbreviatedNotation
-    ? abbreviateWorkoutPoolsideText(item.text) ?? item.text
+    ? (abbreviateWorkoutPoolsideText(item.text) ?? item.text)
     : item.text;
   const secondaryText = item.secondaryText
     ? useAbbreviatedNotation
-      ? abbreviateWorkoutPoolsideText(item.secondaryText) ?? item.secondaryText
+      ? (abbreviateWorkoutPoolsideText(item.secondaryText) ?? item.secondaryText)
       : item.secondaryText
     : null;
 
-  if (secondaryText && shouldInlineWorkoutPoolsideSecondary({ ...item, text: primaryText, secondaryText }, restLayout)) {
+  if (
+    secondaryText &&
+    shouldInlineWorkoutPoolsideSecondary({ ...item, text: primaryText, secondaryText }, restLayout)
+  ) {
     return {
       ...item,
       text: [primaryText, secondaryText].join(" · "),
