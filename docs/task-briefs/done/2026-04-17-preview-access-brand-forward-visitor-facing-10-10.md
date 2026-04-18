@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-17-preview-access-brand-forward-visitor-facing-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-17`
-- `updated`: `2026-04-17`
+- `updated`: `2026-04-18`
 
 ## Goal
 
@@ -334,3 +334,4 @@ Strict `10/10` mode for this brief:
 - `2026-04-17 | working tree | created planned brief for a brand-forward, visitor-facing /preview-access refresh that removes admin-help/status UI, keeps password as the primary unlock action, and adds a secondary early-access notify CTA via the existing contact flow | next: move brief to in-progress when implementation starts, refresh the route UI, update targeted tests, and validate the private-gate flow`
 - `2026-04-17 | implementation start | moved brief to in-progress on branch preview-access-brand-forward-visitor-facing and started route/contact-flow updates for the brand-forward locked-page refresh | next: finish UI + contact variant changes, update tests/runbooks, and run validation`
 - `2026-04-17 | implementation checkpoint | refreshed /preview-access into a brand-forward visitor-facing route, removed the admin/status card, added a preview-updates contact variant plus site-lock bypass for /contact and /api/contact, updated runbooks/tests, and validated with npm run lint:briefs:all, npx vitest run tests/unit/contact-form.test.tsx tests/unit/site-lock-session.test.ts, targeted contact/private-gate Playwright coverage, and a full npm run verify:pre-pr PASS; local plain preview password is not present in env files, so the required password-backed private-gate rerun still needs owner-provided PW_SITE_LOCK_PASSWORD before final merge recommendation | next: commit, push, open PR, watch CI, then rerun verify:pre-merge with available credentials and keep merge-readiness conditional on the missing password-backed gate`
+- `2026-04-18 | housekeeping closeout | moved brief to done after the preview-access visitor refresh landed on main and the remaining public follow-up polish for this surface shipped in merged descendant PRs | next: none`

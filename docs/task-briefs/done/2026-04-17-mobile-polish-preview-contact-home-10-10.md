@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-17-mobile-polish-preview-contact-home-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-17`
-- `updated`: `2026-04-17`
+- `updated`: `2026-04-18`
 
 ## Goal
 
@@ -272,3 +272,4 @@ Strict `10/10` mode for this brief:
 
 - `2026-04-17 | implementation start | created in-progress brief for a mobile-only quality pass on preview access, preview-notify contact, and home so the next slice can target first-viewport clarity, calmer hierarchy, and canonical logo use on iPhone | next: implement the three route/component updates, run targeted mobile validation, and then push the slice through pre-PR verification`
 - `2026-04-17 | targeted validation pass | reduced preview-access hero weight, rebuilt preview-notify intro around the canonical lockup, removed preview-notify helper/example UI, and simplified the home mobile hierarchy; targeted unit + mobile Playwright checks are green, including a password-backed private-gate run | next: stage the brief so lint:briefs sees it, then run verify:pre-pr and prepare commit/push/PR`
+- `2026-04-18 | housekeeping closeout | moved brief to done after the mobile preview/contact/home polish landed on main via the merged PR chain for this slice and its follow-ups | next: none`

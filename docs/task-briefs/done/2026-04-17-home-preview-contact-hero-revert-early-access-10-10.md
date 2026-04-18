@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-17-home-preview-contact-hero-revert-early-access-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-17`
-- `updated`: `2026-04-17`
+- `updated`: `2026-04-18`
 
 ## Goal
 
@@ -186,3 +186,4 @@ Strict `10/10` mode for this brief:
 
 - `2026-04-17 | implementation start | created in-progress brief for a tighter public/mobile brand-voice pass across home, preview-access, and contact so the next slice can restore stronger copy, remove redundant hero lockups, and shift notify language to early-access application language | next: implement the hero/contact/preview updates, run targeted validation, and push the slice through the normal verification gates`
 - `2026-04-17 | mobile polish follow-up | tightened the same slice with centered mobile hero copy on home + preview, removed the preview password placeholder, and stripped redundant early-access form text so the contact apply flow stays cleaner and more truthful | next: rerun targeted checks, full verify gates, update PR #455, and confirm merge readiness`
+- `2026-04-18 | housekeeping closeout | moved brief to done after the stronger public/mobile copy-and-hierarchy pass landed on main in merged PR #455 | next: none`
