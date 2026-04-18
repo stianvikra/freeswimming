@@ -267,7 +267,7 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("workout-editor-poolside-panel")).toHaveAttribute(
       "data-containment-style",
-      "split"
+      "stacked"
     );
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
@@ -2554,7 +2554,7 @@ describe("WorkoutBuilderHub", () => {
     expect(fetchBody.draft.poolLengthM).toBe(30.477);
   });
 
-  it("keeps the poolside focus selector compact and removes redundant focus role labels", async () => {
+  it("keeps long poolside focus lists on natural page scroll without redundant focus role labels", async () => {
     render(
       <WorkoutBuilderHub
         workoutLibrary={buildWorkoutLibrary()}
@@ -2574,8 +2574,12 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    expect(screen.getByTestId("workout-editor-poolside-panel")).toHaveAttribute(
+      "data-layout-mode",
+      "stacked"
+    );
     const focusList = screen.getByTestId("workout-editor-poolside-focus-list");
-    expect(focusList).toHaveClass("overflow-y-auto");
+    expect(focusList).not.toHaveClass("overflow-y-auto");
     expect(within(focusList).queryByText("Primary focus")).not.toBeInTheDocument();
     expect(within(focusList).queryByText("Optional focus")).not.toBeInTheDocument();
     expect(within(focusList).getByText("Hold the line before pressing back.")).toBeVisible();

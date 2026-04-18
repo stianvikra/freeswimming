@@ -1046,6 +1046,32 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain("margin: 12mm;");
   });
 
+  it("uses Mod in abbreviated poolside notation when a poolside line includes moderate effort", () => {
+    const draft = {
+      ...buildDraft(),
+      steps: [
+        {
+          ...buildDraft().steps[0],
+          intensity: "moderate" as const,
+        },
+      ],
+    };
+    const pdfModel = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "abbreviated",
+    });
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "abbreviated",
+    });
+
+    expect(pdfModel.poolsideLines).toContain("400m · Free · Mod");
+    expect(html).toContain("400m · Free · Mod");
+    expect(html).not.toContain("400m · Freestyle · Moderate");
+  });
+
   it("uses a dedicated landscape header composition without the old summary pill", () => {
     const html = buildWorkoutPdfHtmlDocument(
       {
@@ -1475,7 +1501,12 @@ describe("workouts shared readiness", () => {
       ],
     });
 
-    expect(sections.map((section) => section.title)).toEqual(["Warmup", "Main", "Cooldown", "Main"]);
+    expect(sections.map((section) => section.title)).toEqual([
+      "Warmup",
+      "Main",
+      "Cooldown",
+      "Main",
+    ]);
     expect(sections[0]?.rows[0]).toMatchObject({
       text: "400m · Freestyle · Easy",
       secondaryText: "Rest 0:30",
