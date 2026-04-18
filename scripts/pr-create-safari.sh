@@ -81,7 +81,7 @@ generate_body_file() {
 
   require_node_runtime "[pr-create-safari]" || return 1
 
-  file_path="$(mktemp "${TMPDIR:-/tmp}/pr-body.XXXXXX.md")"
+  file_path="$(mktemp "${TMPDIR:-/tmp}/pr-body.XXXXXX")"
   if node ./scripts/generate-pr-body.mjs --base "$base_branch" --output "$file_path" >/dev/null; then
     echo "$file_path"
     return 0
