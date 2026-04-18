@@ -5,11 +5,12 @@ import { useEffect, useState } from "react";
 import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
 import {
   formatDistanceMetersLabel,
-  getSessionTypeLabel,
   resolveSessionDraftPoolLengthUnit,
 } from "@/lib/session-generator-v1/shared";
 import type {
   WorkoutPoolsideFocusOption,
+  WorkoutPoolsideNotationMode,
+  WorkoutPoolsideRestLayout,
   WorkoutPoolsidePrintLayout,
   WorkoutPoolsidePrintStyle,
   WorkoutSummary,
@@ -55,15 +56,13 @@ type QuickPreviewRow = {
   secondaryText?: string | null;
 };
 
-function buildQuickPreviewRows(workout: WorkoutSummary): QuickPreviewRow[] {
-  if (workout.previewLineItems && workout.previewLineItems.length > 0) {
-    return workout.previewLineItems.map((lineItem, index) => ({
-      key: `${workout.id}-preview-${index}`,
-      primaryText: lineItem.text,
-      secondaryText: lineItem.secondaryText ?? null,
-    }));
-  }
+type QuickPreviewSection = {
+  key: string;
+  title?: string | null;
+  rows: QuickPreviewRow[];
+};
 
+function buildQuickPreviewRowsFromPreviewText(workout: WorkoutSummary): QuickPreviewRow[] {
   if (!workout.previewText) {
     return [];
   }
@@ -91,18 +90,61 @@ function buildQuickPreviewRows(workout: WorkoutSummary): QuickPreviewRow[] {
     });
 }
 
+function buildQuickPreviewSections(workout: WorkoutSummary): QuickPreviewSection[] {
+  if (workout.previewSections && workout.previewSections.length > 0) {
+    return workout.previewSections.map((section, sectionIndex) => ({
+      key: section.key || `${workout.id}-preview-section-${sectionIndex}`,
+      title: section.title,
+      rows: section.rows.map((lineItem, lineIndex) => ({
+        key: `${section.key || `${workout.id}-preview-section-${sectionIndex}`}-line-${lineIndex}`,
+        primaryText: lineItem.text,
+        secondaryText: lineItem.secondaryText ?? null,
+      })),
+    }));
+  }
+
+  if (workout.previewLineItems && workout.previewLineItems.length > 0) {
+    return [
+      {
+        key: `${workout.id}-preview-section-0`,
+        title: null,
+        rows: workout.previewLineItems.map((lineItem, index) => ({
+          key: `${workout.id}-preview-${index}`,
+          primaryText: lineItem.text,
+          secondaryText: lineItem.secondaryText ?? null,
+        })),
+      },
+    ];
+  }
+
+  const fallbackRows = buildQuickPreviewRowsFromPreviewText(workout);
+  return fallbackRows.length > 0
+    ? [
+        {
+          key: `${workout.id}-preview-section-0`,
+          title: null,
+          rows: fallbackRows,
+        },
+      ]
+    : [];
+}
+
 function buildPoolsidePreviewHref(
   baseHref: string,
   options: {
     selectedFocusIds: string[];
     printStyle: WorkoutPoolsidePrintStyle;
     printLayout: WorkoutPoolsidePrintLayout;
+    notationMode: WorkoutPoolsideNotationMode;
+    restLayout: WorkoutPoolsideRestLayout;
   }
 ) {
   const url = new URL(baseHref, "http://localhost");
   url.searchParams.set("focusMode", "custom");
   url.searchParams.set("printStyle", options.printStyle);
   url.searchParams.set("printLayout", options.printLayout);
+  url.searchParams.set("notationMode", options.notationMode);
+  url.searchParams.set("restLayout", options.restLayout);
   url.searchParams.delete("focusId");
   options.selectedFocusIds.forEach((focusId) => {
     url.searchParams.append("focusId", focusId);
@@ -153,6 +195,10 @@ export default function SavedWorkoutsPanel({
   const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
   const [poolsidePrintLayout, setPoolsidePrintLayout] =
     useState<WorkoutPoolsidePrintLayout>("portrait");
+  const [poolsideNotationMode, setPoolsideNotationMode] =
+    useState<WorkoutPoolsideNotationMode>("auto");
+  const [poolsideRestLayout, setPoolsideRestLayout] =
+    useState<WorkoutPoolsideRestLayout>("auto");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     trainingFocusOptions.map((focus) => focus.id)
   );
@@ -354,22 +400,7 @@ export default function SavedWorkoutsPanel({
             const previewOpen = previewWorkoutId === workout.id;
             const poolsideOpen = poolsideWorkoutId === workout.id;
             const isSelected = selectedWorkoutIds.includes(workout.id);
-            const workoutDistanceLabel = workout.totalDistanceM
-              ? workout.environment === "pool"
-                ? formatDistanceMetersLabel(
-                    workout.totalDistanceM,
-                    resolveSessionDraftPoolLengthUnit(workout.poolLengthUnit)
-                  )
-                : `${workout.totalDistanceM}m`
-              : null;
-            const updatedLabel = new Intl.DateTimeFormat("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }).format(new Date(workout.updatedAt));
-            const quickPreviewRows = buildQuickPreviewRows(workout);
+            const quickPreviewSections = buildQuickPreviewSections(workout);
             const totalDistanceQuickLabel = workout.totalDistanceM
               ? workout.environment === "pool"
                 ? formatDistanceMetersLabel(
@@ -383,6 +414,8 @@ export default function SavedWorkoutsPanel({
                   selectedFocusIds: selectedPoolsideFocusIds,
                   printStyle: poolsidePrintStyle,
                   printLayout: poolsidePrintLayout,
+                  notationMode: poolsideNotationMode,
+                  restLayout: poolsideRestLayout,
                 })
               : null;
 
@@ -412,27 +445,11 @@ export default function SavedWorkoutsPanel({
                         />
                       ) : null}
                       <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
-                      {isCurrentWorkout ? (
-                        <span
-                          data-testid={`saved-workout-current-${workout.id}`}
-                          className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700"
-                        >
-                          Current
-                        </span>
-                      ) : null}
                     </div>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {[workoutDistanceLabel, getSessionTypeLabel(workout.sessionType)]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-                      Updated {updatedLabel}
-                    </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {showInlinePreview &&
-                    (quickPreviewRows.length > 0 || totalDistanceQuickLabel) ? (
+                    (quickPreviewSections.length > 0 || totalDistanceQuickLabel) ? (
                       <button
                         type="button"
                         onClick={() => {
@@ -498,27 +515,37 @@ export default function SavedWorkoutsPanel({
                   </div>
                 </div>
 
-                {previewOpen && (quickPreviewRows.length > 0 || totalDistanceQuickLabel) ? (
+                {previewOpen && (quickPreviewSections.length > 0 || totalDistanceQuickLabel) ? (
                   <div
                     data-testid={previewTestIdBuilder(workout.id)}
                     className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Quick preview
-                    </p>
-                    <div className="mt-3 space-y-3">
-                      {quickPreviewRows.map((line) => (
-                        <div
-                          key={line.key}
+                    <div className="space-y-3">
+                      {quickPreviewSections.map((section) => (
+                        <section
+                          key={section.key}
                           className="rounded-xl border border-white/80 bg-white px-3 py-3"
                         >
-                          <p className="text-sm leading-6 text-slate-800">{line.primaryText}</p>
-                          {line.secondaryText ? (
-                            <p className="mt-2 text-sm font-semibold text-blue-800">
-                              {line.secondaryText}
+                          {section.title ? (
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {section.title}
                             </p>
                           ) : null}
-                        </div>
+                          <div className={`${section.title ? "mt-2" : ""} space-y-2`}>
+                            {section.rows.map((line) => (
+                              <div key={line.key}>
+                                <p className="text-sm leading-6 text-slate-800">
+                                  {line.primaryText}
+                                </p>
+                                {line.secondaryText ? (
+                                  <p className="text-sm font-semibold text-blue-800">
+                                    {line.secondaryText}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        </section>
                       ))}
                     </div>
                     {totalDistanceQuickLabel ? (
@@ -552,6 +579,10 @@ export default function SavedWorkoutsPanel({
                     onPrintStyleChange={setPoolsidePrintStyle}
                     printLayout={poolsidePrintLayout}
                     onPrintLayoutChange={setPoolsidePrintLayout}
+                    notationMode={poolsideNotationMode}
+                    onNotationModeChange={setPoolsideNotationMode}
+                    restLayout={poolsideRestLayout}
+                    onRestLayoutChange={setPoolsideRestLayout}
                     actionSlot={
                       <Link
                         href={workoutPoolsidePreviewHref}

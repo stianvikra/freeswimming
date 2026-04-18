@@ -10,6 +10,7 @@ import {
 } from "@/lib/session-generator-v1/shared";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 import {
+  buildWorkoutSummaryPreviewSections,
   buildWorkoutSummaryPreviewLineItems,
   buildWorkoutSummaryPreviewText,
   normalizeSessionDraftForWorkoutPersistence,
@@ -236,6 +237,7 @@ export function buildWorkoutSummary(row: WorkoutRow): WorkoutSummary {
     status: row.status as WorkoutStatus,
     previewText: buildWorkoutSummaryPreviewText(draft),
     previewLineItems: buildWorkoutSummaryPreviewLineItems(draft),
+    previewSections: buildWorkoutSummaryPreviewSections(draft),
   };
 }
 

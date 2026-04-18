@@ -3,9 +3,9 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 async function getWithSocketHangupRetry(request: APIRequestContext, url: string) {
   let lastError: unknown;
 
-  for (let attempt = 1; attempt <= 4; attempt += 1) {
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
     try {
-      return await request.get(url, { timeout: 10_000 });
+      return await request.get(url, { timeout: 20_000 });
     } catch (error) {
       lastError = error;
       const message =
@@ -13,13 +13,15 @@ async function getWithSocketHangupRetry(request: APIRequestContext, url: string)
       const isTransientNetworkError =
         message.includes("socket hang up") ||
         message.includes("econnreset") ||
+        message.includes("fetch failed") ||
+        message.includes("econnrefused") ||
         message.includes("timeout");
-      if (!isTransientNetworkError || attempt === 4) {
+      if (!isTransientNetworkError || attempt === 6) {
         throw error;
       }
 
       await new Promise((resolve) => {
-        setTimeout(resolve, 250 * attempt);
+        setTimeout(resolve, 500 * attempt);
       });
     }
   }

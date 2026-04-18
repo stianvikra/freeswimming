@@ -4,6 +4,7 @@ import {
   buildWorkoutPdfFileName,
   buildWorkoutPdfHtmlDocument,
   buildWorkoutPdfModel,
+  buildWorkoutSummaryPreviewSections,
   getDefaultWorkoutPoolsideFocusIds,
   buildWorkoutGarminReadyExport,
   buildWorkoutGarminReadyExportFileName,
@@ -1385,6 +1386,177 @@ describe("workouts shared readiness", () => {
 
     expect(exportPayload.blocks[0].roundSummary).toBe("4 rounds · 100m + 0:30 per round");
     expect(exportPayload.blocks[1].step.duration.summary).toBe("Fixed Rest Time 0:40");
+  });
+
+  it("builds ordered summary preview sections without merging non-contiguous section labels", () => {
+    const sections = buildWorkoutSummaryPreviewSections({
+      ...buildDraft(),
+      steps: [
+        {
+          id: "step-1",
+          category: "warmup",
+          name: "Warmup swim",
+          stroke: "freestyle",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 400,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Warmup rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-3",
+          category: "main",
+          name: "Main swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-4",
+          category: "rest",
+          name: "Main rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-5",
+          category: "cooldown",
+          name: "Cooldown swim",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 200,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-6",
+          category: "main",
+          name: "Second main swim",
+          stroke: "freestyle",
+          drillType: "kick",
+          equipment: "kickboard",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 25,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+        },
+      ],
+    });
+
+    expect(sections.map((section) => section.title)).toEqual(["Warmup", "Main", "Cooldown", "Main"]);
+    expect(sections[0]?.rows[0]).toMatchObject({
+      text: "400m · Freestyle · Easy",
+      secondaryText: "Rest 0:30",
+    });
+    expect(sections[1]?.rows[0]?.text).toContain("4 x 100m · Freestyle · Moderate");
+    expect(sections[3]?.rows[0]?.text).toContain("25m · Freestyle · Kick · Kickboard · Easy");
+  });
+
+  it("supports auto notation fallback plus manual poolside overrides", () => {
+    const longLineDraft: SessionDraft = {
+      ...buildDraft(),
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Long repeat swim",
+          stroke: "freestyle",
+          drillType: "kick",
+          equipment: "kickboard",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 25,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 16,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.17,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 16,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-3",
+          category: "rest",
+          name: "Post set rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+          postSetRestForRepeatGroupId: "repeat-1",
+        },
+      ],
+    };
+
+    const autoHtml = buildWorkoutPdfHtmlDocument(longLineDraft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "auto",
+      poolsideRestLayout: "auto",
+    });
+    const fullBelowHtml = buildWorkoutPdfHtmlDocument(longLineDraft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "full",
+      poolsideRestLayout: "below_step",
+    });
+
+    expect(autoHtml).toContain('data-poolside-notation-mode="auto"');
+    expect(autoHtml).toContain('data-poolside-rest-layout="auto"');
+    expect(autoHtml).toContain("16 x 25m · Free · K · KB · Easy · IR 0:10 · SR 0:30");
+    expect(fullBelowHtml).toContain('data-poolside-notation-mode="full"');
+    expect(fullBelowHtml).toContain('data-poolside-rest-layout="below_step"');
+    expect(fullBelowHtml).toContain("16 x 25m · Freestyle · Kick · Kickboard · Easy");
+    expect(fullBelowHtml).toContain("Interval rest 0:10 · Set rest 0:30");
+    expect(fullBelowHtml).toContain("poolside-line-secondary-text");
   });
 
   it("prefers the primary poolside focus by default and resolves titles from explicit ids", () => {

@@ -5,8 +5,10 @@ import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import {
   buildWorkoutPdfHtmlDocument,
+  normalizeWorkoutPoolsideNotationMode,
   normalizeWorkoutPoolsidePrintLayout,
   normalizeWorkoutPoolsidePrintStyle,
+  normalizeWorkoutPoolsideRestLayout,
   selectWorkoutPoolsideFocusPoints,
   type WorkoutPoolsideFocusOption,
 } from "@/lib/workouts/shared";
@@ -54,6 +56,12 @@ export async function GET(request: Request, context: RouteContext) {
   );
   const poolsidePrintLayout = normalizeWorkoutPoolsidePrintLayout(
     requestUrl.searchParams.get("printLayout")
+  );
+  const poolsideNotationMode = normalizeWorkoutPoolsideNotationMode(
+    requestUrl.searchParams.get("notationMode")
+  );
+  const poolsideRestLayout = normalizeWorkoutPoolsideRestLayout(
+    requestUrl.searchParams.get("restLayout")
   );
   const { workoutId } = await context.params;
   if (!UUID_PATTERN.test(workoutId)) {
@@ -123,6 +131,8 @@ export async function GET(request: Request, context: RouteContext) {
         focusPoints,
         poolsidePrintStyle,
         poolsidePrintLayout,
+        poolsideNotationMode,
+        poolsideRestLayout,
         swimmerName: athleteProfileSnapshot?.profile?.primaryName ?? null,
         logoUrl: new URL(
           getWorkoutPdfLogoPath({

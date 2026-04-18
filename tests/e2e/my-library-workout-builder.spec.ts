@@ -603,7 +603,7 @@ test.describe("my library workout builder", () => {
     ).toHaveCount(0);
     await expect(repeatSummary.getByText("Final rest skipped")).toHaveCount(0);
     await expect(repeatSummary).toContainText(
-      "6 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+      "6 x 100m · Freestyle · Moderate · Interval rest 0:30 · Set rest 0:30"
     );
     await expect(repeatSummary).not.toContainText("109.36yd");
     await expect(page.getByText("Keeps the blue surfaces")).toBeVisible();
@@ -623,7 +623,7 @@ test.describe("my library workout builder", () => {
       /304(?:\.49|\.5)m/
     );
     await expect(page.getByTestId("session-draft-repeat-summary-2")).toContainText(
-      "6 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+      "6 x 100m · Freestyle · Moderate · Interval rest 0:30 · Set rest 0:30"
     );
     await expect(page.getByTestId("session-draft-repeat-summary-2")).not.toContainText("109.36yd");
     await page.getByTestId("session-draft-step-toggle-2").click();
@@ -888,7 +888,9 @@ test.describe("my library workout builder", () => {
     await waitForWorkoutBuilderClientReady(page);
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
+    await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).not.toContainText("Updated");
     const savedWorkoutPreview = await openSavedWorkoutPreview(page, workoutId);
+    await expect(savedWorkoutPreview).not.toContainText("Quick preview");
     await expect(savedWorkoutPreview).toContainText("Total");
     await expect(savedWorkoutPreview).toContainText("Rest");
     await page.getByTestId(`saved-workouts-poolside-${workoutId}`).click();
@@ -896,6 +898,12 @@ test.describe("my library workout builder", () => {
     await expect(
       page.getByTestId(`saved-workout-poolside-${workoutId}-print-preview`)
     ).toHaveAttribute("href", /focusMode=custom/);
+    await expect(
+      page.getByTestId(`saved-workout-poolside-${workoutId}-print-preview`)
+    ).toHaveAttribute("href", /notationMode=auto/);
+    await expect(
+      page.getByTestId(`saved-workout-poolside-${workoutId}-print-preview`)
+    ).toHaveAttribute("href", /restLayout=auto/);
     const editWorkoutLink = page.getByTestId(`workout-builder-edit-workout-${workoutId}`);
     const editWorkoutHref = await editWorkoutLink.getAttribute("href");
     if (editWorkoutHref) {

@@ -784,7 +784,7 @@ describe("WorkoutBuilderHub", () => {
 
     expect(repeatEndingRestMode).toHaveValue("skip_last_rest");
     expect(repeatSummary).toHaveTextContent(
-      "4 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+      "4 x 100m · Freestyle · Moderate · Interval rest 0:30 · Set rest 0:30"
     );
     expect(repeatSummary).toHaveTextContent("Repeat block");
     expect(
@@ -1072,7 +1072,7 @@ describe("WorkoutBuilderHub", () => {
     const previewDraft = readPreviewDraft();
     expect(previewDraft.steps.some((step) => step.postSetRestForRepeatGroupId)).toBe(false);
     expect(screen.queryByText("This creates two rests in a row.")).not.toBeInTheDocument();
-    expect(repeatSummary).toHaveTextContent("4 x 100m · Freestyle · Interval rest 0:30");
+    expect(repeatSummary).toHaveTextContent("4 x 100m · Freestyle · Moderate · Interval rest 0:30");
   });
 
   it("does not seed scaffold note copy into a fresh manual pool session", async () => {
@@ -1247,6 +1247,38 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.queryByTestId("session-draft-step-name-0")).not.toBeInTheDocument();
     expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveTextContent("Edit");
+  });
+
+  it("adds stable bottom done actions for open steps and repeat editors", async () => {
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+
+    expect(screen.getByTestId("session-draft-step-done-bottom-0")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("session-draft-step-done-bottom-0"));
+
+    expect(screen.queryByTestId("session-draft-step-name-0")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
+    if (screen.queryAllByTestId(/session-draft-repeat-done-bottom-/).length === 0) {
+      fireEvent.click(screen.getAllByTestId(/session-draft-repeat-toggle-/)[0]);
+    }
+
+    const repeatDoneButton = screen.getAllByTestId(/session-draft-repeat-done-bottom-/)[0];
+
+    expect(repeatDoneButton).toBeVisible();
+
+    fireEvent.click(repeatDoneButton);
+
+    expect(screen.queryAllByTestId(/session-draft-repeat-done-bottom-/)).toHaveLength(0);
   });
 
   it("builds a truthful handoff preview and supports copy/download actions", async () => {
@@ -1888,7 +1920,7 @@ describe("WorkoutBuilderHub", () => {
     const repeatSummary = screen.getAllByTestId(/session-draft-repeat-summary-/)[0];
 
     expect(repeatSummary).toHaveTextContent(
-      "4 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+      "4 x 100m · Freestyle · Moderate · Interval rest 0:30 · Set rest 0:30"
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Yards" }));
@@ -1898,7 +1930,7 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("session-draft-step-summary-0")).not.toHaveTextContent("437.45yd");
     expect(screen.getAllByTestId(/session-draft-repeat-summary-/)[0]).toHaveTextContent(
-      "4 x 100m · Freestyle · Interval rest 0:30 · Set rest 0:30"
+      "4 x 100m · Freestyle · Moderate · Interval rest 0:30 · Set rest 0:30"
     );
     expect(screen.getAllByTestId(/session-draft-repeat-summary-/)[0]).not.toHaveTextContent(
       "109.36yd"
@@ -2616,7 +2648,28 @@ describe("WorkoutBuilderHub", () => {
               title: "Old QA cleanup workout",
               totalDistanceM: 1600,
               estimatedDurationMin: 37,
-              previewText: "8 x 25m Kick · Easy\nRest 0:20\n\nTotal: 1600m",
+              previewSections: [
+                {
+                  key: "warmup-0",
+                  title: "Warmup",
+                  rows: [
+                    {
+                      text: "8 x 25m Kick · Easy",
+                      secondaryText: "Rest 0:20",
+                    },
+                  ],
+                },
+                {
+                  key: "main-1",
+                  title: "Main",
+                  rows: [
+                    {
+                      text: "4 x 100m · Freestyle · Moderate",
+                      secondaryText: "Interval rest 0:30",
+                    },
+                  ],
+                },
+              ],
             }),
           ],
         })}
@@ -2636,6 +2689,12 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("saved-workout-card-workout-1")).toBeVisible();
     expect(screen.queryByTestId("saved-workout-current-workout-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
+    expect(
+      within(screen.getByTestId("saved-workout-card-workout-2")).queryByText("1600m")
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("saved-workout-card-workout-2")).queryByText(/updated/i)
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workouts-view-workout-2")).toBeVisible();
     expect(
       within(screen.getByTestId("saved-workout-card-workout-2")).getByRole("button", {
@@ -2644,6 +2703,9 @@ describe("WorkoutBuilderHub", () => {
     ).toBeVisible();
 
     fireEvent.click(screen.getByTestId("saved-workouts-view-workout-2"));
+    expect(screen.queryByText("Quick preview")).not.toBeInTheDocument();
+    expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("Warmup");
+    expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("Main");
     expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent(
       "8 x 25m Kick · Easy"
     );
@@ -2654,9 +2716,21 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("saved-workouts-poolside-workout-2"));
     expect(screen.getByTestId("saved-workout-poolside-workout-2-panel")).toBeVisible();
     expect(screen.getByText("Swimmer: Stian Vikra")).toBeVisible();
+    expect(screen.getByTestId("saved-workout-poolside-workout-2-notation-auto")).toBeChecked();
+    expect(screen.getByTestId("saved-workout-poolside-workout-2-rest-layout-auto")).toBeChecked();
+    fireEvent.click(screen.getByTestId("saved-workout-poolside-workout-2-notation-abbreviated"));
+    fireEvent.click(screen.getByTestId("saved-workout-poolside-workout-2-rest-layout-below"));
     expect(screen.getByTestId("saved-workout-poolside-workout-2-print-preview")).toHaveAttribute(
       "href",
       expect.stringContaining("focusMode=custom")
+    );
+    expect(screen.getByTestId("saved-workout-poolside-workout-2-print-preview")).toHaveAttribute(
+      "href",
+      expect.stringContaining("notationMode=abbreviated")
+    );
+    expect(screen.getByTestId("saved-workout-poolside-workout-2-print-preview")).toHaveAttribute(
+      "href",
+      expect.stringContaining("restLayout=below_step")
     );
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
