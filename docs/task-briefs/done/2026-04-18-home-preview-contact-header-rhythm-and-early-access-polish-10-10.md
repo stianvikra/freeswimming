@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-home-preview-contact-header-rhythm-and-early-access-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-04-18`
@@ -192,3 +192,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-18 | implementation start | moved the brief from planned to in-progress on branch \`feat/home-preview-contact-header-rhythm-and-early-access-polish\` and started a narrow public-surface polish pass across \`/\`, \`/preview-access\`, and the early-access contact variant to tighten header rhythm, simplify hierarchy, and normalize placeholders without changing route behavior | next: implement the route-scoped UI adjustments, add/update targeted public-surface tests, then run verify gates before PR handoff`
 - `2026-04-18 | implementation checkpoint | tightened shared tight-top inset rhythm for the public header layouts, optically centered the preview-access first screen on mobile, collapsed the early-access contact variant to a single small-label \`h1\` above the lockup and form, normalized the email placeholder to \`your@email.com\`, and passed targeted unit/e2e coverage plus \`npm run lint:briefs:all\` and \`npm run verify:pre-pr\` | next: stage the scoped diff, commit, push, open/update the PR, then run \`npm run verify:pre-merge\` before merge readiness`
+- `2026-04-18 | merged + closeout | PR #464 merged to \`main\` as squash commit \`b854384\`; the public home/preview/contact polish is live on \`main\`, local \`npm run verify:pre-merge\` passed in the docs-only closeout lane with the brief now moved from \`in-progress\` to \`done\`, and the implementation evidence remains: targeted unit/e2e coverage green, \`npm run verify:pre-pr\` green, \`npm run verify:pre-merge\` green before merge, and required CI checks green on the PR | next: none`
