@@ -38,6 +38,10 @@ const RISK_PLACEHOLDERS = new Set([
 ]);
 const ROLLBACK_PLACEHOLDERS = new Set(["tbd", "todo", "n/a", "na", "<fill-in>"]);
 const POLICY_CHECKLIST_STATUSES = new Set(["PASS", "FAIL", "PENDING", "N/A"]);
+const RETRYABLE_PR_BODY_ERROR_PATTERNS = [
+  /same evidence line must include current pr head sha/i,
+  /requires pass evidence line containing current head sha/i,
+];
 const POLICY_IMPACT_RULES = [
   {
     id: "auth",
@@ -216,6 +220,10 @@ function escapedRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function normalizeCommandName(value) {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 function extractCheckedCommandCheckboxes(content) {
   return content
     .split(/\r?\n/)
@@ -224,13 +232,25 @@ function extractCheckedCommandCheckboxes(content) {
     .map((match) => match[1].trim());
 }
 
+function parseStructuredCommandEvidenceLine(line) {
+  const match = line.match(/^\s*-\s*`([^`]+)`\s*:\s*(.+)$/);
+  if (!match) return null;
+
+  const statusMatch = match[2].match(/\b(PASS|FAIL|PENDING|NOT RUN)\b/i);
+  return {
+    command: normalizeCommandName(match[1]),
+    line,
+    status: statusMatch ? statusMatch[1].toUpperCase() : "",
+  };
+}
+
 function hasStatusEvidenceForCommand(content, command) {
-  const commandPattern = new RegExp(escapedRegExp(command), "i");
-  return content.split(/\r?\n/).some((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || /^-\s*\[[xX ]\]/.test(trimmed)) return false;
-    return commandPattern.test(trimmed) && /\b(PASS|FAIL|PENDING|NOT RUN)\b/i.test(trimmed);
-  });
+  const normalizedCommand = normalizeCommandName(command);
+  return content
+    .split(/\r?\n/)
+    .map((line) => parseStructuredCommandEvidenceLine(line))
+    .filter(Boolean)
+    .some((evidence) => evidence.command === normalizedCommand && Boolean(evidence.status));
 }
 
 function checkboxIsChecked(content, labelFragment) {
@@ -239,28 +259,42 @@ function checkboxIsChecked(content, labelFragment) {
 }
 
 function extractVerifyEvidence(content, commandName) {
-  const lines = content.split(/\r?\n/);
-  const evidenceLine = lines.find((line) => new RegExp(commandName, "i").test(line)) ?? "";
-  if (!evidenceLine) {
+  const normalizedCommand = normalizeCommandName(commandName);
+  const evidence = content
+    .split(/\r?\n/)
+    .map((line) => parseStructuredCommandEvidenceLine(line))
+    .filter(Boolean)
+    .find((entry) => entry.command === normalizedCommand);
+
+  if (!evidence) {
     return { line: "", status: "" };
   }
 
-  const statusMatch = evidenceLine.match(/\b(PASS|FAIL|PENDING|NOT RUN)\b/i);
-  if (statusMatch) {
-    return {
-      line: evidenceLine,
-      status: statusMatch[1].toUpperCase(),
-    };
+  return { line: evidence.line, status: evidence.status };
+}
+
+function findCommandMentionLine(content, commandName) {
+  const normalizedCommand = normalizeCommandName(commandName);
+  return (
+    content
+      .split(/\r?\n/)
+      .find((line) => normalizeCommandName(line).includes(normalizedCommand)) ?? ""
+  );
+}
+
+function buildStructuredEvidenceHint(commandName) {
+  return `- \`${commandName}\`: **PASS|FAIL|PENDING|NOT RUN** ...`;
+}
+
+function buildMissingVerifyEvidenceMessage(content, commandName) {
+  const mentionLine = findCommandMentionLine(content, commandName);
+  const formatHint = buildStructuredEvidenceHint(commandName);
+
+  if (mentionLine) {
+    return `Section "## Test Evidence" mentions \`${commandName}\` but not in the required evidence format. Use: ${formatHint}`;
   }
 
-  if (/\[[xX]\]/.test(evidenceLine)) {
-    return {
-      line: evidenceLine,
-      status: "PASS",
-    };
-  }
-
-  return { line: evidenceLine, status: "" };
+  return `Section "## Test Evidence" must include ${formatHint}`;
 }
 
 function parsePolicyImpactDecision(rawValue) {
@@ -358,6 +392,21 @@ function lineContainsHeadSha(line, headSha) {
   const shortSha = headSha.slice(0, 7);
   const normalized = line.toLowerCase();
   return normalized.includes(headSha.toLowerCase()) || normalized.includes(shortSha.toLowerCase());
+}
+
+function sleep(ms) {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryablePullRequestBodyError(error) {
+  if (!error) return false;
+  return RETRYABLE_PR_BODY_ERROR_PATTERNS.some((pattern) => pattern.test(error));
+}
+
+export function shouldRetryPullRequestBodyValidation(errors) {
+  if (!Array.isArray(errors) || errors.length === 0) return false;
+  return errors.every((error) => isRetryablePullRequestBodyError(error));
 }
 
 export function validatePullRequestBody(body, options = {}) {
@@ -475,35 +524,44 @@ export function validatePullRequestBody(body, options = {}) {
       );
     }
 
-    const prePrEvidence = extractVerifyEvidence(testEvidence, "verify:pre-pr");
-    if (!prePrEvidence.status) {
-      errors.push(
-        'Section "## Test Evidence" must include `verify:pre-pr` with status (PASS/FAIL/PENDING/NOT RUN or checked box).'
-      );
+    const prePrCommand = "npm run verify:pre-pr";
+    const preMergeCommand = "npm run verify:pre-merge";
+    const checkedCommands = extractCheckedCommandCheckboxes(testEvidence);
+    const checkedCommandSet = new Set(checkedCommands.map((command) => normalizeCommandName(command)));
+    const prePrEvidence = extractVerifyEvidence(testEvidence, prePrCommand);
+    const prePrChecked = checkedCommandSet.has(normalizeCommandName(prePrCommand));
+    if (!prePrEvidence.status && !prePrChecked) {
+      errors.push(buildMissingVerifyEvidenceMessage(testEvidence, prePrCommand));
     }
 
-    const preMergeEvidence = extractVerifyEvidence(testEvidence, "verify:pre-merge");
-    if (!preMergeEvidence.status) {
-      errors.push(
-        'Section "## Test Evidence" must include `verify:pre-merge` with status (PASS/FAIL/PENDING/NOT RUN or checked box).'
-      );
+    const preMergeEvidence = extractVerifyEvidence(testEvidence, preMergeCommand);
+    const preMergeChecked = checkedCommandSet.has(normalizeCommandName(preMergeCommand));
+    if (!preMergeEvidence.status && !preMergeChecked) {
+      errors.push(buildMissingVerifyEvidenceMessage(testEvidence, preMergeCommand));
     } else if (preMergeEvidence.status === "PASS" && !lineContainsHeadSha(preMergeEvidence.line, headSha)) {
       errors.push(
         'When `verify:pre-merge` is `PASS`, the same evidence line must include current PR head SHA (short or full).'
       );
     }
 
-    const checkedCommands = extractCheckedCommandCheckboxes(testEvidence);
     for (const command of checkedCommands) {
       if (/verify:pre-pr/i.test(command)) {
         if (prePrEvidence.status !== "PASS") {
-          errors.push("Checked `verify:pre-pr` checkbox requires PASS evidence in the same section.");
+          errors.push(
+            `Checked \`verify:pre-pr\` checkbox requires a matching PASS evidence line in the form ${buildStructuredEvidenceHint(
+              prePrCommand
+            )}`
+          );
         }
         continue;
       }
       if (/verify:pre-merge/i.test(command)) {
         if (preMergeEvidence.status !== "PASS") {
-          errors.push("Checked `verify:pre-merge` checkbox requires PASS evidence on current HEAD.");
+          errors.push(
+            `Checked \`verify:pre-merge\` checkbox requires a matching PASS evidence line on current HEAD in the form ${buildStructuredEvidenceHint(
+              preMergeCommand
+            )}`
+          );
         } else if (!lineContainsHeadSha(preMergeEvidence.line, headSha)) {
           errors.push("Checked `verify:pre-merge` checkbox requires PASS evidence line containing current HEAD SHA.");
         }
@@ -563,6 +621,53 @@ export function validatePullRequestBody(body, options = {}) {
   return errors;
 }
 
+export async function validatePullRequestBodyWithApiRefresh(pullRequest, options = {}) {
+  const maxAttempts = Math.max(1, options.maxAttempts ?? 4);
+  const refreshDelayMs = Math.max(0, options.refreshDelayMs ?? 3000);
+  const env = options.env ?? process.env;
+  const onRetry = typeof options.onRetry === "function" ? options.onRetry : null;
+  const fetchImpl = options.fetchImpl;
+  const changedFilesOverride = options.changedFiles;
+  let currentPullRequest = pullRequest;
+  let attempts = 0;
+  let errors = [];
+
+  while (attempts < maxAttempts) {
+    attempts += 1;
+    currentPullRequest = await hydratePullRequestFromApi(currentPullRequest, {
+      fetchImpl,
+      env,
+    });
+    const changedFiles = changedFilesOverride ?? listChangedFilesForPullRequest(currentPullRequest);
+    errors = validatePullRequestBody(currentPullRequest.body ?? "", {
+      headSha: currentPullRequest.head?.sha ?? "",
+      changedFiles,
+    });
+
+    if (errors.length === 0 || !shouldRetryPullRequestBodyValidation(errors) || attempts >= maxAttempts) {
+      return {
+        errors,
+        attempts,
+        pullRequest: currentPullRequest,
+      };
+    }
+
+    onRetry?.({
+      attempt: attempts,
+      maxAttempts,
+      errors,
+      headSha: currentPullRequest.head?.sha ?? "",
+    });
+    await sleep(refreshDelayMs);
+  }
+
+  return {
+    errors,
+    attempts,
+    pullRequest: currentPullRequest,
+  };
+}
+
 async function main() {
   const payload = parseEventPayload();
   let pullRequest = payload?.pull_request;
@@ -572,12 +677,12 @@ async function main() {
     return;
   }
 
-  pullRequest = await hydratePullRequestFromApi(pullRequest);
-
-  const changedFiles = listChangedFilesForPullRequest(pullRequest);
-  const errors = validatePullRequestBody(pullRequest.body ?? "", {
-    headSha: pullRequest.head?.sha ?? "",
-    changedFiles,
+  const { errors } = await validatePullRequestBodyWithApiRefresh(pullRequest, {
+    onRetry: ({ attempt, maxAttempts }) => {
+      console.log(
+        `[pr-body-lint] Detected a stale PR body snapshot after push; retrying GitHub API refresh (${attempt}/${maxAttempts - 1}).`
+      );
+    },
   });
   if (errors.length === 0) {
     console.log("[pr-body-lint] PASS");

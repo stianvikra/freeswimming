@@ -1,19 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if ! command -v npm >/dev/null 2>&1; then
-  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-  if [ -s "${NVM_DIR}/nvm.sh" ]; then
-    # shellcheck source=/dev/null
-    . "${NVM_DIR}/nvm.sh"
-    nvm use --silent >/dev/null 2>&1 || true
-  fi
-fi
+# shellcheck source=/dev/null
+source "$(dirname "$0")/lib/bootstrap-node.sh"
 
-if ! command -v npm >/dev/null 2>&1; then
-  echo "[verify-docs-only] npm not found. Load Node first (for example with nvm)."
-  exit 127
-fi
+require_npm_runtime "[verify-docs-only]"
 
 write_run_metadata() {
   local verification_lane="${1:-docs-only}"

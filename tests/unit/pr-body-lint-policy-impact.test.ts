@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   hydratePullRequestFromApi,
+  shouldRetryPullRequestBodyValidation,
   validatePullRequestBody,
+  validatePullRequestBodyWithApiRefresh,
 } from "../../scripts/lint-pr-body-sections.mjs";
 
 const HEAD_SHA = "abcdef1234567890abcdef1234567890abcdef12";
@@ -168,5 +170,87 @@ describe("hydratePullRequestFromApi", () => {
     });
 
     expect(hydrated).toEqual(originalPullRequest);
+  });
+});
+
+describe("shouldRetryPullRequestBodyValidation", () => {
+  it("retries only SHA-staleness failures from PR body refresh races", () => {
+    expect(
+      shouldRetryPullRequestBodyValidation([
+        "When `verify:pre-merge` is `PASS`, the same evidence line must include current PR head SHA (short or full).",
+        "Checked `verify:pre-merge` checkbox requires PASS evidence line containing current HEAD SHA.",
+      ])
+    ).toBe(true);
+    expect(
+      shouldRetryPullRequestBodyValidation([
+        'Section "## Summary" is missing a filled `Policy impact` line (`yes` or `no` + rationale).',
+      ])
+    ).toBe(false);
+  });
+});
+
+describe("validatePullRequestBodyWithApiRefresh", () => {
+  it("rehydrates from GitHub when the first snapshot is stale after a push", async () => {
+    const staleHead = "1234567890abcdef1234567890abcdef12345678";
+    const staleBody = buildPrBody().replace(HEAD_SHA.slice(0, 7), staleHead.slice(0, 7));
+    const freshBody = buildPrBody();
+    const pullRequest = {
+      number: 255,
+      url: "https://api.github.com/repos/stianvikra/freeswimming/pulls/255",
+      body: staleBody,
+      head: { sha: HEAD_SHA },
+      base: { ref: "main", sha: "base-sha" },
+    };
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ...pullRequest, body: staleBody }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ...pullRequest, body: freshBody }),
+      });
+
+    const result = await validatePullRequestBodyWithApiRefresh(pullRequest, {
+      changedFiles: ["scripts/lint-pr-body-sections.mjs"],
+      env: {},
+      fetchImpl,
+      maxAttempts: 2,
+      refreshDelayMs: 0,
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.attempts).toBe(2);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry non-refreshable validation failures", async () => {
+    const invalidBody = buildPrBody().replace(/^- Policy impact:.*\n/m, "");
+    const pullRequest = {
+      number: 255,
+      url: "https://api.github.com/repos/stianvikra/freeswimming/pulls/255",
+      body: invalidBody,
+      head: { sha: HEAD_SHA },
+      base: { ref: "main", sha: "base-sha" },
+    };
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => pullRequest,
+    });
+
+    const result = await validatePullRequestBodyWithApiRefresh(pullRequest, {
+      changedFiles: ["scripts/lint-pr-body-sections.mjs"],
+      env: {},
+      fetchImpl,
+      maxAttempts: 3,
+      refreshDelayMs: 0,
+    });
+
+    expect(result.errors).toContain(
+      'Section "## Summary" is missing a filled `Policy impact` line (`yes` or `no` + rationale).'
+    );
+    expect(result.attempts).toBe(1);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
