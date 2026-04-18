@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-swim-session-builder-local-draft-first-save-boundary-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-04-18`
@@ -218,3 +218,4 @@ Critical target categories for `10/10` claim in this brief:
 
 - `2026-04-18 | working tree | implemented device-local manual draft storage, routed manual pool/open-water entry through local draft URLs, delayed canonical workout creation until the first explicit save, and updated targeted unit + Playwright coverage for resume/discard/first-save list boundaries; targeted validation is green via npx vitest run tests/unit/create-manual-workout-button.test.tsx tests/unit/workout-builder-hub.test.tsx and npx playwright test tests/e2e/my-library-workout-builder.spec.ts --project=desktop-chromium --project=mobile-chromium | next: run full brief lint + npm run verify:pre-pr, then commit, push, and open/update the PR`
 - `2026-04-18 | verification checkpoint | full \`npm run verify:pre-pr\` passed after updating the program-export Playwright flow to follow the same local-draft-first-save boundary; validation finished green with \`158\` unit files / \`805\` tests, full public Playwright \`101 passed\` / \`331 skipped\`, and perf-budget recommendation \`hold\` because the weekly tighten threshold is still at runs \`1/2\` despite a healthy \`36.0%\` margin | next: commit the scoped changes, push the feature branch, open/update the PR, watch CI, then run \`npm run verify:pre-merge\` before merge recommendation`
+- `2026-04-18 | merged + closeout | PR #462 merged to \`main\` as squash commit \`29f27dd\`; manual pool/open-water entry now stays device-local until the first explicit save, local \`npm run verify:pre-merge\` passed with \`103 passed\` / \`329 skipped\`, required CI checks were green, and the brief moved from \`in-progress\` to \`done\` in post-merge closeout | next: none`
