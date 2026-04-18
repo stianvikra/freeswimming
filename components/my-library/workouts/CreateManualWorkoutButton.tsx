@@ -2,13 +2,7 @@
 
 import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  buildManualOpenWaterWorkoutEmptyDraft,
-  buildManualPoolWorkoutEmptyDraft,
-  type ManualWorkoutDraftDefaults,
-  type ManualWorkoutBuilderMode,
-} from "@/lib/workouts/manual";
-import type { WorkoutSaveApiResponse } from "@/lib/workouts/shared";
+import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
 
 type Props = {
   label?: string;
@@ -16,9 +10,9 @@ type Props = {
   className?: string;
   testId?: string;
   builderMode?: ManualWorkoutBuilderMode;
-  createdWorkoutHrefBuilder?: (workoutId: string) => string;
   manualPoolCssMetricSecondsPer100m?: number | null;
   manualPoolCssPaceLabel?: string | null;
+  draftHrefBuilder?: (builderMode: ManualWorkoutBuilderMode) => string;
 };
 
 export default function CreateManualWorkoutButton({
@@ -27,91 +21,55 @@ export default function CreateManualWorkoutButton({
   className = "",
   testId = "create-manual-workout",
   builderMode = "pool",
-  createdWorkoutHrefBuilder,
-  manualPoolCssMetricSecondsPer100m = null,
-  manualPoolCssPaceLabel = null,
+  draftHrefBuilder,
 }: Props) {
   const router = useRouter();
   const [clientReady, setClientReady] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
   const [error, setError] = useState("");
   const resolvedLabel =
     label ?? (builderMode === "pool" ? "Build pool session" : "Build open water session");
   const resolvedPendingLabel =
     pendingLabel ??
-    (builderMode === "pool" ? "Building pool session..." : "Building open water session...");
-  const manualPoolDefaults: ManualWorkoutDraftDefaults | undefined =
-    builderMode === "pool" &&
-    typeof manualPoolCssMetricSecondsPer100m === "number" &&
-    Number.isFinite(manualPoolCssMetricSecondsPer100m) &&
-    manualPoolCssMetricSecondsPer100m > 0
-      ? {
-          basePaceSecondsPer100m: manualPoolCssMetricSecondsPer100m,
-          usedCssPaceLabel: manualPoolCssPaceLabel,
-        }
-      : undefined;
-  const buildWorkoutHref =
-    createdWorkoutHrefBuilder ??
-    ((workoutId: string) =>
-      `/my-library/workouts/${workoutId}?entry=${
-        builderMode === "pool" ? "manual-pool" : "manual-open-water"
+    (builderMode === "pool" ? "Opening pool session..." : "Opening open water session...");
+  const buildDraftHref =
+    draftHrefBuilder ??
+    ((mode: ManualWorkoutBuilderMode) =>
+      `/my-library/workouts?draft=${mode}&entry=${
+        mode === "pool" ? "manual-pool" : "manual-open-water"
       }`);
 
   useEffect(() => {
     setClientReady(true);
   }, []);
 
-  async function handleCreateManualSession() {
-    setIsCreating(true);
+  function handleCreateManualSession() {
+    setIsOpening(true);
     setError("");
 
     try {
-      const response = await fetch("/api/my-library/workouts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sourceKind: "manual",
-          draft:
-            builderMode === "pool"
-              ? buildManualPoolWorkoutEmptyDraft(new Date(), manualPoolDefaults)
-              : buildManualOpenWaterWorkoutEmptyDraft(),
-        }),
-      });
-      const responseBody = (await response
-        .json()
-        .catch(() => null)) as WorkoutSaveApiResponse | null;
-      const genericFailureMessage =
-        builderMode === "pool"
-          ? "Could not build pool session."
-          : "Could not build open water session.";
-
-      if (!response.ok || !responseBody?.ok) {
-        setError(responseBody && !responseBody.ok ? responseBody.error : genericFailureMessage);
-        return;
-      }
-
-      const workoutHref = buildWorkoutHref(responseBody.workout.id);
+      const draftHref = buildDraftHref(builderMode);
 
       startTransition(() => {
-        router.push(workoutHref);
+        router.push(draftHref);
         router.refresh();
       });
 
       window.setTimeout(() => {
-        if (window.location.pathname === "/my-library") {
-          window.location.assign(workoutHref);
+        const resolvedHref = new URL(draftHref, window.location.origin).toString();
+
+        if (window.location.href !== resolvedHref) {
+          window.location.assign(draftHref);
         }
       }, 250);
     } catch {
       setError(
         builderMode === "pool"
-          ? "Could not build pool session."
-          : "Could not build open water session."
+          ? "Could not open pool session builder."
+          : "Could not open open-water session builder."
       );
     } finally {
-      setIsCreating(false);
+      setIsOpening(false);
     }
   }
 
@@ -121,11 +79,11 @@ export default function CreateManualWorkoutButton({
         type="button"
         data-testid={testId}
         data-client-ready={clientReady ? "true" : "false"}
-        onClick={() => void handleCreateManualSession()}
-        disabled={!clientReady || isCreating}
+        onClick={handleCreateManualSession}
+        disabled={!clientReady || isOpening}
         className={className}
       >
-        {isCreating ? resolvedPendingLabel : resolvedLabel}
+        {isOpening ? resolvedPendingLabel : resolvedLabel}
       </button>
       {error ? (
         <p data-testid={`${testId}-error`} className="text-sm text-rose-700">

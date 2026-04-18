@@ -100,6 +100,7 @@ type Props = {
   onSave: () => void;
   onDraftChange: (draft: SessionDraft) => void;
   onDiscardChanges?: (() => void) | null;
+  onRequestDiscardDraft?: (() => void) | null;
   showDiscardUndoNotice?: boolean;
   onUndoDiscardChanges?: (() => void) | null;
   startNewDraftHref?: string | null;
@@ -1586,6 +1587,7 @@ export default function WorkoutEditor({
   onSave,
   onDraftChange,
   onDiscardChanges = null,
+  onRequestDiscardDraft = null,
   showDiscardUndoNotice = false,
   onUndoDiscardChanges = null,
   startNewDraftHref = null,
@@ -1656,8 +1658,7 @@ export default function WorkoutEditor({
     useState<WorkoutPoolsidePrintLayout>("portrait");
   const [poolsideNotationMode, setPoolsideNotationMode] =
     useState<WorkoutPoolsideNotationMode>("auto");
-  const [poolsideRestLayout, setPoolsideRestLayout] =
-    useState<WorkoutPoolsideRestLayout>("auto");
+  const [poolsideRestLayout, setPoolsideRestLayout] = useState<WorkoutPoolsideRestLayout>("auto");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions)
   );
@@ -1718,6 +1719,8 @@ export default function WorkoutEditor({
           savedWorkoutSavedState: "All changes are saved to this session.",
           unsavedDraftPendingState: "This session is not saved yet.",
         };
+  const unsavedSaveButtonLabel =
+    copyVariant === "generator" ? "Accept and save workout" : "Save session";
   const poolLengthQuickChoices =
     poolLengthUnit === "yd" ? YARD_POOL_SIZE_QUICK_CHOICES : MANUAL_POOL_SIZE_QUICK_CHOICES;
   const parsedPoolLengthInput = parsePoolLengthInput(poolLengthInput, poolLengthUnit);
@@ -5222,6 +5225,17 @@ export default function WorkoutEditor({
                     Discard changes
                   </button>
                 ) : null}
+                {isEditMode && !savedWorkout && onRequestDiscardDraft ? (
+                  <button
+                    type="button"
+                    onClick={onRequestDiscardDraft}
+                    disabled={isSaving || pendingRemoval !== null}
+                    data-testid="workout-builder-discard-current-draft"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Discard draft
+                  </button>
+                ) : null}
                 {isEditMode && savedWorkout && onRequestDeleteCurrent ? (
                   <button
                     type="button"
@@ -5250,11 +5264,7 @@ export default function WorkoutEditor({
                   data-testid={saveButtonTestId}
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSaving
-                    ? "Saving..."
-                    : savedWorkout
-                      ? "Save changes"
-                      : "Accept and save workout"}
+                  {isSaving ? "Saving..." : savedWorkout ? "Save changes" : unsavedSaveButtonLabel}
                 </button>
               </div>
             </div>
@@ -6100,6 +6110,17 @@ export default function WorkoutEditor({
                     Discard changes
                   </button>
                 ) : null}
+                {!savedWorkout && onRequestDiscardDraft ? (
+                  <button
+                    type="button"
+                    onClick={onRequestDiscardDraft}
+                    disabled={isSaving || pendingRemoval !== null}
+                    data-testid="workout-builder-discard-current-draft"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Discard draft
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {
@@ -6117,11 +6138,7 @@ export default function WorkoutEditor({
                   data-testid={saveButtonTestId}
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSaving
-                    ? "Saving..."
-                    : savedWorkout
-                      ? "Save changes"
-                      : "Accept and save workout"}
+                  {isSaving ? "Saving..." : savedWorkout ? "Save changes" : unsavedSaveButtonLabel}
                 </button>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import SavedWorkoutsPanel from "@/components/my-library/workouts/SavedWorkoutsPanel";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
@@ -10,6 +10,12 @@ import {
   useAutoDismissNotice,
   WORKOUT_NOTICE_AUTO_DISMISS_MS,
 } from "@/components/my-library/workouts/useAutoDismissNotice";
+import type { ManualWorkoutBuilderMode, ManualWorkoutDraftDefaults } from "@/lib/workouts/manual";
+import {
+  clearStoredManualWorkoutDraft,
+  loadOrCreateStoredManualWorkoutDraft,
+  writeStoredManualWorkoutDraft,
+} from "@/lib/workouts/manual-local-draft";
 import type {
   WorkoutDeleteApiResponse,
   WorkoutEditorRecord,
@@ -29,6 +35,8 @@ type Props = {
   browseOnly?: boolean;
   hideShellIntro?: boolean;
   preferExpandedDetailsOnLoad?: boolean;
+  userId?: string | null;
+  manualLocalDraftMode?: ManualWorkoutBuilderMode | null;
 };
 
 function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
@@ -47,6 +55,8 @@ export default function WorkoutBuilderHub({
   browseOnly = false,
   hideShellIntro = false,
   preferExpandedDetailsOnLoad = false,
+  userId = null,
+  manualLocalDraftMode = null,
 }: Props) {
   const router = useRouter();
   const [savedWorkout, setSavedWorkout] = useState<WorkoutEditorRecord | null>(
@@ -61,11 +71,31 @@ export default function WorkoutBuilderHub({
   const [deletingWorkoutId, setDeletingWorkoutId] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [pendingCurrentDelete, setPendingCurrentDelete] = useState(false);
+  const [pendingCurrentDraftDiscard, setPendingCurrentDraftDiscard] = useState(false);
   const [discardUndoDraft, setDiscardUndoDraft] = useState<WorkoutEditorRecord["draft"] | null>(
     null
   );
   const [clientReady, setClientReady] = useState(false);
-  const hasUnsavedChanges = haveWorkoutDraftChanges(draft, savedWorkout?.draft ?? null);
+  const [activeLocalDraftMode, setActiveLocalDraftMode] = useState<ManualWorkoutBuilderMode | null>(
+    workoutLibrary.selectedWorkout ? null : manualLocalDraftMode
+  );
+  const [localDraftRecovered, setLocalDraftRecovered] = useState(false);
+  const hasUnsavedChanges =
+    savedWorkout !== null ? haveWorkoutDraftChanges(draft, savedWorkout.draft) : false;
+  const manualPoolDraftDefaults = useMemo<ManualWorkoutDraftDefaults | undefined>(() => {
+    if (
+      typeof manualPoolCssMetricSecondsPer100m === "number" &&
+      Number.isFinite(manualPoolCssMetricSecondsPer100m) &&
+      manualPoolCssMetricSecondsPer100m > 0
+    ) {
+      return {
+        basePaceSecondsPer100m: manualPoolCssMetricSecondsPer100m,
+        usedCssPaceLabel: manualPoolCssPaceLabel,
+      };
+    }
+
+    return undefined;
+  }, [manualPoolCssMetricSecondsPer100m, manualPoolCssPaceLabel]);
 
   useAutoDismissNotice(success, setSuccess);
 
@@ -74,6 +104,8 @@ export default function WorkoutBuilderHub({
   }, []);
 
   useEffect(() => {
+    const nextLocalDraftMode = workoutLibrary.selectedWorkout ? null : manualLocalDraftMode;
+
     setSavedWorkout(workoutLibrary.selectedWorkout);
     setDraft(workoutLibrary.selectedWorkout?.draft ?? null);
     setRecentWorkouts(workoutLibrary.recentWorkouts);
@@ -84,7 +116,11 @@ export default function WorkoutBuilderHub({
     setDeletingWorkoutId(null);
     setBulkDeleting(false);
     setPendingCurrentDelete(false);
+    setPendingCurrentDraftDiscard(false);
+    setActiveLocalDraftMode(nextLocalDraftMode);
+    setLocalDraftRecovered(false);
   }, [
+    manualLocalDraftMode,
     workoutLibrary.recentWorkouts,
     workoutLibrary.selectedWorkout,
     workoutLibrary.selectedWorkoutMissing,
@@ -102,24 +138,62 @@ export default function WorkoutBuilderHub({
     };
   }, [discardUndoDraft]);
 
+  useEffect(() => {
+    if (!clientReady || !userId || !activeLocalDraftMode || savedWorkout) {
+      return;
+    }
+
+    const loadedDraft = loadOrCreateStoredManualWorkoutDraft(
+      userId,
+      activeLocalDraftMode,
+      manualPoolDraftDefaults
+    );
+
+    setDraft(loadedDraft.draft);
+    setLocalDraftRecovered(loadedDraft.recovered);
+  }, [activeLocalDraftMode, clientReady, manualPoolDraftDefaults, savedWorkout, userId]);
+
+  useEffect(() => {
+    if (!clientReady || !userId || !activeLocalDraftMode || savedWorkout || !draft) {
+      return;
+    }
+
+    writeStoredManualWorkoutDraft(userId, activeLocalDraftMode, draft);
+  }, [activeLocalDraftMode, clientReady, draft, savedWorkout, userId]);
+
   async function saveWorkout() {
-    if (!draft || !savedWorkout) return;
+    const isFirstCanonicalSave = !savedWorkout && activeLocalDraftMode !== null;
+    const savedWorkoutId = savedWorkout?.id ?? null;
+    if (!draft || (!isFirstCanonicalSave && !savedWorkoutId)) return;
 
     setIsSaving(true);
     setError("");
     setSuccess("");
     setDiscardUndoDraft(null);
+    setPendingCurrentDraftDiscard(false);
 
     try {
-      const response = await fetch(`/api/my-library/workouts/${savedWorkout.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          draft,
-        }),
-      });
+      const response = await fetch(
+        isFirstCanonicalSave
+          ? "/api/my-library/workouts"
+          : `/api/my-library/workouts/${savedWorkoutId}`,
+        {
+          method: isFirstCanonicalSave ? "POST" : "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            isFirstCanonicalSave
+              ? {
+                  draft,
+                  sourceKind: "manual",
+                }
+              : {
+                  draft,
+                }
+          ),
+        }
+      );
       const responseBody = (await response
         .json()
         .catch(() => null)) as WorkoutSaveApiResponse | null;
@@ -131,10 +205,30 @@ export default function WorkoutBuilderHub({
         return;
       }
 
-      setSavedWorkout(responseBody.workout);
-      setDraft(responseBody.workout.draft);
+      if (isFirstCanonicalSave && userId && activeLocalDraftMode) {
+        clearStoredManualWorkoutDraft(userId, activeLocalDraftMode);
+      }
+
+      const canonicalWorkout = responseBody.workout;
+      const canonicalMode = draft.environment === "open_water" ? "open_water" : "pool";
+
+      setSavedWorkout(canonicalWorkout);
+      setDraft(canonicalWorkout.draft);
       setRecentWorkouts((current) => upsertRecentWorkoutSummary(current, responseBody.summary));
-      setSuccess("Changes saved to this session.");
+      setActiveLocalDraftMode(null);
+      setLocalDraftRecovered(false);
+      setSuccess(
+        isFirstCanonicalSave ? "Saved to My Swim Sessions." : "Changes saved to this session."
+      );
+
+      if (isFirstCanonicalSave) {
+        router.replace(
+          `/my-library/workouts/${canonicalWorkout.id}?entry=${
+            canonicalMode === "pool" ? "manual-pool" : "manual-open-water"
+          }`
+        );
+        router.refresh();
+      }
     } catch {
       setError("Could not save workout right now.");
     } finally {
@@ -174,6 +268,28 @@ export default function WorkoutBuilderHub({
     setDiscardUndoDraft(null);
     setError("");
     setSuccess("");
+  }
+
+  function confirmDiscardLocalDraft() {
+    if (!userId || !activeLocalDraftMode) return;
+
+    const discardedMode = activeLocalDraftMode;
+
+    clearStoredManualWorkoutDraft(userId, discardedMode);
+    setDraft(null);
+    setSavedWorkout(null);
+    setActiveLocalDraftMode(null);
+    setLocalDraftRecovered(false);
+    setPendingCurrentDraftDiscard(false);
+    setDiscardUndoDraft(null);
+    setError("");
+    setSuccess(
+      discardedMode === "pool"
+        ? "Discarded the local pool draft."
+        : "Discarded the local open-water draft."
+    );
+    router.replace("/my-library/workouts");
+    router.refresh();
   }
 
   async function confirmDeleteWorkout(workout: Pick<WorkoutSummary, "id" | "title">) {
@@ -381,6 +497,16 @@ export default function WorkoutBuilderHub({
         </div>
       ) : null}
 
+      {activeLocalDraftMode && !savedWorkout && localDraftRecovered ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 sm:p-4">
+          <p className="text-sm text-emerald-900">
+            {activeLocalDraftMode === "pool"
+              ? "Recovered your unsaved local pool draft on this device."
+              : "Recovered your unsaved local open-water draft on this device."}
+          </p>
+        </div>
+      ) : null}
+
       <div className="space-y-4 sm:space-y-5">
         {!browseOnly && savedWorkout && pendingCurrentDelete ? (
           <div
@@ -419,6 +545,37 @@ export default function WorkoutBuilderHub({
           </div>
         ) : null}
 
+        {!browseOnly && !savedWorkout && activeLocalDraftMode && pendingCurrentDraftDiscard ? (
+          <div
+            data-testid="workout-builder-current-draft-actions"
+            className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4"
+          >
+            <p className="text-sm font-medium text-amber-900">Discard this local draft?</p>
+            <p className="mt-1 text-sm text-amber-900/90">
+              {activeLocalDraftMode === "pool"
+                ? "This removes the unsaved pool draft from this device. Nothing is deleted from My Swim Sessions."
+                : "This removes the unsaved open-water draft from this device. Nothing is deleted from My Swim Sessions."}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={confirmDiscardLocalDraft}
+                data-testid="workout-builder-confirm-discard-current-draft"
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-500 px-4 text-sm font-semibold text-white transition hover:bg-amber-400 active:bg-amber-600"
+              >
+                Discard draft
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingCurrentDraftDiscard(false)}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {browseOnly ? (
           recentWorkouts.length > 0 ? (
             <SavedWorkoutsPanel
@@ -448,6 +605,7 @@ export default function WorkoutBuilderHub({
               onRequestDeleteWorkout={(workout) => {
                 setPendingDeleteWorkoutId(workout.id);
                 setPendingCurrentDelete(false);
+                setPendingCurrentDraftDiscard(false);
                 setError("");
                 setSuccess("");
               }}
@@ -469,7 +627,7 @@ export default function WorkoutBuilderHub({
               </p>
             </div>
           )
-        ) : !savedWorkout ? (
+        ) : !savedWorkout && !activeLocalDraftMode ? (
           <div className="space-y-4 sm:space-y-5">
             <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4">
               <p className="text-sm font-medium text-amber-900">
@@ -525,7 +683,7 @@ export default function WorkoutBuilderHub({
           </div>
         ) : null}
 
-        {draft && savedWorkout ? (
+        {draft && (savedWorkout || activeLocalDraftMode) ? (
           <div>
             <WorkoutEditor
               draft={draft}
@@ -537,7 +695,19 @@ export default function WorkoutBuilderHub({
               onSave={saveWorkout}
               hasUnsavedChanges={hasUnsavedChanges}
               onDraftChange={handleDraftChange}
-              onDiscardChanges={discardDraftChanges}
+              onDiscardChanges={savedWorkout ? discardDraftChanges : null}
+              onRequestDiscardDraft={
+                !savedWorkout && activeLocalDraftMode
+                  ? () => {
+                      setDiscardUndoDraft(null);
+                      setPendingCurrentDelete(false);
+                      setPendingDeleteWorkoutId(null);
+                      setPendingCurrentDraftDiscard(true);
+                      setError("");
+                      setSuccess("");
+                    }
+                  : null
+              }
               showDiscardUndoNotice={discardUndoDraft !== null}
               onUndoDiscardChanges={undoDiscardDraftChanges}
               startNewDraftHref={null}
@@ -547,11 +717,12 @@ export default function WorkoutBuilderHub({
               onRequestDeleteCurrent={() => {
                 setDiscardUndoDraft(null);
                 setPendingCurrentDelete(true);
+                setPendingCurrentDraftDiscard(false);
                 setPendingDeleteWorkoutId(null);
                 setError("");
                 setSuccess("");
               }}
-              isDeletingCurrent={deletingWorkoutId === savedWorkout.id}
+              isDeletingCurrent={savedWorkout ? deletingWorkoutId === savedWorkout.id : false}
               swimmerName={swimmerName}
               recentWorkoutsDescription="Edit another saved session when you want to switch what you are working on."
               workoutHrefBuilder={(workoutId) => `/my-library/workouts/${workoutId}`}
