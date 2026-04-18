@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { validatePullRequestBody } from "./lint-pr-body-sections.mjs";
 
 function run(command) {
   try {
-    return execSync(command, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    return execFileSync("bash", ["-lc", command], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
     return "";
   }
@@ -28,7 +31,14 @@ function listChangedFiles(baseRef) {
 }
 
 function generateBody(baseRef) {
-  return run(`node ./scripts/generate-pr-body.mjs --base ${baseRef}`);
+  try {
+    return execFileSync(process.execPath, ["./scripts/generate-pr-body.mjs", "--base", baseRef], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
 }
 
 function main() {

@@ -21,6 +21,7 @@ Use this runbook for reliable local validation when private-access (site lock) i
   - pre-PR: `npm run verify:pre-pr`
   - pre-merge: `npm run verify:pre-merge`
   - merge-preflight summary only: `npm run merge:preflight`
+  - PR sync/create in Safari with canonical generated body: `npm run pr:create:safari`
   - pure docs/governance diffs may auto-select `docs-only` inside those commands
   - code/scripts/tests/config/workflow/runtime diffs still run the full lane
   - pre-merge + PR evidence refresh + merge preflight: `npm run gate:pre-merge`
@@ -105,6 +106,8 @@ Pre-merge evidence marker (for PR body refresh automation):
     - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run verify:pre-merge`
 - After merge and local `main` sync:
   - run `npm run post-merge:preflight` before moving briefs to `done`.
+- For the canonical PR/update/merge and long-workstream handoff path:
+  - `docs/runbooks/pr-flow-and-chat-handoff.md`
 
 ## CI and Nightly Automation
 

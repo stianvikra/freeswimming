@@ -11,6 +11,31 @@ function writeExecutable(filePath: string, content: string) {
   chmodSync(filePath, 0o755);
 }
 
+function writeGenerateBodyNode(filePath: string) {
+  writeExecutable(
+    filePath,
+    [
+      "#!/usr/bin/env bash",
+      'if [ "$1" = "./scripts/generate-pr-body.mjs" ]; then',
+      '  output_path=""',
+      "  shift",
+      "  while [ $# -gt 0 ]; do",
+      '    if [ "$1" = "--output" ]; then',
+      '      output_path="$2"',
+      "      shift 2",
+      "      continue",
+      "    fi",
+      "    shift",
+      "  done",
+      '  printf "%s\\n" "generated body" > "${output_path}"',
+      "  exit 0",
+      "fi",
+      "exit 1",
+      "",
+    ].join("\n")
+  );
+}
+
 function runShell(script: string, env: Record<string, string | undefined> = {}) {
   return execFileSync("/bin/bash", ["--noprofile", "--norc", "-c", script], {
     cwd: repoRoot,
@@ -125,10 +150,12 @@ describe("resolve-gh-cli helper", () => {
     );
   });
 
-  it("lets pr-create-safari resolve an existing PR through fallback gh paths", () => {
+  it("refreshes existing PR metadata by default when pr-create-safari resolves an existing PR", () => {
     const dir = mkdtempSync(join(tmpdir(), "gh-cli-script-"));
     tempDirs.push(dir);
     const fakeGh = join(dir, "gh");
+    const fakeNode = join(dir, "node");
+    const editLog = join(dir, "gh-edit.log");
     writeExecutable(
       fakeGh,
       [
@@ -140,18 +167,66 @@ describe("resolve-gh-cli helper", () => {
         '  printf "%s\\n" "https://github.com/stianvikra/freeswimming/pull/999"',
         "  exit 0",
         "fi",
+        'if [ "$1" = "pr" ] && [ "$2" = "edit" ]; then',
+        `  printf "%s\\n" "$*" >> "${editLog}"`,
+        "  exit 0",
+        "fi",
         "exit 1",
         "",
       ].join("\n")
     );
+    writeGenerateBodyNode(fakeNode);
 
     const result = runShell("bash ./scripts/pr-create-safari.sh --print feature/test-branch", {
-      PATH: "/usr/bin:/bin",
+      PATH: `${dir}:/usr/bin:/bin`,
       GH_FALLBACK_PATHS: fakeGh,
       GH_SKIP_PATH_LOOKUP: "1",
     });
 
     expect(result).toBe("https://github.com/stianvikra/freeswimming/pull/999");
+    expect(runShell(`cat "${editLog}"`)).toContain(
+      "pr edit https://github.com/stianvikra/freeswimming/pull/999"
+    );
+  });
+
+  it("skips metadata refresh when --no-refresh-body is passed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gh-cli-script-no-refresh-"));
+    tempDirs.push(dir);
+    const fakeGh = join(dir, "gh");
+    const fakeNode = join(dir, "node");
+    const editLog = join(dir, "gh-edit.log");
+    writeExecutable(
+      fakeGh,
+      [
+        "#!/usr/bin/env bash",
+        'if [ "$1" = "auth" ] && [ "$2" = "status" ]; then',
+        "  exit 0",
+        "fi",
+        'if [ "$1" = "pr" ] && [ "$2" = "list" ]; then',
+        '  printf "%s\\n" "https://github.com/stianvikra/freeswimming/pull/999"',
+        "  exit 0",
+        "fi",
+        'if [ "$1" = "pr" ] && [ "$2" = "edit" ]; then',
+        `  printf "%s\\n" "$*" >> "${editLog}"`,
+        "  exit 0",
+        "fi",
+        "exit 1",
+        "",
+      ].join("\n")
+    );
+    writeGenerateBodyNode(fakeNode);
+
+    const result = runShell(
+      "bash ./scripts/pr-create-safari.sh --print --no-refresh-body feature/test-branch",
+      {
+        PATH: `${dir}:/usr/bin:/bin`,
+        GH_FALLBACK_PATHS: fakeGh,
+        GH_SKIP_PATH_LOOKUP: "1",
+      }
+    );
+
+    expect(result).toBe("https://github.com/stianvikra/freeswimming/pull/999");
+    expect(runShell(`[ -f "${editLog}" ] && echo present || echo missing`)).toBe("missing");
   });
 
   it("explains when open-pr-safari resolves a PR through the discovered gh binary", () => {

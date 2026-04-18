@@ -182,6 +182,10 @@ Create PR automatically when `gh` is installed/authenticated, then open it in Sa
 npm run pr:create:safari
 ```
 
+- Existing PRs are refreshed from the canonical generated title/body by default.
+- Canonical PR + chat-handoff path:
+  - `docs/runbooks/pr-flow-and-chat-handoff.md`
+
 One-time `gh` setup on macOS (optional):
 
 ```bash

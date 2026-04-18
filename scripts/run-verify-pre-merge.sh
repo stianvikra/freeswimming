@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck source=/dev/null
+source "$(dirname "$0")/lib/bootstrap-node.sh"
+
 read_reuse_decision_field() {
   local decision_output="${1:-}"
   local field_name="${2:-}"
@@ -80,20 +83,7 @@ EOF
   echo "[verify-pre-merge] Recorded PASS marker: ${marker_file}"
 }
 
-# Ensure npm is available (best-effort nvm bootstrap)
-if ! command -v npm >/dev/null 2>&1; then
-  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-  if [ -s "${NVM_DIR}/nvm.sh" ]; then
-    # shellcheck source=/dev/null
-    . "${NVM_DIR}/nvm.sh"
-    nvm use --silent >/dev/null 2>&1 || true
-  fi
-fi
-
-if ! command -v npm >/dev/null 2>&1; then
-  echo "[verify-pre-merge] npm not found. Load Node first (for example with nvm)."
-  exit 127
-fi
+require_npm_runtime "[verify-pre-merge]"
 
 node ./scripts/verification-scope.mjs --summary
 verification_lane="$(node ./scripts/verification-scope.mjs --lane)"
