@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-poolside-note-focus-options-responsive-layout-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-04-18`
@@ -174,8 +174,33 @@ Critical target categories for `10/10` claim in this brief:
 - No dead gutters or overflow traps.
 - Abbreviations control clearly looks expandable and stays calm.
 
+## Closeout
+
+- Shipped via PR `#466`, merged to `main` as `b967bf8` on `2026-04-18`.
+- Achieved all declared target categories at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Accessibility (a11y)`
+  - `Stack-fit and dependency discipline`
+  - `Testing and QA automation`
+- Critical `10/10` gate confirmed at `5/5`:
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Accessibility (a11y)`
+  - `Testing and QA automation`
+- Supporting release-safe closeout stayed at `4/5` or better for the remaining in-scope non-`N/A` categories.
+- Release evidence for the implementation slice:
+  - targeted `vitest` coverage passed for the changed poolside/workout contracts (`95 passed` across `tests/unit/poolside-note-panel.test.tsx`, `tests/unit/workout-builder-hub.test.tsx`, and `tests/unit/workouts-shared.test.ts`),
+  - responsive screenshot QA passed across local mobile, tablet, and desktop builder widths,
+  - local `npm run lint:briefs -- --all` passed during implementation,
+  - local `npm run verify:pre-pr` passed,
+  - local `npm run verify:pre-merge` passed (`101 passed`, `331 skipped`),
+  - required GitHub checks for PR `#466` passed green before merge, including `verify`, `Analyze (javascript-typescript)`, `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `Vercel`, and `CodeQL`.
+
 ## Checkpoint Log
 
 - `2026-04-18 | implementation start | moved the brief from planned to in-progress on branch \`feat/poolside-note-focus-options-responsive-layout\` and scoped the work to \`PoolsideNotePanel\`, the poolside notation legend, and targeted panel tests so the focus/options area can switch between stacked and split layouts without nested scrolling | next: implement the responsive layout/disclosure changes, add targeted coverage, and run visual + verify gates before PR handoff`
 - `2026-04-18 | responsive layout + legend update implemented | updated \`PoolsideNotePanel\` to use content-aware stacked vs split containment, removed nested focus-list scrolling, made the abbreviations row a full-width disclosure, added \`Mod = Moderate\` to the shared poolside legend, and confirmed the empty-focus state now stays stacked instead of forcing a dead desktop split | next: run brief lint + full verify gates, then prepare commit/PR handoff`
 - `2026-04-18 | validation gates green before PR handoff | passed targeted poolside/workout vitest coverage, responsive screenshot QA across mobile/tablet/desktop, \`npm run lint:briefs -- --all\`, and full \`npm run verify:pre-pr\`; removed temporary QA artifacts before staging the branch | next: commit the scoped diff, push the branch, open/update the PR, run \`npm run verify:pre-merge\`, and watch CI to merge readiness`
+- `2026-04-18 | merged + closeout | PR #466 merged to \`main\` as \`b967bf8\`; local \`npm run verify:pre-merge\` passed with \`101 passed\` / \`331 skipped\`, required GitHub checks were green, and this docs-only follow-up moved the brief from \`in-progress\` to \`done\` so lifecycle state matches shipped reality | next: none`
