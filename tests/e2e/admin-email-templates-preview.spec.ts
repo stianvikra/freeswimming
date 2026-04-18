@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 import { buildAdminEmailTemplateQaTestKey } from "@/lib/admin/email-template-test-records";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
@@ -32,6 +32,42 @@ function runOnceOnDesktopChromium(projectName: string) {
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
 }
 
+async function requestWithTransientRetry(
+  request: APIRequestContext,
+  method: "get" | "post",
+  url: string
+) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    try {
+      if (method === "get") {
+        return await request.get(url, { timeout: 10_000 });
+      }
+      return await request.post(url, { timeout: 10_000 });
+    } catch (error) {
+      lastError = error;
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+      const isTransientNetworkError =
+        message.includes("socket hang up") ||
+        message.includes("econnreset") ||
+        message.includes("fetch failed") ||
+        message.includes("timeout");
+
+      if (!isTransientNetworkError || attempt === 4) {
+        throw error;
+      }
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 500 * attempt);
+      });
+    }
+  }
+
+  throw lastError;
+}
+
 async function moveTemplateStatusAndWait(
   page: Page,
   templateItem: Locator,
@@ -55,7 +91,11 @@ async function moveTemplateStatusAndWait(
 }
 
 async function cleanupAdminEmailTemplateTestRecords(page: Page) {
-  const response = await page.request.post("/api/admin/email-templates/test-records");
+  const response = await requestWithTransientRetry(
+    page.request,
+    "post",
+    "/api/admin/email-templates/test-records"
+  );
   const parsed = (await response.json().catch(() => null)) as AdminEmailTemplateCleanupResponse | null;
   expect(response.ok(), parsed && "ok" in parsed && !parsed.ok ? parsed.error : "Expected successful email-template QA cleanup.").toBe(true);
   if (!parsed?.ok) {
@@ -89,7 +129,11 @@ test.describe("admin email template preview", () => {
       test.skip(true, "Dev bypass account lacks editor/admin role for template mutations.");
     }
 
-    const emailTemplatesProbe = await page.request.get("/api/admin/email-templates");
+    const emailTemplatesProbe = await requestWithTransientRetry(
+      page.request,
+      "get",
+      "/api/admin/email-templates"
+    );
     if (!emailTemplatesProbe.ok()) {
       test.skip(true, `Admin email templates API unavailable (${emailTemplatesProbe.status()}).`);
     }
@@ -118,6 +162,7 @@ test.describe("admin email template preview", () => {
 
     const createForm = page.getByTestId("admin-email-templates-create-form");
     await expect(createForm).toBeVisible();
+    await expect(page.getByText("Loading email templates…")).toHaveCount(0);
 
     const subjectField = createForm.getByLabel("Subject");
     const bodyField = createForm.getByLabel("Body");
