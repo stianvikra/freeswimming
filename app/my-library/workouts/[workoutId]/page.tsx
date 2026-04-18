@@ -116,6 +116,7 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
               }
               manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
               swimmerName={athleteProfileSnapshot.profile?.primaryName ?? null}
+              userId={user.id}
               hideShellIntro
               preferExpandedDetailsOnLoad={preferExpandedDetailsOnLoad}
             />

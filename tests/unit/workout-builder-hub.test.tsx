@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
 import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
+import { buildManualWorkoutLocalDraftStorageKey } from "@/lib/workouts/manual-local-draft";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import type {
   WorkoutEditorRecord,
@@ -203,6 +204,7 @@ describe("WorkoutBuilderHub", () => {
 
   afterEach(() => {
     cleanup();
+    window.localStorage.clear();
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
@@ -2827,26 +2829,8 @@ describe("WorkoutBuilderHub", () => {
     );
   });
 
-  it("seeds new manual pool sessions from the provided CSS pace", async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        workout: buildWorkoutRecord({
-          id: "workout-created",
-          sourceKind: "manual",
-          draft: buildDraft({
-            sourceFingerprint: "manual-empty-pool-seeded",
-            basePaceSecondsPer100m: 118,
-            usedCssPaceLabel: "1:58",
-          }),
-        }),
-        summary: buildWorkoutSummary({
-          id: "workout-created",
-          sourceKind: "manual",
-        }),
-      }),
-    } as Response);
+  it("seeds a new local pool draft from the provided CSS pace", async () => {
+    const storageKey = buildManualWorkoutLocalDraftStorageKey("user-1", "pool");
 
     render(
       <WorkoutBuilderHub
@@ -2855,7 +2839,8 @@ describe("WorkoutBuilderHub", () => {
         })}
         manualPoolCssMetricSecondsPer100m={118}
         manualPoolCssPaceLabel="1:58"
-        browseOnly
+        userId="user-1"
+        manualLocalDraftMode="pool"
       />
     );
 
@@ -2866,20 +2851,19 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Build pool session" }));
-
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId("session-draft-title")).toBeVisible();
     });
 
-    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit | undefined;
-    const body = JSON.parse(String(request?.body ?? "{}")) as { draft?: SessionDraft };
+    const storedRaw = window.localStorage.getItem(storageKey);
+    expect(storedRaw).not.toBeNull();
 
-    expect(body.draft?.basePaceSecondsPer100m).toBe(118);
-    expect(body.draft?.usedCssPaceLabel).toBe("1:58");
-    expect(navigationState.push).toHaveBeenCalledWith(
-      "/my-library/workouts/workout-created?entry=manual-pool"
-    );
+    const storedSnapshot = JSON.parse(String(storedRaw)) as {
+      draft?: SessionDraft;
+    };
+
+    expect(storedSnapshot.draft?.basePaceSecondsPer100m).toBe(118);
+    expect(storedSnapshot.draft?.usedCssPaceLabel).toBe("1:58");
   });
 
   it("can force session details open for a fresh manual-entry route", async () => {
@@ -3008,5 +2992,176 @@ describe("WorkoutBuilderHub", () => {
         method: "DELETE",
       });
     });
+  });
+
+  it("recovers an existing local pool draft without loading a canonical session", async () => {
+    const storageKey = buildManualWorkoutLocalDraftStorageKey("user-1", "pool");
+    const recoveredDraft = buildManualWorkoutEmptyDraft(new Date("2026-04-18T09:00:00.000Z"));
+
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        version: 1,
+        mode: "pool",
+        draft: {
+          ...recoveredDraft,
+          title: "Recovered local draft",
+        },
+        updatedAt: Date.now(),
+      })
+    );
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+        })}
+        userId="user-1"
+        manualLocalDraftMode="pool"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-draft-title")).toBeVisible();
+    });
+
+    expect(
+      screen.getByText("Recovered your unsaved local pool draft on this device.")
+    ).toBeVisible();
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Recovered local draft");
+    expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-builder-view-sessions-link")).toHaveAttribute(
+      "href",
+      "/my-library/workouts"
+    );
+  });
+
+  it("discards the current local draft without deleting any saved session", async () => {
+    const storageKey = buildManualWorkoutLocalDraftStorageKey("user-1", "pool");
+    const recoveredDraft = buildManualWorkoutEmptyDraft(new Date("2026-04-18T09:00:00.000Z"));
+
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        version: 1,
+        mode: "pool",
+        draft: recoveredDraft,
+        updatedAt: Date.now(),
+      })
+    );
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+        })}
+        userId="user-1"
+        manualLocalDraftMode="pool"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-discard-current-draft")).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByTestId("workout-builder-discard-current-draft"));
+    expect(screen.getByText("Discard this local draft?")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("workout-builder-confirm-discard-current-draft"));
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem(storageKey)).toBeNull();
+    });
+
+    expect(navigationState.replace).toHaveBeenCalledWith("/my-library/workouts");
+    expect(screen.getByText("Discarded the local pool draft.")).toBeVisible();
+    expect(screen.getByText("No saved swim session is loaded in this route yet.")).toBeVisible();
+    expect(screen.queryByTestId("session-draft-title")).not.toBeInTheDocument();
+  });
+
+  it("creates the canonical workout only on the first explicit save from a local draft", async () => {
+    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        draft: SessionDraft;
+        sourceKind?: string;
+      };
+
+      return {
+        ok: true,
+        json: async () => ({
+          ok: true,
+          workout: buildWorkoutRecord({
+            id: "workout-created",
+            sourceKind: "manual",
+            draft: {
+              ...body.draft,
+              sourceFingerprint: "manual-empty-pool-saved",
+            },
+          }),
+          summary: buildWorkoutSummary({
+            id: "workout-created",
+            sourceKind: "manual",
+            title: body.draft.title,
+          }),
+        }),
+      } as Response;
+    });
+
+    const storageKey = buildManualWorkoutLocalDraftStorageKey("user-1", "pool");
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+        })}
+        userId="user-1"
+        manualLocalDraftMode="pool"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-draft-title")).toBeVisible();
+    });
+
+    fireEvent.change(screen.getByTestId("session-draft-title"), {
+      target: { value: "Saved from local draft" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save session" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/workouts",
+        expect.objectContaining({
+          method: "POST",
+        })
+      );
+    });
+
+    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit | undefined;
+    const body = JSON.parse(String(request?.body ?? "{}")) as {
+      draft?: SessionDraft;
+      sourceKind?: string;
+    };
+
+    expect(body.sourceKind).toBe("manual");
+    expect(body.draft?.title).toBe("Saved from local draft");
+
+    await waitFor(() => {
+      expect(navigationState.replace).toHaveBeenCalledWith(
+        "/my-library/workouts/workout-created?entry=manual-pool"
+      );
+    });
+
+    expect(window.localStorage.getItem(storageKey)).toBeNull();
+    expect(screen.queryByTestId("workout-builder-discard-current-draft")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
+    expect(screen.getByTestId("workout-builder-delete-current-workout")).toBeVisible();
   });
 });

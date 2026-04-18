@@ -5,12 +5,32 @@ import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHu
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
+import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
 import type { WorkoutPoolsideFocusOption } from "@/lib/workouts/shared";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function WorkoutSessionsPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+type Props = {
+  searchParams: SearchParams;
+};
+
+function readSearchParamValue(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string
+): string {
+  const raw = searchParams[key];
+  return Array.isArray(raw) ? (raw[0] ?? "") : (raw ?? "");
+}
+
+export default async function WorkoutSessionsPage({ searchParams }: Props) {
+  const resolvedSearchParams = await searchParams;
+  const entryMode = readSearchParamValue(resolvedSearchParams, "entry");
+  const rawDraftMode = readSearchParamValue(resolvedSearchParams, "draft");
+  const localDraftMode: ManualWorkoutBuilderMode | null =
+    rawDraftMode === "pool" || rawDraftMode === "open_water" ? rawDraftMode : null;
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -34,6 +54,17 @@ export default async function WorkoutSessionsPage() {
           isPrimary: focus.isPrimary,
         }))
       : [];
+  const builderHeading =
+    localDraftMode === "pool"
+      ? "Pool session builder"
+      : localDraftMode === "open_water"
+        ? "Open-water session builder"
+        : "My Swim Sessions";
+  const preferExpandedDetailsOnLoad =
+    localDraftMode !== null ||
+    entryMode === "manual-create" ||
+    entryMode === "manual-pool" ||
+    entryMode === "manual-open-water";
 
   return (
     <SiteChrome>
@@ -53,7 +84,7 @@ export default async function WorkoutSessionsPage() {
                 My Library
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
-                My Swim Sessions
+                {builderHeading}
               </h1>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -76,7 +107,11 @@ export default async function WorkoutSessionsPage() {
               }
               manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
               swimmerName={athleteProfileSnapshot.profile?.primaryName ?? null}
-              browseOnly
+              browseOnly={localDraftMode === null}
+              hideShellIntro={localDraftMode !== null}
+              preferExpandedDetailsOnLoad={preferExpandedDetailsOnLoad}
+              userId={user.id}
+              manualLocalDraftMode={localDraftMode}
             />
           </div>
         </div>

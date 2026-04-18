@@ -101,7 +101,7 @@ async function waitForWorkoutBuilderSaveReady(page: Page) {
   const saveVisible = await saveButton.isVisible({ timeout: 15_000 }).catch(() => false);
   if (!saveVisible) {
     await page.reload({ waitUntil: "domcontentloaded" });
-    await waitForWorkoutBuilderRoute(page);
+    await waitForAnyWorkoutBuilderRoute(page);
     await waitForRouteToSettle(page);
     await waitForWorkoutBuilderClientReady(page);
   }
@@ -109,7 +109,26 @@ async function waitForWorkoutBuilderSaveReady(page: Page) {
   await expect(saveButton).toBeVisible({ timeout: 15_000 });
 }
 
-async function waitForWorkoutBuilderRoute(page: Page) {
+async function waitForAnyWorkoutBuilderRoute(page: Page) {
+  await page.waitForURL(/\/my-library\/workouts(?:\/[0-9a-f-]+)?(?:\?.*)?$/, {
+    timeout: 60_000,
+    waitUntil: "commit",
+  });
+  await page.waitForLoadState("domcontentloaded");
+}
+
+async function waitForLocalWorkoutBuilderRoute(page: Page) {
+  await page.waitForURL(
+    /\/my-library\/workouts\?draft=(?:pool|open_water)&entry=manual-(?:pool|open-water)$/,
+    {
+      timeout: 60_000,
+      waitUntil: "commit",
+    }
+  );
+  await page.waitForLoadState("domcontentloaded");
+}
+
+async function waitForSavedWorkoutBuilderRoute(page: Page) {
   await page.waitForURL(/\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-pool)?$/, {
     timeout: 60_000,
     waitUntil: "commit",
@@ -214,35 +233,39 @@ test.describe("my library program export", () => {
       return;
     }
 
-    const createWorkoutResponsePromise = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/my-library/workouts") &&
-        response.request().method() === "POST" &&
-        response.status() === 200
-    );
-
     await triggerCreateSession(page, "my-library-create-pool-workout");
-    await createWorkoutResponsePromise;
-    await waitForWorkoutBuilderRoute(page);
-    const workoutId = page.url().match(/\/my-library\/workouts\/([0-9a-f-]+)/i)?.[1];
-    expect(workoutId).toBeTruthy();
+    await waitForLocalWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
     await ensureWorkoutMetadataOpen(page);
     await expect(page.getByTestId("session-draft-step-toggle-0")).toBeVisible({ timeout: 15_000 });
 
     await page.getByTestId("session-draft-title").fill(uniqueWorkoutTitle);
+    await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
+      "This session is not saved yet."
+    );
 
     const saveWorkoutResponsePromise = page.waitForResponse(
       (response) =>
-        /\/api\/my-library\/workouts\/[0-9a-f-]+$/.test(response.url()) &&
-        response.request().method() === "PATCH" &&
+        response.url().endsWith("/api/my-library/workouts") &&
+        response.request().method() === "POST" &&
         response.status() === 200
     );
 
     await page.getByTestId("workout-builder-save").click();
-    await saveWorkoutResponsePromise;
-    await expect(page.getByText("Changes saved to this session.")).toBeVisible();
+    const saveWorkoutResponse = await saveWorkoutResponsePromise;
+    const saveWorkoutBody = (await saveWorkoutResponse.json().catch(() => null)) as {
+      ok?: boolean;
+    } | null;
+    expect(saveWorkoutBody?.ok).toBe(true);
+    await waitForSavedWorkoutBuilderRoute(page);
+    await waitForWorkoutBuilderClientReady(page);
+    await expect(page.getByTestId("workout-editor-save-state")).toHaveText(
+      "All changes are saved to this session."
+    );
+
+    const workoutId = page.url().match(/\/my-library\/workouts\/([0-9a-f-]+)/i)?.[1];
+    expect(workoutId).toBeTruthy();
 
     await gotoWithTransientRetry(page, "/my-library", 60_000);
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
