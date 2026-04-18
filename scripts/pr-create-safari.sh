@@ -116,12 +116,12 @@ if [ -n "$gh_bin" ] && gh_cli_is_authenticated "$gh_bin"; then
     exit 1
   fi
 
-  if ! generated_body_file="$(generate_body_file)"; then
-    exit 1
-  fi
-
   existing_pr_url="$("$gh_bin" pr list --head "$branch" --state open --json url -q '.[0].url' 2>/dev/null || true)"
   if [ -z "$existing_pr_url" ]; then
+    if ! generated_body_file="$(generate_body_file)"; then
+      exit 1
+    fi
+
     created_pr_url="$(
       "$gh_bin" pr create \
         --base "$base_branch" \
@@ -137,6 +137,10 @@ if [ -n "$gh_bin" ] && gh_cli_is_authenticated "$gh_bin"; then
 
     gh_resolution_message="Created PR via GitHub CLI (${gh_bin}) with canonical generated title/body."
   elif [ "$refresh_body" -eq 1 ]; then
+    if ! generated_body_file="$(generate_body_file)"; then
+      exit 1
+    fi
+
     "$gh_bin" pr edit "$existing_pr_url" --title "$generated_title" --body-file "$generated_body_file" >/dev/null
     gh_resolution_message="Using existing PR via GitHub CLI (${gh_bin}) and refreshed PR metadata from the canonical generator."
   else

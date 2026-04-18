@@ -98,4 +98,24 @@ describe("bootstrap-node helper", () => {
       expect(getShellErrorMessage(error)).toContain("Run `nvm use --silent default`");
     }
   });
+
+  it("keeps an existing node on PATH even when npm is unavailable", () => {
+    const binDir = mkdtempSync(join(tmpdir(), "node-bootstrap-node-only-"));
+    tempDirs.push(binDir);
+    writeExecutable(join(binDir, "node"), "#!/usr/bin/env bash\nexit 0\n");
+
+    const output = runShell(
+      [
+        "source ./scripts/lib/bootstrap-node.sh",
+        'require_node_runtime "[test]"',
+        "command -v node",
+      ].join("\n"),
+      {
+        PATH: `${binDir}:/usr/bin:/bin`,
+        NVM_DIR: join(repoRoot, "definitely-missing-nvm"),
+      }
+    );
+
+    expect(output).toBe(join(binDir, "node"));
+  });
 });
