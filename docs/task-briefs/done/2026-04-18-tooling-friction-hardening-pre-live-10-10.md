@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-tooling-friction-hardening-pre-live-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-04-18`
@@ -291,3 +291,4 @@ Critical target categories for a `10/10` claim in this brief:
 - `2026-04-18 | ci portability follow-up | fixed the remaining Linux portability stop in \`scripts/pr-create-safari.sh\` by switching the generated PR-body temp file to a GNU/BSD-compatible \`mktemp\` template after PR #460 failed in \`tests/unit/gh-cli-resolution.test.ts\`; reran targeted CI-mode unit coverage and a full local \`npm run verify:pre-pr\` successfully on the working tree | next: commit the follow-up, rerun \`npm run verify:pre-merge\` on the new HEAD, then refresh PR #460 and re-check CI`
 - `2026-04-18 | pr-body refresh-race follow-up | after commit \`6087035\`, CI \`verify\` failed on PR-body SHA evidence even though the live PR body already validated locally; confirmed the failure was a push-versus-PR-edit timing race, then added a narrow retry path in \`scripts/lint-pr-body-sections.mjs\` plus regression coverage for retryable vs non-retryable validation errors | next: commit this hardening slice, rerun \`npm run verify:pre-pr\`, push PR #460, then rerun local \`npm run verify:pre-merge\` before final readiness summary`
 - `2026-04-18 | gh-cli harness follow-up | after commit \`155148e\`, CI moved past PR-body lint but failed Linux unit coverage in \`tests/unit/gh-cli-resolution.test.ts\`; narrowed the remaining stop to two script assumptions: \`pr-create-safari.sh\` generated PR-body files even for existing PRs with \`--no-refresh-body\`, and \`require_node_runtime\` still treated missing \`npm\` as a reason to mutate PATH via \`nvm\`, which masked test-harness behavior locally | next: commit this CI-hardening follow-up, rerun \`npm run verify:pre-pr\`, push PR #460, then re-check required CI before closeout`
+- `2026-04-18 | housekeeping closeout | moved brief to done after the tooling-friction hardening landed on main in merged PR #460 via commit \`8719952\` | next: none`
