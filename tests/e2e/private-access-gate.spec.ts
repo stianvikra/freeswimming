@@ -18,6 +18,8 @@ test.describe("private access gate", () => {
     await expect(page.getByText("Under construction")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Adult learner?" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Early access" })).toBeVisible();
+    await expect(page.getByTestId("mobile-fixed-nav")).toHaveCount(0);
+    await expect(page.getByTestId("header-menu-toggle")).toBeVisible();
     await expect(page.getByLabel("Access password")).not.toHaveAttribute(
       "placeholder",
       "Enter password"

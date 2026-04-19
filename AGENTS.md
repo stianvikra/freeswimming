@@ -113,10 +113,22 @@ This file defines how coding agents should collaborate in this repository.
 
 - For UI, print, layout, branding, or other visibly user-facing changes, assistant must provide a screenshot handoff before merge recommendation.
 - Screenshot handoff must happen after targeted implementation QA is stable, but before final merge-ready handoff.
+- Required sequence for visual work:
+  1. implement the scoped change,
+  2. capture screenshot handoff + give a short explanation,
+  3. wait for owner approval or visual corrections,
+  4. run `npm run verify:pre-pr`,
+  5. open/update PR,
+  6. run `npm run verify:pre-merge` and summarize merge readiness.
+- For visual work, this screenshot approval stop overrides the normal automation-first flow. Assistant should not continue into `verify:pre-pr`, PR creation, or `verify:pre-merge` until the owner has approved the screenshot handoff or explicitly waived that review.
 - Handoff must include:
   - `2-4` representative screenshots from the changed surface,
   - one short explanation per screenshot describing what changed and what the owner should verify,
   - explicit note of any known visual caveat or remaining judgment call.
+- Screenshot filenames must make the comparison type explicit:
+  - use `before-<surface>-<viewport>.*` and `after-<surface>-<viewport>.*` when the same surface is shown before and after,
+  - use `after-<changed-surface>-<viewport>.*` and `reference-<comparison-surface>-<viewport>.*` when the handoff is comparing the changed surface to a separate reference surface instead of a true before-state,
+  - assistant must also say explicitly whether the handoff is `before/after` or `after/reference`; ambiguous filenames like `<surface>.png` are not sufficient.
 - Owner may request visual corrections from the screenshot handoff before merge; assistant should apply those corrections, refresh the screenshots, and only then proceed to final merge readiness.
 - This is required by default for UI/print/layout/brand work, and optional for backend, docs, tooling, and other non-visual changes.
 
@@ -151,6 +163,8 @@ This file defines how coding agents should collaborate in this repository.
   - missing credentials/secrets,
   - sandbox/escalation requirement,
   - explicit owner decision needed for product tradeoff.
+- Exception for visual work:
+  - when the slice changes UI/print/layout/brand behavior, assistant must pause after screenshot handoff and owner review before continuing to `verify:pre-pr`, PR creation, and `verify:pre-merge`.
 - Required gate sequence under automation:
   - before PR update/push: `npm run verify:pre-pr`,
   - before merge recommendation: `npm run verify:pre-merge` + required CI green.

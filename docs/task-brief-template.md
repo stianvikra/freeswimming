@@ -159,7 +159,12 @@ Which commands should pass?
 - `SITE_LOCK_ENABLED=1 npm run test:e2e:private-gate` (automation default with bypass-token fallback)
 - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate` (required when private unlock UX/password behavior changes)
 - for UI/print/layout/brand changes:
-  - targeted screenshot handoff with short explanation before merge
+  - targeted screenshot handoff with short explanation before `verify:pre-pr`
+  - owner screenshot approval or correction pass before `verify:pre-pr`, PR creation, and `verify:pre-merge`
+  - explicit screenshot naming:
+    - `before-<surface>-<viewport>.*` and `after-<surface>-<viewport>.*` for a true before/after pair
+    - `after-<changed-surface>-<viewport>.*` and `reference-<comparison-surface>-<viewport>.*` when comparing the changed surface to a separate reference surface instead of a true before-state
+  - handoff text must state clearly whether the set is `before/after` or `after/reference`
 
 ## Local Tooling Prerequisite (Required)
 
@@ -183,9 +188,11 @@ Required when task impacts UI/UX, install flows, runtime browser behavior, or de
   - Preview URL from PR checks
   - Browsers/devices tested on preview
 - Screenshot handoff required for UI/print/layout/brand changes:
-  - assistant provides representative screenshots before merge recommendation,
+  - assistant provides representative screenshots before `verify:pre-pr`,
   - owner reviews and can request corrections before final merge-ready handoff,
-  - screenshots should cover the most important changed states/surfaces.
+  - screenshots should cover the most important changed states/surfaces,
+  - filenames must make the comparison type explicit (`before-*` / `after-*` or `after-*` / `reference-*`),
+  - if mobile and desktop are both in scope, screenshots should preserve the same core visual language across breakpoints unless the brief explicitly calls for a breakpoint-specific exception.
 - Any local vs preview differences documented (or explicitly `none`)
 - Recommended browser/device matrix for UI/runtime changes:
   - iOS Safari (phone)

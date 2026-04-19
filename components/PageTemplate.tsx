@@ -6,6 +6,7 @@ import BackButton from "@/components/BackButton";
 type Props = {
   children: React.ReactNode;
   size?: "default" | "wide";
+  surfaceTone?: "default" | "brand";
   showBack?: boolean;
   topInset?: "default" | "compact" | "tight";
 
@@ -26,6 +27,7 @@ type Props = {
 export default function PageTemplate({
   children,
   size = "default",
+  surfaceTone = "default",
   showBack = true,
   topInset = "default",
   backVisibility = "desktop",
@@ -34,6 +36,21 @@ export default function PageTemplate({
   const showBackOnMobile = backVisibility === "all";
   const maxW =
     size === "wide" ? "max-w-[720px] lg:max-w-[860px] xl:max-w-[980px]" : "max-w-[520px]";
+  const surfaceClass =
+    surfaceTone === "brand"
+      ? [
+          "rounded-[28px] border p-6 backdrop-blur-xl sm:p-8 sm:backdrop-blur-xl",
+          "border-blue-100/75 bg-[radial-gradient(140%_120%_at_50%_0%,rgba(96,165,250,0.18),rgba(255,255,255,0.92)_58%),linear-gradient(180deg,rgba(239,246,255,0.88),rgba(255,255,255,0.94))]",
+          "shadow-[0_18px_48px_rgba(37,99,235,0.10)]",
+          "lg:border-blue-100/85 lg:bg-[radial-gradient(150%_130%_at_50%_0%,rgba(96,165,250,0.24),rgba(255,255,255,0.88)_52%),linear-gradient(180deg,rgba(237,245,255,0.96),rgba(255,255,255,0.94))]",
+          "lg:shadow-[0_24px_58px_rgba(37,99,235,0.12)] lg:backdrop-blur-md",
+          "xl:bg-[radial-gradient(150%_130%_at_50%_0%,rgba(96,165,250,0.26),rgba(255,255,255,0.90)_52%),linear-gradient(180deg,rgba(237,245,255,0.98),rgba(255,255,255,0.95))]",
+        ].join(" ")
+      : "bg-white/72 lg:bg-white/84 rounded-[28px] border border-white/60 p-6 shadow-[0_16px_44px_rgba(16,24,40,0.11)] backdrop-blur-xl sm:p-8 sm:shadow-[0_14px_38px_rgba(16,24,40,0.09)] lg:border-slate-200/75 lg:shadow-[0_18px_46px_rgba(15,23,42,0.10)] lg:backdrop-blur-md xl:bg-white/90";
+  const glowClass =
+    surfaceTone === "brand"
+      ? "pointer-events-none absolute inset-0 -z-10 rounded-[32px] shadow-[0_0_0_1px_rgba(191,219,254,0.72),0_24px_60px_rgba(59,130,246,0.14)] sm:shadow-[0_0_0_1px_rgba(191,219,254,0.72),0_22px_54px_rgba(59,130,246,0.12)] lg:shadow-[0_0_0_1px_rgba(191,219,254,0.78),0_30px_76px_rgba(59,130,246,0.18)]"
+      : "pointer-events-none absolute inset-0 -z-10 rounded-[32px] shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_20px_56px_rgba(59,130,246,0.10)] sm:shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_18px_48px_rgba(59,130,246,0.08)] lg:shadow-[0_0_0_1px_rgba(203,213,225,0.65),0_24px_58px_rgba(15,23,42,0.10)]";
 
   return (
     <div
@@ -51,7 +68,7 @@ export default function PageTemplate({
       ].join(" ")}
     >
       <section className={`relative mx-auto w-full ${maxW}`}>
-        <div className="bg-white/72 lg:bg-white/84 rounded-[28px] border border-white/60 p-6 shadow-[0_16px_44px_rgba(16,24,40,0.11)] backdrop-blur-xl sm:p-8 sm:shadow-[0_14px_38px_rgba(16,24,40,0.09)] lg:border-slate-200/75 lg:shadow-[0_18px_46px_rgba(15,23,42,0.10)] lg:backdrop-blur-md xl:bg-white/90">
+        <div className={surfaceClass}>
           {showBack ? (
             showBackOnMobile ? (
               <BackButton />
@@ -66,7 +83,7 @@ export default function PageTemplate({
         </div>
 
         {/* subtle outer glow */}
-        <div className="pointer-events-none absolute inset-0 -z-10 rounded-[32px] shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_20px_56px_rgba(59,130,246,0.10)] sm:shadow-[0_0_0_1px_rgba(255,255,255,0.35),0_18px_48px_rgba(59,130,246,0.08)] lg:shadow-[0_0_0_1px_rgba(203,213,225,0.65),0_24px_58px_rgba(15,23,42,0.10)]" />
+        <div className={glowClass} />
       </section>
     </div>
   );
