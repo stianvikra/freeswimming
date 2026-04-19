@@ -1100,7 +1100,6 @@ function buildRepeatSummary(
 
 type ManualPoolViewSectionLine = {
   key: string;
-  label?: string | null;
   primaryText: string;
   secondaryText?: string | null;
   target?:
@@ -1225,8 +1224,7 @@ function buildManualPoolViewLineParts(
 function buildManualPoolRepeatViewLine(
   group: Extract<StepRenderGroup, { kind: "repeat" }>,
   basePaceSecondsPer100m: number,
-  poolLengthUnit: SessionDraftPoolLengthUnit,
-  lineLabel?: string | null
+  poolLengthUnit: SessionDraftPoolLengthUnit
 ): ManualPoolViewSectionLine {
   const workStep = group.entries[0]?.step ?? null;
   const betweenStep = group.entries[1]?.step ?? null;
@@ -1235,7 +1233,6 @@ function buildManualPoolRepeatViewLine(
   if (!normalizedWorkStep) {
     return {
       key: group.repeatGroupId,
-      label: lineLabel,
       primaryText: "Set the work interval for this repeat block.",
       secondaryText: null,
       target: {
@@ -1276,7 +1273,6 @@ function buildManualPoolRepeatViewLine(
 
   return {
     key: group.repeatGroupId,
-    label: lineLabel,
     primaryText,
     secondaryText,
     target: {
@@ -1353,35 +1349,33 @@ function buildManualPoolViewSections(
   poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
   const sections: ManualPoolViewSection[] = [];
-  const sectionByTitle = new Map<string, ManualPoolViewSection>();
   const consumedRestStepIds = new Set<string>();
-  const topLevelDescriptors = buildManualPoolTopLevelSectionDescriptors(stepGroups);
 
-  stepGroups.forEach((group, groupIndex) => {
-    const descriptor = topLevelDescriptors[groupIndex] ?? null;
-    const title =
-      descriptor?.title ?? getSessionStepCategoryLabel(getManualPoolTopLevelCategory(group));
-    const lineLabel =
-      descriptor?.indexWithinCategory && descriptor.totalWithinCategory > 1
-        ? `${descriptor.indexWithinCategory} of ${descriptor.totalWithinCategory}`
-        : null;
-    const category = getManualPoolTopLevelCategory(group);
-    let section = sectionByTitle.get(title);
+  function getOrCreateContiguousSection(category: SessionDraftStep["category"]) {
+    const title = getSessionStepCategoryLabel(category);
+    const currentSection = sections[sections.length - 1] ?? null;
 
-    if (!section) {
-      section = {
-        key: `${title.toLowerCase()}-${sections.length}`,
-        title,
-        lines: [],
-        category,
-      };
-      sectionByTitle.set(title, section);
-      sections.push(section);
+    if (currentSection && currentSection.category === category && currentSection.title === title) {
+      return currentSection;
     }
 
+    const nextSection = {
+      key: `${title.toLowerCase()}-${sections.length}`,
+      title,
+      lines: [],
+      category,
+    };
+    sections.push(nextSection);
+    return nextSection;
+  }
+
+  stepGroups.forEach((group) => {
+    const category = getManualPoolTopLevelCategory(group);
+
     if (group.kind === "repeat") {
+      const section = getOrCreateContiguousSection(category);
       section.lines.push(
-        buildManualPoolRepeatViewLine(group, basePaceSecondsPer100m, poolLengthUnit, lineLabel)
+        buildManualPoolRepeatViewLine(group, basePaceSecondsPer100m, poolLengthUnit)
       );
       return;
     }
@@ -1402,9 +1396,9 @@ function buildManualPoolViewSections(
       poolLengthUnit,
       linkedRestStep
     );
+    const section = getOrCreateContiguousSection(category);
     section.lines.push({
       key: entry.step.id,
-      label: lineLabel,
       primaryText: viewLineParts.primaryText,
       secondaryText: viewLineParts.secondaryText,
       target: {
@@ -1444,6 +1438,36 @@ function getManualPoolCategoryLabelClass(category: SessionDraftStep["category"])
       return "text-slate-600";
     default:
       return "text-slate-500";
+  }
+}
+
+function getManualPoolViewSectionToneClass(category: SessionDraftStep["category"]) {
+  switch (category) {
+    case "warmup":
+      return "border-l-4 border-l-sky-400 border-sky-200";
+    case "main":
+      return "border-l-4 border-l-blue-500 border-blue-200";
+    case "cooldown":
+      return "border-l-4 border-l-teal-500 border-teal-200";
+    case "rest":
+      return "border-l-4 border-l-slate-400 border-slate-200";
+    default:
+      return "border-l-4 border-l-slate-300 border-slate-200";
+  }
+}
+
+function getManualPoolViewSectionHeaderClass(category: SessionDraftStep["category"]) {
+  switch (category) {
+    case "warmup":
+      return "border-b border-sky-100 bg-sky-50/70";
+    case "main":
+      return "border-b border-blue-100 bg-blue-50/60";
+    case "cooldown":
+      return "border-b border-teal-100 bg-teal-50/70";
+    case "rest":
+      return "border-b border-slate-200 bg-slate-50/80";
+    default:
+      return "border-b border-slate-200 bg-slate-50/70";
   }
 }
 
@@ -5399,10 +5423,21 @@ export default function WorkoutEditor({
                   <section
                     key={section.key}
                     data-testid={`workout-editor-view-section-${section.key}`}
-                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                    data-view-category={section.category}
+                    className={`overflow-hidden rounded-2xl border bg-white ${getManualPoolViewSectionToneClass(
+                      section.category
+                    )}`}
                   >
-                    <div className="border-b border-slate-200/80 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <div
+                      className={`px-4 py-3 ${getManualPoolViewSectionHeaderClass(
+                        section.category
+                      )}`}
+                    >
+                      <p
+                        className={`text-xs font-semibold uppercase tracking-wide ${getManualPoolCategoryLabelClass(
+                          section.category
+                        )}`}
+                      >
                         {section.title}
                       </p>
                     </div>
@@ -5411,11 +5446,6 @@ export default function WorkoutEditor({
                         const lineTarget = line.target;
                         const lineContent = (
                           <div className="space-y-2">
-                            {line.label ? (
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                {line.label}
-                              </p>
-                            ) : null}
                             <p className="text-base leading-6 text-slate-900">{line.primaryText}</p>
                             {line.secondaryText ? (
                               <p className="text-sm font-semibold text-blue-800">
