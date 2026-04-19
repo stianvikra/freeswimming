@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-swim-session-builder-view-mode-structure-rest-grouping-and-section-color-consistency-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-04-19`
@@ -180,8 +180,32 @@ Strict `10/10` mode for this brief:
 - Rest should live where swimmers expect to read it.
 - Ordered blocks should do the scanability work that `1 of N` helper labels currently try to compensate for.
 
+## Closeout
+
+- Shipped via PR `#478`, merged to `main` as `8ef6e01` on `2026-04-19`.
+- Declared `target` categories achieved in closeout:
+  - `Product goals and IA`: `5/5`
+  - `UX flow clarity`: `5/5`
+  - `Visual design quality`: `5/5`
+  - `Business logic correctness and data integrity`: `5/5`
+  - `Stack-fit and dependency discipline`: `5/5`
+  - `Testing and QA automation`: `5/5`
+- Critical `10/10` gate categories confirmed at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Business logic correctness and data integrity`
+  - `Testing and QA automation`
+- Release evidence captured in shipped workstream:
+  - reference + after screenshots were reviewed and explicitly approved before verify and PR,
+  - targeted builder unit coverage was updated for ordered contiguous sections, parent-linked rest grouping, and calm section accents,
+  - local `npm run verify:pre-pr` passed,
+  - local `npm run verify:pre-merge` passed,
+  - required CI checks for PR `#478` passed before merge.
+
 ## Checkpoint Log
 
 - `2026-04-19 | implementation start | moved the brief to in-progress on branch feat/builder-view-mode-structure-rest-color after confirming the current view-mode renderer still globally merges sections by title, emits ordinal helper labels, and leaves view-mode section treatment more neutral than the brief allows | next: switch view grouping to contiguous ordered blocks, keep parent-linked rest inside its block, restore calm section accents, and update targeted tests/screenshots before approval`
 - `2026-04-19 | implementation + targeted validation | view mode now groups contiguous sections in workout order instead of globally merging by title, removes the old 1-of-N helper labels, keeps parent-linked rest inside the parent line, and restores calm warmup/main/cooldown section accents in the view renderer; targeted unit coverage and scoped eslint both passed, and screenshot artifacts were captured from a real saved workout route for owner review before repo gates | validation: npx vitest run tests/unit/workout-builder-hub.test.tsx; npx eslint components/my-library/workouts/WorkoutEditor.tsx tests/unit/workout-builder-hub.test.tsx; output/playwright/2026-04-19-builder-view-mode-structure/{reference-builder-edit-mode-desktop.png,reference-builder-rearrange-mode-desktop.png,after-builder-view-mode-desktop.png,after-builder-view-mode-mobile.png} | next: owner screenshot approval, then npm run verify:pre-pr, PR, and npm run verify:pre-merge`
 - `2026-04-19 | owner approval + pre-pr gate green | owner approved the screenshot review, the first full pre-pr attempt was blocked by an unrelated admin-preview data-timeout flake, and the second full run passed end-to-end with verify-open PASS (103 passed / 335 skipped in Playwright); builder view-mode scope remains isolated to WorkoutEditor + targeted builder tests + this brief | validation: npm run verify:pre-pr | next: commit, push, open/update PR, then run npm run verify:pre-merge and monitor CI`
+- `2026-04-19 | merged + closeout | PR #478 merged to main as 8ef6e01; brief moved to done with shipped evidence, target-category closeout scores, and merge-ready validation recorded in the closeout section | next: none`
