@@ -63,7 +63,7 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
 
   return (
     <SiteChrome mobileNavMode="hidden">
-      <PageTemplate topInset="tight" withBottomSafeArea={false}>
+      <PageTemplate surfaceTone="brand" topInset="tight" withBottomSafeArea={false}>
         <div className="pt-1">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
             Under construction
