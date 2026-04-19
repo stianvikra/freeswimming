@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-19-preview-access-visual-parity-with-early-access-apply-surface-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-19`
 - `updated`: `2026-04-19`
@@ -204,3 +204,5 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-04-19 | planning | created the dedicated preview-access visual-parity brief after the owner confirmed that the early-access apply surface is the stronger design reference; the next desired move is to bring /preview-access into the same visual family while keeping it clearly a password gate rather than a second apply form | next: if approved, move this brief to in-progress and implement the route-scoped design parity pass end to end`
+- `2026-04-19 | implementation | moved the brief to in-progress on branch feat/preview-access-visual-parity and locked the implementation contract: reuse the same route shell, card framing, and field/button system as the early-access apply variant while preserving preview-access copy, password-first hierarchy, and existing unlock behavior | next: implement the route-scoped UI pass, then validate with targeted e2e coverage and screenshot handoff`
+- `2026-04-19 | validation | shipped the route-scoped parity pass in app/preview-access/page.tsx, tightened private-access-gate e2e coverage for hidden mobile nav plus header menu access, captured before-merge screenshots for preview-access vs apply surface, and passed npm run verify:pre-pr after clearing local generated .next QA artifacts that polluted repo-wide eslint scope | next: commit, push, open/update PR, run verify:pre-merge, and summarize merge readiness with screenshot paths`
