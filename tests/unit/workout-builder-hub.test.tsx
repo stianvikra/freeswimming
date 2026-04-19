@@ -1516,10 +1516,9 @@ describe("WorkoutBuilderHub", () => {
     expect(poolsideHtml).toContain(
       "Calm exhale: Start the exhale before the head turns to breathe."
     );
-    expect(poolsideHtml).toContain('class="brand-inline-lockup"');
-    expect(poolsideHtml).toContain('class="brand-inline-symbol"');
-    expect(poolsideHtml).toContain('brand-inline-wordmark-primary">freeswimming<');
-    expect(poolsideHtml).toContain('brand-inline-wordmark-org">.org<');
+    expect(poolsideHtml).toContain('class="brand-mark brand-mark-poolside"');
+    expect(poolsideHtml).toContain('class="brand-logo brand-logo-poolside"');
+    expect(poolsideHtml).toContain("lockup-domain-ink.png");
     expect(poolsideHtml).toContain("Print Preview");
     expect(poolsideHtml).toContain("Total");
     expect(poolsideHtml).toContain('data-testid="workout-pdf-total"');
@@ -1535,9 +1534,9 @@ describe("WorkoutBuilderHub", () => {
     expect(poolsideHtml).toContain(
       "<title>freeswimming-local-pdf-workout-poolside-note-draft.pdf - FreeSwimming</title>"
     );
-    expect(
-      poolsideHtml.indexOf('<section class="poolside-steps poolside-steps-primary">')
-    ).toBeLessThan(poolsideHtml.indexOf('<aside class="poolside-side-rail">'));
+    expect(poolsideHtml).toContain("body-landscape-columns");
+    expect(poolsideHtml).toContain("poolside-meta-landscape");
+    expect(poolsideHtml).not.toContain("poolside-side-rail");
     expect(poolsideHtml).toContain("size: A4;");
     expect(poolsideHtml).not.toContain("size: A4 landscape");
     expect(poolsideWindow.document.open).toHaveBeenCalledTimes(1);

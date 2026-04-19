@@ -188,6 +188,7 @@ export const WORKOUT_POOLSIDE_ABBREVIATION_LEGEND = [
   { short: "R", full: "Rest" },
   { short: "K", full: "Kick" },
   { short: "KB", full: "Kickboard" },
+  { short: "S", full: "Snorkel" },
 ] as const;
 
 export type WorkoutPoolsidePrintStyle = (typeof WORKOUT_POOLSIDE_PRINT_STYLES)[number];
@@ -279,8 +280,6 @@ type WorkoutPoolsideSizingProfile = {
   linePaddingX: number;
   linePrimaryFontSizePx: number;
   secondaryFlexBasisPx: number;
-  brandSymbolWidthPx: number;
-  brandWordmarkFontSizePx: number;
   brandMaxWidthMm: number;
   taglineFontSizePx: number;
   titleFontSizePx: number;
@@ -290,11 +289,6 @@ type WorkoutPoolsideSizingProfile = {
   chipFontSizePx: number;
   chipPaddingY: number;
   chipPaddingX: number;
-  landscapeBodyColumns?: {
-    primaryFr: number;
-    sideFr: number;
-    sideMinMm: number;
-  };
 };
 
 type WorkoutStepDetailLabels = {
@@ -1025,41 +1019,22 @@ function buildPdfBrandFontFaceCss(fontUrl: string | null | undefined) {
     `;
 }
 
-function buildPoolsideInlineBrandLockupHtml() {
-  return `
-      <div class="brand-inline-lockup" aria-label="freeswimming.org">
-        <svg
-          class="brand-inline-symbol"
-          viewBox="0 0 88 56"
-          role="img"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path d="M10 34 L37 10 L64 34" />
-          <circle cx="30" cy="44" r="8" />
-        </svg>
-        <span class="brand-inline-wordmark">
-          <span class="brand-inline-wordmark-primary">freeswimming</span><span class="brand-inline-wordmark-org">.org</span>
-        </span>
-      </div>
-    `;
-}
-
 function buildPdfBrandLockupHtml(
   logoUrl: string | null,
   options?: {
     variant?: "standard" | "poolside";
   }
 ) {
-  if (options?.variant === "poolside") {
-    return buildPoolsideInlineBrandLockupHtml();
-  }
+  const brandMarkClass =
+    options?.variant === "poolside" ? "brand-mark brand-mark-poolside" : "brand-mark";
+  const brandLogoClass =
+    options?.variant === "poolside" ? "brand-logo brand-logo-poolside" : "brand-logo";
 
   if (logoUrl) {
     return `
-        <div class="brand-mark" data-logo-state="image">
+        <div class="${brandMarkClass}" data-logo-state="image">
           <img
-            class="brand-logo"
+            class="${brandLogoClass}"
             src="${escapeHtml(logoUrl)}"
             alt="freeswimming.org"
             onerror="this.parentElement.setAttribute('data-logo-state', 'fallback'); this.remove();"
@@ -1070,7 +1045,7 @@ function buildPdfBrandLockupHtml(
   }
 
   return `
-      <div class="brand-mark" data-logo-state="fallback">
+      <div class="${brandMarkClass}" data-logo-state="fallback">
         <span class="brand-fallback">freeswimming.org</span>
       </div>
     `;
@@ -1636,14 +1611,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
   const isLandscape = model.poolsidePrintLayout === "landscape";
   const hasFocusPoints = model.focusPoints.length > 0;
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
-  const sizingProfile = getWorkoutPoolsideSizingProfile(model, {
-    isLandscape,
-    hasFocusPoints,
-  });
-  const landscapeBodyColumns = sizingProfile.landscapeBodyColumns
-    ? `minmax(0, ${sizingProfile.landscapeBodyColumns.primaryFr}fr)
-          minmax(${sizingProfile.landscapeBodyColumns.sideMinMm}mm, ${sizingProfile.landscapeBodyColumns.sideFr}fr)`
-    : "minmax(0, 1.18fr) minmax(54mm, 0.82fr)";
+  const sizingProfile = getWorkoutPoolsideSizingProfile(model, { isLandscape });
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl, { variant: "poolside" });
   const totalDistanceValue = model.totalDistanceLabel?.replace(/^Total:\s*/, "") ?? null;
   const heroTaglineHtml = `
@@ -1674,35 +1642,29 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
   const swimmerNameHtml = model.swimmerName
     ? `<p class="swimmer-pill">Swimmer: ${escapeHtml(model.swimmerName)}</p>`
     : "";
-  const landscapeLineSplit =
-    hasFocusPoints && isLandscape
-      ? splitWorkoutPoolsideLandscapeLineItems(model.poolsideLineItems, model.focusPoints)
-      : null;
-  const stepsHtml = renderWorkoutPoolsideLineListHtml(
-    landscapeLineSplit ? landscapeLineSplit.primaryItems : model.poolsideLineItems,
-    landscapeLineSplit ? "poolside-steps poolside-steps-primary" : "poolside-steps"
-  );
-  const sideRailHtml =
-    landscapeLineSplit && hasFocusPoints
+  const landscapeLineSplit = isLandscape
+    ? splitWorkoutPoolsideLandscapeLineItems(model.poolsideLineItems)
+    : null;
+  const stepsHtml =
+    isLandscape && landscapeLineSplit && landscapeLineSplit.secondaryItems.length > 0
       ? `
-          <aside class="poolside-side-rail">
-            ${focusPointsHtml}
-            ${
-              landscapeLineSplit.overflowItems.length > 0
-                ? renderWorkoutPoolsideLineListHtml(
-                    landscapeLineSplit.overflowItems,
-                    "poolside-steps poolside-steps-overflow"
-                  )
-                : ""
-            }
-          </aside>
+          <div class="poolside-steps-grid">
+            ${renderWorkoutPoolsideLineListHtml(
+              landscapeLineSplit.primaryItems,
+              "poolside-steps poolside-steps-column poolside-steps-column-primary"
+            )}
+            ${renderWorkoutPoolsideLineListHtml(
+              landscapeLineSplit.secondaryItems,
+              "poolside-steps poolside-steps-column poolside-steps-column-secondary"
+            )}
+          </div>
         `
-      : "";
-  const bodyHtml = landscapeLineSplit
+      : renderWorkoutPoolsideLineListHtml(model.poolsideLineItems, "poolside-steps");
+  const bodyHtml = isLandscape
     ? `
-        <div class="body body-landscape-balanced">
+        <div class="body body-landscape-columns">
           ${stepsHtml}
-          ${sideRailHtml}
+          ${hasFocusPoints ? `<div class="poolside-meta poolside-meta-landscape">${focusPointsHtml}</div>` : ""}
         </div>
       `
     : `
@@ -1774,8 +1736,6 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         --poolside-line-pad-x: ${sizingProfile.linePaddingX}px;
         --poolside-line-primary-size: ${sizingProfile.linePrimaryFontSizePx}px;
         --poolside-line-secondary-basis: ${sizingProfile.secondaryFlexBasisPx}px;
-        --poolside-brand-symbol-width: ${sizingProfile.brandSymbolWidthPx}px;
-        --poolside-brand-wordmark-size: ${sizingProfile.brandWordmarkFontSizePx}px;
         --poolside-brand-max-width: ${sizingProfile.brandMaxWidthMm}mm;
         --poolside-tagline-size: ${sizingProfile.taglineFontSizePx}px;
         --poolside-title-size: ${sizingProfile.titleFontSizePx}px;
@@ -1893,50 +1853,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-items: center;
       }
 
-      .brand-inline-lockup {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        min-width: 0;
-      }
-
-      .brand-inline-symbol {
-        width: var(--poolside-brand-symbol-width);
-        height: auto;
-        flex: 0 0 auto;
-        color: var(--accent);
-      }
-
-      .brand-inline-symbol path {
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 10;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-
-      .brand-inline-symbol circle {
-        fill: currentColor;
-      }
-
-      .brand-inline-wordmark {
-        display: inline-flex;
-        align-items: baseline;
-        flex-wrap: nowrap;
-        white-space: nowrap;
-        font-size: var(--poolside-brand-wordmark-size);
-        line-height: 1;
-        letter-spacing: 0;
-      }
-
-      .brand-inline-wordmark-primary {
-        color: var(--ink);
-        font-weight: 800;
-      }
-
-      .brand-inline-wordmark-org {
-        color: var(--muted);
-        font-weight: 700;
+      .brand-mark-poolside {
+        max-width: 100%;
       }
 
       .brand-logo {
@@ -1944,6 +1862,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         width: min(100%, 190px);
         max-width: min(52vw, 190px);
         height: auto;
+      }
+
+      .brand-logo-poolside {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
       }
 
       .brand-fallback {
@@ -1987,7 +1911,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: flex;
         align-items: flex-start;
         min-width: 0;
-        flex: 1 1 auto;
+        flex: 0 1 auto;
+        width: min(100%, var(--poolside-brand-max-width));
         max-width: var(--poolside-brand-max-width);
       }
 
@@ -2014,7 +1939,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .hero-landscape-main {
         display: grid;
-        grid-template-columns: minmax(0, 1.62fr) minmax(max-content, 0.56fr);
+        grid-template-columns: minmax(0, 1fr) auto;
         gap: calc(var(--poolside-hero-gap) + 1px);
         align-items: start;
       }
@@ -2031,6 +1956,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-content: start;
         gap: calc(var(--poolside-hero-gap) - 2px);
         min-width: 0;
+        width: fit-content;
       }
 
       .hero-landscape .swimmer-pill {
@@ -2067,7 +1993,11 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
         padding: var(--poolside-chip-pad-y) var(--poolside-chip-pad-x);
-        min-width: fit-content;
+        min-width: 0;
+        width: fit-content;
+        max-width: 100%;
+        justify-self: start;
+        white-space: nowrap;
       }
 
       .hero-total-label {
@@ -2091,11 +2021,13 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         border-radius: 999px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
-        padding: var(--poolside-chip-pad-y) var(--poolside-chip-pad-x);
-        font-size: var(--poolside-chip-size);
-        font-weight: 700;
+        padding: calc(var(--poolside-chip-pad-y) + 1px) calc(var(--poolside-chip-pad-x) + 2px);
+        font-size: calc(var(--poolside-chip-size) + 0.45px);
+        font-weight: 720;
         color: var(--ink);
         white-space: nowrap;
+        width: fit-content;
+        max-width: 100%;
       }
 
       .body {
@@ -2108,19 +2040,27 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         grid-template-columns: 1fr;
       }
 
-      .body-landscape-balanced {
-        align-items: start;
-        grid-template-columns: ${landscapeBodyColumns};
-        gap: var(--poolside-body-gap);
+      .body-landscape-columns {
+        grid-template-columns: 1fr;
       }
 
       .poolside-meta,
-      .poolside-side-rail,
       .poolside-steps {
         min-width: 0;
         display: grid;
         gap: var(--poolside-body-gap);
         align-content: start;
+      }
+
+      .poolside-steps-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--poolside-body-gap);
+        align-items: start;
+      }
+
+      .poolside-meta-landscape {
+        grid-column: 1 / -1;
       }
 
       .callout,
@@ -2297,6 +2237,10 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         }
 
         .hero-landscape-main {
+          grid-template-columns: 1fr;
+        }
+
+        .poolside-steps-grid {
           grid-template-columns: 1fr;
         }
 
@@ -3129,10 +3073,6 @@ function estimatePoolsideWrappedLineCount(text: string, charactersPerLine: numbe
   return Math.max(1, Math.ceil(text.length / charactersPerLine));
 }
 
-function estimateWorkoutPoolsideFocusRows(points: string[]) {
-  return points.reduce((rows, point) => rows + estimatePoolsideWrappedLineCount(point, 38), 0);
-}
-
 function estimateWorkoutPoolsideLineRows(line: WorkoutPoolsideLineItem) {
   return (
     estimatePoolsideWrappedLineCount(line.text, 34) +
@@ -3140,16 +3080,17 @@ function estimateWorkoutPoolsideLineRows(line: WorkoutPoolsideLineItem) {
   );
 }
 
-function splitWorkoutPoolsideLandscapeLineItems(
-  items: WorkoutPoolsideLineItem[],
-  focusPoints: string[]
-) {
-  if (items.length <= 2 || focusPoints.length === 0) {
-    return { primaryItems: items, overflowItems: [] as WorkoutPoolsideLineItem[] };
+function splitWorkoutPoolsideLandscapeLineItems(items: WorkoutPoolsideLineItem[]) {
+  if (items.length <= 2) {
+    return { primaryItems: items, secondaryItems: [] as WorkoutPoolsideLineItem[] };
   }
 
   const minimumPrimaryItemCount = Math.min(2, items.length - 1);
-  const targetRows = Math.max(2, estimateWorkoutPoolsideFocusRows(focusPoints));
+  const totalLineRows = items.reduce(
+    (rows, item) => rows + estimateWorkoutPoolsideLineRows(item),
+    0
+  );
+  const targetRows = Math.max(2, Math.ceil(totalLineRows / 2));
   let accumulatedRows = 0;
   let splitIndex = minimumPrimaryItemCount;
 
@@ -3166,7 +3107,7 @@ function splitWorkoutPoolsideLandscapeLineItems(
 
   return {
     primaryItems: items.slice(0, splitIndex),
-    overflowItems: items.slice(splitIndex),
+    secondaryItems: items.slice(splitIndex),
   };
 }
 
@@ -3174,59 +3115,40 @@ function getWorkoutPoolsideSizingProfile(
   model: WorkoutPdfModel,
   options: {
     isLandscape: boolean;
-    hasFocusPoints: boolean;
   }
 ): WorkoutPoolsideSizingProfile {
-  const titleLength = model.title.trim().length;
   const longestLineLength = model.poolsideLines.reduce(
     (maxLength, line) => Math.max(maxLength, line.trim().length),
     0
   );
-  const totalChipLength = (model.totalDistanceLabel?.replace(/^Total:\s*/, "") ?? "").trim().length;
-  const swimmerChipLength = model.swimmerName ? `Swimmer: ${model.swimmerName}`.trim().length : 0;
-  const longestChipLength = Math.max(totalChipLength, swimmerChipLength, 0);
-  const titleScore = titleLength * 0.88;
-  const chipScore = longestChipLength * 1.18;
   const lineScore = longestLineLength;
-  const contentDriver =
-    lineScore >= titleScore && lineScore >= chipScore
-      ? "line"
-      : chipScore >= titleScore
-        ? "chip"
-        : "title";
-  const contentScore = Math.max(titleScore, chipScore, lineScore);
+  const contentDriver: WorkoutPoolsideContentDriver = "line";
+  const contentScore = lineScore;
 
   if (options.isLandscape) {
     if (contentScore <= 29) {
       return {
         widthProfile: "compact",
         contentDriver,
-        pageWidthMm: 176,
-        printPageWidthMm: 172,
+        pageWidthMm: 142,
+        printPageWidthMm: 138,
         heroPaddingX: 10,
         heroPaddingY: 9,
         bodyPadding: 7,
         bodyGap: 6,
         linePaddingY: 7,
-        linePaddingX: 9,
+        linePaddingX: 8,
         linePrimaryFontSizePx: 12.65,
-        secondaryFlexBasisPx: 126,
-        brandSymbolWidthPx: 35,
-        brandWordmarkFontSizePx: 16,
-        brandMaxWidthMm: 76,
+        secondaryFlexBasisPx: 94,
+        brandMaxWidthMm: 59,
         taglineFontSizePx: 14,
         titleFontSizePx: 20,
-        heroHeadingMaxWidthMm: 112,
+        heroHeadingMaxWidthMm: 88,
         heroGap: 7,
         totalValueFontSizePx: 15,
         chipFontSizePx: 9.25,
         chipPaddingY: 5,
         chipPaddingX: 8,
-        landscapeBodyColumns: {
-          primaryFr: 1.52,
-          sideFr: 0.7,
-          sideMinMm: options.hasFocusPoints ? 48 : 0,
-        },
       };
     }
 
@@ -3234,64 +3156,50 @@ function getWorkoutPoolsideSizingProfile(
       return {
         widthProfile: "balanced",
         contentDriver,
-        pageWidthMm: 188,
-        printPageWidthMm: 184,
+        pageWidthMm: 150,
+        printPageWidthMm: 146,
         heroPaddingX: 11,
         heroPaddingY: 9,
         bodyPadding: 7,
         bodyGap: 6,
         linePaddingY: 7,
-        linePaddingX: 9,
+        linePaddingX: 8,
         linePrimaryFontSizePx: 12.85,
-        secondaryFlexBasisPx: 134,
-        brandSymbolWidthPx: 36,
-        brandWordmarkFontSizePx: 16.5,
-        brandMaxWidthMm: 82,
+        secondaryFlexBasisPx: 98,
+        brandMaxWidthMm: 64,
         taglineFontSizePx: 15,
         titleFontSizePx: 21,
-        heroHeadingMaxWidthMm: 124,
+        heroHeadingMaxWidthMm: 94,
         heroGap: 7,
         totalValueFontSizePx: 15.5,
         chipFontSizePx: 9.4,
         chipPaddingY: 5,
         chipPaddingX: 8,
-        landscapeBodyColumns: {
-          primaryFr: 1.58,
-          sideFr: 0.74,
-          sideMinMm: options.hasFocusPoints ? 52 : 0,
-        },
       };
     }
 
     return {
       widthProfile: "expanded",
       contentDriver,
-      pageWidthMm: 202,
-      printPageWidthMm: 198,
+      pageWidthMm: 160,
+      printPageWidthMm: 156,
       heroPaddingX: 12,
       heroPaddingY: 10,
       bodyPadding: 8,
       bodyGap: 7,
       linePaddingY: 7,
-      linePaddingX: 10,
+      linePaddingX: 9,
       linePrimaryFontSizePx: 13,
-      secondaryFlexBasisPx: 144,
-      brandSymbolWidthPx: 38,
-      brandWordmarkFontSizePx: 17,
-      brandMaxWidthMm: 92,
+      secondaryFlexBasisPx: 102,
+      brandMaxWidthMm: 68,
       taglineFontSizePx: 16,
       titleFontSizePx: 22,
-      heroHeadingMaxWidthMm: 136,
+      heroHeadingMaxWidthMm: 98,
       heroGap: 8,
       totalValueFontSizePx: 16,
       chipFontSizePx: 9.6,
       chipPaddingY: 5,
       chipPaddingX: 9,
-      landscapeBodyColumns: {
-        primaryFr: 1.64,
-        sideFr: 0.78,
-        sideMinMm: options.hasFocusPoints ? 56 : 0,
-      },
     };
   }
 
@@ -3299,22 +3207,20 @@ function getWorkoutPoolsideSizingProfile(
     return {
       widthProfile: "compact",
       contentDriver,
-      pageWidthMm: 116,
-      printPageWidthMm: 112,
+      pageWidthMm: 90,
+      printPageWidthMm: 86,
       heroPaddingX: 10,
       heroPaddingY: 9,
       bodyPadding: 7,
       bodyGap: 6,
       linePaddingY: 7,
-      linePaddingX: 9,
+      linePaddingX: 8,
       linePrimaryFontSizePx: 12.5,
-      secondaryFlexBasisPx: 118,
-      brandSymbolWidthPx: 39,
-      brandWordmarkFontSizePx: 17,
-      brandMaxWidthMm: 78,
+      secondaryFlexBasisPx: 88,
+      brandMaxWidthMm: 54,
       taglineFontSizePx: 14,
       titleFontSizePx: 21,
-      heroHeadingMaxWidthMm: 96,
+      heroHeadingMaxWidthMm: 68,
       heroGap: 7,
       totalValueFontSizePx: 15,
       chipFontSizePx: 9.25,
@@ -3327,22 +3233,20 @@ function getWorkoutPoolsideSizingProfile(
     return {
       widthProfile: "balanced",
       contentDriver,
-      pageWidthMm: 124,
-      printPageWidthMm: 120,
+      pageWidthMm: 94,
+      printPageWidthMm: 90,
       heroPaddingX: 11,
       heroPaddingY: 9,
       bodyPadding: 7,
       bodyGap: 6,
       linePaddingY: 7,
-      linePaddingX: 9,
+      linePaddingX: 8,
       linePrimaryFontSizePx: 12.75,
-      secondaryFlexBasisPx: 124,
-      brandSymbolWidthPx: 40,
-      brandWordmarkFontSizePx: 17.5,
-      brandMaxWidthMm: 84,
+      secondaryFlexBasisPx: 90,
+      brandMaxWidthMm: 58,
       taglineFontSizePx: 15,
       titleFontSizePx: 22,
-      heroHeadingMaxWidthMm: 104,
+      heroHeadingMaxWidthMm: 72,
       heroGap: 7,
       totalValueFontSizePx: 15.5,
       chipFontSizePx: 9.4,
@@ -3354,22 +3258,20 @@ function getWorkoutPoolsideSizingProfile(
   return {
     widthProfile: "expanded",
     contentDriver,
-    pageWidthMm: 132,
-    printPageWidthMm: 128,
+    pageWidthMm: 98,
+    printPageWidthMm: 94,
     heroPaddingX: 12,
     heroPaddingY: 10,
     bodyPadding: 8,
     bodyGap: 7,
     linePaddingY: 7,
-    linePaddingX: 10,
+    linePaddingX: 9,
     linePrimaryFontSizePx: 13,
-    secondaryFlexBasisPx: 132,
-    brandSymbolWidthPx: 42,
-    brandWordmarkFontSizePx: 18,
-    brandMaxWidthMm: 90,
+    secondaryFlexBasisPx: 94,
+    brandMaxWidthMm: 62,
     taglineFontSizePx: 15,
     titleFontSizePx: 23,
-    heroHeadingMaxWidthMm: 112,
+    heroHeadingMaxWidthMm: 76,
     heroGap: 8,
     totalValueFontSizePx: 16,
     chipFontSizePx: 9.6,
@@ -3484,6 +3386,7 @@ function abbreviateWorkoutPoolsideText(value: string | null | undefined) {
 
   const replacements: Array<[RegExp, string]> = [
     [/\bKickboard\b/g, "KB"],
+    [/\bSnorkel\b/g, "S"],
     [/\bFreestyle\b/g, "Free"],
     [/\bBackstroke\b/g, "Back"],
     [/\bBreaststroke\b/g, "Breast"],
