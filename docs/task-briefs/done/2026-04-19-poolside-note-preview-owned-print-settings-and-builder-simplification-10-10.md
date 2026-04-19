@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-19-poolside-note-preview-owned-print-settings-and-builder-simplification-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-19`
 - `updated`: `2026-04-19`
@@ -208,9 +208,55 @@ Critical target categories for `10/10` claim in this brief:
   - no drift between builder-selected focus content and preview output,
   - no accidental write-back of preview-only state into canonical workout data.
 
+## Closeout
+
+- Shipped via PR `#480`, merged to `main` as `d8d616f` on `2026-04-19`.
+- Completion audit:
+  - all acceptance criteria shipped in the merged implementation slice,
+  - no acceptance-criteria scope was deferred during closeout,
+  - the later "save as image" idea remains outside this brief and can stay a separate future follow-up without blocking this lifecycle move.
+- Delivered feature/files summary:
+  - builder-side poolside panels now keep `Session Focus` while dropping duplicate print-setting controls in `components/my-library/workouts/PoolsideNotePanel.tsx`,
+  - preview-owned controls now live in `app/my-library/workouts/poolside-preview/page.tsx`, `components/my-library/workouts/PoolsidePreviewPageClient.tsx`, and `lib/workouts/poolside-preview.ts`,
+  - saved-workout and live-editor entry points were aligned in `components/my-library/workouts/SavedWorkoutsPanel.tsx`, `components/my-library/workouts/WorkoutEditor.tsx`, `components/my-library/workouts/WorkoutBuilderHub.tsx`, and `lib/workouts/shared.ts`,
+  - preview/export parity stayed covered by `app/api/my-library/workouts/[workoutId]/export/pdf/route.ts` plus the focused unit coverage added in `tests/unit/poolside-note-panel.test.tsx`, `tests/unit/workout-builder-hub.test.tsx`, `tests/unit/workout-poolside-preview.test.ts`, and `tests/unit/workouts-shared.test.ts`.
+- Achieved all declared target categories at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Business logic correctness and data integrity`
+  - `Admin editor ergonomics`
+  - `Data placement and sync boundaries`
+  - `Caching and invalidation strategy`
+  - `Admin workflow and editability`
+  - `Stack-fit and dependency discipline`
+  - `Testing and QA automation`
+- Critical `10/10` gate confirmed at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Admin editor ergonomics`
+  - `Data placement and sync boundaries`
+  - `Testing and QA automation`
+- Supporting release-safe closeout stayed at `4/5` or better for the remaining in-scope non-`N/A` categories.
+- Release evidence for the implementation slice:
+  - screenshot handoff completed from `output/playwright/2026-04-19-poolside-preview-owned-print-settings/`, and owner approval was recorded before `npm run verify:pre-pr`,
+  - targeted unit coverage passed for the new ownership contract in `tests/unit/poolside-note-panel.test.tsx`, `tests/unit/workout-builder-hub.test.tsx`, `tests/unit/workout-poolside-preview.test.ts`, and `tests/unit/workouts-shared.test.ts`,
+  - local `npm run verify:pre-pr` passed for PR `#480` (`103 passed`, `335 skipped`),
+  - local `npm run verify:pre-merge` passed after merge-readiness review (`104 passed`, `334 skipped`; private-gate rerun remained `N/A` because `SITE_LOCK_ENABLED!=1` for this owner-only open-surface slice),
+  - required GitHub checks for PR `#480` passed green before merge, including `verify`, `Analyze (javascript-typescript)`, `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `Vercel`, and `CodeQL`,
+  - Vercel preview deployment for PR `#480` completed successfully before merge.
+- DevOps/workflow and secrets summary:
+  - no new dependency, migration, runtime flag, env var, or secret requirement was introduced,
+  - no runbook or Help/Guide update was required because the slice stayed inside the private workout builder/poolside workflow.
+- Continuity notes:
+  - reconstruct shipped context from squash commit `d8d616f` plus PR `#480`,
+  - reopen the implementation surface through `app/my-library/workouts/poolside-preview/page.tsx`, `components/my-library/workouts/PoolsidePreviewPageClient.tsx`, and `components/my-library/workouts/PoolsideNotePanel.tsx`,
+  - use the final local gate artifact `artifacts/verify-pre-merge/20260419-215003.json` when you need the last merge-ready evidence snapshot without chat history.
+
 ## Checkpoint Log
 
 - `2026-04-19 | planning | created the dedicated follow-up brief after PR #473 closeout to lock the next poolside ownership change: keep Session Focus in builder, move print settings to the preview surface, and remove duplicate builder-side print controls only after preview parity exists | next: if approved, move this brief to in-progress and implement the builder/preview ownership cleanup end to end`
 - `2026-04-19 | implementation | moved the brief to in-progress, removed builder-side print settings from the poolside panel, added the owner-facing poolside preview route with preview-owned settings, kept saved-workout previews URL-driven, and added local preview draft storage so the live editor opens the same preview surface with current draft content | next: run visual QA, capture reference/after screenshots, and stop for owner approval before verify:pre-pr`
 - `2026-04-19 | implementation | tightened the embedded preview renderer after screenshot review so mobile preview keeps the poolside note in its print-faithful composition instead of triggering the standalone responsive stack; the preview frame now scales the rendered note while preserving the top-right Learn. Drill. Swim. lockup inside the note surface | next: hand off updated mobile/desktop screenshots for owner approval before verify:pre-pr`
 - `2026-04-19 | implementation | finished the last mobile preview micro-fix by moving viewport measurement earlier, clamping embedded scale before first visible paint, and tightening embedded padding so the note surface stays optically centered without clipping on the right edge | next: owner review of the refreshed after-screenshots, then verify:pre-pr if approved`
+- `2026-04-19 | merged + closeout | PR #480 merged to \`main\` as \`d8d616f\`; local \`npm run post-merge:preflight\` confirmed this brief as the pending lifecycle move, and this docs-only closeout updated the record, flipped status to \`done\`, and prepared the file for relocation into \`docs/task-briefs/done/\` | next: none`
