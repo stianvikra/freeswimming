@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-19-poolside-note-width-reclaim-flow-notation-and-brand-lockup-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-19`
 - `updated`: `2026-04-19`
@@ -217,8 +217,40 @@ Critical target categories for `10/10` claim in this brief:
   - no notation mismatch,
   - no landscape grouping that misrepresents sequence semantics.
 
+## Closeout
+
+- Shipped via PR `#473`, merged to `main` as `bee3c81` on `2026-04-19`.
+- Achieved all declared target categories at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Data placement and sync boundaries`
+  - `Content governance`
+  - `Stack-fit and dependency discipline`
+  - `Testing and QA automation`
+- Critical `10/10` gate confirmed at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Content governance`
+  - `Testing and QA automation`
+- Supporting release-safe closeout stayed at `4/5` or better for the remaining in-scope non-`N/A` categories.
+- Release evidence for the implementation slice:
+  - owner-approved screenshot handoff covered portrait and landscape poolside output before merge,
+  - targeted `vitest` coverage passed in `tests/unit/workouts-shared.test.ts`, `tests/unit/workout-builder-hub.test.tsx`, `tests/unit/workouts-routes.test.ts`, and `tests/unit/poolside-note-panel.test.tsx` (`112 passed`),
+  - local `npm run verify:pre-pr` passed on the implementation branch in the full lane,
+  - local `npm run verify:pre-merge` passed on the implementation branch before merge,
+  - required GitHub checks for PR `#473` passed green before merge, including `verify`, `Analyze (javascript-typescript)`, `CodeQL`, `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `Vercel`, and `Vercel Preview Comments`.
+- Secrets used:
+  - none.
+- Continuity notes:
+  - implementation truth lives in merge commit `bee3c81` plus PR `#473`,
+  - the next builder/preview ownership cleanup is captured separately in `docs/task-briefs/planned/2026-04-19-poolside-note-preview-owned-print-settings-and-builder-simplification-10-10.md`,
+  - local screenshot artifacts remain intentionally uncommitted under `output/playwright/`.
+
 ## Checkpoint Log
 
+- `2026-04-19 | merged + closeout | PR #473 merged to \`main\` as \`bee3c81\`; local \`npm run verify:pre-merge\` passed, required GitHub checks were green, the screenshot handoff was approved before merge, and this closeout moved the brief from \`in-progress\` to \`done\` while the next preview-owned print-settings simplification was captured as its own planned follow-up brief | next: none`
 - `2026-04-19 | verify-pre-pr-pass | reran full pre-pr verification after removing local generated .next QA artifacts that polluted lint scope; full lane passed including lint, typecheck, unit, build, perf budgets, and Playwright, while the approved screenshot handoff artifacts remain available under output/playwright for PR context but stay uncommitted | next: commit, push, and update/open PR for owner merge review`
 - `2026-04-19 | visual-qa-pass-3 | applied the owner-aligned width rule: portrait squeezes one more notch while landscape stays calmer by default as long as it still fits within A4 width plus print margins; current dense-fixture candidate is about 98mm portrait and 160mm landscape, with remaining landscape wrapping treated as acceptable when auto mode hits the A4-fit boundary and users can tighten further through abbreviations or below-step rests | next: owner screenshot review before any PR update / verify:pre-pr pass`
 - `2026-04-19 | visual-qa-pass-2 | tightened poolside width reclaim further so sizing is now line-driven with narrower physical widths in both orientations; current screenshot candidate lands at roughly 100mm portrait and 156mm landscape for the dense 5000m fixture, keeps focus below the landscape step columns, and preserves the canonical brand lockup asset while targeted unit coverage stays green | next: owner screenshot review before any PR update / verify:pre-pr pass`
