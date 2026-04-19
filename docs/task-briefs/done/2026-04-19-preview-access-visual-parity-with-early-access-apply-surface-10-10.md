@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-19-preview-access-visual-parity-with-early-access-apply-surface-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-19`
 - `updated`: `2026-04-19`
@@ -201,9 +201,33 @@ Critical target categories for `10/10` claim in this brief:
   - no password-submit behavior drift,
   - no weakening of the private gate contract.
 
+## Closeout
+
+- Shipped via PR `#476`, merged to `main` as `fd43f1d` on `2026-04-19`.
+- Declared `target` categories achieved in closeout:
+  - `Product goals and IA`: `5/5`
+  - `UX flow clarity`: `5/5`
+  - `Visual design quality`: `5/5`
+  - `Accessibility (a11y)`: `5/5`
+  - `Stack-fit and dependency discipline`: `5/5`
+  - `Testing and QA automation`: `5/5`
+- Critical `10/10` gate categories confirmed at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Accessibility (a11y)`
+  - `Testing and QA automation`
+- Release evidence captured in shipped workstream:
+  - before/after and reference screenshots reviewed before merge,
+  - targeted route + e2e coverage updated,
+  - local `npm run verify:pre-pr` passed,
+  - local `npm run verify:pre-merge` passed,
+  - required CI checks for PR `#476` passed before merge.
+
 ## Checkpoint Log
 
 - `2026-04-19 | planning | created the dedicated preview-access visual-parity brief after the owner confirmed that the early-access apply surface is the stronger design reference; the next desired move is to bring /preview-access into the same visual family while keeping it clearly a password gate rather than a second apply form | next: if approved, move this brief to in-progress and implement the route-scoped design parity pass end to end`
 - `2026-04-19 | implementation | moved the brief to in-progress on branch feat/preview-access-visual-parity and locked the implementation contract: reuse the same route shell, card framing, and field/button system as the early-access apply variant while preserving preview-access copy, password-first hierarchy, and existing unlock behavior | next: implement the route-scoped UI pass, then validate with targeted e2e coverage and screenshot handoff`
 - `2026-04-19 | validation | shipped the route-scoped parity pass in app/preview-access/page.tsx, tightened private-access-gate e2e coverage for hidden mobile nav plus header menu access, captured before-merge screenshots for preview-access vs apply surface, and passed npm run verify:pre-pr after clearing local generated .next QA artifacts that polluted repo-wide eslint scope | next: commit, push, open/update PR, run verify:pre-merge, and summarize merge readiness with screenshot paths`
 - `2026-04-19 | visual-qa + validation | added a route-scoped desktop tone parity pass by extending PageTemplate with an optional brand surface tone and applying it only to /preview-access and the preview-access-notify contact variant, captured updated after/reference desktop screenshots, received owner approval ("okei nå"), confirmed the initial desktop-admin e2e failures were flake by rerunning the two failing tests under SITE_LOCK_ENABLED=0, and reran npm run verify:pre-pr to a green pass | next: commit and push the scoped desktop parity diff, then run verify:pre-merge and monitor PR #476 checks`
+- `2026-04-19 | merged + closeout | PR #476 merged to main as fd43f1d; done brief closeout now records the shipped parity pass, screenshot approval cadence, local verify:pre-pr and verify:pre-merge evidence, and green required CI before merge | next: none`
