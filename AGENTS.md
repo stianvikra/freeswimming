@@ -109,6 +109,17 @@ This file defines how coding agents should collaborate in this repository.
     - `npm run dev`
   - if owner is prompted for command approval, recommend one-time scoped approvals (`Yes, and don't ask again`) for recurring safe prefixes to reduce repeated interruptions.
 
+## Screenshot Review Rule
+
+- For UI, print, layout, branding, or other visibly user-facing changes, assistant must provide a screenshot handoff before merge recommendation.
+- Screenshot handoff must happen after targeted implementation QA is stable, but before final merge-ready handoff.
+- Handoff must include:
+  - `2-4` representative screenshots from the changed surface,
+  - one short explanation per screenshot describing what changed and what the owner should verify,
+  - explicit note of any known visual caveat or remaining judgment call.
+- Owner may request visual corrections from the screenshot handoff before merge; assistant should apply those corrections, refresh the screenshots, and only then proceed to final merge readiness.
+- This is required by default for UI/print/layout/brand work, and optional for backend, docs, tooling, and other non-visual changes.
+
 ## Sandbox Approval Reality
 
 - Repo docs can record recommended approval habits, but they cannot auto-persist Codex sandbox approvals across chats or machines.

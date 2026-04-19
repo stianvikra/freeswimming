@@ -158,6 +158,8 @@ Which commands should pass?
 - `npm run verify:public` (when private gate can affect route visibility)
 - `SITE_LOCK_ENABLED=1 npm run test:e2e:private-gate` (automation default with bypass-token fallback)
 - `SITE_LOCK_ENABLED=1 PW_SITE_LOCK_USE_PASSWORD=1 PW_SITE_LOCK_PASSWORD="<password>" npm run test:e2e:private-gate` (required when private unlock UX/password behavior changes)
+- for UI/print/layout/brand changes:
+  - targeted screenshot handoff with short explanation before merge
 
 ## Local Tooling Prerequisite (Required)
 
@@ -180,6 +182,10 @@ Required when task impacts UI/UX, install flows, runtime browser behavior, or de
 - Vercel preview tested (for production-like verification):
   - Preview URL from PR checks
   - Browsers/devices tested on preview
+- Screenshot handoff required for UI/print/layout/brand changes:
+  - assistant provides representative screenshots before merge recommendation,
+  - owner reviews and can request corrections before final merge-ready handoff,
+  - screenshots should cover the most important changed states/surfaces.
 - Any local vs preview differences documented (or explicitly `none`)
 - Recommended browser/device matrix for UI/runtime changes:
   - iOS Safari (phone)
