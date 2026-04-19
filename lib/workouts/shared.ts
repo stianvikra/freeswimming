@@ -264,6 +264,39 @@ type WorkoutPoolsideLineItem = {
   secondaryText?: string | null;
 };
 
+type WorkoutPoolsideContentDriver = "title" | "chip" | "line";
+
+type WorkoutPoolsideSizingProfile = {
+  widthProfile: "compact" | "balanced" | "expanded";
+  contentDriver: WorkoutPoolsideContentDriver;
+  pageWidthMm: number;
+  printPageWidthMm: number;
+  heroPaddingX: number;
+  heroPaddingY: number;
+  bodyPadding: number;
+  bodyGap: number;
+  linePaddingY: number;
+  linePaddingX: number;
+  linePrimaryFontSizePx: number;
+  secondaryFlexBasisPx: number;
+  brandSymbolWidthPx: number;
+  brandWordmarkFontSizePx: number;
+  brandMaxWidthMm: number;
+  taglineFontSizePx: number;
+  titleFontSizePx: number;
+  heroHeadingMaxWidthMm: number;
+  heroGap: number;
+  totalValueFontSizePx: number;
+  chipFontSizePx: number;
+  chipPaddingY: number;
+  chipPaddingX: number;
+  landscapeBodyColumns?: {
+    primaryFr: number;
+    sideFr: number;
+    sideMinMm: number;
+  };
+};
+
 type WorkoutStepDetailLabels = {
   targetSummary: string;
   stepNote: string;
@@ -1603,6 +1636,14 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
   const isLandscape = model.poolsidePrintLayout === "landscape";
   const hasFocusPoints = model.focusPoints.length > 0;
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
+  const sizingProfile = getWorkoutPoolsideSizingProfile(model, {
+    isLandscape,
+    hasFocusPoints,
+  });
+  const landscapeBodyColumns = sizingProfile.landscapeBodyColumns
+    ? `minmax(0, ${sizingProfile.landscapeBodyColumns.primaryFr}fr)
+          minmax(${sizingProfile.landscapeBodyColumns.sideMinMm}mm, ${sizingProfile.landscapeBodyColumns.sideFr}fr)`
+    : "minmax(0, 1.18fr) minmax(54mm, 0.82fr)";
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl, { variant: "poolside" });
   const totalDistanceValue = model.totalDistanceLabel?.replace(/^Total:\s*/, "") ?? null;
   const heroTaglineHtml = `
@@ -1723,6 +1764,27 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         --accent-soft: ${isInkSaver ? "rgba(15, 23, 42, 0.04)" : "rgba(29, 78, 216, 0.12)"};
         --warning: #92400e;
         --warning-soft: ${isInkSaver ? "#ffffff" : "rgba(245, 158, 11, 0.16)"};
+        --poolside-page-width: ${sizingProfile.pageWidthMm}mm;
+        --poolside-print-width: ${sizingProfile.printPageWidthMm}mm;
+        --poolside-hero-pad-x: ${sizingProfile.heroPaddingX}px;
+        --poolside-hero-pad-y: ${sizingProfile.heroPaddingY}px;
+        --poolside-body-pad: ${sizingProfile.bodyPadding}px;
+        --poolside-body-gap: ${sizingProfile.bodyGap}px;
+        --poolside-line-pad-y: ${sizingProfile.linePaddingY}px;
+        --poolside-line-pad-x: ${sizingProfile.linePaddingX}px;
+        --poolside-line-primary-size: ${sizingProfile.linePrimaryFontSizePx}px;
+        --poolside-line-secondary-basis: ${sizingProfile.secondaryFlexBasisPx}px;
+        --poolside-brand-symbol-width: ${sizingProfile.brandSymbolWidthPx}px;
+        --poolside-brand-wordmark-size: ${sizingProfile.brandWordmarkFontSizePx}px;
+        --poolside-brand-max-width: ${sizingProfile.brandMaxWidthMm}mm;
+        --poolside-tagline-size: ${sizingProfile.taglineFontSizePx}px;
+        --poolside-title-size: ${sizingProfile.titleFontSizePx}px;
+        --poolside-hero-heading-max: ${sizingProfile.heroHeadingMaxWidthMm}mm;
+        --poolside-hero-gap: ${sizingProfile.heroGap}px;
+        --poolside-total-value-size: ${sizingProfile.totalValueFontSizePx}px;
+        --poolside-chip-size: ${sizingProfile.chipFontSizePx}px;
+        --poolside-chip-pad-y: ${sizingProfile.chipPaddingY}px;
+        --poolside-chip-pad-x: ${sizingProfile.chipPaddingX}px;
       }
 
       ${fontFaceCss}
@@ -1805,21 +1867,21 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .shell {
-        padding: 8px 8px 12px;
+        padding: 8px 8px 10px;
       }
 
       .page {
-        width: min(100%, ${isLandscape ? "240mm" : "144mm"});
+        width: min(100%, var(--poolside-page-width));
         margin: 0 auto;
         border: 1px solid rgba(16, 33, 60, 0.08);
-        border-radius: 18px;
+        border-radius: 16px;
         background: var(--surface);
-        box-shadow: 0 20px 48px rgba(16, 33, 60, 0.14);
+        box-shadow: 0 18px 42px rgba(16, 33, 60, 0.13);
         overflow: hidden;
       }
 
       .hero {
-        padding: 10px 12px 9px;
+        padding: var(--poolside-hero-pad-y) var(--poolside-hero-pad-x);
         background: ${
           isInkSaver ? "#ffffff" : "linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%)"
         };
@@ -1834,12 +1896,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       .brand-inline-lockup {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 7px;
         min-width: 0;
       }
 
       .brand-inline-symbol {
-        width: ${isLandscape ? "42px" : "44px"};
+        width: var(--poolside-brand-symbol-width);
         height: auto;
         flex: 0 0 auto;
         color: var(--accent);
@@ -1862,7 +1924,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-items: baseline;
         flex-wrap: nowrap;
         white-space: nowrap;
-        font-size: ${isLandscape ? "18px" : "19px"};
+        font-size: var(--poolside-brand-wordmark-size);
         line-height: 1;
         letter-spacing: 0;
       }
@@ -1898,27 +1960,27 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       h1 {
         margin: 0;
-        font-size: 24px;
+        font-size: var(--poolside-title-size);
         font-weight: 800;
         letter-spacing: 0;
-        line-height: 1.04;
+        line-height: 1.02;
       }
 
       .hero-portrait {
         display: grid;
-        gap: 9px;
+        gap: var(--poolside-hero-gap);
       }
 
       .hero-landscape {
         display: grid;
-        gap: 8px;
+        gap: calc(var(--poolside-hero-gap) - 1px);
       }
 
       .hero-top-row {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 10px;
+        gap: calc(var(--poolside-hero-gap) - 1px);
       }
 
       .hero-brand-lockup {
@@ -1926,12 +1988,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         align-items: flex-start;
         min-width: 0;
         flex: 1 1 auto;
-        max-width: ${isLandscape ? "248px" : "236px"};
+        max-width: var(--poolside-brand-max-width);
       }
 
       .hero-heading {
         display: grid;
-        gap: 6px;
+        gap: 5px;
       }
 
       .hero-heading-portrait {
@@ -1939,35 +2001,35 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .hero-heading-landscape {
-        max-width: 520px;
+        max-width: var(--poolside-hero-heading-max);
       }
 
       .hero-support-row {
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         justify-content: space-between;
-        gap: 8px;
+        gap: 7px;
         flex-wrap: wrap;
       }
 
       .hero-landscape-main {
         display: grid;
-        grid-template-columns: minmax(0, 1.58fr) minmax(160px, 0.52fr);
-        gap: 10px;
-        align-items: end;
+        grid-template-columns: minmax(0, 1.62fr) minmax(max-content, 0.56fr);
+        gap: calc(var(--poolside-hero-gap) + 1px);
+        align-items: start;
       }
 
       .hero-landscape-left {
         display: grid;
-        gap: 8px;
+        gap: calc(var(--poolside-hero-gap) - 1px);
         min-width: 0;
       }
 
       .hero-landscape-right {
         display: grid;
         justify-items: end;
-        align-content: space-between;
-        gap: 8px;
+        align-content: start;
+        gap: calc(var(--poolside-hero-gap) - 2px);
         min-width: 0;
       }
 
@@ -1979,18 +2041,18 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: grid;
         gap: 0;
         justify-items: end;
-        line-height: 0.88;
-        font-weight: 720;
+        line-height: 0.84;
+        font-weight: 740;
         letter-spacing: 0;
         color: rgba(16, 33, 60, 0.72);
       }
 
       .hero-tagline-portrait {
-        font-size: 15px;
+        font-size: calc(var(--poolside-tagline-size) - 2px);
       }
 
       .hero-tagline-landscape {
-        font-size: 17px;
+        font-size: var(--poolside-tagline-size);
       }
 
       .hero-tagline-accent {
@@ -2000,11 +2062,11 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       .hero-total-pill {
         display: inline-flex;
         align-items: baseline;
-        gap: 8px;
-        border-radius: 8px;
+        gap: 6px;
+        border-radius: 999px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
-        padding: 6px 8px;
+        padding: var(--poolside-chip-pad-y) var(--poolside-chip-pad-x);
         min-width: fit-content;
       }
 
@@ -2017,7 +2079,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .hero-total-value {
-        font-size: 17px;
+        font-size: var(--poolside-total-value-size);
         font-weight: 800;
         letter-spacing: 0;
         color: var(--ink);
@@ -2025,11 +2087,12 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .swimmer-pill {
         display: inline-flex;
+        align-items: center;
         border-radius: 999px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.92);
-        padding: 5px 9px;
-        font-size: 9.5px;
+        padding: var(--poolside-chip-pad-y) var(--poolside-chip-pad-x);
+        font-size: var(--poolside-chip-size);
         font-weight: 700;
         color: var(--ink);
         white-space: nowrap;
@@ -2037,8 +2100,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .body {
         display: grid;
-        gap: 8px;
-        padding: 8px;
+        gap: var(--poolside-body-gap);
+        padding: var(--poolside-body-pad);
       }
 
       .body-single-column {
@@ -2047,8 +2110,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .body-landscape-balanced {
         align-items: start;
-        grid-template-columns: minmax(0, 1.16fr) minmax(0, 0.84fr);
-        gap: 8px;
+        grid-template-columns: ${landscapeBodyColumns};
+        gap: var(--poolside-body-gap);
       }
 
       .poolside-meta,
@@ -2056,14 +2119,14 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       .poolside-steps {
         min-width: 0;
         display: grid;
-        gap: 8px;
+        gap: var(--poolside-body-gap);
         align-content: start;
       }
 
       .callout,
       .review-note {
-        border-radius: 12px;
-        padding: 8px 10px;
+        border-radius: 11px;
+        padding: 7px 9px;
       }
 
       .callout {
@@ -2091,9 +2154,9 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         margin: 4px 0 0;
         padding-left: 16px;
         display: grid;
-        gap: 3px;
-        font-size: 11.75px;
-        line-height: 1.35;
+        gap: 2px;
+        font-size: 11.4px;
+        line-height: 1.3;
       }
 
       .section-title {
@@ -2104,18 +2167,18 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .steps {
         display: grid;
-        gap: 8px;
+        gap: var(--poolside-body-gap);
       }
 
       .step-group {
         border: 1px solid var(--line);
-        border-radius: 18px;
+        border-radius: 16px;
         overflow: hidden;
         background: #fff;
       }
 
       .step-group-head {
-        padding: 10px 12px;
+        padding: 8px 10px;
         background: var(--surface-soft);
         border-bottom: 1px solid rgba(16, 33, 60, 0.08);
       }
@@ -2127,9 +2190,9 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .step-group-summary {
-        margin: 4px 0 0;
+        margin: 3px 0 0;
         font-size: 11px;
-        line-height: 1.4;
+        line-height: 1.34;
         color: var(--muted);
       }
 
@@ -2138,7 +2201,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         margin: 0;
         padding: 0;
         border: 1px solid rgba(16, 33, 60, 0.08);
-        border-radius: 14px;
+        border-radius: 12px;
         background: rgba(255, 255, 255, 0.88);
         break-inside: avoid;
         page-break-inside: avoid;
@@ -2146,7 +2209,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
 
       .poolside-line {
         display: block;
-        padding: 8px 10px;
+        padding: var(--poolside-line-pad-y) var(--poolside-line-pad-x);
         border-top: 1px solid rgba(16, 33, 60, 0.08);
         break-inside: avoid;
         page-break-inside: avoid;
@@ -2160,37 +2223,37 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         display: flex;
         flex-wrap: wrap;
         align-items: baseline;
-        gap: 4px 8px;
+        gap: 3px 7px;
       }
 
       .poolside-line-primary {
-        font-size: 13.25px;
-        line-height: 1.32;
+        font-size: var(--poolside-line-primary-size);
+        line-height: 1.27;
         font-weight: 600;
         color: var(--ink);
       }
 
       .poolside-line-secondary {
-        flex: 1 1 160px;
+        flex: 1 1 var(--poolside-line-secondary-basis);
         max-width: 100%;
         color: var(--accent-strong);
       }
 
       .poolside-line-secondary-text {
         display: block;
-        font-size: 11.5px;
-        line-height: 1.32;
+        font-size: 11.2px;
+        line-height: 1.27;
         font-weight: 700;
       }
 
       .poolside-line-recovery {
         background: var(--accent-soft);
-        padding-top: 7px;
-        padding-bottom: 7px;
+        padding-top: calc(var(--poolside-line-pad-y) - 1px);
+        padding-bottom: calc(var(--poolside-line-pad-y) - 1px);
       }
 
       .poolside-line-recovery .poolside-line-primary {
-        font-size: 13px;
+        font-size: calc(var(--poolside-line-primary-size) - 0.25px);
         font-weight: 700;
         color: var(--accent-strong);
       }
@@ -2214,10 +2277,10 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         }
 
         .page {
-          width: ${isLandscape ? "100%" : "140mm"};
+          width: var(--poolside-print-width);
           max-width: 100%;
           min-width: 0;
-          border-radius: 16px;
+          border-radius: 14px;
           box-shadow: none;
         }
       }
@@ -2261,7 +2324,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         <span class="toolbar-kicker">FreeSwimming</span>
         <span class="toolbar-title">Print Preview</span>
       </div>
-      <div class="toolbar-actions">
+        <div class="toolbar-actions">
         <button class="toolbar-button toolbar-button-primary" type="button" onclick="window.print()">
           Print / Save PDF
         </button>
@@ -2279,6 +2342,9 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         data-poolside-print-layout="${escapeHtml(model.poolsidePrintLayout)}"
         data-poolside-notation-mode="${escapeHtml(model.poolsideNotationMode)}"
         data-poolside-rest-layout="${escapeHtml(model.poolsideRestLayout)}"
+        data-poolside-width-profile="${escapeHtml(sizingProfile.widthProfile)}"
+        data-poolside-content-driver="${escapeHtml(sizingProfile.contentDriver)}"
+        data-poolside-page-width-mm="${escapeHtml(String(sizingProfile.pageWidthMm))}"
       >
         <header class="hero ${isLandscape ? "hero-landscape" : "hero-portrait"}">
           ${heroHtml}
@@ -3101,6 +3167,214 @@ function splitWorkoutPoolsideLandscapeLineItems(
   return {
     primaryItems: items.slice(0, splitIndex),
     overflowItems: items.slice(splitIndex),
+  };
+}
+
+function getWorkoutPoolsideSizingProfile(
+  model: WorkoutPdfModel,
+  options: {
+    isLandscape: boolean;
+    hasFocusPoints: boolean;
+  }
+): WorkoutPoolsideSizingProfile {
+  const titleLength = model.title.trim().length;
+  const longestLineLength = model.poolsideLines.reduce(
+    (maxLength, line) => Math.max(maxLength, line.trim().length),
+    0
+  );
+  const totalChipLength = (model.totalDistanceLabel?.replace(/^Total:\s*/, "") ?? "").trim().length;
+  const swimmerChipLength = model.swimmerName ? `Swimmer: ${model.swimmerName}`.trim().length : 0;
+  const longestChipLength = Math.max(totalChipLength, swimmerChipLength, 0);
+  const titleScore = titleLength * 0.88;
+  const chipScore = longestChipLength * 1.18;
+  const lineScore = longestLineLength;
+  const contentDriver =
+    lineScore >= titleScore && lineScore >= chipScore
+      ? "line"
+      : chipScore >= titleScore
+        ? "chip"
+        : "title";
+  const contentScore = Math.max(titleScore, chipScore, lineScore);
+
+  if (options.isLandscape) {
+    if (contentScore <= 29) {
+      return {
+        widthProfile: "compact",
+        contentDriver,
+        pageWidthMm: 176,
+        printPageWidthMm: 172,
+        heroPaddingX: 10,
+        heroPaddingY: 9,
+        bodyPadding: 7,
+        bodyGap: 6,
+        linePaddingY: 7,
+        linePaddingX: 9,
+        linePrimaryFontSizePx: 12.65,
+        secondaryFlexBasisPx: 126,
+        brandSymbolWidthPx: 35,
+        brandWordmarkFontSizePx: 16,
+        brandMaxWidthMm: 76,
+        taglineFontSizePx: 14,
+        titleFontSizePx: 20,
+        heroHeadingMaxWidthMm: 112,
+        heroGap: 7,
+        totalValueFontSizePx: 15,
+        chipFontSizePx: 9.25,
+        chipPaddingY: 5,
+        chipPaddingX: 8,
+        landscapeBodyColumns: {
+          primaryFr: 1.52,
+          sideFr: 0.7,
+          sideMinMm: options.hasFocusPoints ? 48 : 0,
+        },
+      };
+    }
+
+    if (contentScore <= 41) {
+      return {
+        widthProfile: "balanced",
+        contentDriver,
+        pageWidthMm: 188,
+        printPageWidthMm: 184,
+        heroPaddingX: 11,
+        heroPaddingY: 9,
+        bodyPadding: 7,
+        bodyGap: 6,
+        linePaddingY: 7,
+        linePaddingX: 9,
+        linePrimaryFontSizePx: 12.85,
+        secondaryFlexBasisPx: 134,
+        brandSymbolWidthPx: 36,
+        brandWordmarkFontSizePx: 16.5,
+        brandMaxWidthMm: 82,
+        taglineFontSizePx: 15,
+        titleFontSizePx: 21,
+        heroHeadingMaxWidthMm: 124,
+        heroGap: 7,
+        totalValueFontSizePx: 15.5,
+        chipFontSizePx: 9.4,
+        chipPaddingY: 5,
+        chipPaddingX: 8,
+        landscapeBodyColumns: {
+          primaryFr: 1.58,
+          sideFr: 0.74,
+          sideMinMm: options.hasFocusPoints ? 52 : 0,
+        },
+      };
+    }
+
+    return {
+      widthProfile: "expanded",
+      contentDriver,
+      pageWidthMm: 202,
+      printPageWidthMm: 198,
+      heroPaddingX: 12,
+      heroPaddingY: 10,
+      bodyPadding: 8,
+      bodyGap: 7,
+      linePaddingY: 7,
+      linePaddingX: 10,
+      linePrimaryFontSizePx: 13,
+      secondaryFlexBasisPx: 144,
+      brandSymbolWidthPx: 38,
+      brandWordmarkFontSizePx: 17,
+      brandMaxWidthMm: 92,
+      taglineFontSizePx: 16,
+      titleFontSizePx: 22,
+      heroHeadingMaxWidthMm: 136,
+      heroGap: 8,
+      totalValueFontSizePx: 16,
+      chipFontSizePx: 9.6,
+      chipPaddingY: 5,
+      chipPaddingX: 9,
+      landscapeBodyColumns: {
+        primaryFr: 1.64,
+        sideFr: 0.78,
+        sideMinMm: options.hasFocusPoints ? 56 : 0,
+      },
+    };
+  }
+
+  if (contentScore <= 29) {
+    return {
+      widthProfile: "compact",
+      contentDriver,
+      pageWidthMm: 116,
+      printPageWidthMm: 112,
+      heroPaddingX: 10,
+      heroPaddingY: 9,
+      bodyPadding: 7,
+      bodyGap: 6,
+      linePaddingY: 7,
+      linePaddingX: 9,
+      linePrimaryFontSizePx: 12.5,
+      secondaryFlexBasisPx: 118,
+      brandSymbolWidthPx: 39,
+      brandWordmarkFontSizePx: 17,
+      brandMaxWidthMm: 78,
+      taglineFontSizePx: 14,
+      titleFontSizePx: 21,
+      heroHeadingMaxWidthMm: 96,
+      heroGap: 7,
+      totalValueFontSizePx: 15,
+      chipFontSizePx: 9.25,
+      chipPaddingY: 5,
+      chipPaddingX: 8,
+    };
+  }
+
+  if (contentScore <= 41) {
+    return {
+      widthProfile: "balanced",
+      contentDriver,
+      pageWidthMm: 124,
+      printPageWidthMm: 120,
+      heroPaddingX: 11,
+      heroPaddingY: 9,
+      bodyPadding: 7,
+      bodyGap: 6,
+      linePaddingY: 7,
+      linePaddingX: 9,
+      linePrimaryFontSizePx: 12.75,
+      secondaryFlexBasisPx: 124,
+      brandSymbolWidthPx: 40,
+      brandWordmarkFontSizePx: 17.5,
+      brandMaxWidthMm: 84,
+      taglineFontSizePx: 15,
+      titleFontSizePx: 22,
+      heroHeadingMaxWidthMm: 104,
+      heroGap: 7,
+      totalValueFontSizePx: 15.5,
+      chipFontSizePx: 9.4,
+      chipPaddingY: 5,
+      chipPaddingX: 8,
+    };
+  }
+
+  return {
+    widthProfile: "expanded",
+    contentDriver,
+    pageWidthMm: 132,
+    printPageWidthMm: 128,
+    heroPaddingX: 12,
+    heroPaddingY: 10,
+    bodyPadding: 8,
+    bodyGap: 7,
+    linePaddingY: 7,
+    linePaddingX: 10,
+    linePrimaryFontSizePx: 13,
+    secondaryFlexBasisPx: 132,
+    brandSymbolWidthPx: 42,
+    brandWordmarkFontSizePx: 18,
+    brandMaxWidthMm: 90,
+    taglineFontSizePx: 15,
+    titleFontSizePx: 23,
+    heroHeadingMaxWidthMm: 112,
+    heroGap: 8,
+    totalValueFontSizePx: 16,
+    chipFontSizePx: 9.6,
+    chipPaddingY: 5,
+    chipPaddingX: 9,
   };
 }
 
