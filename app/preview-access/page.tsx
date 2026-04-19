@@ -59,7 +59,7 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
     <section className="min-h-svh bg-[radial-gradient(960px_420px_at_50%_0%,rgba(94,146,255,0.20),rgba(255,255,255,0)_68%),linear-gradient(180deg,#edf4ff_0%,#ffffff_100%)] sm:min-h-screen">
       <div className="mx-auto flex min-h-svh w-full max-w-[760px] items-center px-5 py-10 sm:min-h-screen sm:px-6 sm:py-16">
         <div className="mx-auto w-full max-w-[31rem] sm:max-w-none">
-          <div className="text-center sm:text-left">
+          <div className="text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">
               Under construction
             </p>
@@ -67,18 +67,18 @@ export default async function PreviewAccessPage({ searchParams }: Props) {
             <BrandImage
               asset={BRAND_USAGE.methodLockup}
               priority
-              className="mx-auto mt-3 h-9 w-auto sm:mx-0 sm:h-11"
+              className="mt-3 h-9 w-auto sm:h-11"
               sizes="(max-width: 640px) 260px, 340px"
             />
 
-            <div className="mx-auto mt-5 max-w-[34rem] sm:mx-0">
+            <div className="mt-5 max-w-[34rem]">
               <p className="text-[15px] font-medium leading-6 text-slate-700 sm:text-[16px]">
                 Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
               </p>
-              <h1 className="mx-auto mt-2 max-w-[12ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mx-0 sm:text-[40px]">
+              <h1 className="mt-2 max-w-[12ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:text-[40px]">
                 Adult learner?
               </h1>
-              <p className="mx-auto mt-1.5 max-w-[28ch] text-[16px] leading-7 text-slate-700 sm:mx-0 sm:mt-2 sm:max-w-[32ch] sm:text-[17px]">
+              <p className="mt-1.5 max-w-[28ch] text-[16px] leading-7 text-slate-700 sm:mt-2 sm:max-w-[32ch] sm:text-[17px]">
                 You&apos;re exactly where you should be.
               </p>
             </div>

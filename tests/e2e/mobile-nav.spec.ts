@@ -105,3 +105,31 @@ test("home keeps menu access and shows login CTA", async ({ page }, testInfo) =>
   await expect(page.getByTestId("header-menu-toggle")).toBeVisible();
   await expect(page.getByTestId("header-auth-link")).toBeVisible();
 });
+
+test("preview notify route hides fixed mobile nav and keeps header menu access", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Early-access mobile navigation behavior is validated only on mobile projects."
+  );
+  test.slow();
+
+  await page.goto("/contact?source=preview_access_notify", {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await waitForPageToSettle(page);
+
+  await expect(page.getByTestId("mobile-fixed-nav")).toBeHidden();
+
+  const menu = page.getByTestId("header-menu-toggle");
+  const drawer = page.getByRole("dialog", { name: "Navigation menu" });
+
+  await expect(menu).toBeVisible();
+  await menu.click();
+  await expect(drawer).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+});
