@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-poolside-note-content-aware-print-sizing-and-header-balance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-04-19`
@@ -165,7 +165,31 @@ Critical target categories for `10/10` claim in this brief:
 - Readability and brand quality stay high.
 - The printed note feels compact, intentional, and polished.
 
+## Closeout
+
+- Shipped via PR `#468`, merged to `main` as `744dcd9` on `2026-04-19`.
+- Achieved all declared target categories at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Data placement and sync boundaries`
+  - `Stack-fit and dependency discipline`
+  - `Testing and QA automation`
+- Critical `10/10` gate confirmed at `5/5`:
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Testing and QA automation`
+- Supporting release-safe closeout stayed at `4/5` or better for the remaining in-scope non-`N/A` categories.
+- Release evidence for the implementation slice:
+  - targeted `vitest` coverage passed across `tests/unit/workouts-shared.test.ts`, `tests/unit/workout-builder-hub.test.tsx`, and `tests/unit/workouts-routes.test.ts` (`108 passed`),
+  - local popup QA on the real builder flow confirmed content-aware output at `124mm` portrait and `188mm` landscape for the current draft; the focus-width boundary stayed locked in targeted unit coverage because this local environment exposed no selectable focus options,
+  - local `npm run lint:briefs:all` passed during implementation,
+  - local `npm run verify:pre-pr` passed,
+  - local `npm run verify:pre-merge` passed (`103 passed`, `329 skipped`),
+  - required GitHub checks for PR `#468` passed green before merge, including `verify`, `Analyze (javascript-typescript)`, `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `Vercel`, and `CodeQL`.
+
 ## Checkpoint Log
 
 - `2026-04-19 | implementation start | moved the brief from planned to in-progress on branch \`feat/poolside-note-content-aware-print-sizing\` and scoped the work to the poolside PDF renderer in \`lib/workouts/shared.ts\`, its route/test contracts, and portrait/landscape visual QA so the print artifact can size to rendered content instead of a roomy fixed canvas | next: implement content-aware portrait/landscape sizing, tighten header balance, add targeted coverage, then run visual + verify gates before PR handoff`
 - `2026-04-19 | implementation + targeted QA | shipped content-aware poolside sizing tiers in \`lib/workouts/shared.ts\`, tightened portrait/landscape paddings and header balance, replaced the invalid landscape grid expression with explicit asymmetric columns, and updated \`tests/unit/workouts-shared.test.ts\` to lock width profile, content driver, long-focus wrapping, and long-line expansion; targeted unit coverage passed, and local Playwright popup QA captured portrait/landscape screenshots with the real app flow at 124mm portrait and 188mm landscape for the current local draft (this local env exposed no focus options, so focus-width behavior remains covered by the targeted unit assertions) | next: clean temporary QA artifacts, run \`npm run verify:pre-pr\`, then prepare commit/push/PR handoff`
+- `2026-04-19 | merged + closeout | PR #468 merged to \`main\` as \`744dcd9\`; local \`npm run verify:pre-merge\` passed with \`103 passed\` / \`329 skipped\`, required GitHub checks were green, and this docs-only follow-up moved the brief from \`in-progress\` to \`done\` so lifecycle state matches shipped reality | next: none`
