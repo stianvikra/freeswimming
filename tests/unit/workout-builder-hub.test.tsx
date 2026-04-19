@@ -4,6 +4,7 @@ import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHu
 import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
 import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
 import { buildManualWorkoutLocalDraftStorageKey } from "@/lib/workouts/manual-local-draft";
+import { readStoredWorkoutPoolsidePreviewDraft } from "@/lib/workouts/poolside-preview";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import type {
   WorkoutEditorRecord,
@@ -1427,7 +1428,7 @@ describe("WorkoutBuilderHub", () => {
   it("opens truthful PDF and poolside note views for the current draft state", async () => {
     const writtenDocuments: string[] = [];
     const pdfWindow = buildMockPrintWindow(writtenDocuments);
-    const poolsideWindow = buildMockPrintWindow(writtenDocuments);
+    const poolsideWindow = { focus: vi.fn() };
     const createObjectUrlSpy = vi.spyOn(URL, "createObjectURL");
     const openSpy = vi
       .spyOn(window, "open")
@@ -1494,69 +1495,46 @@ describe("WorkoutBuilderHub", () => {
       )}. Use Print / Save PDF in that tab.`
     );
 
-    fireEvent.click(screen.getByTestId("workout-editor-poolside-focus-focus-2"));
-    fireEvent.click(screen.getByTestId("workout-editor-poolside-style-ink-saver"));
-    fireEvent.click(screen.getByTestId("workout-editor-poolside-layout-landscape"));
+    expect(screen.queryByText("Print options")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Style, layout, notation, and rest layout stay in Print Preview.")
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("workout-editor-poolside-pdf-open"));
 
     await waitFor(() => {
       expect(openSpy).toHaveBeenCalledTimes(2);
     });
 
-    const poolsideHtml = writtenDocuments[1] ?? "";
+    const poolsidePreviewHref = openSpy.mock.calls[1]?.[0] as string;
+    expect(poolsidePreviewHref).toContain("/my-library/workouts/poolside-preview?previewId=");
+    expect(poolsidePreviewHref).toContain("printStyle=color");
+    expect(poolsidePreviewHref).toContain("printLayout=portrait");
+    expect(poolsidePreviewHref).toContain("notationMode=auto");
+    expect(poolsidePreviewHref).toContain("restLayout=auto");
+    expect(openSpy.mock.calls[1]?.[1]).toBe("_blank");
+    expect(openSpy.mock.calls[1]?.[2]).toBe("noopener,noreferrer");
 
-    expect(poolsideHtml).toContain('data-pdf-variant="poolside"');
-    expect(poolsideHtml).toContain('data-poolside-print-style="ink_saver"');
-    expect(poolsideHtml).toContain('data-poolside-print-layout="landscape"');
-    expect(poolsideHtml).toContain("High elbow catch");
-    expect(poolsideHtml).toContain("Calm exhale");
-    expect(poolsideHtml).toContain(
-      "High elbow catch: Keep the forearm vertical before pressing back."
-    );
-    expect(poolsideHtml).toContain(
-      "Calm exhale: Start the exhale before the head turns to breathe."
-    );
-    expect(poolsideHtml).toContain('class="brand-mark brand-mark-poolside"');
-    expect(poolsideHtml).toContain('class="brand-logo brand-logo-poolside"');
-    expect(poolsideHtml).toContain("lockup-domain-ink.png");
-    expect(poolsideHtml).toContain("Print Preview");
-    expect(poolsideHtml).toContain("Total");
-    expect(poolsideHtml).toContain('data-testid="workout-pdf-total"');
-    expect(poolsideHtml).toContain('<link rel="icon" href="/favicon.ico" sizes="any" />');
-    expect(poolsideHtml).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />');
-    expect(poolsideHtml).not.toContain("Pool session execution");
-    expect(poolsideHtml).not.toContain("Source: Local draft");
-    expect(poolsideHtml).not.toContain(">Color mode<");
-    expect(poolsideHtml).not.toContain(">Ink saver<");
-    expect(poolsideHtml).not.toContain(">Portrait<");
-    expect(poolsideHtml).not.toContain(">Landscape<");
-    expect(poolsideHtml).not.toContain("~");
-    expect(poolsideHtml).toContain(
-      "<title>freeswimming-local-pdf-workout-poolside-note-draft.pdf - FreeSwimming</title>"
-    );
-    expect(poolsideHtml).toContain("body-landscape-columns");
-    expect(poolsideHtml).toContain("poolside-meta-landscape");
-    expect(poolsideHtml).not.toContain("poolside-side-rail");
-    expect(poolsideHtml).toContain("size: A4;");
-    expect(poolsideHtml).not.toContain("size: A4 landscape");
-    expect(poolsideWindow.document.open).toHaveBeenCalledTimes(1);
-    expect(poolsideWindow.document.close).toHaveBeenCalledTimes(1);
+    const poolsidePreviewUrl = new URL(poolsidePreviewHref, "http://localhost");
+    const previewId = poolsidePreviewUrl.searchParams.get("previewId");
+    expect(previewId).toBeTruthy();
+
+    const storedPreview = readStoredWorkoutPoolsidePreviewDraft(previewId ?? "");
+    expect(storedPreview?.draftState).toBe("local_draft");
+    expect(storedPreview?.draft.title).toBe("Local PDF workout");
+    expect(storedPreview?.draft.steps[0]?.stroke).toBe("reverse_im_order");
+    expect(storedPreview?.focusPoints).toEqual([
+      "High elbow catch: Keep the forearm vertical before pressing back.",
+    ]);
     expect(poolsideWindow.focus).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Keeps the blue surfaces")).toBeVisible();
-    expect(screen.getByText("Uses white surfaces.")).toBeVisible();
-    expect(screen.getByText("Print options")).toBeVisible();
-    expect(
-      screen.queryByText("Compact lane-side note in one tall column.")
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Wider split layout for longer programs and more focus notes.")
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Keeps the blue surfaces when your browser prints backgrounds.")
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Uses white surfaces and strong outlines for cheaper printing.")
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-editor-pdf-notice")).toHaveTextContent(
+      `Opened Print Preview for ${buildWorkoutPdfFileName(
+        {
+          ...buildDraft(),
+          title: "Local PDF workout",
+        },
+        { draftState: "local_draft", variant: "poolside" }
+      )}. Finish layout and print settings in that tab.`
+    );
   }, 30000);
 
   it("collapses the metadata panel by default for saved builder sessions and reopens on demand", async () => {
@@ -2734,8 +2712,10 @@ describe("WorkoutBuilderHub", () => {
     });
 
     vi.useFakeTimers();
-    fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
-    expect(screen.getByTestId("workout-editor-pdf-notice")).toBeVisible();
+    act(() => {
+      fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
+    });
+    expect(screen.queryByTestId("workout-editor-pdf-notice")).toBeVisible();
 
     act(() => {
       vi.advanceTimersByTime(WORKOUT_NOTICE_AUTO_DISMISS_MS);
@@ -2832,22 +2812,30 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("saved-workouts-poolside-workout-2"));
     expect(screen.getByTestId("saved-workout-poolside-workout-2-panel")).toBeVisible();
     expect(screen.getByText("Swimmer: Stian Vikra")).toBeVisible();
-    expect(screen.getByTestId("saved-workout-poolside-workout-2-notation-auto")).toBeChecked();
-    expect(screen.getByTestId("saved-workout-poolside-workout-2-rest-layout-auto")).toBeChecked();
-    fireEvent.click(screen.getByTestId("saved-workout-poolside-workout-2-notation-abbreviated"));
-    fireEvent.click(screen.getByTestId("saved-workout-poolside-workout-2-rest-layout-below"));
+    expect(screen.queryByText("Print options")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Style, layout, notation, and rest layout stay in Print Preview.")
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("saved-workout-poolside-workout-2-print-preview")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/my-library/workouts/poolside-preview?workoutId=workout-2")
+    );
     expect(screen.getByTestId("saved-workout-poolside-workout-2-print-preview")).toHaveAttribute(
       "href",
       expect.stringContaining("focusMode=custom")
     );
     expect(screen.getByTestId("saved-workout-poolside-workout-2-print-preview")).toHaveAttribute(
       "href",
-      expect.stringContaining("notationMode=abbreviated")
+      expect.stringContaining("notationMode=auto")
     );
     expect(screen.getByTestId("saved-workout-poolside-workout-2-print-preview")).toHaveAttribute(
       "href",
-      expect.stringContaining("restLayout=below_step")
+      expect.stringContaining("restLayout=auto")
     );
+    fireEvent.click(screen.getByTestId("saved-workout-poolside-workout-2-focus-focus-2"));
+    expect(
+      screen.getByTestId("saved-workout-poolside-workout-2-print-preview").getAttribute("href")
+    ).not.toContain("focusId=focus-2");
 
     fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
 

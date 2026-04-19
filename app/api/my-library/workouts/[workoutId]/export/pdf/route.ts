@@ -8,6 +8,7 @@ import {
   normalizeWorkoutPoolsideNotationMode,
   normalizeWorkoutPoolsidePrintLayout,
   normalizeWorkoutPoolsidePrintStyle,
+  normalizeWorkoutPdfPreviewChrome,
   normalizeWorkoutPoolsideRestLayout,
   selectWorkoutPoolsideFocusPoints,
   type WorkoutPoolsideFocusOption,
@@ -62,6 +63,9 @@ export async function GET(request: Request, context: RouteContext) {
   );
   const poolsideRestLayout = normalizeWorkoutPoolsideRestLayout(
     requestUrl.searchParams.get("restLayout")
+  );
+  const previewChrome = normalizeWorkoutPdfPreviewChrome(
+    requestUrl.searchParams.get("previewChrome")
   );
   const { workoutId } = await context.params;
   if (!UUID_PATTERN.test(workoutId)) {
@@ -142,6 +146,7 @@ export async function GET(request: Request, context: RouteContext) {
           requestUrl
         ).toString(),
         fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, requestUrl).toString(),
+        previewChrome,
       })
     )
   );

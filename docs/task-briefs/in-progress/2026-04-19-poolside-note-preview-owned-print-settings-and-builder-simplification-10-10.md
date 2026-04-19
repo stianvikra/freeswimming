@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-19-poolside-note-preview-owned-print-settings-and-builder-simplification-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-19`
 - `updated`: `2026-04-19`
@@ -211,3 +211,6 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-04-19 | planning | created the dedicated follow-up brief after PR #473 closeout to lock the next poolside ownership change: keep Session Focus in builder, move print settings to the preview surface, and remove duplicate builder-side print controls only after preview parity exists | next: if approved, move this brief to in-progress and implement the builder/preview ownership cleanup end to end`
+- `2026-04-19 | implementation | moved the brief to in-progress, removed builder-side print settings from the poolside panel, added the owner-facing poolside preview route with preview-owned settings, kept saved-workout previews URL-driven, and added local preview draft storage so the live editor opens the same preview surface with current draft content | next: run visual QA, capture reference/after screenshots, and stop for owner approval before verify:pre-pr`
+- `2026-04-19 | implementation | tightened the embedded preview renderer after screenshot review so mobile preview keeps the poolside note in its print-faithful composition instead of triggering the standalone responsive stack; the preview frame now scales the rendered note while preserving the top-right Learn. Drill. Swim. lockup inside the note surface | next: hand off updated mobile/desktop screenshots for owner approval before verify:pre-pr`
+- `2026-04-19 | implementation | finished the last mobile preview micro-fix by moving viewport measurement earlier, clamping embedded scale before first visible paint, and tightening embedded padding so the note surface stays optically centered without clipping on the right edge | next: owner review of the refreshed after-screenshots, then verify:pre-pr if approved`

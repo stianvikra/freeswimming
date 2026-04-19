@@ -172,6 +172,7 @@ function formatWorkoutDistanceLabel(
 
 export type WorkoutHandoffDraftState = "canonical" | "local_draft";
 export type WorkoutPdfVariant = "standard" | "poolside";
+export type WorkoutPdfPreviewChrome = "standalone" | "embedded";
 export const WORKOUT_POOLSIDE_PRINT_STYLES = ["color", "ink_saver"] as const;
 export const WORKOUT_POOLSIDE_PRINT_LAYOUTS = ["portrait", "landscape"] as const;
 export const WORKOUT_POOLSIDE_NOTATION_MODES = ["auto", "full", "abbreviated"] as const;
@@ -991,17 +992,24 @@ export function buildWorkoutPdfHtmlDocument(
     swimmerName?: string | null;
     logoUrl?: string | null;
     fontUrl?: string | null;
+    previewChrome?: WorkoutPdfPreviewChrome;
   }
 ) {
   const model = buildWorkoutPdfModel(draft, options);
+  const previewChrome = normalizeWorkoutPdfPreviewChrome(options?.previewChrome);
   if (model.variant === "poolside") {
-    return buildPoolsideWorkoutPdfHtmlDocument(model, options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH);
+    return buildPoolsideWorkoutPdfHtmlDocument(
+      model,
+      options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH,
+      previewChrome
+    );
   }
 
   return buildStandardWorkoutPdfHtmlDocument(
     model,
     options?.fontUrl ?? BRAND_FONT_PUBLIC_PATH,
-    getWorkoutStepDetailLabels(draft?.environment)
+    getWorkoutStepDetailLabels(draft?.environment),
+    previewChrome
   );
 }
 
@@ -1054,10 +1062,12 @@ function buildPdfBrandLockupHtml(
 function buildStandardWorkoutPdfHtmlDocument(
   model: WorkoutPdfModel,
   fontUrl: string | null,
-  detailLabels: WorkoutStepDetailLabels
+  detailLabels: WorkoutStepDetailLabels,
+  previewChrome: WorkoutPdfPreviewChrome
 ) {
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
+  const isEmbeddedPreview = previewChrome === "embedded";
   const reviewDetailsHtml =
     model.readiness.issues.length > 0
       ? `
@@ -1546,6 +1556,10 @@ function buildStandardWorkoutPdfHtmlDocument(
     </style>
   </head>
   <body>
+    ${
+      isEmbeddedPreview
+        ? ""
+        : `
     <div class="toolbar">
       <div class="toolbar-copy">
         <span class="toolbar-kicker">FreeSwimming</span>
@@ -1560,6 +1574,8 @@ function buildStandardWorkoutPdfHtmlDocument(
         </button>
       </div>
     </div>
+    `
+    }
     <main class="shell">
       <article class="page" data-testid="workout-pdf-print-view" data-pdf-variant="standard">
         <header class="hero">
@@ -1606,10 +1622,15 @@ function buildStandardWorkoutPdfHtmlDocument(
 </html>`;
 }
 
-function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: string | null) {
+function buildPoolsideWorkoutPdfHtmlDocument(
+  model: WorkoutPdfModel,
+  fontUrl: string | null,
+  previewChrome: WorkoutPdfPreviewChrome
+) {
   const isInkSaver = model.poolsidePrintStyle === "ink_saver";
   const isLandscape = model.poolsidePrintLayout === "landscape";
   const hasFocusPoints = model.focusPoints.length > 0;
+  const isEmbeddedPreview = previewChrome === "embedded";
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
   const sizingProfile = getWorkoutPoolsideSizingProfile(model, { isLandscape });
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl, { variant: "poolside" });
@@ -1827,7 +1848,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
       }
 
       .shell {
-        padding: 8px 8px 10px;
+        ${isEmbeddedPreview ? "display: flex; justify-content: center; padding: 4px 0 6px;" : "padding: 8px 8px 10px;"}
       }
 
       .page {
@@ -2230,6 +2251,10 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         margin: 8mm;
       }
 
+      ${
+        isEmbeddedPreview
+          ? ""
+          : `
       @media (max-width: 900px) {
         .hero-top-row {
           align-items: flex-start;
@@ -2260,15 +2285,21 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
           white-space: normal;
         }
       }
+      `
+      }
     </style>
   </head>
   <body>
+    ${
+      isEmbeddedPreview
+        ? ""
+        : `
     <div class="toolbar">
       <div class="toolbar-copy">
         <span class="toolbar-kicker">FreeSwimming</span>
         <span class="toolbar-title">Print Preview</span>
       </div>
-        <div class="toolbar-actions">
+      <div class="toolbar-actions">
         <button class="toolbar-button toolbar-button-primary" type="button" onclick="window.print()">
           Print / Save PDF
         </button>
@@ -2277,6 +2308,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(model: WorkoutPdfModel, fontUrl: st
         </button>
       </div>
     </div>
+    `
+    }
     <main class="shell">
       <article
         class="page"
@@ -3370,6 +3403,12 @@ export function normalizeWorkoutPoolsideRestLayout(
   }
 
   return "auto";
+}
+
+export function normalizeWorkoutPdfPreviewChrome(
+  value: string | null | undefined
+): WorkoutPdfPreviewChrome {
+  return value === "embedded" ? "embedded" : "standalone";
 }
 
 function normalizeWorkoutSwimmerName(value: string | null | undefined) {
