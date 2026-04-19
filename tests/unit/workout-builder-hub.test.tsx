@@ -1849,6 +1849,117 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByLabelText("Step Type")).not.toBeInTheDocument();
   });
 
+  it("keeps view mode sections in workout order with calm section accents and parent-linked rest", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: buildDraft({
+              sourceFingerprint: "manual-view-structure",
+              steps: [
+                {
+                  id: "warmup-1",
+                  category: "warmup",
+                  name: "Warmup swim",
+                  stroke: "freestyle",
+                  intensity: "easy",
+                  durationMode: "distance",
+                  distanceM: 400,
+                  timeMin: null,
+                  targetSummary: "",
+                  notes: "",
+                },
+                {
+                  id: "warmup-rest-1",
+                  category: "rest",
+                  name: "Warmup rest",
+                  stroke: "choice",
+                  intensity: "easy",
+                  durationMode: "fixed_rest",
+                  distanceM: null,
+                  timeMin: 0.5,
+                  targetSummary: "",
+                  notes: "",
+                },
+                {
+                  id: "main-1",
+                  category: "main",
+                  name: "Main swim",
+                  stroke: "freestyle",
+                  intensity: "moderate",
+                  durationMode: "distance",
+                  distanceM: 200,
+                  timeMin: null,
+                  targetSummary: "",
+                  notes: "",
+                },
+                {
+                  id: "warmup-2",
+                  category: "warmup",
+                  name: "Warmup reset",
+                  stroke: "backstroke",
+                  intensity: "easy",
+                  durationMode: "distance",
+                  distanceM: 100,
+                  timeMin: null,
+                  targetSummary: "",
+                  notes: "",
+                },
+                {
+                  id: "warmup-rest-2",
+                  category: "rest",
+                  name: "Warmup reset rest",
+                  stroke: "choice",
+                  intensity: "easy",
+                  durationMode: "fixed_rest",
+                  distanceM: null,
+                  timeMin: 1,
+                  targetSummary: "",
+                  notes: "",
+                },
+              ],
+            }),
+          }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
+
+    const sections = screen.getAllByTestId(/workout-editor-view-section-/);
+    expect(sections).toHaveLength(3);
+    expect(sections.map((section) => section.getAttribute("data-view-category"))).toEqual([
+      "warmup",
+      "main",
+      "warmup",
+    ]);
+
+    expect(sections[0]).toHaveClass("border-l-4", "border-l-sky-400");
+    expect(sections[1]).toHaveClass("border-l-4", "border-l-blue-500");
+    expect(within(sections[0]).getByText("Warmup")).toHaveClass("text-sky-700");
+    expect(within(sections[1]).getByText("Main")).toHaveClass("text-blue-700");
+
+    expect(within(sections[0]).getByText("400m · Freestyle · Easy")).toBeVisible();
+    expect(within(sections[0]).getByText("Rest 0:30")).toBeVisible();
+    expect(within(sections[2]).getByText("100m · Backstroke · Easy")).toBeVisible();
+    expect(within(sections[2]).getByText("Rest 1:00")).toBeVisible();
+
+    expect(screen.queryByText("1 of 2")).not.toBeInTheDocument();
+    expect(screen.queryByText("2 of 2")).not.toBeInTheDocument();
+    expect(
+      sections.filter((section) => section.getAttribute("data-view-category") === "rest")
+    ).toHaveLength(0);
+  });
+
   it("uses rearrange as a separate ordering mode without opening edit and keeps top-level moves in one place", async () => {
     render(
       <WorkoutBuilderHub
