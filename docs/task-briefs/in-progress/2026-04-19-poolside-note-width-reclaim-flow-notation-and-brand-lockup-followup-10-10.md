@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-19-poolside-note-width-reclaim-flow-notation-and-brand-lockup-followup-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-19`
 - `updated`: `2026-04-19`
@@ -219,4 +219,8 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-19 | verify-pre-pr-pass | reran full pre-pr verification after removing local generated .next QA artifacts that polluted lint scope; full lane passed including lint, typecheck, unit, build, perf budgets, and Playwright, while the approved screenshot handoff artifacts remain available under output/playwright for PR context but stay uncommitted | next: commit, push, and update/open PR for owner merge review`
+- `2026-04-19 | visual-qa-pass-3 | applied the owner-aligned width rule: portrait squeezes one more notch while landscape stays calmer by default as long as it still fits within A4 width plus print margins; current dense-fixture candidate is about 98mm portrait and 160mm landscape, with remaining landscape wrapping treated as acceptable when auto mode hits the A4-fit boundary and users can tighten further through abbreviations or below-step rests | next: owner screenshot review before any PR update / verify:pre-pr pass`
+- `2026-04-19 | visual-qa-pass-2 | tightened poolside width reclaim further so sizing is now line-driven with narrower physical widths in both orientations; current screenshot candidate lands at roughly 100mm portrait and 156mm landscape for the dense 5000m fixture, keeps focus below the landscape step columns, and preserves the canonical brand lockup asset while targeted unit coverage stays green | next: owner screenshot review before any PR update / verify:pre-pr pass`
+- `2026-04-19 | implementation-start | moved the poolside width/flow/notation/brand follow-up into in-progress on branch \`feat/poolside-note-width-reclaim-followup\`; next is a scoped renderer pass for width reclaim, landscape flow ordering, snorkel abbreviation coverage, chip sizing, and brand-lockup proportion fixes before screenshot QA`
 - `2026-04-19 | planning | created the dedicated planned follow-up brief for the remaining poolside-note print seams: width reclaim in portrait and landscape, landscape flow/order polish, missing snorkel abbreviation coverage, chip proportion cleanup, and brand-lockup rendering review; admin-managed abbreviation controls stay explicitly deferred to a separate later brief if still wanted | next: execute this brief after owner approval, then validate with screenshot handoff before merge`

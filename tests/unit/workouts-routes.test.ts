@@ -410,9 +410,9 @@ describe("workouts routes", () => {
     expect(body).not.toContain("High elbow catch");
     expect(body).not.toContain("~");
     expect(body).toContain("Breathing timing");
-    expect(body).toContain('class="brand-inline-lockup"');
-    expect(body).toContain('brand-inline-wordmark-primary">freeswimming<');
-    expect(body).toContain('brand-inline-wordmark-org">.org<');
+    expect(body).toContain('class="brand-mark brand-mark-poolside"');
+    expect(body).toContain('class="brand-logo brand-logo-poolside"');
+    expect(body).toContain("lockup-domain-ink.png");
     expect(from).toHaveBeenCalledWith("athlete_profiles");
     expect(from).toHaveBeenCalledWith("training_metrics");
     expect(from).toHaveBeenCalledWith("training_preferences");

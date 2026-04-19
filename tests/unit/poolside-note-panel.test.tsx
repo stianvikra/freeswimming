@@ -118,6 +118,7 @@ describe("PoolsideNotePanel", () => {
     );
     expect(screen.getByText("Mod")).toBeInTheDocument();
     expect(screen.getByText("Moderate")).toBeInTheDocument();
+    expect(screen.getByText("Snorkel")).toBeInTheDocument();
 
     await user.click(toggle);
 

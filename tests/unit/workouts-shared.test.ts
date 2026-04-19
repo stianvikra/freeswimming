@@ -1027,10 +1027,9 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("Total");
     expect(html).toContain('data-testid="workout-pdf-total"');
     expect(html).toContain('hero-total-value">400m<');
-    expect(html).toContain('class="brand-inline-lockup"');
-    expect(html).toContain('class="brand-inline-symbol"');
-    expect(html).toContain('brand-inline-wordmark-primary">freeswimming<');
-    expect(html).toContain('brand-inline-wordmark-org">.org<');
+    expect(html).toContain('class="brand-mark brand-mark-poolside"');
+    expect(html).toContain('class="brand-logo brand-logo-poolside"');
+    expect(html).toContain('src="https://example.com/logos/brand/lockup-domain-ink.png"');
     expect(html).toContain(">Print Preview<");
     expect(html).toContain("Learn.");
     expect(html).toContain("Swim.");
@@ -1047,13 +1046,14 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain("P:");
     expect(readPoolsideDataAttribute(html, "data-poolside-width-profile")).toBe("compact");
     expect(readPoolsideDataAttribute(html, "data-poolside-content-driver")).toBe("line");
-    expect(readPoolsideDataAttribute(html, "data-poolside-page-width-mm")).toBe("116");
+    expect(readPoolsideDataAttribute(html, "data-poolside-page-width-mm")).toBe("90");
     expect(html).toContain("size: A4;");
     expect(html).not.toContain("size: A4 portrait");
     expect(html).not.toContain("size: A4 landscape");
     expect(html).toContain("width: min(100%, var(--poolside-page-width))");
-    expect(html).toContain("--poolside-page-width: 116mm;");
-    expect(html).toContain("--poolside-print-width: 112mm;");
+    expect(html).toContain("--poolside-page-width: 90mm;");
+    expect(html).toContain("--poolside-print-width: 86mm;");
+    expect(html).toContain("width: fit-content;");
     expect(html).toContain("margin: 8mm;");
     expect(html).not.toContain("width: min(100%, 144mm)");
     expect(html).not.toContain("margin: 12mm;");
@@ -1077,8 +1077,8 @@ describe("workouts shared readiness", () => {
 
     expect(readPoolsideDataAttribute(compactHtml, "data-poolside-width-profile")).toBe("compact");
     expect(readPoolsideDataAttribute(longFocusHtml, "data-poolside-width-profile")).toBe("compact");
-    expect(readPoolsideDataAttribute(compactHtml, "data-poolside-page-width-mm")).toBe("116");
-    expect(readPoolsideDataAttribute(longFocusHtml, "data-poolside-page-width-mm")).toBe("116");
+    expect(readPoolsideDataAttribute(compactHtml, "data-poolside-page-width-mm")).toBe("90");
+    expect(readPoolsideDataAttribute(longFocusHtml, "data-poolside-page-width-mm")).toBe("90");
     expect(readPoolsideDataAttribute(longFocusHtml, "data-poolside-content-driver")).toBe("line");
     expect(longFocusHtml).toContain("let the note wrap down the page");
   });
@@ -1109,6 +1109,33 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain("400m · Freestyle · Moderate");
   });
 
+  it("uses S in abbreviated poolside notation when a poolside line includes snorkel equipment", () => {
+    const draft = {
+      ...buildDraft(),
+      equipmentAllowlist: ["snorkel" as const],
+      steps: [
+        {
+          ...buildDraft().steps[0],
+          equipment: "snorkel" as const,
+        },
+      ],
+    };
+    const pdfModel = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "abbreviated",
+    });
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "abbreviated",
+    });
+
+    expect(pdfModel.poolsideLines).toContain("400m · Free · S · Easy");
+    expect(html).toContain("400m · Free · S · Easy");
+    expect(html).not.toContain("400m · Free · Snorkel · Easy");
+  });
+
   it("uses a dedicated landscape header composition without the old summary pill", () => {
     const html = buildWorkoutPdfHtmlDocument(
       {
@@ -1125,16 +1152,17 @@ describe("workouts shared readiness", () => {
     );
 
     expect(html).toContain('<header class="hero hero-landscape">');
-    expect(html).toContain('<div class="body body-single-column">');
+    expect(html).toContain('<div class="body body-landscape-columns">');
     expect(html).not.toContain('data-testid="workout-pdf-focus-points"');
     expect(html).toContain('data-poolside-print-layout="landscape"');
     expect(readPoolsideDataAttribute(html, "data-poolside-width-profile")).toBe("compact");
     expect(readPoolsideDataAttribute(html, "data-poolside-content-driver")).toBe("line");
-    expect(readPoolsideDataAttribute(html, "data-poolside-page-width-mm")).toBe("176");
-    expect(html).toContain("--poolside-page-width: 176mm;");
-    expect(html).toContain("--poolside-print-width: 172mm;");
+    expect(readPoolsideDataAttribute(html, "data-poolside-page-width-mm")).toBe("142");
+    expect(html).toContain("--poolside-page-width: 142mm;");
+    expect(html).toContain("--poolside-print-width: 138mm;");
+    expect(html).toContain("grid-template-columns: minmax(0, 1fr) auto;");
     expect(html).toContain('hero-total-value">400m<');
-    expect(html).toContain('class="brand-inline-lockup"');
+    expect(html).toContain('class="brand-mark brand-mark-poolside"');
     expect(html).not.toContain("~10 min");
   });
 
@@ -1232,19 +1260,22 @@ describe("workouts shared readiness", () => {
       focusPoints: ["High elbow catch", "Calm exhale before the breath starts"],
     });
 
-    expect(html).toContain("body-landscape-balanced");
-    expect(html).toContain("poolside-steps-primary");
-    expect(html).toContain("poolside-side-rail");
-    expect(html).toContain("poolside-steps-overflow");
-    expect(html.indexOf('<section class="poolside-steps poolside-steps-primary">')).toBeLessThan(
-      html.indexOf('<aside class="poolside-side-rail">')
+    expect(html).toContain("body-landscape-columns");
+    expect(html).toContain("poolside-steps-grid");
+    expect(html).toContain("poolside-steps-column-primary");
+    expect(html).toContain("poolside-steps-column-secondary");
+    expect(html.indexOf('<div class="poolside-steps-grid">')).toBeLessThan(
+      html.indexOf('<div class="poolside-meta poolside-meta-landscape">')
     );
-    expect(html.indexOf("workout-pdf-focus-points")).toBeLessThan(
-      html.indexOf('<section class="poolside-steps poolside-steps-overflow">')
+    expect(html.indexOf("poolside-steps-column-primary")).toBeLessThan(
+      html.indexOf("poolside-steps-column-secondary")
+    );
+    expect(html.indexOf("workout-pdf-focus-points")).toBeGreaterThan(
+      html.indexOf("poolside-steps-column-secondary")
     );
   });
 
-  it("expands landscape width from the longest rendered workout line and uses the asymmetric column split", () => {
+  it("expands landscape width from the longest rendered workout line while keeping focus below the step grid", () => {
     const longLineDraft: SessionDraft = {
       ...buildDraft(),
       steps: [
@@ -1308,11 +1339,12 @@ describe("workouts shared readiness", () => {
 
     expect(readPoolsideDataAttribute(html, "data-poolside-width-profile")).toBe("expanded");
     expect(readPoolsideDataAttribute(html, "data-poolside-content-driver")).toBe("line");
-    expect(readPoolsideDataAttribute(html, "data-poolside-page-width-mm")).toBe("202");
-    expect(html).toContain("--poolside-page-width: 202mm;");
-    expect(html).toContain("--poolside-print-width: 198mm;");
-    expect(html).toContain("grid-template-columns: minmax(0, 1.64fr)");
-    expect(html).toContain("minmax(56mm, 0.78fr);");
+    expect(readPoolsideDataAttribute(html, "data-poolside-page-width-mm")).toBe("160");
+    expect(html).toContain("--poolside-page-width: 160mm;");
+    expect(html).toContain("--poolside-print-width: 156mm;");
+    expect(html).toContain("body-landscape-columns");
+    expect(html).toContain("poolside-meta-landscape");
+    expect(html).not.toContain("poolside-side-rail");
   });
 
   it("deduplicates effort labels and inlines ordinary recovery for poolside lines", () => {
