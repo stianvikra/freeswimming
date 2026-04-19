@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-19-early-access-mobile-nav-and-preview-left-alignment-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-19`
 - `updated`: `2026-04-19`
@@ -224,7 +224,32 @@ Strict `10/10` mode for this brief:
   - no submission payload change,
   - no preview-unlock behavior regression.
 
+## Closeout
+
+- Shipped via PR `#470`, merged to `main` as `bd2b3a7` on `2026-04-19`.
+- Achieved all declared target categories at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Accessibility (a11y)`
+  - `Stack-fit and dependency discipline`
+  - `Testing and QA automation`
+- Critical `10/10` gate confirmed at `5/5`:
+  - `Product goals and IA`
+  - `UX flow clarity`
+  - `Visual design quality`
+  - `Testing and QA automation`
+- Supporting release-safe closeout stayed at `4/5` or better for the remaining in-scope non-`N/A` categories.
+- Release evidence for the implementation slice:
+  - targeted `vitest` coverage passed in `tests/unit/contact-form.test.tsx` (`3 passed`),
+  - targeted Playwright coverage passed in `tests/e2e/mobile-nav.spec.ts`, `tests/e2e/contact-form-a11y.spec.ts`, and `tests/e2e/private-access-gate.spec.ts` on `mobile-chromium` (`5 passed`, `3 skipped`),
+  - local `npm run lint:briefs:all` passed during the brief setup and implementation checkpoint,
+  - local `npm run verify:pre-pr` passed (`103 passed`, `335 skipped`),
+  - local `npm run verify:pre-merge` passed (`104 passed`, `334 skipped`; private-gate rerun remained `N/A` because `SITE_LOCK_ENABLED!=1` for this public-surface slice),
+  - required GitHub checks for PR `#470` passed green before merge, including `verify`, `Analyze (javascript-typescript)`, `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `Vercel`, and `CodeQL`.
+
 ## Checkpoint Log
 
 - `2026-04-19 | in-progress | moved the brief into in-progress and started the scoped early-access follow-up: hide fixed mobile nav on the preview-access notify route, align the /preview-access mobile intro to one left axis, and update the regression contract so the new mobile behavior is explicit before validation and PR handoff | next: finish the route/chrome patch, update targeted e2e coverage, then run verify gates`
 - `2026-04-19 | in-progress | implemented the route-scoped mobile-nav suppression for the preview-access notify contact variant, left-aligned the full /preview-access intro stack on mobile, updated the regression checklist, and passed targeted public-surface tests plus npm run verify:pre-pr | next: stage the scoped diff, commit, push, open the PR, and run npm run verify:pre-merge before merge readiness`
+- `2026-04-19 | merged + closeout | PR #470 merged to \`main\` as \`bd2b3a7\`; local \`npm run verify:pre-merge\` passed with \`104 passed\` / \`334 skipped\`, required GitHub checks were green, and this docs follow-up moved the brief from \`in-progress\` to \`done\` so lifecycle state matches shipped reality | next: none`
