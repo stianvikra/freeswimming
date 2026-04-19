@@ -4,7 +4,8 @@ Use this checklist after UI interaction changes.
 
 ## Navigation + Press Feel
 
-- [ ] On `/contact` mobile viewport, fixed bottom nav is visible and tappable.
+- [ ] On default `/contact` mobile viewport, fixed bottom nav is visible and tappable.
+- [ ] On `/contact?source=preview_access_notify` mobile viewport, fixed bottom nav is hidden and header menu access remains available.
 - [ ] Bottom nav `Menu` button toggles open/close state and does not get stuck.
 - [ ] Bottom nav `Home` and `Course` controls are links (`<a>`) and navigate correctly.
 - [ ] Home page CTA buttons (`FREE COURSE`, `SWIM PROGRAMS`, etc.) feel stronger than utility nav buttons.

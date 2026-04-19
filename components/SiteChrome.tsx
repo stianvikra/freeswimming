@@ -35,6 +35,7 @@ type SiteMenu = {
 type Props = {
   children: React.ReactNode;
   menu?: SiteMenu | CustomMenu;
+  mobileNavMode?: "default" | "hidden";
 
   /**
    * Optional custom bottom bar (e.g. Course page Prev/Lessons/Next).
@@ -43,7 +44,12 @@ type Props = {
   bottomBar?: React.ReactNode;
 };
 
-export default function SiteChrome({ children, menu, bottomBar }: Props) {
+export default function SiteChrome({
+  children,
+  menu,
+  mobileNavMode = "default",
+  bottomBar,
+}: Props) {
   const pathname = usePathname() ?? "/";
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [dashboardVisible, setDashboardVisible] = useState(false);
@@ -142,7 +148,7 @@ export default function SiteChrome({ children, menu, bottomBar }: Props) {
   const menuItems = getMainMenuItems({ includeDashboard: dashboardVisible });
 
   // ✅ Home: remove bottom nav so focus stays on the CTA buttons
-  const showDefaultMobileNav = !hasCustomBottomBar && !isHomeRoute;
+  const showDefaultMobileNav = mobileNavMode !== "hidden" && !hasCustomBottomBar && !isHomeRoute;
 
   // ✅ Hide hamburger on mobile when any bottom nav exists (default or custom).
   const hideHamburgerOnMobile = showDefaultMobileNav || hasCustomBottomBar;
