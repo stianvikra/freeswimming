@@ -1059,6 +1059,20 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain("margin: 12mm;");
   });
 
+  it("can render an embedded poolside preview without the standalone toolbar chrome", () => {
+    const html = buildWorkoutPdfHtmlDocument(buildDraft(), {
+      draftState: "local_draft",
+      variant: "poolside",
+      previewChrome: "embedded",
+    });
+
+    expect(html).toContain('data-pdf-variant="poolside"');
+    expect(html).not.toContain('<div class="toolbar">');
+    expect(html).not.toContain(">Print / Save PDF<");
+    expect(html).not.toContain(">Close<");
+    expect(html).not.toContain("@media (max-width: 900px)");
+  });
+
   it("keeps long poolside focus text inside the chosen compact width", () => {
     const compactHtml = buildWorkoutPdfHtmlDocument(buildDraft(), {
       draftState: "canonical",

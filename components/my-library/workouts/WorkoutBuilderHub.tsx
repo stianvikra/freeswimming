@@ -586,7 +586,7 @@ export default function WorkoutBuilderHub({
                 `/api/my-library/workouts/${workoutId}/export/pdf`
               }
               workoutPoolsidePdfHrefBuilder={(workoutId) =>
-                `/api/my-library/workouts/${workoutId}/export/pdf?variant=poolside`
+                `/my-library/workouts/poolside-preview?workoutId=${workoutId}`
               }
               editLabel="Edit"
               testId="workout-builder-saved-sessions"

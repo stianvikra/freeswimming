@@ -2,22 +2,12 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
-import type {
-  WorkoutPoolsideFocusOption,
-  WorkoutPoolsideNotationMode,
-  WorkoutPoolsidePrintLayout,
-  WorkoutPoolsidePrintStyle,
-  WorkoutPoolsideRestLayout,
-} from "@/lib/workouts/shared";
+import type { WorkoutPoolsideFocusOption } from "@/lib/workouts/shared";
 
 function renderPoolsideNotePanel(
   focusOptions: WorkoutPoolsideFocusOption[],
   options?: {
     selectedFocusIds?: string[];
-    printStyle?: WorkoutPoolsidePrintStyle;
-    printLayout?: WorkoutPoolsidePrintLayout;
-    notationMode?: WorkoutPoolsideNotationMode;
-    restLayout?: WorkoutPoolsideRestLayout;
   }
 ) {
   return render(
@@ -27,14 +17,6 @@ function renderPoolsideNotePanel(
       focusOptions={focusOptions}
       selectedFocusIds={options?.selectedFocusIds ?? []}
       onToggleFocus={vi.fn()}
-      printStyle={options?.printStyle ?? "color"}
-      onPrintStyleChange={vi.fn()}
-      printLayout={options?.printLayout ?? "portrait"}
-      onPrintLayoutChange={vi.fn()}
-      notationMode={options?.notationMode ?? "auto"}
-      onNotationModeChange={vi.fn()}
-      restLayout={options?.restLayout ?? "auto"}
-      onRestLayoutChange={vi.fn()}
       actionSlot={<button type="button">Print Preview</button>}
     />
   );
@@ -52,11 +34,12 @@ describe("PoolsideNotePanel", () => {
       "data-layout-mode",
       "stacked"
     );
-    expect(screen.getByTestId("poolside-note-test-print-options-grid")).toHaveAttribute(
+    expect(screen.getByTestId("poolside-note-test-reference-panel")).toHaveAttribute(
       "data-layout-mode",
       "stacked"
     );
     expect(screen.getByText(/No open focuses are available/i)).toBeInTheDocument();
+    expect(screen.queryByText("Print Preview owns the final layout")).not.toBeInTheDocument();
   });
 
   it("keeps long focus lists on a stacked page-scroll-first layout", () => {
@@ -77,7 +60,7 @@ describe("PoolsideNotePanel", () => {
       "stacked"
     );
     expect(screen.getByTestId("poolside-note-test-focus-list")).not.toHaveClass("overflow-y-auto");
-    expect(screen.getByTestId("poolside-note-test-print-options-grid")).toHaveAttribute(
+    expect(screen.getByTestId("poolside-note-test-reference-panel")).toHaveAttribute(
       "data-layout-mode",
       "stacked"
     );

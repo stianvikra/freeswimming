@@ -7,14 +7,8 @@ import {
   formatDistanceMetersLabel,
   resolveSessionDraftPoolLengthUnit,
 } from "@/lib/session-generator-v1/shared";
-import type {
-  WorkoutPoolsideFocusOption,
-  WorkoutPoolsideNotationMode,
-  WorkoutPoolsideRestLayout,
-  WorkoutPoolsidePrintLayout,
-  WorkoutPoolsidePrintStyle,
-  WorkoutSummary,
-} from "@/lib/workouts/shared";
+import { buildWorkoutPoolsidePreviewHref } from "@/lib/workouts/poolside-preview";
+import type { WorkoutPoolsideFocusOption, WorkoutSummary } from "@/lib/workouts/shared";
 
 type Props = {
   workouts: WorkoutSummary[];
@@ -129,29 +123,6 @@ function buildQuickPreviewSections(workout: WorkoutSummary): QuickPreviewSection
     : [];
 }
 
-function buildPoolsidePreviewHref(
-  baseHref: string,
-  options: {
-    selectedFocusIds: string[];
-    printStyle: WorkoutPoolsidePrintStyle;
-    printLayout: WorkoutPoolsidePrintLayout;
-    notationMode: WorkoutPoolsideNotationMode;
-    restLayout: WorkoutPoolsideRestLayout;
-  }
-) {
-  const url = new URL(baseHref, "http://localhost");
-  url.searchParams.set("focusMode", "custom");
-  url.searchParams.set("printStyle", options.printStyle);
-  url.searchParams.set("printLayout", options.printLayout);
-  url.searchParams.set("notationMode", options.notationMode);
-  url.searchParams.set("restLayout", options.restLayout);
-  url.searchParams.delete("focusId");
-  options.selectedFocusIds.forEach((focusId) => {
-    url.searchParams.append("focusId", focusId);
-  });
-  return `${url.pathname}${url.search}`;
-}
-
 export default function SavedWorkoutsPanel({
   workouts,
   description,
@@ -192,13 +163,6 @@ export default function SavedWorkoutsPanel({
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false);
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
   const [selectedWorkoutIds, setSelectedWorkoutIds] = useState<string[]>([]);
-  const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
-  const [poolsidePrintLayout, setPoolsidePrintLayout] =
-    useState<WorkoutPoolsidePrintLayout>("portrait");
-  const [poolsideNotationMode, setPoolsideNotationMode] =
-    useState<WorkoutPoolsideNotationMode>("auto");
-  const [poolsideRestLayout, setPoolsideRestLayout] =
-    useState<WorkoutPoolsideRestLayout>("auto");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     trainingFocusOptions.map((focus) => focus.id)
   );
@@ -410,12 +374,8 @@ export default function SavedWorkoutsPanel({
                 : `${workout.totalDistanceM}m`
               : null;
             const workoutPoolsidePreviewHref = workoutPoolsidePdfHref
-              ? buildPoolsidePreviewHref(workoutPoolsidePdfHref, {
+              ? buildWorkoutPoolsidePreviewHref(workoutPoolsidePdfHref, {
                   selectedFocusIds: selectedPoolsideFocusIds,
-                  printStyle: poolsidePrintStyle,
-                  printLayout: poolsidePrintLayout,
-                  notationMode: poolsideNotationMode,
-                  restLayout: poolsideRestLayout,
                 })
               : null;
 
@@ -575,14 +535,6 @@ export default function SavedWorkoutsPanel({
                           : [...current, focusId]
                       )
                     }
-                    printStyle={poolsidePrintStyle}
-                    onPrintStyleChange={setPoolsidePrintStyle}
-                    printLayout={poolsidePrintLayout}
-                    onPrintLayoutChange={setPoolsidePrintLayout}
-                    notationMode={poolsideNotationMode}
-                    onNotationModeChange={setPoolsideNotationMode}
-                    restLayout={poolsideRestLayout}
-                    onRestLayoutChange={setPoolsideRestLayout}
                     actionSlot={
                       <Link
                         href={workoutPoolsidePreviewHref}

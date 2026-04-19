@@ -72,22 +72,23 @@ import {
   buildWorkoutStepDurationOutputSummary,
   buildWorkoutPdfFileName,
   buildWorkoutPdfHtmlDocument,
-  getDefaultWorkoutPoolsideFocusIds,
   buildWorkoutGarminReadyExport,
   buildWorkoutGarminReadyExportFileName,
   buildWorkoutGarminReadinessReport,
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
+  getDefaultWorkoutPoolsideFocusIds,
   selectWorkoutPoolsideFocusPoints,
   type WorkoutEditorRecord,
   type WorkoutHandoffDraftState,
   type WorkoutPoolsideFocusOption,
-  type WorkoutPoolsideNotationMode,
-  type WorkoutPoolsideRestLayout,
-  type WorkoutPoolsidePrintLayout,
-  type WorkoutPoolsidePrintStyle,
   type WorkoutSummary,
 } from "@/lib/workouts/shared";
+import {
+  buildWorkoutPoolsidePreviewHref,
+  createWorkoutPoolsidePreviewId,
+  writeStoredWorkoutPoolsidePreviewDraft,
+} from "@/lib/workouts/poolside-preview";
 
 type Props = {
   draft: SessionDraft;
@@ -1677,12 +1678,6 @@ export default function WorkoutEditor({
   );
   const [builderViewMode, setBuilderViewMode] =
     useState<(typeof WORKOUT_VIEW_MODES)[number]>("edit");
-  const [poolsidePrintStyle, setPoolsidePrintStyle] = useState<WorkoutPoolsidePrintStyle>("color");
-  const [poolsidePrintLayout, setPoolsidePrintLayout] =
-    useState<WorkoutPoolsidePrintLayout>("portrait");
-  const [poolsideNotationMode, setPoolsideNotationMode] =
-    useState<WorkoutPoolsideNotationMode>("auto");
-  const [poolsideRestLayout, setPoolsideRestLayout] = useState<WorkoutPoolsideRestLayout>("auto");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions)
   );
@@ -2135,10 +2130,6 @@ export default function WorkoutEditor({
   useEffect(() => {
     setMetadataOpen(forceMetadataOpenOnLoad || !metadataStartsCollapsed);
     setBuilderViewMode("edit");
-    setPoolsidePrintStyle("color");
-    setPoolsidePrintLayout("portrait");
-    setPoolsideNotationMode("auto");
-    setPoolsideRestLayout("auto");
     setSelectedPoolsideFocusIds(parseSignatureValues(defaultPoolsideFocusIdSignature));
   }, [
     copyVariant,
@@ -2170,10 +2161,6 @@ export default function WorkoutEditor({
     handoffDraftState,
     savedWorkoutId,
     savedWorkout?.updatedAt,
-    poolsidePrintStyle,
-    poolsidePrintLayout,
-    poolsideNotationMode,
-    poolsideRestLayout,
     selectedPoolsideFocusSignature,
     swimmerName,
   ]);
@@ -3144,29 +3131,30 @@ export default function WorkoutEditor({
         throw new Error("Window unavailable.");
       }
 
-      const html =
-        variant === "poolside"
-          ? buildWorkoutPdfHtmlDocument(draft, {
-              draftState: handoffDraftState,
-              variant: "poolside",
-              focusPoints: selectedPoolsideFocusPoints,
-              poolsidePrintStyle,
-              poolsidePrintLayout,
-              poolsideNotationMode,
-              poolsideRestLayout,
-              swimmerName,
-              logoUrl: new URL(
-                getWorkoutPdfLogoPath({
-                  variant: "poolside",
-                  poolsidePrintStyle,
-                }),
-                window.location.origin
-              ).toString(),
-              fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, window.location.origin).toString(),
-            })
-          : workoutPdfHtml;
-      const fileName = variant === "poolside" ? workoutPoolsidePdfFileName : workoutPdfFileName;
-      const variantLabel = variant === "poolside" ? "Print Preview" : "PDF";
+      if (variant === "poolside") {
+        const previewId = createWorkoutPoolsidePreviewId();
+        writeStoredWorkoutPoolsidePreviewDraft(previewId, {
+          draft,
+          draftState: handoffDraftState,
+          focusPoints: selectedPoolsideFocusPoints,
+          swimmerName: swimmerName ?? null,
+        });
+        const previewHref = buildWorkoutPoolsidePreviewHref(
+          `/my-library/workouts/poolside-preview?previewId=${encodeURIComponent(previewId)}`
+        );
+        const previewWindow = window.open(previewHref, "_blank", "noopener,noreferrer");
+
+        if (!previewWindow) {
+          throw new Error("Popup blocked.");
+        }
+
+        previewWindow.focus?.();
+        setWorkoutPdfNotice(
+          `Opened Print Preview for ${workoutPoolsidePdfFileName}. Finish layout and print settings in that tab.`
+        );
+        return;
+      }
+
       const printWindow = window.open("", "_blank");
 
       if (!printWindow?.document) {
@@ -3174,11 +3162,11 @@ export default function WorkoutEditor({
       }
 
       printWindow.document.open();
-      printWindow.document.write(html);
+      printWindow.document.write(workoutPdfHtml);
       printWindow.document.close();
       printWindow.focus?.();
       setWorkoutPdfNotice(
-        `Opened ${variantLabel} for ${fileName}. Use Print / Save PDF in that tab.`
+        `Opened PDF for ${workoutPdfFileName}. Use Print / Save PDF in that tab.`
       );
     } catch {
       setWorkoutPdfError(
@@ -5017,14 +5005,6 @@ export default function WorkoutEditor({
       focusOptions={trainingFocusOptions}
       selectedFocusIds={selectedPoolsideFocusIds}
       onToggleFocus={togglePoolsideFocusSelection}
-      printStyle={poolsidePrintStyle}
-      onPrintStyleChange={setPoolsidePrintStyle}
-      printLayout={poolsidePrintLayout}
-      onPrintLayoutChange={setPoolsidePrintLayout}
-      notationMode={poolsideNotationMode}
-      onNotationModeChange={setPoolsideNotationMode}
-      restLayout={poolsideRestLayout}
-      onRestLayoutChange={setPoolsideRestLayout}
       actionSlot={
         <button
           type="button"
