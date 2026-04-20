@@ -5,12 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { BRAND_FONT_PUBLIC_PATH, getWorkoutPdfLogoPath } from "@/lib/brand";
 import {
   applyWorkoutPoolsidePreviewSettings,
+  buildWorkoutPoolsideImageFileName,
   buildWorkoutPoolsidePrintFrameHref,
   normalizeWorkoutPoolsidePreviewSettings,
   readStoredWorkoutPoolsidePreviewDraft,
   type StoredWorkoutPoolsidePreviewDraft,
   type WorkoutPoolsidePreviewSettings,
 } from "@/lib/workouts/poolside-preview";
+import { getWorkoutPoolsideImageExportDriver } from "@/lib/workouts/poolside-image-export-client";
 import { buildWorkoutPdfHtmlDocument } from "@/lib/workouts/shared";
 
 const CSS_PIXELS_PER_MM = 96 / 25.4;
@@ -37,6 +39,11 @@ function arePreviewSettingsEqual(
     left.notationMode === right.notationMode &&
     left.restLayout === right.restLayout
   );
+}
+
+function isShareCancelled(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /abort|cancel/i.test(message);
 }
 
 export default function PoolsidePreviewPageClient() {
@@ -70,6 +77,9 @@ export default function PoolsidePreviewPageClient() {
   const [embeddedPreviewViewportWidth, setEmbeddedPreviewViewportWidth] = useState(() =>
     getEmbeddedPreviewFallbackWidth(settings.printLayout)
   );
+  const [saveImagePending, setSaveImagePending] = useState(false);
+  const [saveImageError, setSaveImageError] = useState("");
+  const [saveImageNotice, setSaveImageNotice] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(searchSignature);
@@ -79,7 +89,6 @@ export default function PoolsidePreviewPageClient() {
       notationMode: params.get("notationMode"),
       restLayout: params.get("restLayout"),
     });
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- URL changes are the external source of truth for preview settings.
     setSettings((current) =>
       arePreviewSettingsEqual(current, nextSettings) ? current : nextSettings
     );
@@ -98,7 +107,6 @@ export default function PoolsidePreviewPageClient() {
 
   useEffect(() => {
     if (!previewSource.previewId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing preview draft when the external preview id disappears is an effect sync.
       setLocalPreviewDraft(undefined);
       return;
     }
@@ -106,7 +114,6 @@ export default function PoolsidePreviewPageClient() {
   }, [previewSource.previewId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset embedded width fallback when layout mode changes before iframe metrics arrive.
     setEmbeddedPreviewViewportWidth(getEmbeddedPreviewFallbackWidth(settings.printLayout));
   }, [settings.printLayout]);
 
@@ -281,6 +288,95 @@ export default function PoolsidePreviewPageClient() {
     frameWindow.setTimeout(measure, 160);
   }
 
+  async function resolvePreviewNoteForExport() {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const frameDocument = iframeRef.current?.contentWindow?.document ?? null;
+      const noteElement =
+        frameDocument?.querySelector<HTMLElement>('[data-testid="workout-pdf-print-view"]') ?? null;
+
+      if (frameDocument && noteElement) {
+        return { frameDocument, noteElement };
+      }
+
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 80);
+      });
+    }
+
+    throw new Error("Poolside note is not ready to export yet. Try again.");
+  }
+
+  function triggerImageDownload(file: File) {
+    const objectUrl = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = file.name;
+    anchor.rel = "noopener";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  }
+
+  function shouldPreferNativeShare() {
+    return typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
+  }
+
+  async function handleSaveImage() {
+    if (previewUnavailable || saveImagePending) {
+      return;
+    }
+
+    setSaveImagePending(true);
+    setSaveImageError("");
+    setSaveImageNotice("");
+
+    try {
+      const { frameDocument, noteElement } = await resolvePreviewNoteForExport();
+      const noteTitle =
+        frameDocument
+          .querySelector<HTMLElement>('[data-testid="workout-pdf-title"]')
+          ?.textContent?.trim() ||
+        localPreviewDraft?.draft.title?.trim() ||
+        "Poolside note";
+      const fileName = buildWorkoutPoolsideImageFileName({
+        title: noteTitle,
+        printLayout: settings.printLayout,
+      });
+      const blob = await getWorkoutPoolsideImageExportDriver().captureNoteBlob(noteElement);
+      const imageFile = new File([blob], fileName, { type: "image/png" });
+      const shareApi = navigator.share;
+      const canShareFile =
+        typeof navigator.canShare === "function" && navigator.canShare({ files: [imageFile] });
+
+      if (shouldPreferNativeShare() && typeof shareApi === "function" && canShareFile) {
+        try {
+          await shareApi({
+            files: [imageFile],
+            title: noteTitle,
+          });
+          setSaveImageNotice("Image ready to share.");
+          return;
+        } catch (error) {
+          if (isShareCancelled(error)) {
+            return;
+          }
+        }
+      }
+
+      triggerImageDownload(imageFile);
+      setSaveImageNotice(`Saved ${fileName}.`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not save the poolside note image right now.";
+      setSaveImageError(message);
+    } finally {
+      setSaveImagePending(false);
+    }
+  }
+
   const embeddedPreviewScale =
     previewViewportWidth > 0
       ? Math.min(
@@ -326,6 +422,15 @@ export default function PoolsidePreviewPageClient() {
                 </button>
                 <button
                   type="button"
+                  onClick={handleSaveImage}
+                  disabled={previewUnavailable || saveImagePending}
+                  data-testid="poolside-preview-save-image"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saveImagePending ? "Preparing image..." : "Save image"}
+                </button>
+                <button
+                  type="button"
                   onClick={handleClose}
                   data-testid="poolside-preview-close"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
@@ -334,6 +439,24 @@ export default function PoolsidePreviewPageClient() {
                 </button>
               </div>
             </div>
+            {saveImageNotice ? (
+              <p
+                role="status"
+                data-testid="poolside-preview-save-image-notice"
+                className="mt-3 text-sm text-blue-800"
+              >
+                {saveImageNotice}
+              </p>
+            ) : null}
+            {saveImageError ? (
+              <p
+                role="alert"
+                data-testid="poolside-preview-save-image-error"
+                className="mt-3 text-sm text-rose-700"
+              >
+                {saveImageError}
+              </p>
+            ) : null}
 
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <label className="grid gap-2" htmlFor="poolside-preview-style">

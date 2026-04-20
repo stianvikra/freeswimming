@@ -38,6 +38,14 @@ export const DEFAULT_WORKOUT_POOLSIDE_PREVIEW_SETTINGS: WorkoutPoolsidePreviewSe
   restLayout: "auto",
 };
 
+function slugifyPoolsideFilePart(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function isBrowser() {
   return typeof window !== "undefined";
 }
@@ -145,6 +153,19 @@ export function buildWorkoutPoolsidePrintFrameHref(
   }
 
   return `${url.pathname}${url.search}`;
+}
+
+export function buildWorkoutPoolsideImageFileName(params: {
+  title?: string | null;
+  printLayout: WorkoutPoolsidePreviewSettings["printLayout"];
+}) {
+  const normalizedTitle = params.title?.trim().length ? params.title.trim() : "poolside-note";
+  const slug = slugifyPoolsideFilePart(normalizedTitle) || "poolside-note";
+  if (slug === "poolside-note") {
+    return `freeswimming-poolside-note-${params.printLayout}.png`;
+  }
+
+  return `freeswimming-${slug}-poolside-note-${params.printLayout}.png`;
 }
 
 export function writeStoredWorkoutPoolsidePreviewDraft(
