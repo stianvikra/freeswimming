@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-20-poolside-note-save-as-image-export-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-20`
 - `updated`: `2026-04-20`
@@ -240,6 +240,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-20 | merged + closeout | PR #485 merged to \`main\` as squash commit \`2069336\`; poolside note preview now exports PNG images from the current preview state across saved-workout and local-draft entry paths, local \`npm run verify:pre-merge\` passed, required GitHub checks were green, and this docs-only follow-up moved the brief from \`in-progress\` to \`done\` so lifecycle state matches shipped reality | next: none`
 - `2026-04-20 | pre-pr gate green | owner approved the save-image screenshots/export artifacts, embedded canonical preview assets were normalized to relative paths for image-capture parity, targeted unit + Playwright coverage passed, and \`npm run verify:pre-pr\` finished green after confirming two unrelated desktop-chromium flakes as environment/backend noise rather than save-image regressions | next: stage only the scoped source/test/brief files, commit, push, open/update the PR, monitor CI, and run \`npm run verify:pre-merge\` before merge recommendation`
 - `2026-04-20 | implementation + artifact checkpoint | wired preview-owned PNG export into the poolside preview, added focused unit coverage for filename/export state, added a desktop Playwright export path, and generated local approval artifacts in \`output/playwright/poolside-save-image-export/\`; targeted \`vitest\` and \`typecheck\` passed, while the dedicated Playwright spec currently skips its auth/schema branch in this local environment and is documented as an environment-limited signal rather than a product failure | next: owner review of the generated screenshots/export artifact, then \`npm run lint:briefs\` + \`npm run verify:pre-pr\` before PR update`
 - `2026-04-20 | implementation start | created a clean implementation worktree from \`origin/main\`, moved the save-as-image export brief into \`in-progress\`, and started the narrow poolside PNG-export slice scoped to the existing preview renderer plus transient client-side export state | next: wire the export path, add focused coverage, and produce before/after/export artifacts for owner approval before \`verify:pre-pr\``
