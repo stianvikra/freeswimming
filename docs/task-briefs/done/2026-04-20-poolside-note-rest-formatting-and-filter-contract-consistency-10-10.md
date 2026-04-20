@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-20-poolside-note-rest-formatting-and-filter-contract-consistency-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-20`
 - `updated`: `2026-04-20`
@@ -265,6 +265,7 @@ Strict `10/10` mode for this brief:
 
 ## Checkpoint Log
 
+- `2026-04-20 | merged + closeout | PR #483 merged to \`main\` as squash commit \`2859da7\`; the deterministic poolside rest-formatting contract is live, local \`npm run verify:pre-merge\` passed with \`103 passed\` / \`335 skipped\`, required GitHub checks were green, and this docs-only follow-up moved the brief from \`in-progress\` to \`done\` so lifecycle state matches shipped reality | next: none`
 - `2026-04-20 | verify-pre-pr-pass | \`npm run verify:pre-pr\` passed after clearing generated local \`.next-\*\` artifacts from the working tree; validation covered lint, typecheck, 818 unit tests, production build, perf budgets, and the shared Playwright matrix (103 passed / 335 skipped) | perf-trend follow-up: hold tightening in this brief and carry the recommendation in PR summary because this slice is a rendering-contract fix, not a performance-budget retune`
 - `2026-04-20 | screenshot-ready | updated the renderer contract to match the owner-approved UX: \`Auto\` is adaptive per row, explicit modes are labeled \`All inline\` and \`All separate line\`, and rest accents stay blue across all modes; refreshed before/after screenshots, plus explicit inline/separate-line desktop captures, under \`output/playwright/2026-04-20-poolside-rest-contract/\` | validation: targeted vitest pass, typecheck pass, brief-lint pass | next: owner screenshot approval before \`verify:pre-pr\``
 - `2026-04-20 | implementation-adjustment | owner corrected the final UX contract after screenshot review: explicit labels should read \`All inline\` and \`All separate line\`, while \`Auto\` must stay adaptive per row instead of resolving note-wide; next step is to update renderer logic, tests, and after-screenshots before any PR gate`
