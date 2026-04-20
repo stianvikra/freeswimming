@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  buildWorkoutPoolsideImageFileName,
   buildWorkoutPoolsidePreviewHref,
   buildWorkoutPoolsidePrintFrameHref,
   readStoredWorkoutPoolsidePreviewDraft,
@@ -104,5 +105,23 @@ describe("workout poolside preview helpers", () => {
       focusPoints: ["High elbow catch"],
       swimmerName: "Stian Vikra",
     });
+  });
+
+  it("builds a predictable poolside image filename from title and layout", () => {
+    expect(
+      buildWorkoutPoolsideImageFileName({
+        title: "S2 - Easy Base Session",
+        printLayout: "landscape",
+      })
+    ).toBe("freeswimming-s2-easy-base-session-poolside-note-landscape.png");
+  });
+
+  it("falls back to a generic poolside image filename when title is empty", () => {
+    expect(
+      buildWorkoutPoolsideImageFileName({
+        title: "   ",
+        printLayout: "portrait",
+      })
+    ).toBe("freeswimming-poolside-note-portrait.png");
   });
 });

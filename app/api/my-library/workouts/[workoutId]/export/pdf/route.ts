@@ -67,6 +67,7 @@ export async function GET(request: Request, context: RouteContext) {
   const previewChrome = normalizeWorkoutPdfPreviewChrome(
     requestUrl.searchParams.get("previewChrome")
   );
+  const useRelativeAssetUrls = previewChrome === "embedded";
   const { workoutId } = await context.params;
   if (!UUID_PATTERN.test(workoutId)) {
     return noStoreText("Invalid workout id.", 400);
@@ -126,6 +127,14 @@ export async function GET(request: Request, context: RouteContext) {
       : focusOptions.map((focus) =>
           focus.description ? `${focus.title}: ${focus.description}` : focus.title
         );
+  const logoPath = getWorkoutPdfLogoPath({
+    variant: pdfVariant,
+    poolsidePrintStyle,
+  });
+  const logoUrl = useRelativeAssetUrls ? logoPath : new URL(logoPath, requestUrl).toString();
+  const fontUrl = useRelativeAssetUrls
+    ? BRAND_FONT_PUBLIC_PATH
+    : new URL(BRAND_FONT_PUBLIC_PATH, requestUrl).toString();
 
   return applySupabaseCookies(
     noStoreHtml(
@@ -138,14 +147,8 @@ export async function GET(request: Request, context: RouteContext) {
         poolsideNotationMode,
         poolsideRestLayout,
         swimmerName: athleteProfileSnapshot?.profile?.primaryName ?? null,
-        logoUrl: new URL(
-          getWorkoutPdfLogoPath({
-            variant: pdfVariant,
-            poolsidePrintStyle,
-          }),
-          requestUrl
-        ).toString(),
-        fontUrl: new URL(BRAND_FONT_PUBLIC_PATH, requestUrl).toString(),
+        logoUrl,
+        fontUrl,
         previewChrome,
       })
     )
