@@ -325,7 +325,7 @@ test.describe("my library generator intake", () => {
       has: page.getByText(uniqueTitle, { exact: true }),
     });
     await expect(targetWorkoutCard).toBeVisible();
-    const openWorkoutLink = targetWorkoutCard.getByRole("link", { name: "Edit" });
+    const openWorkoutLink = targetWorkoutCard.getByRole("link", { name: "Open" });
     await expect(openWorkoutLink).toBeVisible();
     const workoutHref = await openWorkoutLink.getAttribute("href");
     expect(workoutHref).toBeTruthy();

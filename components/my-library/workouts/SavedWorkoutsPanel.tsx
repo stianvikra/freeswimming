@@ -132,7 +132,7 @@ export default function SavedWorkoutsPanel({
   collapsedByDefault = true,
   testId = "session-generator-recent-workouts",
   heading = "My Swim Sessions",
-  editLabel = "Edit",
+  editLabel = "Open",
   editButtonTestIdBuilder = (workoutId) => `saved-workouts-edit-${workoutId}`,
   deleteButtonTestIdBuilder = (workoutId) => `saved-workouts-delete-${workoutId}`,
   confirmDeleteButtonTestIdBuilder = (workoutId) => `saved-workouts-confirm-delete-${workoutId}`,
@@ -237,6 +237,14 @@ export default function SavedWorkoutsPanel({
   const selectedWorkouts = workouts.filter((workout) => selectedWorkoutIds.includes(workout.id));
   const showBulkToolbar = enableBulkDelete && typeof onConfirmDeleteWorkouts === "function";
 
+  function toggleWorkoutSelection(workoutId: string) {
+    setSelectedWorkoutIds((current) =>
+      current.includes(workoutId)
+        ? current.filter((selectedWorkoutId) => selectedWorkoutId !== workoutId)
+        : [...current, workoutId]
+    );
+  }
+
   return (
     <div data-testid={testId} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
       {showHeader ? (
@@ -268,11 +276,9 @@ export default function SavedWorkoutsPanel({
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/80 bg-white px-3 py-3">
               <div>
                 <p className="text-sm font-semibold text-slate-900">Library cleanup</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  {bulkSelectionMode
-                    ? `${selectedWorkoutIds.length} selected`
-                    : "Use selection mode when you want to delete multiple saved sessions at once."}
-                </p>
+                {bulkSelectionMode ? (
+                  <p className="mt-1 text-sm text-slate-600">{selectedWorkoutIds.length} selected</p>
+                ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {!bulkSelectionMode ? (
@@ -378,34 +384,43 @@ export default function SavedWorkoutsPanel({
                   selectedFocusIds: selectedPoolsideFocusIds,
                 })
               : null;
+            const cardClasses = bulkSelectionMode
+              ? isSelected
+                ? "border-blue-200 bg-blue-50/80 ring-1 ring-blue-200"
+                : "border-slate-200 bg-white"
+              : "border-white/80 bg-white";
 
             return (
               <div
                 key={workout.id}
                 data-testid={`saved-workout-card-${workout.id}`}
-                className="rounded-2xl border border-white/80 bg-white p-3"
+                data-selected={bulkSelectionMode ? String(isSelected) : undefined}
+                className={`rounded-2xl border p-3 transition ${cardClasses}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {bulkSelectionMode ? (
+                    {bulkSelectionMode ? (
+                      <label
+                        data-testid={`saved-workout-selection-hit-area-${workout.id}`}
+                        className={`flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-xl px-2 py-2 transition ${
+                          isSelected ? "bg-white/80" : "hover:bg-slate-50"
+                        }`}
+                      >
                         <input
                           type="checkbox"
                           aria-label={`Select ${workout.title}`}
                           checked={isSelected}
-                          onChange={() =>
-                            setSelectedWorkoutIds((current) =>
-                              current.includes(workout.id)
-                                ? current.filter((workoutId) => workoutId !== workout.id)
-                                : [...current, workout.id]
-                            )
-                          }
+                          onChange={() => toggleWorkoutSelection(workout.id)}
                           data-testid={`saved-workout-select-${workout.id}`}
                           className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
                         />
-                      ) : null}
+                        <span className="min-w-0 text-sm font-semibold text-slate-900">
+                          {workout.title}
+                        </span>
+                      </label>
+                    ) : (
                       <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
-                    </div>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {showInlinePreview &&

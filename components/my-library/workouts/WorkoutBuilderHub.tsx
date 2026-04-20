@@ -588,7 +588,7 @@ export default function WorkoutBuilderHub({
               workoutPoolsidePdfHrefBuilder={(workoutId) =>
                 `/my-library/workouts/poolside-preview?workoutId=${workoutId}`
               }
-              editLabel="Edit"
+              editLabel="Open"
               testId="workout-builder-saved-sessions"
               showToggle={false}
               showInlinePreview
