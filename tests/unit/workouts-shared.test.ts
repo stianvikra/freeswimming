@@ -1674,8 +1674,8 @@ describe("workouts shared readiness", () => {
     expect(sections[3]?.rows[0]?.text).toContain("25m · Freestyle · Kick · Kickboard · Easy");
   });
 
-  it("supports auto notation fallback plus manual poolside overrides", () => {
-    const longLineDraft: SessionDraft = {
+  it("keeps explicit inline rests accented without merging them into the primary line text", () => {
+    const inlineDraft: SessionDraft = {
       ...buildDraft(),
       steps: [
         {
@@ -1726,27 +1726,153 @@ describe("workouts shared readiness", () => {
       ],
     };
 
-    const autoHtml = buildWorkoutPdfHtmlDocument(longLineDraft, {
+    const inlineModel = buildWorkoutPdfModel(inlineDraft, {
       draftState: "canonical",
       variant: "poolside",
-      poolsideNotationMode: "auto",
+      poolsideNotationMode: "abbreviated",
+      poolsideRestLayout: "inline",
+    });
+    const inlineHtml = buildWorkoutPdfHtmlDocument(inlineDraft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "abbreviated",
+      poolsideRestLayout: "inline",
+    });
+
+    expect(inlineModel.poolsideResolvedRestLayout).toBe("inline");
+    expect(inlineModel.poolsideLineItems[0]).toMatchObject({
+      text: "16 x 25m · Free · K · KB · Easy",
+      secondaryText: "IR 0:10 · SR 0:30",
+      secondaryPlacement: "inline",
+    });
+    expect(readPoolsideDataAttribute(inlineHtml, "data-poolside-rest-layout")).toBe("inline");
+    expect(readPoolsideDataAttribute(inlineHtml, "data-poolside-resolved-rest-layout")).toBe(
+      "inline"
+    );
+    expect(inlineHtml).toContain("poolside-line-secondary-inline");
+    expect(inlineHtml).toContain('data-secondary-placement="inline"');
+    expect(inlineHtml).toContain("IR 0:10 · SR 0:30");
+  });
+
+  it("keeps auto rest placement adaptive per row while explicit modes stay global", () => {
+    const mixedLengthDraft: SessionDraft = {
+      ...buildDraft(),
+      steps: [
+        {
+          id: "step-1",
+          category: "warmup",
+          name: "Warmup swim",
+          stroke: "freestyle",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 400,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Warmup rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-3",
+          category: "main",
+          name: "Long repeat swim",
+          stroke: "freestyle",
+          drillType: "kick",
+          equipment: "kickboard",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 25,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 16,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-4",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.17,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 16,
+          repeatEndingRestMode: "use_last_rest",
+        },
+        {
+          id: "step-5",
+          category: "rest",
+          name: "Post set rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+          postSetRestForRepeatGroupId: "repeat-1",
+        },
+      ],
+    };
+
+    const autoModel = buildWorkoutPdfModel(mixedLengthDraft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "full",
       poolsideRestLayout: "auto",
     });
-    const fullBelowHtml = buildWorkoutPdfHtmlDocument(longLineDraft, {
+    const autoHtml = buildWorkoutPdfHtmlDocument(mixedLengthDraft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideNotationMode: "full",
+      poolsideRestLayout: "auto",
+    });
+    const fullBelowHtml = buildWorkoutPdfHtmlDocument(mixedLengthDraft, {
       draftState: "canonical",
       variant: "poolside",
       poolsideNotationMode: "full",
       poolsideRestLayout: "below_step",
     });
 
-    expect(autoHtml).toContain('data-poolside-notation-mode="auto"');
-    expect(autoHtml).toContain('data-poolside-rest-layout="auto"');
-    expect(autoHtml).toContain("16 x 25m · Free · K · KB · Easy · IR 0:10 · SR 0:30");
-    expect(fullBelowHtml).toContain('data-poolside-notation-mode="full"');
-    expect(fullBelowHtml).toContain('data-poolside-rest-layout="below_step"');
-    expect(fullBelowHtml).toContain("16 x 25m · Freestyle · Kick · Kickboard · Easy");
-    expect(fullBelowHtml).toContain("Interval rest 0:10 · Set rest 0:30");
-    expect(fullBelowHtml).toContain("poolside-line-secondary-text");
+    expect(autoModel.poolsideResolvedRestLayout).toBe("auto");
+    expect(autoModel.poolsideLineItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          text: "400m · Freestyle · Easy",
+          secondaryText: "Rest 0:30",
+          secondaryPlacement: "inline",
+        }),
+        expect.objectContaining({
+          text: "16 x 25m · Freestyle · Kick · Kickboard · Easy",
+          secondaryText: "Interval rest 0:10 · Set rest 0:30",
+          secondaryPlacement: "below_step",
+        }),
+      ])
+    );
+    expect(readPoolsideDataAttribute(autoHtml, "data-poolside-rest-layout")).toBe("auto");
+    expect(readPoolsideDataAttribute(autoHtml, "data-poolside-resolved-rest-layout")).toBe("auto");
+    expect(autoHtml).toContain('data-secondary-placement="below_step"');
+    expect(autoHtml).toContain('data-secondary-placement="inline"');
+    expect(autoHtml).toContain("400m · Freestyle · Easy");
+    expect(autoHtml).toContain("Rest 0:30");
+    expect(autoHtml).toContain("16 x 25m · Freestyle · Kick · Kickboard · Easy");
+    expect(autoHtml).toContain("Interval rest 0:10 · Set rest 0:30");
+    expect(fullBelowHtml).toContain("poolside-line-secondary-below_step");
   });
 
   it("prefers the primary poolside focus by default and resolves titles from explicit ids", () => {

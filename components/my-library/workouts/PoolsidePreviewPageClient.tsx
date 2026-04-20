@@ -417,8 +417,8 @@ export default function PoolsidePreviewPageClient() {
                   className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="auto">Auto</option>
-                  <option value="inline">Inline</option>
-                  <option value="below_step">Separate line</option>
+                  <option value="inline">All inline</option>
+                  <option value="below_step">All separate line</option>
                 </select>
               </label>
             </div>
