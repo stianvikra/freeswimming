@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-20-my-swim-sessions-selection-and-action-label-ergonomics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-20`
 - `updated`: `2026-04-20`
@@ -201,6 +201,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-20 | closeout on main | PR #488 was merged to main as \`bdf5d2b8d6ad6c60fd9e885eee73cc21e56b4db6\`; this closeout sweep moved the brief to \`done\` and cleaned the main-worktree-generated artifacts used during merge/review work | next: none`
 - `2026-04-20 | verify:pre-pr passed | full public verification lane passed after syncing the local dependency/runtime environment for this clean worktree; screenshot review was approved before gates, and the branch is ready for commit/push/PR handoff | next: commit, push, open/update PR, then run \`verify:pre-merge\` and monitor CI`
 - `2026-04-20 | implementation checkpoint | shipped the saved-sessions ergonomics diff on the feature branch: row action text now reads \`Open\`, selection mode uses a larger left-side hit area with full-row selected state, default cleanup helper copy is removed, and targeted unit + Playwright coverage passed; after screenshots are ready for owner review before \`verify:pre-pr\` | next: owner screenshot approval or correction pass, then run \`npm run verify:pre-pr\``
 - `2026-04-20 | implementation start | added the brief directly on the feature branch because it was not yet present on \`main\`, and started the narrow saved-sessions ergonomics slice scoped to label truthfulness, larger selection hit area, and helper-copy cleanup | next: implement the panel contract, update targeted unit/e2e coverage, and generate after screenshots for owner approval before \`verify:pre-pr\``
