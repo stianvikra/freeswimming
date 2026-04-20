@@ -310,8 +310,26 @@ test.describe("my library workout builder", () => {
     await gotoWithTransientRetry(page, "/my-library/workouts");
     await waitForWorkoutBuilderClientReady(page);
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
-    await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toBeVisible();
-    await expect(page.getByTestId(`saved-workout-card-${workoutId}`)).toContainText(uniqueTitle);
+    const savedWorkoutCard = page.getByTestId(`saved-workout-card-${workoutId}`);
+    await expect(savedWorkoutCard).toBeVisible();
+    await expect(savedWorkoutCard).toContainText(uniqueTitle);
+    await expect(savedWorkoutCard.getByRole("link", { name: "Open" })).toBeVisible();
+    await expect(
+      page.getByText("Use selection mode when you want to delete multiple saved sessions at once.")
+    ).toHaveCount(0);
+
+    await page.getByTestId("workout-builder-saved-sessions-bulk-select-toggle").click();
+    const selectionHitArea = page.getByTestId(`saved-workout-selection-hit-area-${workoutId}`);
+    const selectionCheckbox = page.getByTestId(`saved-workout-select-${workoutId}`);
+    await selectionHitArea.click();
+    await expect(selectionCheckbox).toBeChecked();
+    await expect(savedWorkoutCard).toHaveAttribute("data-selected", "true");
+    await savedWorkoutCard.getByTestId(`saved-workouts-view-${workoutId}`).click();
+    await expect(selectionCheckbox).toBeChecked();
+    await expect(page.getByText("1 selected")).toBeVisible();
+    await page.getByTestId("workout-builder-saved-sessions-bulk-cancel").click();
+    await expect(selectionCheckbox).toHaveCount(0);
+
     const savedWorkoutPreview = await openSavedWorkoutPreview(page, workoutId);
     await expect(savedWorkoutPreview).toContainText("Total");
   });

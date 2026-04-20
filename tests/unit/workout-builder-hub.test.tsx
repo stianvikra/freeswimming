@@ -3072,12 +3072,31 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.queryByTestId("workout-builder-saved-sessions-load-more")
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Use selection mode when you want to delete multiple saved sessions at once.")
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("saved-workout-card-workout-1")).getByRole("link", { name: "Open" })
+    ).toBeVisible();
 
     fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-select-toggle"));
     expect(screen.queryByText("Select session")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Select Threshold follow-up")).toBeVisible();
-    fireEvent.click(screen.getByTestId("saved-workout-select-workout-2"));
-    fireEvent.click(screen.getByTestId("saved-workout-select-workout-4"));
+    fireEvent.click(screen.getByTestId("saved-workout-selection-hit-area-workout-2"));
+    fireEvent.click(screen.getByTestId("saved-workout-selection-hit-area-workout-4"));
+    expect(screen.getByTestId("saved-workout-select-workout-2")).toBeChecked();
+    expect(screen.getByTestId("saved-workout-select-workout-4")).toBeChecked();
+    expect(screen.getByTestId("saved-workout-card-workout-2")).toHaveAttribute("data-selected", "true");
+    expect(screen.getByText("2 selected")).toBeVisible();
+
+    fireEvent.click(
+      within(screen.getByTestId("saved-workout-card-workout-2")).getByTestId(
+        "saved-workouts-view-workout-2"
+      )
+    );
+    expect(screen.getByTestId("saved-workout-select-workout-2")).toBeChecked();
+    expect(screen.getByText("2 selected")).toBeVisible();
+
     expect(screen.getByText("Delete selected sessions")).toBeVisible();
     fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-delete"));
 
