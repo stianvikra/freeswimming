@@ -122,9 +122,11 @@ This file defines how coding agents should collaborate in this repository.
   6. run `npm run verify:pre-merge` and summarize merge readiness.
 - For visual work, this screenshot approval stop overrides the normal automation-first flow. Assistant should not continue into `verify:pre-pr`, PR creation, or `verify:pre-merge` until the owner has approved the screenshot handoff or explicitly waived that review.
 - Handoff must include:
+  - an absolute filesystem folder link to the full-resolution screenshot artifacts,
   - `2-4` representative screenshots from the changed surface,
   - one short explanation per screenshot describing what changed and what the owner should verify,
   - explicit note of any known visual caveat or remaining judgment call.
+- Chat-embedded screenshot previews are secondary only; owner review should be possible from the linked artifact folder without relying on compressed chat thumbnails.
 - Screenshot filenames must make the comparison type explicit:
   - use `before-<surface>-<viewport>.*` and `after-<surface>-<viewport>.*` when the same surface is shown before and after,
   - use `after-<changed-surface>-<viewport>.*` and `reference-<comparison-surface>-<viewport>.*` when the handoff is comparing the changed surface to a separate reference surface instead of a true before-state,

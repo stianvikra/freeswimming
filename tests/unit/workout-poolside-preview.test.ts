@@ -74,6 +74,8 @@ describe("workout poolside preview helpers", () => {
     expect(href).toContain("printLayout=portrait");
     expect(href).toContain("notationMode=auto");
     expect(href).toContain("restLayout=auto");
+    expect(href).toContain("sessionNoteMode=off");
+    expect(href).toContain("stepNotesMode=off");
   });
 
   it("builds an embedded canonical frame href for the preview surface", () => {
@@ -84,11 +86,13 @@ describe("workout poolside preview helpers", () => {
         printLayout: "landscape",
         notationMode: "abbreviated",
         restLayout: "below_step",
+        sessionNoteMode: "include",
+        stepNotesMode: "drills_only",
       },
     });
 
     expect(href).toBe(
-      "/api/my-library/workouts/workout-1/export/pdf?variant=poolside&previewChrome=embedded&printStyle=ink_saver&printLayout=landscape&notationMode=abbreviated&restLayout=below_step&focusMode=custom"
+      "/api/my-library/workouts/workout-1/export/pdf?variant=poolside&previewChrome=embedded&printStyle=ink_saver&printLayout=landscape&notationMode=abbreviated&restLayout=below_step&sessionNoteMode=include&stepNotesMode=drills_only&focusMode=custom"
     );
   });
 

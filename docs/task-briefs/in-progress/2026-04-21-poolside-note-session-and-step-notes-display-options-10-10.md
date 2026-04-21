@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-21-poolside-note-session-and-step-notes-display-options-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
 - `updated`: `2026-04-21`
@@ -42,9 +42,9 @@ Let poolside note users optionally include the saved session note and relevant s
   - session note, if enabled, renders below Focus as a separate box,
   - step notes, if enabled, render under the step line they belong to,
   - step-note modes should be:
-    - `Off`
-    - `Drills only`
-    - `All step notes`
+    - `Hidden`
+    - `Drill steps`
+    - `All notes`
   - session-note mode should be a simple include/exclude control unless implementation shows a clearer existing pattern,
   - notes must be included in `Print / Save PDF` and `Save image` output when enabled,
   - no new note authoring model or persistence schema is introduced in this brief.
@@ -117,7 +117,7 @@ Critical target categories for `10/10` claim in this brief:
   - saved workout identity and step ordering.
 - Local-only / preview state:
   - include session note on/off,
-  - step-note display mode (`Off`, `Drills only`, `All step notes`),
+  - step-note display mode (`Hidden`, `Drill steps`, `All notes`),
   - rendered preview/export readiness state.
 - Sync policy:
   - toggling note display changes only preview/export presentation,
@@ -141,7 +141,8 @@ Critical target categories for `10/10` claim in this brief:
 - Add poolside preview presentation controls for session note and step notes.
 - Render session note below Focus as a separate box when enabled and populated.
 - Render step notes under their matching step line when enabled and populated.
-- Support `Off`, `Drills only`, and `All step notes` for step notes.
+- Support `Hidden`, `Drill steps`, and `All notes` for step notes.
+- Prefer concrete drill names in the poolside step summary when present, so generic `Drill` is replaced by labels like `Catch drill`.
 - Validate portrait and landscape poolside note layouts.
 - Validate print/PDF and Save image output.
 - Preserve existing note authoring and Garmin/export semantics.
@@ -158,7 +159,7 @@ Critical target categories for `10/10` claim in this brief:
 ## Acceptance Criteria
 
 1. Poolside preview exposes a clear session-note include/exclude control.
-2. Poolside preview exposes `Off`, `Drills only`, and `All step notes` modes for step notes.
+2. Poolside preview exposes `Hidden`, `Drill steps`, and `All notes` modes for step notes.
 3. Default poolside output remains unchanged/noiseless when note options are off.
 4. Session note renders below Focus in its own box only when enabled and populated.
 5. Step notes render directly under the step line they belong to only when enabled by the selected mode.
@@ -242,3 +243,6 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created after the poolside mobile preview/save-image reliability closeout; scope is limited to optional session note and step-note display in poolside preview/export, with maintenance baseline still sequenced after this findings-wave follow-up | next: implement end-to-end or explicitly defer before starting maintenance baseline`
+- `2026-04-21 | in-progress | moved to feature branch feat/poolside-session-step-notes-2026-04-21 and started implementation; default note output remains off while preview controls, renderer options, and URL settings are being wired together | next: targeted validation, screenshots, owner review`
+- `2026-04-21 | in-progress | owner review caught wording and readability issues; refined labels to Hidden/Shown and Hidden/Drill steps/All notes, increased note readability, and moved concrete drill identity into the step summary where available | next: refresh targeted tests and screenshot handoff`
+- `2026-04-21 | in-progress | targeted unit validation passed (66 tests) and owner approved the refreshed screenshot handoff in output/playwright/poolside-notes-review | next: run verify:pre-pr, commit, push, and open PR`

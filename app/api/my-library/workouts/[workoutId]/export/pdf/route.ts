@@ -10,6 +10,8 @@ import {
   normalizeWorkoutPoolsidePrintStyle,
   normalizeWorkoutPdfPreviewChrome,
   normalizeWorkoutPoolsideRestLayout,
+  normalizeWorkoutPoolsideSessionNoteMode,
+  normalizeWorkoutPoolsideStepNotesMode,
   selectWorkoutPoolsideFocusPoints,
   type WorkoutPoolsideFocusOption,
 } from "@/lib/workouts/shared";
@@ -63,6 +65,12 @@ export async function GET(request: Request, context: RouteContext) {
   );
   const poolsideRestLayout = normalizeWorkoutPoolsideRestLayout(
     requestUrl.searchParams.get("restLayout")
+  );
+  const poolsideSessionNoteMode = normalizeWorkoutPoolsideSessionNoteMode(
+    requestUrl.searchParams.get("sessionNoteMode")
+  );
+  const poolsideStepNotesMode = normalizeWorkoutPoolsideStepNotesMode(
+    requestUrl.searchParams.get("stepNotesMode")
   );
   const previewChrome = normalizeWorkoutPdfPreviewChrome(
     requestUrl.searchParams.get("previewChrome")
@@ -146,6 +154,8 @@ export async function GET(request: Request, context: RouteContext) {
         poolsidePrintLayout,
         poolsideNotationMode,
         poolsideRestLayout,
+        poolsideSessionNoteMode,
+        poolsideStepNotesMode,
         swimmerName: athleteProfileSnapshot?.profile?.primaryName ?? null,
         logoUrl,
         fontUrl,

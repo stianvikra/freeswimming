@@ -506,6 +506,8 @@ describe("workouts routes", () => {
     expect(body).toContain('data-poolside-print-style="ink_saver"');
     expect(body).toContain('data-poolside-notation-mode="abbreviated"');
     expect(body).toContain('data-poolside-rest-layout="inline"');
+    expect(body).toContain('data-poolside-session-note-mode="off"');
+    expect(body).toContain('data-poolside-step-notes-mode="off"');
     expect(body).toContain('data-testid="workout-pdf-total"');
     expect(body).toContain("Calm exhale: Start the exhale before the head turns to breathe.");
     expect(body).not.toContain("High elbow catch");

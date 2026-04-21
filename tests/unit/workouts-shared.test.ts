@@ -1021,6 +1021,8 @@ describe("workouts shared readiness", () => {
     ).toBe("freeswimming-garmin-readiness-draft-poolside-note.pdf");
     expect(html).toContain('data-pdf-variant="poolside"');
     expect(html).toContain('data-poolside-print-style="ink_saver"');
+    expect(html).toContain('data-poolside-session-note-mode="off"');
+    expect(html).toContain('data-poolside-step-notes-mode="off"');
     expect(html).toContain("High elbow catch");
     expect(html).toContain("Calm exhale");
     expect(html).toContain("400m");
@@ -1041,6 +1043,7 @@ describe("workouts shared readiness", () => {
     expect(html).not.toContain(">Portrait<");
     expect(html).not.toContain(">Landscape<");
     expect(html).not.toContain("Compact lane-side note");
+    expect(html).not.toContain("Start smooth.");
     expect(html).not.toContain("~10 min");
     expect(html).toContain("400m · Freestyle · Easy");
     expect(html).not.toContain("P:");
@@ -1057,6 +1060,64 @@ describe("workouts shared readiness", () => {
     expect(html).toContain("margin: 8mm;");
     expect(html).not.toContain("width: min(100%, 144mm)");
     expect(html).not.toContain("margin: 12mm;");
+  });
+
+  it("adds poolside session and selected step notes only when preview controls ask for them", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      description: "Bring the snorkel and keep the main set calm.",
+      steps: [
+        {
+          ...buildDraft().steps[0],
+          notes: "Settle into long strokes.",
+        },
+        {
+          id: "step-2",
+          category: "drill",
+          name: "Catch drill",
+          stroke: "freestyle",
+          drillType: "drill",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 50,
+          timeMin: null,
+          targetSummary: "",
+          notes: "Single-arm catch with the non-working arm forward.",
+        },
+      ],
+    };
+    const defaultHtml = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+      focusPoints: ["High elbow catch"],
+    });
+    const drillNotesHtml = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+      focusPoints: ["High elbow catch"],
+      poolsideSessionNoteMode: "include",
+      poolsideStepNotesMode: "drills_only",
+    });
+    const allNotesHtml = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+      poolsideStepNotesMode: "all",
+    });
+
+    expect(defaultHtml).toContain('data-poolside-session-note-mode="off"');
+    expect(defaultHtml).toContain('data-poolside-step-notes-mode="off"');
+    expect(defaultHtml).not.toContain("Bring the snorkel");
+    expect(defaultHtml).not.toContain("Single-arm catch");
+    expect(drillNotesHtml).toContain('data-poolside-session-note-mode="include"');
+    expect(drillNotesHtml).toContain('data-poolside-step-notes-mode="drills_only"');
+    expect(drillNotesHtml).toContain("Session note");
+    expect(drillNotesHtml).toContain("Bring the snorkel and keep the main set calm.");
+    expect(drillNotesHtml).toContain("50m · Freestyle · Catch drill · Easy");
+    expect(drillNotesHtml).not.toContain("50m · Freestyle · Drill · Catch drill · Easy");
+    expect(drillNotesHtml).toContain("Single-arm catch with the non-working arm forward.");
+    expect(drillNotesHtml).not.toContain("Settle into long strokes.");
+    expect(allNotesHtml).toContain("Single-arm catch with the non-working arm forward.");
+    expect(allNotesHtml).toContain("Settle into long strokes.");
   });
 
   it("can render an embedded poolside preview without the standalone toolbar chrome", () => {
