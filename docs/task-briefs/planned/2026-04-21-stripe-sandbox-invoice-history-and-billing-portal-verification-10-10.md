@@ -1,0 +1,143 @@
+# Task Brief: Stripe Sandbox Invoice History And Billing Portal Verification (10/10)
+
+## Metadata
+
+- `id`: `2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10`
+- `status`: `planned`
+- `owner`: `stianvikra`
+- `created`: `2026-04-21`
+- `updated`: `2026-04-21`
+
+## Goal
+
+Verify why Stripe Billing Portal shows no invoice history after a sandbox purchase and make the app, Stripe setup, and support expectations consistent before live billing trust is needed.
+
+## Sequencing Lock
+
+- Run before pre-live maintenance baseline if billing confidence is required before launch.
+- Keep this as billing verification and contract hardening, not broad commerce redesign.
+- Coordinate with Account & Security only if billing access currently depends on that page.
+
+## Why This Brief Exists
+
+- Owner observed `No invoice history` in Stripe Billing Portal after a previous sandbox purchase.
+- The cause may be valid sandbox behavior, incomplete payment/subscription state, portal configuration, customer mismatch, or webhook/app-state drift.
+- Billing flows must be 10/10 in finance/reporting/support categories before launch.
+
+## Platform 10/10 Scorecard Mapping
+
+Reference: `docs/quality/platform-10-10-scorecard.md`
+
+Critical target categories for `10/10` claim:
+
+- `Business logic correctness and data integrity`
+- `Security and authz`
+- `Commerce and revenue ops`
+- `Finance and reporting operations`
+- `Testing and QA automation`
+
+| Category                                      | Mapping      | Target Threshold (if `target`)                                                                                                      | Evidence                               | Expected Closeout Score |
+| --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------------- |
+| Product goals and IA                          | `target`     | Billing entrypoints and portal expectations clearly match what sandbox/live users can actually see.                                 | billing flow audit and screenshots     | `5/5`                   |
+| UX flow clarity                               | `target`     | User can understand Manage billing outcomes and is not promised invoice history when Stripe cannot show one.                        | portal QA and copy review              | `5/5`                   |
+| Visual design quality                         | `supporting` | Supporting only: any app-side billing copy/link changes match current My Library action style.                                      | screenshot review                      | `4/5`                   |
+| Business logic correctness and data integrity | `target`     | Stripe customer, checkout/session, subscription/payment, invoice, entitlement, and portal records reconcile for the tested user.    | Stripe API/dashboard reconciliation    | `5/5`                   |
+| Admin editor ergonomics                       | `N/A`        | N/A because this does not change admin content editing or publishing flows.                                                         | explicit scope rationale               | `N/A`                   |
+| Accessibility (a11y)                          | `supporting` | Supporting only: app-side billing links/buttons keep clear labels and focus states.                                                 | semantic review                        | `4/5`                   |
+| Performance (CWV + payloads)                  | `supporting` | Supporting only: billing link verification should not add client payload or slow My Library.                                        | route diff review                      | `4/5`                   |
+| Data placement and sync boundaries            | `target`     | Stripe remains source of truth for billing/customer/invoice data; app entitlement mirror rules are documented.                      | data contract review                   | `5/5`                   |
+| Caching and invalidation strategy             | `target`     | Billing/entitlement state cannot stay stale after checkout, portal return, webhook, or manual refresh.                              | webhook/route QA                       | `5/5`                   |
+| Reliability and failure handling              | `target`     | Missing invoice, incomplete checkout, customer mismatch, and portal errors produce diagnosable outcomes, not silent confusion.      | negative-path QA and logs              | `5/5`                   |
+| Security and authz                            | `target`     | Billing portal access is owner-scoped and cannot expose another user's Stripe customer or invoice data.                             | authz tests and code review            | `5/5`                   |
+| Privacy and compliance                        | `target`     | Billing PII is minimized in app logs/UI and Stripe-hosted pages are the source for sensitive payment method data.                   | privacy review                         | `5/5`                   |
+| Content governance                            | `supporting` | Supporting only: billing copy and support guidance have one source of truth.                                                        | help/runbook review                    | `4/5`                   |
+| Admin workflow and editability                | `N/A`        | N/A because no admin CRUD/status workflow changes.                                                                                  | explicit scope rationale               | `N/A`                   |
+| SEO and crawlability                          | `N/A`        | N/A because billing portal and My Library billing routes are authenticated/private and not crawlable.                               | explicit scope rationale               | `N/A`                   |
+| AI discoverability                            | `N/A`        | N/A because no public AI-discoverable content changes.                                                                              | explicit scope rationale               | `N/A`                   |
+| Analytics and KPI observability               | `target`     | Checkout/portal/invoice state has enough safe logging or events to support reconciliation without PII leakage.                      | event/log review                       | `5/5`                   |
+| Commerce and revenue ops                      | `target`     | Checkout, customer portal, invoice history expectations, and entitlements reconcile for sandbox test purchase.                      | Stripe dashboard/API evidence          | `5/5`                   |
+| Incident response and support operations      | `target`     | Support can diagnose `No invoice history`, missing payment method, incomplete purchase, and customer mismatch.                      | support runbook/checklist              | `5/5`                   |
+| Finance and reporting operations              | `target`     | Sandbox purchase/invoice/payment records are reconcilable, or documented as intentionally absent with exact Stripe reason.          | finance reconciliation notes           | `5/5`                   |
+| i18n operational readiness                    | `N/A`        | N/A because this brief does not change locale architecture; billing copy remains current-language only for this verification slice. | explicit scope rationale tied to scope | `N/A`                   |
+| Stack-fit and dependency discipline           | `target`     | Use existing Stripe SDK/routes/configuration; add no billing dependency unless required and justified.                              | dependency diff                        | `5/5`                   |
+| Testing and QA automation                     | `target`     | Tests cover portal/customer ownership and webhook/checkout state where repo supports deterministic test coverage.                   | targeted tests and verify gates        | `5/5`                   |
+| Scalability and cost efficiency               | `supporting` | Supporting only: reconciliation approach should support future billing growth without manual guessing.                              | ops review                             | `4/5`                   |
+| DevOps and rollback readiness                 | `target`     | Config or code changes have rollback notes and do not require destructive Stripe data changes.                                      | PR/runbook notes                       | `5/5`                   |
+
+## Data Placement And Sync Contract
+
+- Server-canonical:
+  - Stripe customer, checkout, subscription/payment, invoice, payment method.
+- App-canonical/mirror:
+  - entitlement state only if existing app logic mirrors Stripe state.
+- Local-only:
+  - transient portal redirect state.
+- Sync policy:
+  - webhook and portal-return behavior must be documented and tested where possible.
+- Retention and sensitivity:
+  - no raw card/payment data in the app.
+- Cache/invalidation:
+  - post-checkout and post-portal state must refresh or be explicitly manually refreshed.
+
+## Identity And Rename Contract
+
+- Canonical stable ID:
+  - app user ID mapped to Stripe customer ID.
+- Human-readable identifier:
+  - email is display/contact identity, not a billing authorization key by itself.
+- Compatibility:
+  - detect and document orphaned or duplicate sandbox customers if found.
+
+## Scope
+
+- Audit Stripe sandbox purchase history for the test user.
+- Verify portal invoice history behavior.
+- Verify Stripe customer mapping and app billing route.
+- Verify webhook/entitlement state where implemented.
+- Update support/runbook/help copy if the current behavior is expected.
+
+## Out Of Scope
+
+- New pricing model.
+- Payment method redesign.
+- Live-mode billing migration.
+- Account & Security redesign except billing-link dependency audit.
+
+## Acceptance Criteria
+
+1. We know exactly why portal shows no invoice history.
+2. The tested user maps to the expected Stripe customer.
+3. Checkout/payment/subscription/invoice state is reconciled or documented as intentionally absent.
+4. App copy does not overpromise invoice visibility.
+5. Billing portal access is owner-scoped.
+6. Support has a deterministic troubleshooting path.
+
+## Validation
+
+- `npm run lint:briefs`
+- Stripe sandbox dashboard/API evidence captured in PR summary without secrets
+- targeted billing route/auth tests where applicable
+- targeted webhook/entitlement tests where applicable
+- `npm run verify:pre-pr`
+- `npm run verify:pre-merge`
+
+## Manual QA Environments
+
+- Local where Stripe sandbox env is available.
+- Vercel preview if sandbox env is available.
+- Stripe test dashboard and customer portal.
+
+## Constraints
+
+- Never commit Stripe secrets or raw env values.
+- Do not use email alone as an authorization boundary.
+- Do not change live billing data.
+
+## Help/Guide Impact
+
+- Required if the user-facing Manage billing expectation changes.
+- Support notes must include how to diagnose missing invoice history.
+
+## Checkpoint Log
+
+- `2026-04-21 | planned | created from owner finding that Stripe Billing Portal showed no invoice history after sandbox purchase | next: implement or defer before maintenance baseline`
