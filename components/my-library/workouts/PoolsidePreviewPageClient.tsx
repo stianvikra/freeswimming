@@ -38,7 +38,9 @@ function arePreviewSettingsEqual(
     left.printStyle === right.printStyle &&
     left.printLayout === right.printLayout &&
     left.notationMode === right.notationMode &&
-    left.restLayout === right.restLayout
+    left.restLayout === right.restLayout &&
+    left.sessionNoteMode === right.sessionNoteMode &&
+    left.stepNotesMode === right.stepNotesMode
   );
 }
 
@@ -84,6 +86,8 @@ export default function PoolsidePreviewPageClient() {
       printLayout: searchParams.get("printLayout"),
       notationMode: searchParams.get("notationMode"),
       restLayout: searchParams.get("restLayout"),
+      sessionNoteMode: searchParams.get("sessionNoteMode"),
+      stepNotesMode: searchParams.get("stepNotesMode"),
     })
   );
   const [localPreviewDraft, setLocalPreviewDraft] = useState<
@@ -110,6 +114,8 @@ export default function PoolsidePreviewPageClient() {
       printLayout: params.get("printLayout"),
       notationMode: params.get("notationMode"),
       restLayout: params.get("restLayout"),
+      sessionNoteMode: params.get("sessionNoteMode"),
+      stepNotesMode: params.get("stepNotesMode"),
     });
     setSettings((current) =>
       arePreviewSettingsEqual(current, nextSettings) ? current : nextSettings
@@ -193,6 +199,8 @@ export default function PoolsidePreviewPageClient() {
       poolsidePrintLayout: settings.printLayout,
       poolsideNotationMode: settings.notationMode,
       poolsideRestLayout: settings.restLayout,
+      poolsideSessionNoteMode: settings.sessionNoteMode,
+      poolsideStepNotesMode: settings.stepNotesMode,
       swimmerName: localPreviewDraft.swimmerName,
       logoUrl: new URL(
         getWorkoutPdfLogoPath({
@@ -214,6 +222,8 @@ export default function PoolsidePreviewPageClient() {
         settings.printLayout,
         settings.notationMode,
         settings.restLayout,
+        settings.sessionNoteMode,
+        settings.stepNotesMode,
       ].join("|"),
     [localPreviewDraft?.updatedAt, previewFrameHref, settings]
   );
@@ -501,7 +511,7 @@ export default function PoolsidePreviewPageClient() {
               </p>
             ) : null}
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <label className="grid gap-2" htmlFor="poolside-preview-style">
                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Ink usage
@@ -585,6 +595,49 @@ export default function PoolsidePreviewPageClient() {
                   <option value="auto">Auto</option>
                   <option value="inline">All inline</option>
                   <option value="below_step">All separate line</option>
+                </select>
+              </label>
+
+              <label className="grid gap-2" htmlFor="poolside-preview-session-note">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Session note
+                </span>
+                <select
+                  id="poolside-preview-session-note"
+                  value={settings.sessionNoteMode}
+                  onChange={(event) =>
+                    updateSetting(
+                      "sessionNoteMode",
+                      event.target.value as WorkoutPoolsidePreviewSettings["sessionNoteMode"]
+                    )
+                  }
+                  data-testid="poolside-preview-session-note"
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="off">Hidden</option>
+                  <option value="include">Shown</option>
+                </select>
+              </label>
+
+              <label className="grid gap-2" htmlFor="poolside-preview-step-notes">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Step notes
+                </span>
+                <select
+                  id="poolside-preview-step-notes"
+                  value={settings.stepNotesMode}
+                  onChange={(event) =>
+                    updateSetting(
+                      "stepNotesMode",
+                      event.target.value as WorkoutPoolsidePreviewSettings["stepNotesMode"]
+                    )
+                  }
+                  data-testid="poolside-preview-step-notes"
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="off">Hidden</option>
+                  <option value="drills_only">Drill steps</option>
+                  <option value="all">All notes</option>
                 </select>
               </label>
             </div>

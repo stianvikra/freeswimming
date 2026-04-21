@@ -177,6 +177,8 @@ export const WORKOUT_POOLSIDE_PRINT_STYLES = ["color", "ink_saver"] as const;
 export const WORKOUT_POOLSIDE_PRINT_LAYOUTS = ["portrait", "landscape"] as const;
 export const WORKOUT_POOLSIDE_NOTATION_MODES = ["auto", "full", "abbreviated"] as const;
 export const WORKOUT_POOLSIDE_REST_LAYOUTS = ["auto", "inline", "below_step"] as const;
+export const WORKOUT_POOLSIDE_SESSION_NOTE_MODES = ["off", "include"] as const;
+export const WORKOUT_POOLSIDE_STEP_NOTES_MODES = ["off", "drills_only", "all"] as const;
 
 export const WORKOUT_POOLSIDE_ABBREVIATION_LEGEND = [
   { short: "Free", full: "Freestyle" },
@@ -196,6 +198,8 @@ export type WorkoutPoolsidePrintStyle = (typeof WORKOUT_POOLSIDE_PRINT_STYLES)[n
 export type WorkoutPoolsidePrintLayout = (typeof WORKOUT_POOLSIDE_PRINT_LAYOUTS)[number];
 export type WorkoutPoolsideNotationMode = (typeof WORKOUT_POOLSIDE_NOTATION_MODES)[number];
 export type WorkoutPoolsideRestLayout = (typeof WORKOUT_POOLSIDE_REST_LAYOUTS)[number];
+export type WorkoutPoolsideSessionNoteMode = (typeof WORKOUT_POOLSIDE_SESSION_NOTE_MODES)[number];
+export type WorkoutPoolsideStepNotesMode = (typeof WORKOUT_POOLSIDE_STEP_NOTES_MODES)[number];
 type WorkoutPoolsideLineSecondaryPlacement = Exclude<WorkoutPoolsideRestLayout, "auto">;
 export type WorkoutPoolsideFocusOption = {
   id: string;
@@ -241,6 +245,8 @@ export type WorkoutPdfModel = {
   poolsideNotationMode: WorkoutPoolsideNotationMode;
   poolsideRestLayout: WorkoutPoolsideRestLayout;
   poolsideResolvedRestLayout: WorkoutPoolsideRestLayout;
+  poolsideSessionNoteMode: WorkoutPoolsideSessionNoteMode;
+  poolsideStepNotesMode: WorkoutPoolsideStepNotesMode;
   logoUrl: string | null;
   swimmerName: string | null;
   sourceLabel: string;
@@ -267,6 +273,13 @@ type WorkoutPoolsideLineItem = {
   text: string;
   secondaryText?: string | null;
   secondaryPlacement?: WorkoutPoolsideLineSecondaryPlacement | null;
+  stepNoteCandidates?: WorkoutPoolsideLineItemNote[];
+  stepNotes?: string[];
+};
+
+type WorkoutPoolsideLineItemNote = {
+  text: string;
+  scope: "drill" | "step";
 };
 
 type WorkoutPoolsideContentDriver = "title" | "chip" | "line";
@@ -822,6 +835,8 @@ export function buildWorkoutPdfModel(
     poolsidePrintLayout?: WorkoutPoolsidePrintLayout;
     poolsideNotationMode?: WorkoutPoolsideNotationMode;
     poolsideRestLayout?: WorkoutPoolsideRestLayout;
+    poolsideSessionNoteMode?: WorkoutPoolsideSessionNoteMode;
+    poolsideStepNotesMode?: WorkoutPoolsideStepNotesMode;
     swimmerName?: string | null;
     logoUrl?: string | null;
   }
@@ -838,12 +853,19 @@ export function buildWorkoutPdfModel(
     options?.poolsideRestLayout == null
       ? "below_step"
       : normalizeWorkoutPoolsideRestLayout(options.poolsideRestLayout);
+  const poolsideSessionNoteMode = normalizeWorkoutPoolsideSessionNoteMode(
+    options?.poolsideSessionNoteMode
+  );
+  const poolsideStepNotesMode = normalizeWorkoutPoolsideStepNotesMode(
+    options?.poolsideStepNotesMode
+  );
   const fileName = buildWorkoutPdfFileName(draft, { draftState, variant });
   const sourceLabel = draftState === "canonical" ? "Canonical workout" : "Local draft";
   const focusPoints = buildWorkoutPdfFocusPoints(draft, options?.focusPoints);
   const poolsideFormatting = buildWorkoutPoolsideLineItemsForDraft(draft, {
     notationMode: poolsideNotationMode,
     restLayout: poolsideRestLayout,
+    stepNotesMode: poolsideStepNotesMode,
   });
   const poolsideLineItems = poolsideFormatting.items;
   const poolsideLines = poolsideLineItems.map(formatWorkoutPoolsideLineItemText);
@@ -860,6 +882,8 @@ export function buildWorkoutPdfModel(
       poolsideNotationMode,
       poolsideRestLayout,
       poolsideResolvedRestLayout: poolsideFormatting.resolvedRestLayout,
+      poolsideSessionNoteMode,
+      poolsideStepNotesMode,
       logoUrl: options?.logoUrl ?? null,
       swimmerName,
       sourceLabel,
@@ -963,6 +987,8 @@ export function buildWorkoutPdfModel(
     poolsideNotationMode,
     poolsideRestLayout,
     poolsideResolvedRestLayout: poolsideFormatting.resolvedRestLayout,
+    poolsideSessionNoteMode,
+    poolsideStepNotesMode,
     logoUrl: options?.logoUrl ?? null,
     swimmerName,
     sourceLabel,
@@ -995,6 +1021,8 @@ export function buildWorkoutPdfHtmlDocument(
     poolsidePrintLayout?: WorkoutPoolsidePrintLayout;
     poolsideNotationMode?: WorkoutPoolsideNotationMode;
     poolsideRestLayout?: WorkoutPoolsideRestLayout;
+    poolsideSessionNoteMode?: WorkoutPoolsideSessionNoteMode;
+    poolsideStepNotesMode?: WorkoutPoolsideStepNotesMode;
     swimmerName?: string | null;
     logoUrl?: string | null;
     fontUrl?: string | null;
@@ -1658,6 +1686,15 @@ function buildPoolsideWorkoutPdfHtmlDocument(
         </section>
       `
     : "";
+  const sessionNoteHtml =
+    model.poolsideSessionNoteMode === "include" && model.description
+      ? `
+        <section class="callout">
+          <p class="callout-label">Session note</p>
+          <p class="session-note-text">${escapeHtml(model.description)}</p>
+        </section>
+      `
+      : "";
   const heroTotalHtml = totalDistanceValue
     ? `
         <div class="hero-total-pill" data-testid="workout-pdf-total">
@@ -1691,13 +1728,21 @@ function buildPoolsideWorkoutPdfHtmlDocument(
     ? `
         <div class="body body-landscape-columns">
           ${stepsHtml}
-          ${hasFocusPoints ? `<div class="poolside-meta poolside-meta-landscape">${focusPointsHtml}</div>` : ""}
+          ${
+            hasFocusPoints || sessionNoteHtml
+              ? `<div class="poolside-meta poolside-meta-landscape">${focusPointsHtml}${sessionNoteHtml}</div>`
+              : ""
+          }
         </div>
       `
     : `
         <div class="body body-single-column">
           ${stepsHtml}
-          ${hasFocusPoints ? `<div class="poolside-meta">${focusPointsHtml}</div>` : ""}
+          ${
+            hasFocusPoints || sessionNoteHtml
+              ? `<div class="poolside-meta">${focusPointsHtml}${sessionNoteHtml}</div>`
+              : ""
+          }
         </div>
       `;
   const heroHtml = isLandscape
@@ -2126,6 +2171,13 @@ function buildPoolsideWorkoutPdfHtmlDocument(
         line-height: 1.3;
       }
 
+      .session-note-text {
+        margin: 4px 0 0;
+        font-size: 11.4px;
+        line-height: 1.34;
+        color: var(--ink);
+      }
+
       .section-title {
         margin: 2px 0 0;
         font-size: 15px;
@@ -2233,6 +2285,17 @@ function buildPoolsideWorkoutPdfHtmlDocument(
 
       .poolside-line-secondary-inline .poolside-line-secondary-text {
         display: inline;
+      }
+
+      .poolside-line-note-list {
+        margin: 4px 0 0;
+        padding-left: 15px;
+        display: grid;
+        gap: 2px;
+        font-size: 11.1px;
+        line-height: 1.32;
+        font-weight: 560;
+        color: var(--muted);
       }
 
       .poolside-line-recovery {
@@ -2348,6 +2411,8 @@ function buildPoolsideWorkoutPdfHtmlDocument(
         data-poolside-notation-mode="${escapeHtml(model.poolsideNotationMode)}"
         data-poolside-rest-layout="${escapeHtml(model.poolsideRestLayout)}"
         data-poolside-resolved-rest-layout="${escapeHtml(model.poolsideResolvedRestLayout)}"
+        data-poolside-session-note-mode="${escapeHtml(model.poolsideSessionNoteMode)}"
+        data-poolside-step-notes-mode="${escapeHtml(model.poolsideStepNotesMode)}"
         data-poolside-width-profile="${escapeHtml(sizingProfile.widthProfile)}"
         data-poolside-content-driver="${escapeHtml(sizingProfile.contentDriver)}"
         data-poolside-page-width-mm="${escapeHtml(String(sizingProfile.pageWidthMm))}"
@@ -3104,6 +3169,14 @@ function renderWorkoutPoolsideLineHtml(line: WorkoutPoolsideLineItem) {
           : ""
       }<span class="poolside-line-secondary-text">${escapeHtml(line.secondaryText)}</span></span>`
     : "";
+  const stepNotesHtml =
+    line.stepNotes && line.stepNotes.length > 0
+      ? `
+        <ul class="poolside-line-note-list">
+          ${line.stepNotes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}
+        </ul>
+      `
+      : "";
 
   return `
     <li class="poolside-line ${line.kind === "recovery" ? "poolside-line-recovery" : ""}">
@@ -3111,6 +3184,7 @@ function renderWorkoutPoolsideLineHtml(line: WorkoutPoolsideLineItem) {
         <span class="poolside-line-primary">${escapeHtml(line.text)}</span>
         ${secondaryHtml}
       </span>
+      ${stepNotesHtml}
     </li>
   `;
 }
@@ -3141,17 +3215,23 @@ function estimatePoolsideWrappedLineCount(text: string, charactersPerLine: numbe
 }
 
 function estimateWorkoutPoolsideLineRows(line: WorkoutPoolsideLineItem) {
+  const noteRows = (line.stepNotes ?? []).reduce(
+    (rows, note) => rows + estimatePoolsideWrappedLineCount(note, 38),
+    0
+  );
+
   if (!line.secondaryText) {
-    return estimatePoolsideWrappedLineCount(line.text, 34);
+    return estimatePoolsideWrappedLineCount(line.text, 34) + noteRows;
   }
 
   if (line.secondaryPlacement === "inline") {
-    return estimatePoolsideWrappedLineCount(`${line.text} · ${line.secondaryText}`, 34);
+    return estimatePoolsideWrappedLineCount(`${line.text} · ${line.secondaryText}`, 34) + noteRows;
   }
 
   return (
     estimatePoolsideWrappedLineCount(line.text, 34) +
-    estimatePoolsideWrappedLineCount(line.secondaryText, 28)
+    estimatePoolsideWrappedLineCount(line.secondaryText, 28) +
+    noteRows
   );
 }
 
@@ -3188,15 +3268,16 @@ function splitWorkoutPoolsideLandscapeLineItems(items: WorkoutPoolsideLineItem[]
 
 function buildWorkoutPoolsideSizingLines(items: WorkoutPoolsideLineItem[]) {
   return items.flatMap((item) => {
+    const noteLines = item.stepNotes ?? [];
     if (!item.secondaryText) {
-      return [item.text];
+      return [item.text, ...noteLines];
     }
 
     if (item.secondaryPlacement === "inline") {
-      return [`${item.text} · ${item.secondaryText}`];
+      return [`${item.text} · ${item.secondaryText}`, ...noteLines];
     }
 
-    return [item.text, item.secondaryText];
+    return [item.text, item.secondaryText, ...noteLines];
   });
 }
 
@@ -3461,6 +3542,22 @@ export function normalizeWorkoutPoolsideRestLayout(
   return "auto";
 }
 
+export function normalizeWorkoutPoolsideSessionNoteMode(
+  value: string | null | undefined
+): WorkoutPoolsideSessionNoteMode {
+  return value === "include" ? "include" : "off";
+}
+
+export function normalizeWorkoutPoolsideStepNotesMode(
+  value: string | null | undefined
+): WorkoutPoolsideStepNotesMode {
+  if (value === "drills_only" || value === "all") {
+    return value;
+  }
+
+  return "off";
+}
+
 export function normalizeWorkoutPdfPreviewChrome(
   value: string | null | undefined
 ): WorkoutPdfPreviewChrome {
@@ -3582,11 +3679,39 @@ function shouldInlineWorkoutPoolsideSecondary(
   );
 }
 
+function selectWorkoutPoolsideLineItemStepNotes(
+  candidates: WorkoutPoolsideLineItemNote[] | null | undefined,
+  mode: WorkoutPoolsideStepNotesMode
+) {
+  if (mode === "off" || !candidates || candidates.length === 0) {
+    return [];
+  }
+
+  const selectedCandidates =
+    mode === "drills_only"
+      ? candidates.filter((candidate) => candidate.scope === "drill")
+      : candidates;
+  const seen = new Set<string>();
+  const selectedNotes: string[] = [];
+
+  for (const candidate of selectedCandidates) {
+    const normalized = normalizeNullableText(candidate.text, 260);
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+    selectedNotes.push(normalized);
+    seen.add(normalized);
+  }
+
+  return selectedNotes;
+}
+
 function formatWorkoutPoolsideLineItem(
   item: WorkoutPoolsideLineItem,
   options: {
     notationMode: WorkoutPoolsideNotationMode;
     requestedRestLayout: WorkoutPoolsideRestLayout;
+    stepNotesMode: WorkoutPoolsideStepNotesMode;
   }
 ) {
   const { primaryText, secondaryText } = formatWorkoutPoolsideLineTexts(item, {
@@ -3607,6 +3732,10 @@ function formatWorkoutPoolsideLineItem(
     text: primaryText,
     secondaryText,
     secondaryPlacement,
+    stepNotes: selectWorkoutPoolsideLineItemStepNotes(
+      item.stepNoteCandidates,
+      options.stepNotesMode
+    ),
   };
 }
 
@@ -3616,12 +3745,14 @@ function formatWorkoutPoolsideLineItems(
 ) {
   const notationMode = normalizeWorkoutPoolsideNotationMode(options?.notationMode);
   const requestedRestLayout = normalizeWorkoutPoolsideRestLayout(options?.restLayout);
+  const stepNotesMode = normalizeWorkoutPoolsideStepNotesMode(options?.stepNotesMode);
 
   return {
     items: items.map((item) =>
       formatWorkoutPoolsideLineItem(item, {
         notationMode,
         requestedRestLayout,
+        stepNotesMode,
       })
     ),
     resolvedRestLayout: requestedRestLayout,
@@ -3735,6 +3866,7 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
 type WorkoutPoolsideFormattingOptions = {
   notationMode?: WorkoutPoolsideNotationMode;
   restLayout?: WorkoutPoolsideRestLayout;
+  stepNotesMode?: WorkoutPoolsideStepNotesMode;
 };
 
 type WorkoutPoolsideFormattingResult = {
@@ -3895,6 +4027,7 @@ function buildWorkoutPoolsideSingleGroupLineItems(
         entry.step,
         null,
         trailingRecoveryText,
+        inlineRecoverySteps,
         basePaceSecondsPer100m,
         environment,
         poolLengthUnit
@@ -3956,6 +4089,7 @@ function buildWorkoutPoolsideRepeatGroupLineItems(
         step,
         repeatCount,
         trailingRecoveryText,
+        trailingRecoverySteps,
         basePaceSecondsPer100m,
         environment,
         poolLengthUnit
@@ -4009,11 +4143,16 @@ function buildWorkoutPoolsideRepeatGroupLineItems(
         secondaryText: [lastInterval.secondaryText, trailingPostSetRestText]
           .filter(Boolean)
           .join(" · "),
+        stepNoteCandidates: [
+          ...(lastInterval.stepNoteCandidates ?? []),
+          ...buildWorkoutPoolsideStepNoteCandidates(trailingPostSetRestSteps),
+        ],
       };
     } else {
       lineItems.push({
         kind: "recovery",
         text: trailingPostSetRestText,
+        stepNoteCandidates: buildWorkoutPoolsideStepNoteCandidates(trailingPostSetRestSteps),
       });
     }
   }
@@ -4028,6 +4167,7 @@ function buildWorkoutPoolsideIntervalLineItem(
   step: SessionDraftStep,
   repeatCount: number | null,
   trailingRecoveryText: string | null,
+  trailingRecoverySteps: SessionDraftStep[],
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
@@ -4044,7 +4184,28 @@ function buildWorkoutPoolsideIntervalLineItem(
     kind: "interval" as const,
     text,
     secondaryText: trailingRecoveryText,
+    stepNoteCandidates: buildWorkoutPoolsideStepNoteCandidates([step, ...trailingRecoverySteps]),
   };
+}
+
+function isWorkoutPoolsideDrillNoteStep(step: SessionDraftStep) {
+  return step.category === "drill" || Boolean(step.drillType);
+}
+
+function buildWorkoutPoolsideStepNoteCandidates(steps: SessionDraftStep[]) {
+  return steps
+    .map((step) => {
+      const text = normalizeNullableText(step.notes, 260);
+      if (!text) {
+        return null;
+      }
+
+      return {
+        text,
+        scope: isWorkoutPoolsideDrillNoteStep(step) ? "drill" : "step",
+      } satisfies WorkoutPoolsideLineItemNote;
+    })
+    .filter((candidate): candidate is WorkoutPoolsideLineItemNote => candidate !== null);
 }
 
 function buildWorkoutPoolsideRecoverySummary(
@@ -4114,6 +4275,7 @@ function buildWorkoutPoolsideStandaloneRecoveryLineItem(
       poolLengthUnit,
       "standalone"
     ),
+    stepNoteCandidates: buildWorkoutPoolsideStepNoteCandidates([step]),
   };
 }
 
@@ -4215,17 +4377,18 @@ function buildWorkoutPoolsideDescriptor(
   primaryTargetLabel: string | null
 ) {
   const parts: string[] = [];
+  const isDrillStep = step.category === "drill" || step.stroke === "drill";
 
   if (step.category === "kick") {
     if (step.stroke && step.stroke !== "choice" && step.stroke !== "drill") {
       parts.push(getSessionStepStrokeLabel(step.stroke));
     }
     parts.push("Kick");
-  } else if (step.category === "drill" || step.stroke === "drill") {
-    if (step.drillType && step.drillType !== "none") {
-      parts.push(getSessionStepDrillTypeLabel(step.drillType));
+  } else if (isDrillStep) {
+    if (step.stroke && step.stroke !== "choice" && step.stroke !== "drill") {
+      parts.push(getSessionStepStrokeLabel(step.stroke));
     }
-    parts.push("Drill");
+    parts.push(resolveWorkoutPoolsideDrillLabel(step, durationLabel, primaryTargetLabel));
   } else if (step.stroke === "choice") {
     parts.push("Choice");
   } else if (step.stroke) {
@@ -4235,6 +4398,7 @@ function buildWorkoutPoolsideDescriptor(
   if (
     step.drillType &&
     step.drillType !== "none" &&
+    !isDrillStep &&
     !parts.includes(getSessionStepDrillTypeLabel(step.drillType))
   ) {
     parts.push(getSessionStepDrillTypeLabel(step.drillType));
@@ -4261,6 +4425,36 @@ function buildWorkoutPoolsideDescriptor(
   ].filter(Boolean) as string[];
 
   return duplicateLabels.some((label) => normalizedName === label.toLowerCase()) ? null : name;
+}
+
+function resolveWorkoutPoolsideDrillLabel(
+  step: SessionDraftStep,
+  durationLabel: string,
+  primaryTargetLabel: string | null
+) {
+  const name = typeof step.name === "string" ? step.name.trim() : "";
+  const normalizedName = name.toLowerCase();
+  const genericNames = new Set(["drill", "drill step", "swim drill", "pool drill"]);
+  const duplicateLabels = [
+    durationLabel,
+    primaryTargetLabel,
+    getSessionStepIntensityLabel(step.intensity),
+  ].filter(Boolean) as string[];
+
+  if (
+    name &&
+    !name.includes("·") &&
+    !genericNames.has(normalizedName) &&
+    !duplicateLabels.some((label) => normalizedName === label.toLowerCase())
+  ) {
+    return name;
+  }
+
+  if (step.drillType && step.drillType !== "none") {
+    return getSessionStepDrillTypeLabel(step.drillType);
+  }
+
+  return "Drill";
 }
 
 function buildWorkoutPoolsideTargetLabel(

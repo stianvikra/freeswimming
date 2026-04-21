@@ -148,6 +148,7 @@ describe("PoolsidePreviewPageClient", () => {
   );
 
   beforeEach(() => {
+    navigationState.searchParams = new URLSearchParams("previewId=preview-1");
     writeStoredWorkoutPoolsidePreviewDraft("preview-1", {
       draft: buildDraft(),
       draftState: "local_draft",
@@ -307,5 +308,24 @@ describe("PoolsidePreviewPageClient", () => {
 
     await markEmbeddedPreviewReady();
     expect(screen.getByTestId("poolside-preview-save-image")).not.toBeDisabled();
+  });
+
+  it("keeps note controls off by default and syncs selected note modes into the URL", async () => {
+    render(<PoolsidePreviewPageClient />);
+
+    expect(screen.getByTestId("poolside-preview-session-note")).toHaveValue("off");
+    expect(screen.getByTestId("poolside-preview-step-notes")).toHaveValue("off");
+
+    fireEvent.change(screen.getByTestId("poolside-preview-session-note"), {
+      target: { value: "include" },
+    });
+    fireEvent.change(screen.getByTestId("poolside-preview-step-notes"), {
+      target: { value: "drills_only" },
+    });
+
+    await waitFor(() => {
+      expect(window.location.search).toContain("sessionNoteMode=include");
+      expect(window.location.search).toContain("stepNotesMode=drills_only");
+    });
   });
 });

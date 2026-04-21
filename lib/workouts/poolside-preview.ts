@@ -5,12 +5,16 @@ import type {
   WorkoutPoolsidePrintLayout,
   WorkoutPoolsidePrintStyle,
   WorkoutPoolsideRestLayout,
+  WorkoutPoolsideSessionNoteMode,
+  WorkoutPoolsideStepNotesMode,
 } from "@/lib/workouts/shared";
 import {
   normalizeWorkoutPoolsideNotationMode,
   normalizeWorkoutPoolsidePrintLayout,
   normalizeWorkoutPoolsidePrintStyle,
   normalizeWorkoutPoolsideRestLayout,
+  normalizeWorkoutPoolsideSessionNoteMode,
+  normalizeWorkoutPoolsideStepNotesMode,
 } from "@/lib/workouts/shared";
 
 const WORKOUT_POOLSIDE_PREVIEW_STORAGE_PREFIX = "my-library-workout-poolside-preview-v1:";
@@ -20,6 +24,8 @@ export type WorkoutPoolsidePreviewSettings = {
   printLayout: WorkoutPoolsidePrintLayout;
   notationMode: WorkoutPoolsideNotationMode;
   restLayout: WorkoutPoolsideRestLayout;
+  sessionNoteMode: WorkoutPoolsideSessionNoteMode;
+  stepNotesMode: WorkoutPoolsideStepNotesMode;
 };
 
 export type StoredWorkoutPoolsidePreviewDraft = {
@@ -36,6 +42,8 @@ export const DEFAULT_WORKOUT_POOLSIDE_PREVIEW_SETTINGS: WorkoutPoolsidePreviewSe
   printLayout: "portrait",
   notationMode: "auto",
   restLayout: "auto",
+  sessionNoteMode: "off",
+  stepNotesMode: "off",
 };
 
 function slugifyPoolsideFilePart(value: string) {
@@ -91,12 +99,16 @@ export function normalizeWorkoutPoolsidePreviewSettings(input?: {
   printLayout?: string | null | undefined;
   notationMode?: string | null | undefined;
   restLayout?: string | null | undefined;
+  sessionNoteMode?: string | null | undefined;
+  stepNotesMode?: string | null | undefined;
 }): WorkoutPoolsidePreviewSettings {
   return {
     printStyle: normalizeWorkoutPoolsidePrintStyle(input?.printStyle),
     printLayout: normalizeWorkoutPoolsidePrintLayout(input?.printLayout),
     notationMode: normalizeWorkoutPoolsideNotationMode(input?.notationMode),
     restLayout: normalizeWorkoutPoolsideRestLayout(input?.restLayout),
+    sessionNoteMode: normalizeWorkoutPoolsideSessionNoteMode(input?.sessionNoteMode),
+    stepNotesMode: normalizeWorkoutPoolsideStepNotesMode(input?.stepNotesMode),
   };
 }
 
@@ -109,6 +121,8 @@ export function applyWorkoutPoolsidePreviewSettings(
   searchParams.set("printLayout", normalized.printLayout);
   searchParams.set("notationMode", normalized.notationMode);
   searchParams.set("restLayout", normalized.restLayout);
+  searchParams.set("sessionNoteMode", normalized.sessionNoteMode);
+  searchParams.set("stepNotesMode", normalized.stepNotesMode);
 }
 
 export function buildWorkoutPoolsidePreviewHref(
