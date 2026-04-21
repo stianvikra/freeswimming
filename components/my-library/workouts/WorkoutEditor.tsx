@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, ChevronUp, Ellipsis } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Ellipsis } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -1667,6 +1667,9 @@ export default function WorkoutEditor({
   const [manualPoolTitleEdited, setManualPoolTitleEdited] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
   const [lastRemovedBlock, setLastRemovedBlock] = useState<LastRemovedBlock | null>(null);
+  const [recentlyMovedBlockKey, setRecentlyMovedBlockKey] = useState<string | null>(null);
+  const [rearrangeLiveMessage, setRearrangeLiveMessage] = useState("");
+  const movedHighlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [workoutPdfNotice, setWorkoutPdfNotice] = useState("");
   const [workoutPdfError, setWorkoutPdfError] = useState("");
   const [garminExportNotice, setGarminExportNotice] = useState("");
@@ -1801,6 +1804,7 @@ export default function WorkoutEditor({
         totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
         estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
       });
+  const metadataPanelSummary = simplifyManualMetadata ? null : metadataSummary;
   const sessionTotalLabel = draftTotals.totalDistanceM
     ? formatDistanceMetersLabel(draftTotals.totalDistanceM, poolLengthUnit)
     : null;
@@ -1882,11 +1886,23 @@ export default function WorkoutEditor({
   const supportSummaryItemClass = "rounded-xl bg-slate-100/80 p-3 sm:p-4";
   const mobileSummaryToggleClass =
     "w-full rounded-2xl text-left outline-none transition focus-visible:ring-2 focus-visible:ring-blue-200";
+  const mobileIconButtonBaseClass =
+    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition";
   const mobileActionToggleClass =
-    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 active:bg-slate-100";
+    `${mobileIconButtonBaseClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100`;
+  const getMobileExpandToggleClass = (expanded: boolean) =>
+    `${mobileIconButtonBaseClass} ${
+      expanded
+        ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 active:bg-blue-100"
+        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+    }`;
   const mobileActionPanelClass = "mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-2.5";
   const mobileSecondaryActionClass =
     "inline-flex min-h-10 w-full items-center justify-start rounded-xl border px-3 py-2 text-sm font-medium transition";
+  const rearrangeMoveButtonClass =
+    "inline-flex h-10 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-10";
+  const recentlyMovedBlockClass =
+    "bg-teal-50/80 shadow-sm ring-2 ring-inset ring-teal-300";
   const desktopHeaderStackClass = "flex items-start justify-between gap-3";
   const desktopSummaryBlockClass = "min-w-0 flex-1";
   const desktopRepeatControlRowClass = "grid gap-3";
@@ -2248,6 +2264,26 @@ export default function WorkoutEditor({
     onDraftChange(syncedDraft);
   }, [draft, isManualPoolMode, onDraftChange, syncDraftSelections]);
 
+  useEffect(() => {
+    return () => {
+      if (movedHighlightTimeoutRef.current) {
+        clearTimeout(movedHighlightTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  function markBlockMoved(blockKey: string, label: string, direction: -1 | 1) {
+    if (movedHighlightTimeoutRef.current) {
+      clearTimeout(movedHighlightTimeoutRef.current);
+    }
+
+    setRecentlyMovedBlockKey(blockKey);
+    setRearrangeLiveMessage(`Moved ${label} ${direction === -1 ? "up" : "down"}.`);
+    movedHighlightTimeoutRef.current = setTimeout(() => {
+      setRecentlyMovedBlockKey(null);
+    }, 1500);
+  }
+
   function stepUsesAllowedStroke(stroke: SessionGeneratorStroke) {
     return draft.steps.some((step) => step.stroke === stroke);
   }
@@ -2274,13 +2310,23 @@ export default function WorkoutEditor({
     );
   }
 
-  function moveDraftGroup(groupIndex: number, direction: -1 | 1) {
+  function moveDraftGroup(groupIndex: number, direction: -1 | 1, movedLabel?: string) {
     const nextGroupIndex = groupIndex + direction;
     if (groupIndex < 0 || nextGroupIndex < 0 || nextGroupIndex >= stepGroups.length) return;
 
     const nextGroups = [...stepGroups];
     const [group] = nextGroups.splice(groupIndex, 1);
+    if (!group) return;
     nextGroups.splice(nextGroupIndex, 0, group);
+    const movedBlockKey =
+      group.kind === "repeat"
+        ? `repeat:${group.repeatGroupId}`
+        : `step:${group.entries[0]?.step.id ?? groupIndex}`;
+    const movedBlockLabel =
+      movedLabel ??
+      (group.kind === "repeat"
+        ? "repeat block"
+        : getSessionStepCategoryLabel(group.entries[0]?.step.category ?? "main"));
 
     onDraftChange(
       syncDraftSelections({
@@ -2292,16 +2338,19 @@ export default function WorkoutEditor({
         ),
       })
     );
+    markBlockMoved(movedBlockKey, movedBlockLabel, direction);
   }
 
-  function findManualPoolSingleBlockByStepId(stepId: string) {
-    return (
-      manualPoolEditBlocks.find(
-        (block) =>
-          block.kind === "single" &&
-          (block.entry.step.id === stepId || block.linkedRestEntry?.step.id === stepId)
-      ) ?? null
-    );
+  function findManualPoolSingleBlockByStepId(
+    stepId: string
+  ): Extract<ManualPoolEditBlock, { kind: "single" }> | null {
+    const block =
+      manualPoolEditBlocks.find((block) => {
+        if (block.kind !== "single") return false;
+        return block.entry.step.id === stepId || block.linkedRestEntry?.step.id === stepId;
+      }) ?? null;
+
+    return block?.kind === "single" ? block : null;
   }
 
   function moveManualPoolSingleBlock(stepId: string, direction: -1 | 1) {
@@ -2324,6 +2373,7 @@ export default function WorkoutEditor({
     const [movedBlock] = nextBlocks.splice(sourceBlockIndex, 1);
     if (!movedBlock) return;
     nextBlocks.splice(targetBlockIndex, 0, movedBlock);
+    const movedLabel = getSessionStepCategoryLabel(sourceBlock.entry.step.category);
 
     onDraftChange(
       syncDraftSelections({
@@ -2331,6 +2381,7 @@ export default function WorkoutEditor({
         steps: nextBlocks.flatMap((block) => block.steps),
       })
     );
+    markBlockMoved(sourceBlock.key, movedLabel, direction);
   }
 
   function insertStepAfterManualPoolSingleBlock(stepId: string) {
@@ -3512,6 +3563,10 @@ export default function WorkoutEditor({
       ) : null;
     const showRearrangeControls = isRearrangeMode && !insideRepeatGroup && !isLinkedPostSetRest;
     const canUseDesktopCardOpen = desktopCardEditEnabled && isEditMode && !isOpen;
+    const stepMoveHighlightKey = isTopLevelManualPoolBlock
+      ? (manualPoolEditBlock?.key ?? `step:${step.id}`)
+      : `step:${step.id}`;
+    const stepWasRecentlyMoved = recentlyMovedBlockKey === stepMoveHighlightKey;
     const topLevelCategoryRailClass =
       !pendingDelete && isTopLevelManualPoolBlock
         ? `border-l-4 ${getManualPoolCategoryRailClass(normalizedStep.category)}`
@@ -3530,6 +3585,13 @@ export default function WorkoutEditor({
     const openStepCard = () => {
       setOpenMobileActionKey(null);
       setOpenStepId(step.id);
+      if (insideRepeatGroup && normalizedStep.repeatGroupId) {
+        setOpenRepeatGroupId(normalizedStep.repeatGroupId);
+      }
+    };
+    const toggleStepCard = () => {
+      setOpenMobileActionKey(null);
+      setOpenStepId((current) => (current === step.id ? null : step.id));
       if (insideRepeatGroup && normalizedStep.repeatGroupId) {
         setOpenRepeatGroupId(normalizedStep.repeatGroupId);
       }
@@ -3555,6 +3617,8 @@ export default function WorkoutEditor({
             : undefined
         }
         className={`rounded-2xl border p-3 transition sm:p-4 ${cardStateClass} ${topLevelCategoryRailClass} ${
+          stepWasRecentlyMoved ? recentlyMovedBlockClass : ""
+        } ${
           canUseDesktopCardOpen && !pendingDelete
             ? "cursor-pointer hover:border-blue-200 hover:bg-white hover:shadow-sm"
             : ""
@@ -3562,31 +3626,20 @@ export default function WorkoutEditor({
       >
         <div className={desktopHeaderStackClass}>
           <div className={desktopSummaryBlockClass}>
-            {isSummaryOnlyMode ? (
+            {isSummaryOnlyMode || showRearrangeControls ? (
               <div data-testid={`session-draft-step-mobile-summary-${index}`} className="sm:hidden">
                 {stepSummaryContent}
               </div>
             ) : (
               <button
                 type="button"
-                onClick={() => {
-                  setOpenMobileActionKey(null);
-                  setOpenStepId((current) => (current === step.id ? null : step.id));
-                  if (insideRepeatGroup && normalizedStep.repeatGroupId) {
-                    setOpenRepeatGroupId(normalizedStep.repeatGroupId);
-                  }
-                }}
+                onClick={toggleStepCard}
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 data-testid={`session-draft-step-mobile-summary-${index}`}
                 className={`${mobileSummaryToggleClass} sm:hidden`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">{stepSummaryContent}</div>
-                  <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
-                    {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-                  </span>
-                </div>
+                {stepSummaryContent}
               </button>
             )}
             <div data-testid={`session-draft-step-summary-${index}`} className="hidden sm:block">
@@ -3597,12 +3650,7 @@ export default function WorkoutEditor({
             <div className="hidden shrink-0 sm:flex">
               <button
                 type="button"
-                onClick={() => {
-                  setOpenStepId((current) => (current === step.id ? null : step.id));
-                  if (insideRepeatGroup && normalizedStep.repeatGroupId) {
-                    setOpenRepeatGroupId(normalizedStep.repeatGroupId);
-                  }
-                }}
+                onClick={toggleStepCard}
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 data-testid={`session-draft-step-toggle-${index}`}
@@ -3619,29 +3667,48 @@ export default function WorkoutEditor({
           {showRearrangeControls ? (
             <div
               data-testid={`session-draft-step-rearrange-controls-${index}`}
-              className="flex shrink-0 flex-wrap gap-2"
+              className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap"
             >
               <button
                 type="button"
                 onClick={handleMoveUp}
                 disabled={moveUpDisabled}
+                aria-label="Move up"
+                title="Move up"
                 data-testid={`session-draft-step-rearrange-move-up-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className={rearrangeMoveButtonClass}
               >
-                Move up
+                <ArrowUp aria-hidden="true" className="size-4" />
               </button>
               <button
                 type="button"
                 onClick={handleMoveDown}
                 disabled={moveDownDisabled}
+                aria-label="Move down"
+                title="Move down"
                 data-testid={`session-draft-step-rearrange-move-down-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className={rearrangeMoveButtonClass}
               >
-                Move down
+                <ArrowDown aria-hidden="true" className="size-4" />
               </button>
             </div>
           ) : isEditMode ? (
-            <div className="flex shrink-0 sm:hidden">
+            <div className="flex shrink-0 items-start gap-2 sm:hidden">
+              <button
+                type="button"
+                onClick={toggleStepCard}
+                aria-expanded={isOpen}
+                aria-controls={panelId}
+                aria-label={isOpen ? "Hide step details" : "Show step details"}
+                data-testid={`session-draft-step-mobile-toggle-${index}`}
+                className={getMobileExpandToggleClass(isOpen)}
+              >
+                {isOpen ? (
+                  <ChevronUp aria-hidden="true" className="size-4" />
+                ) : (
+                  <ChevronDown aria-hidden="true" className="size-4" />
+                )}
+              </button>
               <button
                 type="button"
                 onClick={() =>
@@ -5161,7 +5228,7 @@ export default function WorkoutEditor({
                 {sessionTotalLabel ? (
                   <span
                     data-testid="workout-editor-session-total"
-                    className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800"
+                    className="inline-flex w-fit items-center self-start rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800"
                   >
                     {sessionTotalLabel}
                   </span>
@@ -5182,12 +5249,12 @@ export default function WorkoutEditor({
                   {workoutPdfStateLabel}
                 </p>
               ) : null}
-              {!metadataOpen || isSummaryOnlyMode ? (
+              {(!metadataOpen || isSummaryOnlyMode) && metadataPanelSummary ? (
                 <p
                   data-testid="workout-editor-metadata-summary"
                   className="mt-2 text-sm font-medium text-slate-900"
                 >
-                  {metadataSummary}
+                  {metadataPanelSummary}
                 </p>
               ) : null}
             </div>
@@ -5351,6 +5418,14 @@ export default function WorkoutEditor({
         </div>
 
         <div className="mt-4 space-y-4">
+          <p
+            data-testid="workout-editor-rearrange-live"
+            className="sr-only"
+            aria-live="polite"
+          >
+            {rearrangeLiveMessage}
+          </p>
+
           {stepGroups.length === 0 ? (
             <div
               data-testid="session-draft-empty-steps"
@@ -5552,6 +5627,10 @@ export default function WorkoutEditor({
                               : ""
                           }`
                     } ${
+                      recentlyMovedBlockKey === `repeat:${group.repeatGroupId}`
+                        ? recentlyMovedBlockClass
+                        : ""
+                    } ${
                       desktopCardEditEnabled &&
                       isEditMode &&
                       openRepeatGroupId !== group.repeatGroupId &&
@@ -5641,24 +5720,24 @@ export default function WorkoutEditor({
                         <div className="space-y-3">
                           <div className={desktopHeaderStackClass}>
                             <div className={desktopSummaryBlockClass}>
-                              <button
-                                type="button"
-                                onClick={() => toggleRepeatEditor(group.repeatGroupId)}
-                                aria-expanded={isRepeatOpen}
-                                data-testid={`session-draft-repeat-mobile-summary-${groupIndex}`}
-                                className={`${mobileSummaryToggleClass} sm:hidden`}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="min-w-0 flex-1">{repeatSummaryContent}</div>
-                                  <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
-                                    {isRepeatOpen ? (
-                                      <ChevronUp className="size-4" />
-                                    ) : (
-                                      <ChevronDown className="size-4" />
-                                    )}
-                                  </span>
+                              {isRearrangeMode ? (
+                                <div
+                                  data-testid={`session-draft-repeat-mobile-summary-${groupIndex}`}
+                                  className="sm:hidden"
+                                >
+                                  {repeatSummaryContent}
                                 </div>
-                              </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRepeatEditor(group.repeatGroupId)}
+                                  aria-expanded={isRepeatOpen}
+                                  data-testid={`session-draft-repeat-mobile-summary-${groupIndex}`}
+                                  className={`${mobileSummaryToggleClass} sm:hidden`}
+                                >
+                                  {repeatSummaryContent}
+                                </button>
+                              )}
                               <div
                                 data-testid={`session-draft-repeat-summary-${groupIndex}`}
                                 className="hidden sm:block"
@@ -5686,29 +5765,49 @@ export default function WorkoutEditor({
                             {isRearrangeMode ? (
                               <div
                                 data-testid={`session-draft-repeat-rearrange-controls-${groupIndex}`}
-                                className="flex shrink-0 flex-wrap gap-2"
+                                className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap"
                               >
                                 <button
                                   type="button"
-                                  onClick={() => moveDraftGroup(groupIndex, -1)}
+                                  onClick={() => moveDraftGroup(groupIndex, -1, repeatLabel)}
                                   disabled={repeatMoveUpDisabled}
+                                  aria-label="Move up"
+                                  title="Move up"
                                   data-testid={`session-draft-repeat-rearrange-move-up-${groupIndex}`}
-                                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                  className={rearrangeMoveButtonClass}
                                 >
-                                  Move up
+                                  <ArrowUp aria-hidden="true" className="size-4" />
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => moveDraftGroup(groupIndex, 1)}
+                                  onClick={() => moveDraftGroup(groupIndex, 1, repeatLabel)}
                                   disabled={repeatMoveDownDisabled}
+                                  aria-label="Move down"
+                                  title="Move down"
                                   data-testid={`session-draft-repeat-rearrange-move-down-${groupIndex}`}
-                                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                  className={rearrangeMoveButtonClass}
                                 >
-                                  Move down
+                                  <ArrowDown aria-hidden="true" className="size-4" />
                                 </button>
                               </div>
                             ) : isEditMode ? (
-                              <div className="flex shrink-0 sm:hidden">
+                              <div className="flex shrink-0 items-start gap-2 sm:hidden">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRepeatEditor(group.repeatGroupId)}
+                                  aria-expanded={isRepeatOpen}
+                                  aria-label={
+                                    isRepeatOpen ? "Hide repeat details" : "Show repeat details"
+                                  }
+                                  data-testid={`session-draft-repeat-mobile-toggle-${groupIndex}`}
+                                  className={getMobileExpandToggleClass(isRepeatOpen)}
+                                >
+                                  {isRepeatOpen ? (
+                                    <ChevronUp aria-hidden="true" className="size-4" />
+                                  ) : (
+                                    <ChevronDown aria-hidden="true" className="size-4" />
+                                  )}
+                                </button>
                                 {isRepeatOpen ? (
                                   <button
                                     type="button"

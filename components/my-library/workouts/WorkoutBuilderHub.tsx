@@ -322,7 +322,7 @@ export default function WorkoutBuilderHub({
         setPendingCurrentDelete(false);
         setSavedWorkout(null);
         setDraft(null);
-        router.replace("/my-library");
+        router.replace("/my-library/workouts");
         return;
       }
 
@@ -673,10 +673,10 @@ export default function WorkoutBuilderHub({
                   AI-generated session
                 </Link>
                 <Link
-                  href="/my-library"
+                  href="/my-library/workouts"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                 >
-                  Back to My Library
+                  My Swim Sessions
                 </Link>
               </div>
             </div>

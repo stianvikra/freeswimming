@@ -1612,6 +1612,38 @@ describe("WorkoutBuilderHub", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps manual session overview focused on title and total pill while metadata is collapsed", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({
+            sourceKind: "manual",
+            draft: {
+              ...buildDraft(),
+              sourceFingerprint: "manual-collapsed-summary",
+              title: "Manual pool overview",
+            },
+          }),
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.getByText("Manual pool overview")).toBeVisible();
+    expect(screen.getByTestId("workout-editor-session-total")).toHaveTextContent("400m");
+    expect(screen.queryByTestId("workout-editor-metadata-summary")).not.toBeInTheDocument();
+  });
+
   it("keeps the full metadata controls for non-manual workout sources", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
@@ -1973,12 +2005,27 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("session-draft-repeat-toggle-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("session-draft-step-rearrange-controls-0")).toBeVisible();
     expect(screen.getByTestId("session-draft-repeat-rearrange-controls-1")).toBeVisible();
+    expect(screen.getByTestId("session-draft-step-rearrange-move-up-0")).toHaveAccessibleName(
+      "Move up"
+    );
+    expect(screen.getByTestId("session-draft-step-rearrange-move-down-0")).toHaveAccessibleName(
+      "Move down"
+    );
+    expect(screen.getByTestId("session-draft-step-mobile-summary-0").tagName).toBe("DIV");
+    expect(screen.getByTestId("session-draft-repeat-mobile-summary-1").tagName).toBe("DIV");
+    expect(screen.getByTestId("session-draft-step-rearrange-controls-0")).toHaveClass("flex-col");
+    expect(screen.getByTestId("session-draft-repeat-rearrange-controls-1")).toHaveClass(
+      "flex-col"
+    );
 
     fireEvent.click(getDesktopSummaryCard("session-draft-step-summary-0"));
     expect(screen.queryByLabelText("Step Type")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("session-draft-step-rearrange-move-down-0"));
 
+    expect(screen.getByTestId("workout-editor-rearrange-live")).toHaveTextContent(
+      "Moved Warmup down."
+    );
     const previewDraft = readPreviewDraft();
     expect(previewDraft.steps[0]?.repeatGroupId).not.toBeNull();
     expect(previewDraft.steps.at(-1)?.id).toBe("step-1");
@@ -2837,7 +2884,23 @@ describe("WorkoutBuilderHub", () => {
       screen.getByTestId("saved-workout-poolside-workout-2-print-preview").getAttribute("href")
     ).not.toContain("focusId=focus-2");
 
-    fireEvent.click(screen.getByTestId("workout-builder-delete-workout-workout-2"));
+    const mobileActionsToggle = screen.getByTestId("saved-workout-mobile-actions-toggle-workout-2");
+    expect(mobileActionsToggle).toBeVisible();
+    expect(mobileActionsToggle).toHaveAccessibleName("More actions");
+    fireEvent.click(mobileActionsToggle);
+    expect(mobileActionsToggle).toHaveAccessibleName("Hide actions");
+    const mobileActionsPanel = screen.getByTestId("saved-workout-mobile-actions-panel-workout-2");
+    expect(mobileActionsPanel).toBeVisible();
+    expect(within(mobileActionsPanel).getByTestId("saved-workout-mobile-open-workout-2")).toHaveTextContent(
+      "Open"
+    );
+    expect(
+      within(mobileActionsPanel).getByTestId("workout-builder-delete-workout-workout-2")
+    ).toBeVisible();
+
+    fireEvent.click(
+      within(mobileActionsPanel).getByTestId("workout-builder-delete-workout-workout-2")
+    );
 
     expect(screen.getByText("Delete this saved session from My Library?")).toBeVisible();
     expect(
@@ -2900,7 +2963,7 @@ describe("WorkoutBuilderHub", () => {
     });
 
     await waitFor(() => {
-      expect(navigationState.replace).toHaveBeenCalledWith("/my-library");
+      expect(navigationState.replace).toHaveBeenCalledWith("/my-library/workouts");
     });
 
     expect(navigationState.refresh).not.toHaveBeenCalled();
@@ -3086,16 +3149,15 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("saved-workout-selection-hit-area-workout-4"));
     expect(screen.getByTestId("saved-workout-select-workout-2")).toBeChecked();
     expect(screen.getByTestId("saved-workout-select-workout-4")).toBeChecked();
-    expect(screen.getByTestId("saved-workout-card-workout-2")).toHaveAttribute("data-selected", "true");
-    expect(screen.getByText("2 selected")).toBeVisible();
-
-    fireEvent.click(
-      within(screen.getByTestId("saved-workout-card-workout-2")).getByTestId(
-        "saved-workouts-view-workout-2"
-      )
+    expect(screen.getByTestId("saved-workout-card-workout-2")).toHaveAttribute(
+      "data-selected",
+      "true"
     );
-    expect(screen.getByTestId("saved-workout-select-workout-2")).toBeChecked();
     expect(screen.getByText("2 selected")).toBeVisible();
+    expect(screen.queryByTestId("saved-workouts-view-workout-2")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("saved-workout-mobile-actions-toggle-workout-2")
+    ).not.toBeInTheDocument();
 
     expect(screen.getByText("Delete selected sessions")).toBeVisible();
     fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-delete"));

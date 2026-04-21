@@ -76,7 +76,7 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
         : "Swim session builder";
 
   return (
-    <SiteChrome>
+    <SiteChrome mobileNavMode="hidden">
       <section
         data-testid="workout-builder-route-shell"
         data-mobile-density="tight"
@@ -98,11 +98,11 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
-                href="/my-library"
+                href="/my-library/workouts"
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
                 <span className="sm:hidden">Back</span>
-                <span className="hidden sm:inline">Back to My Library</span>
+                <span className="hidden sm:inline">Back to My Swim Sessions</span>
               </Link>
             </div>
           </div>
