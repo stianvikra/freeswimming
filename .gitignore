@@ -24,6 +24,7 @@
 
 # next.js
 /.next/
+/.next-early-access-qa/
 /.next-playwright/
 /.next-playwright-lock/
 /out/
