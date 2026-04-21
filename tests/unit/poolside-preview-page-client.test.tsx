@@ -12,9 +12,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/workouts/shared", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/workouts/shared")>(
-    "@/lib/workouts/shared"
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/workouts/shared")>("@/lib/workouts/shared");
 
   return {
     ...actual,
@@ -70,10 +69,24 @@ function buildDraft() {
 function buildFrameDocument(title = "Poolside preview draft") {
   const frameDocument = document.implementation.createHTMLDocument("poolside-export");
   frameDocument.body.innerHTML = `
-    <article data-testid="workout-pdf-print-view">
-      <h1 data-testid="workout-pdf-title">${title}</h1>
-    </article>
+    <main class="shell">
+      <article data-testid="workout-pdf-print-view" data-poolside-page-width-mm="90">
+        <h1 data-testid="workout-pdf-title">${title}</h1>
+      </article>
+    </main>
   `;
+  const shell = frameDocument.querySelector<HTMLElement>(".shell");
+  const article = frameDocument.querySelector<HTMLElement>(
+    '[data-testid="workout-pdf-print-view"]'
+  );
+
+  if (shell) {
+    defineElementLayout(shell, { width: 388, height: 260 });
+  }
+
+  if (article) {
+    defineElementLayout(article, { width: 340, height: 240 });
+  }
 
   Object.defineProperty(frameDocument, "fonts", {
     configurable: true,
@@ -81,6 +94,40 @@ function buildFrameDocument(title = "Poolside preview draft") {
   });
 
   return frameDocument;
+}
+
+function defineElementLayout(element: HTMLElement, size: { width: number; height: number }) {
+  Object.defineProperties(element, {
+    clientHeight: { configurable: true, value: size.height },
+    clientWidth: { configurable: true, value: size.width },
+    offsetHeight: { configurable: true, value: size.height },
+    offsetWidth: { configurable: true, value: size.width },
+    scrollHeight: { configurable: true, value: size.height },
+    scrollWidth: { configurable: true, value: size.width },
+  });
+  element.getBoundingClientRect = () =>
+    ({
+      bottom: size.height,
+      height: size.height,
+      left: 0,
+      right: size.width,
+      top: 0,
+      width: size.width,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }) as DOMRect;
+}
+
+async function markEmbeddedPreviewReady() {
+  fireEvent.load(screen.getByTestId("poolside-preview-frame"));
+
+  await waitFor(() => {
+    expect(screen.getByTestId("poolside-preview-frame-state")).toHaveAttribute(
+      "data-preview-ready",
+      "true"
+    );
+  });
 }
 
 function setExportOverride(
@@ -166,6 +213,7 @@ describe("PoolsidePreviewPageClient", () => {
     });
 
     render(<PoolsidePreviewPageClient />);
+    await markEmbeddedPreviewReady();
 
     fireEvent.click(screen.getByTestId("poolside-preview-save-image"));
 
@@ -211,6 +259,7 @@ describe("PoolsidePreviewPageClient", () => {
     });
 
     render(<PoolsidePreviewPageClient />);
+    await markEmbeddedPreviewReady();
 
     fireEvent.click(screen.getByTestId("poolside-preview-save-image"));
 
@@ -233,6 +282,7 @@ describe("PoolsidePreviewPageClient", () => {
     });
 
     render(<PoolsidePreviewPageClient />);
+    await markEmbeddedPreviewReady();
 
     fireEvent.click(screen.getByTestId("poolside-preview-save-image"));
 
@@ -241,5 +291,21 @@ describe("PoolsidePreviewPageClient", () => {
         "Could not capture the poolside note image."
       );
     });
+  });
+
+  it("does not allow image export until the embedded note has rendered", async () => {
+    const captureSpy = vi.fn(async () => new Blob(["png"], { type: "image/png" }));
+    setExportOverride({
+      captureNoteBlob: captureSpy,
+    });
+
+    render(<PoolsidePreviewPageClient />);
+
+    expect(screen.getByTestId("poolside-preview-save-image")).toBeDisabled();
+    fireEvent.click(screen.getByTestId("poolside-preview-save-image"));
+    expect(captureSpy).not.toHaveBeenCalled();
+
+    await markEmbeddedPreviewReady();
+    expect(screen.getByTestId("poolside-preview-save-image")).not.toBeDisabled();
   });
 });

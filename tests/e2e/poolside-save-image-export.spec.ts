@@ -8,9 +8,8 @@ import {
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
-function runOnceOnDesktopChromium(projectName: string) {
-  test.skip(!projectName.startsWith("desktop-"), "Poolside image export e2e is desktop-only.");
-  test.skip(projectName !== "desktop-chromium", "Runs once on desktop Chromium.");
+function runOnceOnMobileChromium(projectName: string) {
+  test.skip(projectName !== "mobile-chromium", "Runs once on mobile Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
 }
 
@@ -111,7 +110,11 @@ async function triggerCreateSession(page: Page, testId: string) {
 
 async function openSavedWorkoutPoolsidePanel(page: Page, workoutId: string) {
   const card = page.getByTestId(`saved-workout-card-${workoutId}`);
-  const poolsideToggle = card.getByTestId(`saved-workouts-poolside-${workoutId}`);
+  const poolsideToggle = card
+    .getByTestId(`saved-workouts-poolside-${workoutId}`)
+    .filter({ visible: true })
+    .first();
+  const mobileActionsToggle = card.getByTestId(`saved-workout-mobile-actions-toggle-${workoutId}`);
   const printPreviewLink = card.getByTestId(`saved-workout-poolside-${workoutId}-print-preview`);
 
   await expect(card).toBeVisible({ timeout: 15_000 });
@@ -120,6 +123,15 @@ async function openSavedWorkoutPoolsidePanel(page: Page, workoutId: string) {
     const linkVisible = await printPreviewLink.isVisible().catch(() => false);
     if (linkVisible) {
       return printPreviewLink;
+    }
+
+    const poolsideToggleVisible = await poolsideToggle.isVisible().catch(() => false);
+    if (!poolsideToggleVisible && (await mobileActionsToggle.isVisible().catch(() => false))) {
+      await mobileActionsToggle.scrollIntoViewIfNeeded();
+      await mobileActionsToggle.click();
+      await expect(card.getByTestId(`saved-workout-mobile-actions-panel-${workoutId}`)).toBeVisible(
+        { timeout: 5_000 }
+      );
     }
 
     await expect(poolsideToggle).toBeVisible({ timeout: 10_000 });
@@ -181,6 +193,15 @@ async function installSaveImageDownloadProbe(page: Page) {
       return;
     }
 
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(navigator, "canShare", {
+      configurable: true,
+      value: undefined,
+    });
+
     const originalClick = HTMLAnchorElement.prototype.click;
     HTMLAnchorElement.prototype.click = function patchedPoolsideSaveImageAnchorClick() {
       if (this.download) {
@@ -188,6 +209,7 @@ async function installSaveImageDownloadProbe(page: Page) {
           download: this.download,
           href: this.href,
         });
+        return undefined;
       }
 
       return originalClick.call(this);
@@ -197,16 +219,39 @@ async function installSaveImageDownloadProbe(page: Page) {
   });
 }
 
+async function expectSaveImageDownloadCount(page: Page, expectedCount: number) {
+  await expect
+    .poll(
+      async () =>
+        await page.evaluate(() => {
+          const probe = (
+            window as typeof window & {
+              __fsPoolsideSaveImageDownloadProbe__?: {
+                entries: Array<{ download: string; href: string }>;
+              };
+            }
+          ).__fsPoolsideSaveImageDownloadProbe__;
+          return probe?.entries.length ?? 0;
+        }),
+      {
+        timeout: 15_000,
+      }
+    )
+    .toBe(expectedCount);
+}
+
 async function expectSaveImageDownloadIntent(page: Page, expectedFileName: string) {
   await expect
     .poll(
       async () =>
         await page.evaluate(() => {
-          const probe = (window as typeof window & {
-            __fsPoolsideSaveImageDownloadProbe__?: {
-              entries: Array<{ download: string; href: string }>;
-            };
-          }).__fsPoolsideSaveImageDownloadProbe__;
+          const probe = (
+            window as typeof window & {
+              __fsPoolsideSaveImageDownloadProbe__?: {
+                entries: Array<{ download: string; href: string }>;
+              };
+            }
+          ).__fsPoolsideSaveImageDownloadProbe__;
           const entries = probe?.entries ?? [];
           return entries.length > 0 ? entries[entries.length - 1] : null;
         }),
@@ -231,6 +276,13 @@ async function waitForEmbeddedPoolsidePreview(
   const previewFrame = page.frameLocator('[data-testid="poolside-preview-frame"]');
   const article = previewFrame.locator('[data-testid="workout-pdf-print-view"]');
 
+  await expect(page.getByTestId("poolside-preview-frame-state")).toHaveAttribute(
+    "data-preview-ready",
+    "true",
+    {
+      timeout: 15_000,
+    }
+  );
   await expect(article).toBeVisible({ timeout: 15_000 });
 
   if (expected.printLayout) {
@@ -256,7 +308,7 @@ test.describe("poolside save image export", () => {
   test("exports PNG from both local-draft and saved-workout preview entry paths", async ({
     page,
   }, testInfo) => {
-    runOnceOnDesktopChromium(testInfo.project.name);
+    runOnceOnMobileChromium(testInfo.project.name);
     test.slow();
     test.setTimeout(180_000);
 
@@ -295,9 +347,13 @@ test.describe("poolside save image export", () => {
     await installSaveImageDownloadProbe(localPreviewPopup);
     await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
     await expectSaveImageDownloadIntent(localPreviewPopup, expectedPortraitFileName);
+    await expectSaveImageDownloadCount(localPreviewPopup, 1);
     await expect(localPreviewPopup.getByTestId("poolside-preview-save-image-notice")).toContainText(
       expectedPortraitFileName
     );
+    await expect(localPreviewPopup.getByTestId("poolside-preview-save-image")).toBeEnabled();
+    await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
+    await expectSaveImageDownloadCount(localPreviewPopup, 2);
     await localPreviewPopup.close();
 
     const firstSaveResponsePromise = page.waitForResponse(
@@ -332,6 +388,7 @@ test.describe("poolside save image export", () => {
     await installSaveImageDownloadProbe(savedPreviewPopup);
     await savedPreviewPopup.getByTestId("poolside-preview-save-image").click();
     await expectSaveImageDownloadIntent(savedPreviewPopup, expectedLandscapeFileName);
+    await expectSaveImageDownloadCount(savedPreviewPopup, 1);
     await expect(savedPreviewPopup.getByTestId("poolside-preview-save-image-notice")).toContainText(
       expectedLandscapeFileName
     );
