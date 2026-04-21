@@ -16,7 +16,8 @@ import { getWorkoutPoolsideImageExportDriver } from "@/lib/workouts/poolside-ima
 import { buildWorkoutPdfHtmlDocument } from "@/lib/workouts/shared";
 
 const CSS_PIXELS_PER_MM = 96 / 25.4;
-const EMBEDDED_PREVIEW_MIN_HEIGHT = 680;
+const EMBEDDED_PREVIEW_LOADING_HEIGHT = 180;
+const EMBEDDED_PREVIEW_MIN_READY_HEIGHT = 220;
 const EMBEDDED_PREVIEW_FRAME_PADDING = 48;
 const EMBEDDED_PREVIEW_STAGE_GUTTER = 12;
 
@@ -46,6 +47,24 @@ function isShareCancelled(error: unknown) {
   return /abort|cancel/i.test(message);
 }
 
+function getElementRenderSize(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    width: Math.ceil(Math.max(rect.width, element.offsetWidth, element.scrollWidth)),
+    height: Math.ceil(Math.max(rect.height, element.offsetHeight, element.scrollHeight)),
+  };
+}
+
+function isNoteElementReadyForCapture(element: HTMLElement | null): element is HTMLElement {
+  if (!element || !element.isConnected) {
+    return false;
+  }
+
+  const size = getElementRenderSize(element);
+  return size.width > 0 && size.height > 0;
+}
+
 export default function PoolsidePreviewPageClient() {
   const searchParams = useSearchParams();
   const searchSignature = searchParams.toString();
@@ -73,10 +92,13 @@ export default function PoolsidePreviewPageClient() {
   const [previewViewportWidth, setPreviewViewportWidth] = useState(() =>
     typeof window === "undefined" ? 0 : Math.max(0, window.innerWidth - 56)
   );
-  const [embeddedPreviewHeight, setEmbeddedPreviewHeight] = useState(EMBEDDED_PREVIEW_MIN_HEIGHT);
+  const [embeddedPreviewHeight, setEmbeddedPreviewHeight] = useState(
+    EMBEDDED_PREVIEW_MIN_READY_HEIGHT
+  );
   const [embeddedPreviewViewportWidth, setEmbeddedPreviewViewportWidth] = useState(() =>
     getEmbeddedPreviewFallbackWidth(settings.printLayout)
   );
+  const [embeddedNoteReady, setEmbeddedNoteReady] = useState(false);
   const [saveImagePending, setSaveImagePending] = useState(false);
   const [saveImageError, setSaveImageError] = useState("");
   const [saveImageNotice, setSaveImageNotice] = useState("");
@@ -183,6 +205,24 @@ export default function PoolsidePreviewPageClient() {
       previewChrome: "embedded",
     });
   }, [localPreviewDraft, settings]);
+  const previewFrameKey = useMemo(
+    () =>
+      [
+        previewFrameHref ?? "local-draft",
+        localPreviewDraft?.updatedAt ?? "no-local-draft",
+        settings.printStyle,
+        settings.printLayout,
+        settings.notationMode,
+        settings.restLayout,
+      ].join("|"),
+    [localPreviewDraft?.updatedAt, previewFrameHref, settings]
+  );
+
+  useEffect(() => {
+    setEmbeddedNoteReady(false);
+    setEmbeddedPreviewHeight(EMBEDDED_PREVIEW_MIN_READY_HEIGHT);
+    setEmbeddedPreviewViewportWidth(getEmbeddedPreviewFallbackWidth(settings.printLayout));
+  }, [previewFrameKey, settings.printLayout]);
 
   function syncPreviewSettings(nextSettings: WorkoutPoolsidePreviewSettings) {
     setSettings(nextSettings);
@@ -242,33 +282,23 @@ export default function PoolsidePreviewPageClient() {
     }
 
     const measure = () => {
-      const root = frameDocument.documentElement;
-      const body = frameDocument.body;
       const article = frameDocument.querySelector<HTMLElement>(
         '[data-testid="workout-pdf-print-view"]'
       );
       const shell = frameDocument.querySelector<HTMLElement>(".shell");
-      const renderedPageWidthMm = Number(
-        article?.getAttribute("data-poolside-page-width-mm") ?? ""
-      );
+      if (!isNoteElementReadyForCapture(article)) {
+        setEmbeddedNoteReady(false);
+        return false;
+      }
+
+      const renderedPageWidthMm = Number(article.getAttribute("data-poolside-page-width-mm") ?? "");
+      const articleSize = getElementRenderSize(article);
       const nextHeight = Math.max(
-        EMBEDDED_PREVIEW_MIN_HEIGHT,
-        Math.ceil(
-          Math.max(
-            root?.scrollHeight ?? 0,
-            body?.scrollHeight ?? 0,
-            shell?.scrollHeight ?? 0,
-            article?.offsetHeight ?? 0
-          )
-        )
+        EMBEDDED_PREVIEW_MIN_READY_HEIGHT,
+        Math.ceil(Math.max(shell?.scrollHeight ?? 0, articleSize.height))
       );
       const measuredViewportWidth = Math.ceil(
-        Math.max(
-          root?.scrollWidth ?? 0,
-          body?.scrollWidth ?? 0,
-          shell?.scrollWidth ?? 0,
-          (article?.offsetWidth ?? 0) + EMBEDDED_PREVIEW_FRAME_PADDING
-        )
+        Math.max(articleSize.width + EMBEDDED_PREVIEW_FRAME_PADDING, EMBEDDED_PREVIEW_FRAME_PADDING)
       );
       const expectedViewportWidth = Number.isFinite(renderedPageWidthMm)
         ? Math.max(
@@ -282,10 +312,16 @@ export default function PoolsidePreviewPageClient() {
       setEmbeddedPreviewViewportWidth((current) =>
         current === nextViewportWidth ? current : nextViewportWidth
       );
+      setEmbeddedNoteReady(true);
+      return true;
     };
 
     measure();
+    frameWindow.requestAnimationFrame?.(() => {
+      measure();
+    });
     frameWindow.setTimeout(measure, 160);
+    frameWindow.setTimeout(measure, 420);
   }
 
   async function resolvePreviewNoteForExport() {
@@ -294,7 +330,7 @@ export default function PoolsidePreviewPageClient() {
       const noteElement =
         frameDocument?.querySelector<HTMLElement>('[data-testid="workout-pdf-print-view"]') ?? null;
 
-      if (frameDocument && noteElement) {
+      if (frameDocument && isNoteElementReadyForCapture(noteElement)) {
         return { frameDocument, noteElement };
       }
 
@@ -319,13 +355,15 @@ export default function PoolsidePreviewPageClient() {
   }
 
   function shouldPreferNativeShare() {
-    return typeof window !== "undefined" &&
+    return (
+      typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&
-      window.matchMedia("(pointer: coarse)").matches;
+      window.matchMedia("(pointer: coarse)").matches
+    );
   }
 
   async function handleSaveImage() {
-    if (previewUnavailable || saveImagePending) {
+    if (previewUnavailable || saveImagePending || !embeddedNoteReady) {
       return;
     }
 
@@ -370,7 +408,9 @@ export default function PoolsidePreviewPageClient() {
       setSaveImageNotice(`Saved ${fileName}.`);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Could not save the poolside note image right now.";
+        error instanceof Error
+          ? error.message
+          : "Could not save the poolside note image right now.";
       setSaveImageError(message);
     } finally {
       setSaveImagePending(false);
@@ -387,7 +427,10 @@ export default function PoolsidePreviewPageClient() {
       : 1;
   const embeddedStageWidth = embeddedPreviewViewportWidth * embeddedPreviewScale;
   const embeddedStageHeight = embeddedPreviewHeight * embeddedPreviewScale;
-  const embeddedPreviewReady = previewViewportWidth > 0;
+  const embeddedPreviewReady = previewViewportWidth > 0 && embeddedNoteReady;
+  const displayedEmbeddedStageHeight = embeddedPreviewReady
+    ? embeddedStageHeight
+    : EMBEDDED_PREVIEW_LOADING_HEIGHT;
 
   return (
     <main
@@ -423,7 +466,7 @@ export default function PoolsidePreviewPageClient() {
                 <button
                   type="button"
                   onClick={handleSaveImage}
-                  disabled={previewUnavailable || saveImagePending}
+                  disabled={previewUnavailable || saveImagePending || !embeddedNoteReady}
                   data-testid="poolside-preview-save-image"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -565,16 +608,30 @@ export default function PoolsidePreviewPageClient() {
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 px-2 py-2 sm:px-3 sm:py-3"
               >
                 <div
-                  className="mx-auto"
+                  className="relative mx-auto"
+                  data-testid="poolside-preview-frame-state"
+                  data-preview-ready={embeddedPreviewReady ? "true" : "false"}
                   style={{
                     width: `${embeddedStageWidth}px`,
-                    height: `${embeddedStageHeight}px`,
-                    opacity: embeddedPreviewReady ? 1 : 0,
-                    transition: "opacity 120ms ease",
+                    height: `${displayedEmbeddedStageHeight}px`,
+                    transition: "height 160ms ease",
                   }}
                 >
+                  {!embeddedPreviewReady ? (
+                    <div
+                      data-testid="poolside-preview-frame-loading"
+                      className="absolute inset-0 grid place-items-center rounded-xl border border-blue-100 bg-white/70 px-4 text-center text-sm font-medium text-slate-600"
+                    >
+                      Loading note preview...
+                    </div>
+                  ) : null}
                   <div
-                    className="relative origin-top-left"
+                    className={`relative origin-top-left ${
+                      embeddedPreviewReady
+                        ? "opacity-100"
+                        : "pointer-events-none absolute left-0 top-0 opacity-0"
+                    }`}
+                    aria-hidden={embeddedPreviewReady ? undefined : true}
                     style={{
                       width: `${embeddedPreviewViewportWidth}px`,
                       height: `${embeddedPreviewHeight}px`,
@@ -583,6 +640,7 @@ export default function PoolsidePreviewPageClient() {
                     }}
                   >
                     <iframe
+                      key={previewFrameKey}
                       ref={iframeRef}
                       title="Poolside note preview"
                       data-testid="poolside-preview-frame"
