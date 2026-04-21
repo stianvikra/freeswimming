@@ -20,6 +20,12 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
   - [2026-04-20-poolside-note-mobile-preview-and-save-image-reliability-followup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-20-poolside-note-mobile-preview-and-save-image-reliability-followup-10-10.md)
 - Remaining findings-wave brief that currently takes precedence:
   - [2026-04-21-poolside-note-session-and-step-notes-display-options-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-poolside-note-session-and-step-notes-display-options-10-10.md)
+  - [2026-04-21-poolside-note-save-image-crop-boundary-followup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-poolside-note-save-image-crop-boundary-followup-10-10.md)
+  - [2026-04-21-my-swim-profile-page-ia-and-copy-cleanup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-my-swim-profile-page-ia-and-copy-cleanup-10-10.md)
+  - [2026-04-21-account-security-simplification-and-auth-surface-audit-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-account-security-simplification-and-auth-surface-audit-10-10.md)
+  - [2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10.md)
+  - [2026-04-21-course-dashboard-new-content-and-continue-card-cleanup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-course-dashboard-new-content-and-continue-card-cleanup-10-10.md)
+  - [2026-04-21-my-library-my-training-ia-and-builder-entrypoint-reconcile-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-my-library-my-training-ia-and-builder-entrypoint-reconcile-10-10.md)
 
 ## Why This Brief Exists
 
