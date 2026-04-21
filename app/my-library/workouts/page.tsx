@@ -66,8 +66,10 @@ export default async function WorkoutSessionsPage({ searchParams }: Props) {
     entryMode === "manual-pool" ||
     entryMode === "manual-open-water";
 
+  const backHref = localDraftMode === null ? "/my-library" : "/my-library/workouts";
+
   return (
-    <SiteChrome>
+    <SiteChrome mobileNavMode={localDraftMode === null ? "default" : "hidden"}>
       <section
         data-testid="workout-builder-route-shell"
         data-mobile-density="tight"
@@ -89,11 +91,13 @@ export default async function WorkoutSessionsPage({ searchParams }: Props) {
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
-                href="/my-library"
+                href={backHref}
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
                 <span className="sm:hidden">Back</span>
-                <span className="hidden sm:inline">Back to My Library</span>
+                <span className="hidden sm:inline">
+                  {localDraftMode === null ? "Back to My Library" : "Back to My Swim Sessions"}
+                </span>
               </Link>
             </div>
           </div>

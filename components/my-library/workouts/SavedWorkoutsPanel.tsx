@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronUp, Ellipsis } from "lucide-react";
 import { useEffect, useState } from "react";
 import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
 import {
@@ -159,6 +160,7 @@ export default function SavedWorkoutsPanel({
   const [expanded, setExpanded] = useState(() => !collapsedByDefault);
   const [previewWorkoutId, setPreviewWorkoutId] = useState<string | null>(null);
   const [poolsideWorkoutId, setPoolsideWorkoutId] = useState<string | null>(null);
+  const [mobileActionsWorkoutId, setMobileActionsWorkoutId] = useState<string | null>(null);
   const [showAllWorkouts, setShowAllWorkouts] = useState(() => initialVisibleCount == null);
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false);
   const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
@@ -186,6 +188,7 @@ export default function SavedWorkoutsPanel({
     if (pendingDeleteWorkoutId) {
       setPreviewWorkoutId(null);
       setPoolsideWorkoutId(null);
+      setMobileActionsWorkoutId(null);
     }
   }, [pendingDeleteWorkoutId]);
 
@@ -200,6 +203,12 @@ export default function SavedWorkoutsPanel({
       setPoolsideWorkoutId(null);
     }
   }, [poolsideWorkoutId, workouts]);
+
+  useEffect(() => {
+    if (mobileActionsWorkoutId && !workouts.some((workout) => workout.id === mobileActionsWorkoutId)) {
+      setMobileActionsWorkoutId(null);
+    }
+  }, [mobileActionsWorkoutId, workouts]);
 
   useEffect(() => {
     setSelectedWorkoutIds((current) =>
@@ -217,6 +226,14 @@ export default function SavedWorkoutsPanel({
       return availableFocusIds;
     });
   }, [trainingFocusOptions]);
+
+  useEffect(() => {
+    if (bulkSelectionMode) {
+      setPreviewWorkoutId(null);
+      setPoolsideWorkoutId(null);
+      setMobileActionsWorkoutId(null);
+    }
+  }, [bulkSelectionMode]);
 
   useEffect(() => {
     if (selectedWorkoutIds.length === 0) {
@@ -384,6 +401,15 @@ export default function SavedWorkoutsPanel({
                   selectedFocusIds: selectedPoolsideFocusIds,
                 })
               : null;
+            const hasQuickView =
+              showInlinePreview && (quickPreviewSections.length > 0 || totalDistanceQuickLabel);
+            const hasDeleteAction =
+              !isCurrentWorkout && typeof onRequestDeleteWorkout === "function";
+            const hasSecondaryActions = Boolean(
+              hasQuickView || workoutPdfHref || workoutPoolsidePdfHref || hasDeleteAction
+            );
+            const hasMobileActions = Boolean(!isCurrentWorkout || hasSecondaryActions);
+            const mobileActionsOpen = mobileActionsWorkoutId === workout.id;
             const cardClasses = bulkSelectionMode
               ? isSelected
                 ? "border-blue-200 bg-blue-50/80 ring-1 ring-blue-200"
@@ -422,9 +448,112 @@ export default function SavedWorkoutsPanel({
                       <p className="text-sm font-semibold text-slate-900">{workout.title}</p>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {showInlinePreview &&
-                    (quickPreviewSections.length > 0 || totalDistanceQuickLabel) ? (
+                  {!bulkSelectionMode ? (
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                      {!isCurrentWorkout ? (
+                        <Link
+                          href={workoutHrefBuilder(workout.id)}
+                          data-testid={editButtonTestIdBuilder(workout.id)}
+                          className="hidden h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:inline-flex"
+                        >
+                          {editLabel}
+                        </Link>
+                      ) : null}
+                      {hasMobileActions ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMobileActionsWorkoutId((current) =>
+                              current === workout.id ? null : workout.id
+                            )
+                          }
+                          aria-expanded={mobileActionsOpen}
+                          aria-controls={`saved-workout-mobile-actions-panel-${workout.id}`}
+                          aria-label={mobileActionsOpen ? "Hide actions" : "More actions"}
+                          data-testid={`saved-workout-mobile-actions-toggle-${workout.id}`}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:hidden"
+                        >
+                          {mobileActionsOpen ? (
+                            <ChevronUp aria-hidden="true" className="size-4" />
+                          ) : (
+                            <Ellipsis aria-hidden="true" className="size-5" />
+                          )}
+                        </button>
+                      ) : null}
+                      <div className="hidden flex-wrap items-center gap-2 sm:flex">
+                        {hasQuickView ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPoolsideWorkoutId(null);
+                              setPreviewWorkoutId((current) =>
+                                current === workout.id ? null : workout.id
+                              );
+                            }}
+                            data-testid={viewButtonTestIdBuilder(workout.id)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                          >
+                            {previewOpen ? "Hide" : "Quick View"}
+                          </button>
+                        ) : null}
+                        {workoutPdfHref ? (
+                          <Link
+                            href={workoutPdfHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-testid={printButtonTestIdBuilder(workout.id)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
+                          >
+                            View PDF
+                          </Link>
+                        ) : null}
+                        {workoutPoolsidePdfHref ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPreviewWorkoutId(null);
+                              setPoolsideWorkoutId((current) =>
+                                current === workout.id ? null : workout.id
+                              );
+                            }}
+                            data-testid={poolsidePdfButtonTestIdBuilder(workout.id)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+                          >
+                            {poolsideOpen ? "Hide Poolside" : "Poolside Note"}
+                          </button>
+                        ) : null}
+                        {hasDeleteAction ? (
+                          <button
+                            type="button"
+                            onClick={() => onRequestDeleteWorkout?.(workout)}
+                            disabled={deleting}
+                            data-testid={deleteButtonTestIdBuilder(workout.id)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deleting ? "Deleting..." : "Delete"}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {!bulkSelectionMode && mobileActionsOpen ? (
+                  <div
+                    id={`saved-workout-mobile-actions-panel-${workout.id}`}
+                    data-testid={`saved-workout-mobile-actions-panel-${workout.id}`}
+                    className="mt-3 grid gap-2 sm:hidden"
+                  >
+                    {!isCurrentWorkout ? (
+                      <Link
+                        href={workoutHrefBuilder(workout.id)}
+                        data-testid={`saved-workout-mobile-open-${workout.id}`}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      >
+                        {editLabel}
+                      </Link>
+                    ) : null}
+                    {hasQuickView ? (
                       <button
                         type="button"
                         onClick={() => {
@@ -436,17 +565,8 @@ export default function SavedWorkoutsPanel({
                         data-testid={viewButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                       >
-                        {previewOpen ? "Hide" : "Quick View"}
+                        {previewOpen ? "Hide quick view" : "Quick View"}
                       </button>
-                    ) : null}
-                    {!isCurrentWorkout ? (
-                      <Link
-                        href={workoutHrefBuilder(workout.id)}
-                        data-testid={editButtonTestIdBuilder(workout.id)}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                      >
-                        {editLabel}
-                      </Link>
                     ) : null}
                     {workoutPdfHref ? (
                       <Link
@@ -474,12 +594,10 @@ export default function SavedWorkoutsPanel({
                         {poolsideOpen ? "Hide Poolside" : "Poolside Note"}
                       </button>
                     ) : null}
-                    {!bulkSelectionMode &&
-                    !isCurrentWorkout &&
-                    typeof onRequestDeleteWorkout === "function" ? (
+                    {hasDeleteAction ? (
                       <button
                         type="button"
-                        onClick={() => onRequestDeleteWorkout(workout)}
+                        onClick={() => onRequestDeleteWorkout?.(workout)}
                         disabled={deleting}
                         data-testid={deleteButtonTestIdBuilder(workout.id)}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -488,7 +606,7 @@ export default function SavedWorkoutsPanel({
                       </button>
                     ) : null}
                   </div>
-                </div>
+                ) : null}
 
                 {previewOpen && (quickPreviewSections.length > 0 || totalDistanceQuickLabel) ? (
                   <div

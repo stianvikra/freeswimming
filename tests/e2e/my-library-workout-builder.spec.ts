@@ -170,6 +170,7 @@ test.describe("my library workout builder", () => {
     await waitForLocalWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
+    await expect(page.getByTestId("mobile-fixed-nav")).toHaveCount(0);
 
     await expect(page.getByTestId("workout-builder-route-shell")).toHaveAttribute(
       "data-mobile-density",
@@ -291,6 +292,11 @@ test.describe("my library workout builder", () => {
     expect(firstSavePayload?.ok).toBe(true);
     await waitForSavedWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
+    await expect(page.getByTestId("mobile-fixed-nav")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Back to My Swim Sessions" })).toHaveAttribute(
+      "href",
+      "/my-library/workouts"
+    );
 
     await expect(page.getByRole("button", { name: "Discard draft" })).toHaveCount(0);
     await expect(page.getByTestId("workout-builder-delete-current-workout")).toBeVisible();
@@ -324,8 +330,10 @@ test.describe("my library workout builder", () => {
     await selectionHitArea.click();
     await expect(selectionCheckbox).toBeChecked();
     await expect(savedWorkoutCard).toHaveAttribute("data-selected", "true");
-    await savedWorkoutCard.getByTestId(`saved-workouts-view-${workoutId}`).click();
-    await expect(selectionCheckbox).toBeChecked();
+    await expect(savedWorkoutCard.getByTestId(`saved-workouts-view-${workoutId}`)).toHaveCount(0);
+    await expect(
+      savedWorkoutCard.getByTestId(`saved-workout-mobile-actions-toggle-${workoutId}`)
+    ).toHaveCount(0);
     await expect(page.getByText("1 selected")).toBeVisible();
     await page.getByTestId("workout-builder-saved-sessions-bulk-cancel").click();
     await expect(selectionCheckbox).toHaveCount(0);
