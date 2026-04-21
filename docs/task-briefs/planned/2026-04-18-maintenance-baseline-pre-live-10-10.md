@@ -18,8 +18,8 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
 - Findings-wave briefs completed before this baseline:
   - [2026-04-20-swim-session-builder-library-default-entry-action-density-and-workspace-nav-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-20-swim-session-builder-library-default-entry-action-density-and-workspace-nav-10-10.md)
   - [2026-04-20-poolside-note-mobile-preview-and-save-image-reliability-followup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-20-poolside-note-mobile-preview-and-save-image-reliability-followup-10-10.md)
+  - [2026-04-21-poolside-note-session-and-step-notes-display-options-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-21-poolside-note-session-and-step-notes-display-options-10-10.md)
 - Remaining findings-wave brief that currently takes precedence:
-  - [2026-04-21-poolside-note-session-and-step-notes-display-options-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-21-poolside-note-session-and-step-notes-display-options-10-10.md)
   - [2026-04-21-poolside-note-save-image-crop-boundary-followup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-poolside-note-save-image-crop-boundary-followup-10-10.md)
   - [2026-04-21-my-swim-profile-page-ia-and-copy-cleanup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-my-swim-profile-page-ia-and-copy-cleanup-10-10.md)
   - [2026-04-21-account-security-simplification-and-auth-surface-audit-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-21-account-security-simplification-and-auth-surface-audit-10-10.md)
@@ -46,6 +46,10 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
   - `npm audit --omit=dev --audit-level=high` reports one high-severity `next` advisory window affecting the current pinned version,
   - runtime pinning is implicit in CI (`node-version: 20`) but not explicit in repo-root developer tooling files,
   - there is no canonical monthly maintenance issue/runbook flow that turns “remember to do hygiene” into a stable operating rhythm.
+- Carry-forward decision from PR #496:
+  - `npm run test:perf:budgets` recommended tightening one stretch target after two consecutive weekly green runs,
+  - tightening is intentionally deferred out of the product/UI poolside notes slice,
+  - this maintenance baseline must review `artifacts/perf-budgets/trend-log.ndjson`, decide `tighten` / `hold` / `revert`, and record the decision in the active brief and PR summary.
 
 ## Recommended Execution Order
 
@@ -72,6 +76,7 @@ Do not batch all three into one PR unless validation shows the diff is still eas
 - Remove all known `high` or `critical` production dependency findings on current `main`.
 - Lock the runtime contract explicitly in repo files, not only in CI workflow YAML.
 - Define the maintenance cadence that should happen weekly, monthly, and quarterly.
+- Resolve the carried-forward perf-budget stretch-target recommendation from PR #496 with a documented `tighten` / `hold` / `revert` decision.
 - Keep major migrations explicitly deferred into separate planned briefs or backlog items.
 
 ## Before Live
@@ -176,6 +181,7 @@ Critical target categories for a `10/10` claim in this brief:
 3. One canonical maintenance runbook/checklist exists and defines weekly, monthly, and quarterly cadence.
 4. Major dependency migrations remain explicitly deferred into separate planned work, not silently bundled into the baseline pass.
 5. All baseline child PRs are narrow enough that root cause remains debuggable.
+6. The PR #496 perf-budget stretch-target recommendation is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
 
 ## Validation
 

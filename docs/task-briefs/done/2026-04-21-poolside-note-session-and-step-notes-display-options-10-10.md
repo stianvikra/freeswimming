@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-21-poolside-note-session-and-step-notes-display-options-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
 - `updated`: `2026-04-21`
@@ -246,3 +246,4 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-04-21 | in-progress | moved to feature branch feat/poolside-session-step-notes-2026-04-21 and started implementation; default note output remains off while preview controls, renderer options, and URL settings are being wired together | next: targeted validation, screenshots, owner review`
 - `2026-04-21 | in-progress | owner review caught wording and readability issues; refined labels to Hidden/Shown and Hidden/Drill steps/All notes, increased note readability, and moved concrete drill identity into the step summary where available | next: refresh targeted tests and screenshot handoff`
 - `2026-04-21 | in-progress | targeted unit validation passed (66 tests) and owner approved the refreshed screenshot handoff in output/playwright/poolside-notes-review | next: run verify:pre-pr, commit, push, and open PR`
+- `2026-04-21 | done | PR #496 merged to main at e7b0a7b; local verify:pre-pr PASS, CI green, verify:pre-merge PASS, and owner-approved screenshots completed before merge; perf-budget stretch-target tightening was explicitly deferred to the maintenance baseline because this was product/UI scope | next: run standard closeout PR for lifecycle move and maintenance carry-forward`
