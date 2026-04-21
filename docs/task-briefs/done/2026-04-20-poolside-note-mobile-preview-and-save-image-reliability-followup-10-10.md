@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-20-poolside-note-mobile-preview-and-save-image-reliability-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-20`
 - `updated`: `2026-04-21`
@@ -15,7 +15,7 @@ Make the owner-facing poolside note preview and `Save image` flow fully reliable
 ## Sequencing Lock
 
 - Run this brief after:
-  - [2026-04-20-swim-session-builder-library-default-entry-action-density-and-workspace-nav-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-20-swim-session-builder-library-default-entry-action-density-and-workspace-nav-10-10.md)
+  - [2026-04-20-swim-session-builder-library-default-entry-action-density-and-workspace-nav-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-20-swim-session-builder-library-default-entry-action-density-and-workspace-nav-10-10.md)
 - Run this brief before:
   - [2026-04-18-maintenance-baseline-pre-live-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-04-18-maintenance-baseline-pre-live-10-10.md)
 - Keep this as a narrow mobile preview/export reliability pass, not a general poolside redesign umbrella.
@@ -35,7 +35,7 @@ Make the owner-facing poolside note preview and `Save image` flow fully reliable
 - Depends on shipped poolside preview/export lineage:
   - [2026-04-19-poolside-note-preview-owned-print-settings-and-builder-simplification-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-19-poolside-note-preview-owned-print-settings-and-builder-simplification-10-10.md)
   - [2026-04-20-poolside-note-save-as-image-export-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-20-poolside-note-save-as-image-export-10-10.md)
-  - [2026-04-20-poolside-note-rest-formatting-and-filter-contract-consistency-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-20-poolside-note-rest-formatting-and-filter-contract-consistency-10-10.md)
+  - [2026-04-20-poolside-note-rest-formatting-and-filter-contract-consistency-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-20-poolside-note-rest-formatting-and-filter-contract-consistency-10-10.md)
 - Primary implementation surfaces likely touched when execution starts:
   - [/Users/stianvikra/freeswimming/app/my-library/workouts/poolside-preview/page.tsx](/Users/stianvikra/freeswimming/app/my-library/workouts/poolside-preview/page.tsx)
   - [/Users/stianvikra/freeswimming/components/my-library/workouts/PoolsidePreviewPageClient.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/PoolsidePreviewPageClient.tsx)
@@ -253,8 +253,36 @@ Critical target categories for `10/10` claim in this brief:
 - Rationale:
   - this brief fixes private owner-facing mobile reliability for an existing preview/export action and does not introduce a new documented Help/Guide workflow by itself.
 
+## Closeout Evidence
+
+- Shipped in PR #492:
+  - `https://github.com/stianvikra/freeswimming/pull/492`
+- Merged to `main` as merge commit `fb6330b`.
+- Implementation summary:
+  - mobile embedded preview readiness now waits for the actual note iframe/article surface before exposing export readiness,
+  - `Save image` is disabled until the note surface is render-ready,
+  - image export waits for fonts/images/frames, captures explicit note bounds, and adds mobile/Safari right-edge capture safety,
+  - repeated mobile save attempts are covered across local-draft and saved-workout preview paths.
+- Screenshot/export artifact handoff:
+  - `/Users/stianvikra/freeswimming/artifacts/test-runs/20260421-poolside-mobile-preview-save-image/`
+  - `after-mobile-preview-ready-saved-workout.png`
+  - `after-mobile-save-image-notice.png`
+  - `after-mobile-note-surface-only.png`
+  - `after-save-image-downloaded.png`
+- Targeted validation:
+  - `npx vitest run tests/unit/poolside-preview-page-client.test.tsx tests/unit/poolside-image-export-client.test.ts tests/unit/workout-poolside-preview.test.ts` PASS.
+  - `PW_REUSE_EXISTING_SERVER=1 npx playwright test tests/e2e/poolside-save-image-export.spec.ts --project=mobile-chromium` PASS.
+- Release validation:
+  - `npm run verify:pre-pr` PASS with full lane.
+  - GitHub PR checks for #492 PASS.
+  - `npm run verify:pre-merge` PASS.
+- Remaining follow-up:
+  - poolside session-note and step-note display options should be handled as a separate planned brief if still desired.
+  - maintenance baseline remains sequenced after remaining poolside/builder follow-ups are completed or explicitly deferred.
+
 ## Checkpoint Log
 
+- `2026-04-21 | merged + closeout | PR #492 merged to main as merge commit fb6330b; mobile poolside preview now gates image export on the actual rendered note surface, avoids cropped mobile captures, supports repeated saves, and preserves note-surface-only PNG output; targeted unit/e2e checks, screenshot/export artifact review, npm run verify:pre-pr, GitHub CI, and npm run verify:pre-merge all passed | next: none`
 - `2026-04-21`: Started implementation on
   `feat/poolside-mobile-preview-save-image-reliability`. Added embedded preview readiness
   gating, explicit note export bounds, repeat-save mobile E2E coverage, and after artifacts under
