@@ -1,6 +1,6 @@
 # PR Flow And Chat Handoff
 
-Use this as the canonical repo path for PR sync, merge readiness, and long-workstream baton passes.
+Use this as the canonical repo path for PR sync, merge readiness, and baton passes when a new chat is the better working mode.
 
 ## Canonical PR Flow
 
@@ -27,17 +27,23 @@ Use raw `gh pr create`, raw `gh pr edit`, or manual PR-body editing only when th
 
 ## New-Chat Rule
 
-Start a new chat when the workstream reaches a stable checkpoint and the next primary goal changes. In practice, that means:
+Start a new chat or provide a carry-forward prompt when that is the best way to preserve momentum and reduce risk. Heavy context is one trigger, not the only trigger.
+
+Strong triggers:
 
 - `verify:pre-pr` just passed and the next step is commit/push/PR/CI follow-up,
 - required CI is green and the next step is merge readiness or closeout,
 - the active brief changes,
 - the thread starts mixing more than one brief or a major scope pivot.
+- repeated connection/tool interruptions make the current thread unreliable,
+- the owner is about to travel, close the machine, or pause for a long period,
+- a high-cost debugging loop has reached a stable checkpoint and should be resumed from clean state.
 
 Before the chat break:
 
 - update the active brief checkpoint log,
 - include latest commit, completed scope, and exact next step.
+- include PR URL, artifact folder, open blockers, and any owner approval state when relevant.
 
 ## Carry-Forward Prompt Template
 

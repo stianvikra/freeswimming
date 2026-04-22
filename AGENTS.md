@@ -134,6 +134,30 @@ This file defines how coding agents should collaborate in this repository.
 - Owner may request visual corrections from the screenshot handoff before merge; assistant should apply those corrections, refresh the screenshots, and only then proceed to final merge readiness.
 - This is required by default for UI/print/layout/brand work, and optional for backend, docs, tooling, and other non-visual changes.
 
+## UI Debugging And High-Cost Bug Protocol
+
+- For visual, screenshot, export, browser, or layout bugs, use `docs/runbooks/ui-debug-hypothesis-and-handoff.md`.
+- If a fix attempt fails twice, the observed symptom contradicts the claimed fix, or the owner flags that the same issue remains, stop patching by intuition and switch to a ranked hypothesis loop:
+  - restate the exact observed failure,
+  - list plausible causes in likelihood order,
+  - verify or eliminate them one by one with targeted evidence,
+  - make the smallest fix,
+  - regenerate the relevant full-resolution artifacts before presenting again.
+- Do not claim a UI/export bug is fixed until the validation directly checks the original failure mode. For image/export issues, inspect the actual exported artifact, not only the in-browser preview.
+- Log repeated or expensive bugs in `docs/runbooks/high-cost-debug-log.md` with symptom, root cause, fix pattern, detection, and prevention test.
+- Before debugging a similar issue later, check `docs/runbooks/high-cost-debug-log.md` for prior causes and probes.
+
+## Session Handoff Timing
+
+- Start a new chat or provide a carry-forward prompt when it is the best way to preserve momentum and reduce risk, not only when context is already heavy.
+- Strong triggers include:
+  - the workstream reaches a stable checkpoint and the next primary goal changes,
+  - context is mixing multiple briefs or several PRs,
+  - repeated tool/connection interruptions make the thread hard to trust,
+  - the owner is about to travel, close the machine, or pause for a long period,
+  - the next step can run independently in GitHub/CI or a new implementation slice.
+- Use `docs/runbooks/pr-flow-and-chat-handoff.md` for the carry-forward prompt shape.
+
 ## Sandbox Approval Reality
 
 - Repo docs can record recommended approval habits, but they cannot auto-persist Codex sandbox approvals across chats or machines.
