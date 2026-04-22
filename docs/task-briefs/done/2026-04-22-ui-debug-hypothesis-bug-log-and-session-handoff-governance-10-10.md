@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-22-ui-debug-hypothesis-bug-log-and-session-handoff-governance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-22`
 - `updated`: `2026-04-22`
@@ -137,7 +137,41 @@ Critical target categories for `10/10` claim:
 - Rollback:
   - revert this docs-only PR.
 
+## Closeout Evidence
+
+- Shipped in PR #500:
+  - `https://github.com/stianvikra/freeswimming/pull/500`
+- Merged to `main` as squash commit `c39cb8f`.
+- Implementation summary:
+  - added `docs/runbooks/ui-debug-hypothesis-and-handoff.md` as the canonical ranked-hypothesis UI/debug runbook,
+  - added `docs/runbooks/high-cost-debug-log.md` and seeded the poolside Save image crop incident,
+  - updated `AGENTS.md` so repeated visual/export failures must switch to hypothesis/probe/debug-log mode,
+  - updated `docs/runbooks/pr-flow-and-chat-handoff.md` so new-chat handoff happens when it is the best working mode, not only when context is heavy,
+  - updated `docs/task-brief-template.md` so future briefs can require visual artifact, high-cost debug, and handoff contracts.
+- Validation:
+  - `npm run lint:briefs:all` PASS.
+  - `npm run verify:pre-pr` PASS docs-only lane.
+  - GitHub PR #500 checks PASS.
+  - `npm run verify:pre-merge` PASS docs-only lane.
+  - `npm run post-merge:preflight` PASS and identified this brief for closeout.
+- Remaining gaps:
+  - none for this governance slice.
+
+## Closeout Score Outcome
+
+| Target Category                          | Score | Evidence                                                                                                              |
+| ---------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                     | `5/5` | AGENTS, runbook, task-template, and brief all point to one clear protocol.                                            |
+| UX flow clarity                          | `5/5` | Visual flow now explicitly requires artifact handoff and owner approval before gates.                                 |
+| Reliability and failure handling         | `5/5` | Ranked hypotheses, deterministic probes, and actual-artifact validation are required for repeated UI/export failures. |
+| Content governance                       | `5/5` | Source-of-truth docs are established for debug protocol, bug log, and handoff prompt.                                 |
+| Incident response and support operations | `5/5` | High-cost debug log captures reusable symptom/root-cause/fix/probe/prevention data.                                   |
+| Stack-fit and dependency discipline      | `5/5` | Docs-only solution, no new dependencies, scripts, runtime behavior, or workflow complexity.                           |
+| Testing and QA automation                | `5/5` | Brief lint, docs-only pre-PR, CI, and docs-only pre-merge gates passed.                                               |
+| DevOps and rollback readiness            | `5/5` | Docs-only PR is reversible and has clean PR/CI/merge-gate evidence.                                                   |
+
 ## Checkpoint Log
 
+- `2026-04-22 | merged + closeout | PR #500 merged to main as squash commit c39cb8f; UI debug hypothesis runbook, high-cost debug log, session handoff rule, AGENTS guidance, and task-template hooks are now live; validation passed through lint:briefs:all, verify:pre-pr, GitHub CI, verify:pre-merge, and post-merge:preflight | next: none`
 - `2026-04-22 | validation | added AGENTS rule, UI-debug runbook, high-cost bug log, handoff runbook update, task brief template hooks, and seeded poolside Save image incident; npm run lint:briefs:all passed; npm run verify:pre-pr passed docs-only lane | next: commit, push, open PR`
 - `2026-04-22 | in-progress | created docs/governance branch and scoped UI-debug hypothesis, high-cost bug log, and session handoff guidance | next: run lint/verify gates and open PR`
