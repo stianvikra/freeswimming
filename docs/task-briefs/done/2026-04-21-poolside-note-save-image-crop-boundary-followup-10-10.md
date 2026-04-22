@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-21-poolside-note-save-image-crop-boundary-followup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
 - `updated`: `2026-04-22`
@@ -133,8 +133,38 @@ Critical target categories for `10/10` claim:
 
 - `N/A` unless implementation changes the user-facing Save image workflow text.
 
+## Closeout Evidence
+
+- Shipped in PR #498:
+  - `https://github.com/stianvikra/freeswimming/pull/498`
+- Merged to `main` as squash commit `912adde`.
+- Implementation summary:
+  - `Save image` now captures a real white wrapper around a shadowless note clone,
+  - embedded preview readiness resets in a layout effect so stale loading state does not block preview/export,
+  - exported PNG bounds are validated against actual image pixels so all four edges stay clean,
+  - the unrelated admin contextual-notes API probe now shares the existing unavailable-API skip contract after a pre-merge `ECONNRESET` finding.
+- Screenshot/export artifact handoff:
+  - `/Users/stianvikra/freeswimming/output/playwright/poolside-save-image-crop-boundary-2026-04-21`
+  - `after-poolside-save-image-export-portrait.png`
+  - `after-poolside-save-image-export-landscape.png`
+  - `after-poolside-save-image-preview-mobile-portrait.png`
+  - `after-poolside-save-image-preview-mobile-landscape-setting.png`
+- Targeted validation:
+  - `npm run test:unit -- tests/unit/poolside-image-export-client.test.ts` PASS.
+  - `npm run test:e2e -- tests/e2e/poolside-save-image-export.spec.ts --project=mobile-chromium` PASS.
+  - `npx eslint tests/e2e/admin-contextual-notes.spec.ts` PASS.
+- Release validation:
+  - owner approved regenerated artifacts.
+  - `npm run verify:pre-pr` PASS full public lane on `f5a69c2`; 106 passed / 338 skipped.
+  - GitHub PR checks for #498 PASS.
+  - `npm run verify:pre-merge` PASS full merge gate on `f5a69c2`; 105 passed / 339 skipped.
+- Remaining follow-up:
+  - governance/tooling brief for structured UI-debug hypothesis logging and new-chat handoff should be handled separately.
+  - maintenance/perf-baseline should record the deferred perf-budget tightening decision.
+
 ## Checkpoint Log
 
+- `2026-04-22 | merged + closeout | PR #498 merged to main as squash commit 912adde; poolside Save image now exports the note surface without asymmetric white margin, clipped right edge, or stale loading preview; owner-approved artifacts, targeted unit/e2e checks, npm run verify:pre-pr, GitHub CI, and npm run verify:pre-merge all passed | next: none`
 - `2026-04-21 | planned | created from owner finding that Save image still leaves left-side white margin | next: implement or defer before maintenance baseline`
 - `2026-04-21 | in-progress | moved to implementation branch fix/poolside-save-image-crop-boundary-2026-04-21; exact note capture width and PNG-vs-note metric tests in progress | next: targeted validation and screenshot/artifact handoff before PR gates`
 - `2026-04-22 | in-progress | targeted unit and mobile Playwright export tests pass; after-artifacts saved in output/playwright/poolside-save-image-crop-boundary-2026-04-21 | next: owner artifact approval before verify:pre-pr`
