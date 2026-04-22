@@ -57,7 +57,7 @@ Ship a production-safe first real passkey rollout using Clerk for paying subscri
   - returning passkey sign-in on supported devices,
   - fallback email-code flow on unsupported/new devices,
   - lost-device recovery,
-  - passkey management in `My Library > Account & Security`.
+  - passkey management in a future member account/security surface; do not assume the current `/my-library/security` legacy redirect is a live settings page.
 - Preserve entitlement access:
   - members with active subscriptions must keep access during migration,
   - login-provider change must not strand active paid members.
@@ -98,7 +98,7 @@ Ship a production-safe first real passkey rollout using Clerk for paying subscri
   - only the minimum provider/account metadata needed for support, auditing, and entitlement mapping is retained,
   - recovery and support logs must redact secrets, challenges, tokens, and sensitive payloads.
 - Cache / invalidation:
-  - `/auth/sign-in`, `/my-library/security`, member gateways, and member account surfaces remain dynamic,
+  - `/auth/sign-in`, future account/security/member settings surfaces, member gateways, and member account surfaces remain dynamic,
   - entitlement or auth-state changes invalidate access decisions immediately,
   - stale migration or recovery state must not remain cached across navigation or reload.
 
@@ -169,7 +169,7 @@ Critical target categories for `10/10` claim:
 | Business logic correctness and data integrity | `target` | Identity linking, entitlement mapping, fallback sign-in, and passkey management are deterministic and never orphan or duplicate paying-member access.           | invariant tests + migration checks + runtime guards               |
 | Admin editor ergonomics                       | `target` | Admin/support operators can inspect member auth status, recovery state, and entitlement linkage with low-friction diagnostics and explicit safe actions.        | operator workflow review + support runbook                        |
 | Accessibility (a11y)                          | `target` | Bootstrap, passkey prompt, fallback email code, and account-security management remain keyboard, focus, label, and screen-reader clean across supported matrix. | automated a11y + manual keyboard/screen-reader QA                 |
-| Performance (CWV + payloads)                  | `target` | `/auth/sign-in`, `/my-library/security`, and paying-member entry routes stay within defined speed budgets despite provider integration.                         | perf budgets + bundle diff + preview measurements                 |
+| Performance (CWV + payloads)                  | `target` | `/auth/sign-in`, future account/security surfaces, and paying-member entry routes stay within defined speed budgets despite provider integration.               | perf budgets + bundle diff + preview measurements                 |
 | Data placement and sync boundaries            | `target` | Internal member identity, provider linkage, entitlements, and credential-management boundaries are explicit and enforced.                                       | data contract + code review + tests                               |
 | Caching and invalidation strategy             | `target` | Sign-in, entitlement, and security-state changes invalidate immediately with no stale member-access decisions.                                                  | route cache contract + invalidation tests                         |
 | Reliability and failure handling              | `target` | Provider outage, lost device, unsupported browser, revoked credential, stale linkage, and recovery failures degrade safely without blocking paying members.     | failure-mode matrix + negative-path tests + drills                |
@@ -239,7 +239,7 @@ Critical target categories for `10/10` claim:
   - no live-product QA is required because this planned brief does not change runtime behavior yet.
 - Future implementation baseline:
   - `http://127.0.0.1:3000/auth/sign-in`
-  - `http://127.0.0.1:3000/my-library/security`
+  - future account/security/member settings route if this rollout creates one
   - member entry routes affected by entitlement gating
   - PR preview URL after branch push
 - Recommended future matrix before rollout:

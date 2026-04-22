@@ -225,7 +225,7 @@ Critical target categories for `10/10` claim in this brief:
 | Business logic correctness and data integrity | `target` | Registration, authentication, revocation, recovery, and admin step-up invariants are explicit, deterministic, and reject ambiguous account-linking outcomes.            | state model + sequence diagrams + invariant checklist             |
 | Admin editor ergonomics                       | `target` | Admin and support operators can add/remove/revoke credentials, guide recovery, and handle step-up incidents with low-friction flows and explicit confirmations.         | operator workflow inventory + support-flow review                 |
 | Accessibility (a11y)                          | `target` | Chosen flows preserve keyboard, focus, labels, and screen-reader clarity for passkey, fallback, recovery, and admin reauth surfaces.                                    | a11y acceptance checklist + future test plan                      |
-| Performance (CWV + payloads)                  | `target` | Recommended architecture sets route budgets for `/auth/sign-in`, `/my-library/security`, and `/preview-access` with no heavy auth JS bundle regression.                 | route budget table + architecture comparison                      |
+| Performance (CWV + payloads)                  | `target` | Recommended architecture sets route budgets for `/auth/sign-in`, a future account/security surface, and `/preview-access` with no heavy auth JS bundle regression.      | route budget table + architecture comparison                      |
 | Data placement and sync boundaries            | `target` | Server/local ownership, challenge TTL, revocation timing, rename behavior, and stale-view invalidation rules are explicit and testable.                                 | data contract + invalidation plan                                 |
 | Caching and invalidation strategy             | `target` | Security surfaces define dynamic-read policy and deterministic invalidation triggers after sign-in, credential changes, recovery changes, and admin unlock.             | cache contract + route config plan                                |
 | Reliability and failure handling              | `target` | The decision covers unsupported browsers, provider outages, lost devices, replay attempts, stale challenges, and recovery failure without unsafe fallback.              | failure-mode matrix + incident scenarios                          |
@@ -295,7 +295,7 @@ Critical target categories for `10/10` claim in this brief:
   - no live-product QA is required because this brief does not change shipped UI or runtime behavior.
 - Future implementation planning baseline:
   - `/auth/sign-in`
-  - `/my-library/security`
+  - future account/security surface if this brief reintroduces one; do not assume current `/my-library/security` legacy redirect is a live settings page
   - `/preview-access` if admin/security recovery or site-lock unlock behavior changes
 - Recommended future matrix before rollout:
   - iPhone Safari
