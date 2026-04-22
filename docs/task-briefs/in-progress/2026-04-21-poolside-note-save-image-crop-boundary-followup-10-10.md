@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-21-poolside-note-save-image-crop-boundary-followup-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
-- `updated`: `2026-04-21`
+- `updated`: `2026-04-22`
 
 ## Goal
 
@@ -101,7 +101,7 @@ Critical target categories for `10/10` claim:
 
 ## Acceptance Criteria
 
-1. Saved PNG has no extra left white margin.
+1. Saved PNG has no asymmetric left/right white margin.
 2. Saved PNG has no excess preview-container background beyond the note boundary.
 3. Portrait and landscape exports both crop to the intended note surface.
 4. Repeated Save image attempts work without stale or blank exports.
@@ -136,3 +136,11 @@ Critical target categories for `10/10` claim:
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created from owner finding that Save image still leaves left-side white margin | next: implement or defer before maintenance baseline`
+- `2026-04-21 | in-progress | moved to implementation branch fix/poolside-save-image-crop-boundary-2026-04-21; exact note capture width and PNG-vs-note metric tests in progress | next: targeted validation and screenshot/artifact handoff before PR gates`
+- `2026-04-22 | in-progress | targeted unit and mobile Playwright export tests pass; after-artifacts saved in output/playwright/poolside-save-image-crop-boundary-2026-04-21 | next: owner artifact approval before verify:pre-pr`
+- `2026-04-22 | in-progress | tightened export boundary to include measured visual overflow and added tagline edge padding so brand lockup is not clipped in exported PNGs | next: owner artifact approval before verify:pre-pr`
+- `2026-04-22 | in-progress | revised approach: export now crops to exact note surface, e2e asserts visible content stays inside note bounds, and hero safe-inset was increased to improve optical alignment | next: owner artifact approval before verify:pre-pr`
+- `2026-04-22 | in-progress | removed horizontal scrollWidth from export bounds and regenerated full-res portrait/landscape PNG artifacts; width now follows visible note surface while height may still use scrollHeight | next: owner artifact approval before verify:pre-pr`
+- `2026-04-22 | in-progress | fixed embedded preview loading race with layout-effect readiness reset; changed save-image capture to symmetric 8px canvas padding using translate so the note is not hard-clipped at the right edge; regenerated artifacts after stricter ready checks | next: owner artifact approval before verify:pre-pr`
+- `2026-04-22 | in-progress | replaced transform-based export padding with a real white capture wrapper around a shadowless note clone; e2e now checks all four PNG edges for hard-clipped note content and full-res artifacts were regenerated | next: owner artifact approval before verify:pre-pr`
+- `2026-04-22 | in-progress | owner approved regenerated artifacts; npm run verify:pre-pr passed full public lane with 104 passed / 340 skipped | next: commit, push, open PR`

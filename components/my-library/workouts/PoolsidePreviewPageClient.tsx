@@ -228,7 +228,7 @@ export default function PoolsidePreviewPageClient() {
     [localPreviewDraft?.updatedAt, previewFrameHref, settings]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setEmbeddedNoteReady(false);
     setEmbeddedPreviewHeight(EMBEDDED_PREVIEW_MIN_READY_HEIGHT);
     setEmbeddedPreviewViewportWidth(getEmbeddedPreviewFallbackWidth(settings.printLayout));

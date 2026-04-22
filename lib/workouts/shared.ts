@@ -1977,6 +1977,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(
         align-items: flex-start;
         justify-content: space-between;
         gap: calc(var(--poolside-hero-gap) - 1px);
+        padding-right: 18px;
       }
 
       .hero-brand-lockup {
@@ -2014,6 +2015,7 @@ function buildPoolsideWorkoutPdfHtmlDocument(
         grid-template-columns: minmax(0, 1fr) auto;
         gap: calc(var(--poolside-hero-gap) + 1px);
         align-items: start;
+        padding-right: 18px;
       }
 
       .hero-landscape-left {

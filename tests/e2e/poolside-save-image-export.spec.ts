@@ -8,6 +8,20 @@ import {
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
+type SaveImageExportMetrics = {
+  bottomEdgeStrongPixels: number;
+  expectedImageHeight: number;
+  expectedImageWidth: number;
+  imageHeight: number;
+  imageWidth: number;
+  leftEdgeStrongPixels: number;
+  noteHeight: number;
+  noteWidth: number;
+  pixelRatio: number;
+  rightEdgeStrongPixels: number;
+  topEdgeStrongPixels: number;
+};
+
 function runOnceOnMobileChromium(projectName: string) {
   test.skip(projectName !== "mobile-chromium", "Runs once on mobile Chromium.");
   test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
@@ -174,19 +188,43 @@ async function installSaveImageDownloadProbe(page: Page) {
       download: string;
       href: string;
     };
+    type DownloadProbeMetrics = {
+      bottomEdgeStrongPixels: number;
+      expectedImageHeight: number;
+      expectedImageWidth: number;
+      imageHeight: number;
+      imageWidth: number;
+      leftEdgeStrongPixels: number;
+      noteHeight: number;
+      noteWidth: number;
+      pixelRatio: number;
+      rightEdgeStrongPixels: number;
+      topEdgeStrongPixels: number;
+    };
+    type DownloadProbe = {
+      entries: DownloadProbeEntry[];
+      errors: string[];
+      metricsByHref: Record<string, DownloadProbeMetrics>;
+    };
 
     const windowWithProbe = window as typeof window & {
-      __fsPoolsideSaveImageDownloadProbe__?: {
-        entries: DownloadProbeEntry[];
-      };
+      __fsPoolsideSaveImageDownloadProbe__?: DownloadProbe;
       __fsPoolsideSaveImageDownloadPatched__?: boolean;
     };
 
     const probe = windowWithProbe.__fsPoolsideSaveImageDownloadProbe__;
     if (probe) {
       probe.entries.length = 0;
+      probe.errors.length = 0;
+      for (const key of Object.keys(probe.metricsByHref)) {
+        delete probe.metricsByHref[key];
+      }
     } else {
-      windowWithProbe.__fsPoolsideSaveImageDownloadProbe__ = { entries: [] };
+      windowWithProbe.__fsPoolsideSaveImageDownloadProbe__ = {
+        entries: [],
+        errors: [],
+        metricsByHref: {},
+      };
     }
 
     if (windowWithProbe.__fsPoolsideSaveImageDownloadPatched__) {
@@ -202,17 +240,154 @@ async function installSaveImageDownloadProbe(page: Page) {
       value: undefined,
     });
 
-    const originalClick = HTMLAnchorElement.prototype.click;
-    HTMLAnchorElement.prototype.click = function patchedPoolsideSaveImageAnchorClick() {
-      if (this.download) {
-        windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.entries.push({
-          download: this.download,
-          href: this.href,
+    const captureEdgePaddingPx = 8;
+    const captureBlobMetrics = (href: string, object: Blob) => {
+      if (object.type !== "image/png" || typeof createImageBitmap !== "function") {
+        return;
+      }
+
+      const previewFrame = document.querySelector<HTMLIFrameElement>(
+        '[data-testid="poolside-preview-frame"]'
+      );
+      const frameDocument = previewFrame?.contentDocument ?? previewFrame?.contentWindow?.document;
+      const noteElement = frameDocument?.querySelector<HTMLElement>(
+        '[data-testid="workout-pdf-print-view"]'
+      );
+
+      if (!noteElement) {
+        windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.errors.push(
+          "Poolside note export target was not available for PNG metric capture."
+        );
+        return;
+      }
+
+      const rect = noteElement.getBoundingClientRect();
+      const noteWidth = Math.ceil(Math.max(rect.width, noteElement.offsetWidth));
+      const noteHeight = Math.ceil(
+        Math.max(rect.height, noteElement.offsetHeight, noteElement.scrollHeight)
+      );
+      const pixelRatio = Math.max(2, Math.min(3, window.devicePixelRatio || 1));
+
+      void createImageBitmap(object)
+        .then((bitmap) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+          const context = canvas.getContext("2d");
+          if (!context) {
+            throw new Error("Canvas context was not available for PNG edge checks.");
+          }
+
+          context.drawImage(bitmap, 0, 0);
+          const imageData = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+          const isStrongNonWhitePixel = (index: number) => {
+            const alpha = imageData[index + 3];
+            return (
+              alpha > 20 &&
+              (imageData[index] < 246 || imageData[index + 1] < 246 || imageData[index + 2] < 246)
+            );
+          };
+          let rightEdgeStrongPixels = 0;
+          let bottomEdgeStrongPixels = 0;
+          let leftEdgeStrongPixels = 0;
+          let topEdgeStrongPixels = 0;
+
+          for (let y = 0; y < bitmap.height; y += 1) {
+            const leftIndex = y * bitmap.width * 4;
+            if (isStrongNonWhitePixel(leftIndex)) {
+              leftEdgeStrongPixels += 1;
+            }
+
+            const index = (y * bitmap.width + (bitmap.width - 1)) * 4;
+            if (isStrongNonWhitePixel(index)) {
+              rightEdgeStrongPixels += 1;
+            }
+          }
+
+          for (let x = 0; x < bitmap.width; x += 1) {
+            const topIndex = x * 4;
+            if (isStrongNonWhitePixel(topIndex)) {
+              topEdgeStrongPixels += 1;
+            }
+
+            const index = ((bitmap.height - 1) * bitmap.width + x) * 4;
+            if (isStrongNonWhitePixel(index)) {
+              bottomEdgeStrongPixels += 1;
+            }
+          }
+
+          windowWithProbe.__fsPoolsideSaveImageDownloadProbe__!.metricsByHref[href] = {
+            bottomEdgeStrongPixels,
+            expectedImageHeight: Math.round((noteHeight + captureEdgePaddingPx * 2) * pixelRatio),
+            expectedImageWidth: Math.round((noteWidth + captureEdgePaddingPx * 2) * pixelRatio),
+            imageHeight: bitmap.height,
+            imageWidth: bitmap.width,
+            leftEdgeStrongPixels,
+            noteHeight,
+            noteWidth,
+            pixelRatio,
+            rightEdgeStrongPixels,
+            topEdgeStrongPixels,
+          };
+          bitmap.close();
+        })
+        .catch((error: unknown) => {
+          windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.errors.push(
+            error instanceof Error ? error.message : String(error)
+          );
         });
+    };
+
+    const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = function patchedPoolsideSaveImageCreateObjectUrl(object) {
+      const href = originalCreateObjectUrl(object);
+      if (object instanceof Blob) {
+        captureBlobMetrics(href, object);
+      }
+      return href;
+    };
+
+    const originalClick = HTMLAnchorElement.prototype.click;
+    const captureAnchorClick = (anchor: HTMLAnchorElement) => {
+      if (!anchor.download) {
+        return false;
+      }
+
+      windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.entries.push({
+        download: anchor.download,
+        href: anchor.href,
+      });
+      return true;
+    };
+
+    HTMLAnchorElement.prototype.click = function patchedPoolsideSaveImageAnchorClick() {
+      if (captureAnchorClick(this)) {
         return undefined;
       }
 
       return originalClick.call(this);
+    };
+
+    const originalCreateElement = Document.prototype.createElement;
+    Document.prototype.createElement = function patchedPoolsideSaveImageCreateElement(
+      tagName: string,
+      options?: ElementCreationOptions
+    ) {
+      const element = originalCreateElement.call(this, tagName, options);
+      if (tagName.toLowerCase() === "a") {
+        Object.defineProperty(element, "click", {
+          configurable: true,
+          value() {
+            if (captureAnchorClick(element as HTMLAnchorElement)) {
+              return undefined;
+            }
+
+            return originalClick.call(element);
+          },
+        });
+      }
+
+      return element;
     };
 
     windowWithProbe.__fsPoolsideSaveImageDownloadPatched__ = true;
@@ -249,11 +424,34 @@ async function expectSaveImageDownloadIntent(page: Page, expectedFileName: strin
             window as typeof window & {
               __fsPoolsideSaveImageDownloadProbe__?: {
                 entries: Array<{ download: string; href: string }>;
+                errors: string[];
+                metricsByHref: Record<string, SaveImageExportMetrics>;
               };
             }
           ).__fsPoolsideSaveImageDownloadProbe__;
           const entries = probe?.entries ?? [];
-          return entries.length > 0 ? entries[entries.length - 1] : null;
+          const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+          if (latestEntry) {
+            return latestEntry;
+          }
+
+          const errorText = document
+            .querySelector('[data-testid="poolside-preview-save-image-error"]')
+            ?.textContent?.trim();
+          const buttonText = document
+            .querySelector('[data-testid="poolside-preview-save-image"]')
+            ?.textContent?.trim();
+          const metricCount = probe ? Object.keys(probe.metricsByHref).length : 0;
+          const probeErrors = probe?.errors.join("; ") ?? "";
+
+          return {
+            download: errorText
+              ? `ERROR: ${errorText}`
+              : probeErrors
+                ? `PROBE_ERROR: ${probeErrors}`
+                : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount}`,
+            href: window.location.href,
+          };
         }),
       {
         timeout: 15_000,
@@ -263,6 +461,96 @@ async function expectSaveImageDownloadIntent(page: Page, expectedFileName: strin
       download: expectedFileName,
       href: expect.stringContaining("blob:"),
     });
+}
+
+async function readLatestSaveImageExportMetrics(page: Page) {
+  const metricsHandle = await page.waitForFunction(
+    () => {
+      const probe = (
+        window as typeof window & {
+          __fsPoolsideSaveImageDownloadProbe__?: {
+            entries: Array<{ download: string; href: string }>;
+            errors: string[];
+            metricsByHref: Record<string, SaveImageExportMetrics>;
+          };
+        }
+      ).__fsPoolsideSaveImageDownloadProbe__;
+      const entries = probe?.entries ?? [];
+      const latestEntry = entries[entries.length - 1];
+      if (!probe || !latestEntry) {
+        return null;
+      }
+
+      const metrics = probe.metricsByHref[latestEntry.href];
+      if (metrics) {
+        return metrics;
+      }
+
+      if (probe.errors.length > 0) {
+        throw new Error(probe.errors.join("; "));
+      }
+
+      return null;
+    },
+    undefined,
+    { timeout: 15_000 }
+  );
+
+  return (await metricsHandle.jsonValue()) as SaveImageExportMetrics;
+}
+
+async function expectSaveImageCropMatchesNote(page: Page) {
+  const metrics = await readLatestSaveImageExportMetrics(page);
+
+  expect(Math.abs(metrics.imageWidth - metrics.expectedImageWidth)).toBeLessThanOrEqual(1);
+  expect(Math.abs(metrics.imageHeight - metrics.expectedImageHeight)).toBeLessThanOrEqual(1);
+  expect(metrics.leftEdgeStrongPixels).toBe(0);
+  expect(metrics.topEdgeStrongPixels).toBe(0);
+  expect(metrics.rightEdgeStrongPixels).toBe(0);
+  expect(metrics.bottomEdgeStrongPixels).toBe(0);
+}
+
+async function expectPoolsideNoteContentWithinBounds(page: Page) {
+  await expect
+    .poll(
+      async () =>
+        await page.evaluate(() => {
+          const previewFrame = document.querySelector<HTMLIFrameElement>(
+            '[data-testid="poolside-preview-frame"]'
+          );
+          const frameDocument =
+            previewFrame?.contentDocument ?? previewFrame?.contentWindow?.document;
+          const noteElement = frameDocument?.querySelector<HTMLElement>(
+            '[data-testid="workout-pdf-print-view"]'
+          );
+
+          if (!noteElement) {
+            return null;
+          }
+
+          const noteRect = noteElement.getBoundingClientRect();
+          let maxRightOverflow = 0;
+          let maxBottomOverflow = 0;
+          for (const child of Array.from(noteElement.querySelectorAll<HTMLElement>("*"))) {
+            const childRect = child.getBoundingClientRect();
+            if (childRect.width <= 0 || childRect.height <= 0) {
+              continue;
+            }
+
+            maxRightOverflow = Math.max(maxRightOverflow, childRect.right - noteRect.right);
+            maxBottomOverflow = Math.max(maxBottomOverflow, childRect.bottom - noteRect.bottom);
+          }
+
+          return {
+            bottom: Math.ceil(maxBottomOverflow),
+            right: Math.ceil(maxRightOverflow),
+          };
+        }),
+      {
+        timeout: 15_000,
+      }
+    )
+    .toEqual({ bottom: 0, right: 0 });
 }
 
 async function waitForEmbeddedPoolsidePreview(
@@ -283,6 +571,9 @@ async function waitForEmbeddedPoolsidePreview(
       timeout: 15_000,
     }
   );
+  await expect(page.getByTestId("poolside-preview-frame-loading")).toBeHidden({
+    timeout: 15_000,
+  });
   await expect(article).toBeVisible({ timeout: 15_000 });
 
   if (expected.printLayout) {
@@ -302,6 +593,14 @@ async function waitForEmbeddedPoolsidePreview(
       timeout: 15_000,
     });
   }
+
+  await page.waitForTimeout(350);
+  await expect(page.getByTestId("poolside-preview-frame-state")).toHaveAttribute(
+    "data-preview-ready",
+    "true"
+  );
+  await expect(page.getByTestId("poolside-preview-frame-loading")).toBeHidden();
+  await expect(page.getByTestId("poolside-preview-save-image")).toBeEnabled();
 }
 
 test.describe("poolside save image export", () => {
@@ -344,16 +643,19 @@ test.describe("poolside save image export", () => {
     });
 
     await waitForEmbeddedPoolsidePreview(localPreviewPopup, { printLayout: "portrait" });
+    await expectPoolsideNoteContentWithinBounds(localPreviewPopup);
     await installSaveImageDownloadProbe(localPreviewPopup);
     await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
     await expectSaveImageDownloadIntent(localPreviewPopup, expectedPortraitFileName);
     await expectSaveImageDownloadCount(localPreviewPopup, 1);
+    await expectSaveImageCropMatchesNote(localPreviewPopup);
     await expect(localPreviewPopup.getByTestId("poolside-preview-save-image-notice")).toContainText(
       expectedPortraitFileName
     );
     await expect(localPreviewPopup.getByTestId("poolside-preview-save-image")).toBeEnabled();
     await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
     await expectSaveImageDownloadCount(localPreviewPopup, 2);
+    await expectSaveImageCropMatchesNote(localPreviewPopup);
     await localPreviewPopup.close();
 
     const firstSaveResponsePromise = page.waitForResponse(
@@ -385,10 +687,12 @@ test.describe("poolside save image export", () => {
     await waitForEmbeddedPoolsidePreview(savedPreviewPopup, { printLayout: "portrait" });
     await savedPreviewPopup.getByTestId("poolside-preview-layout").selectOption("landscape");
     await waitForEmbeddedPoolsidePreview(savedPreviewPopup, { printLayout: "landscape" });
+    await expectPoolsideNoteContentWithinBounds(savedPreviewPopup);
     await installSaveImageDownloadProbe(savedPreviewPopup);
     await savedPreviewPopup.getByTestId("poolside-preview-save-image").click();
     await expectSaveImageDownloadIntent(savedPreviewPopup, expectedLandscapeFileName);
     await expectSaveImageDownloadCount(savedPreviewPopup, 1);
+    await expectSaveImageCropMatchesNote(savedPreviewPopup);
     await expect(savedPreviewPopup.getByTestId("poolside-preview-save-image-notice")).toContainText(
       expectedLandscapeFileName
     );
