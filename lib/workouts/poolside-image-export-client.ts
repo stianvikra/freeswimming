@@ -1,6 +1,6 @@
 import { toBlob } from "html-to-image";
 
-const CAPTURE_EDGE_SAFETY_PX = 16;
+const CAPTURE_EDGE_PADDING_PX = 8;
 
 export type WorkoutPoolsideImageExportDriver = {
   captureNoteBlob: (noteElement: HTMLElement) => Promise<Blob>;
@@ -72,7 +72,7 @@ function waitForNextFrame(document: Document) {
 
 export function resolvePoolsideNoteCaptureBounds(noteElement: HTMLElement) {
   const rect = noteElement.getBoundingClientRect();
-  const width = Math.ceil(Math.max(rect.width, noteElement.offsetWidth, noteElement.scrollWidth));
+  const width = Math.ceil(Math.max(rect.width, noteElement.offsetWidth));
   const height = Math.ceil(
     Math.max(rect.height, noteElement.offsetHeight, noteElement.scrollHeight)
   );
@@ -84,36 +84,71 @@ export function resolvePoolsideNoteCaptureBounds(noteElement: HTMLElement) {
   return { width, height };
 }
 
+function createPoolsideNoteCaptureWrapper(noteElement: HTMLElement, width: number, height: number) {
+  const document = noteElement.ownerDocument;
+  const captureWidth = width + CAPTURE_EDGE_PADDING_PX * 2;
+  const captureHeight = height + CAPTURE_EDGE_PADDING_PX * 2;
+  const wrapper = document.createElement("div");
+  const noteClone = noteElement.cloneNode(true) as HTMLElement;
+
+  wrapper.setAttribute("aria-hidden", "true");
+  wrapper.style.background = "#ffffff";
+  wrapper.style.boxSizing = "border-box";
+  wrapper.style.height = `${captureHeight}px`;
+  wrapper.style.left = "0";
+  wrapper.style.overflow = "visible";
+  wrapper.style.padding = `${CAPTURE_EDGE_PADDING_PX}px`;
+  wrapper.style.pointerEvents = "none";
+  wrapper.style.position = "fixed";
+  wrapper.style.top = "0";
+  wrapper.style.width = `${captureWidth}px`;
+  wrapper.style.zIndex = "2147483647";
+
+  noteClone.style.height = `${height}px`;
+  noteClone.style.margin = "0";
+  noteClone.style.maxHeight = "none";
+  noteClone.style.maxWidth = "none";
+  noteClone.style.boxShadow = "none";
+  noteClone.style.width = `${width}px`;
+
+  wrapper.appendChild(noteClone);
+  document.body.appendChild(wrapper);
+
+  return wrapper;
+}
+
 async function capturePoolsideNoteBlob(noteElement: HTMLElement) {
   await waitForDocumentAssets(noteElement.ownerDocument);
   await waitForNextFrame(noteElement.ownerDocument);
   await waitForNextFrame(noteElement.ownerDocument);
 
   const { width, height } = resolvePoolsideNoteCaptureBounds(noteElement);
-  const captureWidth = width + CAPTURE_EDGE_SAFETY_PX;
+  const captureWidth = width + CAPTURE_EDGE_PADDING_PX * 2;
+  const captureHeight = height + CAPTURE_EDGE_PADDING_PX * 2;
   const pixelRatio =
     typeof window === "undefined" ? 2 : Math.max(2, Math.min(3, window.devicePixelRatio || 1));
 
-  const blob = await toBlob(noteElement, {
-    backgroundColor: "#ffffff",
-    cacheBust: true,
-    height,
-    pixelRatio,
-    style: {
-      height: `${height}px`,
-      maxHeight: "none",
-      maxWidth: "none",
-      transform: "none",
-      width: `${captureWidth}px`,
-    },
-    width: captureWidth,
-  });
+  const captureWrapper = createPoolsideNoteCaptureWrapper(noteElement, width, height);
 
-  if (!blob) {
-    throw new Error("Could not capture the poolside note image.");
+  try {
+    await waitForNextFrame(noteElement.ownerDocument);
+
+    const blob = await toBlob(captureWrapper, {
+      backgroundColor: "#ffffff",
+      cacheBust: true,
+      height: captureHeight,
+      pixelRatio,
+      width: captureWidth,
+    });
+
+    if (!blob) {
+      throw new Error("Could not capture the poolside note image.");
+    }
+
+    return blob;
+  } finally {
+    captureWrapper.remove();
   }
-
-  return blob;
 }
 
 export function getWorkoutPoolsideImageExportDriver(): WorkoutPoolsideImageExportDriver {
