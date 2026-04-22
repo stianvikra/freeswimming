@@ -268,13 +268,7 @@ async function openQuickCaptureDialog(page: Page, panel: ReturnType<Page["getByT
   return quickCaptureDialog;
 }
 
-async function expectPageQuickCaptureFlow(
-  page: Page,
-  contextPath: string,
-  title: string,
-  body: string
-) {
-  const probeUrl = `/api/admin/notes?contextType=page&contextRef=${encodeURIComponent(contextPath)}`;
+async function ensureContextNotesApiAvailable(page: Page, probeUrl: string) {
   const probe = await page.request.get(probeUrl).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : "unknown request failure";
     test.skip(true, `Context notes API probe failed (${message}).`);
@@ -292,6 +286,16 @@ async function expectPageQuickCaptureFlow(
   if (probePayload.ok && probePayload.schemaReady === false) {
     test.skip(true, "Admin notes schema is not ready in this environment.");
   }
+}
+
+async function expectPageQuickCaptureFlow(
+  page: Page,
+  contextPath: string,
+  title: string,
+  body: string
+) {
+  const probeUrl = `/api/admin/notes?contextType=page&contextRef=${encodeURIComponent(contextPath)}`;
+  await ensureContextNotesApiAvailable(page, probeUrl);
 
   const panel = await ensureAdminContextPanelLoaded(page, contextPath);
 
@@ -398,17 +402,10 @@ test.describe("admin contextual notes", () => {
       .toContain(`lesson=${encodeURIComponent(canonicalLessonContextRef)}`);
     await waitForCourseLessonContext(page, canonicalLessonContextRef);
 
-    const probe = await page.request.get(
+    await ensureContextNotesApiAvailable(
+      page,
       `/api/admin/notes?contextType=course_lesson&contextRef=${encodeURIComponent(canonicalLessonContextRef)}`
     );
-    if (!probe.ok()) {
-      test.skip(true, `Context notes API unavailable (${probe.status()}).`);
-    }
-
-    const probePayload = (await probe.json()) as { ok?: boolean; schemaReady?: boolean };
-    if (probePayload.ok && probePayload.schemaReady === false) {
-      test.skip(true, "Admin notes schema is not ready in this environment.");
-    }
 
     const panel = await ensureAdminContextPanelLoaded(
       page,
@@ -609,15 +606,10 @@ test.describe("admin contextual notes", () => {
     await loginAsAdminViaDevBypass(page, "/plans");
     expect(new URL(page.url()).pathname).toBe("/plans");
 
-    const probe = await page.request.get("/api/admin/notes?contextType=page&contextRef=%2Fplans");
-    if (!probe.ok()) {
-      test.skip(true, `Context notes API unavailable (${probe.status()}).`);
-    }
-
-    const probePayload = (await probe.json()) as { ok?: boolean; schemaReady?: boolean };
-    if (probePayload.ok && probePayload.schemaReady === false) {
-      test.skip(true, "Admin notes schema is not ready in this environment.");
-    }
+    await ensureContextNotesApiAvailable(
+      page,
+      "/api/admin/notes?contextType=page&contextRef=%2Fplans"
+    );
 
     const panel = await ensureAdminContextPanelLoaded(page, "/plans");
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -708,17 +700,10 @@ test.describe("admin contextual notes", () => {
     await loginAsAdminViaDevBypass(page, "/my-library/goals");
     expect(new URL(page.url()).pathname).toBe("/my-library/goals");
 
-    const probe = await page.request.get(
+    await ensureContextNotesApiAvailable(
+      page,
       "/api/admin/notes?contextType=page&contextRef=%2Fmy-library%2Fgoals"
     );
-    if (!probe.ok()) {
-      test.skip(true, `Context notes API unavailable (${probe.status()}).`);
-    }
-
-    const probePayload = (await probe.json()) as { ok?: boolean; schemaReady?: boolean };
-    if (probePayload.ok && probePayload.schemaReady === false) {
-      test.skip(true, "Admin notes schema is not ready in this environment.");
-    }
 
     const panel = await ensureAdminContextPanelLoaded(page, "/my-library/goals");
 
