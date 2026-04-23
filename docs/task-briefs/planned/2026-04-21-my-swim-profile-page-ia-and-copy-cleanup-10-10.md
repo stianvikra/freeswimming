@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
-- `updated`: `2026-04-21`
+- `updated`: `2026-04-22`
 
 ## Goal
 
@@ -15,7 +15,7 @@ Turn the current athlete profile/training setup/records page into a cleaner `My 
 ## Sequencing Lock
 
 - Run before maintenance baseline unless explicitly deferred.
-- Coordinate with the separate Account & Security audit brief before removing account/security entrypoints permanently.
+- Account & Security audit removes the dedicated account/security entrypoint; do not reintroduce that button while cleaning the profile page.
 - Keep this as page IA/copy cleanup, not a profile-data schema redesign.
 
 ## Why This Brief Exists

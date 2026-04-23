@@ -11,7 +11,6 @@ import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateMa
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import CreateManualDrylandSessionButton from "@/components/my-library/dryland/CreateManualDrylandSessionButton";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
-import AccountSecurityEntryCard from "@/components/my-library/security/AccountSecurityEntryCard";
 import PortalButton from "@/components/my-library/PortalButton";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
@@ -152,7 +151,6 @@ export default async function MyLibraryPage() {
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
             <MyLibraryNewContentNotice userId={user.id} />
-            <AccountSecurityEntryCard />
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>

@@ -569,7 +569,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "Use `Quick note` when you want a lightweight admin note from the current surface without losing context.",
       "If you still need to scroll, click, or collect a screenshot before saving, collapse `Quick note`; the page stays interactive underneath and you can reopen the same draft from the docked edge handle on the right.",
       "If you navigate to another supported admin/context surface before saving, the same draft can follow you, but it stays attached to the original locked context shown in the panel.",
-      "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security`, plus saved detail routes under `/my-library/workouts/<id>`, `/my-library/dryland/<id>`, and `/my-library/programs/<id>`.",
+      "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, and `generator`, plus saved detail routes under `/my-library/workouts/<id>`, `/my-library/dryland/<id>`, and `/my-library/programs/<id>`.",
       "Use the top `Add note` section when you want full fields in place; if notes already exist it stays collapsed until you expand it again.",
       "If the note is already saved and you forgot the screenshot, open `Edit` in the contextual notes panel and upload the image there instead of recreating the note.",
       "Saved contextual notes now show the visible note ID, an `Open in Notes` jump, and related-note titles that jump into the full queue by stable note ID.",
@@ -907,10 +907,10 @@ export default function AdminHelpCenter() {
             </p>
             <p className="mt-1 text-sm text-amber-800">
               Confirm the screenshot was copied first. If clipboard access is blocked or upload
-              still fails, keep the note ID, refresh Notes, and use Upload images. If the image
-              only exists in Codex chat, save the real file under `/.tmp/admin-note-imports/` and
-              give Codex the note ID + file path. Use the admin-notes recovery runbook if the
-              state is still unclear.
+              still fails, keep the note ID, refresh Notes, and use Upload images. If the image only
+              exists in Codex chat, save the real file under `/.tmp/admin-note-imports/` and give
+              Codex the note ID + file path. Use the admin-notes recovery runbook if the state is
+              still unclear.
             </p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">

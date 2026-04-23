@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-21-account-security-simplification-and-auth-surface-audit-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
-- `updated`: `2026-04-21`
+- `updated`: `2026-04-22`
 
 ## Goal
 
@@ -24,6 +24,18 @@ Audit whether the current Account & Security surface provides necessary user val
 - Email identity might belong in My Swim Profile or a minimal account area instead.
 - One-time-code login guidance may belong in sign-in/help copy rather than a permanent account page.
 - Future Face ID/passkey work is out of scope until auth architecture supports it cleanly.
+
+## Implementation Decision
+
+- Remove the dedicated `Account & Security` UI and entrypoints for this live slice.
+- Keep `/my-library/security` as a protected legacy route:
+  - signed-out users go to `/auth/sign-in?next=/my-library`,
+  - signed-in users go to `/my-library`.
+- Keep current auth/account jobs in their stronger existing locations:
+  - signed-in email, billing, and sign-out stay on `My Library`,
+  - one-time-code recovery/spam-junk guidance stays on `/auth/sign-in`,
+  - preview unlock stays on `/preview-access`.
+- Do not add passkeys, Face ID, change-email, or new auth provider behavior in this slice.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -143,7 +155,14 @@ Critical target categories for `10/10` claim:
 
 - Required if Account & Security copy is removed.
 - Help/Guide must cover one-time-code email, spam/junk reminder, and recovery path if those are no longer visible in-page.
+- Support/runbook replacement:
+  - [auth-account-support.md](/Users/stianvikra/freeswimming/docs/runbooks/auth-account-support.md)
 
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created from owner finding that Account & Security may be low-value and needs a 10/10 auth/security audit before removal | next: implement or defer before maintenance baseline`
+- `2026-04-22 | in-progress | moved brief to in-progress, chose to remove the low-value Account & Security surface while preserving a protected legacy redirect; account jobs now stay on My Library, auth recovery on sign-in, preview unlock on preview-access | next: run targeted auth/UI tests, screenshots, then owner approval before PR gate`
+- `2026-04-22 | in-progress | implementation complete and owner-approved: removed Account & Security entrypoints, protected legacy route redirects to My Library, and support guidance now lives in docs/runbooks/auth-account-support.md; screenshots captured in output/playwright/account-security-simplification/ and approved | next: commit, push, open PR, monitor CI`
+- `2026-04-22 | validation | targeted auth/security checks passed: account-security-simplification, auth-sign-in-ux, api-security-negative-paths, and isolated poolside-save-image-export flake rerun; npm run verify:pre-pr passed lint/typecheck/unit/build/perf and failed only on a confirmed isolated wide e2e navigation flake in poolside-save-image-export | next: record flake in PR risk notes and rely on CI/pre-merge for final full-lane signal`
+- `2026-04-22 | perf-budget | perf gate recommended tightening one stretch target after two weekly green runs; decision: hold in this auth/product slice and defer the tighten/hold/revert decision to the maintenance/perf-baseline brief | next: include defer note in PR summary`
+- `2026-04-23 | validation | hardened the unrelated poolside save-image e2e probe against transient preview navigation/context reloads; local pre-merge then exposed stale Help/Guide quick-note copy for the retired security hub plus a tab-click race in the admin help e2e | next: update Help/Guide contract, commit/push, and rerun final gates`
