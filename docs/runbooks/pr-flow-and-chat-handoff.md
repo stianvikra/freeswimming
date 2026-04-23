@@ -4,15 +4,16 @@ Use this as the canonical repo path for PR sync, merge readiness, and baton pass
 
 ## Canonical PR Flow
 
-1. Run `npm run verify:pre-pr`.
-2. Run `npm run pr:create:safari`.
+1. For route, label, workflow action, Help/Guide, runbook, or support-surface removals/renames/consolidations, complete `docs/runbooks/route-label-support-surface-impact-sweep.md` before broad verification.
+2. Run `npm run verify:pre-pr`.
+3. Run `npm run pr:create:safari`.
    - This creates a new PR when none exists.
    - This refreshes the existing PR title/body from the canonical generator by default when a PR already exists.
-3. Watch required checks on the PR.
-4. Run `npm run verify:pre-merge` on the current HEAD before merge recommendation.
-5. Run `npm run gate:pre-merge` for the full local merge handoff, or `npm run merge:preflight` if `verify:pre-merge` already ran on the same HEAD and the PR body is already refreshed.
-6. Repo owner merges from the GitHub PR page when required checks are green.
-7. After merge and local sync:
+4. Watch required checks on the PR.
+5. Run `npm run verify:pre-merge` on the current HEAD before merge recommendation.
+6. Run `npm run gate:pre-merge` for the full local merge handoff, or `npm run merge:preflight` if `verify:pre-merge` already ran on the same HEAD and the PR body is already refreshed.
+7. Repo owner merges from the GitHub PR page when required checks are green.
+8. After merge and local sync:
    - `git checkout main`
    - `git pull --ff-only origin main`
    - `npm run post-merge:preflight`
@@ -22,6 +23,7 @@ Use raw `gh pr create`, raw `gh pr edit`, or manual PR-body editing only when th
 ## Why This Is The One True Path
 
 - `npm run pr:create:safari` keeps PR body generation on the same canonical source as the linter.
+- route/label/support-surface sweeps happen before broad gates, so obvious fallout is fixed in the same commit as the behavior change.
 - repo scripts handle `gh` resolution and repo-standard Node bootstrap.
 - `verify:pre-pr`, `verify:pre-merge`, and merge preflight stay SHA-aware and aligned.
 
