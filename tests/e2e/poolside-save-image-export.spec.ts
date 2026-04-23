@@ -397,17 +397,25 @@ async function installSaveImageDownloadProbe(page: Page) {
 async function expectSaveImageDownloadCount(page: Page, expectedCount: number) {
   await expect
     .poll(
-      async () =>
-        await page.evaluate(() => {
-          const probe = (
-            window as typeof window & {
-              __fsPoolsideSaveImageDownloadProbe__?: {
-                entries: Array<{ download: string; href: string }>;
-              };
-            }
-          ).__fsPoolsideSaveImageDownloadProbe__;
-          return probe?.entries.length ?? 0;
-        }),
+      async () => {
+        try {
+          return await page.evaluate(() => {
+            const probe = (
+              window as typeof window & {
+                __fsPoolsideSaveImageDownloadProbe__?: {
+                  entries: Array<{ download: string; href: string }>;
+                };
+              }
+            ).__fsPoolsideSaveImageDownloadProbe__;
+            return probe?.entries.length ?? 0;
+          });
+        } catch (error) {
+          if (isTransientPageEvaluationError(error)) {
+            return -1;
+          }
+          throw error;
+        }
+      },
       {
         timeout: 15_000,
       }
@@ -418,41 +426,52 @@ async function expectSaveImageDownloadCount(page: Page, expectedCount: number) {
 async function expectSaveImageDownloadIntent(page: Page, expectedFileName: string) {
   await expect
     .poll(
-      async () =>
-        await page.evaluate(() => {
-          const probe = (
-            window as typeof window & {
-              __fsPoolsideSaveImageDownloadProbe__?: {
-                entries: Array<{ download: string; href: string }>;
-                errors: string[];
-                metricsByHref: Record<string, SaveImageExportMetrics>;
-              };
+      async () => {
+        try {
+          return await page.evaluate(() => {
+            const probe = (
+              window as typeof window & {
+                __fsPoolsideSaveImageDownloadProbe__?: {
+                  entries: Array<{ download: string; href: string }>;
+                  errors: string[];
+                  metricsByHref: Record<string, SaveImageExportMetrics>;
+                };
+              }
+            ).__fsPoolsideSaveImageDownloadProbe__;
+            const entries = probe?.entries ?? [];
+            const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+            if (latestEntry) {
+              return latestEntry;
             }
-          ).__fsPoolsideSaveImageDownloadProbe__;
-          const entries = probe?.entries ?? [];
-          const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
-          if (latestEntry) {
-            return latestEntry;
+
+            const errorText = document
+              .querySelector('[data-testid="poolside-preview-save-image-error"]')
+              ?.textContent?.trim();
+            const buttonText = document
+              .querySelector('[data-testid="poolside-preview-save-image"]')
+              ?.textContent?.trim();
+            const metricCount = probe ? Object.keys(probe.metricsByHref).length : 0;
+            const probeErrors = probe?.errors.join("; ") ?? "";
+
+            return {
+              download: errorText
+                ? `ERROR: ${errorText}`
+                : probeErrors
+                  ? `PROBE_ERROR: ${probeErrors}`
+                  : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount}`,
+              href: window.location.href,
+            };
+          });
+        } catch (error) {
+          if (isTransientPageEvaluationError(error)) {
+            return {
+              download: "TRANSIENT_PAGE_EVALUATION",
+              href: page.url(),
+            };
           }
-
-          const errorText = document
-            .querySelector('[data-testid="poolside-preview-save-image-error"]')
-            ?.textContent?.trim();
-          const buttonText = document
-            .querySelector('[data-testid="poolside-preview-save-image"]')
-            ?.textContent?.trim();
-          const metricCount = probe ? Object.keys(probe.metricsByHref).length : 0;
-          const probeErrors = probe?.errors.join("; ") ?? "";
-
-          return {
-            download: errorText
-              ? `ERROR: ${errorText}`
-              : probeErrors
-                ? `PROBE_ERROR: ${probeErrors}`
-                : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount}`,
-            href: window.location.href,
-          };
-        }),
+          throw error;
+        }
+      },
       {
         timeout: 15_000,
       }
@@ -461,6 +480,11 @@ async function expectSaveImageDownloadIntent(page: Page, expectedFileName: strin
       download: expectedFileName,
       href: expect.stringContaining("blob:"),
     });
+}
+
+function isTransientPageEvaluationError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /execution context was destroyed|navigation|cannot find context/i.test(message);
 }
 
 async function readLatestSaveImageExportMetrics(page: Page) {
@@ -653,8 +677,10 @@ test.describe("poolside save image export", () => {
       expectedPortraitFileName
     );
     await expect(localPreviewPopup.getByTestId("poolside-preview-save-image")).toBeEnabled();
+    await installSaveImageDownloadProbe(localPreviewPopup);
     await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
-    await expectSaveImageDownloadCount(localPreviewPopup, 2);
+    await expectSaveImageDownloadIntent(localPreviewPopup, expectedPortraitFileName);
+    await expectSaveImageDownloadCount(localPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(localPreviewPopup);
     await localPreviewPopup.close();
 
