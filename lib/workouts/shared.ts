@@ -4379,7 +4379,8 @@ function buildWorkoutPoolsideDescriptor(
   primaryTargetLabel: string | null
 ) {
   const parts: string[] = [];
-  const isDrillStep = step.category === "drill" || step.stroke === "drill";
+  const isDrillStep =
+    step.category === "drill" || step.stroke === "drill" || step.drillType === "drill";
 
   if (step.category === "kick") {
     if (step.stroke && step.stroke !== "choice" && step.stroke !== "drill") {

@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-23-swim-session-builder-drill-name-authoring-and-summary-labels-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-23`
 - `updated`: `2026-04-23`
@@ -202,3 +202,7 @@ Critical target categories for `10/10` claim:
 ## Checkpoint Log
 
 - `2026-04-23 | planned | created as a focused follow-up for concrete drill names in the current swim session builder; scoped to existing step.name and summary/export rendering, not drill-library/catalog work | next: run after the route-label impact-sweep closeout PR is merged and before maintenance baseline`
+- `2026-04-23 | in-progress | moved to feature branch, completed route/label/support-surface impact sweep, implemented manual-pool Drill name authoring on existing step.name, preserved legacy auto-summary fallback, and added targeted builder + poolside render coverage; targeted vitest for workout-builder-hub and workouts-shared passed | next: run lint/type-focused validation, capture screenshot handoff, then wait for owner approval before verify:pre-pr`
+- `2026-04-23 | visual handoff | captured clean after screenshots for builder edit/rearrange/view, poolside preview portrait/landscape, and actual save-image output under output/playwright/2026-04-23-drill-name-authoring; screenshots confirm Catch drill replaces generic Drill across changed surfaces | next: owner visual approval, then verify:pre-pr`
+- `2026-04-23 | visual revision | aligned Drill name next to Drill Type at equal width on desktop/tablet while preserving stacked mobile layout; regenerated screenshot handoff and reran targeted vitest green | next: owner visual approval, then verify:pre-pr`
+- `2026-04-23 | verification hardening | fixed late `verify:pre-pr`instability by hardening canonical program export auth/preview loading, adding one retry for transient session/export preview failures, and covering that retry path in`program-builder-hub`unit tests; full`npm run verify:pre-pr`passed, including the previously red`my-library-program-export`, `my-library-workout-builder`, and `poolside-save-image-export`paths | next: commit, push, update PR, monitor CI, then run`npm run verify:pre-merge` before merge recommendation`

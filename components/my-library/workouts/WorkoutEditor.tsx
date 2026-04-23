@@ -89,6 +89,7 @@ import {
   createWorkoutPoolsidePreviewId,
   writeStoredWorkoutPoolsidePreviewDraft,
 } from "@/lib/workouts/poolside-preview";
+import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
 
 type Props = {
   draft: SessionDraft;
@@ -114,6 +115,7 @@ type Props = {
   saveButtonTestId?: string;
   showPdfPanel?: boolean;
   copyVariant?: "default" | "generator";
+  manualBuilderMode?: ManualWorkoutBuilderMode | null;
   forceMetadataOpenOnLoad?: boolean;
   onRequestDeleteCurrent?: (() => void) | null;
   isDeletingCurrent?: boolean;
@@ -921,6 +923,79 @@ function resolveManualPoolSummaryUnitFromName(name: string): SessionDraftPoolLen
   return null;
 }
 
+function isManualPoolDrillNameRelevantStep(step: SessionDraftStep) {
+  return step.category === "drill" || step.stroke === "drill" || step.drillType === "drill";
+}
+
+function isLegacyManualPoolAutoSummaryName(name: string) {
+  return name.includes("·");
+}
+
+function getManualPoolDrillNameInputValue(step: SessionDraftStep) {
+  return isLegacyManualPoolAutoSummaryName(step.name) ? "" : step.name;
+}
+
+function resolveConcreteManualPoolDrillName(
+  step: SessionDraftStep,
+  durationLabel: string,
+  targetLabel: string | null
+) {
+  const name = typeof step.name === "string" ? step.name.trim() : "";
+  const normalizedName = name.toLowerCase();
+  const genericNames = new Set(["drill", "drill step", "swim drill", "pool drill"]);
+  const duplicateLabels = [
+    durationLabel,
+    targetLabel,
+    getSessionStepIntensityLabel(step.intensity),
+  ].filter(Boolean) as string[];
+
+  if (
+    !name ||
+    isLegacyManualPoolAutoSummaryName(name) ||
+    genericNames.has(normalizedName) ||
+    duplicateLabels.some((label) => normalizedName === label.toLowerCase())
+  ) {
+    return null;
+  }
+
+  return name;
+}
+
+function buildManualPoolStepContextLabel(
+  step: SessionDraftStep,
+  durationLabel: string,
+  targetLabel: string | null
+) {
+  const drillName = isManualPoolDrillNameRelevantStep(step)
+    ? resolveConcreteManualPoolDrillName(step, durationLabel, targetLabel)
+    : null;
+
+  if (!drillName) {
+    return buildStepContextLabel(step, { environment: "pool" });
+  }
+
+  const parts: string[] = [];
+
+  if (step.stroke && step.stroke !== "choice" && step.stroke !== "drill") {
+    parts.push(getSessionStepStrokeLabel(step.stroke));
+  }
+
+  parts.push(drillName);
+
+  if (step.drillType && step.drillType !== "none" && step.drillType !== "drill") {
+    const drillTypeLabel = getSessionStepDrillTypeLabel(step.drillType);
+    if (!parts.includes(drillTypeLabel)) {
+      parts.push(drillTypeLabel);
+    }
+  }
+
+  if (step.equipment && step.equipment !== "none") {
+    parts.push(getSessionStepEquipmentLabel(step.equipment));
+  }
+
+  return parts.join(" · ");
+}
+
 function resolveManualPoolSummaryUnit(
   step: SessionDraftStep,
   fallbackUnit: SessionDraftPoolLengthUnit
@@ -959,20 +1034,26 @@ function buildManualPoolStepSummary(
 ) {
   const normalizedStep = normalizeManualPoolStepForEditor(step);
   const summaryUnit = options?.summaryUnit ?? resolveManualPoolSummaryUnit(step, poolLengthUnit);
+  const durationLabel = buildWorkoutStepDurationOutputSummary(
+    normalizedStep,
+    basePaceSecondsPer100m,
+    {
+      environment: "pool",
+      poolLengthUnit: summaryUnit,
+    }
+  );
   const structuredTarget = buildSessionStepStructuredTargetLabel(
     normalizedStep,
     basePaceSecondsPer100m,
     summaryUnit
   );
+  const targetLabel = structuredTarget ?? getSessionStepIntensityLabel(normalizedStep.intensity);
 
   return (
     [
-      buildWorkoutStepDurationOutputSummary(normalizedStep, basePaceSecondsPer100m, {
-        environment: "pool",
-        poolLengthUnit: summaryUnit,
-      }),
-      buildStepContextLabel(normalizedStep, { environment: "pool" }),
-      structuredTarget ?? getSessionStepIntensityLabel(normalizedStep.intensity),
+      durationLabel,
+      buildManualPoolStepContextLabel(normalizedStep, durationLabel, targetLabel),
+      targetLabel,
     ]
       .filter(Boolean)
       .join(" · ") || `${getSessionStepCategoryLabel(normalizedStep.category)} step`
@@ -1027,9 +1108,11 @@ function syncManualPoolEditableStep(
 
   return {
     ...normalizedStep,
-    name: buildManualPoolStepSummary(normalizedStep, basePaceSecondsPer100m, poolLengthUnit, {
-      summaryUnit: options?.summaryUnit,
-    }).slice(0, 120),
+    name: isManualPoolDrillNameRelevantStep(normalizedStep)
+      ? getManualPoolDrillNameInputValue(normalizedStep).slice(0, 120)
+      : buildManualPoolStepSummary(normalizedStep, basePaceSecondsPer100m, poolLengthUnit, {
+          summaryUnit: options?.summaryUnit,
+        }).slice(0, 120),
     targetSummary: "",
   };
 }
@@ -1625,6 +1708,7 @@ export default function WorkoutEditor({
   saveButtonTestId = "session-generator-save",
   showPdfPanel = true,
   copyVariant = "default",
+  manualBuilderMode = null,
   forceMetadataOpenOnLoad = false,
   onRequestDeleteCurrent = null,
   isDeletingCurrent = false,
@@ -1635,12 +1719,14 @@ export default function WorkoutEditor({
   const stepGroups = buildStepRenderGroups(draft.steps);
   const showCalmBuilderLayout = copyVariant === "default";
   const isManualMetadataMode = showCalmBuilderLayout && savedWorkout?.sourceKind === "manual";
-  const manualBuilderMode = isManualMetadataMode
-    ? draft.environment === "open_water"
-      ? "open_water"
-      : "pool"
-    : null;
-  const isManualPoolMode = manualBuilderMode === "pool";
+  const resolvedManualBuilderMode = manualBuilderMode
+    ? manualBuilderMode
+    : isManualMetadataMode
+      ? draft.environment === "open_water"
+        ? "open_water"
+        : "pool"
+      : null;
+  const isManualPoolMode = resolvedManualBuilderMode === "pool";
   const autoPoolBuilderTitle = getPoolBuilderAutoTitle(draft.environment);
   const timeDurationInputFocusRef = useRef<Record<string, boolean>>({});
   const [openStepId, setOpenStepId] = useState<string | null>(null);
@@ -1888,8 +1974,7 @@ export default function WorkoutEditor({
     "w-full rounded-2xl text-left outline-none transition focus-visible:ring-2 focus-visible:ring-blue-200";
   const mobileIconButtonBaseClass =
     "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition";
-  const mobileActionToggleClass =
-    `${mobileIconButtonBaseClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100`;
+  const mobileActionToggleClass = `${mobileIconButtonBaseClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100`;
   const getMobileExpandToggleClass = (expanded: boolean) =>
     `${mobileIconButtonBaseClass} ${
       expanded
@@ -1901,8 +1986,7 @@ export default function WorkoutEditor({
     "inline-flex min-h-10 w-full items-center justify-start rounded-xl border px-3 py-2 text-sm font-medium transition";
   const rearrangeMoveButtonClass =
     "inline-flex h-10 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-10";
-  const recentlyMovedBlockClass =
-    "bg-teal-50/80 shadow-sm ring-2 ring-inset ring-teal-300";
+  const recentlyMovedBlockClass = "bg-teal-50/80 shadow-sm ring-2 ring-inset ring-teal-300";
   const desktopHeaderStackClass = "flex items-start justify-between gap-3";
   const desktopSummaryBlockClass = "min-w-0 flex-1";
   const desktopRepeatControlRowClass = "grid gap-3";
@@ -3334,6 +3418,9 @@ export default function WorkoutEditor({
         ? getManualPoolCategoryLabelClass(normalizedStep.category)
         : "text-slate-500";
     const stepNotes = isManualPoolMode && isRestStepCard ? "" : step.notes;
+    const showManualPoolDrillNameField =
+      isManualPoolMode && !isMinimalRestEditor && isManualPoolDrillNameRelevantStep(normalizedStep);
+    const manualPoolDrillNameHelpId = `session-draft-step-drill-name-help-${step.id}`;
     const stepSummaryContent = (
       <>
         <p
@@ -3939,6 +4026,30 @@ export default function WorkoutEditor({
               </label>
             )}
 
+            {showManualPoolDrillNameField ? (
+              <div className="text-sm text-slate-700">
+                <label htmlFor={`session-draft-step-drill-name-${step.id}`}>Drill name</label>
+                <input
+                  id={`session-draft-step-drill-name-${step.id}`}
+                  type="text"
+                  value={getManualPoolDrillNameInputValue(normalizedStep)}
+                  onChange={(event) =>
+                    updateDraftStep(step.id, (current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                  aria-describedby={manualPoolDrillNameHelpId}
+                  placeholder="Catch drill"
+                  data-testid={`session-draft-step-drill-name-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                <p id={manualPoolDrillNameHelpId} className="mt-2 text-sm text-slate-500">
+                  Names the drill. Use Notes for execution cues.
+                </p>
+              </div>
+            ) : null}
+
             {isManualPoolMode || isMinimalRestEditor ? null : (
               <>
                 <p className="text-sm text-slate-500 md:col-span-2">
@@ -4512,7 +4623,7 @@ export default function WorkoutEditor({
         />
       </label>
 
-      {manualBuilderMode ? null : (
+      {resolvedManualBuilderMode ? null : (
         <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">
           <legend className="px-1 text-sm font-semibold text-slate-900">Environment</legend>
           <div className="mt-3 flex flex-wrap gap-3">
@@ -5418,11 +5529,7 @@ export default function WorkoutEditor({
         </div>
 
         <div className="mt-4 space-y-4">
-          <p
-            data-testid="workout-editor-rearrange-live"
-            className="sr-only"
-            aria-live="polite"
-          >
+          <p data-testid="workout-editor-rearrange-live" className="sr-only" aria-live="polite">
             {rearrangeLiveMessage}
           </p>
 

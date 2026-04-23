@@ -202,6 +202,10 @@ async function installSaveImageDownloadProbe(page: Page) {
       topEdgeStrongPixels: number;
     };
     type DownloadProbe = {
+      buttonClicks: Array<{
+        buttonDisabled: boolean;
+        previewReady: string | null;
+      }>;
       entries: DownloadProbeEntry[];
       errors: string[];
       metricsByHref: Record<string, DownloadProbeMetrics>;
@@ -214,6 +218,7 @@ async function installSaveImageDownloadProbe(page: Page) {
 
     const probe = windowWithProbe.__fsPoolsideSaveImageDownloadProbe__;
     if (probe) {
+      probe.buttonClicks.length = 0;
       probe.entries.length = 0;
       probe.errors.length = 0;
       for (const key of Object.keys(probe.metricsByHref)) {
@@ -221,6 +226,7 @@ async function installSaveImageDownloadProbe(page: Page) {
       }
     } else {
       windowWithProbe.__fsPoolsideSaveImageDownloadProbe__ = {
+        buttonClicks: [],
         entries: [],
         errors: [],
         metricsByHref: {},
@@ -420,6 +426,22 @@ async function installSaveImageDownloadProbe(page: Page) {
       return element;
     };
 
+    const saveImageButton = document.querySelector<HTMLButtonElement>(
+      '[data-testid="poolside-preview-save-image"]'
+    );
+    if (saveImageButton && saveImageButton.dataset.poolsideSaveImageProbeAttached !== "true") {
+      saveImageButton.dataset.poolsideSaveImageProbeAttached = "true";
+      saveImageButton.addEventListener("click", () => {
+        windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.buttonClicks.push({
+          buttonDisabled: saveImageButton.disabled,
+          previewReady:
+            document
+              .querySelector('[data-testid="poolside-preview-frame-state"]')
+              ?.getAttribute("data-preview-ready") ?? null,
+        });
+      });
+    }
+
     windowWithProbe.__fsPoolsideSaveImageDownloadPatched__ = true;
   });
 }
@@ -463,6 +485,10 @@ async function expectSaveImageDownloadIntent(page: Page, expectedFileName: strin
               window as typeof window & {
                 __fsPoolsideSaveImageDownloadProbe__?: {
                   entries: Array<{ download: string; href: string }>;
+                  buttonClicks: Array<{
+                    buttonDisabled: boolean;
+                    previewReady: string | null;
+                  }>;
                   errors: string[];
                   metricsByHref: Record<string, SaveImageExportMetrics>;
                 };
@@ -481,6 +507,8 @@ async function expectSaveImageDownloadIntent(page: Page, expectedFileName: strin
               .querySelector('[data-testid="poolside-preview-save-image"]')
               ?.textContent?.trim();
             const metricCount = probe ? Object.keys(probe.metricsByHref).length : 0;
+            const clickCount = probe?.buttonClicks.length ?? 0;
+            const latestButtonClick = clickCount > 0 ? probe?.buttonClicks[clickCount - 1] : null;
             const probeErrors = probe?.errors.join("; ") ?? "";
 
             return {
@@ -488,7 +516,7 @@ async function expectSaveImageDownloadIntent(page: Page, expectedFileName: strin
                 ? `ERROR: ${errorText}`
                 : probeErrors
                   ? `PROBE_ERROR: ${probeErrors}`
-                  : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount}`,
+                  : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount} clicks=${clickCount} latestClick=${latestButtonClick ? JSON.stringify(latestButtonClick) : "none"}`,
               href: window.location.href,
             };
           });

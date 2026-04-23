@@ -1120,6 +1120,56 @@ describe("workouts shared readiness", () => {
     expect(allNotesHtml).toContain("Settle into long strokes.");
   });
 
+  it("falls back from generic poolside drill names without duplicating the drill label", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      steps: [
+        {
+          ...buildDraft().steps[0],
+          category: "warmup",
+          name: "Drill",
+          stroke: "freestyle",
+          drillType: "drill",
+          durationMode: "distance",
+          distanceM: 50,
+        },
+      ],
+    };
+
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+    });
+
+    expect(html).toContain("50m · Freestyle · Drill · Easy");
+    expect(html).not.toContain("50m · Freestyle · Drill · Drill · Easy");
+  });
+
+  it("uses concrete poolside drill names from manual-pool Drill Type steps", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      steps: [
+        {
+          ...buildDraft().steps[0],
+          category: "warmup",
+          name: "Catch drill",
+          stroke: "freestyle",
+          drillType: "drill",
+          durationMode: "distance",
+          distanceM: 50,
+        },
+      ],
+    };
+
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "poolside",
+    });
+
+    expect(html).toContain("50m · Freestyle · Catch drill · Easy");
+    expect(html).not.toContain("50m · Freestyle · Drill · Easy");
+  });
+
   it("can render an embedded poolside preview without the standalone toolbar chrome", () => {
     const html = buildWorkoutPdfHtmlDocument(buildDraft(), {
       draftState: "local_draft",

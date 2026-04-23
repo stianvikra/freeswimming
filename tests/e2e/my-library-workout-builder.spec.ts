@@ -399,7 +399,8 @@ test.describe("my library workout builder", () => {
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
     await openMetadataPanelIfCollapsed(page);
-    await expect(page.getByTestId("session-draft-title")).toHaveValue("Untitled pool session");
+    await expect(page.getByText("Untitled pool session")).toBeVisible();
+    await expect(page.getByTestId("session-draft-title")).toHaveValue("");
     await expect(page.getByText(resumeTitle)).toHaveCount(0);
   });
 });
