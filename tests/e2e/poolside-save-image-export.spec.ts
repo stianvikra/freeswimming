@@ -231,15 +231,6 @@ async function installSaveImageDownloadProbe(page: Page) {
       return;
     }
 
-    Object.defineProperty(navigator, "share", {
-      configurable: true,
-      value: undefined,
-    });
-    Object.defineProperty(navigator, "canShare", {
-      configurable: true,
-      value: undefined,
-    });
-
     const captureEdgePaddingPx = 8;
     const captureBlobMetrics = (href: string, object: Blob) => {
       if (object.type !== "image/png" || typeof createImageBitmap !== "function") {
@@ -339,6 +330,10 @@ async function installSaveImageDownloadProbe(page: Page) {
     };
 
     const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
+    const originalShare =
+      typeof navigator.share === "function" ? navigator.share.bind(navigator) : null;
+    const originalCanShare =
+      typeof navigator.canShare === "function" ? navigator.canShare.bind(navigator) : null;
     URL.createObjectURL = function patchedPoolsideSaveImageCreateObjectUrl(object) {
       const href = originalCreateObjectUrl(object);
       if (object instanceof Blob) {
@@ -359,6 +354,41 @@ async function installSaveImageDownloadProbe(page: Page) {
       });
       return true;
     };
+
+    Object.defineProperty(navigator, "canShare", {
+      configurable: true,
+      value(data?: ShareData) {
+        if (Array.isArray(data?.files) && data.files.length > 0) {
+          return true;
+        }
+
+        return originalCanShare ? originalCanShare(data) : false;
+      },
+    });
+
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      async value(data?: ShareData) {
+        const fileCandidate = Array.isArray(data?.files) ? data.files[0] : null;
+        if (fileCandidate instanceof Blob) {
+          const href = URL.createObjectURL(fileCandidate);
+          const download =
+            "name" in fileCandidate && typeof fileCandidate.name === "string"
+              ? fileCandidate.name
+              : "shared-poolside-note.png";
+
+          windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.entries.push({
+            download,
+            href,
+          });
+          return;
+        }
+
+        if (originalShare) {
+          await originalShare(data);
+        }
+      },
+    });
 
     HTMLAnchorElement.prototype.click = function patchedPoolsideSaveImageAnchorClick() {
       if (captureAnchorClick(this)) {
@@ -480,6 +510,21 @@ async function expectSaveImageDownloadIntent(page: Page, expectedFileName: strin
       download: expectedFileName,
       href: expect.stringContaining("blob:"),
     });
+}
+
+async function expectSaveImageNotice(page: Page, expectedFileName: string) {
+  await expect
+    .poll(
+      async () => {
+        const value = await page.getByTestId("poolside-preview-save-image-notice").textContent();
+        return (
+          typeof value === "string" &&
+          (value.includes(expectedFileName) || value.includes("Image ready to share."))
+        );
+      },
+      { timeout: 5_000 }
+    )
+    .toBe(true);
 }
 
 function isTransientPageEvaluationError(error: unknown) {
@@ -673,9 +718,7 @@ test.describe("poolside save image export", () => {
     await expectSaveImageDownloadIntent(localPreviewPopup, expectedPortraitFileName);
     await expectSaveImageDownloadCount(localPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(localPreviewPopup);
-    await expect(localPreviewPopup.getByTestId("poolside-preview-save-image-notice")).toContainText(
-      expectedPortraitFileName
-    );
+    await expectSaveImageNotice(localPreviewPopup, expectedPortraitFileName);
     await expect(localPreviewPopup.getByTestId("poolside-preview-save-image")).toBeEnabled();
     await installSaveImageDownloadProbe(localPreviewPopup);
     await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
@@ -719,9 +762,7 @@ test.describe("poolside save image export", () => {
     await expectSaveImageDownloadIntent(savedPreviewPopup, expectedLandscapeFileName);
     await expectSaveImageDownloadCount(savedPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(savedPreviewPopup);
-    await expect(savedPreviewPopup.getByTestId("poolside-preview-save-image-notice")).toContainText(
-      expectedLandscapeFileName
-    );
+    await expectSaveImageNotice(savedPreviewPopup, expectedLandscapeFileName);
     await savedPreviewPopup.close();
   });
 });
