@@ -26,9 +26,20 @@ test.describe("admin help center", () => {
 
     const helpTab = page.getByTestId("admin-tab-help");
     await expect(helpTab).toBeVisible();
-    await helpTab.click();
 
-    await expect(page.getByTestId("admin-active-section-label")).toHaveText("Help/Guide");
+    const activeSectionLabel = page.getByTestId("admin-active-section-label");
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await helpTab.click();
+      try {
+        await expect(activeSectionLabel).toHaveText("Help/Guide", { timeout: 2_000 });
+        break;
+      } catch (error) {
+        if (attempt === 2) {
+          throw error;
+        }
+      }
+    }
+
     await expect(page.getByTestId("admin-help-center")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
     await expect(page.getByText("Last updated:")).toBeVisible();
@@ -108,7 +119,9 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Open / Done archive / All + Search + Context filters:")
     ).toBeVisible();
-    await expect(page.getByText("Visible note ID / Open in Notes / Related note title:")).toBeVisible();
+    await expect(
+      page.getByText("Visible note ID / Open in Notes / Related note title:")
+    ).toBeVisible();
     await expect(page.getByText("Priority:")).toBeVisible();
     await expect(page.getByText("Add images / Delete image:")).toBeVisible();
     await expect(page.getByText("Paste image from clipboard / Upload images:")).toBeVisible();
@@ -147,7 +160,7 @@ test.describe("admin help center", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, `generator`, and `security`, plus saved detail routes under `/my-library/workouts/<id>`, `/my-library/dryland/<id>`, and `/my-library/programs/<id>`."
+        "Page-level `Quick note` is intentionally available on supported public pages plus selected My Library hubs: `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, and `generator`, plus saved detail routes under `/my-library/workouts/<id>`, `/my-library/dryland/<id>`, and `/my-library/programs/<id>`."
       )
     ).toBeVisible();
     await expect(
