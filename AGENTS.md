@@ -147,6 +147,14 @@ This file defines how coding agents should collaborate in this repository.
 - Log repeated or expensive bugs in `docs/runbooks/high-cost-debug-log.md` with symptom, root cause, fix pattern, detection, and prevention test.
 - Before debugging a similar issue later, check `docs/runbooks/high-cost-debug-log.md` for prior causes and probes.
 
+## Route, Label, And Support-Surface Impact Sweep
+
+- For changes that remove, rename, consolidate, or materially reposition routes, route params, user/admin labels, workflow actions, Help/Guide surfaces, runbooks, recovery paths, or operator-facing support surfaces, use `docs/runbooks/route-label-support-surface-impact-sweep.md`.
+- Run the targeted `rg` sweep before the first broad gate, not after `verify:pre-pr` or `verify:pre-merge` fails.
+- Check at minimum `app/`, `components/`, `tests/`, `docs/`, `docs/runbooks/`, active/planned/done task briefs, and Help/Guide assertions when relevant.
+- Update product code, tests, docs, runbooks, and task brief fallout in the same commit whenever practical. If a fallout item is intentionally deferred, record the rationale and follow-up brief in the active brief or PR body.
+- Treat `verify:pre-pr` and `verify:pre-merge` as confirmation gates for this class of work, not as the primary discovery mechanism.
+
 ## Session Handoff Timing
 
 - Start a new chat or provide a carry-forward prompt when it is the best way to preserve momentum and reduce risk, not only when context is already heavy.

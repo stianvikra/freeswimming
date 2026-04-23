@@ -22,6 +22,7 @@ Use this quick check so the task execution is precise:
 - State platform scorecard mapping (`docs/quality/platform-10-10-scorecard.md`)
 - State Help/Guide impact rule (required update or explicit `N/A` rationale for workflow changes)
 - State visual artifact rule for UI/print/layout/brand changes, including folder path and `before/after` or `after/reference` naming
+- State route/label/support-surface impact sweep rule when routes, labels, workflow actions, Help/Guide surfaces, runbooks, or support paths are removed/renamed/consolidated
 - State high-cost debugging rule when prior attempts have failed, including hypothesis list, ranked probes, and bug-log impact
 - State session handoff rule when a new chat is the better working mode, not only when context is already heavy
 - State closeout gate (completion audit + final 10/10 quality/safety/perf/regression sweep + move/cleanup prompts)
@@ -218,6 +219,12 @@ Any constraints around copy, design, API compatibility, performance, or deadline
 ## Debugging And Handoff Contract
 
 - For visual, screenshot, export, browser, or layout bugs, follow `docs/runbooks/ui-debug-hypothesis-and-handoff.md`.
+- For route, label, workflow action, Help/Guide, runbook, recovery-path, or support-surface removals/renames/consolidations, follow `docs/runbooks/route-label-support-surface-impact-sweep.md` before the first broad gate.
+- Impact-sweep evidence must state:
+  - old/new identifiers searched,
+  - directories/surfaces checked,
+  - targeted test/docs/runbook updates made in the same commit,
+  - intentional leftovers or follow-up brief links.
 - If the workstream becomes easier or safer to continue in a new chat, provide a carry-forward prompt using `docs/runbooks/pr-flow-and-chat-handoff.md`.
 - If the task reveals a reusable high-cost bug pattern, update `docs/runbooks/high-cost-debug-log.md` in the same PR or explicitly justify why it is not reusable.
 

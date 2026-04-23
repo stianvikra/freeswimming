@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-23-route-label-support-surface-impact-sweep-governance-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-23`
 - `updated`: `2026-04-23`
@@ -157,6 +157,17 @@ For an implementation PR that includes optional script support:
 - The repo should stop paying repeated time cost for predictable rename/remove fallout.
 - Optional script support is only worth shipping if it stays boring, transparent, and easy to trust.
 
+## Implementation Decision
+
+- Ship the manual governance rule first.
+- Defer optional `lint:impact-sweep` or checklist-script support for now because:
+  - the acceptance criteria are satisfied by a canonical runbook plus AGENTS/template/PR-flow references,
+  - a script would need intent inputs to avoid false confidence,
+  - adding a new gate before the rule proves useful would increase maintenance cost without clear immediate value.
+- Future script support can be added as a separate tooling slice if repeated impact sweeps show a stable, low-noise command shape.
+
 ## Checkpoint Log
 
 - `2026-04-23 | planned | created as the explicit follow-up for route/label/support-surface impact-sweep governance after the broader UI-debug/handoff slice landed; direction locked: ship the manual repo rule first and treat any helper script as optional only if the diff stays low-risk and low-maintenance | next: decide execution timing relative to the current active product PR, then implement the governance updates and defer or include a tiny helper based on final scope size`
+- `2026-04-23 | working tree | moved brief to in-progress; added canonical impact-sweep runbook plus AGENTS/task-template/PR-flow references; optional script support explicitly deferred as non-essential tooling | next: run lint/verify, commit, push, open PR`
+- `2026-04-23 | working tree | validation passed: npm run lint:briefs:all and npm run verify:pre-pr docs-only lane; staged governance docs and runbook changes | next: commit, push, open PR`
