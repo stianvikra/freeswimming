@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-21-account-security-simplification-and-auth-surface-audit-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
-- `updated`: `2026-04-22`
+- `updated`: `2026-04-23`
 
 ## Goal
 
@@ -158,6 +158,53 @@ Critical target categories for `10/10` claim:
 - Support/runbook replacement:
   - [auth-account-support.md](/Users/stianvikra/freeswimming/docs/runbooks/auth-account-support.md)
 
+## Closeout
+
+- Merged PR: `#502`
+- Merge commit: `7daf9532a0eb4bac079b7394faea0219183febaa`
+- Final status: done on `2026-04-23`
+- Final implementation:
+  - removed the low-value Account & Security entrypoints and retired the old hub components,
+  - preserved `/my-library/security` as a protected legacy route,
+  - kept email, billing, and sign-out on `My Library`,
+  - moved support guidance to [auth-account-support.md](/Users/stianvikra/freeswimming/docs/runbooks/auth-account-support.md),
+  - hardened the related poolside save-image e2e probe so the full lane stayed green.
+- Final validation:
+  - `npm run lint:briefs:all`: PASS on `2026-04-22`
+  - targeted auth/account/security e2e checks: PASS on `2026-04-22`
+  - `npx playwright test tests/e2e/poolside-save-image-export.spec.ts --project=mobile-chromium`: PASS on `2026-04-23`
+  - `npm run verify:pre-merge`: PASS full lane on `2026-04-23`
+  - GitHub required checks for PR `#502`: PASS before merge
+  - Vercel preview private-gate smoke QA: PASS on `2026-04-23`
+- Deferred note:
+  - perf-budget stretch-target tightening remains deferred to the maintenance/perf-baseline workstream, not this auth/product slice.
+
+## Final 10/10 Score Outcome
+
+Critical target categories confirmed `5/5`:
+
+- Business logic correctness and data integrity: `5/5`
+- Reliability and failure handling: `5/5`
+- Security and authz: `5/5`
+- Privacy and compliance: `5/5`
+- Testing and QA automation: `5/5`
+
+Additional target categories:
+
+- Product goals and IA: `5/5`
+- UX flow clarity: `5/5`
+- Visual design quality: `5/5`
+- Accessibility (a11y): `5/5`
+- Data placement and sync boundaries: `5/5`
+- Caching and invalidation strategy: `5/5`
+- Content governance: `5/5`
+- Incident response and support operations: `5/5`
+- i18n operational readiness: `5/5`
+- Stack-fit and dependency discipline: `5/5`
+- DevOps and rollback readiness: `5/5`
+
+Remaining gaps: none inside this brief scope.
+
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created from owner finding that Account & Security may be low-value and needs a 10/10 auth/security audit before removal | next: implement or defer before maintenance baseline`
@@ -166,3 +213,4 @@ Critical target categories for `10/10` claim:
 - `2026-04-22 | validation | targeted auth/security checks passed: account-security-simplification, auth-sign-in-ux, api-security-negative-paths, and isolated poolside-save-image-export flake rerun; npm run verify:pre-pr passed lint/typecheck/unit/build/perf and failed only on a confirmed isolated wide e2e navigation flake in poolside-save-image-export | next: record flake in PR risk notes and rely on CI/pre-merge for final full-lane signal`
 - `2026-04-22 | perf-budget | perf gate recommended tightening one stretch target after two weekly green runs; decision: hold in this auth/product slice and defer the tighten/hold/revert decision to the maintenance/perf-baseline brief | next: include defer note in PR summary`
 - `2026-04-23 | validation | hardened the unrelated poolside save-image e2e probe against transient preview navigation/context reloads; local pre-merge then exposed stale Help/Guide quick-note copy for the retired security hub plus a tab-click race in the admin help e2e | next: update Help/Guide contract, commit/push, and rerun final gates`
+- `2026-04-23 | done | PR #502 merged at 7daf9532a0eb4bac079b7394faea0219183febaa after full local pre-merge, green required CI, and Vercel preview smoke QA | next: run closeout docs PR and then execute the planned route/label/support-surface impact-sweep governance brief`
