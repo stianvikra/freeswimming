@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
-- `updated`: `2026-04-21`
+- `updated`: `2026-04-24`
 
 ## Goal
 
@@ -46,9 +46,10 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
   - `npm audit --omit=dev --audit-level=high` reports one high-severity `next` advisory window affecting the current pinned version,
   - runtime pinning is implicit in CI (`node-version: 20`) but not explicit in repo-root developer tooling files,
   - there is no canonical monthly maintenance issue/runbook flow that turns “remember to do hygiene” into a stable operating rhythm.
-- Carry-forward decision from PR #496:
-  - `npm run test:perf:budgets` recommended tightening one stretch target after two consecutive weekly green runs,
-  - tightening is intentionally deferred out of the product/UI poolside notes slice,
+- Carry-forward perf-budget decisions from product PRs:
+  - PR #496 first recorded the recommendation that `npm run test:perf:budgets` should tighten one stretch target after two consecutive weekly green runs,
+  - PR #507 reconfirmed that recommendation on `2026-04-24` with `35.6%` worst margin (`artifacts/test-runs/20260424-094822/verify.log`),
+  - both product slices intentionally deferred the ratchet decision out of feature work,
   - this maintenance baseline must review `artifacts/perf-budgets/trend-log.ndjson`, decide `tighten` / `hold` / `revert`, and record the decision in the active brief and PR summary.
 
 ## Recommended Execution Order
@@ -181,7 +182,7 @@ Critical target categories for a `10/10` claim in this brief:
 3. One canonical maintenance runbook/checklist exists and defines weekly, monthly, and quarterly cadence.
 4. Major dependency migrations remain explicitly deferred into separate planned work, not silently bundled into the baseline pass.
 5. All baseline child PRs are narrow enough that root cause remains debuggable.
-6. The PR #496 perf-budget stretch-target recommendation is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
+6. The carried-forward perf-budget stretch-target recommendation from PRs `#496` and `#507` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
 
 ## Validation
 

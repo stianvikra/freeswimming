@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-23-swim-session-builder-drill-name-authoring-and-summary-labels-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-23`
-- `updated`: `2026-04-23`
+- `updated`: `2026-04-24`
 
 ## Goal
 
@@ -199,6 +199,48 @@ Critical target categories for `10/10` claim:
   - screenshot folder,
   - exact next step.
 
+## Closeout
+
+- Merged PR: `#507`
+- Merge commit: `7a0ed727c13b1487fbffe7c18d0b6f706a16b3a6`
+- Final status: done on `2026-04-24`
+- Final implementation:
+  - exposed an optional `Drill name` field for drill-relevant manual pool steps and stored it on existing `step.name`,
+  - kept generic or empty values on the existing fallback path so legacy saved sessions continued to render safely,
+  - updated builder edit/rearrange/view summaries plus poolside preview, PDF/program export, and save-image output to prefer concrete drill names without duplicating `Drill`,
+  - hardened related export-preview/save-image flows after late gate flakes so the final builder/poolside contract stayed deterministic.
+- Final validation:
+  - route/label/support-surface impact sweep completed during implementation
+  - targeted vitest for builder/shared drill-label behavior: PASS on `2026-04-23`
+  - visual handoff screenshots approved under `/Users/stianvikra/freeswimming/output/playwright/2026-04-23-drill-name-authoring`
+  - isolated mobile save-image export repro `--repeat-each=5`: PASS on `2026-04-24`
+  - `npm run verify:pre-pr`: PASS on `2026-04-24` (`artifacts/test-runs/20260424-092227/verify.log`)
+  - `npm run verify:pre-merge`: PASS on `2026-04-24` (`artifacts/test-runs/20260424-094822/verify.log`)
+  - GitHub required checks for PR `#507`: PASS before merge
+- Deferred note:
+  - perf-budget trend again recommended tightening one stretch target (`35.6%` worst margin, two consecutive weekly green runs), but that decision remains intentionally deferred out of this product slice and into the maintenance baseline brief.
+
+## Final 10/10 Score Outcome
+
+Critical target categories confirmed `5/5`:
+
+- UX flow clarity: `5/5`
+- Business logic correctness and data integrity: `5/5`
+- Visual design quality: `5/5`
+- Accessibility (a11y): `5/5`
+- Content governance: `5/5`
+- Testing and QA automation: `5/5`
+
+Additional target categories:
+
+- Product goals and IA: `5/5`
+- Data placement and sync boundaries: `5/5`
+- Reliability and failure handling: `5/5`
+
+Remaining gaps:
+
+- none inside this brief scope; the only explicit carry-forward is the perf-budget tighten/hold/revert decision deferred to maintenance baseline.
+
 ## Checkpoint Log
 
 - `2026-04-23 | planned | created as a focused follow-up for concrete drill names in the current swim session builder; scoped to existing step.name and summary/export rendering, not drill-library/catalog work | next: run after the route-label impact-sweep closeout PR is merged and before maintenance baseline`
@@ -209,3 +251,4 @@ Critical target categories for `10/10` claim:
 - `2026-04-23 | save-image race hardening | isolated a late `poolside-save-image-export`failure to a first-click readiness race in`PoolsidePreviewPageClient`, removed the premature `!embeddedNoteReady`short-circuit so the existing export resolver owns readiness waiting, reran the failing e2e twice green plus focused unit coverage, and reran full`npm run verify:pre-pr` green (`106 passed`, `344 skipped`) | next: commit, push, refresh PR checks, then run `npm run verify:pre-merge` before merge recommendation`
 - `2026-04-23 | save-image probe hardening | a later full `verify:pre-merge`red turned out to be a popup probe lifecycle flake, not a stable export regression: the mobile save-image Playwright probe could be lost across popup full reloads in dev mode, so the test reported `NO_ENTRY ... clicks=0`; hardened the test harness with reload-safe popup instrumentation via `addInitScript`, sessionStorage-backed probe state, and explicit reset only when the test starts a new capture window, then reran the isolated mobile export repro `--repeat-each=5`green and logged the reusable pattern in`docs/runbooks/high-cost-debug-log.md` | next: rerun repo gates from current HEAD, then push/update PR if green`
 - `2026-04-23 | save-image lost-click recovery | the first probe hardening still left one full-matrix mobile failure at the first local-preview save click, again with the exact `NO_ENTRY ... clicks=0`signature while isolated `--repeat-each=5`stayed green; narrowed the residual case to a dev-reload window where the first click never reached the preview surface, then hardened the e2e contract with a one-time retry only for that explicit signature after re-waiting for embedded preview readiness; reran isolated mobile export`--repeat-each=5` green again | next: rerun repo gates, then push/update PR if green`
+- `2026-04-24 | done | PR #507 merged at 7a0ed727c13b1487fbffe7c18d0b6f706a16b3a6 after green local pre-pr/pre-merge, green required CI, and approved visual handoff; brief moved to done and perf-budget tighten recommendation explicitly carried forward to maintenance baseline | next: maintenance baseline or the next findings-wave brief`
