@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-21-my-swim-profile-page-ia-and-copy-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
 - `updated`: `2026-04-24`
@@ -139,6 +139,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-04-24 | merged + closeout | PR #509 merged to \`main\` as squash commit \`106e77c\`; the \`My Swim Profile\` IA/copy cleanup is live, local \`npm run verify:pre-merge\` passed with \`106 passed\` / \`344 skipped\`, required GitHub checks were green, the My Library profile-card fallback noise stayed removed, and the carried-forward perf-budget tighten recommendation remains deferred into the maintenance baseline brief so the ratchet is decided in the perf-owned slice | next: none`
 - `2026-04-21 | planned | created from owner finding that Athlete Profile page is over-explained and should become My Swim Profile | next: implement or defer before maintenance baseline`
 - `2026-04-24 | in-progress | route/page scope patched to My Swim Profile label, entrypoint cleanup, and redundant explainer/refresh action removal | next: run targeted QA, capture screenshots, then full gates`
 - `2026-04-24 | in-progress | desktop/mobile screenshots captured in output/playwright/my-swim-profile-ia and verify:pre-pr passed on rerun after one transient 3100 connection-refused flake in verify-open | next: owner screenshot approval, then commit/push/open PR`
