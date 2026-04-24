@@ -182,245 +182,326 @@ async function openPoolsidePreviewPopup(triggerPage: Page, trigger: () => Promis
   return popup;
 }
 
-async function installSaveImageDownloadProbe(page: Page) {
-  await page.evaluate(() => {
-    type DownloadProbeEntry = {
-      download: string;
-      href: string;
-    };
-    type DownloadProbeMetrics = {
-      bottomEdgeStrongPixels: number;
-      expectedImageHeight: number;
-      expectedImageWidth: number;
-      imageHeight: number;
-      imageWidth: number;
-      leftEdgeStrongPixels: number;
-      noteHeight: number;
-      noteWidth: number;
-      pixelRatio: number;
-      rightEdgeStrongPixels: number;
-      topEdgeStrongPixels: number;
-    };
-    type DownloadProbe = {
-      entries: DownloadProbeEntry[];
-      errors: string[];
-      metricsByHref: Record<string, DownloadProbeMetrics>;
-    };
+function installSaveImageDownloadProbeScript() {
+  type DownloadProbeEntry = {
+    download: string;
+    href: string;
+  };
+  type DownloadProbeMetrics = {
+    bottomEdgeStrongPixels: number;
+    expectedImageHeight: number;
+    expectedImageWidth: number;
+    imageHeight: number;
+    imageWidth: number;
+    leftEdgeStrongPixels: number;
+    noteHeight: number;
+    noteWidth: number;
+    pixelRatio: number;
+    rightEdgeStrongPixels: number;
+    topEdgeStrongPixels: number;
+  };
+  type DownloadProbe = {
+    buttonClicks: Array<{
+      buttonDisabled: boolean;
+      previewReady: string | null;
+    }>;
+    entries: DownloadProbeEntry[];
+    errors: string[];
+    metricsByHref: Record<string, DownloadProbeMetrics>;
+  };
 
-    const windowWithProbe = window as typeof window & {
-      __fsPoolsideSaveImageDownloadProbe__?: DownloadProbe;
-      __fsPoolsideSaveImageDownloadPatched__?: boolean;
-    };
+  const storageKey = "__fsPoolsideSaveImageDownloadProbeStorage__";
+  const windowWithProbe = window as typeof window & {
+    __fsPoolsideSaveImageDownloadProbe__?: DownloadProbe;
+    __fsPoolsideSaveImageDownloadPatched__?: boolean;
+    __fsPoolsideSaveImageDownloadClickListenerAttached__?: boolean;
+  };
 
-    const probe = windowWithProbe.__fsPoolsideSaveImageDownloadProbe__;
-    if (probe) {
-      probe.entries.length = 0;
-      probe.errors.length = 0;
-      for (const key of Object.keys(probe.metricsByHref)) {
-        delete probe.metricsByHref[key];
-      }
-    } else {
-      windowWithProbe.__fsPoolsideSaveImageDownloadProbe__ = {
-        entries: [],
-        errors: [],
-        metricsByHref: {},
-      };
+  const readStoredProbe = () => {
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      return stored ? (JSON.parse(stored) as DownloadProbe) : null;
+    } catch {
+      return null;
     }
+  };
 
-    if (windowWithProbe.__fsPoolsideSaveImageDownloadPatched__) {
-      return;
+  const probe = windowWithProbe.__fsPoolsideSaveImageDownloadProbe__ ??
+    readStoredProbe() ?? {
+      buttonClicks: [],
+      entries: [],
+      errors: [],
+      metricsByHref: {},
+    };
+
+  const persistProbe = () => {
+    windowWithProbe.__fsPoolsideSaveImageDownloadProbe__ = probe;
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(probe));
+    } catch {
+      // Ignore probe persistence failures in browser-only diagnostics code.
     }
+  };
 
-    const captureEdgePaddingPx = 8;
-    const captureBlobMetrics = (href: string, object: Blob) => {
-      if (object.type !== "image/png" || typeof createImageBitmap !== "function") {
-        return;
-      }
+  if (!windowWithProbe.__fsPoolsideSaveImageDownloadClickListenerAttached__) {
+    windowWithProbe.__fsPoolsideSaveImageDownloadClickListenerAttached__ = true;
+    document.addEventListener(
+      "click",
+      (event) => {
+        const saveImageButton =
+          event.target instanceof Element
+            ? event.target.closest<HTMLButtonElement>('[data-testid="poolside-preview-save-image"]')
+            : null;
 
-      const previewFrame = document.querySelector<HTMLIFrameElement>(
-        '[data-testid="poolside-preview-frame"]'
-      );
-      const frameDocument = previewFrame?.contentDocument ?? previewFrame?.contentWindow?.document;
-      const noteElement = frameDocument?.querySelector<HTMLElement>(
-        '[data-testid="workout-pdf-print-view"]'
-      );
-
-      if (!noteElement) {
-        windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.errors.push(
-          "Poolside note export target was not available for PNG metric capture."
-        );
-        return;
-      }
-
-      const rect = noteElement.getBoundingClientRect();
-      const noteWidth = Math.ceil(Math.max(rect.width, noteElement.offsetWidth));
-      const noteHeight = Math.ceil(
-        Math.max(rect.height, noteElement.offsetHeight, noteElement.scrollHeight)
-      );
-      const pixelRatio = Math.max(2, Math.min(3, window.devicePixelRatio || 1));
-
-      void createImageBitmap(object)
-        .then((bitmap) => {
-          const canvas = document.createElement("canvas");
-          canvas.width = bitmap.width;
-          canvas.height = bitmap.height;
-          const context = canvas.getContext("2d");
-          if (!context) {
-            throw new Error("Canvas context was not available for PNG edge checks.");
-          }
-
-          context.drawImage(bitmap, 0, 0);
-          const imageData = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
-          const isStrongNonWhitePixel = (index: number) => {
-            const alpha = imageData[index + 3];
-            return (
-              alpha > 20 &&
-              (imageData[index] < 246 || imageData[index + 1] < 246 || imageData[index + 2] < 246)
-            );
-          };
-          let rightEdgeStrongPixels = 0;
-          let bottomEdgeStrongPixels = 0;
-          let leftEdgeStrongPixels = 0;
-          let topEdgeStrongPixels = 0;
-
-          for (let y = 0; y < bitmap.height; y += 1) {
-            const leftIndex = y * bitmap.width * 4;
-            if (isStrongNonWhitePixel(leftIndex)) {
-              leftEdgeStrongPixels += 1;
-            }
-
-            const index = (y * bitmap.width + (bitmap.width - 1)) * 4;
-            if (isStrongNonWhitePixel(index)) {
-              rightEdgeStrongPixels += 1;
-            }
-          }
-
-          for (let x = 0; x < bitmap.width; x += 1) {
-            const topIndex = x * 4;
-            if (isStrongNonWhitePixel(topIndex)) {
-              topEdgeStrongPixels += 1;
-            }
-
-            const index = ((bitmap.height - 1) * bitmap.width + x) * 4;
-            if (isStrongNonWhitePixel(index)) {
-              bottomEdgeStrongPixels += 1;
-            }
-          }
-
-          windowWithProbe.__fsPoolsideSaveImageDownloadProbe__!.metricsByHref[href] = {
-            bottomEdgeStrongPixels,
-            expectedImageHeight: Math.round((noteHeight + captureEdgePaddingPx * 2) * pixelRatio),
-            expectedImageWidth: Math.round((noteWidth + captureEdgePaddingPx * 2) * pixelRatio),
-            imageHeight: bitmap.height,
-            imageWidth: bitmap.width,
-            leftEdgeStrongPixels,
-            noteHeight,
-            noteWidth,
-            pixelRatio,
-            rightEdgeStrongPixels,
-            topEdgeStrongPixels,
-          };
-          bitmap.close();
-        })
-        .catch((error: unknown) => {
-          windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.errors.push(
-            error instanceof Error ? error.message : String(error)
-          );
-        });
-    };
-
-    const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
-    const originalShare =
-      typeof navigator.share === "function" ? navigator.share.bind(navigator) : null;
-    const originalCanShare =
-      typeof navigator.canShare === "function" ? navigator.canShare.bind(navigator) : null;
-    URL.createObjectURL = function patchedPoolsideSaveImageCreateObjectUrl(object) {
-      const href = originalCreateObjectUrl(object);
-      if (object instanceof Blob) {
-        captureBlobMetrics(href, object);
-      }
-      return href;
-    };
-
-    const originalClick = HTMLAnchorElement.prototype.click;
-    const captureAnchorClick = (anchor: HTMLAnchorElement) => {
-      if (!anchor.download) {
-        return false;
-      }
-
-      windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.entries.push({
-        download: anchor.download,
-        href: anchor.href,
-      });
-      return true;
-    };
-
-    Object.defineProperty(navigator, "canShare", {
-      configurable: true,
-      value(data?: ShareData) {
-        if (Array.isArray(data?.files) && data.files.length > 0) {
-          return true;
-        }
-
-        return originalCanShare ? originalCanShare(data) : false;
-      },
-    });
-
-    Object.defineProperty(navigator, "share", {
-      configurable: true,
-      async value(data?: ShareData) {
-        const fileCandidate = Array.isArray(data?.files) ? data.files[0] : null;
-        if (fileCandidate instanceof Blob) {
-          const href = URL.createObjectURL(fileCandidate);
-          const download =
-            "name" in fileCandidate && typeof fileCandidate.name === "string"
-              ? fileCandidate.name
-              : "shared-poolside-note.png";
-
-          windowWithProbe.__fsPoolsideSaveImageDownloadProbe__?.entries.push({
-            download,
-            href,
-          });
+        if (!saveImageButton) {
           return;
         }
 
-        if (originalShare) {
-          await originalShare(data);
-        }
-      },
-    });
-
-    HTMLAnchorElement.prototype.click = function patchedPoolsideSaveImageAnchorClick() {
-      if (captureAnchorClick(this)) {
-        return undefined;
-      }
-
-      return originalClick.call(this);
-    };
-
-    const originalCreateElement = Document.prototype.createElement;
-    Document.prototype.createElement = function patchedPoolsideSaveImageCreateElement(
-      tagName: string,
-      options?: ElementCreationOptions
-    ) {
-      const element = originalCreateElement.call(this, tagName, options);
-      if (tagName.toLowerCase() === "a") {
-        Object.defineProperty(element, "click", {
-          configurable: true,
-          value() {
-            if (captureAnchorClick(element as HTMLAnchorElement)) {
-              return undefined;
-            }
-
-            return originalClick.call(element);
-          },
+        probe.buttonClicks.push({
+          buttonDisabled: saveImageButton.disabled,
+          previewReady:
+            document
+              .querySelector('[data-testid="poolside-preview-frame-state"]')
+              ?.getAttribute("data-preview-ready") ?? null,
         });
+        persistProbe();
+      },
+      true
+    );
+  }
+
+  if (windowWithProbe.__fsPoolsideSaveImageDownloadPatched__) {
+    return;
+  }
+
+  const captureEdgePaddingPx = 8;
+  const captureBlobMetrics = (href: string, object: Blob) => {
+    if (object.type !== "image/png" || typeof createImageBitmap !== "function") {
+      return;
+    }
+
+    const previewFrame = document.querySelector<HTMLIFrameElement>(
+      '[data-testid="poolside-preview-frame"]'
+    );
+    const frameDocument = previewFrame?.contentDocument ?? previewFrame?.contentWindow?.document;
+    const noteElement = frameDocument?.querySelector<HTMLElement>(
+      '[data-testid="workout-pdf-print-view"]'
+    );
+
+    if (!noteElement) {
+      probe.errors.push("Poolside note export target was not available for PNG metric capture.");
+      persistProbe();
+      return;
+    }
+
+    const rect = noteElement.getBoundingClientRect();
+    const noteWidth = Math.ceil(Math.max(rect.width, noteElement.offsetWidth));
+    const noteHeight = Math.ceil(
+      Math.max(rect.height, noteElement.offsetHeight, noteElement.scrollHeight)
+    );
+    const pixelRatio = Math.max(2, Math.min(3, window.devicePixelRatio || 1));
+
+    void createImageBitmap(object)
+      .then((bitmap) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          throw new Error("Canvas context was not available for PNG edge checks.");
+        }
+
+        context.drawImage(bitmap, 0, 0);
+        const imageData = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+        const isStrongNonWhitePixel = (index: number) => {
+          const alpha = imageData[index + 3];
+          return (
+            alpha > 20 &&
+            (imageData[index] < 246 || imageData[index + 1] < 246 || imageData[index + 2] < 246)
+          );
+        };
+        let rightEdgeStrongPixels = 0;
+        let bottomEdgeStrongPixels = 0;
+        let leftEdgeStrongPixels = 0;
+        let topEdgeStrongPixels = 0;
+
+        for (let y = 0; y < bitmap.height; y += 1) {
+          const leftIndex = y * bitmap.width * 4;
+          if (isStrongNonWhitePixel(leftIndex)) {
+            leftEdgeStrongPixels += 1;
+          }
+
+          const index = (y * bitmap.width + (bitmap.width - 1)) * 4;
+          if (isStrongNonWhitePixel(index)) {
+            rightEdgeStrongPixels += 1;
+          }
+        }
+
+        for (let x = 0; x < bitmap.width; x += 1) {
+          const topIndex = x * 4;
+          if (isStrongNonWhitePixel(topIndex)) {
+            topEdgeStrongPixels += 1;
+          }
+
+          const index = ((bitmap.height - 1) * bitmap.width + x) * 4;
+          if (isStrongNonWhitePixel(index)) {
+            bottomEdgeStrongPixels += 1;
+          }
+        }
+
+        probe.metricsByHref[href] = {
+          bottomEdgeStrongPixels,
+          expectedImageHeight: Math.round((noteHeight + captureEdgePaddingPx * 2) * pixelRatio),
+          expectedImageWidth: Math.round((noteWidth + captureEdgePaddingPx * 2) * pixelRatio),
+          imageHeight: bitmap.height,
+          imageWidth: bitmap.width,
+          leftEdgeStrongPixels,
+          noteHeight,
+          noteWidth,
+          pixelRatio,
+          rightEdgeStrongPixels,
+          topEdgeStrongPixels,
+        };
+        persistProbe();
+        bitmap.close();
+      })
+      .catch((error: unknown) => {
+        probe.errors.push(error instanceof Error ? error.message : String(error));
+        persistProbe();
+      });
+  };
+
+  const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
+  const originalShare =
+    typeof navigator.share === "function" ? navigator.share.bind(navigator) : null;
+  const originalCanShare =
+    typeof navigator.canShare === "function" ? navigator.canShare.bind(navigator) : null;
+  URL.createObjectURL = function patchedPoolsideSaveImageCreateObjectUrl(object) {
+    const href = originalCreateObjectUrl(object);
+    if (object instanceof Blob) {
+      captureBlobMetrics(href, object);
+    }
+    return href;
+  };
+
+  const originalClick = HTMLAnchorElement.prototype.click;
+  const captureAnchorClick = (anchor: HTMLAnchorElement) => {
+    if (!anchor.download) {
+      return false;
+    }
+
+    probe.entries.push({
+      download: anchor.download,
+      href: anchor.href,
+    });
+    persistProbe();
+    return true;
+  };
+
+  Object.defineProperty(navigator, "canShare", {
+    configurable: true,
+    value(data?: ShareData) {
+      if (Array.isArray(data?.files) && data.files.length > 0) {
+        return true;
       }
 
-      return element;
-    };
+      return originalCanShare ? originalCanShare(data) : false;
+    },
+  });
 
-    windowWithProbe.__fsPoolsideSaveImageDownloadPatched__ = true;
+  Object.defineProperty(navigator, "share", {
+    configurable: true,
+    async value(data?: ShareData) {
+      const fileCandidate = Array.isArray(data?.files) ? data.files[0] : null;
+      if (fileCandidate instanceof Blob) {
+        const href = URL.createObjectURL(fileCandidate);
+        const download =
+          "name" in fileCandidate && typeof fileCandidate.name === "string"
+            ? fileCandidate.name
+            : "shared-poolside-note.png";
+
+        probe.entries.push({
+          download,
+          href,
+        });
+        persistProbe();
+        return;
+      }
+
+      if (originalShare) {
+        await originalShare(data);
+      }
+    },
+  });
+
+  HTMLAnchorElement.prototype.click = function patchedPoolsideSaveImageAnchorClick() {
+    if (captureAnchorClick(this)) {
+      return undefined;
+    }
+
+    return originalClick.call(this);
+  };
+
+  const originalCreateElement = Document.prototype.createElement;
+  Document.prototype.createElement = function patchedPoolsideSaveImageCreateElement(
+    tagName: string,
+    options?: ElementCreationOptions
+  ) {
+    const element = originalCreateElement.call(this, tagName, options);
+    if (tagName.toLowerCase() === "a") {
+      Object.defineProperty(element, "click", {
+        configurable: true,
+        value() {
+          if (captureAnchorClick(element as HTMLAnchorElement)) {
+            return undefined;
+          }
+
+          return originalClick.call(element);
+        },
+      });
+    }
+
+    return element;
+  };
+
+  windowWithProbe.__fsPoolsideSaveImageDownloadPatched__ = true;
+}
+
+async function installSaveImageDownloadProbe(page: Page) {
+  await page.addInitScript(installSaveImageDownloadProbeScript);
+  await page.evaluate(installSaveImageDownloadProbeScript);
+  await page.evaluate(() => {
+    const storageKey = "__fsPoolsideSaveImageDownloadProbeStorage__";
+    const probe = (
+      window as typeof window & {
+        __fsPoolsideSaveImageDownloadProbe__?: {
+          buttonClicks: Array<{
+            buttonDisabled: boolean;
+            previewReady: string | null;
+          }>;
+          entries: Array<{ download: string; href: string }>;
+          errors: string[];
+          metricsByHref: Record<string, SaveImageExportMetrics>;
+        };
+      }
+    ).__fsPoolsideSaveImageDownloadProbe__;
+
+    if (!probe) {
+      return;
+    }
+
+    probe.buttonClicks.length = 0;
+    probe.entries.length = 0;
+    probe.errors.length = 0;
+    for (const key of Object.keys(probe.metricsByHref)) {
+      delete probe.metricsByHref[key];
+    }
+
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(probe));
+    } catch {
+      // Ignore probe persistence failures in browser-only diagnostics code.
+    }
   });
 }
 
@@ -453,63 +534,102 @@ async function expectSaveImageDownloadCount(page: Page, expectedCount: number) {
     .toBe(expectedCount);
 }
 
+type SaveImageDownloadIntentSnapshot = {
+  download: string;
+  href: string;
+};
+
+async function readSaveImageDownloadIntentSnapshot(
+  page: Page
+): Promise<SaveImageDownloadIntentSnapshot> {
+  try {
+    return await page.evaluate(() => {
+      const probe = (
+        window as typeof window & {
+          __fsPoolsideSaveImageDownloadProbe__?: {
+            entries: Array<{ download: string; href: string }>;
+            buttonClicks: Array<{
+              buttonDisabled: boolean;
+              previewReady: string | null;
+            }>;
+            errors: string[];
+            metricsByHref: Record<string, SaveImageExportMetrics>;
+          };
+        }
+      ).__fsPoolsideSaveImageDownloadProbe__;
+      const entries = probe?.entries ?? [];
+      const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+      if (latestEntry) {
+        return latestEntry;
+      }
+
+      const errorText = document
+        .querySelector('[data-testid="poolside-preview-save-image-error"]')
+        ?.textContent?.trim();
+      const buttonText = document
+        .querySelector('[data-testid="poolside-preview-save-image"]')
+        ?.textContent?.trim();
+      const metricCount = probe ? Object.keys(probe.metricsByHref).length : 0;
+      const clickCount = probe?.buttonClicks.length ?? 0;
+      const latestButtonClick = clickCount > 0 ? probe?.buttonClicks[clickCount - 1] : null;
+      const probeErrors = probe?.errors.join("; ") ?? "";
+
+      return {
+        download: errorText
+          ? `ERROR: ${errorText}`
+          : probeErrors
+            ? `PROBE_ERROR: ${probeErrors}`
+            : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount} clicks=${clickCount} latestClick=${latestButtonClick ? JSON.stringify(latestButtonClick) : "none"}`,
+        href: window.location.href,
+      };
+    });
+  } catch (error) {
+    if (isTransientPageEvaluationError(error)) {
+      return {
+        download: "TRANSIENT_PAGE_EVALUATION",
+        href: page.url(),
+      };
+    }
+    throw error;
+  }
+}
+
+function isNoEntryWithoutClicks(snapshot: SaveImageDownloadIntentSnapshot) {
+  return snapshot.download.startsWith("NO_ENTRY ") && snapshot.download.includes("clicks=0");
+}
+
 async function expectSaveImageDownloadIntent(page: Page, expectedFileName: string) {
   await expect
-    .poll(
-      async () => {
-        try {
-          return await page.evaluate(() => {
-            const probe = (
-              window as typeof window & {
-                __fsPoolsideSaveImageDownloadProbe__?: {
-                  entries: Array<{ download: string; href: string }>;
-                  errors: string[];
-                  metricsByHref: Record<string, SaveImageExportMetrics>;
-                };
-              }
-            ).__fsPoolsideSaveImageDownloadProbe__;
-            const entries = probe?.entries ?? [];
-            const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
-            if (latestEntry) {
-              return latestEntry;
-            }
-
-            const errorText = document
-              .querySelector('[data-testid="poolside-preview-save-image-error"]')
-              ?.textContent?.trim();
-            const buttonText = document
-              .querySelector('[data-testid="poolside-preview-save-image"]')
-              ?.textContent?.trim();
-            const metricCount = probe ? Object.keys(probe.metricsByHref).length : 0;
-            const probeErrors = probe?.errors.join("; ") ?? "";
-
-            return {
-              download: errorText
-                ? `ERROR: ${errorText}`
-                : probeErrors
-                  ? `PROBE_ERROR: ${probeErrors}`
-                  : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount}`,
-              href: window.location.href,
-            };
-          });
-        } catch (error) {
-          if (isTransientPageEvaluationError(error)) {
-            return {
-              download: "TRANSIENT_PAGE_EVALUATION",
-              href: page.url(),
-            };
-          }
-          throw error;
-        }
-      },
-      {
-        timeout: 15_000,
-      }
-    )
+    .poll(() => readSaveImageDownloadIntentSnapshot(page), {
+      timeout: 15_000,
+    })
     .toEqual({
       download: expectedFileName,
       href: expect.stringContaining("blob:"),
     });
+}
+
+async function clickSaveImageAndExpectDownload(page: Page, expectedFileName: string) {
+  const saveImageButton = page.getByTestId("poolside-preview-save-image");
+
+  await installSaveImageDownloadProbe(page);
+  await saveImageButton.click();
+
+  try {
+    await expectSaveImageDownloadIntent(page, expectedFileName);
+    return;
+  } catch (error) {
+    const snapshot = await readSaveImageDownloadIntentSnapshot(page);
+    if (!isNoEntryWithoutClicks(snapshot)) {
+      throw error;
+    }
+  }
+
+  await waitForEmbeddedPoolsidePreview(page);
+  await expectPoolsideNoteContentWithinBounds(page);
+  await installSaveImageDownloadProbe(page);
+  await saveImageButton.click();
+  await expectSaveImageDownloadIntent(page, expectedFileName);
 }
 
 async function expectSaveImageNotice(page: Page, expectedFileName: string) {
@@ -713,16 +833,12 @@ test.describe("poolside save image export", () => {
 
     await waitForEmbeddedPoolsidePreview(localPreviewPopup, { printLayout: "portrait" });
     await expectPoolsideNoteContentWithinBounds(localPreviewPopup);
-    await installSaveImageDownloadProbe(localPreviewPopup);
-    await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
-    await expectSaveImageDownloadIntent(localPreviewPopup, expectedPortraitFileName);
+    await clickSaveImageAndExpectDownload(localPreviewPopup, expectedPortraitFileName);
     await expectSaveImageDownloadCount(localPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(localPreviewPopup);
     await expectSaveImageNotice(localPreviewPopup, expectedPortraitFileName);
     await expect(localPreviewPopup.getByTestId("poolside-preview-save-image")).toBeEnabled();
-    await installSaveImageDownloadProbe(localPreviewPopup);
-    await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
-    await expectSaveImageDownloadIntent(localPreviewPopup, expectedPortraitFileName);
+    await clickSaveImageAndExpectDownload(localPreviewPopup, expectedPortraitFileName);
     await expectSaveImageDownloadCount(localPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(localPreviewPopup);
     await localPreviewPopup.close();
@@ -757,9 +873,7 @@ test.describe("poolside save image export", () => {
     await savedPreviewPopup.getByTestId("poolside-preview-layout").selectOption("landscape");
     await waitForEmbeddedPoolsidePreview(savedPreviewPopup, { printLayout: "landscape" });
     await expectPoolsideNoteContentWithinBounds(savedPreviewPopup);
-    await installSaveImageDownloadProbe(savedPreviewPopup);
-    await savedPreviewPopup.getByTestId("poolside-preview-save-image").click();
-    await expectSaveImageDownloadIntent(savedPreviewPopup, expectedLandscapeFileName);
+    await clickSaveImageAndExpectDownload(savedPreviewPopup, expectedLandscapeFileName);
     await expectSaveImageDownloadCount(savedPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(savedPreviewPopup);
     await expectSaveImageNotice(savedPreviewPopup, expectedLandscapeFileName);

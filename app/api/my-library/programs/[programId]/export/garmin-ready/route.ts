@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isUnauthenticatedAuthUserLookupError } from "@/lib/admin/access";
 import { buildProgramGarminReadyExport } from "@/lib/programs/export";
 import { loadProgramExportSnapshot } from "@/lib/programs/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
@@ -29,7 +30,25 @@ export async function GET(_request: Request, context: RouteContext) {
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+
+  if (userError) {
+    if (
+      isUnauthenticatedAuthUserLookupError({
+        code: userError.code,
+        message: userError.message,
+        status: userError.status,
+      })
+    ) {
+      return applySupabaseCookies(noStoreJson({ ok: false, error: "Unauthorized." }, 401));
+    }
+
+    console.error("[ProgramExport] Could not verify auth user for garmin-ready export", userError);
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: "Could not verify session right now." }, 503)
+    );
+  }
 
   if (!user) {
     return applySupabaseCookies(noStoreJson({ ok: false, error: "Unauthorized." }, 401));

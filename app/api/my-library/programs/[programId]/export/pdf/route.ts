@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isUnauthenticatedAuthUserLookupError } from "@/lib/admin/access";
 import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
 import { buildProgramPdfHtmlDocument } from "@/lib/programs/export";
 import { loadProgramExportSnapshot } from "@/lib/programs/server";
@@ -44,7 +45,23 @@ export async function GET(request: Request, context: RouteContext) {
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+
+  if (userError) {
+    if (
+      isUnauthenticatedAuthUserLookupError({
+        code: userError.code,
+        message: userError.message,
+        status: userError.status,
+      })
+    ) {
+      return applySupabaseCookies(noStoreText("Unauthorized.", 401));
+    }
+
+    console.error("[ProgramPdf] Could not verify auth user for program pdf", userError);
+    return applySupabaseCookies(noStoreText("Could not verify session right now.", 503));
+  }
 
   if (!user) {
     return applySupabaseCookies(noStoreText("Unauthorized.", 401));

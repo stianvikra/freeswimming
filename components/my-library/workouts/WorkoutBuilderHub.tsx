@@ -713,6 +713,7 @@ export default function WorkoutBuilderHub({
               startNewDraftHref={null}
               showLoadedBanner={false}
               showPdfPanel={false}
+              manualBuilderMode={!savedWorkout ? activeLocalDraftMode : null}
               forceMetadataOpenOnLoad={preferExpandedDetailsOnLoad}
               onRequestDeleteCurrent={() => {
                 setDiscardUndoDraft(null);

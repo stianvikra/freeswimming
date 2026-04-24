@@ -300,4 +300,49 @@ describe("ProgramBuilderHub", () => {
       "Opened print view for freeswimming-manual-race-prep-shell-print.pdf."
     );
   });
+
+  it("retries the canonical export preview once after a transient session failure", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({
+          ok: false,
+          error: "Could not verify session right now.",
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => buildProgramExportPreview(),
+      } as Response);
+
+    render(<ProgramBuilderHub programLibrary={buildProgramLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("program-editor-garmin-export-preview")).toHaveTextContent(
+        '"kind": "freeswimming_garmin_ready_program_v1"'
+      );
+    });
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/my-library/programs/program-1/export/garmin-ready",
+      expect.objectContaining({
+        method: "GET",
+        cache: "no-store",
+      })
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/my-library/programs/program-1/export/garmin-ready",
+      expect.objectContaining({
+        method: "GET",
+        cache: "no-store",
+      })
+    );
+    expect(
+      screen.queryByTestId("program-editor-garmin-export-preview-error")
+    ).not.toBeInTheDocument();
+  });
 });

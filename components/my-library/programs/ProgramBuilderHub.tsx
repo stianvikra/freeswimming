@@ -23,6 +23,41 @@ type Props = {
   programLibrary: ProgramLibrarySnapshot;
 };
 
+type RetryablePreviewError = Error & {
+  status?: number;
+};
+
+function buildProgramExportPreviewError(message: string, status?: number): RetryablePreviewError {
+  const error = new Error(message) as RetryablePreviewError;
+  error.status = status;
+  return error;
+}
+
+function isRetryableProgramExportPreviewError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+
+  const candidateStatus = (error as RetryablePreviewError).status;
+  const status = typeof candidateStatus === "number" ? candidateStatus : null;
+
+  if (status === 401 || status === 408 || status === 429) {
+    return true;
+  }
+
+  if (status !== null && status >= 500) {
+    return true;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("fetch failed") ||
+    message.includes("network") ||
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("econnreset") ||
+    message.includes("connection reset")
+  );
+}
+
 function upsertRecentProgramSummary(current: ProgramSummary[], next: ProgramSummary) {
   const existing = current.filter((summary) => summary.id !== next.id);
   return [next, ...existing].slice(0, 6);
@@ -124,25 +159,39 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
       setProgramExportPreviewError("");
 
       try {
-        const response = await fetch(programGarminExportRoute, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const responseBody = (await response.json().catch(() => null)) as Record<
-          string,
-          unknown
-        > | null;
-        const responseError =
-          responseBody && typeof responseBody.error === "string"
-            ? responseBody.error
-            : "Could not load the canonical program export preview right now.";
+        let previewJson = "";
 
-        if (!response.ok || !responseBody) {
-          throw new Error(responseError);
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            const response = await fetch(programGarminExportRoute, {
+              method: "GET",
+              cache: "no-store",
+            });
+            const responseBody = (await response.json().catch(() => null)) as Record<
+              string,
+              unknown
+            > | null;
+            const responseError =
+              responseBody && typeof responseBody.error === "string"
+                ? responseBody.error
+                : "Could not load the canonical program export preview right now.";
+
+            if (!response.ok || !responseBody) {
+              throw buildProgramExportPreviewError(responseError, response.status);
+            }
+
+            previewJson = JSON.stringify(responseBody, null, 2);
+            break;
+          } catch (error) {
+            const shouldRetry = attempt === 0 && isRetryableProgramExportPreviewError(error);
+            if (!shouldRetry) {
+              throw error;
+            }
+          }
         }
 
         if (!cancelled) {
-          setProgramExportPreview(JSON.stringify(responseBody, null, 2));
+          setProgramExportPreview(previewJson);
         }
       } catch (error) {
         if (!cancelled) {

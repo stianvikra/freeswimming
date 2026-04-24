@@ -2014,9 +2014,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-mobile-summary-0").tagName).toBe("DIV");
     expect(screen.getByTestId("session-draft-repeat-mobile-summary-1").tagName).toBe("DIV");
     expect(screen.getByTestId("session-draft-step-rearrange-controls-0")).toHaveClass("flex-col");
-    expect(screen.getByTestId("session-draft-repeat-rearrange-controls-1")).toHaveClass(
-      "flex-col"
-    );
+    expect(screen.getByTestId("session-draft-repeat-rearrange-controls-1")).toHaveClass("flex-col");
 
     fireEvent.click(getDesktopSummaryCard("session-draft-step-summary-0"));
     expect(screen.queryByLabelText("Step Type")).not.toBeInTheDocument();
@@ -2424,6 +2422,81 @@ describe("WorkoutBuilderHub", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Final rest skipped")).not.toBeInTheDocument();
   }, 30000);
+
+  it("lets manual-pool drill steps use a concrete drill name in edit, rearrange, and view", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+
+    expect(screen.queryByLabelText("Drill name")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("session-draft-step-drill-type-0"), {
+      target: { value: "drill" },
+    });
+
+    const drillNameInput = screen.getByTestId("session-draft-step-drill-name-0");
+    expect(drillNameInput).toHaveValue("");
+    expect(screen.getByText("Names the drill. Use Notes for execution cues.")).toBeVisible();
+
+    fireEvent.change(drillNameInput, {
+      target: { value: "Catch drill" },
+    });
+
+    await waitFor(() => {
+      expect(readPreviewDraft().steps[0]).toMatchObject({
+        drillType: "drill",
+        name: "Catch drill",
+      });
+    });
+
+    expect(screen.getAllByText("400m · Freestyle · Catch drill · Easy").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+
+    expect(screen.getByTestId("session-draft-step-mobile-summary-0")).toHaveTextContent(
+      "400m · Freestyle · Catch drill · Easy"
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-builder-mode-rearrange"));
+
+    expect(screen.getByTestId("session-draft-step-mobile-summary-0")).toHaveTextContent(
+      "400m · Freestyle · Catch drill · Easy"
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
+
+    expect(screen.getByText("400m · Freestyle · Catch drill · Easy")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("workout-editor-builder-mode-edit"));
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    fireEvent.change(screen.getByTestId("session-draft-step-drill-name-0"), {
+      target: { value: "Drill" },
+    });
+
+    await waitFor(() => {
+      expect(readPreviewDraft().steps[0]).toMatchObject({
+        name: "Drill",
+      });
+    });
+
+    expect(screen.getAllByText("400m · Freestyle · Drill · Easy").length).toBeGreaterThan(0);
+    expect(screen.queryByText("400m · Freestyle · Drill · Drill · Easy")).not.toBeInTheDocument();
+  });
 
   it("uses a single MM:SS field for manual-pool time duration editing", async () => {
     render(
@@ -2891,9 +2964,9 @@ describe("WorkoutBuilderHub", () => {
     expect(mobileActionsToggle).toHaveAccessibleName("Hide actions");
     const mobileActionsPanel = screen.getByTestId("saved-workout-mobile-actions-panel-workout-2");
     expect(mobileActionsPanel).toBeVisible();
-    expect(within(mobileActionsPanel).getByTestId("saved-workout-mobile-open-workout-2")).toHaveTextContent(
-      "Open"
-    );
+    expect(
+      within(mobileActionsPanel).getByTestId("saved-workout-mobile-open-workout-2")
+    ).toHaveTextContent("Open");
     expect(
       within(mobileActionsPanel).getByTestId("workout-builder-delete-workout-workout-2")
     ).toBeVisible();
@@ -3136,7 +3209,9 @@ describe("WorkoutBuilderHub", () => {
       screen.queryByTestId("workout-builder-saved-sessions-load-more")
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText("Use selection mode when you want to delete multiple saved sessions at once.")
+      screen.queryByText(
+        "Use selection mode when you want to delete multiple saved sessions at once."
+      )
     ).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId("saved-workout-card-workout-1")).getByRole("link", { name: "Open" })
@@ -3219,6 +3294,9 @@ describe("WorkoutBuilderHub", () => {
       screen.getByText("Recovered your unsaved local pool draft on this device.")
     ).toBeVisible();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Recovered local draft");
+    fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
+    expect(screen.getByLabelText("Drill Type")).toBeVisible();
+    expect(screen.queryByLabelText("Focus tag")).not.toBeInTheDocument();
     expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-builder-view-sessions-link")).toHaveAttribute(
       "href",
