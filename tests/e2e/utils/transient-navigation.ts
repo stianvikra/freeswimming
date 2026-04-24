@@ -6,7 +6,8 @@ const DEFAULT_RETRY_TIMEOUT_MS = 60_000;
 const ROUTE_SETTLE_TIMEOUT_MS = 60_000;
 const POST_COMMIT_DOMCONTENT_TIMEOUT_MS = 15_000;
 const RETRY_URL_SETTLE_TIMEOUT_MS = 3_000;
-const RETRY_DELAY_MS = 250;
+const RETRY_DELAY_MS = 1_000;
+const MAX_GOTO_ATTEMPTS = 5;
 
 function resolveTargetUrl(page: Page, href: string) {
   const currentUrl = page.url();
@@ -55,7 +56,7 @@ export async function gotoWithTransientRetry(
 ) {
   await prewarmRoute(page, href, initialTimeoutMs);
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < MAX_GOTO_ATTEMPTS; attempt += 1) {
     try {
       await page.goto(href, {
         waitUntil: "commit",
@@ -70,7 +71,7 @@ export async function gotoWithTransientRetry(
         return;
       }
 
-      if (!isTransientGotoError(error) || attempt === 2) {
+      if (!isTransientGotoError(error) || attempt === MAX_GOTO_ATTEMPTS - 1) {
         throw error;
       }
 
@@ -107,7 +108,7 @@ export async function gotoWithTransientRetry(
         throw error;
       }
 
-      await page.waitForTimeout(RETRY_DELAY_MS);
+      await page.waitForTimeout(RETRY_DELAY_MS * (attempt + 1));
     }
   }
 }

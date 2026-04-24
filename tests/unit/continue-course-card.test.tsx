@@ -38,13 +38,10 @@ describe("ContinueCourseCard", () => {
   it("shows start state when no saved lesson exists", () => {
     render(<ContinueCourseCard />);
 
-    expect(
-      screen.queryByText(
-        "Start the free course and your lesson progress will be saved on this device."
-      )
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Free Course" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Continue Free Course" })).not.toBeInTheDocument();
 
-    const link = screen.getByRole("link", { name: "Start free course" });
+    const link = screen.getByRole("link", { name: "Start" });
     expect(link).toHaveAttribute("href", "/course");
 
     fireEvent.click(link);
@@ -61,14 +58,10 @@ describe("ContinueCourseCard", () => {
     render(<ContinueCourseCard />);
 
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: "Continue course" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Continue" })).toBeInTheDocument();
     });
 
-    expect(
-      screen.queryByText("We saved your latest lesson on this device. Continue where you left off.")
-    ).not.toBeInTheDocument();
-
-    const link = screen.getByRole("link", { name: "Continue course" });
+    const link = screen.getByRole("link", { name: "Continue" });
     expect(link).toHaveAttribute("href", "/course?lesson=mod1-l2");
 
     fireEvent.click(link);
