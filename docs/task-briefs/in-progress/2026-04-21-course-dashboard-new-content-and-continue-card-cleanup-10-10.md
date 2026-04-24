@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-21-course-dashboard-new-content-and-continue-card-cleanup-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
-- `updated`: `2026-04-21`
+- `updated`: `2026-04-24`
 
 ## Goal
 
@@ -137,3 +137,5 @@ Critical target categories for `10/10` claim:
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created from owner findings about over-explained new lesson notification and continue-card copy | next: implement or defer before maintenance baseline`
+- `2026-04-24 | in-progress | branch feat/course-dashboard-card-cleanup-2026-04-24; compacted continue card, removed first-lesson CTA, and updated unit/e2e contracts to use lesson-list opens only | next: capture desktop/mobile screenshots for owner approval`
+- `2026-04-24 | in-progress | owner approved screenshots; verify:pre-pr passed on full lane (106 passed, 344 skipped); perf trend again recommended tightening one stretch target, deferred to maintenance-baseline decision rather than this product slice | next: commit, push, open PR, and run verify:pre-merge`

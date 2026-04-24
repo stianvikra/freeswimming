@@ -64,10 +64,10 @@ async function refreshDevSessionForCurrentRoute(page: Page) {
   await waitForRouteToSettle(page);
 }
 
-async function openFirstNewLessonFromNotice(page: Page) {
+async function openExpandedNewLessonFromNotice(page: Page, lessonId: string) {
   const openLink = page
     .getByTestId("my-library-new-content-notice")
-    .getByTestId("my-library-new-content-open");
+    .getByTestId(`my-library-new-content-item-${lessonId}`);
   await expect(openLink).toBeVisible();
   await expect(openLink).toHaveAttribute("href", /\/course\?lesson=/);
   const href = await openLink.getAttribute("href");
@@ -156,7 +156,9 @@ test.describe("my library new content notice", () => {
 
     const banner = page.getByTestId("my-library-new-content-notice");
     await expect(banner).toBeVisible();
-    await expect(banner).toContainText(/\+\d+ nye leksjoner i Free Course/);
+    await expect(banner).toContainText("New content");
+    await expect(banner).toContainText("1 new lesson");
+    await expect(page.getByTestId("my-library-new-content-open")).toHaveCount(0);
     await expect(page.getByTestId("my-library-new-content-toggle")).toHaveAttribute(
       "aria-expanded",
       "false"
@@ -170,7 +172,7 @@ test.describe("my library new content notice", () => {
     );
     await expect(page.getByTestId("my-library-new-content-list")).toBeVisible();
 
-    await openFirstNewLessonFromNotice(page);
+    await openExpandedNewLessonFromNotice(page, "mod1-l1");
 
     await gotoWithTransientRetry(page, "/my-library");
     await waitForRouteToSettle(page);
@@ -208,7 +210,7 @@ test.describe("my library new content notice", () => {
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
     await page.getByTestId("my-library-new-content-toggle").click();
     await expect(page.getByTestId("my-library-new-content-item-mod1-l1")).toBeVisible();
-    await openFirstNewLessonFromNotice(page);
+    await openExpandedNewLessonFromNotice(page, "mod1-l1");
   });
 
   test("keeps page usable and shows retry state when notice signal fetch fails", async ({
