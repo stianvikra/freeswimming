@@ -373,7 +373,7 @@ export default function PoolsidePreviewPageClient() {
   }
 
   async function handleSaveImage() {
-    if (previewUnavailable || saveImagePending || !embeddedNoteReady) {
+    if (previewUnavailable || saveImagePending) {
       return;
     }
 
