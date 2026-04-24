@@ -534,69 +534,102 @@ async function expectSaveImageDownloadCount(page: Page, expectedCount: number) {
     .toBe(expectedCount);
 }
 
+type SaveImageDownloadIntentSnapshot = {
+  download: string;
+  href: string;
+};
+
+async function readSaveImageDownloadIntentSnapshot(
+  page: Page
+): Promise<SaveImageDownloadIntentSnapshot> {
+  try {
+    return await page.evaluate(() => {
+      const probe = (
+        window as typeof window & {
+          __fsPoolsideSaveImageDownloadProbe__?: {
+            entries: Array<{ download: string; href: string }>;
+            buttonClicks: Array<{
+              buttonDisabled: boolean;
+              previewReady: string | null;
+            }>;
+            errors: string[];
+            metricsByHref: Record<string, SaveImageExportMetrics>;
+          };
+        }
+      ).__fsPoolsideSaveImageDownloadProbe__;
+      const entries = probe?.entries ?? [];
+      const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+      if (latestEntry) {
+        return latestEntry;
+      }
+
+      const errorText = document
+        .querySelector('[data-testid="poolside-preview-save-image-error"]')
+        ?.textContent?.trim();
+      const buttonText = document
+        .querySelector('[data-testid="poolside-preview-save-image"]')
+        ?.textContent?.trim();
+      const metricCount = probe ? Object.keys(probe.metricsByHref).length : 0;
+      const clickCount = probe?.buttonClicks.length ?? 0;
+      const latestButtonClick = clickCount > 0 ? probe?.buttonClicks[clickCount - 1] : null;
+      const probeErrors = probe?.errors.join("; ") ?? "";
+
+      return {
+        download: errorText
+          ? `ERROR: ${errorText}`
+          : probeErrors
+            ? `PROBE_ERROR: ${probeErrors}`
+            : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount} clicks=${clickCount} latestClick=${latestButtonClick ? JSON.stringify(latestButtonClick) : "none"}`,
+        href: window.location.href,
+      };
+    });
+  } catch (error) {
+    if (isTransientPageEvaluationError(error)) {
+      return {
+        download: "TRANSIENT_PAGE_EVALUATION",
+        href: page.url(),
+      };
+    }
+    throw error;
+  }
+}
+
+function isNoEntryWithoutClicks(snapshot: SaveImageDownloadIntentSnapshot) {
+  return snapshot.download.startsWith("NO_ENTRY ") && snapshot.download.includes("clicks=0");
+}
+
 async function expectSaveImageDownloadIntent(page: Page, expectedFileName: string) {
   await expect
-    .poll(
-      async () => {
-        try {
-          return await page.evaluate(() => {
-            const probe = (
-              window as typeof window & {
-                __fsPoolsideSaveImageDownloadProbe__?: {
-                  entries: Array<{ download: string; href: string }>;
-                  buttonClicks: Array<{
-                    buttonDisabled: boolean;
-                    previewReady: string | null;
-                  }>;
-                  errors: string[];
-                  metricsByHref: Record<string, SaveImageExportMetrics>;
-                };
-              }
-            ).__fsPoolsideSaveImageDownloadProbe__;
-            const entries = probe?.entries ?? [];
-            const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
-            if (latestEntry) {
-              return latestEntry;
-            }
-
-            const errorText = document
-              .querySelector('[data-testid="poolside-preview-save-image-error"]')
-              ?.textContent?.trim();
-            const buttonText = document
-              .querySelector('[data-testid="poolside-preview-save-image"]')
-              ?.textContent?.trim();
-            const metricCount = probe ? Object.keys(probe.metricsByHref).length : 0;
-            const clickCount = probe?.buttonClicks.length ?? 0;
-            const latestButtonClick = clickCount > 0 ? probe?.buttonClicks[clickCount - 1] : null;
-            const probeErrors = probe?.errors.join("; ") ?? "";
-
-            return {
-              download: errorText
-                ? `ERROR: ${errorText}`
-                : probeErrors
-                  ? `PROBE_ERROR: ${probeErrors}`
-                  : `NO_ENTRY button=${buttonText ?? "missing"} metrics=${metricCount} clicks=${clickCount} latestClick=${latestButtonClick ? JSON.stringify(latestButtonClick) : "none"}`,
-              href: window.location.href,
-            };
-          });
-        } catch (error) {
-          if (isTransientPageEvaluationError(error)) {
-            return {
-              download: "TRANSIENT_PAGE_EVALUATION",
-              href: page.url(),
-            };
-          }
-          throw error;
-        }
-      },
-      {
-        timeout: 15_000,
-      }
-    )
+    .poll(() => readSaveImageDownloadIntentSnapshot(page), {
+      timeout: 15_000,
+    })
     .toEqual({
       download: expectedFileName,
       href: expect.stringContaining("blob:"),
     });
+}
+
+async function clickSaveImageAndExpectDownload(page: Page, expectedFileName: string) {
+  const saveImageButton = page.getByTestId("poolside-preview-save-image");
+
+  await installSaveImageDownloadProbe(page);
+  await saveImageButton.click();
+
+  try {
+    await expectSaveImageDownloadIntent(page, expectedFileName);
+    return;
+  } catch (error) {
+    const snapshot = await readSaveImageDownloadIntentSnapshot(page);
+    if (!isNoEntryWithoutClicks(snapshot)) {
+      throw error;
+    }
+  }
+
+  await waitForEmbeddedPoolsidePreview(page);
+  await expectPoolsideNoteContentWithinBounds(page);
+  await installSaveImageDownloadProbe(page);
+  await saveImageButton.click();
+  await expectSaveImageDownloadIntent(page, expectedFileName);
 }
 
 async function expectSaveImageNotice(page: Page, expectedFileName: string) {
@@ -800,16 +833,12 @@ test.describe("poolside save image export", () => {
 
     await waitForEmbeddedPoolsidePreview(localPreviewPopup, { printLayout: "portrait" });
     await expectPoolsideNoteContentWithinBounds(localPreviewPopup);
-    await installSaveImageDownloadProbe(localPreviewPopup);
-    await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
-    await expectSaveImageDownloadIntent(localPreviewPopup, expectedPortraitFileName);
+    await clickSaveImageAndExpectDownload(localPreviewPopup, expectedPortraitFileName);
     await expectSaveImageDownloadCount(localPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(localPreviewPopup);
     await expectSaveImageNotice(localPreviewPopup, expectedPortraitFileName);
     await expect(localPreviewPopup.getByTestId("poolside-preview-save-image")).toBeEnabled();
-    await installSaveImageDownloadProbe(localPreviewPopup);
-    await localPreviewPopup.getByTestId("poolside-preview-save-image").click();
-    await expectSaveImageDownloadIntent(localPreviewPopup, expectedPortraitFileName);
+    await clickSaveImageAndExpectDownload(localPreviewPopup, expectedPortraitFileName);
     await expectSaveImageDownloadCount(localPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(localPreviewPopup);
     await localPreviewPopup.close();
@@ -844,9 +873,7 @@ test.describe("poolside save image export", () => {
     await savedPreviewPopup.getByTestId("poolside-preview-layout").selectOption("landscape");
     await waitForEmbeddedPoolsidePreview(savedPreviewPopup, { printLayout: "landscape" });
     await expectPoolsideNoteContentWithinBounds(savedPreviewPopup);
-    await installSaveImageDownloadProbe(savedPreviewPopup);
-    await savedPreviewPopup.getByTestId("poolside-preview-save-image").click();
-    await expectSaveImageDownloadIntent(savedPreviewPopup, expectedLandscapeFileName);
+    await clickSaveImageAndExpectDownload(savedPreviewPopup, expectedLandscapeFileName);
     await expectSaveImageDownloadCount(savedPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(savedPreviewPopup);
     await expectSaveImageNotice(savedPreviewPopup, expectedLandscapeFileName);
