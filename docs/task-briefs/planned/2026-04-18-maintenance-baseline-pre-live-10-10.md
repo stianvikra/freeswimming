@@ -77,7 +77,7 @@ Do not batch all three into one PR unless validation shows the diff is still eas
 - Remove all known `high` or `critical` production dependency findings on current `main`.
 - Lock the runtime contract explicitly in repo files, not only in CI workflow YAML.
 - Define the maintenance cadence that should happen weekly, monthly, and quarterly.
-- Resolve the carried-forward perf-budget stretch-target recommendation from PR #496 with a documented `tighten` / `hold` / `revert` decision.
+- Resolve the carried-forward perf-budget stretch-target recommendation from PRs #496, #507, and #509 with a documented `tighten` / `hold` / `revert` decision.
 - Keep major migrations explicitly deferred into separate planned briefs or backlog items.
 
 ## Before Live
@@ -182,7 +182,7 @@ Critical target categories for a `10/10` claim in this brief:
 3. One canonical maintenance runbook/checklist exists and defines weekly, monthly, and quarterly cadence.
 4. Major dependency migrations remain explicitly deferred into separate planned work, not silently bundled into the baseline pass.
 5. All baseline child PRs are narrow enough that root cause remains debuggable.
-6. The carried-forward perf-budget stretch-target recommendation from PRs `#496` and `#507` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
+6. The carried-forward perf-budget stretch-target recommendation from PRs `#496`, `#507`, and `#509` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
 
 ## Validation
 
