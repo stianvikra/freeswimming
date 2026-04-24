@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
-import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
+import { gotoWithTransientRetry } from "./utils/transient-navigation";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -66,7 +66,7 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
   }
 
   await gotoWithTransientRetry(page, "/my-library");
-  await waitForRouteToSettle(page);
+  await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
 }
 
 test.describe("account security simplification", () => {
@@ -79,8 +79,6 @@ test.describe("account security simplification", () => {
 
     await loginToMyLibraryViaDevBypass(page);
     await expectSecurityRouteRedirect(page, "/my-library");
-    await gotoWithTransientRetry(page, "/my-library");
-    await waitForRouteToSettle(page);
     expect(new URL(page.url()).pathname).toBe("/my-library");
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
     await expect(page.getByText("Account & Security")).toHaveCount(0);

@@ -108,6 +108,16 @@ export default async function MyLibraryPage() {
   }
   const claimHref = `/claim?${claimQuery.toString()}`;
   const latestProgram = programLibrarySnapshot.recentPrograms[0] ?? null;
+  const mySwimProfileSummary = [
+    athleteProfileSnapshot.profile?.primaryName?.trim() || null,
+    athleteProfileSnapshot.cssMetric
+      ? `CSS ${athleteProfileSnapshot.cssMetric.paceLabel}/100m`
+      : null,
+    athleteProfileSnapshot.preferences?.poolLengthLabel ?? null,
+    athleteProfileSnapshot.preferences?.preferredWeeklySessionCount
+      ? `${athleteProfileSnapshot.preferences.preferredWeeklySessionCount} sessions/week`
+      : null,
+  ].filter((value): value is string => Boolean(value));
 
   return (
     <SiteChrome>
@@ -154,40 +164,22 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    Athlete profile, training setup & records
-                  </h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {!athleteProfileSnapshot.profileSchemaReady
-                      ? "This athlete profile foundation is still syncing in this environment."
-                      : athleteProfileSnapshot.profile ||
-                          athleteProfileSnapshot.cssMetric ||
-                          athleteProfileSnapshot.preferences ||
-                          athleteProfileSnapshot.personalRecords.length > 0
-                        ? [
-                            athleteProfileSnapshot.profile?.primaryName ?? "Private swimmer",
-                            athleteProfileSnapshot.profile?.ageBandLabel ?? null,
-                            athleteProfileSnapshot.cssMetric
-                              ? `CSS ${athleteProfileSnapshot.cssMetric.paceLabel}/100m`
-                              : null,
-                            athleteProfileSnapshot.preferences?.poolLengthLabel ?? null,
-                            athleteProfileSnapshot.preferences?.preferredWeeklySessionCount
-                              ? `${athleteProfileSnapshot.preferences.preferredWeeklySessionCount} sessions/week`
-                              : null,
-                            athleteProfileSnapshot.personalRecords.length > 0
-                              ? `${athleteProfileSnapshot.personalRecords.length} record${athleteProfileSnapshot.personalRecords.length === 1 ? "" : "s"}`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")
-                        : "Add your private swimmer profile, current CSS, practical preferences, and personal records now so later generator work has a real foundation."}
-                  </p>
+                  <h2 className="text-lg font-semibold text-slate-900">My Swim Profile</h2>
+                  {!athleteProfileSnapshot.profileSchemaReady ? (
+                    <p className="mt-2 text-sm text-slate-600">
+                      This athlete profile foundation is still syncing in this environment.
+                    </p>
+                  ) : mySwimProfileSummary.length > 0 ? (
+                    <p className="mt-2 text-sm text-slate-600">
+                      {mySwimProfileSummary.join(" · ")}
+                    </p>
+                  ) : null}
                 </div>
                 <Link
                   href="/my-library/profile"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Open training setup
+                  Open profile
                 </Link>
               </div>
             </section>

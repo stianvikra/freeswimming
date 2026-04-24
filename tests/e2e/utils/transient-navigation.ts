@@ -30,7 +30,9 @@ function currentPageMatchesTarget(page: Page, href: string) {
 
 function isTransientGotoError(error: unknown) {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  return /ERR_ABORTED|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(errorMessage);
+  return /ERR_ABORTED|ERR_CONNECTION_REFUSED|ERR_CONNECTION_RESET|ECONNRESET|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(
+    errorMessage
+  );
 }
 
 export async function prewarmRoute(

@@ -395,7 +395,6 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const [actionSuccess, setActionSuccess] = useState("");
   const [isClientReady, setIsClientReady] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeStatusSection, setActiveStatusSection] = useState<ProfileSectionKey | null>(null);
   const [sectionOpenState, setSectionOpenState] = useState<SectionDisclosureState>(() =>
     buildDefaultDisclosureState({
@@ -579,12 +578,6 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     return payload?.error || fallback;
   }
 
-  function setGlobalStatus(message: string, kind: "error" | "success") {
-    setActiveStatusSection(null);
-    setActionError(kind === "error" ? message : "");
-    setActionSuccess(kind === "success" ? message : "");
-  }
-
   function setSectionStatus(
     section: ProfileSectionKey,
     message: string,
@@ -633,65 +626,6 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     }
 
     return null;
-  }
-
-  async function refreshProfile() {
-    setIsRefreshing(true);
-    setGlobalStatus("", "success");
-
-    try {
-      const response = await fetch("/api/my-library/profile", {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        setGlobalStatus(
-          await parseError(response, "Could not refresh training setup right now."),
-          "error"
-        );
-        return;
-      }
-
-      const payload = (await response.json().catch(() => null)) as ApiError | null;
-      if (!payload?.ok || !payload.snapshot) {
-        setGlobalStatus("Could not refresh training setup right now.", "error");
-        return;
-      }
-
-      setSnapshot(payload.snapshot);
-
-      if (!hasUnsavedProfileChanges) {
-        setProfileDraft(buildProfileDraft(payload.snapshot.profile));
-      }
-
-      if (!hasUnsavedCssChanges) {
-        setCssDraft(buildCssMetricDraft(payload.snapshot.cssMetric));
-      }
-
-      if (!hasUnsavedPreferencesChanges) {
-        setPreferencesDraft(buildPreferencesDraft(payload.snapshot.preferences));
-      }
-
-      if (!hasUnsavedRecordChanges) {
-        setRecordDraft(
-          buildPersonalRecordDraft(
-            findRecordById(payload.snapshot.personalRecords, recordDraft.editingRecordId)
-          )
-        );
-      }
-
-      void sendClientAnalyticsEvent("athlete_profile_refreshed", {
-        hasProfile: Boolean(payload.snapshot.profile),
-        hasCssMetric: Boolean(payload.snapshot.cssMetric),
-        hasPreferences: Boolean(payload.snapshot.preferences),
-        personalRecordCount: payload.snapshot.personalRecords.length,
-      });
-    } catch {
-      setGlobalStatus("Could not refresh training setup right now.", "error");
-    } finally {
-      setIsRefreshing(false);
-    }
   }
 
   async function saveProfile(event: React.FormEvent) {
@@ -1181,17 +1115,6 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
           {globalActionSuccess}
         </div>
       ) : null}
-
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => void refreshProfile()}
-          disabled={isRefreshing}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
-        >
-          {isRefreshing ? "Refreshing..." : "Refresh all"}
-        </button>
-      </div>
 
       <section
         data-testid="athlete-profile-section-profile"

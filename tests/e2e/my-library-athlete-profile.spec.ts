@@ -88,9 +88,9 @@ test.describe("my library athlete profile", () => {
 
     await loginToMyLibraryViaDevBypass(page);
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open training setup" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open profile" })).toBeVisible();
 
-    const openProfileLink = page.getByRole("link", { name: "Open training setup" });
+    const openProfileLink = page.getByRole("link", { name: "Open profile" });
     await expect(openProfileLink).toHaveAttribute("href", "/my-library/profile");
     const href = await openProfileLink.getAttribute("href");
     expect(href).toBeTruthy();
@@ -104,7 +104,7 @@ test.describe("my library athlete profile", () => {
     await waitForRouteToSettle(page);
     await expect(
       page.getByRole("heading", {
-        name: "Athlete profile, training setup & records",
+        name: "My Swim Profile",
         level: 1,
       })
     ).toBeVisible();
@@ -131,7 +131,7 @@ test.describe("my library athlete profile", () => {
     await waitForRouteToSettle(page);
     await expect(
       page.getByRole("heading", {
-        name: "Athlete profile, training setup & records",
+        name: "My Swim Profile",
         level: 1,
       })
     ).toBeVisible();
@@ -166,7 +166,7 @@ test.describe("my library athlete profile", () => {
     await waitForRouteToSettle(page);
     await expect(
       page.getByRole("heading", {
-        name: "Athlete profile, training setup & records",
+        name: "My Swim Profile",
         level: 1,
       })
     ).toBeVisible();
