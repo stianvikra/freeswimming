@@ -121,13 +121,13 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
   }, [currentSignal, newLessonCount, visible]);
 
   const trackOpen = useCallback(
-    (source: "open_first" | "open_list_item", lessonId: string | null) => {
+    (lessonId: string | null) => {
       if (!currentSignal) return;
       void sendClientAnalyticsEvent("library_new_content_notice_opened", {
         lessonCount: currentSignal.lessonCount,
         newLessonCount,
         signature: currentSignal.signature,
-        source,
+        source: "open_list_item",
         lessonId,
       });
     },
@@ -206,45 +206,28 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
               {newLessonCount} new lesson{newLessonCount === 1 ? "" : "s"}
             </p>
           </div>
-          <p className="mt-2 text-base font-semibold text-slate-900">
-            +{newLessonCount} nye leksjoner i Free Course
-          </p>
-          <p className="mt-1 max-w-[54ch] text-sm text-slate-600">
-            Freshly published lessons are waiting. Open the first one now, or expand the list when
-            you want the full overview.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Link
-              data-testid="my-library-new-content-open"
-              href={buildLessonHref(newLessons[0]?.lessonId ?? currentSignal.firstLessonId)}
-              onClick={() =>
-                trackOpen("open_first", newLessons[0]?.lessonId ?? currentSignal.firstLessonId)
-              }
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
-            >
-              Open first new lesson
-            </Link>
-            <button
-              data-testid="my-library-new-content-toggle"
-              type="button"
-              onClick={() => setDetailsExpanded((current) => !current)}
-              aria-expanded={detailsExpanded}
-              aria-controls="my-library-new-content-details"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
-            >
-              {detailsExpanded ? "Hide lesson list" : "Show lesson list"}
-            </button>
-          </div>
         </div>
-        <button
-          data-testid="my-library-new-content-dismiss"
-          type="button"
-          onClick={handleDismiss}
-          aria-label="Dismiss new lesson notice"
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
-          X
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            data-testid="my-library-new-content-toggle"
+            type="button"
+            onClick={() => setDetailsExpanded((current) => !current)}
+            aria-expanded={detailsExpanded}
+            aria-controls="my-library-new-content-details"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+          >
+            {detailsExpanded ? "Hide lesson list" : "Show lesson list"}
+          </button>
+          <button
+            data-testid="my-library-new-content-dismiss"
+            type="button"
+            onClick={handleDismiss}
+            aria-label="Dismiss new lesson notice"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            X
+          </button>
+        </div>
       </div>
 
       {detailsExpanded ? (
@@ -261,7 +244,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
                 <Link
                   data-testid={`my-library-new-content-item-${lesson.lessonId}`}
                   href={buildLessonHref(lesson.lessonId)}
-                  onClick={() => trackOpen("open_list_item", lesson.lessonId)}
+                  onClick={() => trackOpen(lesson.lessonId)}
                   className="inline-flex flex-wrap items-center gap-1 text-sm font-medium text-blue-800 hover:text-blue-700 hover:underline"
                 >
                   <span>{lesson.lessonTitle}</span>

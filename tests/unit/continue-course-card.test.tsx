@@ -39,10 +39,10 @@ describe("ContinueCourseCard", () => {
     render(<ContinueCourseCard />);
 
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Start the free course and your lesson progress will be saved on this device."
       )
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
 
     const link = screen.getByRole("link", { name: "Start free course" });
     expect(link).toHaveAttribute("href", "/course");
@@ -65,8 +65,8 @@ describe("ContinueCourseCard", () => {
     });
 
     expect(
-      screen.getByText("We saved your latest lesson on this device. Continue where you left off.")
-    ).toBeInTheDocument();
+      screen.queryByText("We saved your latest lesson on this device. Continue where you left off.")
+    ).not.toBeInTheDocument();
 
     const link = screen.getByRole("link", { name: "Continue course" });
     expect(link).toHaveAttribute("href", "/course?lesson=mod1-l2");

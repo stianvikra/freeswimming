@@ -85,7 +85,8 @@ describe("MyLibraryNewContentNotice", () => {
     await waitFor(() => {
       expect(screen.getByTestId("my-library-new-content-notice")).toBeInTheDocument();
     });
-    expect(screen.getByText("+2 nye leksjoner i Free Course")).toBeInTheDocument();
+    expect(screen.getByText("2 new lessons")).toBeInTheDocument();
+    expect(screen.queryByText("+2 nye leksjoner i Free Course")).not.toBeInTheDocument();
     expect(screen.queryByTestId("my-library-new-content-list")).not.toBeInTheDocument();
     expect(screen.getByTestId("my-library-new-content-toggle")).toHaveAttribute(
       "aria-expanded",
@@ -158,15 +159,18 @@ describe("MyLibraryNewContentNotice", () => {
     await waitFor(() => {
       expect(screen.getByTestId("my-library-new-content-notice")).toBeInTheDocument();
     });
-    expect(screen.getByText("+2 nye leksjoner i Free Course")).toBeInTheDocument();
+    expect(screen.getByText("2 new lessons")).toBeInTheDocument();
+    expect(screen.queryByTestId("my-library-new-content-open")).not.toBeInTheDocument();
     expect(screen.queryByTestId("my-library-new-content-item-mod1-l2")).not.toBeInTheDocument();
     expect(screen.queryByTestId("my-library-new-content-item-mod1-l3")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId("my-library-new-content-open"));
+    fireEvent.click(screen.getByTestId("my-library-new-content-toggle"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("my-library-new-content-notice")).toBeInTheDocument();
+      expect(screen.getByTestId("my-library-new-content-item-mod1-l2")).toBeInTheDocument();
     });
+
+    fireEvent.click(screen.getByTestId("my-library-new-content-item-mod1-l2"));
     const storedRaw = localStorage.getItem(buildMyLibrarySeenStorageKey("user-1"));
     expect(storedRaw).toContain(previousSignal.signature);
     expect(storedRaw).not.toContain(signal.signature);
@@ -175,13 +179,8 @@ describe("MyLibraryNewContentNotice", () => {
       lessonCount: signal.lessonCount,
       newLessonCount: 2,
       signature: signal.signature,
-      source: "open_first",
+      source: "open_list_item",
       lessonId: "mod1-l2",
-    });
-
-    fireEvent.click(screen.getByTestId("my-library-new-content-toggle"));
-    await waitFor(() => {
-      expect(screen.getByTestId("my-library-new-content-item-mod1-l3")).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByTestId("my-library-new-content-item-mod1-l3"));
