@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-21-my-swim-profile-page-ia-and-copy-cleanup-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
-- `updated`: `2026-04-22`
+- `updated`: `2026-04-24`
 
 ## Goal
 
@@ -140,3 +140,8 @@ Critical target categories for `10/10` claim:
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created from owner finding that Athlete Profile page is over-explained and should become My Swim Profile | next: implement or defer before maintenance baseline`
+- `2026-04-24 | in-progress | route/page scope patched to My Swim Profile label, entrypoint cleanup, and redundant explainer/refresh action removal | next: run targeted QA, capture screenshots, then full gates`
+- `2026-04-24 | in-progress | desktop/mobile screenshots captured in output/playwright/my-swim-profile-ia and verify:pre-pr passed on rerun after one transient 3100 connection-refused flake in verify-open | next: owner screenshot approval, then commit/push/open PR`
+- `2026-04-24 | in-progress | perf-budget trend recommended tightening one stretch target after two green weekly runs; decision deferred to maintenance baseline because this brief is narrow IA/copy cleanup, not perf-baseline scope | next: record same defer note in PR summary`
+- `2026-04-24 | in-progress | owner approved screenshots, My Swim Profile card fallback summary noise was removed, and support-surface tests were hardened by removing unnecessary full-route settle in account-security plus treating local connection reset/refused as transient goto retries | next: rerun full verify:pre-pr and proceed to PR flow`
+- `2026-04-24 | in-progress | full verify:pre-pr green after support-surface hardening (`106 passed`, `344 skipped`); no new product-surface regressions found in desktop/mobile profile flows | next: commit, push, open PR, then run verify:pre-merge before merge recommendation`
