@@ -6,8 +6,8 @@ const DEFAULT_RETRY_TIMEOUT_MS = 60_000;
 const ROUTE_SETTLE_TIMEOUT_MS = 60_000;
 const POST_COMMIT_DOMCONTENT_TIMEOUT_MS = 15_000;
 const RETRY_URL_SETTLE_TIMEOUT_MS = 3_000;
-const RETRY_DELAY_MS = 1_000;
-const MAX_GOTO_ATTEMPTS = 5;
+const RETRY_DELAY_MS = 2_000;
+const MAX_GOTO_ATTEMPTS = 8;
 
 function resolveTargetUrl(page: Page, href: string) {
   const currentUrl = page.url();
@@ -31,7 +31,7 @@ function currentPageMatchesTarget(page: Page, href: string) {
 
 function isTransientGotoError(error: unknown) {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  return /ERR_ABORTED|ERR_CONNECTION_REFUSED|ERR_CONNECTION_RESET|ECONNRESET|frame was detached|page\.goto: Timeout \d+ms exceeded/i.test(
+  return /ERR_ABORTED|ERR_CONNECTION_REFUSED|ERR_CONNECTION_RESET|ECONNRESET|Could not connect to the server|frame was detached|interrupted by another navigation|page\.goto: Timeout \d+ms exceeded/i.test(
     errorMessage
   );
 }
@@ -54,9 +54,9 @@ export async function gotoWithTransientRetry(
   href: string,
   initialTimeoutMs = DEFAULT_INITIAL_TIMEOUT_MS
 ) {
-  await prewarmRoute(page, href, initialTimeoutMs);
-
   for (let attempt = 0; attempt < MAX_GOTO_ATTEMPTS; attempt += 1) {
+    await prewarmRoute(page, href, attempt === 0 ? initialTimeoutMs : DEFAULT_RETRY_TIMEOUT_MS);
+
     try {
       await page.goto(href, {
         waitUntil: "commit",

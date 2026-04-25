@@ -23,7 +23,20 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
   }
 
   await waitForRouteToSettle(page);
-  await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+  const libraryHeading = page.getByRole("heading", { name: "My Library" });
+  const libraryReady = await libraryHeading.isVisible({ timeout: 15_000 }).catch(() => false);
+
+  if (libraryReady) {
+    return;
+  }
+
+  await gotoWithTransientRetry(page, loginHref);
+  if (new URL(page.url()).pathname !== "/my-library") {
+    test.skip(true, "Dev auth bypass is not enabled in this environment.");
+  }
+
+  await waitForRouteToSettle(page);
+  await expect(libraryHeading).toBeVisible({ timeout: 15_000 });
 }
 
 test.describe("my library landing entrypoints", () => {
