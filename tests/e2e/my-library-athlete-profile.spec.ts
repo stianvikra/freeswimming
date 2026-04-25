@@ -88,9 +88,12 @@ test.describe("my library athlete profile", () => {
 
     await loginToMyLibraryViaDevBypass(page);
     await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open profile" })).toBeVisible();
+    const profileCard = page
+      .getByRole("heading", { name: "My Swim Profile" })
+      .locator("xpath=ancestor::section[1]");
+    await expect(profileCard.getByRole("link", { name: "Open" })).toBeVisible();
 
-    const openProfileLink = page.getByRole("link", { name: "Open profile" });
+    const openProfileLink = profileCard.getByRole("link", { name: "Open" });
     await expect(openProfileLink).toHaveAttribute("href", "/my-library/profile");
     const href = await openProfileLink.getAttribute("href");
     expect(href).toBeTruthy();

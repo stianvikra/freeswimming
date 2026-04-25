@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
 
@@ -27,6 +27,7 @@ export default function CreateManualWorkoutButton({
   const [clientReady, setClientReady] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [error, setError] = useState("");
+  const navigationFallbackTimeoutRef = useRef<number | null>(null);
   const resolvedLabel =
     label ?? (builderMode === "pool" ? "Build pool session" : "Build open water session");
   const resolvedPendingLabel =
@@ -43,6 +44,14 @@ export default function CreateManualWorkoutButton({
     setClientReady(true);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (navigationFallbackTimeoutRef.current !== null && typeof window !== "undefined") {
+        window.clearTimeout(navigationFallbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
   function handleCreateManualSession() {
     setIsOpening(true);
     setError("");
@@ -55,13 +64,23 @@ export default function CreateManualWorkoutButton({
         router.refresh();
       });
 
-      window.setTimeout(() => {
-        const resolvedHref = new URL(draftHref, window.location.origin).toString();
-
-        if (window.location.href !== resolvedHref) {
-          window.location.assign(draftHref);
+      if (typeof window !== "undefined") {
+        if (navigationFallbackTimeoutRef.current !== null) {
+          window.clearTimeout(navigationFallbackTimeoutRef.current);
         }
-      }, 250);
+
+        navigationFallbackTimeoutRef.current = window.setTimeout(() => {
+          if (typeof window === "undefined") {
+            return;
+          }
+
+          const resolvedHref = new URL(draftHref, window.location.origin).toString();
+
+          if (window.location.href !== resolvedHref) {
+            window.location.assign(draftHref);
+          }
+        }, 250);
+      }
     } catch {
       setError(
         builderMode === "pool"

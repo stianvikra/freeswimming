@@ -27,6 +27,8 @@ type RetryablePreviewError = Error & {
   status?: number;
 };
 
+const PROGRAM_EXPORT_PREVIEW_TIMEOUT_MS = 15_000;
+
 function buildProgramExportPreviewError(message: string, status?: number): RetryablePreviewError {
   const error = new Error(message) as RetryablePreviewError;
   error.status = status;
@@ -53,6 +55,7 @@ function isRetryableProgramExportPreviewError(error: unknown): boolean {
     message.includes("network") ||
     message.includes("timeout") ||
     message.includes("timed out") ||
+    message.includes("aborted") ||
     message.includes("econnreset") ||
     message.includes("connection reset")
   );
@@ -161,12 +164,20 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
       try {
         let previewJson = "";
 
-        for (let attempt = 0; attempt < 2; attempt += 1) {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const controller = new AbortController();
+          const timeout = window.setTimeout(
+            () => controller.abort(),
+            PROGRAM_EXPORT_PREVIEW_TIMEOUT_MS
+          );
+
           try {
             const response = await fetch(programGarminExportRoute, {
               method: "GET",
               cache: "no-store",
+              signal: controller.signal,
             });
+            window.clearTimeout(timeout);
             const responseBody = (await response.json().catch(() => null)) as Record<
               string,
               unknown
@@ -183,10 +194,20 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             previewJson = JSON.stringify(responseBody, null, 2);
             break;
           } catch (error) {
-            const shouldRetry = attempt === 0 && isRetryableProgramExportPreviewError(error);
+            const normalizedError =
+              error instanceof DOMException && error.name === "AbortError"
+                ? buildProgramExportPreviewError(
+                    "Could not load the canonical program export preview right now.",
+                    408
+                  )
+                : error;
+            const shouldRetry =
+              attempt < 2 && isRetryableProgramExportPreviewError(normalizedError);
             if (!shouldRetry) {
-              throw error;
+              throw normalizedError;
             }
+          } finally {
+            window.clearTimeout(timeout);
           }
         }
 

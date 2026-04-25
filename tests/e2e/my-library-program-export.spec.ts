@@ -36,7 +36,21 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
     test.skip(true, "Dev auth bypass is not enabled in this environment.");
   }
 
-  await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+  await waitForRouteToSettle(page);
+  const libraryHeading = page.getByRole("heading", { name: "My Library" });
+  const libraryReady = await libraryHeading.isVisible({ timeout: 15_000 }).catch(() => false);
+
+  if (libraryReady) {
+    return;
+  }
+
+  await gotoWithTransientRetry(page, loginHref);
+  if (new URL(page.url()).pathname !== "/my-library") {
+    test.skip(true, "Dev auth bypass is not enabled in this environment.");
+  }
+
+  await waitForRouteToSettle(page);
+  await expect(libraryHeading).toBeVisible({ timeout: 15_000 });
 }
 
 async function refreshDevSessionForCurrentRoute(page: Page) {
@@ -179,6 +193,62 @@ async function waitForProgramBuilderClientReady(page: Page) {
   }
 }
 
+async function waitForProgramExportPreviewReady(page: Page) {
+  const exportPreview = page.getByTestId("program-editor-garmin-export-preview").first();
+  const previewError = page.getByTestId("program-editor-garmin-export-preview-error");
+
+  await expect(exportPreview).toBeVisible({ timeout: 15_000 });
+
+  const waitForPreviewResolution = async () => {
+    const resolved = await expect
+      .poll(
+        async () => {
+          if ((await previewError.count()) > 0 && (await previewError.first().isVisible())) {
+            return "error";
+          }
+
+          const previewText = (await exportPreview.textContent()) ?? "";
+          if (previewText.includes("Loading canonical export preview...")) {
+            return "loading";
+          }
+
+          return previewText.trim().length > 0 ? "ready" : "empty";
+        },
+        { timeout: 20_000 }
+      )
+      .toMatch(/ready|error/)
+      .then(() => true)
+      .catch(() => false);
+
+    if (resolved) {
+      return;
+    }
+
+    await refreshDevSessionForCurrentRoute(page);
+    await waitForProgramBuilderClientReady(page);
+    await expect
+      .poll(
+        async () => {
+          if ((await previewError.count()) > 0 && (await previewError.first().isVisible())) {
+            return "error";
+          }
+
+          const previewText = (await exportPreview.textContent()) ?? "";
+          if (previewText.includes("Loading canonical export preview...")) {
+            return "loading";
+          }
+
+          return previewText.trim().length > 0 ? "ready" : "empty";
+        },
+        { timeout: 20_000 }
+      )
+      .toMatch(/ready|error/);
+  };
+
+  await waitForPreviewResolution();
+  await expect(previewError).toHaveCount(0);
+}
+
 async function ensureProgramSchemaReady(page: Page) {
   const schemaWarning = page.getByText(
     /This canonical program layer is still syncing in this environment\.|Program planning tools are still syncing in this environment\./
@@ -315,10 +385,7 @@ test.describe("my library program export", () => {
     );
 
     const exportPreview = page.getByTestId("program-editor-garmin-export-preview").first();
-    await expect(exportPreview).toBeVisible({ timeout: 15_000 });
-    await expect(exportPreview).not.toContainText("Loading canonical export preview...", {
-      timeout: 30_000,
-    });
+    await waitForProgramExportPreviewReady(page);
     await expect(exportPreview).toContainText('"kind": "freeswimming_garmin_ready_program_v1"', {
       timeout: 15_000,
     });

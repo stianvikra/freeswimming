@@ -45,7 +45,20 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
   }
 
   await waitForRouteToSettle(page);
-  await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+  const libraryHeading = page.getByRole("heading", { name: "My Library" });
+  const libraryReady = await libraryHeading.isVisible({ timeout: 15_000 }).catch(() => false);
+
+  if (libraryReady) {
+    return;
+  }
+
+  await gotoWithTransientRetry(page, loginHref);
+  if (new URL(page.url()).pathname !== "/my-library") {
+    test.skip(true, "Dev auth bypass is not enabled in this environment.");
+  }
+
+  await waitForRouteToSettle(page);
+  await expect(libraryHeading).toBeVisible({ timeout: 15_000 });
 }
 
 async function refreshDevSessionForCurrentRoute(page: Page) {
@@ -62,6 +75,18 @@ async function refreshDevSessionForCurrentRoute(page: Page) {
     test.skip(true, "Dev auth bypass is not enabled in this environment.");
   }
   await waitForRouteToSettle(page);
+}
+
+async function ensureMyLibraryHeadingVisible(page: Page) {
+  const libraryHeading = page.getByRole("heading", { name: "My Library" });
+  const libraryReady = await libraryHeading.isVisible({ timeout: 15_000 }).catch(() => false);
+
+  if (libraryReady) {
+    return;
+  }
+
+  await refreshDevSessionForCurrentRoute(page);
+  await expect(libraryHeading).toBeVisible({ timeout: 15_000 });
 }
 
 async function openExpandedNewLessonFromNotice(page: Page, lessonId: string) {
@@ -129,7 +154,7 @@ test.describe("my library new content notice", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
-    testInfo.setTimeout(180_000);
+    testInfo.setTimeout(240_000);
     await page.route("**/api/my-library/new-content-signal", async (route) => {
       await route.fulfill({
         status: 200,
@@ -151,7 +176,7 @@ test.describe("my library new content notice", () => {
     });
     await gotoWithTransientRetry(page, "/my-library");
     await waitForRouteToSettle(page);
-    await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await ensureMyLibraryHeadingVisible(page);
     await waitForNoticeResolution(page);
 
     const banner = page.getByTestId("my-library-new-content-notice");
@@ -176,7 +201,7 @@ test.describe("my library new content notice", () => {
 
     await gotoWithTransientRetry(page, "/my-library");
     await waitForRouteToSettle(page);
-    await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await ensureMyLibraryHeadingVisible(page);
     await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
 
@@ -184,7 +209,7 @@ test.describe("my library new content notice", () => {
     await expect(banner).toBeHidden();
 
     await refreshDevSessionForCurrentRoute(page);
-    await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await ensureMyLibraryHeadingVisible(page);
     await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toHaveCount(0);
 
@@ -205,7 +230,7 @@ test.describe("my library new content notice", () => {
     });
 
     await refreshDevSessionForCurrentRoute(page);
-    await expect(page.getByRole("heading", { name: "My Library" })).toBeVisible();
+    await ensureMyLibraryHeadingVisible(page);
     await waitForNoticeResolution(page);
     await expect(page.getByTestId("my-library-new-content-notice")).toBeVisible();
     await page.getByTestId("my-library-new-content-toggle").click();

@@ -78,7 +78,7 @@ export default async function MyLibraryPage() {
     (entitlements ?? []).map((entitlement) => entitlement.product_id)
   );
 
-  const { count: activeGoalCount, error: activeGoalCountError } = await supabase
+  const { error: activeGoalCountError } = await supabase
     .from("goals")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
@@ -118,6 +118,13 @@ export default async function MyLibraryPage() {
       ? `${athleteProfileSnapshot.preferences.preferredWeeklySessionCount} sessions/week`
       : null,
   ].filter((value): value is string => Boolean(value));
+  const focusAndNotesSummary = !trainingContextSnapshot.schemaReady
+    ? "This training context is still syncing in this environment."
+    : trainingContextSnapshot.focusNeedsPrimarySelection
+      ? `You have ${trainingContextSnapshot.openFocuses.length} open focuses and need to choose one primary cue before other My Library surfaces use a single focus.`
+      : trainingContextSnapshot.activeFocus
+        ? `${trainingContextSnapshot.primaryFocus ? "Primary focus" : "Current focus cue"}: ${trainingContextSnapshot.activeFocus.title}. ${trainingContextSnapshot.unresolvedObservationCount} open observation${trainingContextSnapshot.unresolvedObservationCount === 1 ? "" : "s"} and ${trainingContextSnapshot.unansweredQuestionCount} unanswered question${trainingContextSnapshot.unansweredQuestionCount === 1 ? "" : "s"}.`
+        : null;
 
   return (
     <SiteChrome>
@@ -179,7 +186,7 @@ export default async function MyLibraryPage() {
                   href="/my-library/profile"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Open profile
+                  Open
                 </Link>
               </div>
             </section>
@@ -187,17 +194,17 @@ export default async function MyLibraryPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">Goals</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {(activeGoalCount ?? 0) > 0
-                      ? `${activeGoalCount} active goal${activeGoalCount === 1 ? "" : "s"} in progress.`
-                      : "Set your first measurable swim goal and keep momentum with clear next actions."}
-                  </p>
+                  {!activeGoalCountError ? null : (
+                    <p className="mt-2 text-sm text-slate-600">
+                      Goals are still syncing in this environment.
+                    </p>
+                  )}
                 </div>
                 <Link
                   href="/my-library/goals"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Open goals hub
+                  Open
                 </Link>
               </div>
             </section>
@@ -205,28 +212,22 @@ export default async function MyLibraryPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">Focus & Notes</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {!trainingContextSnapshot.schemaReady
-                      ? "This training context is still syncing in this environment."
-                      : trainingContextSnapshot.focusNeedsPrimarySelection
-                        ? `You have ${trainingContextSnapshot.openFocuses.length} open focuses and need to choose one primary cue before other My Library surfaces use a single focus.`
-                        : trainingContextSnapshot.activeFocus
-                          ? `${trainingContextSnapshot.primaryFocus ? "Primary focus" : "Current focus cue"}: ${trainingContextSnapshot.activeFocus.title}. ${trainingContextSnapshot.unresolvedObservationCount} open observation${trainingContextSnapshot.unresolvedObservationCount === 1 ? "" : "s"} and ${trainingContextSnapshot.unansweredQuestionCount} unanswered question${trainingContextSnapshot.unansweredQuestionCount === 1 ? "" : "s"}.`
-                          : "Add an open focus and capture observations or questions between swim sessions."}
-                  </p>
+                  {focusAndNotesSummary ? (
+                    <p className="mt-2 text-sm text-slate-600">{focusAndNotesSummary}</p>
+                  ) : null}
                 </div>
                 <Link
                   href="/my-library/training"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
-                  Open focus & notes
+                  Open
                 </Link>
               </div>
             </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Swim session builder</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">Swim Sessions</h2>
                   {!workoutLibrarySnapshot.schemaReady ? (
                     <p className="mt-2 text-sm text-slate-600">
                       This canonical swim-session layer is still syncing in this environment.
@@ -237,7 +238,7 @@ export default async function MyLibraryPage() {
                   {workoutLibrarySnapshot.schemaReady ? (
                     <Link
                       href="/my-library/workouts"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                     >
                       My Swim Sessions
                     </Link>
@@ -250,7 +251,7 @@ export default async function MyLibraryPage() {
                         athleteProfileSnapshot.cssMetric?.valueSeconds ?? null
                       }
                       manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                     />
                   ) : null}
                   {workoutLibrarySnapshot.schemaReady ? (
