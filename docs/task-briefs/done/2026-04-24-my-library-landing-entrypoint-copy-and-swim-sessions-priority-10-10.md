@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-24-my-library-landing-entrypoint-copy-and-swim-sessions-priority-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-24`
-- `updated`: `2026-04-24`
+- `updated`: `2026-04-25`
 
 ## Goal
 
@@ -157,6 +157,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-04-25 | merged + closeout | PR #512 merged to \`main\` as squash commit \`3227c3c\`; My Library landing now uses the shorter Free Course/Start-or-Continue entrypoint, concise \`Open\` CTAs on single-action cards, \`Swim Sessions\` browse-first priority, and hardened My Library verification surfaces; required GitHub checks were green, local lint/typecheck/unit/build/perf passed during pre-merge, local Playwright hung silently after startup on this machine and was treated as a local runner issue because GitHub \`verify\` passed the full suite on a clean runner; perf-budget trend again recommended tightening one stretch target after two weekly green runs and that decision remains deferred into the maintenance baseline brief | next: none`
 - `2026-04-24 | in-progress | created as the first executable child slice under the My Library/My Training IA umbrella, narrowed to landing-card copy cleanup and swim-session CTA priority | next: implement on My Library landing page and lock the new labels/CTA priority with targeted tests`
 - `2026-04-24 | in-progress | scope tightened after screenshot review to shorten single-action CTA labels and rename the free-course entry card to Free Course with Start/Continue button copy | next: implement the shorter labels, refresh screenshots, and stop again at visual approval`
 - `2026-04-24 | in-progress | implementation complete; owner approved refreshed desktop/mobile screenshots for Free Course, Open CTAs, and Swim Sessions browse-first priority; targeted tests green and full verify:pre-pr green | next: commit, push, open PR, and run verify:pre-merge before merge recommendation`
