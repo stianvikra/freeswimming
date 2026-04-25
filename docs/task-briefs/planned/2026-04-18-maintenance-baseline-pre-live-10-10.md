@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
-- `updated`: `2026-04-24`
+- `updated`: `2026-04-25`
 
 ## Goal
 
@@ -49,7 +49,9 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
 - Carry-forward perf-budget decisions from product PRs:
   - PR #496 first recorded the recommendation that `npm run test:perf:budgets` should tighten one stretch target after two consecutive weekly green runs,
   - PR #507 reconfirmed that recommendation on `2026-04-24` with `35.6%` worst margin (`artifacts/test-runs/20260424-094822/verify.log`),
-  - both product slices intentionally deferred the ratchet decision out of feature work,
+  - PR #509 carried the same recommendation forward while keeping the `My Swim Profile` IA/copy slice narrow,
+  - PR #512 reconfirmed that recommendation on `2026-04-25` with `35.6%` worst margin (`artifacts/test-runs/20260425-152253/verify.log`),
+  - these product slices intentionally deferred the ratchet decision out of feature work,
   - this maintenance baseline must review `artifacts/perf-budgets/trend-log.ndjson`, decide `tighten` / `hold` / `revert`, and record the decision in the active brief and PR summary.
 
 ## Recommended Execution Order
@@ -77,7 +79,7 @@ Do not batch all three into one PR unless validation shows the diff is still eas
 - Remove all known `high` or `critical` production dependency findings on current `main`.
 - Lock the runtime contract explicitly in repo files, not only in CI workflow YAML.
 - Define the maintenance cadence that should happen weekly, monthly, and quarterly.
-- Resolve the carried-forward perf-budget stretch-target recommendation from PRs #496, #507, and #509 with a documented `tighten` / `hold` / `revert` decision.
+- Resolve the carried-forward perf-budget stretch-target recommendation from PRs #496, #507, #509, and #512 with a documented `tighten` / `hold` / `revert` decision.
 - Keep major migrations explicitly deferred into separate planned briefs or backlog items.
 
 ## Before Live
@@ -182,7 +184,7 @@ Critical target categories for a `10/10` claim in this brief:
 3. One canonical maintenance runbook/checklist exists and defines weekly, monthly, and quarterly cadence.
 4. Major dependency migrations remain explicitly deferred into separate planned work, not silently bundled into the baseline pass.
 5. All baseline child PRs are narrow enough that root cause remains debuggable.
-6. The carried-forward perf-budget stretch-target recommendation from PRs `#496`, `#507`, and `#509` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
+6. The carried-forward perf-budget stretch-target recommendation from PRs `#496`, `#507`, `#509`, and `#512` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
 
 ## Validation
 
