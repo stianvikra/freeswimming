@@ -24,8 +24,9 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
   - [2026-04-21-account-security-simplification-and-auth-surface-audit-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-21-account-security-simplification-and-auth-surface-audit-10-10.md)
   - [2026-04-21-course-dashboard-new-content-and-continue-card-cleanup-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-21-course-dashboard-new-content-and-continue-card-cleanup-10-10.md)
   - [2026-04-21-my-library-my-training-ia-and-builder-entrypoint-reconcile-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-21-my-library-my-training-ia-and-builder-entrypoint-reconcile-10-10.md)
-- Remaining findings-wave brief that currently takes precedence:
-  - [2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10.md)
+  - [2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10.md)
+- Remaining findings-wave briefs that currently take precedence:
+  - none; maintenance baseline can start after this docs-only closeout merges.
 
 ## Why This Brief Exists
 
@@ -51,8 +52,13 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
   - PR #507 reconfirmed that recommendation on `2026-04-24` with `35.6%` worst margin (`artifacts/test-runs/20260424-094822/verify.log`),
   - PR #509 carried the same recommendation forward while keeping the `My Swim Profile` IA/copy slice narrow,
   - PR #512 reconfirmed that recommendation on `2026-04-25` with `35.6%` worst margin (`artifacts/test-runs/20260425-152253/verify.log`),
+  - PR #517 reconfirmed that recommendation on `2026-04-26` with `35.6%` worst margin (`artifacts/test-runs/20260426-090528/verify.log`),
   - these product slices intentionally deferred the ratchet decision out of feature work,
   - this maintenance baseline must review `artifacts/perf-budgets/trend-log.ndjson`, decide `tighten` / `hold` / `revert`, and record the decision in the active brief and PR summary.
+- Carry-forward Stripe sandbox verification:
+  - PR #517 fixed invoice creation for future one-time Checkout purchases,
+  - older sandbox payment-mode purchases do not retroactively gain invoices,
+  - the first maintenance/billing follow-up should create a fresh sandbox purchase after `bd3a9e5` and confirm invoice visibility in Stripe/customer portal evidence before claiming live billing confidence.
 
 ## Recommended Execution Order
 
@@ -79,7 +85,7 @@ Do not batch all three into one PR unless validation shows the diff is still eas
 - Remove all known `high` or `critical` production dependency findings on current `main`.
 - Lock the runtime contract explicitly in repo files, not only in CI workflow YAML.
 - Define the maintenance cadence that should happen weekly, monthly, and quarterly.
-- Resolve the carried-forward perf-budget stretch-target recommendation from PRs #496, #507, #509, and #512 with a documented `tighten` / `hold` / `revert` decision.
+- Resolve the carried-forward perf-budget stretch-target recommendation from PRs #496, #507, #509, #512, and #517 with a documented `tighten` / `hold` / `revert` decision.
 - Keep major migrations explicitly deferred into separate planned briefs or backlog items.
 
 ## Before Live
@@ -184,7 +190,8 @@ Critical target categories for a `10/10` claim in this brief:
 3. One canonical maintenance runbook/checklist exists and defines weekly, monthly, and quarterly cadence.
 4. Major dependency migrations remain explicitly deferred into separate planned work, not silently bundled into the baseline pass.
 5. All baseline child PRs are narrow enough that root cause remains debuggable.
-6. The carried-forward perf-budget stretch-target recommendation from PRs `#496`, `#507`, `#509`, and `#512` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
+6. The carried-forward perf-budget stretch-target recommendation from PRs `#496`, `#507`, `#509`, `#512`, and `#517` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
+7. A fresh post-`bd3a9e5` Stripe sandbox purchase confirms invoice visibility, or the baseline records why that verification is deferred before live billing confidence is claimed.
 
 ## Validation
 
