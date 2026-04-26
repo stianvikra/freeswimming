@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-maintenance-baseline-pre-live-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-04-26`
@@ -26,7 +26,7 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
   - [2026-04-21-my-library-my-training-ia-and-builder-entrypoint-reconcile-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-21-my-library-my-training-ia-and-builder-entrypoint-reconcile-10-10.md)
   - [2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10.md)
 - Remaining findings-wave briefs that currently take precedence:
-  - none; maintenance baseline can start after this docs-only closeout merges.
+  - none; maintenance baseline is complete after this docs-only closeout merges.
 
 ## Why This Brief Exists
 
@@ -119,7 +119,7 @@ Do not batch all three into one PR unless validation shows the diff is still eas
   - No runtime app code, route behavior, dependency versions, secrets, or UI surfaces are changed in this slice.
   - PR `#521` merged as `7a9746a` on `2026-04-26`; local `main` was clean after post-merge sync and branch cleanup.
 
-## Active Slice: Maintenance Cadence Automation
+## Completed Slice: Maintenance Cadence Automation
 
 - Scope:
   - add one canonical maintenance cadence runbook,
@@ -142,6 +142,12 @@ Do not batch all three into one PR unless validation shows the diff is still eas
   - workflow creates at most one open monthly issue per `YYYY-MM`,
   - perf budget remains green after the JS transfer threshold ratchet,
   - full PR validation remains green because this slice touches workflow and runtime script files.
+- Implementation notes:
+  - Added `docs/runbooks/maintenance-cadence.md` as the canonical weekly/monthly/quarterly maintenance runbook.
+  - Added `docs/checklists/monthly-maintenance-pass.md` and `.github/ISSUE_TEMPLATE/monthly-maintenance-pass.yml` for the manual monthly fallback.
+  - Added `.github/workflows/monthly-maintenance-reminder.yml` to create one open `Monthly maintenance pass - YYYY-MM` issue per month.
+  - Tightened the default JS transfer budget from `450kb` to `425kb`; `npm run test:perf:budgets` stayed green with latest route medians around `305kb` and worst margin `28.2%`.
+  - PR `#522` merged as `a7ec25d` on `2026-04-26`; local `main` was clean after post-merge sync and branch cleanup.
 
 ## Must Now
 
@@ -288,6 +294,31 @@ Critical target categories for a `10/10` claim in this brief:
   - at least mobile + desktop for touched routes.
 - The planning brief itself has no runtime QA requirement.
 
+## Closeout Summary
+
+- Shipped as three narrow maintenance child PRs:
+  - PR #519 `maintenance: refresh next security baseline`, merged as `e5a64dd`,
+  - PR #521 `maintenance: pin node runtime baseline`, merged as `7a9746a`,
+  - PR #522 `maintenance: automate cadence baseline`, merged as `a7ec25d`.
+- Scope completed:
+  - production `high`/`critical` audit blocker from the previous Next baseline was remediated,
+  - runtime ownership is explicit through `.nvmrc`, `package.json` `engines.node`, `packageManager`, and GitHub Actions `node-version-file: .nvmrc`,
+  - recurring maintenance is documented through one runbook, one monthly checklist, one issue template, and one monthly reminder workflow,
+  - the carried-forward perf-budget recommendation was resolved with `tighten`: JS transfer default `450kb` -> `425kb`,
+  - major dependency migrations remain explicitly deferred to planned/backlog work instead of being bundled into baseline maintenance.
+- Known carry-forward: a fresh Stripe sandbox purchase after `bd3a9e5` must still confirm invoice visibility before live billing confidence is claimed.
+- No screenshot handoff was required for this closeout because it only moves and updates the task brief lifecycle document.
+
+## Closeout Validation
+
+- Current closeout audit: `npm audit --omit=dev --audit-level=high` exits cleanly for high/critical production findings; npm still reports the known moderate transitive `postcss` advisory under Next.
+- PR #519: merged after security baseline validation cleared the production high/critical audit blocker and required release gates.
+- PR #521: merged after runtime pinning validation on Node `v20.20.2` / npm `10.8.2`, local `verify:pre-pr`, local `verify:pre-merge`, and green CI.
+- PR #522: `npm run verify:pre-pr` PASS on full lane (`artifacts/test-runs/20260426-180608`, 112 E2E passed / 344 skipped, perf budgets PASS with JS transfer `425kb`).
+- PR #522: GitHub CI PASS for `verify`, `e2e-smoke`, `site-lock-smoke`, CodeQL, PR Size, Vercel Preview, and Vercel.
+- PR #522: `npm run verify:pre-merge` PASS for `f3a9a7f` with marker `artifacts/verify-pre-merge/20260426-163408.json`.
+- Merge: PR #522 squashed into `a7ec25d` on `2026-04-26`; local `main` synced cleanly after merge.
+
 ## Constraints
 
 - Keep maintenance slices narrow.
@@ -363,3 +394,4 @@ Critical target categories for a `10/10` claim in this brief:
 - `2026-04-26 | in-progress | PR #521 merged as 7a9746a; started maintenance cadence automation from clean main, with runtime pinning now completed and branch cleanup done | next: add cadence runbook/checklist/reminder, resolve perf-budget ratchet, and validate full lane`
 - `2026-04-26 | in-progress | cadence automation implementation added maintenance runbook, monthly checklist, issue template, scheduled reminder workflow, and tightened JS transfer budget from 450kb to 425kb while leaving fresh Stripe sandbox invoice verification deferred before live billing confidence | next: run targeted lint/tests and full verify:pre-pr`
 - `2026-04-26 | in-progress | targeted cadence validation passed: lint, typecheck, YAML parse, perf trend, and perf budgets with JS transfer 425kb (worst margin 28.2%) | next: commit cadence slice, run verify:pre-pr on committed HEAD, push, and open PR`
+- `2026-04-26 | done | PR #522 merged as a7ec25d after green CI and local verify:pre-merge; maintenance baseline moved to done in docs-only closeout | next: run closeout PR validation and keep Stripe fresh-purchase verification as before-live billing carry-forward`
