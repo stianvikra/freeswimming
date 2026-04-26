@@ -59,7 +59,9 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
 - Carry-forward Stripe sandbox verification:
   - PR #517 fixed invoice creation for future one-time Checkout purchases,
   - older sandbox payment-mode purchases do not retroactively gain invoices,
-  - a fresh sandbox purchase after `bd3a9e5` remains a billing-confidence follow-up before live billing is claimed, not a blocker for this maintenance cadence PR.
+  - resolved on `2026-04-26`: fresh sandbox Checkout session `cs_...uT9CS6` completed as
+    paid with `invoice_creation.enabled=true`, invoice `in_...Nz9ezn`, and Billing Portal
+    invoice-history/paid-state evidence for the same customer.
 
 ## Recommended Execution Order
 
@@ -306,7 +308,8 @@ Critical target categories for a `10/10` claim in this brief:
   - recurring maintenance is documented through one runbook, one monthly checklist, one issue template, and one monthly reminder workflow,
   - the carried-forward perf-budget recommendation was resolved with `tighten`: JS transfer default `450kb` -> `425kb`,
   - major dependency migrations remain explicitly deferred to planned/backlog work instead of being bundled into baseline maintenance.
-- Known carry-forward: a fresh Stripe sandbox purchase after `bd3a9e5` must still confirm invoice visibility before live billing confidence is claimed.
+- Stripe carry-forward resolved on `2026-04-26`: a fresh post-`bd3a9e5` sandbox purchase
+  confirmed invoice-backed Checkout and Billing Portal visibility with redacted evidence.
 - No screenshot handoff was required for this closeout because it only moves and updates the task brief lifecycle document.
 
 ## Closeout Validation

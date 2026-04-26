@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildFinanceReconciliationReport,
+  collectStripeSessionRows,
   parseCliArgs,
   parseCsv,
   resolveDateRangeWindow,
@@ -68,6 +69,44 @@ describe("buildFinanceReconciliationReport", () => {
 
     expect(report.unexplainedMismatchCount).toBe(1);
     expect(report.pass).toBe(true);
+  });
+});
+
+describe("collectStripeSessionRows", () => {
+  it("collects invoice fields from the Stripe SDK async iterable list", async () => {
+    async function* sessions() {
+      yield {
+        id: "session_fixture_paid",
+        payment_status: "paid",
+        status: "complete",
+        created: 1777226400,
+        customer: "customer_fixture",
+        invoice: { id: "invoice_fixture" },
+        invoice_creation: { enabled: true },
+        client_reference_id: "11111111-1111-4111-8111-111111111111",
+        metadata: { fs_product_id: "guide_0_1000m" },
+        customer_details: { email: null },
+        amount_total: 9900,
+        currency: "usd",
+      };
+    }
+
+    await expect(collectStripeSessionRows(sessions())).resolves.toEqual([
+      {
+        id: "session_fixture_paid",
+        payment_status: "paid",
+        status: "complete",
+        created: 1777226400,
+        customer: "customer_fixture",
+        invoice: "invoice_fixture",
+        invoice_creation_enabled: true,
+        client_reference_id: "11111111-1111-4111-8111-111111111111",
+        metadata_product_id: "guide_0_1000m",
+        customer_email: "",
+        amount_total: 9900,
+        currency: "usd",
+      },
+    ]);
   });
 });
 
