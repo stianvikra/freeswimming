@@ -251,7 +251,7 @@ async function waitForProgramExportPreviewReady(page: Page) {
 
 async function ensureProgramSchemaReady(page: Page) {
   const schemaWarning = page.getByText(
-    /This canonical program layer is still syncing in this environment\.|Program planning tools are still syncing in this environment\./
+    /This canonical program layer is still syncing in this environment\.|Program builder preview is still syncing in this environment\./
   );
 
   if ((await schemaWarning.count()) > 0 && (await schemaWarning.first().isVisible())) {

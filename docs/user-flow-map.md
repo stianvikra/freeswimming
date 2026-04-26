@@ -56,3 +56,13 @@ flowchart LR
 - `Mark as done` -> `Done`
 - `Lessons` (for course drawer)
 - `Menu` (for main drawer)
+
+## My Library Authenticated IA
+
+- `/my-library`: account home and top-level owner dashboard.
+- `/my-library/profile`: `My Swim Profile` for swimmer identity, CSS, preferences, and personal records.
+- `/my-library/goals`: `Goals` for long-term targets and progress.
+- `/my-library/training`: `My Training` for turning goals into focus cues and notes.
+- `/my-library/workouts`: `My Swim Sessions` for saved swim sessions plus `Build pool session`, `Build open water session`, and `AI session generator`.
+- `/my-library/dryland`: `Dryland Sessions` for saved strength/stretching work and dryland creation.
+- `/my-library/programs/<id>`: `Program builder preview` for optional week/day planning from saved swim sessions.

@@ -528,15 +528,15 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
               Turn goals into next-session work
             </h2>
             <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
-              Goals stay long-term. Use Focus & Notes to turn one goal into the next training
-              priority or a poolside observation without re-entering the same context.
+              Goals stay long-term. Use My Training to turn one goal into the next training priority
+              or a poolside observation without re-entering the same context.
             </p>
           </div>
           <Link
             href="/my-library/training"
             className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
           >
-            Open focus & notes
+            Open My Training
           </Link>
         </div>
       </section>

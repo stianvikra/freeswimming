@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-21-my-library-my-training-ia-and-builder-entrypoint-reconcile-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
-- `updated`: `2026-04-21`
+- `updated`: `2026-04-26`
 
 ## Goal
 
@@ -110,6 +110,38 @@ Critical target categories for `10/10` claim:
   - program builder preview.
 - Produce narrow implementation slices if more than one route changes.
 
+## Implementation Slice
+
+This PR is the first executable reconcile slice:
+
+- no route path changes,
+- no persistence, auth, entitlement, or sync-boundary changes,
+- canonical visible labels are applied to existing entrypoints,
+- route/IA map and support guidance are documented,
+- larger profile/account grouping decisions remain deferred unless a later brief names them.
+
+## Route/IA Map
+
+| Route                       | Canonical label           | Job                                                                 |
+| --------------------------- | ------------------------- | ------------------------------------------------------------------- |
+| `/my-library`               | `My Library`              | account home and top-level owner dashboard                          |
+| `/my-library/profile`       | `My Swim Profile`         | swimmer identity, CSS, preferences, and personal records            |
+| `/my-library/goals`         | `Goals`                   | long-term targets and result/progress tracking                      |
+| `/my-library/training`      | `My Training`             | goal-to-focus workflow, focus cues, and poolside notes              |
+| `/my-library/workouts`      | `My Swim Sessions`        | saved swim sessions plus pool/open-water builder entrypoints        |
+| `/my-library/generator`     | `AI session generator`    | AI-assisted session drafting that saves into `My Swim Sessions`     |
+| `/my-library/dryland`       | `Dryland Sessions`        | saved strength/stretching sessions plus dryland builder entrypoints |
+| `/my-library/programs/<id>` | `Program builder preview` | optional week/day planning from saved swim sessions                 |
+| `/my-library/security`      | legacy account redirect   | redirects signed-in users to `My Library`; no live account surface  |
+
+## Route, Label, And Support Sweep
+
+- Searched identifiers: `Focus & Notes`, `My Training`, `Swim Sessions`, `My Swim Sessions`, `Dryland builder`, `View dryland sessions`, `Dryland Sessions`, `Program planning`, `Program builder preview`, `AI-generated session`, `AI session generator`.
+- Checked surfaces: `app/`, `components/`, `tests/`, `docs/runbooks/`, `docs/user-flow-map.md`, active task briefs, and targeted Help/Admin assertions.
+- Intentional leftovers:
+  - historical `done/` task briefs retain the labels that were true when those PRs shipped,
+  - API/schema error strings using `Dryland builder` remain because this slice does not rename backend contracts.
+
 ## Out Of Scope
 
 - Implementing all child IA changes in one PR.
@@ -157,3 +189,6 @@ Critical target categories for `10/10` claim:
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created from owner IA findings around My Profile, My Training, builder entrypoints, and account/profile grouping | next: implement discovery/IA pass or defer before maintenance baseline`
+- `2026-04-26 | in-progress | started first executable IA reconcile slice from main after PR #514; scoped to canonical labels, route/IA documentation, support guidance, and targeted tests with no route/data movement | next: run targeted validation and screenshot handoff before PR gates`
+- `2026-04-26 | validation checkpoint | typecheck, targeted unit tests, targeted desktop Playwright, and all-brief lint passed; screenshot handoff captured in output/playwright/my-library-training-ia-reconcile-2026-04-26 | next: wait for owner visual approval before verify:pre-pr and PR update`
+- `2026-04-26 | pre-pr checkpoint | owner approved screenshot handoff; npm run verify:pre-pr passed with 113 passed and 343 skipped after full lint/typecheck/unit/build/perf/e2e lane; perf trend recommended tightening a stretch target, held outside this IA slice for a separate budget decision | next: commit, push, open PR, monitor CI, then run verify:pre-merge`

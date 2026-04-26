@@ -2807,7 +2807,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-builder-empty-create-pool")).toBeVisible();
     expect(screen.getByTestId("workout-builder-empty-create-open-water")).toBeVisible();
     expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "AI-generated session" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "AI session generator" })).toHaveAttribute(
       "href",
       "/my-library/generator"
     );
@@ -3061,7 +3061,7 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByRole("button", { name: "Build pool session" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Build open water session" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "AI-generated session" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "AI session generator" })).toHaveAttribute(
       "href",
       "/my-library/generator"
     );

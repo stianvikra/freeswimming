@@ -12,6 +12,14 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - `/preview-access` owns private preview unlock guidance when site-lock is enabled.
 - `/my-library/security` is a legacy protected route that redirects signed-in users to `My Library`.
 
+## My Library IA
+
+- `My Swim Profile` holds swimmer identity, CSS, preferences, and personal records.
+- `My Training` (`/my-library/training`) holds goals-to-focus workflow, focus cues, and poolside notes.
+- `My Swim Sessions` (`/my-library/workouts`) is the saved swim-session list and swim builder entrypoint.
+- `Dryland Sessions` (`/my-library/dryland`) is the saved strength/stretching list and dryland builder entrypoint.
+- `Program builder preview` is optional and only for placing saved swim sessions into week/day slots.
+
 ## Support Answers
 
 - If a user asks which email is signed in: send them to `My Library`.

@@ -439,7 +439,7 @@ export default function WorkoutBuilderHub({
               href="/my-library/generator"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              AI-generated session
+              AI session generator
             </Link>
           </div>
           {recentWorkouts.length > 0 ? (
@@ -670,7 +670,7 @@ export default function WorkoutBuilderHub({
                   href="/my-library/generator"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
                 >
-                  AI-generated session
+                  AI session generator
                 </Link>
                 <Link
                   href="/my-library/workouts"

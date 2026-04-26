@@ -45,7 +45,7 @@ Provide a deterministic first-response flow for production incidents on core rou
 
 Additional `My Library` sub-route checks:
 
-- `/my-library/goals` -> `/my-library/training`
+- `/my-library/goals` -> `/my-library/training` (`My Training`)
   - confirm `Use as focus` and `Add note` links include a canonical `goalId` query param,
   - confirm opening the linked training route preselects the intended goal without mutating the goal row,
   - confirm existing local focus/note draft text is preserved when goal-prefill is applied.
@@ -56,7 +56,7 @@ Additional `My Library` sub-route checks:
   - confirm `/api/my-library/generator/session-draft` returns owner-scoped `200` for session target, `401` for unauthenticated reads, and explicit `422` when program target is chosen in this slice,
   - confirm `/api/my-library/workouts` and `/api/my-library/workouts/[workoutId]` return owner-scoped `200`, fail-closed `401`, and `404` for missing canonical workout ids,
   - confirm `/api/my-library/workouts/[workoutId]/export/pdf` returns owner-scoped printable `200`, fail-closed `401`, `404` for missing canonical workout ids, and `503` when the canonical workouts schema is not ready,
-  - confirm `/my-library/workouts` stays a list-first browse surface with `My Swim Sessions`, `Build pool session`, `Build open water session`, and `AI-generated session` exposed as the primary actions and no hidden editor mutation happening in the background,
+  - confirm `/my-library/workouts` stays a list-first browse surface with `My Swim Sessions`, `Build pool session`, `Build open water session`, and `AI session generator` exposed as the primary actions and no hidden editor mutation happening in the background,
   - confirm `Build pool session` creates a fresh canonical workout row directly and lands on the pool detail route with `Session details` expanded on first load,
   - confirm `Build open water session` creates a fresh canonical workout row directly and lands on the open-water detail route with the environment locked to open water,
   - confirm existing saved-session edits still start from `My Swim Sessions` rather than a chooser tied to the most recently saved session,
