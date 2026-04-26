@@ -1,0 +1,46 @@
+name: Monthly maintenance pass
+description: Track the recurring dependency, runtime, perf, and release-gate maintenance pass.
+title: "Monthly maintenance pass - YYYY-MM"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this issue with `docs/checklists/monthly-maintenance-pass.md` and `docs/runbooks/maintenance-cadence.md`.
+  - type: input
+    id: month
+    attributes:
+      label: Month
+      description: Use `YYYY-MM`.
+      placeholder: "2026-05"
+    validations:
+      required: true
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: Local `main` is clean and up to date.
+        - label: Dependabot PRs and security alerts reviewed.
+        - label: Nightly E2E, admin E2E, CodeQL, and Vercel status reviewed.
+        - label: "`npm audit --omit=dev --audit-level=high` result recorded."
+  - type: checkboxes
+    id: performance
+    attributes:
+      label: Performance Ratchet
+      options:
+        - label: "`npm run test:perf:trend` result recorded."
+        - label: Tighten/hold/revert decision recorded with rationale.
+        - label: Any threshold change was limited to one metric step.
+  - type: checkboxes
+    id: closeout
+    attributes:
+      label: Closeout
+      options:
+        - label: Each maintenance PR has validation evidence and rollback note.
+        - label: Deferred major upgrades have a planned brief or owner.
+        - label: Stripe sandbox invoice follow-up is completed or explicitly deferred before billing confidence is claimed.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes and PR Links
+      description: Add PRs, decisions, deferrals, and validation evidence.

@@ -122,6 +122,7 @@ Useful commands:
   - assistant must explicitly ask owner whether to tighten budgets toward stretch targets.
 - Tighten one step at a time to avoid flaky regressions.
 - Record each tighten/hold/revert decision in the relevant brief or PR summary.
+- Current ratchet baseline: JS transfer default budget tightened from `450kb` to `425kb` on `2026-04-26`; wait for two new weekly green runs before another step.
 
 ## Accessibility
 

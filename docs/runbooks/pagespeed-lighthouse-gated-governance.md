@@ -17,6 +17,17 @@ Run repeatable performance checks for core routes in both public mode and passwo
 - `/course`
 - `/my-library`
 
+## Current Budget Defaults
+
+| Metric        | Default threshold |
+| ------------- | ----------------- |
+| LCP           | `2500ms`          |
+| CLS           | `0.10`            |
+| TBT           | `200ms`           |
+| JS transfer   | `425kb`           |
+| CSS transfer  | `160kb`           |
+| Request count | `130`             |
+
 ## Profiles
 
 | Profile        | Site Lock | Bypass Header                    | What It Measures                                                         |
@@ -93,7 +104,8 @@ Automation note:
 - Recommendation thresholds are configurable:
   - `PERF_BUDGET_TIGHTEN_MIN_WEEKLY_GREENS` (default `2`)
   - `PERF_BUDGET_TIGHTEN_MIN_MARGIN_PCT` (default `15`)
-- If recommendation is `tighten`, raise one stretch budget step and record the decision in the AW-010 checkpoint/PR summary.
+- If recommendation is `tighten`, raise one stretch budget step and record the decision in the active brief checkpoint/PR summary.
+- Latest ratchet decision: `2026-04-26`, `tighten`, JS transfer default `450kb` -> `425kb`.
 
 ## Failure Protocol
 
