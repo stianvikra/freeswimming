@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
 - `updated`: `2026-04-26`
@@ -147,6 +147,28 @@ Critical target categories for `10/10` claim:
 - App-side `Manage billing` copy does not promise invoice history; support guidance now documents the exact missing-invoice checks.
 - `finance:reconcile -- --collect-live` now includes invoice and invoice-creation fields from Stripe Checkout Sessions so sandbox exports can prove whether invoices are intentionally absent or created.
 
+## Closeout Summary
+
+- Shipped via PR #517 and merged to `main` as `bd3a9e5`.
+- Scope completed:
+  - one-time Stripe Checkout Sessions now request invoice creation for future sandbox/live payment-mode purchases,
+  - `/api/portal` remains owner-scoped and no browser request can choose a Stripe customer,
+  - support and finance guidance now explain why older sandbox purchases can show no invoice history,
+  - finance reconciliation exports now include invoice and invoice-creation fields.
+- Known limitation: older sandbox one-time purchases created before `invoice_creation.enabled=true` remain receipt/charge-only and will not retroactively gain invoices in Stripe Billing Portal.
+- Carry-forward verification: create a new sandbox purchase after `bd3a9e5` and confirm the resulting invoice appears in Stripe/customer portal evidence before live billing confidence is claimed.
+- Carry-forward maintenance item: `npm run test:perf:budgets` again recommended tightening one stretch target after two consecutive weekly green runs; budget ratchet decision remains deferred to the maintenance baseline brief.
+- No screenshot handoff was required because this slice changed backend, tests, and docs only, not app UI/layout.
+
+## Closeout Validation
+
+- Targeted tests: `npx vitest run tests/unit/checkout-session-payload.test.ts tests/unit/portal-route.test.ts tests/unit/portal-utils.test.ts tests/unit/finance-reconciliation.test.ts` PASS, 18 tests.
+- `npm run verify:pre-pr`: PASS on implementation branch, full lane, 838 unit tests, build, perf budgets, 112 E2E passed / 344 skipped, log `artifacts/test-runs/20260426-075810/verify.log`.
+- Later `npm run verify:pre-pr` rerun hit an unrelated `poolside-save-image-export` mobile Chromium client-ready timeout; targeted rerun of that exact test passed 1/1 and the same test passed in final pre-merge.
+- GitHub CI for PR #517: PASS for `verify`, `e2e-smoke`, `site-lock-smoke`, `CodeQL`, `size-check`, `deploy-preview`, and Vercel.
+- `npm run verify:pre-merge`: PASS on `afd052caadb140c66e928b993ac4534087b0e782`, full lane, 838 unit tests, build, perf budgets, 113 E2E passed / 343 skipped, marker `artifacts/verify-pre-merge/20260426-072711.json`.
+- Merge: PR #517 squashed into `bd3a9e5` on `2026-04-26`.
+
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created from owner finding that Stripe Billing Portal showed no invoice history after sandbox purchase | next: implement or defer before maintenance baseline`
@@ -154,3 +176,4 @@ Critical target categories for `10/10` claim:
 - `2026-04-26 | in-progress | implemented Checkout invoice_creation payload, owner-scoped portal fallback guard, invoice-aware finance export fields, and support/checklist guidance; targeted Vitest passed for checkout payload, portal route, portal utils, and finance reconciliation | next: run verify:pre-pr, push PR, then pre-merge gate after CI`
 - `2026-04-26 | in-progress | npm run verify:pre-pr PASS (full lane; 838 unit tests, build, perf budgets, 112 E2E passed / 344 skipped; log artifacts/test-runs/20260426-075810/verify.log); Stripe test API summary confirmed 0/10 recent payment sessions had invoice_creation enabled and 5 paid sessions had no invoice | next: commit, push, open PR`
 - `2026-04-26 | in-progress | final pre-PR rerun after docs checkpoint reached E2E and hit one unrelated mobile Chromium client-ready timeout in poolside-save-image-export; targeted rerun of that exact test passed (1/1), matching the earlier full green run | next: commit, push, open PR with flake note`
+- `2026-04-26 | done | PR #517 merged as bd3a9e5 after green CI and local verify:pre-merge; brief moved to done in docs-only closeout | next: continue to maintenance baseline with sandbox re-test and perf-budget ratchet decision carried forward`
