@@ -131,7 +131,7 @@ test.describe("my library training context", () => {
 
     await loginToMyLibraryViaDevBypass(page);
     await gotoWithTransientRetry(page, "/my-library/training", 60_000);
-    await expect(page.getByRole("heading", { name: "Focus & Notes", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "My Training", level: 1 })).toBeVisible();
     await waitForTrainingContextClientReady(page);
 
     await page.getByTestId("training-overview-card-goals").click();
@@ -166,7 +166,7 @@ test.describe("my library training context", () => {
 
     await expect(
       page.getByRole("heading", {
-        name: "Focus & Notes",
+        name: "My Training",
         level: 1,
       })
     ).toBeVisible();
@@ -210,7 +210,7 @@ test.describe("my library training context", () => {
 
     await expect(
       page.getByRole("heading", {
-        name: "Focus & Notes",
+        name: "My Training",
         level: 1,
       })
     ).toBeVisible();
@@ -242,7 +242,7 @@ test.describe("my library training context", () => {
 
     await loginToMyLibraryViaDevBypass(page);
     await gotoWithTransientRetry(page, "/my-library/training", 60_000);
-    await expect(page.getByRole("heading", { name: "Focus & Notes", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "My Training", level: 1 })).toBeVisible();
     await waitForTrainingContextClientReady(page);
 
     if (

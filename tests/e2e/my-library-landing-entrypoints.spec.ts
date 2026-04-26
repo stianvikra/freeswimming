@@ -48,8 +48,9 @@ test.describe("my library landing entrypoints", () => {
     await expect(page.getByRole("heading", { name: "Free Course" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "My Swim Profile" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Focus & Notes" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Swim Sessions" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "My Training" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "My Swim Sessions" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dryland Sessions" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Swim session builder" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Continue Free Course" })).toHaveCount(0);
 
@@ -62,7 +63,7 @@ test.describe("my library landing entrypoints", () => {
     await expect(page.getByRole("link", { name: "Start free course" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Open profile" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Open goals" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Open focus & notes" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Open My Training" })).toHaveCount(0);
 
     const freeCourseCard = page
       .getByRole("heading", { name: "Free Course" })
@@ -80,7 +81,7 @@ test.describe("my library landing entrypoints", () => {
     await expect(goalsCard.getByRole("link", { name: "Open" })).toBeVisible();
 
     const focusCard = page
-      .getByRole("heading", { name: "Focus & Notes" })
+      .getByRole("heading", { name: "My Training" })
       .locator("xpath=ancestor::section[1]");
     await expect(focusCard.getByRole("link", { name: "Open" })).toBeVisible();
 

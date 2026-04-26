@@ -57,13 +57,13 @@ describe("GoalsHub", () => {
     vi.unstubAllGlobals();
   });
 
-  it("shows explicit bridge actions into Focus & Notes for active goals", () => {
+  it("shows explicit bridge actions into My Training for active goals", () => {
     render(<GoalsHub initialGoals={[buildGoal()]} templates={[]} activeLimit={3} />);
 
     expect(
       screen.getByRole("heading", { name: "Turn goals into next-session work" })
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open focus & notes" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open My Training" })).toHaveAttribute(
       "href",
       "/my-library/training"
     );

@@ -118,7 +118,7 @@ export default async function MyLibraryPage() {
       ? `${athleteProfileSnapshot.preferences.preferredWeeklySessionCount} sessions/week`
       : null,
   ].filter((value): value is string => Boolean(value));
-  const focusAndNotesSummary = !trainingContextSnapshot.schemaReady
+  const myTrainingSummary = !trainingContextSnapshot.schemaReady
     ? "This training context is still syncing in this environment."
     : trainingContextSnapshot.focusNeedsPrimarySelection
       ? `You have ${trainingContextSnapshot.openFocuses.length} open focuses and need to choose one primary cue before other My Library surfaces use a single focus.`
@@ -211,9 +211,9 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Focus & Notes</h2>
-                  {focusAndNotesSummary ? (
-                    <p className="mt-2 text-sm text-slate-600">{focusAndNotesSummary}</p>
+                  <h2 className="text-lg font-semibold text-slate-900">My Training</h2>
+                  {myTrainingSummary ? (
+                    <p className="mt-2 text-sm text-slate-600">{myTrainingSummary}</p>
                   ) : null}
                 </div>
                 <Link
@@ -227,7 +227,7 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Swim Sessions</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">My Swim Sessions</h2>
                   {!workoutLibrarySnapshot.schemaReady ? (
                     <p className="mt-2 text-sm text-slate-600">
                       This canonical swim-session layer is still syncing in this environment.
@@ -266,7 +266,7 @@ export default async function MyLibraryPage() {
                     href="/my-library/generator"
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                   >
-                    AI-generated session
+                    AI session generator
                   </Link>
                 </div>
               </div>
@@ -275,7 +275,7 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Dryland builder</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">Dryland Sessions</h2>
                   {!drylandLibrarySnapshot.schemaReady ? (
                     <p className="mt-2 text-sm text-slate-600">
                       This dryland foundation is still syncing in this environment.
@@ -288,7 +288,7 @@ export default async function MyLibraryPage() {
                       href="/my-library/dryland"
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                     >
-                      View dryland sessions
+                      Dryland Sessions
                     </Link>
                   ) : null}
                   {drylandLibrarySnapshot.schemaReady ? (
@@ -324,7 +324,7 @@ export default async function MyLibraryPage() {
                   </div>
                   <p className="mt-2 text-sm text-slate-600">
                     {!programLibrarySnapshot.schemaReady
-                      ? "Program planning tools are still syncing in this environment."
+                      ? "Program builder preview is still syncing in this environment."
                       : latestProgram
                         ? [
                             latestProgram.title,

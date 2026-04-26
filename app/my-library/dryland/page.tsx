@@ -28,7 +28,7 @@ export default async function DrylandSessionsPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">View dryland sessions</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">Dryland Sessions</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
                 Browse saved strength and stretching sessions first, then open one focused session
                 at a time when you want to edit, execute, or finish it.

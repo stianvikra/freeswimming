@@ -67,10 +67,10 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Focus & Notes</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">My Training</h1>
               <p className="mt-2 max-w-[64ch] text-sm text-slate-600">
-                Keep today&apos;s cue clear, keep supporting focuses nearby, and save quick notes
-                from the pool without turning this page into a wall of setup text.
+                Keep goals, today&apos;s cue, supporting focuses, and poolside notes in one training
+                workspace without turning this page into a wall of setup text.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

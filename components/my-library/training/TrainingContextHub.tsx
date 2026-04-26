@@ -268,7 +268,8 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
   const [pendingNoteSaveId, setPendingNoteSaveId] = useState<string | null>(null);
   const [showFocusComposer, setShowFocusComposer] = useState(true);
   const [showNoteComposer, setShowNoteComposer] = useState(true);
-  const [noteListFilters, setNoteListFilters] = useState<NoteListFilters>(DEFAULT_NOTE_LIST_FILTERS);
+  const [noteListFilters, setNoteListFilters] =
+    useState<NoteListFilters>(DEFAULT_NOTE_LIST_FILTERS);
 
   useEffect(() => {
     setIsOnline(readNavigatorOnlineState());
@@ -1038,7 +1039,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
     >
       {!snapshot.schemaReady ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
-          <h2 className="text-lg font-semibold text-slate-900">Focus & Notes are syncing</h2>
+          <h2 className="text-lg font-semibold text-slate-900">My Training is syncing</h2>
           <p className="mt-2 text-sm text-slate-700">
             The new training-context tables are not ready in this environment yet. Refresh after the
             migration has finished.

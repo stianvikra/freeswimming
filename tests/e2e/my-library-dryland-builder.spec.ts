@@ -43,7 +43,7 @@ test.describe("my library dryland builder", () => {
     testInfo.setTimeout(240_000);
 
     await loginToMyLibraryViaDevBypass(page);
-    await expect(page.getByRole("heading", { name: "Dryland builder" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dryland Sessions" })).toBeVisible();
 
     const createButton = page.getByTestId("my-library-create-strength-session");
     const schemaReady = await createButton.isVisible().catch(() => false);

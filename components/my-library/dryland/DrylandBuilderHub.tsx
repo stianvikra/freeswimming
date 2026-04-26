@@ -168,7 +168,7 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">
-            {browseOnly ? "View dryland sessions" : "Dryland builder"}
+            {browseOnly ? "Dryland Sessions" : "Dryland builder"}
           </h2>
           <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
             {browseOnly
@@ -184,7 +184,7 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
               href="/my-library/dryland"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              View dryland sessions
+              Dryland Sessions
             </Link>
           ) : null}
           {drylandLibrary.schemaReady ? (
@@ -388,7 +388,7 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
                   href="/my-library/dryland"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                 >
-                  View dryland sessions
+                  Dryland Sessions
                 </Link>
               ) : null}
             </div>
