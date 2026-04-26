@@ -262,6 +262,16 @@ async function collectRouteMetrics(page, route) {
   });
 }
 
+async function collectRouteMetricsSample(context, route) {
+  const page = await context.newPage();
+  try {
+    await installPerformanceObservers(page);
+    return await collectRouteMetrics(page, route);
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
 function buildFailures(route, metrics) {
   const failures = [];
 
@@ -439,8 +449,6 @@ async function run() {
         : undefined,
     };
     const context = await browser.newContext(contextOptions);
-    const page = await context.newPage();
-    await installPerformanceObservers(page);
 
     const routeRows = [];
     const failures = [];
@@ -448,7 +456,7 @@ async function run() {
     for (const route of ROUTES) {
       const samples = [];
       for (let sampleIndex = 0; sampleIndex < PERF_BUDGET_SAMPLES_PER_ROUTE; sampleIndex += 1) {
-        const metrics = await collectRouteMetrics(page, route);
+        const metrics = await collectRouteMetricsSample(context, route);
         samples.push(normalizeRouteMetrics(metrics));
       }
       const normalizedMetrics = aggregateRouteMetricSamples(samples);
@@ -461,6 +469,7 @@ async function run() {
       failures.push(...buildFailures(route, normalizedMetrics));
     }
 
+    await context.close();
     await browser.close();
 
     printSummary(routeRows);

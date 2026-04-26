@@ -59,7 +59,7 @@ export async function GET() {
   }
 
   const relativePath = getGuide0To1000PdfAssetPath();
-  const absolutePath = path.join(process.cwd(), relativePath);
+  const absolutePath = path.join(/* turbopackIgnore: true */ process.cwd(), relativePath);
 
   try {
     const pdfBuffer = await readFile(absolutePath);
