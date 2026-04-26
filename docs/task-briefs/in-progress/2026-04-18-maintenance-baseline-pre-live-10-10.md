@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-maintenance-baseline-pre-live-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-04-26`
@@ -79,6 +79,23 @@ This brief should be implemented as small safe PRs, in this order:
    - define how patch/minor vs major dependency work is triaged.
 
 Do not batch all three into one PR unless validation shows the diff is still easy to reason about.
+
+## Active Slice: Security Baseline Dependency Refresh
+
+- Scope:
+  - remediate current `next` high/critical production audit findings,
+  - align paired framework packages such as `eslint-config-next`,
+  - keep runtime pinning, cadence automation, Stripe sandbox re-test, and perf-budget ratchet decision as later slices unless needed to complete this security refresh safely.
+- Validation target:
+  - `npm audit --omit=dev --audit-level=high` returns zero high/critical production findings,
+  - targeted dependency/build gates pass before full pre-PR verification.
+- Implementation notes:
+  - `npm audit --omit=dev --audit-level=high` on `2026-04-26` confirmed the production blocker was `next@16.1.6` with one high-severity advisory group.
+  - Updated `next` and `eslint-config-next` from `16.1.6` to `16.2.4`, the current npm `latest` for both packages at execution time.
+  - Left `react` and `react-dom` at `19.2.3`; their `19.2.5` patch is visible in `npm outdated` but not required to clear the production audit blocker.
+  - `npm audit --omit=dev --audit-level=high` now exits cleanly for high/critical production findings; npm still reports a moderate transitive `postcss` advisory under Next, which is outside this slice's high/critical gate.
+  - Next `16.2.4` surfaced a Turbopack NFT warning for dynamic guide PDF asset reads; the PDF routes now mark the existing `process.cwd()` join with `turbopackIgnore` so build tracing remains scoped without changing runtime behavior.
+  - `verify:pre-pr` exposed local perf-budget TBT flakes after the framework refresh; the perf-budget runner now uses a fresh Playwright page per route sample so renderer long tasks from one route/sample cannot leak into the next route's median.
 
 ## Must Now
 
@@ -289,3 +306,9 @@ Critical target categories for a `10/10` claim in this brief:
   - zero production `high`/`critical` audit findings, pinned runtime contract present, cadence documented.
 - Help/Guide and operator training documentation
   - update maintenance/operator runbooks if execution changes local validation or release rhythm.
+
+## Checkpoint Log
+
+- `2026-04-26 | in-progress | started maintenance baseline after pre-maintenance wave closed through PR #518; opened security baseline dependency refresh slice from main 24dd1fd | next: clear Next high/critical production audit finding and run framework validation`
+- `2026-04-26 | in-progress | updated next and eslint-config-next to 16.2.4, confirmed npm audit --omit=dev --audit-level=high exits cleanly, removed stale .next* artifacts after version switch, and fixed a new Turbopack PDF-route trace warning with static ignore comments | next: run full verify:pre-pr, commit, push, and open PR`
+- `2026-04-26 | in-progress | isolated perf-budget sampling after local TBT flakes in full verify; targeted reruns confirmed the route budget remains green when samples do not share one long-lived page | next: rerun full verify:pre-pr and open PR when green`
