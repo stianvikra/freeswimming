@@ -29,7 +29,12 @@ const FALSE_STATUS_VALUES = new Set([
   "no",
 ]);
 
-const STRIPE_SESSION_ID_KEYS = ["id", "session_id", "checkout_session_id", "stripe_checkout_session_id"];
+const STRIPE_SESSION_ID_KEYS = [
+  "id",
+  "session_id",
+  "checkout_session_id",
+  "stripe_checkout_session_id",
+];
 const STRIPE_PAYMENT_STATUS_KEYS = ["payment_status", "status", "paid"];
 const ENTITLEMENT_SESSION_ID_KEYS = [
   "stripe_checkout_session_id",
@@ -129,9 +134,9 @@ function toCsvRows(text) {
     const char = text[i];
     const next = text[i + 1];
 
-    if (char === "\"") {
-      if (inQuotes && next === "\"") {
-        currentCell += "\"";
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        currentCell += '"';
         i += 1;
       } else {
         inQuotes = !inQuotes;
@@ -196,7 +201,9 @@ function parseJsonToRows(value) {
     if (Array.isArray(candidate)) return candidate;
   }
 
-  throw new Error(`Could not find row array in JSON object. Supported keys: ${JSON_ARRAY_KEYS.join(", ")}`);
+  throw new Error(
+    `Could not find row array in JSON object. Supported keys: ${JSON_ARRAY_KEYS.join(", ")}`
+  );
 }
 
 export async function loadRowsFromFile(filePath) {
@@ -273,11 +280,7 @@ function setDifference(first, second) {
   return output.sort();
 }
 
-export function buildFinanceReconciliationReport(
-  stripeRows,
-  entitlementRows,
-  options = {}
-) {
+export function buildFinanceReconciliationReport(stripeRows, entitlementRows, options = {}) {
   const maxUnexplainedMismatch = Number(options.maxUnexplainedMismatch ?? 0);
 
   const stripe = collectUniqueIds(stripeRows, STRIPE_SESSION_ID_KEYS, {
@@ -419,20 +422,10 @@ async function writeRowsJson(filePath, rows) {
   await writeFile(filePath, `${JSON.stringify({ data: rows }, null, 2)}\n`, "utf8");
 }
 
-async function collectStripeRows(window) {
-  const stripeSecretKey = requireEnv("STRIPE_SECRET_KEY");
-  const stripeClient = new Stripe(stripeSecretKey);
+export async function collectStripeSessionRows(sessionList) {
   const rows = [];
 
-  const sessionList = stripeClient.checkout.sessions.list({
-    limit: 100,
-    created: {
-      gte: window.stripeCreatedGte,
-      lte: window.stripeCreatedLte,
-    },
-  });
-
-  for await (const session of sessionList.autoPagingIterable()) {
+  for await (const session of sessionList) {
     rows.push({
       id: session.id,
       payment_status: session.payment_status ?? "",
@@ -450,6 +443,20 @@ async function collectStripeRows(window) {
   }
 
   return rows;
+}
+
+async function collectStripeRows(window) {
+  const stripeSecretKey = requireEnv("STRIPE_SECRET_KEY");
+  const stripeClient = new Stripe(stripeSecretKey);
+  const sessionList = stripeClient.checkout.sessions.list({
+    limit: 100,
+    created: {
+      gte: window.stripeCreatedGte,
+      lte: window.stripeCreatedLte,
+    },
+  });
+
+  return collectStripeSessionRows(sessionList);
 }
 
 async function collectEntitlementRows(window) {
@@ -506,14 +513,20 @@ async function collectLiveInputs(args) {
     outputDir,
     `stripe-checkout-sessions-${window.fromDate}-to-${window.toDate}.json`
   );
-  const entitlementsPath = path.join(outputDir, `entitlements-${window.fromDate}-to-${window.toDate}.json`);
+  const entitlementsPath = path.join(
+    outputDir,
+    `entitlements-${window.fromDate}-to-${window.toDate}.json`
+  );
 
   const [stripeRows, entitlementRows] = await Promise.all([
     collectStripeRows(window),
     collectEntitlementRows(window),
   ]);
 
-  await Promise.all([writeRowsJson(stripePath, stripeRows), writeRowsJson(entitlementsPath, entitlementRows)]);
+  await Promise.all([
+    writeRowsJson(stripePath, stripeRows),
+    writeRowsJson(entitlementsPath, entitlementRows),
+  ]);
 
   console.log(
     `[finance-reconcile] Collected live exports for ${window.fromDate}..${window.toDate} into ${outputDir}`
@@ -627,7 +640,9 @@ export async function runCli(argv = process.argv.slice(2)) {
     );
   }
 
-  const resolvedInputs = args.collectLive ? await collectLiveInputs(args) : await resolveInputPaths(args);
+  const resolvedInputs = args.collectLive
+    ? await collectLiveInputs(args)
+    : await resolveInputPaths(args);
 
   if (!resolvedInputs.stripePath || !resolvedInputs.entitlementsPath) {
     throw new Error("Provide either --input-dir, or both --stripe and --entitlements.");
@@ -662,8 +677,7 @@ export async function runCli(argv = process.argv.slice(2)) {
   return 0;
 }
 
-const isCliEntrypoint =
-  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+const isCliEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isCliEntrypoint) {
   runCli().catch((error) => {

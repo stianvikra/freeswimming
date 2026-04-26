@@ -156,7 +156,10 @@ Critical target categories for `10/10` claim:
   - support and finance guidance now explain why older sandbox purchases can show no invoice history,
   - finance reconciliation exports now include invoice and invoice-creation fields.
 - Known limitation: older sandbox one-time purchases created before `invoice_creation.enabled=true` remain receipt/charge-only and will not retroactively gain invoices in Stripe Billing Portal.
-- Carry-forward verification: create a new sandbox purchase after `bd3a9e5` and confirm the resulting invoice appears in Stripe/customer portal evidence before live billing confidence is claimed.
+- Carry-forward verification resolved on `2026-04-26`: a fresh post-`bd3a9e5` sandbox
+  Checkout purchase (`cs_...uT9CS6`) completed as paid with `invoice_creation.enabled=true`,
+  invoice `in_...Nz9ezn`, and Billing Portal invoice-history/paid-state evidence for the same
+  customer. The raw Stripe IDs, customer email, portal URL, and finance exports were not committed.
 - Carry-forward maintenance item: `npm run test:perf:budgets` again recommended tightening one stretch target after two consecutive weekly green runs; budget ratchet decision remains deferred to the maintenance baseline brief.
 - No screenshot handoff was required because this slice changed backend, tests, and docs only, not app UI/layout.
 

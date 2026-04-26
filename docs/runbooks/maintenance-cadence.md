@@ -46,7 +46,7 @@ Do not take another stretch-target step until at least two weekly green runs hav
 
 ## Billing Carry-Forward
 
-The Stripe sandbox invoice follow-up is not part of routine maintenance cadence. Before live billing confidence is claimed, create one fresh sandbox purchase after `bd3a9e5` and confirm invoice visibility in Stripe/customer portal evidence, or keep that item explicitly deferred.
+The Stripe sandbox invoice follow-up is not part of routine maintenance cadence. It was resolved on `2026-04-26` with one fresh post-`bd3a9e5` sandbox purchase that confirmed invoice-backed Checkout, finance reconciliation, and Billing Portal invoice-history evidence. Repeat this check before live billing confidence only if the checkout, portal, webhook, or finance reconciliation contract changes.
 
 ## Release Gate
 

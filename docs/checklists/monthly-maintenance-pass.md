@@ -37,7 +37,7 @@ Use this checklist for the monthly issue created by `.github/workflows/monthly-m
 
 ## Billing Carry-Forward
 
-- [ ] If live billing confidence is in scope this month, create one fresh Stripe sandbox purchase after `bd3a9e5` and confirm invoice visibility.
+- [ ] If checkout, portal, webhook, or finance reconciliation changed this month, repeat the fresh Stripe sandbox purchase invoice-visibility check.
 - [ ] If not in scope, record the deferral and do not claim live billing confidence.
 
 ## Closeout
