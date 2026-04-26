@@ -80,7 +80,7 @@ This brief should be implemented as small safe PRs, in this order:
 
 Do not batch all three into one PR unless validation shows the diff is still easy to reason about.
 
-## Active Slice: Security Baseline Dependency Refresh
+## Completed Slice: Security Baseline Dependency Refresh
 
 - Scope:
   - remediate current `next` high/critical production audit findings,
@@ -96,6 +96,26 @@ Do not batch all three into one PR unless validation shows the diff is still eas
   - `npm audit --omit=dev --audit-level=high` now exits cleanly for high/critical production findings; npm still reports a moderate transitive `postcss` advisory under Next, which is outside this slice's high/critical gate.
   - Next `16.2.4` surfaced a Turbopack NFT warning for dynamic guide PDF asset reads; the PDF routes now mark the existing `process.cwd()` join with `turbopackIgnore` so build tracing remains scoped without changing runtime behavior.
   - `verify:pre-pr` exposed local perf-budget TBT flakes after the framework refresh; the perf-budget runner now uses a fresh Playwright page per route sample so renderer long tasks from one route/sample cannot leak into the next route's median.
+  - PR `#519` merged as `e5a64dd` on `2026-04-26`; local `main` was clean after post-merge sync.
+
+## Active Slice: Runtime Pinning Baseline
+
+- Scope:
+  - declare the local Node runtime through repo-root `.nvmrc`,
+  - declare the package manager and Node engine in `package.json`,
+  - update GitHub Actions setup-node jobs to read the same `.nvmrc` file instead of duplicating hardcoded runtime values,
+  - keep maintenance cadence automation, perf-budget ratchet decision, and additional dependency hygiene as later slices.
+- Runtime contract:
+  - `.nvmrc`: `20`
+  - `package.json` `engines.node`: `>=20.17.0 <21`
+  - `package.json` `packageManager`: `npm@10.8.2`
+- Validation target:
+  - changed workflow YAML resolves Node through `node-version-file: .nvmrc`,
+  - package metadata and lockfile stay aligned,
+  - full PR validation remains green after the CI/runtime contract moves from implicit workflow literals to repo-owned files.
+- Implementation notes:
+  - Local shell initially resolved Node `v24.13.0`; `nvm install 20` resolved the pinned line to Node `v20.20.2` with npm `10.8.2`, so `packageManager` records that bundled npm version.
+  - No runtime app code, route behavior, dependency versions, secrets, or UI surfaces are changed in this slice.
 
 ## Must Now
 
@@ -312,3 +332,5 @@ Critical target categories for a `10/10` claim in this brief:
 - `2026-04-26 | in-progress | started maintenance baseline after pre-maintenance wave closed through PR #518; opened security baseline dependency refresh slice from main 24dd1fd | next: clear Next high/critical production audit finding and run framework validation`
 - `2026-04-26 | in-progress | updated next and eslint-config-next to 16.2.4, confirmed npm audit --omit=dev --audit-level=high exits cleanly, removed stale .next* artifacts after version switch, and fixed a new Turbopack PDF-route trace warning with static ignore comments | next: run full verify:pre-pr, commit, push, and open PR`
 - `2026-04-26 | in-progress | isolated perf-budget sampling after local TBT flakes in full verify; targeted reruns confirmed the route budget remains green when samples do not share one long-lived page | next: rerun full verify:pre-pr and open PR when green`
+- `2026-04-26 | in-progress | PR #519 merged as e5a64dd; started runtime pinning baseline from clean main and moved CI setup-node jobs toward .nvmrc-owned Node 20 contract | next: validate package metadata, run targeted gates, then full verify:pre-pr`
+- `2026-04-26 | in-progress | runtime pinning slice validated on Node v20.20.2/npm 10.8.2; npm ci, lint/typecheck, production audit high/critical gate, and verify:pre-pr passed after rerunning one network-flaked workout-builder E2E in isolation | next: commit, push, open PR, monitor CI, then run verify:pre-merge`
