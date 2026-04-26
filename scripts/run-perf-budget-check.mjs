@@ -49,7 +49,7 @@ const BUDGETS = {
   lcpMs: Number(process.env.PERF_BUDGET_LCP_MS ?? 2500),
   cls: Number(process.env.PERF_BUDGET_CLS ?? 0.1),
   tbtMs: Number(process.env.PERF_BUDGET_TBT_MS ?? 200),
-  jsTransferKb: Number(process.env.PERF_BUDGET_JS_TRANSFER_KB ?? 450),
+  jsTransferKb: Number(process.env.PERF_BUDGET_JS_TRANSFER_KB ?? 425),
   cssTransferKb: Number(process.env.PERF_BUDGET_CSS_TRANSFER_KB ?? 160),
   requestCount: Number(process.env.PERF_BUDGET_REQUEST_COUNT ?? 130),
 };
@@ -137,20 +137,30 @@ function normalizeRouteMetrics(metrics) {
 
 function aggregateRouteMetricSamples(samples) {
   return {
-    lcpMs: median(samples.map((sample) => sample.lcpMs), null),
+    lcpMs: median(
+      samples.map((sample) => sample.lcpMs),
+      null
+    ),
     cls: median(samples.map((sample) => sample.cls)),
     tbtMs: median(samples.map((sample) => sample.tbtMs)),
     longTaskCount: median(samples.map((sample) => sample.longTaskCount)),
     jsTransferKb: median(samples.map((sample) => sample.jsTransferKb)),
     cssTransferKb: median(samples.map((sample) => sample.cssTransferKb)),
     requestCount: median(samples.map((sample) => sample.requestCount)),
-    fcpMs: median(samples.map((sample) => toFiniteNumber(sample.fcpMs, NaN)), null),
+    fcpMs: median(
+      samples.map((sample) => toFiniteNumber(sample.fcpMs, NaN)),
+      null
+    ),
     domContentLoadedMs: median(
       samples.map((sample) => toFiniteNumber(sample.domContentLoadedMs, NaN)),
       null
     ),
-    loadMs: median(samples.map((sample) => toFiniteNumber(sample.loadMs, NaN)), null),
-    observerSetupError: samples.find((sample) => sample.observerSetupError)?.observerSetupError ?? null,
+    loadMs: median(
+      samples.map((sample) => toFiniteNumber(sample.loadMs, NaN)),
+      null
+    ),
+    observerSetupError:
+      samples.find((sample) => sample.observerSetupError)?.observerSetupError ?? null,
   };
 }
 
@@ -343,7 +353,9 @@ function printSummary(routeRows) {
   console.log(
     `[perf-budget] Profile: ${PERF_BUDGET_PROFILE} (SITE_LOCK_ENABLED=${PERF_BUDGET_SITE_LOCK_ENABLED}, bypass-token=${PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN ? "yes" : "no"})`
   );
-  console.log(`[perf-budget] Route metrics (median of ${PERF_BUDGET_SAMPLES_PER_ROUTE} sample(s)):`);
+  console.log(
+    `[perf-budget] Route metrics (median of ${PERF_BUDGET_SAMPLES_PER_ROUTE} sample(s)):`
+  );
   for (const row of routeRows) {
     const cells = [
       `${row.route.padEnd(12)}`,
@@ -361,7 +373,9 @@ function printSummary(routeRows) {
 async function writeReportIfRequested(report) {
   if (!PERF_BUDGET_OUTPUT) return;
   const outputPath = PERF_BUDGET_OUTPUT;
-  const outputDir = outputPath.includes("/") ? outputPath.slice(0, outputPath.lastIndexOf("/")) : ".";
+  const outputDir = outputPath.includes("/")
+    ? outputPath.slice(0, outputPath.lastIndexOf("/"))
+    : ".";
   await mkdir(outputDir, { recursive: true });
   await writeFile(outputPath, JSON.stringify(report, null, 2), "utf8");
   console.log(`[perf-budget] Wrote JSON report: ${outputPath}`);
@@ -534,7 +548,9 @@ async function run() {
     ]);
 
     if (!serverClosed) {
-      console.warn("[perf-budget] Timed out while closing perf-budget server; continuing shutdown.");
+      console.warn(
+        "[perf-budget] Timed out while closing perf-budget server; continuing shutdown."
+      );
     }
   }
 }

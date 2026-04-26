@@ -53,12 +53,13 @@ Bring the repo and runtime maintenance baseline to a pre-live 10/10 level: no kn
   - PR #509 carried the same recommendation forward while keeping the `My Swim Profile` IA/copy slice narrow,
   - PR #512 reconfirmed that recommendation on `2026-04-25` with `35.6%` worst margin (`artifacts/test-runs/20260425-152253/verify.log`),
   - PR #517 reconfirmed that recommendation on `2026-04-26` with `35.6%` worst margin (`artifacts/test-runs/20260426-090528/verify.log`),
+  - PR #521 reconfirmed that recommendation on `2026-04-26` with `32.2%` worst margin after the runtime pinning slice,
   - these product slices intentionally deferred the ratchet decision out of feature work,
-  - this maintenance baseline must review `artifacts/perf-budgets/trend-log.ndjson`, decide `tighten` / `hold` / `revert`, and record the decision in the active brief and PR summary.
+  - this maintenance cadence slice resolves the ratchet with `tighten`: default JS transfer budget moves from `450kb` to `425kb`.
 - Carry-forward Stripe sandbox verification:
   - PR #517 fixed invoice creation for future one-time Checkout purchases,
   - older sandbox payment-mode purchases do not retroactively gain invoices,
-  - the first maintenance/billing follow-up should create a fresh sandbox purchase after `bd3a9e5` and confirm invoice visibility in Stripe/customer portal evidence before claiming live billing confidence.
+  - a fresh sandbox purchase after `bd3a9e5` remains a billing-confidence follow-up before live billing is claimed, not a blocker for this maintenance cadence PR.
 
 ## Recommended Execution Order
 
@@ -98,7 +99,7 @@ Do not batch all three into one PR unless validation shows the diff is still eas
   - `verify:pre-pr` exposed local perf-budget TBT flakes after the framework refresh; the perf-budget runner now uses a fresh Playwright page per route sample so renderer long tasks from one route/sample cannot leak into the next route's median.
   - PR `#519` merged as `e5a64dd` on `2026-04-26`; local `main` was clean after post-merge sync.
 
-## Active Slice: Runtime Pinning Baseline
+## Completed Slice: Runtime Pinning Baseline
 
 - Scope:
   - declare the local Node runtime through repo-root `.nvmrc`,
@@ -116,13 +117,38 @@ Do not batch all three into one PR unless validation shows the diff is still eas
 - Implementation notes:
   - Local shell initially resolved Node `v24.13.0`; `nvm install 20` resolved the pinned line to Node `v20.20.2` with npm `10.8.2`, so `packageManager` records that bundled npm version.
   - No runtime app code, route behavior, dependency versions, secrets, or UI surfaces are changed in this slice.
+  - PR `#521` merged as `7a9746a` on `2026-04-26`; local `main` was clean after post-merge sync and branch cleanup.
+
+## Active Slice: Maintenance Cadence Automation
+
+- Scope:
+  - add one canonical maintenance cadence runbook,
+  - add one monthly maintenance checklist,
+  - add a repo-native monthly GitHub issue reminder workflow,
+  - add a manual issue template fallback for the same monthly pass,
+  - resolve the carried-forward perf-budget recommendation by tightening one threshold step,
+  - keep major dependency migrations and fresh Stripe sandbox purchase verification as separate follow-up work.
+- Cadence contract:
+  - weekly: review Dependabot PRs, security alerts, CodeQL, and nightly/admin E2E health,
+  - monthly: complete the auto-created maintenance issue using the repo checklist,
+  - quarterly: review deferred major upgrades and decide whether to open fresh planned briefs.
+- Perf ratchet decision:
+  - decision: `tighten`,
+  - metric: JS transfer default budget,
+  - change: `450kb` -> `425kb`,
+  - rationale: multiple consecutive green weekly runs with the latest worst margin still above the tighten threshold; recent measured JS transfer remained about `305kb`.
+- Validation target:
+  - runbook/checklist/template/workflow are internally linked,
+  - workflow creates at most one open monthly issue per `YYYY-MM`,
+  - perf budget remains green after the JS transfer threshold ratchet,
+  - full PR validation remains green because this slice touches workflow and runtime script files.
 
 ## Must Now
 
 - Remove all known `high` or `critical` production dependency findings on current `main`.
 - Lock the runtime contract explicitly in repo files, not only in CI workflow YAML.
 - Define the maintenance cadence that should happen weekly, monthly, and quarterly.
-- Resolve the carried-forward perf-budget stretch-target recommendation from PRs #496, #507, #509, #512, and #517 with a documented `tighten` / `hold` / `revert` decision.
+- Resolve the carried-forward perf-budget stretch-target recommendation from PRs #496, #507, #509, #512, #517, and #521 with a documented `tighten` / `hold` / `revert` decision.
 - Keep major migrations explicitly deferred into separate planned briefs or backlog items.
 
 ## Before Live
@@ -227,7 +253,7 @@ Critical target categories for a `10/10` claim in this brief:
 3. One canonical maintenance runbook/checklist exists and defines weekly, monthly, and quarterly cadence.
 4. Major dependency migrations remain explicitly deferred into separate planned work, not silently bundled into the baseline pass.
 5. All baseline child PRs are narrow enough that root cause remains debuggable.
-6. The carried-forward perf-budget stretch-target recommendation from PRs `#496`, `#507`, `#509`, `#512`, and `#517` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
+6. The carried-forward perf-budget stretch-target recommendation from PRs `#496`, `#507`, `#509`, `#512`, `#517`, and `#521` is reviewed against current trend evidence, and the baseline PR records `tighten`, `hold`, or `revert` with rationale.
 7. A fresh post-`bd3a9e5` Stripe sandbox purchase confirms invoice visibility, or the baseline records why that verification is deferred before live billing confidence is claimed.
 
 ## Validation
@@ -334,3 +360,6 @@ Critical target categories for a `10/10` claim in this brief:
 - `2026-04-26 | in-progress | isolated perf-budget sampling after local TBT flakes in full verify; targeted reruns confirmed the route budget remains green when samples do not share one long-lived page | next: rerun full verify:pre-pr and open PR when green`
 - `2026-04-26 | in-progress | PR #519 merged as e5a64dd; started runtime pinning baseline from clean main and moved CI setup-node jobs toward .nvmrc-owned Node 20 contract | next: validate package metadata, run targeted gates, then full verify:pre-pr`
 - `2026-04-26 | in-progress | runtime pinning slice validated on Node v20.20.2/npm 10.8.2; npm ci, lint/typecheck, production audit high/critical gate, and verify:pre-pr passed after rerunning one network-flaked workout-builder E2E in isolation | next: commit, push, open PR, monitor CI, then run verify:pre-merge`
+- `2026-04-26 | in-progress | PR #521 merged as 7a9746a; started maintenance cadence automation from clean main, with runtime pinning now completed and branch cleanup done | next: add cadence runbook/checklist/reminder, resolve perf-budget ratchet, and validate full lane`
+- `2026-04-26 | in-progress | cadence automation implementation added maintenance runbook, monthly checklist, issue template, scheduled reminder workflow, and tightened JS transfer budget from 450kb to 425kb while leaving fresh Stripe sandbox invoice verification deferred before live billing confidence | next: run targeted lint/tests and full verify:pre-pr`
+- `2026-04-26 | in-progress | targeted cadence validation passed: lint, typecheck, YAML parse, perf trend, and perf budgets with JS transfer 425kb (worst margin 28.2%) | next: commit cadence slice, run verify:pre-pr on committed HEAD, push, and open PR`

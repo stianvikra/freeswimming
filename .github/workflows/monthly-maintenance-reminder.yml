@@ -1,0 +1,86 @@
+name: Monthly Maintenance Reminder
+
+on:
+  schedule:
+    # Monthly reminder near the start of the Norway workday.
+    - cron: "30 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: monthly-maintenance-reminder
+  cancel-in-progress: false
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create monthly maintenance issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const now = new Date();
+            const month = now.toISOString().slice(0, 7);
+            const title = `Monthly maintenance pass - ${month}`;
+            const { owner, repo } = context.repo;
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+
+            const existing = openIssues.find(
+              (issue) => !issue.pull_request && issue.title === title
+            );
+
+            if (existing) {
+              await core.summary
+                .addHeading("Monthly maintenance issue already exists")
+                .addLink(title, existing.html_url)
+                .write();
+              return;
+            }
+
+            const body = [
+              "## Monthly Maintenance Pass",
+              "",
+              `Month: \`${month}\``,
+              "",
+              "Use these repo-owned references:",
+              "",
+              "- `docs/runbooks/maintenance-cadence.md`",
+              "- `docs/checklists/monthly-maintenance-pass.md`",
+              "",
+              "## Required Checks",
+              "",
+              "- [ ] Review Dependabot PRs and security alerts.",
+              "- [ ] Review CodeQL, nightly E2E, admin E2E, and Vercel status.",
+              "- [ ] Run or review `npm audit --omit=dev --audit-level=high`.",
+              "- [ ] Run `npm run test:perf:trend` and record `tighten` / `hold` / `revert`.",
+              "- [ ] Keep major upgrades deferred to planned briefs unless explicitly approved.",
+              "- [ ] Record any Stripe sandbox invoice follow-up as completed or deferred before billing confidence is claimed.",
+              "- [ ] Link maintenance PRs and validation evidence before closing this issue.",
+              "",
+              "## Notes",
+              "",
+              "- PRs:",
+              "- Decisions:",
+              "- Deferrals:",
+            ].join("\n");
+
+            const issue = await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body,
+            });
+
+            await core.summary
+              .addHeading("Created monthly maintenance issue")
+              .addLink(title, issue.data.html_url)
+              .write();
