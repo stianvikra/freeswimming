@@ -54,6 +54,24 @@ async function resolveStripeCustomerId(params: {
     return null;
   }
 
+  const { data: ownedEntitlementMissingCustomer, error: missingCustomerError } = await supabase
+    .from("entitlements")
+    .select("id")
+    .eq("user_id", userId)
+    .is("stripe_customer_id", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (missingCustomerError) {
+    throw new Error(
+      `Could not verify owned entitlement before customer fallback: ${missingCustomerError.message}`
+    );
+  }
+
+  if (!ownedEntitlementMissingCustomer) {
+    return null;
+  }
+
   const customers = await stripe.customers.list({
     email: normalizedEmail,
     limit: 10,

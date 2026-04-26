@@ -1,0 +1,68 @@
+import { describe, expect, it } from "vitest";
+import type { CatalogProduct } from "@/lib/commerce/catalog";
+import { buildCheckoutSessionPayload } from "@/lib/commerce/checkout";
+
+const product: CatalogProduct = {
+  id: "guide_poolside",
+  slug: "poolside-guide",
+  title: "Poolside guide",
+  kind: "course_addon",
+  stripePriceId: "price_test_poolside",
+  active: true,
+};
+
+describe("buildCheckoutSessionPayload", () => {
+  it("enables post-purchase invoice creation for one-time Checkout purchases", () => {
+    const user = {
+      id: "11111111-1111-4111-8111-111111111111",
+      email: "swimmer@example.com",
+    };
+    const payload = buildCheckoutSessionPayload({
+      appUrl: "https://freeswimming.example",
+      cancelPath: "/my-library",
+      product,
+      user,
+    });
+
+    expect(payload).toMatchObject({
+      mode: "payment",
+      customer_creation: "always",
+      allow_promotion_codes: true,
+      success_url: "https://freeswimming.example/checkout/success?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: "https://freeswimming.example/my-library",
+      line_items: [{ price: "price_test_poolside", quantity: 1 }],
+      client_reference_id: user.id,
+      customer_email: user.email,
+    });
+    expect(payload.metadata).toEqual({
+      fs_product_id: "guide_poolside",
+      fs_product_slug: "poolside-guide",
+      fs_product_kind: "course_addon",
+      fs_user_id: user.id,
+    });
+    expect(payload.invoice_creation).toEqual({
+      enabled: true,
+      invoice_data: {
+        metadata: payload.metadata,
+      },
+    });
+  });
+
+  it("falls back to a local cancel path and omits absent user fields", () => {
+    const payload = buildCheckoutSessionPayload({
+      appUrl: "https://freeswimming.example",
+      cancelPath: "https://evil.example/return",
+      product,
+      user: null,
+    });
+
+    expect(payload.cancel_url).toBe("https://freeswimming.example/programs");
+    expect(payload).not.toHaveProperty("client_reference_id");
+    expect(payload).not.toHaveProperty("customer_email");
+    expect(payload.metadata).toEqual({
+      fs_product_id: "guide_poolside",
+      fs_product_slug: "poolside-guide",
+      fs_product_kind: "course_addon",
+    });
+  });
+});

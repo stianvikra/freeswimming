@@ -62,6 +62,14 @@ function requireEnv(name) {
   return value;
 }
 
+function serializeStripeReference(value) {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && typeof value.id === "string") {
+    return value.id;
+  }
+  return "";
+}
+
 function parseIsoDateStart(dateValue, flagName) {
   if (!ISO_DATE_PATTERN.test(dateValue)) {
     throw new Error(`${flagName} must use YYYY-MM-DD format.`);
@@ -431,6 +439,10 @@ async function collectStripeRows(window) {
       status: session.status ?? "",
       created: session.created,
       customer: session.customer ?? "",
+      invoice: serializeStripeReference(session.invoice),
+      invoice_creation_enabled: Boolean(session.invoice_creation?.enabled),
+      client_reference_id: session.client_reference_id ?? "",
+      metadata_product_id: session.metadata?.fs_product_id ?? "",
       customer_email: session.customer_details?.email ?? "",
       amount_total: session.amount_total ?? null,
       currency: session.currency ?? "",
