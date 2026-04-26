@@ -48,6 +48,7 @@ npm run finance:reconcile -- \
 - Required env: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
 - Date window is UTC and inclusive (`--from..--to`).
 - Command auto-collects Stripe checkout sessions + entitlement rows, writes JSON exports, then runs deterministic mismatch checks.
+- Stripe session exports include customer ID, invoice ID, `invoice_creation.enabled`, `client_reference_id`, and product metadata so missing Billing Portal invoice history can be classified as either pre-invoice-creation legacy behavior or a current checkout bug.
 
 Fallback mode: stage both exports in one folder using filename hints:
 

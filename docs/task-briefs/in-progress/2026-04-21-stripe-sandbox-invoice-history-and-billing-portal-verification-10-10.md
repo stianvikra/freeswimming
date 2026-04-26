@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-21-stripe-sandbox-invoice-history-and-billing-portal-verification-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
-- `updated`: `2026-04-21`
+- `updated`: `2026-04-26`
 
 ## Goal
 
@@ -138,6 +138,19 @@ Critical target categories for `10/10` claim:
 - Required if the user-facing Manage billing expectation changes.
 - Support notes must include how to diagnose missing invoice history.
 
+## Implementation Notes
+
+- Root cause from code audit and Stripe documentation: the app used one-time Checkout Sessions (`mode=payment`) without `invoice_creation.enabled=true`; Stripe only auto-generates invoices for subscriptions, while one-time Checkout purchases need explicit invoice creation.
+- Read-only Stripe test API evidence on `2026-04-26`: inspected 10 recent Checkout Sessions, all 10 were payment-mode, 5 were paid, 6 had a customer, 0 had an invoice, 0 had invoice creation enabled, and 5 paid sessions had no invoice. No raw secret, email, or full Stripe ID was output.
+- Billing Portal can show invoices for the authenticated user's Stripe customer, but older sandbox one-time purchases created without invoice creation remain receipt/charge-only and do not retroactively gain portal invoice history.
+- `/api/portal` does not accept a customer ID from the browser; it resolves the Stripe customer from the authenticated Supabase user and owned entitlement records, with email only used for best-effort guest-entitlement attachment and repairing an already owned entitlement missing `stripe_customer_id`.
+- App-side `Manage billing` copy does not promise invoice history; support guidance now documents the exact missing-invoice checks.
+- `finance:reconcile -- --collect-live` now includes invoice and invoice-creation fields from Stripe Checkout Sessions so sandbox exports can prove whether invoices are intentionally absent or created.
+
 ## Checkpoint Log
 
 - `2026-04-21 | planned | created from owner finding that Stripe Billing Portal showed no invoice history after sandbox purchase | next: implement or defer before maintenance baseline`
+- `2026-04-26 | in-progress | branch stripe-sandbox-invoice-portal-verification from main ecbc6ba; Stripe docs confirmed one-time Checkout purchases require invoice_creation.enabled=true for paid invoices | next: implement checkout payload, support runbook, targeted tests`
+- `2026-04-26 | in-progress | implemented Checkout invoice_creation payload, owner-scoped portal fallback guard, invoice-aware finance export fields, and support/checklist guidance; targeted Vitest passed for checkout payload, portal route, portal utils, and finance reconciliation | next: run verify:pre-pr, push PR, then pre-merge gate after CI`
+- `2026-04-26 | in-progress | npm run verify:pre-pr PASS (full lane; 838 unit tests, build, perf budgets, 112 E2E passed / 344 skipped; log artifacts/test-runs/20260426-075810/verify.log); Stripe test API summary confirmed 0/10 recent payment sessions had invoice_creation enabled and 5 paid sessions had no invoice | next: commit, push, open PR`
+- `2026-04-26 | in-progress | final pre-PR rerun after docs checkpoint reached E2E and hit one unrelated mobile Chromium client-ready timeout in poolside-save-image-export; targeted rerun of that exact test passed (1/1), matching the earlier full green run | next: commit, push, open PR with flake note`
