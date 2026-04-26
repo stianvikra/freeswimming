@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-21-my-library-my-training-ia-and-builder-entrypoint-reconcile-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-21`
 - `updated`: `2026-04-26`
@@ -168,6 +168,28 @@ This PR is the first executable reconcile slice:
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
 
+## Closeout Summary
+
+- Shipped via PR #515 and merged to `main` as `871bcd9`.
+- Scope completed as the first executable IA reconcile slice:
+  - `Focus & Notes` is now presented as `My Training`,
+  - saved swim sessions are presented as `My Swim Sessions`,
+  - the AI entrypoint is labeled `AI session generator`,
+  - dryland browse surfaces are labeled `Dryland Sessions`,
+  - program detail copy uses `Program builder preview`.
+- No route path, schema, auth, billing, entitlement, persistence, or sync-boundary behavior changed.
+- Support/runbook and user-flow documentation were updated with the canonical route/IA map.
+- Screenshot handoff was approved from `output/playwright/my-library-training-ia-reconcile-2026-04-26`.
+- Deferred follow-up: profile/account grouping and any route-path consolidation remain out of scope until a later named brief.
+- Perf trend note: verification recommended tightening a stretch performance target after two weekly green runs; this IA closeout records the recommendation but does not change budgets.
+
+## Closeout Validation
+
+- `npm run verify:pre-pr`: PASS on implementation commit `cc84f0e`, 113 passed / 343 skipped.
+- GitHub CI for PR #515: PASS for `verify`, `e2e-smoke`, `site-lock-smoke`, `CodeQL`, `size-check`, `deploy-preview`, and Vercel.
+- `npm run verify:pre-merge`: PASS on implementation commit `cc84f0e`, 112 passed / 344 skipped, marker `artifacts/verify-pre-merge/20260426-044742.json`.
+- Merge: PR #515 squashed into `871bcd9` on `2026-04-26`.
+
 ## Manual QA Environments
 
 - Local and Vercel preview.
@@ -192,3 +214,4 @@ This PR is the first executable reconcile slice:
 - `2026-04-26 | in-progress | started first executable IA reconcile slice from main after PR #514; scoped to canonical labels, route/IA documentation, support guidance, and targeted tests with no route/data movement | next: run targeted validation and screenshot handoff before PR gates`
 - `2026-04-26 | validation checkpoint | typecheck, targeted unit tests, targeted desktop Playwright, and all-brief lint passed; screenshot handoff captured in output/playwright/my-library-training-ia-reconcile-2026-04-26 | next: wait for owner visual approval before verify:pre-pr and PR update`
 - `2026-04-26 | pre-pr checkpoint | owner approved screenshot handoff; npm run verify:pre-pr passed with 113 passed and 343 skipped after full lint/typecheck/unit/build/perf/e2e lane; perf trend recommended tightening a stretch target, held outside this IA slice for a separate budget decision | next: commit, push, open PR, monitor CI, then run verify:pre-merge`
+- `2026-04-26 | done | PR #515 merged as 871bcd9 after green CI and local verify:pre-merge; brief moved to done in docs-only closeout | next: continue with remaining pre-maintenance work before maintenance baseline`
