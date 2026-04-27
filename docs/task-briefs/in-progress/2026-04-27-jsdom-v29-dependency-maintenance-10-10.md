@@ -128,7 +128,11 @@ Critical target categories for `10/10` claim:
 - Dependency install checked with repo Node/npm lane: Node `20.20.2`, npm `10.8.2`, `npm ls jsdom --depth=0` reports `jsdom@29.0.2`.
 - `npm run lint:briefs:all`: PASS for all 200 task brief files.
 - Targeted jsdom-backed component/unit coverage: `npx vitest run tests/unit/session-generator-panel.test.tsx tests/unit/workout-builder-hub.test.tsx tests/unit/poolside-preview-page-client.test.tsx tests/unit/program-builder-hub.test.tsx` PASS, 4 files / 74 tests.
-- Full local release gates pending on the rebased branch.
+- First full local `npm run verify:pre-pr` attempt reached the browser E2E lane after passing briefs, admin/env/PR-body lint, ESLint, typecheck, unit tests, production build, and perf budgets, then failed with two Chromium E2E flakes:
+  - `my-library-landing-entrypoints.spec.ts` mobile timeout.
+  - `my-library-workout-builder.spec.ts` desktop missing `workout-builder-browse-create-pool` after Supabase/storage `UND_ERR_CONNECT_TIMEOUT` logs.
+- Targeted rerun of the two failed E2E scenarios passed: `npx playwright test tests/e2e/my-library-landing-entrypoints.spec.ts tests/e2e/my-library-workout-builder.spec.ts --project=mobile-chromium --project=desktop-chromium --grep "keeps the landing page browse-first|resumes and discards"` PASS, 3 passed / 1 skipped.
+- Full local release gates pending rerun on the rebased branch.
 - Previous GitHub `verify` failure on PR #361 was PR-body governance only: missing required sections and brief link.
 
 ## Manual QA / Screenshot Handoff
@@ -143,3 +147,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-27 | in-progress | selected PR #361 as the next dependency slice after all narrow GitHub Actions PRs were merged; confirmed old CI failure was PR-body governance only and jsdom 29.0.2 supports CI Node 20.20.2 | next: run targeted tests, full local gates, push rebased branch, refresh PR body, and monitor CI`
 - `2026-04-27 | in-progress | rebased PR #361 onto main, confirmed diff is package.json/package-lock plus this brief, installed with Node 20.20.2/npm 10.8.2, and targeted jsdom-backed unit/component tests passed | next: commit brief, run verify:pre-pr, push, refresh PR body, and monitor CI`
+- `2026-04-27 | in-progress | first full verify:pre-pr attempt passed non-E2E gates and failed on two Chromium E2E flakes; targeted rerun of the failed landing/workout-builder scenarios passed | next: run one full verify:pre-pr rerun, then push and refresh PR body if green`
