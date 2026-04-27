@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-27-e2e-baseline-stabilization-before-dependency-queue-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-27`
 - `updated`: `2026-04-27`
@@ -135,8 +135,41 @@ N/A. This brief must not change persisted entity IDs, slugs, titles, route param
 - Export tests must validate actual artifact availability/readiness, not only route navigation.
 - No new dependencies, secrets, or product scope drift.
 
+## Closeout Summary
+
+- Shipped via PR #525 and merged to `main` as `59b32fc`.
+- PR #161 was closed as superseded by newer env-parity governance on `main`.
+- PR #334 was closed as superseded by PR #335 plus later My Library/My Training IA reconciliation.
+- PR #1 remains open and intentionally unmerged until dependency-maintenance baseline gates are trustworthy.
+- No product runtime, UI, schema, dependency, billing, or security behavior changed.
+- Maintenance guidance now defines how to classify open PRs, close superseded stale PRs, and promote one dependency PR at a time only after baseline gates are green.
+
+## Closeout Validation
+
+- Targeted E2E baseline probes:
+  - `api-security-negative-paths.spec.ts:356 --project=desktop-chromium`: PASS.
+  - `poolside-save-image-export.spec.ts:796 --project=mobile-chromium`: PASS.
+  - `my-library-program-export.spec.ts:282 --project=desktop-chromium`: PASS.
+  - combined failure pack: PASS, `3 passed / 3 skipped`.
+- `npm run verify:pre-pr`: PASS docs-only, artifact `artifacts/test-runs/20260427-072258`.
+- `npm run verify:pre-merge`: PASS docs-only, marker `artifacts/verify-pre-merge/20260427-052428.json`.
+- GitHub CI for PR #525: PASS for `verify`, `e2e-smoke`, `site-lock-smoke`, `CodeQL`, `size-check`, `deploy-preview`, and Vercel.
+- Screenshot handoff: N/A because this was docs/governance only.
+
+## Closeout Scores
+
+- `Business logic correctness and data integrity`: `5/5`.
+- `Reliability and failure handling`: `5/5`.
+- `Security and authz`: `5/5`.
+- `Incident response and support operations`: `5/5`.
+- `Stack-fit and dependency discipline`: `5/5`.
+- `Testing and QA automation`: `5/5`.
+- `DevOps and rollback readiness`: `5/5`.
+- 10/10 claim: all critical target categories are `5/5`.
+
 ## Checkpoint Log
 
 - `2026-04-27 | in-progress | created after PR #1 CodeQL validation showed GitHub CI green but local full-lane E2E blocked by unrelated baseline failures; #161 and #334 are being evaluated for supersede closure before dependency work continues | next: close confirmed superseded PRs, reproduce targeted blockers from main, then patch the smallest deterministic failure mode`
 - `2026-04-27 | triage | closed PR #161 as superseded by newer env-parity governance on main and PR #334 as superseded by PR #335 plus later My Library/My Training IA reconciliation; branches were left intact for history | next: validate targeted E2E blockers and update maintenance cadence so stale PRs are caught earlier`
 - `2026-04-27 | validation | targeted admin negative-path, poolside PNG export, and program export specs passed individually; combined failure pack also passed with 3 passed / 3 skipped, so no product/test-code patch was made from non-reproduced full-suite failures | next: run docs validation, commit, push, and open a docs/process PR`
+- `2026-04-27 | done | PR #525 merged as 59b32fc after green docs-only local gates and green GitHub CI; lifecycle closeout moved this brief to done | next: resume controlled dependency PR promotion, starting with the narrowest open automated PR only after current baseline checks are green`
