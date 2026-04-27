@@ -50,7 +50,7 @@ jobs:
 
       - name: Upload smoke artifacts
         if: always() && steps.verification-plan.outputs.lane != 'docs-only'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ci-e2e-smoke-artifacts
           path: |
@@ -105,7 +105,7 @@ jobs:
 
       - name: Upload site-lock artifacts
         if: always() && steps.verification-plan.outputs.lane != 'docs-only'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ci-site-lock-artifacts
           path: |
@@ -182,7 +182,7 @@ jobs:
 
       - name: Upload verify artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ci-verify-artifacts
           path: |
