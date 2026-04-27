@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-04-27-lucide-react-v1-dependency-maintenance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-27`
 - `updated`: `2026-04-27`
 
 ## Goal
 
-Bring the icon dependency `lucide-react` from `^0.563.0` to `^1.11.0` through PR `#362`, with a narrow dependency-maintenance scope, visual screenshot handoff, and green local/CI gates before any merge recommendation.
+Bring the icon dependency `lucide-react` from `^0.563.0` to `^1.11.0` through PR `#362`, with a narrow dependency-maintenance scope, visual screenshot handoff, and green local/CI gates before merge.
 
 ## Why This Brief Exists
 
@@ -79,7 +79,7 @@ Critical target categories for `10/10` claim:
 - Update `lucide-react` from `^0.563.0` to `^1.11.0` in:
   - `package.json`,
   - `package-lock.json`.
-- Add this in-progress task brief with scorecard mapping and validation evidence.
+- Add this task brief with scorecard mapping and validation evidence.
 - Refresh PR body so required governance sections and brief links are present.
 - Capture screenshot handoff for representative icon surfaces before full pre-PR gate.
 - Run local release gates and monitor GitHub checks after visual approval.
@@ -149,14 +149,27 @@ Critical target categories for `10/10` claim:
   - `after-goals-coaching-success-desktop.png`
 - Screenshot capture verified `2` `svg.lucide` elements on each before/after public success surface.
 - My Library workout icons are covered by targeted component checks and build in this slice; local dev-login returned `403` in the screenshot browser context, so the visual handoff uses public lucide surfaces.
-- Pending: owner screenshot approval, full local gates, PR body refresh, GitHub checks, and pre-merge gate.
+- Owner approved screenshot handoff.
+- `npm run verify:pre-pr` passed on the updated branch in full lane.
+- `npm run verify:pre-merge` passed for `55dc7bc` (`artifacts/verify-pre-merge/20260427-182727.json`).
+- GitHub PR checks passed after PR-body evidence correction:
+  - `verify`
+  - `size-check`
+  - `deploy-preview`
+  - `e2e-smoke`
+  - `site-lock-smoke`
+  - `CodeQL`
+  - `Analyze (javascript-typescript)`
+  - Vercel
+- PR `#362` merged to `main` as `7dafca3` on `2026-04-27`.
+- Perf-budget trend recommended tightening one stretch target after consecutive green runs; decision for this dependency slice was `hold/carry-forward` to the maintenance baseline rather than changing perf budgets here.
 
 ## Manual QA / Screenshot Handoff
 
 - Required because this slice can change rendered SVG icon components.
 - Handoff includes before/after public contact and goals-coaching success surfaces before full `verify:pre-pr`.
 - Known visual caveat: authenticated My Library workout icon surfaces were not screenshot-captured because local dev-login returned `403`; they remain covered by targeted component tests and `npm run build`.
-- Owner approval is required before continuing to full pre-PR gate and PR update.
+- Owner approved the screenshot handoff before the full pre-PR gate and PR update.
 
 ## Help/Guide And Operator Training Impact
 
@@ -166,3 +179,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-27 | in-progress | selected PR #362 after reviewing the refreshed Dependabot queue; deferred #365 because Node 25 type definitions do not match the repo Node 20 runtime policy; rebased lucide branch onto main and refreshed local install to lucide-react 1.11.0 | next: run targeted checks, capture screenshot handoff, and wait for visual approval before full pre-pr gate`
 - `2026-04-27 | in-progress | targeted checks, typecheck, build, and public before/after screenshot handoff completed; dev-login returned 403 for authenticated My Library screenshot capture, so workout icon coverage remains test/build-based in this slice | next: wait for visual approval before full pre-pr gate and PR update`
+- `2026-04-27 | done | owner approved screenshots; full local pre-pr and pre-merge gates passed; GitHub checks passed after PR-body evidence correction; PR #362 merged as 7dafca3 and local main was fast-forwarded cleanly | next: this docs-only lifecycle closeout moved the brief to done`
