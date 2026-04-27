@@ -120,8 +120,9 @@ Critical target categories for `10/10` claim:
 - `npx playwright test tests/e2e/admin-email-templates-preview.spec.ts --project=desktop-chromium`: PASS, 1 passed.
 - First `npm run verify:pre-pr` attempt passed lint, typecheck, unit, build, perf, and the formerly blocked admin email-template E2E, then failed on one unrelated Supabase/dev-login network flake in `my-library-generator-intake.spec.ts`; targeted rerun passed.
 - `npx playwright test tests/e2e/my-library-generator-intake.spec.ts --project=desktop-chromium --grep "accepts one generated session draft"`: PASS, 1 passed.
-- `npm run verify:pre-pr`: pending rerun after commit.
+- `npm run verify:pre-pr`: PASS, artifact `artifacts/test-runs/20260427-144935/verify.log`; 111 E2E passed / 345 skipped by matrix, `verify-open` PASS.
 - `npm run verify:pre-merge`: pending.
+- Perf budget gate: PASS; trend recommendation still says tighten one stretch target after 3 green weekly runs, carried forward to the maintenance/perf baseline rather than changed in this cleanup slice.
 
 ## Manual QA / Screenshot Handoff
 
@@ -137,3 +138,4 @@ Critical target categories for `10/10` claim:
 - `2026-04-27 | in-progress | split out from jsdom PR #361 after full verify exposed deterministic admin email-template QA cleanup failure with PostgREST Bad Request on large revision delete; dependency branch remains local and unpushed | next: implement batched cleanup, run targeted unit/e2e, then full pre-PR gate`
 - `2026-04-27 | validation | implemented batched deletes for QA/test templates and revisions, added unit coverage for 201 revision rows over three batches, and confirmed the previously failing admin-email Playwright spec passes | next: run full verify:pre-pr, commit, push, open PR, and monitor CI`
 - `2026-04-27 | full-gate triage | first full verify:pre-pr attempt confirmed admin-email cleanup is fixed but hit one unrelated Supabase/dev-login DNS flake in My Library generator intake; targeted rerun passed | next: commit final diff and rerun full verify:pre-pr`
+- `2026-04-27 | pre-pr gate | full verify:pre-pr rerun passed on commit eb89f7c, including the previously blocked admin-email-template E2E and the previously flaky My Library generator intake test | next: commit evidence update, push branch, open PR, and run pre-merge gate`
