@@ -247,10 +247,7 @@ describe("/api/admin/email-templates/test-records route", () => {
     });
     expect(inMock).toHaveBeenCalledWith("id", ["tmpl-1", "tmpl-2"]);
     expect(deleteRevisionInMock).toHaveBeenNthCalledWith(1, "id", ["rev-1", "rev-2"]);
-    expect(deleteRevisionInMock).toHaveBeenNthCalledWith(2, "template_id", [
-      "tmpl-1",
-      "tmpl-2",
-    ]);
+    expect(deleteRevisionInMock).toHaveBeenNthCalledWith(2, "template_id", ["tmpl-1", "tmpl-2"]);
   });
 
   it("deletes orphaned qa/test revisions even when no live templates remain", async () => {
@@ -327,6 +324,86 @@ describe("/api/admin/email-templates/test-records route", () => {
     });
     expect(deleteTemplateMock).not.toHaveBeenCalled();
     expect(revisionDeleteInMock).toHaveBeenCalledWith("id", ["rev-orphan-1"]);
+  });
+
+  it("deletes large revision cleanup sets in batches", async () => {
+    const templateOrderMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
+    const templateOrMock = vi.fn().mockReturnValue({ order: templateOrderMock });
+    const templateSelectMock = vi.fn().mockReturnValue({ or: templateOrMock });
+    const deleteTemplateMock = vi.fn();
+
+    const revisionDeleteRows = Array.from({ length: 201 }, (_, index) => ({
+      id: `rev-batch-${index + 1}`,
+      template_id: `tmpl-batch-${index + 1}`,
+      template_key: `e2e_admin_email_template_preview_${index + 1}`,
+      locale: "nb-NO",
+    }));
+    const revisionOrderMock = vi.fn().mockResolvedValue({
+      data: revisionDeleteRows,
+      error: null,
+      count: revisionDeleteRows.length,
+    });
+    const revisionOrMock = vi.fn().mockReturnValue({ order: revisionOrderMock });
+    const revisionSelectMock = vi.fn().mockReturnValue({ or: revisionOrMock });
+    const revisionDeleteSelectMock = vi
+      .fn()
+      .mockResolvedValueOnce({ data: revisionDeleteRows.slice(0, 100), error: null })
+      .mockResolvedValueOnce({ data: revisionDeleteRows.slice(100, 200), error: null })
+      .mockResolvedValueOnce({ data: revisionDeleteRows.slice(200), error: null });
+    const revisionDeleteInMock = vi.fn().mockReturnValue({ select: revisionDeleteSelectMock });
+    const revisionDeleteMock = vi.fn().mockReturnValue({ in: revisionDeleteInMock });
+
+    const from = vi.fn((table: string) => {
+      if (table === "admin_email_templates") {
+        return {
+          select: templateSelectMock,
+          delete: deleteTemplateMock,
+        };
+      }
+
+      if (table === "admin_email_template_revisions") {
+        return {
+          select: revisionSelectMock,
+          delete: revisionDeleteMock,
+        };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: {
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await POST();
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      deletedCount?: number;
+      deletedRevisionCount?: number;
+      deletedRevisionIds?: string[];
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.deletedCount).toBe(0);
+    expect(payload.deletedRevisionCount).toBe(201);
+    expect(payload.deletedRevisionIds).toHaveLength(201);
+    expect(deleteTemplateMock).not.toHaveBeenCalled();
+    expect(revisionDeleteInMock).toHaveBeenCalledTimes(3);
+    expect(revisionDeleteInMock).toHaveBeenNthCalledWith(
+      1,
+      "id",
+      revisionDeleteRows.slice(0, 100).map((item) => item.id)
+    );
+    expect(revisionDeleteInMock).toHaveBeenNthCalledWith(
+      2,
+      "id",
+      revisionDeleteRows.slice(100, 200).map((item) => item.id)
+    );
+    expect(revisionDeleteInMock).toHaveBeenNthCalledWith(3, "id", ["rev-batch-201"]);
   });
 
   it("refuses cleanup when candidate count exceeds the safety limit", async () => {

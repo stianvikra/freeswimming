@@ -71,6 +71,9 @@ Run safe, auditable template copy changes without ad-hoc edits in code or provid
 - Revision hygiene:
   - QA/test cleanup must remove both live `admin_email_templates` rows and matching `admin_email_template_revisions` history rows,
   - email-template revision history is intentionally delete-safe and must not depend on a live foreign key back to the template row.
+- Cleanup implementation:
+  - delete QA/test template and revision rows in bounded batches so old residue cannot exceed PostgREST query limits,
+  - keep the existing safety caps in place before any batched delete starts.
 - Recovery expectation:
   - the protected QA cleanup path should be run before/after automated preview coverage,
   - if old legacy QA rows are found in production, purge only those explicit keys and re-check the template list afterward.

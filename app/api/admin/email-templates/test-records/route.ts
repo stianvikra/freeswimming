@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { PostgrestError } from "@supabase/supabase-js";
 import { getAdminSchemaSetupMessage, isAdminEmailTemplatesSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { isAdminEmailTemplateQaTestRecord } from "@/lib/admin/email-template-test-records";
@@ -20,8 +21,61 @@ function noStoreJson(
 
 const MAX_BULK_QA_TEST_TEMPLATE_DELETE = 500;
 const MAX_BULK_QA_TEST_REVISION_DELETE = 2_000;
+const QA_TEST_DELETE_BATCH_SIZE = 100;
 const QA_TEST_TEMPLATE_KEY_FILTER =
   "template_key.ilike.e2e_admin_email_template_%,template_key.ilike.aw012_publish_fallback_%";
+
+type RouteHandlerSupabaseClient = Awaited<
+  ReturnType<typeof createRouteHandlerSupabaseClient>
+>["supabase"];
+
+type CleanupTemplateRow = {
+  id: string;
+  template_key: string;
+  locale: string;
+};
+
+type CleanupRevisionRow = CleanupTemplateRow & {
+  template_id: string | null;
+};
+
+function chunkIds(ids: string[], size: number) {
+  const chunks: string[][] = [];
+
+  for (let index = 0; index < ids.length; index += size) {
+    chunks.push(ids.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+async function deleteRowsInBatches<T extends CleanupTemplateRow>({
+  supabase,
+  table,
+  column,
+  ids,
+  select,
+}: {
+  supabase: RouteHandlerSupabaseClient;
+  table: "admin_email_templates" | "admin_email_template_revisions";
+  column: "id" | "template_id";
+  ids: string[];
+  select: string;
+}): Promise<{ data: T[]; error: PostgrestError | null }> {
+  const deletedRows: T[] = [];
+
+  for (const idBatch of chunkIds(ids, QA_TEST_DELETE_BATCH_SIZE)) {
+    const result = await supabase.from(table).delete().in(column, idBatch).select(select);
+
+    if (result.error) {
+      return { data: deletedRows, error: result.error };
+    }
+
+    deletedRows.push(...((result.data ?? []) as unknown as T[]));
+  }
+
+  return { data: deletedRows, error: null };
+}
 
 export async function POST() {
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
@@ -147,11 +201,13 @@ export async function POST() {
   const candidateIds = candidates.map((item) => item.id);
   const revisionCandidateIds = revisionCandidates.map((item) => item.id);
   const deleteRevisionResult = revisionCandidateIds.length
-    ? await supabase
-        .from("admin_email_template_revisions")
-        .delete()
-        .in("id", revisionCandidateIds)
-        .select("id, template_id, template_key, locale")
+    ? await deleteRowsInBatches<CleanupRevisionRow>({
+        supabase,
+        table: "admin_email_template_revisions",
+        column: "id",
+        ids: revisionCandidateIds,
+        select: "id, template_id, template_key, locale",
+      })
     : { data: [], error: null };
 
   if (deleteRevisionResult.error) {
@@ -181,11 +237,13 @@ export async function POST() {
   }
 
   const deleteResult = candidateIds.length
-    ? await supabase
-        .from("admin_email_templates")
-        .delete()
-        .in("id", candidateIds)
-        .select("id, template_key, locale")
+    ? await deleteRowsInBatches<CleanupTemplateRow>({
+        supabase,
+        table: "admin_email_templates",
+        column: "id",
+        ids: candidateIds,
+        select: "id, template_key, locale",
+      })
     : { data: [], error: null };
 
   if (deleteResult.error) {
@@ -217,11 +275,13 @@ export async function POST() {
   const deletedRows = deleteResult.data ?? [];
   const deletedTemplateIds = deletedRows.map((item) => item.id);
   const deletePostTemplateRevisionResult = deletedTemplateIds.length
-    ? await supabase
-        .from("admin_email_template_revisions")
-        .delete()
-        .in("template_id", deletedTemplateIds)
-        .select("id, template_id, template_key, locale")
+    ? await deleteRowsInBatches<CleanupRevisionRow>({
+        supabase,
+        table: "admin_email_template_revisions",
+        column: "template_id",
+        ids: deletedTemplateIds,
+        select: "id, template_id, template_key, locale",
+      })
     : { data: [], error: null };
 
   if (deletePostTemplateRevisionResult.error) {
