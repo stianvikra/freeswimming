@@ -104,14 +104,10 @@ Critical target categories for `10/10` claim:
 
 ## Validation Evidence
 
-- `npm run lint:briefs`: skipped before commit because the repo linter discovers changed
-  briefs from committed branch diff.
-- `npm run lint:briefs:all`: PASS for all `196` brief files, including this active
-  CodeQL brief.
-- `env NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-pr`: PASS full lane
-  because `.github/workflows/codeql.yml` is a `full-only` path; Playwright result
-  `113` passed / `343` skipped. Log:
-  `artifacts/test-runs/20260427-053721/verify.log`.
+- Previous local evidence from the branch state before PR #526 is superseded by the
+  `2026-04-27` rebase onto `main` at `7108421`.
+- Current local validation is pending on the rebased branch because
+  `.github/workflows/codeql.yml` is a `full-only` path.
 
 ## Implementation Notes
 
@@ -119,7 +115,7 @@ Critical target categories for `10/10` claim:
   one workflow file, no runtime package lock churn, and no app code.
 - Verified GitHub release source through `gh api repos/github/codeql-action/releases/latest`
   before execution; current public CodeQL bundle is available under the CodeQL action release stream.
-- Rebased the Dependabot branch onto `origin/main` on `2026-04-26`.
+- Rebased the Dependabot branch onto `main` at `7108421` on `2026-04-27` after PR #526.
 
 ## Manual QA / Screenshot Handoff
 
@@ -133,3 +129,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-27 | in-progress | selected PR #1 as the first dependency-maintenance slice because it is a one-file CodeQL workflow update; rebased branch onto current main after PR #524 | next: add brief, run local gates, push, monitor PR checks`
 - `2026-04-27 | in-progress | npm run lint:briefs:all passed all 196 brief files and env NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-pr passed full lane with 113 E2E passed and 343 expected skips | next: commit, force-push rebased PR branch, monitor CI, run pre-merge gate`
+- `2026-04-27 | in-progress | resumed after PR #526, rebased PR #1 branch onto main 7108421, and marked earlier local validation as superseded | next: commit the refreshed checkpoint, run current full pre-PR gate, then force-push the updated Dependabot branch`
