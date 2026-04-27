@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-27-codeql-action-v4-dependency-maintenance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-27`
 - `updated`: `2026-04-27`
@@ -104,10 +104,20 @@ Critical target categories for `10/10` claim:
 
 ## Validation Evidence
 
-- Previous local evidence from the branch state before PR #526 is superseded by the
-  `2026-04-27` rebase onto `main` at `7108421`.
-- Current local validation is pending on the rebased branch because
-  `.github/workflows/codeql.yml` is a `full-only` path.
+- `env NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-pr`: PASS full lane
+  because `.github/workflows/codeql.yml` is a `full-only` path. Artifact:
+  `artifacts/test-runs/20260427-081516`; Playwright result `112` passed /
+  `344` skipped.
+- `env NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-merge`: PASS.
+  Marker: `artifacts/verify-pre-merge/20260427-063511.json`.
+- GitHub CI for PR #1: PASS for `verify` (12m58s), `CodeQL`, `Analyze
+(javascript-typescript)`, `e2e-smoke`, `site-lock-smoke`, `size-check`,
+  `deploy-preview`, Vercel, and Vercel Preview Comments.
+- Screenshot handoff: N/A because this changed only CI workflow configuration and
+  governance docs.
+- Perf-budget note: local full gate again recommended tightening one stretch target
+  after consecutive green runs. That remains a carry-forward item for the
+  maintenance-baseline/perf-budget slice, not a CodeQL dependency change.
 
 ## Implementation Notes
 
@@ -125,8 +135,33 @@ Critical target categories for `10/10` claim:
 
 - `N/A` because this slice does not change admin/user workflow labels, actions, recovery behavior, or Help/Guide content.
 
+## Closeout Summary
+
+- Shipped via PR #1 and merged to `main` as `3d3c64f`.
+- Updated the CodeQL workflow action references for `init`, `autobuild`, and
+  `analyze` from `github/codeql-action@v3` to `@v4`.
+- Kept workflow permissions, language matrix, schedule, runner, and app runtime
+  behavior unchanged.
+- Rebased the stale Dependabot branch onto current `main` after PR #526, refreshed
+  local/full CI evidence, resolved the branch-policy review block through owner
+  approval, and merged only after green GitHub CI.
+- No UI, product runtime, schema, package dependency, billing, analytics, Help/Guide,
+  or policy behavior changed.
+
+## Closeout Scores
+
+- `Product goals and IA`: `5/5`.
+- `Reliability and failure handling`: `5/5`.
+- `Security and authz`: `5/5`.
+- `Incident response and support operations`: `5/5`.
+- `Stack-fit and dependency discipline`: `5/5`.
+- `Testing and QA automation`: `5/5`.
+- `DevOps and rollback readiness`: `5/5`.
+- 10/10 claim: all critical target categories are `5/5`.
+
 ## Checkpoint Log
 
 - `2026-04-27 | in-progress | selected PR #1 as the first dependency-maintenance slice because it is a one-file CodeQL workflow update; rebased branch onto current main after PR #524 | next: add brief, run local gates, push, monitor PR checks`
 - `2026-04-27 | in-progress | npm run lint:briefs:all passed all 196 brief files and env NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-pr passed full lane with 113 E2E passed and 343 expected skips | next: commit, force-push rebased PR branch, monitor CI, run pre-merge gate`
 - `2026-04-27 | in-progress | resumed after PR #526, rebased PR #1 branch onto main 7108421, and marked earlier local validation as superseded | next: commit the refreshed checkpoint, run current full pre-PR gate, then force-push the updated Dependabot branch`
+- `2026-04-27 | done | PR #1 merged as 3d3c64f after green local full gates, green GitHub CI, and owner-approved review; lifecycle closeout moved this brief to done | next: continue controlled dependency-maintenance promotion one PR at a time`
