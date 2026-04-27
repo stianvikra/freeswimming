@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-27-upload-artifact-v7-dependency-maintenance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-27`
 - `updated`: `2026-04-27`
@@ -123,8 +123,11 @@ Critical target categories for `10/10` claim:
 
 ## Validation Evidence
 
-- Pending on the rebased branch.
-- Previous GitHub `verify` failure on PR #216 was PR-body governance only: missing required sections and brief link.
+- PR `#216` merged into `main` as `3e249be` on `2026-04-27`.
+- Local `npm run verify:pre-pr`: PASS on `7fde248`, full-public lane, artifact folder `artifacts/test-runs/20260427-112234`.
+- Local `npm run verify:pre-merge`: PASS on `7fde248`; reused current full-public PASS and recorded `artifacts/verify-pre-merge/20260427-095035.json`.
+- GitHub checks on PR `#216`: PASS for `verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `deploy-preview`, `CodeQL`, `Analyze (javascript-typescript)`, Vercel, and Vercel Preview Comments.
+- Previous GitHub `verify` failure on PR #216 was PR-body governance only: missing required sections and brief link. The closeout run corrected the PR body before merge.
 
 ## Manual QA / Screenshot Handoff
 
@@ -137,3 +140,4 @@ Critical target categories for `10/10` claim:
 ## Checkpoint Log
 
 - `2026-04-27 | in-progress | selected PR #216 as the next narrow GitHub Actions dependency slice after CodeQL v4 and GitHub Script v9; confirmed diff is limited to four upload-artifact workflow references and old verify failure was PR-body governance only | next: add brief, run local gates, push rebased branch, refresh PR body, and monitor CI`
+- `2026-04-27 | done | PR #216 merged as 3e249be after local pre-PR/pre-merge gates and GitHub checks passed; branch cleanup completed | next: close out this brief in docs-only PR`
