@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-04-27-jsdom-v29-dependency-maintenance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-27`
 - `updated`: `2026-04-27`
 
 ## Goal
 
-Bring the test DOM dependency `jsdom` from `^28.0.0` to `^29.0.2` through PR `#361`, with a narrow dependency-maintenance scope and green local/CI gates before any merge recommendation.
+Bring the test DOM dependency `jsdom` from `^28.0.0` to `^29.0.2` through PR `#361`, with a narrow dependency-maintenance scope and green local/CI gates before merge.
 
 ## Why This Brief Exists
 
@@ -18,6 +18,14 @@ Bring the test DOM dependency `jsdom` from `^28.0.0` to `^29.0.2` through PR `#3
 - PR `#361` is the next lowest-risk dependency candidate because `jsdom` is a devDependency used by Vitest's `jsdom` environment, not an application runtime dependency.
 - The update is still a major package upgrade, so it must be rebased onto current `main`, checked against repo Node constraints, and validated through the full gate.
 - The previous PR `verify` failure was PR-body governance only: missing required PR sections and brief link.
+
+## Closeout Summary
+
+- PR `#361` merged into `main` as `f354842` on `2026-04-27`.
+- `jsdom` is now `^29.0.2` in `package.json` and `package-lock.json`.
+- No runtime dependency, app route, UI, schema, workflow, secret, or production behavior changed.
+- GitHub checks for PR `#361` passed before merge: `verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `deploy-preview`, Vercel, CodeQL, and `Analyze (javascript-typescript)`.
+- Local pre-merge finished green on the merged PR head after one classified E2E navigation flake and targeted rerun.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -135,6 +143,10 @@ Critical target categories for `10/10` claim:
 - Full local `npm run verify:pre-pr`: PASS on the rebased branch, artifact `artifacts/test-runs/20260427-171322/verify.log`; full lane passed briefs/admin/env/PR-body lint, ESLint, typecheck, unit tests, production build, perf budgets, and E2E `113 passed / 343 skipped`.
 - Perf-budget run again recommended tightening one stretch target after continued green weekly runs; this is carried forward to the maintenance baseline/performance-budget workstream and is intentionally not changed in this jsdom dependency slice.
 - Previous GitHub `verify` failure on PR #361 was PR-body governance only: missing required sections and brief link.
+- GitHub checks on PR `#361`: PASS for `verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `deploy-preview`, Vercel, CodeQL, and `Analyze (javascript-typescript)`.
+- First local `npm run verify:pre-merge` on commit `44946ef` failed in E2E after `ECONNRESET` / `page.goto net::ERR_ABORTED` navigation flakes in `my-library-workout-builder.spec.ts` and `my-library-landing-entrypoints.spec.ts`; targeted rerun of the exact failed scenarios passed, 4 passed / 2 skipped.
+- Final local `npm run verify:pre-merge`: PASS on commit `44946ef`, artifact `artifacts/test-runs/20260427-181902/verify.log`, marker `artifacts/verify-pre-merge/20260427-164133.json`; full lane passed with E2E `111 passed / 345 skipped`.
+- PR `#361` merged as `f354842`.
 
 ## Manual QA / Screenshot Handoff
 
@@ -150,3 +162,4 @@ Critical target categories for `10/10` claim:
 - `2026-04-27 | in-progress | rebased PR #361 onto main, confirmed diff is package.json/package-lock plus this brief, installed with Node 20.20.2/npm 10.8.2, and targeted jsdom-backed unit/component tests passed | next: commit brief, run verify:pre-pr, push, refresh PR body, and monitor CI`
 - `2026-04-27 | in-progress | first full verify:pre-pr attempt passed non-E2E gates and failed on two Chromium E2E flakes; targeted rerun of the failed landing/workout-builder scenarios passed | next: run one full verify:pre-pr rerun, then push and refresh PR body if green`
 - `2026-04-27 | in-progress | rebased PR #361 onto main after PR #531, reran full verify:pre-pr, and the full local pre-PR gate passed on artifact artifacts/test-runs/20260427-171322/verify.log | next: commit evidence, force-with-lease push the rebased PR branch, refresh PR body, monitor CI, and run verify:pre-merge before merge recommendation`
+- `2026-04-27 | done | PR #361 passed GitHub checks and final local verify:pre-merge, then merged to main as f354842 | next: lifecycle closeout PR moves this brief from in-progress to done`
