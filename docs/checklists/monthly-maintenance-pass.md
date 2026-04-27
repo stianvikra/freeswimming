@@ -12,7 +12,9 @@ Use this checklist for the monthly issue created by `.github/workflows/monthly-m
 ## Preflight
 
 - [ ] Confirm local `main` is clean and up to date.
-- [ ] Review open Dependabot PRs and group by patch/minor/major.
+- [ ] Review open PRs and classify them as `auto-dependency`, `human/agent`, `superseded`, or `dirty/stale`.
+- [ ] Close superseded stale PRs with a comment naming the replacing PR/brief/current-main evidence; leave branches intact unless explicitly approved.
+- [ ] Review open Dependabot PRs and group by patch/minor/major/security-advisory.
 - [ ] Review GitHub security alerts, CodeQL status, nightly E2E, and admin E2E status.
 - [ ] Run or review `npm audit --omit=dev --audit-level=high`.
 
@@ -31,6 +33,8 @@ Use this checklist for the monthly issue created by `.github/workflows/monthly-m
 
 ## Dependency Hygiene
 
+- [ ] Do not merge dependency PRs directly from the open queue; promote one narrow PR at a time from current `main`.
+- [ ] If a dependency PR is blocked by unrelated local E2E baseline failures, keep it open and stabilize the baseline before promoting the next dependency PR.
 - [ ] Patch/minor updates are merged only after required gates are green.
 - [ ] Major updates are deferred to planned briefs unless explicitly approved as the monthly slice.
 - [ ] High/critical production advisories are prioritized before routine cleanup.

@@ -29,6 +29,29 @@ Keep dependency hygiene, runtime pinning, performance budgets, and release-gate 
 - Workflow/runtime/tooling changes: full validation lane is required.
 - Pure docs/governance updates: docs-only lane is allowed when the verification scripts select it.
 
+## Dependency PR Promotion Gate
+
+Use this order before merging routine dependency PRs:
+
+1. Start from a clean, up-to-date `main`.
+2. Review open PRs and classify each as:
+   - `auto-dependency`: Dependabot or another trusted automation,
+   - `human/agent`: owner or agent-created feature/docs work,
+   - `superseded`: replaced by newer merged work,
+   - `dirty/stale`: cannot be rebased or merged without product review.
+3. Close `superseded` PRs with a comment that names the replacing PR, brief, or current `main` evidence. Do not delete branches unless the owner explicitly asks.
+4. Hold `dirty/stale` human or agent PRs out of dependency maintenance. Either close as superseded or reopen as a fresh named brief.
+5. Promote only one dependency PR at a time:
+   - rebase onto current `main`,
+   - confirm the PR body/gate evidence is current,
+   - run the local release gate before merge recommendation.
+6. If local full-lane E2E fails on unrelated tests:
+   - keep the dependency PR open,
+   - run the failing specs as a targeted baseline pack from `main`,
+   - fix or document the baseline blocker before promoting the next dependency PR.
+
+Dependabot PRs are created automatically. They should be treated as a queue of proposals, not as merge-ready work. The right time to promote them is during weekly/monthly maintenance after the baseline gates are green, or immediately for high/critical production security advisories.
+
 ## Perf-Budget Ratchet
 
 - Run `npm run test:perf:trend` during monthly maintenance.
