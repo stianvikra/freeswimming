@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-27-github-script-v9-dependency-maintenance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-27`
 - `updated`: `2026-04-27`
@@ -121,8 +121,39 @@ Critical target categories for `10/10` claim:
 
 ## Validation Evidence
 
-- Pending on the rebased branch.
-- Previous GitHub `verify` failure on PR #421 was PR-body governance only: missing required sections and brief link.
+- `env NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-pr`: PASS full lane
+  because `.github/workflows/monthly-maintenance-reminder.yml`,
+  `.github/workflows/pr-size.yml`, and `.github/workflows/vercel-preview.yml`
+  are `full-only` paths. Artifact: `artifacts/test-runs/20260427-101045`;
+  Playwright result `111` passed / `345` skipped.
+- `env NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-merge`: PASS
+  on current PR head `e5f7e32`. Marker:
+  `artifacts/verify-pre-merge/20260427-084047.json`.
+- GitHub CI for PR #421: PASS for `verify` (12m29s), `CodeQL`, `Analyze
+(javascript-typescript)`, `e2e-smoke`, `site-lock-smoke`, `size-check`,
+  `deploy-preview`, Vercel, and Vercel Preview Comments.
+- Previous GitHub `verify` failure on PR #421 was PR-body governance only:
+  missing required sections and brief link. It was resolved by refreshing the PR
+  body before the final CI run.
+- Screenshot handoff: N/A because this changed only CI workflow configuration and
+  governance docs.
+- Perf-budget note: local full gate again recommended tightening one stretch target
+  after consecutive green runs. That remains a carry-forward item for the
+  maintenance-baseline/perf-budget slice, not a GitHub Script dependency change.
+
+## Implementation Notes
+
+- Selected PR `#421` after the CodeQL v4 slice because it was the next narrow
+  GitHub Actions dependency update: three workflow action references, no npm lock
+  churn, and no app runtime code.
+- Rebased the Dependabot branch onto current `main` after PR #527 so the branch
+  was no longer behind.
+- Reviewed the `actions/github-script@v9` breaking-change surface: no
+  `.github/workflows` script used `require('@actions/github')` or redeclared
+  `getOctokit`; the changed scripts use the injected `github`, `context`, and
+  `core` helpers.
+- Refreshed the PR body to satisfy required repo governance sections and brief
+  links before final CI validation.
 
 ## Manual QA / Screenshot Handoff
 
@@ -132,6 +163,35 @@ Critical target categories for `10/10` claim:
 
 - `N/A` because this slice does not change admin/user workflow labels, actions, recovery behavior, or Help/Guide content.
 
+## Closeout Summary
+
+- Shipped via PR #421 and merged to `main` as `a0e47c6`.
+- Updated `actions/github-script` from `@v7` to `@v9` in:
+  `.github/workflows/monthly-maintenance-reminder.yml`,
+  `.github/workflows/pr-size.yml`, and `.github/workflows/vercel-preview.yml`.
+- Kept workflow permissions, schedules, triggers, runner labels, PR-size behavior,
+  Vercel preview behavior, monthly issue content, and app runtime behavior
+  unchanged.
+- Resolved the stale/behind Dependabot branch through rebase, resolved the
+  earlier PR-body governance failure with a structured PR body, and merged only
+  after owner approval plus green local and GitHub gates.
+- No UI, product runtime, schema, package dependency, billing, analytics,
+  Help/Guide, policy text, or data-processing behavior changed.
+
+## Closeout Scores
+
+- `Product goals and IA`: `5/5`.
+- `Reliability and failure handling`: `5/5`.
+- `Security and authz`: `5/5`.
+- `Incident response and support operations`: `5/5`.
+- `Stack-fit and dependency discipline`: `5/5`.
+- `Testing and QA automation`: `5/5`.
+- `DevOps and rollback readiness`: `5/5`.
+- 10/10 claim: all critical target categories are `5/5`.
+
 ## Checkpoint Log
 
 - `2026-04-27 | in-progress | selected PR #421 as the next narrow GitHub Actions dependency slice after CodeQL v4; confirmed diff is limited to three actions/github-script references and old verify failure was PR-body governance only | next: add brief, run local gates, push rebased branch, refresh PR body, and monitor CI`
+- `2026-04-27 | in-progress | rebased PR #421 onto main after PR #527, added this brief, verified github-script v9 compatibility sweep, and refreshed PR body governance | next: run full local gates and push updated Dependabot branch`
+- `2026-04-27 | in-progress | npm run verify:pre-pr passed full lane with 111 E2E passed and 345 expected skips; npm run verify:pre-merge passed on e5f7e32; GitHub checks passed including verify, CodeQL, Vercel, smoke, site-lock, and size-check | next: merge after explicit owner approval`
+- `2026-04-27 | done | PR #421 merged as a0e47c6 after green local full gates, green GitHub CI, and owner-approved review; lifecycle closeout moved this brief to done | next: continue controlled dependency-maintenance promotion one PR at a time`
