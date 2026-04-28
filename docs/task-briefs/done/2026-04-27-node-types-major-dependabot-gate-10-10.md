@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-27-node-types-major-dependabot-gate-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-27`
-- `updated`: `2026-04-27`
+- `updated`: `2026-04-28`
 
 ## Goal
 
@@ -134,6 +134,10 @@ Critical target categories for `10/10` claim:
 - `npm run lint:briefs:all`: PASS for all 203 task brief files.
 - `npm run verify:pre-pr`: PASS in full lane, artifact `artifacts/test-runs/20260427-212635/verify.log`; full lane passed brief/admin/env/PR-body lint, ESLint, typecheck, unit tests, production build, perf budgets, and E2E `112 passed / 344 skipped`.
 - Perf-budget trend again recommended tightening one stretch target after consecutive green runs; decision for this dependency-governance slice is `hold/carry-forward` to the maintenance baseline/performance-budget workstream rather than changing perf budgets here.
+- PR `#535` GitHub checks passed: `verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `deploy-preview`, Vercel, CodeQL, and `Analyze (javascript-typescript)`.
+- PR `#365` was closed as superseded by PR `#535` because Node 25 ambient types do not match the repo Node 20 runtime policy.
+- `npm run verify:pre-merge`: PASS in full lane, marker `artifacts/verify-pre-merge/20260427-211908.json`; E2E `112 passed / 344 skipped`.
+- PR `#535` merged on `2026-04-27` as `5f416c9 chore: gate node types major updates (#535)`.
 
 ## Manual QA / Screenshot Handoff
 
@@ -147,3 +151,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-27 | in-progress | reviewed refreshed Dependabot queue and evaluated PR #365; local install/typecheck/build passed, but Node 25 ambient types do not match the repo Node 20 runtime policy | next: add Dependabot semver-major ignore, run gates, open supersede PR, and close/comment PR #365 after handoff is stable`
 - `2026-04-27 | in-progress | added Dependabot semver-major ignore for @types/node, restored local node_modules to @types/node 20.19.30, and full local verify:pre-pr passed on artifact artifacts/test-runs/20260427-212635/verify.log | next: commit, push, open supersede PR, refresh PR #365 disposition, and run pre-merge/CI gates`
+- `2026-04-28 | done | PR #535 merged as 5f416c9, PR #365 closed as superseded, and local verify:pre-merge passed with marker artifacts/verify-pre-merge/20260427-211908.json | next: continue controlled dependency-maintenance from a clean main after this docs-only lifecycle closeout`
