@@ -164,6 +164,13 @@ Critical target categories for `10/10` claim:
 - `npm run lint:briefs:all`: PASS for all 206 changed brief files.
 - `npm run lint`: PASS.
 - `npm run typecheck`: PASS.
+- First `npm run verify:pre-pr` attempt wrote `artifacts/test-runs/20260428-110740/verify.log` and failed at `test:perf:budgets` because Playwright 1.59 browser binaries were not installed in the local cache after the dependency update.
+- `npx playwright install`: PASS; installed the Playwright 1.59 browser set required by the updated `@playwright/test`.
+- Second `npm run verify:pre-pr` attempt wrote `artifacts/test-runs/20260428-113407/verify.log`; lint, typecheck, unit, build, and perf budgets passed, but full E2E failed with 7 timeouts/navigation aborts across My Library workout/program/training flows and the soft-launch banner smoke.
+- Targeted rerun of the exact failing E2E line set across desktop Chromium/WebKit/Firefox: PASS, 10 passed / 8 skipped. The failing desktop Chromium My Library cases passed in isolation.
+- Final `npm run verify:pre-pr`: PASS, full lane, `artifacts/test-runs/20260428-121757/verify.log`, 112 E2E passed / 344 skipped after lint, typecheck, unit, build, and perf budgets passed.
+- Perf budget trend recorded PASS at `30b22ec463a2` with worst margin `26.5%` and recommended tightening one stretch target after 3 consecutive weekly green runs. Decision for this slice: carry forward to maintenance/perf baseline; do not change perf thresholds inside the grouped dependency PR.
+- React hydration mismatch warnings still appear in existing workout-builder / poolside E2E output, but the final full gate passed. Treat as carry-forward diagnostics, not a blocker for this dependency-only slice.
 
 ## Manual QA / Screenshot Handoff
 
@@ -178,3 +185,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-28 | in-progress | selected PR #539 as next dependency-maintenance candidate after Stripe v22 closeout; found branch BEHIND and rebased onto main without conflicts; install under Node 20.20.2/npm 10.8.2 is clean after clearing npm temp directories from an interrupted sandboxed install | next: commit brief, run targeted checks and full verify:pre-pr, push rebased PR branch, monitor CI, then run verify:pre-merge before merge recommendation`
 - `2026-04-28 | in-progress | targeted Supabase/site-lock/commerce/image-export/React component unit slice passed, all brief lint passed, ESLint passed, and typecheck passed on the rebased grouped update | next: commit evidence, run full verify:pre-pr, push the rebased PR branch, refresh PR body, monitor CI, and run verify:pre-merge before merge recommendation`
+- `2026-04-28 | in-progress | initial full gate exposed missing Playwright 1.59 browser cache and one transient full-suite E2E failure cluster; installed browsers, reran the exact failing E2E subset green, then reran full verify:pre-pr green with artifact 20260428-121757 | next: commit evidence, force-push rebased PR branch with lease, update PR handoff, monitor CI, then run verify:pre-merge before merge recommendation`
