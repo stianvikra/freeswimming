@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-28-typescript-v6-dependency-maintenance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-28`
 - `updated`: `2026-04-28`
@@ -148,6 +148,23 @@ Critical target categories for `10/10` claim:
 - Retried `npm run lint`: PASS.
 - `npm run test:unit`: PASS, 163 files / 840 tests.
 - `npm run build`: PASS under Next.js 16.2.4 / Turbopack with TypeScript 6.
+- `npm run verify:pre-pr`: PASS, full lane, artifact `artifacts/test-runs/20260428-142405/verify.log`, E2E `113 passed / 343 skipped`.
+- GitHub checks on PR `#367`: PASS for `verify`, `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `CodeQL`, `Analyze (javascript-typescript)`, Vercel, and Vercel Preview Comments.
+- `npm run verify:pre-merge`: PASS on PR head `5ef4726`; reused public full-lane PASS artifact and recorded `artifacts/verify-pre-merge/20260428-131337.json`.
+- PR `#367` merged on `2026-04-28` as `d3e43ef`.
+- Docs-only lifecycle closeout moved this brief from `in-progress/` to `done/` after merge.
+
+## Closeout Score Outcome
+
+- `Product goals and IA`: `5/5` - dependency queue ordering stayed explicit; TypeScript 6 shipped before Tailwind 4 because it was the narrower compiler-only candidate.
+- `Business logic correctness and data integrity`: `5/5` - TypeScript 6 surfaced one deterministic `TS2871` issue and the equivalent goal fallback priority was preserved with targeted unit, typecheck, build, and full E2E validation.
+- `Data placement and sync boundaries`: `5/5` - no data ownership, cache, schema, local storage, sync, or identity boundary changed.
+- `Reliability and failure handling`: `5/5` - local full lane, pre-merge gate, and all required GitHub checks passed before merge.
+- `Stack-fit and dependency discipline`: `5/5` - TypeScript 6 installed under Node `20.20.2` / npm `10.8.2` with no runtime package growth.
+- `Testing and QA automation`: `5/5` - targeted unit, full unit, build, `verify:pre-pr`, CI, and `verify:pre-merge` passed.
+- `DevOps and rollback readiness`: `5/5` - rollback remains a single revert of PR `#367`; no migration, secret, config, or runtime rollout change.
+- Remaining gaps: none for this TypeScript slice.
+- Deferred/carry-forward: Tailwind 4 (`#366`) remains a separate UI/build-risk migration; perf stretch-target tightening remains carry-forward to the maintenance/perf baseline.
 
 ## Manual QA / Screenshot Handoff
 
@@ -162,3 +179,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-28 | in-progress | selected PR #367 as next dependency-maintenance candidate after queue review; deferred Tailwind 4 because it has real smoke/site-lock/Vercel regressions and likely needs a dedicated UI/build migration lane; rebased #367 onto current main without conflicts | next: run install, targeted compiler/build gates, full verify:pre-pr, push the rebased PR branch, refresh PR handoff, monitor CI, then run verify:pre-merge before merge recommendation`
 - `2026-04-28 | in-progress | install resolved TypeScript 6.0.3 without lockfile churn; lint and brief lint passed; TypeScript 6 surfaced one TS2871 nullish-chain diagnostic in TrainingContextHub; applied a narrow equivalent fallback-list compatibility fix; typecheck, targeted training-context unit, full unit, and build are green | next: run full verify:pre-pr, push the rebased PR branch, refresh PR handoff, monitor CI, then run verify:pre-merge before merge recommendation`
+- `2026-04-28 | done | PR #367 merged as d3e43ef after local verify:pre-pr PASS, GitHub checks PASS, and local verify:pre-merge PASS; docs-only lifecycle closeout moved this brief to done | next: merge this closeout PR, then reassess the remaining dependency queue before Tailwind 4`
