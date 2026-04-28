@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-28-eslint-v10-dependabot-gate-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-28`
 - `updated`: `2026-04-28`
@@ -138,6 +138,11 @@ Critical target categories for `10/10` claim:
 - Local dependency install on `main` restored `eslint@9.39.2` before creating this supersede branch.
 - `npm run lint:briefs:all`: PASS for all 204 task brief files.
 - `npm run verify:pre-pr`: PASS in full lane, artifact `artifacts/test-runs/20260428-072626/verify.log`; full lane passed brief/admin/env/PR-body lint, ESLint, typecheck, unit tests, production build, perf budgets, and E2E `113 passed / 343 skipped`.
+- `npm run verify:pre-pr`: PASS on final PR head `7d3f2dd`, full-public lane, artifact `artifacts/test-runs/20260428-075145/verify.log`; full lane passed brief/admin/env/PR-body lint, ESLint, typecheck, unit tests, production build, perf budgets, and E2E `112 passed / 344 skipped`.
+- `npm run verify:pre-merge`: PASS on final PR head `7d3f2dd`, marker `artifacts/verify-pre-merge/20260428-061638.json`.
+- GitHub checks for PR `#538`: PASS for `verify`, `CodeQL`, `Analyze (javascript-typescript)`, `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, and Vercel.
+- PR `#364` was closed as superseded by PR `#538`.
+- PR `#538` was squash-merged on `2026-04-28` as commit `44ec4b6`.
 - Perf-budget trend again recommended tightening one stretch target after consecutive green runs; decision for this dependency-governance slice is `hold/carry-forward` to the maintenance baseline/performance-budget workstream rather than changing perf budgets here.
 
 ## Manual QA / Screenshot Handoff
@@ -152,3 +157,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-28 | in-progress | reviewed refreshed Dependabot queue, selected PR #364 as the narrowest remaining dev-tool candidate, rebased it onto main, and confirmed ESLint 10 breaks npm run lint through eslint-plugin-react under eslint-config-next | next: add Dependabot semver-major ignore, run gates, open supersede PR, and close/comment PR #364 after handoff is stable`
 - `2026-04-28 | in-progress | added Dependabot semver-major ignore for eslint, restored local install to eslint 9.39.2, and full local verify:pre-pr passed on artifact artifacts/test-runs/20260428-072626/verify.log | next: commit, push, open supersede PR, close/comment PR #364, and run pre-merge/CI gates`
+- `2026-04-28 | done | PR #538 passed local verify:pre-pr, local verify:pre-merge, all required GitHub checks, closed PR #364 as superseded, and merged as 44ec4b6 | next: resume controlled dependency-maintenance with the next remaining candidate only after this docs-only closeout lands`
