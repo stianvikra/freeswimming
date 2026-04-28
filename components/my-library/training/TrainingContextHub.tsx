@@ -741,15 +741,17 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
     editingNoteId !== null
       ? (snapshot.recentNotes.find((note) => note.id === editingNoteId) ?? null)
       : null;
+  const getGoalOption = (goalId: string | null | undefined) =>
+    goalId ? (goalOptionById.get(goalId) ?? null) : null;
   const overviewGoal =
-    selectedGoal ??
-    (focusEditState?.goalId ? (goalOptionById.get(focusEditState.goalId) ?? null) : null) ??
-    (focusDraft.goalId ? (goalOptionById.get(focusDraft.goalId) ?? null) : null) ??
-    (noteDraft.goalId ? (goalOptionById.get(noteDraft.goalId) ?? null) : null) ??
-    (selectedFocus?.goalId ? (goalOptionById.get(selectedFocus.goalId) ?? null) : null) ??
-    (snapshot.recentNotes[0]?.goalId
-      ? (goalOptionById.get(snapshot.recentNotes[0].goalId) ?? null)
-      : null);
+    [
+      selectedGoal,
+      getGoalOption(focusEditState?.goalId),
+      getGoalOption(focusDraft.goalId),
+      getGoalOption(noteDraft.goalId),
+      getGoalOption(selectedFocus?.goalId),
+      getGoalOption(snapshot.recentNotes[0]?.goalId),
+    ].find((goal) => goal !== null) ?? null;
   const overviewFocusTitle =
     editingFocus && focusEditState
       ? focusEditState.title.trim() || editingFocus.title
