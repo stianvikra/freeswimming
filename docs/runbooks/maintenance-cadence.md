@@ -21,6 +21,17 @@ Keep dependency hygiene, runtime pinning, performance budgets, and release-gate 
 5. Record each PR, decision, and validation result in the monthly issue.
 6. Close the issue only after deferrals have owners or planned briefs.
 
+## Continuous Learning Loop
+
+Maintenance is also where repo lessons become durable process improvements. When a PR, CI run, screenshot handoff, support incident, or release gate exposes a repeatable pattern, record it in the narrowest durable place instead of relying on chat memory:
+
+- update the active brief checkpoint or PR body for one-off evidence and explicit `tighten` / `hold` / `revert` decisions,
+- update this runbook or the monthly checklist for recurring maintenance workflow changes,
+- update testing, architecture, security, billing, or UI-debug runbooks when the lesson belongs to a specific operating surface,
+- open a planned brief when the lesson requires product, architecture, or toolchain work that should not be bundled into the current PR.
+
+Keep the change small and place it where the next operator will naturally look before repeating the same work.
+
 ## Triage Rules
 
 - Patch/minor dependency PRs: merge when CI and local release gates are green.
@@ -85,8 +96,8 @@ Before merge:
 npm run verify:pre-merge
 ```
 
-For local Playwright-heavy gates, use the repo's normal Node runtime from `.nvmrc`. If Next dev-server memory restarts cause `ERR_EMPTY_RESPONSE` flakes, rerun with:
+For local Playwright-heavy gates, use the repo's normal Node runtime from `.nvmrc`. Playwright's managed Next devserver defaults to `8192` MB through `playwright.config.ts` after the Tailwind 4 migration. If a local machine needs a different ceiling, override it with:
 
 ```bash
-NODE_OPTIONS=--max-old-space-size=4096 npm run verify:pre-merge
+PW_NEXT_DEV_MAX_OLD_SPACE_SIZE_MB=8192 npm run verify:pre-merge
 ```

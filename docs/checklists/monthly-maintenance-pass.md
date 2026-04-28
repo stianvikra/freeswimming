@@ -24,6 +24,12 @@ Use this checklist for the monthly issue created by `.github/workflows/monthly-m
 - [ ] Confirm GitHub Actions still use `node-version-file: .nvmrc`.
 - [ ] Document any required runtime/tooling change as its own PR.
 
+## Continuous Improvement Capture
+
+- [ ] Review recent PRs, CI failures, screenshot handoffs, and release-gate notes for repeatable lessons.
+- [ ] Place each lesson in the narrowest durable home: active brief/PR evidence, maintenance runbook, domain runbook, architecture/testing docs, or a planned brief.
+- [ ] Record owner and next checkpoint for any lesson intentionally deferred out of the current maintenance pass.
+
 ## Performance Budget Ratchet
 
 - [ ] Run `npm run test:perf:trend`.

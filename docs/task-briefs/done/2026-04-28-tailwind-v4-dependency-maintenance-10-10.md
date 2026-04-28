@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-28-tailwind-v4-dependency-maintenance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-28`
 - `updated`: `2026-04-28`
@@ -202,3 +202,4 @@ Critical target categories for `10/10` claim:
 - `2026-04-28 | in-progress | targeted heavy E2E passed after the first heap patch; full pre-PR still hit the same Next restart later in desktop my-library, so the Playwright-only heap ceiling was raised to 8192 MB | next: rerun targeted heavy E2E, then full verify:pre-pr`
 - `2026-04-28 | in-progress | targeted heavy E2E passed with the final 8192 MB Playwright devserver heap ceiling | next: rerun full verify:pre-pr`
 - `2026-04-28 | in-progress | final verify:pre-pr passed after the 8192 MB Playwright devserver heap ceiling; full E2E passed without Next memory-threshold restart | next: commit, push, update PR #366 handoff, monitor CI, then run verify:pre-merge`
+- `2026-04-28 | done | PR #366 merged to main as cffcbcd after owner-approved screenshot handoff, green CI, local verify:pre-pr, and local verify:pre-merge; carry-forward learnings are captured for maintenance baseline: keep perf-budget tightening out of dependency closeouts, align maintenance docs with the 8192 MB Playwright devserver heap default, and track recurring workout-builder hydration warnings as diagnostics rather than a Tailwind blocker | next: close out this brief via docs-only lifecycle PR, then run the maintenance-baseline audit`
