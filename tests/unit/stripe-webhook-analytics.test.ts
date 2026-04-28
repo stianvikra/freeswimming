@@ -2,6 +2,8 @@ import type Stripe from "stripe";
 import { describe, expect, it } from "vitest";
 import { getDiscountRedeemedPayload } from "@/lib/stripe/webhook-discount";
 
+type CheckoutSessionTotalDetails = NonNullable<Stripe.Checkout.Session["total_details"]>;
+
 function buildCheckoutSession(input: Partial<Stripe.Checkout.Session>): Stripe.Checkout.Session {
   return {
     id: "cs_test_123",
@@ -16,7 +18,7 @@ describe("getDiscountRedeemedPayload", () => {
     const session = buildCheckoutSession({
       total_details: {
         amount_discount: 0,
-      } as Stripe.Checkout.Session.TotalDetails,
+      } as CheckoutSessionTotalDetails,
     });
 
     expect(getDiscountRedeemedPayload(session)).toBeNull();
@@ -30,7 +32,7 @@ describe("getDiscountRedeemedPayload", () => {
       currency: "usd",
       total_details: {
         amount_discount: 1200,
-      } as Stripe.Checkout.Session.TotalDetails,
+      } as CheckoutSessionTotalDetails,
     });
 
     expect(getDiscountRedeemedPayload(session)).toEqual({
