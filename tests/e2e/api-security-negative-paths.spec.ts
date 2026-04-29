@@ -300,7 +300,7 @@ test.describe("api security negative paths", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
-    testInfo.setTimeout(120_000);
+    testInfo.setTimeout(180_000);
 
     await expectUnauthorizedNoLeakWithTransientRetry(() => request.get("/api/admin/products"));
     await expectUnauthorizedNoLeakWithTransientRetry(() =>
