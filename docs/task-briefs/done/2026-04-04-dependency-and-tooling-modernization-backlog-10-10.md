@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-04-dependency-and-tooling-modernization-backlog-10-10`
-- `status`: `planned`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-04`
-- `updated`: `2026-04-04`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -26,7 +26,22 @@ Replace stale open dependency PRs with one explicit modernization backlog brief 
   - some of them represent migration work that should be re-evaluated against current product code, not revived from old branches.
 - This brief exists so the work is still visible and prioritized without letting stale PRs accumulate operational debt.
 
-## Current State Snapshot
+## 2026-04-29 Closeout / Supersession
+
+- Status: `done`.
+- The original backlog purpose has been fulfilled: stale dependency PRs were not revived, and the work was handled through fresh, controlled maintenance slices from current `main`.
+- Superseding evidence:
+  - GitHub Actions majors were handled through narrow dependency-maintenance PRs for CodeQL, `actions/github-script`, and `actions/upload-artifact`.
+  - npm/runtime packages were handled through dedicated slices for `jsdom`, `lucide-react`, ESLint 10, Stripe 22, grouped npm non-major updates, TypeScript 6, and Tailwind 4.
+  - Node ambient types are now runtime-aligned through the Node 24 LTS migration audit, with `.nvmrc`, `package.json`, npm, CI, and docs aligned to Node 24 / npm 11 / `@types/node` 24.
+  - The open PR queue was empty during the post-Node-24 preflight on `2026-04-29`.
+- Remaining carry-forward items now live in the maintenance system, not this stale modernization backlog:
+  - perf-budget ratchet decision remains `hold` until two new weekly green cycles after the `2026-04-26` tighten,
+  - recurring hydration warnings remain a diagnostics/hardening carry-forward,
+  - future stack/tooling ecosystem-fit checks run through `docs/runbooks/maintenance-cadence.md` and the monthly maintenance checklist.
+- Do not reopen or reuse the old PR branches referenced below. Future dependency work should start from the current monthly or quarterly maintenance cadence.
+
+## Original 2026-04-04 State Snapshot
 
 - Current repo dependency posture on `main`:
   - `@types/node`: `^20`
@@ -302,3 +317,7 @@ Any future child brief created from this backlog must include:
 4. whether the slice is safe to batch or must remain isolated,
 5. any design/runtime/manual QA impact,
 6. whether the slice should update Help/Guide or operator runbooks.
+
+## Checkpoint Log
+
+- `2026-04-29 | done | post-Node-24 preflight found the GitHub PR queue empty, active runtime/tooling docs aligned to Node 24 / npm 11 / TypeScript 6 / Tailwind 4 / ESLint 10, and this planned backlog fully superseded by the controlled dependency-maintenance wave | next: resume the session-builder priority unless the next monthly maintenance pass promotes a specific narrow audit`
