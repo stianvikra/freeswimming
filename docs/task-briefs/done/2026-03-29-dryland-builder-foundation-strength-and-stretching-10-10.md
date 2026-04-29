@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-29-dryland-builder-foundation-strength-and-stretching-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-29`
-- `updated`: `2026-03-29`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -300,6 +300,8 @@ Critical target categories for `10/10` claim in closeout:
 - clearer development views.
 
 ## Checkpoint Log
+
+- `2026-04-29 | done | lifecycle triage confirmed PR #318 merged as 2083f70 and moved this completed dryland builder foundation brief to done; future dryland expansion should use a new scoped brief | next: no action unless a new dryland builder gap is opened`
 
 - `2026-03-29 | kickoff | opened a new dryland-builder brief after owner requested a separate builder for strength and stretching while pausing live swim-builder testing until later in the day | triaged current production admin notes and confirmed no current open prod note directly owns this dryland scope | next: implement phase-1 foundation as a distinct persisted My Library domain, not an extension of the swim workouts table`
 - `2026-03-29 | branch fix/dryland-builder-foundation-2026-03-29 | implemented the first persisted dryland foundation: schema + server helpers + API routes + My Library dryland card + browse route + focused builder route + create buttons + set-completion editor + detail modal + optional start/stop timing + targeted unit/e2e coverage | evidence: npm run typecheck; npx vitest run tests/unit/create-manual-dryland-session-button.test.tsx tests/unit/dryland-routes.test.ts tests/unit/dryland-builder-hub.test.tsx; npx playwright test tests/e2e/my-library-dryland-builder.spec.ts --project=desktop-chromium | next: run full npm run verify:pre-pr, then assess PR-ready scope vs any follow-up polish`

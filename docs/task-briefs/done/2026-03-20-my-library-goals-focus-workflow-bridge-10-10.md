@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-20-my-library-goals-focus-workflow-bridge-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-20`
-- `updated`: `2026-03-21`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -214,6 +214,8 @@ Critical target categories for `10/10` claim in this brief:
 - No silent goal mutation, no silent draft loss, and no ambiguous open-focus or primary-focus behavior.
 
 ## Checkpoint Log
+
+- `2026-04-29 | done | lifecycle triage confirmed PR #256 merged as 753c9a8 and moved this completed workflow-bridge brief to done; future goal/focus IA work should use a new scoped brief | next: no action unless a new workflow gap is opened`
 
 - `2026-03-21 | 9c4f753 | validation hardening checkpoint | hardened the goals-hub readiness wait in the new Playwright bridge coverage after a real hydration-timing failure on the note-intent flow, then reran full \`npm run verify:pre-pr\` green on branch head; the earlier install-prompt interruption was confirmed as a separate flake because the targeted rerun and the full pre-PR matrix both passed afterward | next: push branch head to PR #256, refresh PR summary, rerun \`npm run verify:pre-merge\`, and merge when required checks are green`
 - `2026-03-21 | intent-aware bridge follow-up | realigned the shipped workflow bridge to focus-v2 by honoring goal-prefill intent on initial load, highlighting the intended form, and extending unit + Playwright coverage for both deeplink paths | next: rerun brief lint + verify:pre-pr, then open/update PR`

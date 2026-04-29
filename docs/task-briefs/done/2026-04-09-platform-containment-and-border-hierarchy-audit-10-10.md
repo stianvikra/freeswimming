@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-09-platform-containment-and-border-hierarchy-audit-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-09`
-- `updated`: `2026-04-09`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -299,6 +299,8 @@ Strict 10/10 mode for this brief:
 - Node.js LTS and npm must be installed on the machine used for local validation.
 
 ## Checkpoint Log
+
+- `2026-04-29 | done | lifecycle triage confirmed the audit brief landed through PR #400 (9d0f020) and its primary containment follow-up shipped through PR #402 (90702ad); this audit is closed as historical governance evidence | next: use new scoped briefs for any fresh containment or border hierarchy issues`
 
 - `2026-04-09 | in-progress | created the audit brief in a clean worktree from main, confirmed the containment problem as a platform pattern, and captured initial evidence from WorkoutEditor (`106` bordered wrappers), AdminNotesManager (`75`), My Library route shell (`22`), and AthleteProfileHub (`54`) to ground the follow-up rule set and priority list | next: lint the brief, run pre-PR validation, and open a docs PR with the initial audit brief`
 - `2026-04-09 | in-progress | brief lint passed and verify:pre-pr passed in the isolated worktree after loading the repo .env.local for perf/e2e coverage; no brief-specific failures were found in the full gate run | next: run verify:pre-merge, then commit, push, and open the docs PR`

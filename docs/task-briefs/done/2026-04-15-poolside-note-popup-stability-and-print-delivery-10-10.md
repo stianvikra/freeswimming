@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-15-poolside-note-popup-stability-and-print-delivery-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
-- `updated`: `2026-04-15`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -180,6 +180,8 @@ Strict `10/10` mode for this brief:
   - this slice changes technical print-preview delivery only and no owner-facing workflow labels or guide content.
 
 ## Checkpoint Log
+
+- `2026-04-29 | done | lifecycle triage confirmed this poolside popup/print delivery work shipped in PR #439 as 5863abb and moved the completed brief to done | next: open a new poolside delivery brief only if fresh UI evidence shows a gap`
 
 - `2026-04-15 | implementation start | created a dedicated delivery-stability brief after owner-reported blank/black poolside tabs and empty print output showed that the current popup document.write flow is not stable enough in real browsers | next: harden preview delivery, add regression coverage, and validate in real browser QA before moving on to composition polish`
 - `2026-04-15 | implementation complete | replaced transient document.write popup delivery with blob-backed preview tabs, added cleanup for preview object URLs, and tightened unit/e2e coverage around titled nonblank preview delivery | next: include this slice in poolside final-polish PR closeout and pre-merge validation`

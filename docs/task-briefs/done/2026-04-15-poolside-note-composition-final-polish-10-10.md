@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-15-poolside-note-composition-final-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
-- `updated`: `2026-04-15`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -209,6 +209,8 @@ Strict `10/10` mode for this brief:
   - this slice changes poolside print composition only and no owner-facing help contract.
 
 ## Checkpoint Log
+
+- `2026-04-29 | done | lifecycle triage confirmed this final-polish poolside note composition work shipped in PR #439 as 5863abb and moved the completed brief to done | next: open a new poolside note brief only for new evidence-backed polish gaps`
 
 - `2026-04-15 | implementation start | created a dedicated final-polish brief after owner review confirmed that spacing is still too tall, rest still feels mispositioned, and the current type scale is not yet calm enough for a lane-side artifact | next: tighten density, restructure rest rendering inside work blocks, and re-evaluate portrait and landscape with visual QA`
 - `2026-04-15 | implementation complete | tightened hero/body density, reduced oversized typography, moved interval/set rest into the same workout block with wrap-inside-block behavior, and locked the new semantics in unit/e2e coverage | next: include this slice in poolside final-polish PR closeout and pre-merge validation`
