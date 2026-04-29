@@ -6,11 +6,11 @@ Keep dependency hygiene, runtime pinning, performance budgets, and release-gate 
 
 ## Cadence
 
-| Rhythm    | Owner action                                                                 | Evidence location                                                                            |
-| --------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Weekly    | Review Dependabot PRs, security alerts, CodeQL, nightly E2E, and audit risk. | GitHub PRs/checks plus active maintenance issue if work is needed.                           |
-| Monthly   | Complete one maintenance issue from the monthly reminder workflow.           | GitHub issue created by `.github/workflows/monthly-maintenance-reminder.yml`.                |
-| Quarterly | Review deferred majors and decide whether to open fresh planned briefs.      | `docs/task-briefs/planned/2026-04-04-dependency-and-tooling-modernization-backlog-10-10.md`. |
+| Rhythm    | Owner action                                                                                                        | Evidence location                                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Weekly    | Review Dependabot PRs, security alerts, CodeQL, nightly E2E, and audit risk.                                        | GitHub PRs/checks plus active maintenance issue if work is needed.                                                                  |
+| Monthly   | Complete one maintenance issue from the monthly reminder workflow, including a lightweight stack/tooling fit check. | GitHub issue created by `.github/workflows/monthly-maintenance-reminder.yml`.                                                       |
+| Quarterly | Run a deeper stack/tooling ecosystem-fit audit and decide whether to open fresh planned briefs.                     | `docs/task-briefs/planned/2026-04-04-dependency-and-tooling-modernization-backlog-10-10.md` plus any new stack/tooling audit brief. |
 
 ## Monthly Issue Flow
 
@@ -31,6 +31,45 @@ Maintenance is also where repo lessons become durable process improvements. When
 - open a planned brief when the lesson requires product, architecture, or toolchain work that should not be bundled into the current PR.
 
 Keep the change small and place it where the next operator will naturally look before repeating the same work.
+
+## Stack/Tooling Ecosystem-Fit Audit
+
+Use maintenance to ask a broader question than "are dependencies outdated?": whether the stack and tools are still the best supported, stable, compatible, and launch-safe choices for this app.
+
+Decision vocabulary:
+
+- `upgrade now`: current version/tool creates security, compatibility, support, or delivery risk and the migration path is clear enough for a narrow PR.
+- `hold`: current choice remains the best stable fit; record the reason and the next review point.
+- `watch`: ecosystem signal is promising or concerning, but evidence is not mature enough to act.
+- `replace later`: current tool is acceptable now, but a planned replacement should be evaluated in a named future brief.
+
+Monthly lightweight audit:
+
+- open Dependabot and human/agent PR queue classification,
+- `npm audit --omit=dev --audit-level=high`,
+- runtime alignment across `.nvmrc`, `package.json`, GitHub Actions, Vercel, and local gates,
+- CI/tooling warnings, release-gate flakes, and recurring non-failing warnings,
+- `npm run test:perf:trend` and the current perf-budget `tighten` / `hold` / `revert` decision,
+- whether any lesson from recent PRs belongs in a runbook, architecture/testing docs, or a planned brief.
+
+Quarterly deeper audit:
+
+- Next.js, React, Node, npm, TypeScript, ESLint, Tailwind/PostCSS,
+- Playwright, Vitest, Testing Library, browser matrix, heap/resource assumptions, and flake posture,
+- Supabase, generated database types, migrations, auth/RLS assumptions, and fail-closed behavior,
+- Stripe SDK/API posture, Checkout/Billing Portal/webhook/finance reconciliation contracts,
+- GitHub Actions, CodeQL, Vercel, branch protection, required checks, and rollback path,
+- performance budgets, security/audit posture, secrets/config governance, and support/incident runbooks.
+
+Major migration rule:
+
+- Treat major upgrades such as Next, React, Tailwind, TypeScript, ESLint, Stripe, Supabase, Node, or Playwright as controlled migration briefs unless the change is demonstrably risk-free and local/CI gates prove it.
+- Do not bundle major toolchain migrations into feature PRs.
+- Do not use "latest" as the decision rule. Prefer the best stable choice for the product, runtime, hosting platform, CI, tests, and launch risk.
+
+Pre-live or major-release audit:
+
+- Re-run the ecosystem-fit audit with stricter launch criteria: rollback, secrets/config, monitoring, performance, security, billing, support, and incident diagnostics must be launch-safe before claiming readiness.
 
 ## Triage Rules
 

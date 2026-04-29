@@ -23,7 +23,12 @@ Use this checklist for the monthly issue created by `.github/workflows/monthly-m
 - [ ] Confirm `.nvmrc`, `package.json` `engines.node`, and `packageManager` still match the intended runtime contract.
 - [ ] Confirm GitHub Actions still use `node-version-file: .nvmrc`.
 - [ ] Confirm `docs/architecture.md` and `docs/testing-strategy.md` still match the current major stack and local gate assumptions.
-- [ ] Document any required runtime/tooling change as its own PR.
+- [ ] Run the lightweight stack/tooling fit check and record each decision as `upgrade now`, `hold`, `watch`, or `replace later`.
+- [ ] Confirm Next.js, React, Node, npm, TypeScript, ESLint, Tailwind/PostCSS, Playwright, Vitest, Supabase, Stripe, GitHub Actions, Vercel, and CI are still the best supported, stable, compatible, and launch-safe choices.
+- [ ] For any major upgrade or tool replacement, open a dedicated migration brief instead of mixing it into feature work.
+- [ ] If this is a quarterly pass, run the deeper ecosystem-fit audit from `docs/runbooks/maintenance-cadence.md`.
+- [ ] If this is a pre-live or major-release pass, include rollback, secrets/config, monitoring, perf, security, billing, support, and incident-readiness checks before claiming release readiness.
+- [ ] Document any required runtime/tooling change as its own PR or planned brief.
 
 ## Continuous Improvement Capture
 

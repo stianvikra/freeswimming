@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-26-stripe-fresh-sandbox-purchase-invoice-verification-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-26`
-- `updated`: `2026-04-26`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -120,6 +120,12 @@ Critical target categories for `10/10` claim:
   including lint, typecheck, unit, build, perf budgets, and Playwright E2E (`112`
   passed, `344` skipped). Log:
   `artifacts/test-runs/20260426-210712/verify.log`.
+- `env NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-merge`: PASS full
+  lane before PR #524 merge, with `112` E2E passed / `344` skipped. Log:
+  `artifacts/test-runs/20260426-212930/verify.log`; marker:
+  `artifacts/verify-pre-merge/20260426-194632.json`.
+- GitHub CI for PR #524: PASS for CodeQL, Vercel preview, size-check,
+  e2e-smoke, site-lock-smoke, and verify.
 - The heap flag was used only to avoid the local Next test-server memory restart observed in
   an earlier full pre-PR run; no test selection was narrowed and no failures were skipped.
 
@@ -173,3 +179,4 @@ Critical target categories for `10/10` claim:
 - `2026-04-26 | in-progress | fixed finance live collect for Stripe SDK async iterable support; finance:reconcile collected today's Stripe/Supabase exports into /tmp and passed with one paid invoice-backed session, one entitlement, and zero unexplained mismatches | next: run full pre-PR gate and prepare PR`
 - `2026-04-26 | in-progress | first npm run verify:pre-pr full lane passed lint/typecheck/unit/build/perf but failed two unrelated E2E timeouts: mobile iPhone preview-notify menu dialog and desktop Firefox dev-login navigation; targeted rerun of those exact tests passed 3/3 with 1 expected project skip | next: rerun full pre-PR gate before commit/PR`
 - `2026-04-26 | in-progress | final NODE_OPTIONS=--max-old-space-size=8192 npm run verify:pre-pr full lane passed with 112 E2E passed and 344 expected skips; heap flag avoided local Next test-server memory restart without narrowing test scope | next: commit, push, open PR, then run pre-merge gate`
+- `2026-04-29 | done | PR #524 merged as d086258 after full verify:pre-pr, full verify:pre-merge, and green GitHub checks; fresh sandbox Checkout invoice creation, Billing Portal invoice-history visibility, and finance reconciliation were confirmed with redacted evidence | next: repeat only if checkout, portal, webhook, or finance reconciliation contracts change`
