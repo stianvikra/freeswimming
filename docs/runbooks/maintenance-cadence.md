@@ -48,6 +48,7 @@ Monthly lightweight audit:
 - open Dependabot and human/agent PR queue classification,
 - `npm audit --omit=dev --audit-level=high`,
 - runtime alignment across `.nvmrc`, `package.json`, GitHub Actions, Vercel, and local gates,
+- runtime support window/EOL posture for the pinned Node LTS line,
 - CI/tooling warnings, release-gate flakes, and recurring non-failing warnings,
 - `npm run test:perf:trend` and the current perf-budget `tighten` / `hold` / `revert` decision,
 - whether any lesson from recent PRs belongs in a runbook, architecture/testing docs, or a planned brief.
