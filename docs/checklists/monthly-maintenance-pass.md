@@ -22,12 +22,14 @@ Use this checklist for the monthly issue created by `.github/workflows/monthly-m
 
 - [ ] Confirm `.nvmrc`, `package.json` `engines.node`, and `packageManager` still match the intended runtime contract.
 - [ ] Confirm GitHub Actions still use `node-version-file: .nvmrc`.
+- [ ] Confirm `docs/architecture.md` and `docs/testing-strategy.md` still match the current major stack and local gate assumptions.
 - [ ] Document any required runtime/tooling change as its own PR.
 
 ## Continuous Improvement Capture
 
 - [ ] Review recent PRs, CI failures, screenshot handoffs, and release-gate notes for repeatable lessons.
 - [ ] Place each lesson in the narrowest durable home: active brief/PR evidence, maintenance runbook, domain runbook, architecture/testing docs, or a planned brief.
+- [ ] Promote recurring non-failing warnings to a planned hardening brief when they appear in consecutive release gates or correlate with a test failure.
 - [ ] Record owner and next checkpoint for any lesson intentionally deferred out of the current maintenance pass.
 
 ## Performance Budget Ratchet

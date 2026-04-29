@@ -69,14 +69,26 @@ Dependabot PRs are created automatically. They should be treated as a queue of p
 - If the recommendation is `tighten`, tighten one metric one step, then run `npm run test:perf:budgets` and the normal release gate.
 - If the recommendation is `hold`, record the reason and keep thresholds unchanged.
 - If the recommendation is `revert`, stop the maintenance pass and triage the regression before merging unrelated changes.
+- After a threshold has just been tightened, treat repeated `tighten` recommendations from pre-existing trend history as `hold` until at least two new weekly green cycles have accumulated after the latest threshold change.
 
 Current ratchet baseline:
 
-| Date       | Decision  | Metric              | Change             | Rationale                                                                                                                  |
-| ---------- | --------- | ------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| 2026-04-26 | `tighten` | JS transfer default | `450kb` -> `425kb` | Multiple green weekly runs kept the worst margin above the tighten threshold; recent route medians remained about `305kb`. |
+| Date       | Decision  | Metric              | Change             | Rationale                                                                                                                                                                                                        |
+| ---------- | --------- | ------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-26 | `tighten` | JS transfer default | `450kb` -> `425kb` | Multiple green weekly runs kept the worst margin above the tighten threshold; recent route medians remained about `305kb`.                                                                                       |
+| 2026-04-29 | `hold`    | JS transfer default | none               | `npm run test:perf:trend` still recommended `tighten` (`3` weekly green runs, `25.2%` worst margin), but the latest ratchet was only on `2026-04-26`; wait for two new weekly green cycles after that threshold. |
 
 Do not take another stretch-target step until at least two weekly green runs have accumulated after the latest threshold change.
+
+## Dependency-Wave Baseline Audit
+
+After a controlled dependency wave, run one short maintenance-baseline audit before opening more maintenance work:
+
+- confirm the open PR queue is empty or classified,
+- run `npm run test:perf:trend` and record `tighten` / `hold` / `revert`,
+- run or review `npm audit --omit=dev --audit-level=high`,
+- confirm architecture/testing docs match the current major stack and local gate assumptions,
+- record recurring non-failing E2E warnings as diagnostics with an owner or planned hardening brief if they repeat.
 
 ## Billing Carry-Forward
 
