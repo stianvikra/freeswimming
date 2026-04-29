@@ -6,11 +6,11 @@ Keep dependency hygiene, runtime pinning, performance budgets, and release-gate 
 
 ## Cadence
 
-| Rhythm    | Owner action                                                                                                        | Evidence location                                                                                                                   |
-| --------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Weekly    | Review Dependabot PRs, security alerts, CodeQL, nightly E2E, and audit risk.                                        | GitHub PRs/checks plus active maintenance issue if work is needed.                                                                  |
-| Monthly   | Complete one maintenance issue from the monthly reminder workflow, including a lightweight stack/tooling fit check. | GitHub issue created by `.github/workflows/monthly-maintenance-reminder.yml`.                                                       |
-| Quarterly | Run a deeper stack/tooling ecosystem-fit audit and decide whether to open fresh planned briefs.                     | `docs/task-briefs/planned/2026-04-04-dependency-and-tooling-modernization-backlog-10-10.md` plus any new stack/tooling audit brief. |
+| Rhythm    | Owner action                                                                                                        | Evidence location                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Weekly    | Review Dependabot PRs, security alerts, CodeQL, nightly E2E, and audit risk.                                        | GitHub PRs/checks plus active maintenance issue if work is needed.                               |
+| Monthly   | Complete one maintenance issue from the monthly reminder workflow, including a lightweight stack/tooling fit check. | GitHub issue created by `.github/workflows/monthly-maintenance-reminder.yml`.                    |
+| Quarterly | Run a deeper stack/tooling ecosystem-fit audit and decide whether to open fresh planned briefs.                     | Active maintenance issue plus any fresh planned, in-progress, or done stack/tooling audit brief. |
 
 ## Monthly Issue Flow
 
