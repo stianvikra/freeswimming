@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-21-my-library-goals-progress-reset-and-ia-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-21`
-- `updated`: `2026-03-21`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -228,6 +228,8 @@ Critical target categories for `10/10` claim in this brief:
 - The route must stay accessible and easy to scan even with multiple saved goals.
 
 ## Checkpoint Log
+
+- `2026-04-29 | done | lifecycle triage confirmed PR #254 merged as 164eb2e and moved this completed goals reset/IA cleanup brief to done; future goals IA changes should use a new scoped brief | next: no action unless a new goals reset gap is opened`
 
 - `2026-03-21 | perf trend decision: hold | \`npm run verify:pre-pr\` reported two consecutive weekly green perf-budget runs and recommended tightening one stretch target step; decision is \`hold\` for this goals slice because changed scope does not alter the public budget routes tracked by AW-010 | next: revisit tighten/revert choice in the next perf-focused slice or AW-010 checkpoint/PR summary`
 - `2026-03-21 | working tree validated | implemented reset-result route support, calmer goals IA disclosure, summary filtering, action clarity copy, and automated coverage updates; validated with targeted vitest, eslint, typecheck, targeted Playwright, and full \`npm run verify:pre-pr\` | next: stage slice-only files, commit, and prepare PR handoff while leaving unrelated local planning files untouched`

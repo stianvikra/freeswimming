@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-16-poolside-header-lockup-stability-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-16`
-- `updated`: `2026-04-16`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -173,6 +173,8 @@ Strict `10/10` mode for this brief:
   - this slice changes only poolside preview branding stability, not user-facing workflow guidance.
 
 ## Checkpoint Log
+
+- `2026-04-29 | done | lifecycle triage confirmed PR #449 merged as cadf5b2 and moved this completed header lockup stability brief to done | next: no action unless a new header lockup regression appears`
 
 - `2026-04-16 | implementation start | created a dedicated follow-up slice after #448 to stabilize the poolside header lockup and remove the visually regressive fallback path without reopening the broader print-density scope | next: implement deterministic poolside brand lockup + update targeted tests`
 - `2026-04-16 | implementation checkpoint | switched poolside header branding to a deterministic inline lockup so the popup no longer depends on transient logo-image fallback behavior; updated poolside html/popup/route tests to assert the stable lockup contract | next: run full pre-PR verification, then commit and open the fix PR`

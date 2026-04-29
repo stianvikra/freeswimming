@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-16-poolside-note-print-stability-and-density-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-16`
-- `updated`: `2026-04-16`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -233,6 +233,8 @@ Strict `10/10` mode for this brief:
   - this slice changes poolside print-preview behavior and composition only, not owner-facing help text or workflow terminology.
 
 ## Checkpoint Log
+
+- `2026-04-29 | done | lifecycle triage confirmed PR #448 merged as 70a01ba and moved this completed print stability/density brief to done | next: no action unless a new print density regression appears`
 
 - `2026-04-16 | planning | created the dedicated next-step brief after builder closeout to isolate the remaining poolside note problems: disappearing/blank preview behavior, excessive vertical spacing, and orientation-contract clarity for print flows | next: implement the poolside preview hardening + density reconciliation in one scoped follow-up PR`
 - `2026-04-16 | planning refinement | tightened the brief around whitespace-first portrait compaction: cut nonessential vertical height before touching readability, use roughly half an A4 page as the target for normal portrait notes, and keep landscape balanced by letting workout content continue beneath Focus on the right when needed | next: implement preview stability and density reduction without weakening poolside truthfulness`
