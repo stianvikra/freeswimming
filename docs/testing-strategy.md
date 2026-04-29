@@ -38,8 +38,11 @@ Local Playwright runs are isolated by default to avoid collisions with owner-run
 - default test app port: `3100` (`PW_PORT`)
 - default test Next output dir: `.next-playwright` (`NEXT_DIST_DIR`)
 - default local E2E mode: public (`SITE_LOCK_ENABLED=0`)
+- default managed Next devserver heap: `8192` MB (`PW_NEXT_DEV_MAX_OLD_SPACE_SIZE_MB`)
 - existing local server is **not** reused unless explicitly enabled:
   - `PW_REUSE_EXISTING_SERVER=1 npm run test:e2e`
+
+The 8192 MB default was set after the Tailwind 4 migration because full local E2E could otherwise trigger Next's proactive devserver memory restart and create false network/context failures. Keep the default unless a machine-specific maintenance run explicitly records why a lower or higher ceiling is needed.
 
 ## Required Checks Before Merge
 
@@ -59,6 +62,7 @@ Useful commands:
 
 - `npm run test:e2e:mobile` for fast mobile install/nav checks.
 - `npm run test:e2e:extended` for tablet/desktop matrix checks.
+- `PW_NEXT_DEV_MAX_OLD_SPACE_SIZE_MB=8192 npm run verify:pre-merge` when a local machine needs the Playwright-managed Next devserver heap ceiling made explicit.
 - `npm run verify:public` for full verification with public mode forced (`SITE_LOCK_ENABLED=0`).
 - `npm run test:e2e:private-gate` for private access gate checks (`SITE_LOCK_ENABLED=1`).
   - automation default: `PW_SITE_LOCK_BYPASS_TOKEN` (auto-wired by `verify:pre-merge` when available)
@@ -123,6 +127,7 @@ Useful commands:
 - Tighten one step at a time to avoid flaky regressions.
 - Record each tighten/hold/revert decision in the relevant brief or PR summary.
 - Current ratchet baseline: JS transfer default budget tightened from `450kb` to `425kb` on `2026-04-26`; wait for two new weekly green runs before another step.
+- Latest audit decision: on `2026-04-29`, `npm run test:perf:trend` still recommended `tighten` (`3` weekly green runs, `25.2%` worst margin), but the decision is `hold` because the `2026-04-26` ratchet is too recent. Revisit during the next maintenance baseline after two new weekly green cycles.
 
 ## Accessibility
 
@@ -134,3 +139,4 @@ Useful commands:
 - Mobile navigation states and focus behavior.
 - Contact form validation and API protection (origin/rate-limit/anti-spam).
 - Course navigation edge states (first/last lesson behavior).
+- Recurring React hydration warnings in full E2E logs should be recorded as carry-forward diagnostics when gates pass. Promote them to a separate hardening brief if the same route warning appears in consecutive release gates or correlates with a test failure.
