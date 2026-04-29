@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-21-admin-notes-workflow-v2-attachments-and-linking-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-21`
-- `updated`: `2026-03-26`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -225,6 +225,7 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-29 | done | lifecycle closeout confirmed PR #261 merged as 09bdcd1 for attachments/priority/related links and PR #300 merged as 0dc7156 for the related-note jump polish; moved this completed admin notes workflow-v2 brief to done | next: use new scoped briefs for any future admin notes attachment/linking hardening`
 - `2026-03-22 | scope split | moved attachments/linking brief into in-progress and explicitly split app-wide quick capture into a follow-up slice so storage lifecycle, priority, and related-note integrity can ship first without broad route-surface risk | next: implement schema + API + UI foundations for attachments, priority, and related-note links`
 - `2026-03-22 | implementation + verify | implemented attachment storage/delete lifecycle, priority, related-note linking, hydration, help/runbook updates, and authz negative-path coverage; local npm run verify:pre-pr passed | perf-budget trend recommended tighten, decision: hold for this slice because it does not change public core-route perf targets, and revisit tightening in the next AW-010 performance checkpoint/PR summary | next: run final diff review, commit, push, and open/update PR`
 - `2026-03-21 | planning | created separate advanced admin notes brief for screenshots, related-note links, explicit priority, and app-wide admin quick capture so storage-backed lifecycle risk does not block core notes search/filter continuity work | next: ship admin notes core first, then implement attachment/linking/launcher work with full delete-lifecycle coverage`
