@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-16-stable-course-runtime-ids-and-semantic-slugs-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-16`
-- `updated`: `2026-03-16`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -263,3 +263,4 @@ Critical target categories for `10/10` claim:
 - `2026-03-16 | in-progress | slice 2 implementation landed locally: added legacy lesson-ID alias metadata on published course modules/lessons, canonical lesson-ID read-through in /course deep-link + local progress hydration + progress API GET/POST paths, and alias-aware goals/module lookup support via shared runtime helpers; targeted vitest (28 tests), targeted eslint, and npm run typecheck all passed locally | next: run npm run verify:pre-pr, then open/update PR if green`
 - `2026-03-16 | in-progress | slice 2 gate pass: npm run verify:pre-pr passed end-to-end, including lint/admin/env/pr-body, eslint, typecheck, 89 unit test files / 372 tests, build, perf budgets, and Playwright (`81 passed`, `207 skipped`); perf-budget trend again recommended `tighten`, decision: `hold` in this non-perf compatibility slice and carry the tighten prompt into the next perf-relevant PR/brief update | next: inspect final diff, commit, push, and open PR`
 - `2026-03-16 | in-progress | slice 3 implementation + gate pass: lesson runtime IDs are now read-only in editorial UI, normal admin PATCH edits preserve immutable course runtime IDs server-side, and Help/Guide + create/edit copy now explain slug vs runtime ID plus rename-vs-repurpose rules; targeted vitest, targeted eslint, npm run typecheck, admin-short e2e, and final npm run verify:pre-pr all passed (`81 passed`, `207 skipped`); one earlier verify run hit a desktop admin-notes `ECONNRESET`probe, and the required single rerun confirmed flake rather than a deterministic regression | perf-budget trend again recommended`tighten`, decision: `hold` in this non-perf editor-UX slice and carry the tighten prompt into the next perf-relevant PR/brief update | next: inspect final diff, commit, push, and open PR`
+- `2026-04-29 | done | lifecycle closeout confirmed the stable course runtime-ID work shipped across PR #218 (`baf5d95` parser/runtime resolution hardening), PR #219 (`38b1780` legacy lesson-ID compatibility), PR #220 (`678af89` admin runtime-ID lock + Help/Guide), and PR #221 (`58581d4`canonical runtime IDs, semantic slugs, alias/read-through repair, progress, export, and note-context wiring); historical GitHub checks are green for all four PRs, and remaining`modN`/`modN-lN` usage is explicit legacy compatibility rather than canonical identity | next: use scoped follow-up briefs only for future alias-window narrowing or observability cleanup`
