@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-29-node-24-runtime-lts-migration-audit-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-29`
 - `updated`: `2026-04-29`
@@ -127,8 +127,9 @@ Critical target categories for 10/10 claim:
 - `npm run test:perf:budgets` -> PASS after production build; script still recommends one perf-budget tighten after three green weeks, carried forward to perf-baseline rather than this runtime PR
 - `npm run test:e2e` -> PASS via latest `npm run verify:pre-pr`, `112` passed / `344` skipped across configured matrix
 - `npm run verify:pre-pr` -> PASS, full lane selected because `.nvmrc`, `package.json`, and `package-lock.json` changed
-- required GitHub checks -> pending
-- `npm run verify:pre-merge` -> pending
+- required GitHub checks -> PASS on PR `#552`
+- `npm run verify:pre-merge` -> PASS on PR head `a05196d`; full public lane with `112` passed / `344` skipped, private-gate step skipped because `SITE_LOCK_ENABLED!=1`
+- PR `#552` -> merged as `94c934a`
 
 ## Checkpoint Log
 
@@ -139,3 +140,4 @@ Critical target categories for 10/10 claim:
 - `2026-04-29 | in-progress | npm run verify:pre-pr rerun passed full lane after npm ci lockfile repair, including E2E 111 passed / 345 skipped; perf-budget again passed and carried forward the tighten recommendation | next: push PR update, monitor CI, rerun verify:pre-merge`
 - `2026-04-29 | in-progress | GitHub Linux npm ci still required root optional @emnapi/core and @emnapi/runtime lock entries referenced by @rolldown/binding-wasm32-wasi; restored those npm lock entries without changing package.json scope | next: rerun npm ci and full verify:pre-pr, push, monitor CI, then verify:pre-merge`
 - `2026-04-29 | in-progress | npm ci, lint:briefs:all, and full npm run verify:pre-pr passed after root optional @emnapi lock entries were restored; latest E2E result was 112 passed / 344 skipped | next: push PR update, monitor CI, then run verify:pre-merge before merge recommendation`
+- `2026-04-29 | done | PR #552 merged as 94c934a after required GitHub checks and npm run verify:pre-merge passed on a05196d; moved brief to done as AGENTS lifecycle closeout | next: continue from clean main with the next planned maintenance/audit slice`
