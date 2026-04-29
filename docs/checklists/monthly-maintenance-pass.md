@@ -21,6 +21,7 @@ Use this checklist for the monthly issue created by `.github/workflows/monthly-m
 ## Runtime And Tooling
 
 - [ ] Confirm `.nvmrc`, `package.json` `engines.node`, and `packageManager` still match the intended runtime contract.
+- [ ] Confirm the pinned Node runtime remains on a supported LTS line with no near-term EOL risk.
 - [ ] Confirm GitHub Actions still use `node-version-file: .nvmrc`.
 - [ ] Confirm `docs/architecture.md` and `docs/testing-strategy.md` still match the current major stack and local gate assumptions.
 - [ ] Run the lightweight stack/tooling fit check and record each decision as `upgrade now`, `hold`, `watch`, or `replace later`.
