@@ -125,7 +125,7 @@ Critical target categories for 10/10 claim:
 - `npm run test:unit` -> PASS, `163` files / `840` tests
 - `npm run build` -> PASS, Next.js `16.2.4` production build under Node 24
 - `npm run test:perf:budgets` -> PASS after production build; script still recommends one perf-budget tighten after three green weeks, carried forward to perf-baseline rather than this runtime PR
-- `npm run test:e2e` -> PASS via `npm run verify:pre-pr`, `112` passed / `344` skipped across configured matrix
+- `npm run test:e2e` -> PASS via latest `npm run verify:pre-pr`, `111` passed / `345` skipped across configured matrix
 - `npm run verify:pre-pr` -> PASS, full lane selected because `.nvmrc`, `package.json`, and `package-lock.json` changed
 - required GitHub checks -> pending
 - `npm run verify:pre-merge` -> pending
@@ -136,3 +136,4 @@ Critical target categories for 10/10 claim:
 - `2026-04-29 | in-progress | selected upgrade now to Node 24 after official support audit and local validation; updated .nvmrc, package engines, packageManager, @types/node, architecture docs, and maintenance cadence/checklist; lint, typecheck, unit, build, and perf-budget passed under Node 24 | next: run full verify:pre-pr, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
 - `2026-04-29 | in-progress | npm run verify:pre-pr passed full lane under Node 24, including E2E 112 passed / 344 skipped; known hydration and NO_COLOR warnings remained non-blocking and are not introduced by this runtime contract change | next: commit, push, open PR, monitor CI, run verify:pre-merge`
 - `2026-04-29 | in-progress | PR #552 CI install failed because npm 11 lockfile was missing bundled optional @emnapi entries required by npm ci; regenerated package-lock with npm install --package-lock-only and verified npm ci locally | next: push lockfile repair, rerun verify:pre-pr/CI, then verify:pre-merge`
+- `2026-04-29 | in-progress | npm run verify:pre-pr rerun passed full lane after npm ci lockfile repair, including E2E 111 passed / 345 skipped; perf-budget again passed and carried forward the tighten recommendation | next: push PR update, monitor CI, rerun verify:pre-merge`
