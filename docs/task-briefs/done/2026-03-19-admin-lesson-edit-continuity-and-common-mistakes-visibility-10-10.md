@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-03-19-admin-lesson-edit-continuity-and-common-mistakes-visibility-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-03-19`
-- `updated`: `2026-03-19`
+- `updated`: `2026-04-29`
 
 ## Goal
 
@@ -149,5 +149,6 @@ Critical target categories for `10/10` claim in this brief:
 
 ## Checkpoint Log
 
+- `2026-04-29 | done | lifecycle closeout confirmed PR #235 merged as ded0312 and moved this completed admin lesson edit/common-mistakes visibility brief to done; future admin lesson edit or course guidance refinements should use a new scoped brief | next: no action unless a new evidence-backed admin/course friction item is opened`
 - `2026-03-19 | in-progress | brief created for small admin/course friction slice after repeated editorial pain: lesson save exits edit mode and learner common mistakes hides by default; scoped as one low-risk UX slice with local-only visibility memory and no schema changes | next: implement save-stays-open behavior, add per-lesson common-mistakes memory, and cover with targeted tests`
 - `2026-03-19 | in-progress | implementation landed in admin lesson save flow and learner course page: lesson save now stays open and re-baselines from saved response, common mistakes defaults to visible and remembers collapse per lesson locally, admin help contract updated, targeted Playwright coverage green (admin foundation, admin help, course common mistakes visibility) | next: commit slice state, run full verify:pre-pr, then open PR`
