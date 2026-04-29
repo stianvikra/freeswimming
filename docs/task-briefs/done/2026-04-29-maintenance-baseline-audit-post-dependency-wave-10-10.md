@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-29-maintenance-baseline-audit-post-dependency-wave-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-29`
 - `updated`: `2026-04-29`
@@ -131,3 +131,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-29 | in-progress | started post-dependency-wave maintenance baseline audit from clean main after Tailwind closeout; perf trend still recommends tighten, open PR queue is empty, and high/critical audit gate has no high/critical findings | next: update stack/runtime/testing/perf maintenance docs, run docs-only gates, and open PR`
 - `2026-04-29 | in-progress | updated architecture, testing, maintenance cadence, pagespeed governance, monthly checklist, and testing scorecard docs with the post-dependency audit findings; docs-only verify:pre-pr passed before commit | next: commit, rerun verify:pre-pr on the final head, push, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
+- `2026-04-29 | done | PR #545 merged as 56a46bf after docs-only verify:pre-pr, green GitHub checks, and docs-only verify:pre-merge; maintenance baseline now records stack/runtime alignment, Playwright heap guidance, perf-budget hold decision after the 2026-04-26 ratchet, empty PR queue, and hydration-warning carry-forward policy | next: use the normal monthly maintenance cadence for future dependency/perf checks`
