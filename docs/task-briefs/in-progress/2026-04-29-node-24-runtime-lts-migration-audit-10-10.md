@@ -115,6 +115,8 @@ Critical target categories for 10/10 claim:
 - `node -v` -> `v24.13.0`
 - `npm -v` -> `11.6.2`
 - `npm install` -> PASS, refreshed `package-lock.json`
+- `npm install --package-lock-only` -> PASS, restored npm 11 bundled optional lock entries required by clean CI installs
+- `npm ci` -> PASS after lockfile repair
 - `npm audit --omit=dev --audit-level=high` -> PASS for high/critical production threshold; reports two moderate `next`/transitive `postcss` advisories where `npm audit fix --force` would downgrade to `next@9.3.3`, so no force-fix in this runtime slice
 - `npm ls @types/node --depth=0` -> `@types/node@24.12.2`
 - `npm run lint:briefs:all` -> PASS
@@ -133,3 +135,4 @@ Critical target categories for 10/10 claim:
 - `2026-04-29 | in-progress | started Node runtime LTS migration audit from clean main after lifecycle triage; current repo contract is Node 20/npm 10 while official Node 20 EOL is 2026-04-30, local default resolves Node 24/npm 11, and monthly maintenance cadence already requires runtime alignment decisions | next: test Node 24 migration path, update runtime docs/contracts if gates support it, otherwise record hold/watch with fallback rationale`
 - `2026-04-29 | in-progress | selected upgrade now to Node 24 after official support audit and local validation; updated .nvmrc, package engines, packageManager, @types/node, architecture docs, and maintenance cadence/checklist; lint, typecheck, unit, build, and perf-budget passed under Node 24 | next: run full verify:pre-pr, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
 - `2026-04-29 | in-progress | npm run verify:pre-pr passed full lane under Node 24, including E2E 112 passed / 344 skipped; known hydration and NO_COLOR warnings remained non-blocking and are not introduced by this runtime contract change | next: commit, push, open PR, monitor CI, run verify:pre-merge`
+- `2026-04-29 | in-progress | PR #552 CI install failed because npm 11 lockfile was missing bundled optional @emnapi entries required by npm ci; regenerated package-lock with npm install --package-lock-only and verified npm ci locally | next: push lockfile repair, rerun verify:pre-pr/CI, then verify:pre-merge`
