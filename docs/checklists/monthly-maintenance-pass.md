@@ -24,6 +24,10 @@ Use this checklist for the monthly issue created by `.github/workflows/monthly-m
 - [ ] Confirm the pinned Node runtime remains on a supported LTS line with no near-term EOL risk.
 - [ ] Confirm GitHub Actions still use `node-version-file: .nvmrc`.
 - [ ] Confirm `docs/architecture.md` and `docs/testing-strategy.md` still match the current major stack and local gate assumptions.
+- [ ] Review newly introduced tools/integrations since the previous monthly pass, including dependencies, dev dependencies, GitHub Actions, pinned CLIs, SaaS/API integrations, SDKs, webhooks, Supabase/Vercel/Stripe dashboard features, env vars, secret families, and recommended editor extensions.
+- [ ] For each new tool/integration, confirm it has a durable maintenance home, owner, update-discovery path, review cadence, rollback/replace plan, and `upgrade now` / `hold` / `watch` / `replace later` decision.
+- [ ] For each new tool/integration not covered by Dependabot or `npm audit`, confirm the manual review path is documented in the relevant runbook, checklist, architecture doc, secrets/config governance, policy-impact checklist, or planned brief.
+- [ ] Confirm new tools/integrations have documented security, privacy, policy-impact, data-boundary, performance, and secret/config implications, or explicit `N/A` rationale.
 - [ ] Run the lightweight stack/tooling fit check and record each decision as `upgrade now`, `hold`, `watch`, or `replace later`.
 - [ ] Confirm Next.js, React, Node, npm, TypeScript, ESLint, Tailwind/PostCSS, Playwright, Vitest, Supabase, Stripe, GitHub Actions, Vercel, and CI are still the best supported, stable, compatible, and launch-safe choices.
 - [ ] For any major upgrade or tool replacement, open a dedicated migration brief instead of mixing it into feature work.

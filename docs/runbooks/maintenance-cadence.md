@@ -32,6 +32,29 @@ Maintenance is also where repo lessons become durable process improvements. When
 
 Keep the change small and place it where the next operator will naturally look before repeating the same work.
 
+## New Tool/Integration Adoption Gate
+
+Any PR that introduces a new tool or integration must register it in the maintenance system in the same PR or explicitly defer that registration to a named follow-up brief. This applies to:
+
+- npm dependencies and dev dependencies,
+- GitHub Actions and reusable workflow actions,
+- pinned CLIs in workflows or scripts,
+- SaaS/API integrations, SDKs, webhooks, dashboards, and external processors,
+- environment variables, secret families, and config surfaces,
+- database/platform extensions such as Supabase features, storage, realtime, edge functions, or generated-type tooling,
+- recommended editor extensions when they become part of the repo workflow.
+
+The adoption record must answer:
+
+- why the tool is needed and why existing stack-native options are not enough,
+- where the tool is registered (`package.json`, workflow, script, runbook, checklist, architecture doc, secrets inventory, policy checklist, or recommended extensions list),
+- who owns review and maintenance,
+- how updates are discovered and applied (Dependabot, npm audit, GitHub Actions updates, vendor release watch, manual monthly review, or quarterly ecosystem-fit audit),
+- whether the decision is `upgrade now`, `hold`, `watch`, or `replace later`,
+- security, privacy, policy-impact, secret/config, data-boundary, performance, and rollback/replace implications.
+
+If the tool is not represented in `package.json` or `.github/dependabot.yml`, add it to the narrowest durable maintenance surface so it is still reviewed monthly or quarterly. Do not rely on chat memory or local editor state as the only record.
+
 ## Stack/Tooling Ecosystem-Fit Audit
 
 Use maintenance to ask a broader question than "are dependencies outdated?": whether the stack and tools are still the best supported, stable, compatible, and launch-safe choices for this app.
@@ -47,6 +70,7 @@ Monthly lightweight audit:
 
 - open Dependabot and human/agent PR queue classification,
 - `npm audit --omit=dev --audit-level=high`,
+- new tool/integration adoption records since the previous pass, including anything not covered by Dependabot,
 - runtime alignment across `.nvmrc`, `package.json`, GitHub Actions, Vercel, and local gates,
 - runtime support window/EOL posture for the pinned Node LTS line,
 - CI/tooling warnings, release-gate flakes, and recurring non-failing warnings,
