@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PoolsidePreviewPageClient from "@/components/my-library/workouts/PoolsidePreviewPageClient";
 import { writeStoredWorkoutPoolsidePreviewDraft } from "@/lib/workouts/poolside-preview";
@@ -142,6 +143,7 @@ function clearExportOverride() {
 
 describe("PoolsidePreviewPageClient", () => {
   const originalMatchMedia = window.matchMedia;
+  const originalInnerWidthDescriptor = Object.getOwnPropertyDescriptor(window, "innerWidth");
   const iframeDescriptor = Object.getOwnPropertyDescriptor(
     HTMLIFrameElement.prototype,
     "contentWindow"
@@ -198,6 +200,26 @@ describe("PoolsidePreviewPageClient", () => {
       configurable: true,
       value: originalMatchMedia,
     });
+
+    if (originalInnerWidthDescriptor) {
+      Object.defineProperty(window, "innerWidth", originalInnerWidthDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "innerWidth");
+    }
+  });
+
+  it("keeps the embedded preview frame SSR-stable before viewport measurement", () => {
+    navigationState.searchParams = new URLSearchParams("workoutId=workout-1");
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 390,
+    });
+
+    const html = renderToString(<PoolsidePreviewPageClient />);
+
+    expect(html).toContain('data-testid="poolside-preview-frame-state"');
+    expect(html).toContain("width:388px");
+    expect(html).toContain("height:180px");
   });
 
   it("downloads a PNG on desktop fallback", async () => {

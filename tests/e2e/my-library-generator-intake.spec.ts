@@ -6,6 +6,7 @@ import {
   prewarmRoute,
   waitForRouteToSettle,
 } from "./utils/transient-navigation";
+import { collectHydrationConsoleMessages } from "./utils/hydration-console";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 const transientResponseStatuses = new Set([404]);
@@ -263,6 +264,7 @@ test.describe("my library generator intake", () => {
     const uniqueTitle = `QA accepted workout ${Date.now()}`;
 
     await loginToMyLibraryViaDevBypass(page);
+    const hydrationConsoleMessages = collectHydrationConsoleMessages(page);
     await openGeneratorFromMyLibrary(page);
     await waitForGeneratorIntakeClientReady(page);
 
@@ -370,5 +372,6 @@ test.describe("my library generator intake", () => {
     await expect(page.getByTestId("session-generator-draft-preview")).toContainText(
       "Edited in the dedicated workout builder route."
     );
+    expect(hydrationConsoleMessages).toEqual([]);
   });
 });

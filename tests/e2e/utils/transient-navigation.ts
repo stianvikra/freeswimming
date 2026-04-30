@@ -115,12 +115,14 @@ export async function gotoWithTransientRetry(
 
 export async function waitForRouteToSettle(page: Page) {
   const compilingIndicator = page.getByText("Compiling", { exact: true });
+  const renderingIndicator = page.getByText("Rendering", { exact: true });
 
   await expect
     .poll(
       async () => {
         if (page.isClosed()) return "closed";
-        return (await compilingIndicator.count()) === 0 ? "settled" : "compiling";
+        const busyCount = (await compilingIndicator.count()) + (await renderingIndicator.count());
+        return busyCount === 0 ? "settled" : "busy";
       },
       { timeout: ROUTE_SETTLE_TIMEOUT_MS }
     )

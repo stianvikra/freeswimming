@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
@@ -2202,6 +2203,22 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(getDesktopSummaryCard("session-draft-step-summary-1"));
     expect(screen.getByTestId("session-draft-step-duration-mode-1")).toBeVisible();
+  });
+
+  it("keeps desktop card edit disabled during the SSR-stable first render", () => {
+    stubMatchMedia(true);
+
+    const html = renderToString(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: buildWorkoutRecord({ sourceKind: "manual" }),
+          recentWorkouts: [buildWorkoutSummary({ sourceKind: "manual" })],
+        })}
+        preferExpandedDetailsOnLoad
+      />
+    );
+
+    expect(html).toContain('data-desktop-card-clickable="false"');
   });
 
   it("keeps desktop full-card edit disabled on coarse-pointer layouts", async () => {

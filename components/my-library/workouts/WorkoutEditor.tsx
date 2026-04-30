@@ -1779,17 +1779,7 @@ export default function WorkoutEditor({
   const [pendingCustomDistanceFocusStepId, setPendingCustomDistanceFocusStepId] = useState<
     string | null
   >(null);
-  const [desktopCardEditEnabled, setDesktopCardEditEnabled] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    if (typeof window.matchMedia !== "function") {
-      return true;
-    }
-
-    return window.matchMedia(DESKTOP_CARD_EDIT_MEDIA_QUERY).matches;
-  });
+  const [desktopCardEditEnabled, setDesktopCardEditEnabled] = useState(false);
   const savedWorkoutId = savedWorkout?.id ?? null;
   const isManualSourceDraft = draft.sourceFingerprint.startsWith("manual-");
   const simplifyManualMetadata = showCalmBuilderLayout && isManualSourceDraft;
@@ -3424,7 +3414,7 @@ export default function WorkoutEditor({
     const stepSummaryContent = (
       <>
         <p
-          className={`text-xs font-semibold uppercase tracking-wide ${topLevelCategoryLabelClass}`}
+          className={`text-xs font-semibold tracking-wide uppercase ${topLevelCategoryLabelClass}`}
         >
           {stepLabel}
         </p>
@@ -3451,7 +3441,7 @@ export default function WorkoutEditor({
           <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
         ) : null}
         {pendingDelete ? (
-          <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-700">
+          <p className="mt-2 text-[11px] font-semibold tracking-wide text-rose-700 uppercase">
             Will be removed
           </p>
         ) : null}
@@ -3515,7 +3505,7 @@ export default function WorkoutEditor({
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Rest</p>
+              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Rest</p>
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {linkedTopLevelRestStep
                   ? buildManualPoolDisplaySummary(
@@ -3567,7 +3557,7 @@ export default function WorkoutEditor({
                     )
                   }
                   data-testid={`session-draft-step-linked-rest-duration-mode-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {MANUAL_POOL_REST_DURATION_MODES.map((value) => (
                     <option key={value} value={value}>
@@ -3596,7 +3586,7 @@ export default function WorkoutEditor({
                       handleTimeDurationInputChange(linkedTopLevelRestStep.id, event.target.value)
                     }
                     data-testid={`session-draft-step-linked-rest-time-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </label>
               ) : null}
@@ -3613,7 +3603,7 @@ export default function WorkoutEditor({
                       }))
                     }
                     data-testid={`session-draft-step-linked-rest-css-offset-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
                     {SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.map((value) => {
                       const sign = value > 0 ? "+" : "";
@@ -3641,7 +3631,7 @@ export default function WorkoutEditor({
                     }))
                   }
                   minRows={1}
-                  className="mt-2 block w-full resize-y rounded-xl border border-blue-200 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block w-full resize-y rounded-xl border border-blue-200 bg-white px-3 py-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </label>
             </div>
@@ -3942,7 +3932,7 @@ export default function WorkoutEditor({
                     }))
                   }
                   data-testid={`session-draft-step-name-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </label>
             )}
@@ -3959,7 +3949,7 @@ export default function WorkoutEditor({
                     })
                   )
                 }
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
                 {(isLinkedPostSetRest
                   ? (["rest"] as const)
@@ -3989,7 +3979,7 @@ export default function WorkoutEditor({
                     );
                   }}
                   data-testid={`session-draft-step-stroke-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {(isManualPoolMode
                     ? MANUAL_POOL_VISIBLE_STEP_STROKES
@@ -4015,7 +4005,7 @@ export default function WorkoutEditor({
                     }))
                   }
                   data-testid={`session-draft-step-drill-type-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {SESSION_DRAFT_STEP_DRILL_TYPES.map((value) => (
                     <option key={value} value={value}>
@@ -4042,7 +4032,7 @@ export default function WorkoutEditor({
                   aria-describedby={manualPoolDrillNameHelpId}
                   placeholder="Catch drill"
                   data-testid={`session-draft-step-drill-name-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
                 <p id={manualPoolDrillNameHelpId} className="mt-2 text-sm text-slate-500">
                   Names the drill. Use Notes for execution cues.
@@ -4073,7 +4063,7 @@ export default function WorkoutEditor({
                     }))
                   }
                   data-testid={`session-draft-step-equipment-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {SESSION_DRAFT_STEP_EQUIPMENT.map((value) => (
                     <option key={value} value={value}>
@@ -4095,7 +4085,7 @@ export default function WorkoutEditor({
                       intensity: event.target.value as SessionDraftStepIntensityPreset,
                     }))
                   }
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {(isManualPoolMode
                     ? MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS
@@ -4120,7 +4110,7 @@ export default function WorkoutEditor({
                   )
                 }
                 data-testid={`session-draft-step-duration-mode-${index}`}
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
                 {(isManualPoolMode
                   ? getManualPoolDurationModesForCategory(stepCategoryValue)
@@ -4147,7 +4137,7 @@ export default function WorkoutEditor({
                       updateStepDistanceSelection(step.id, event.target.value, stepDistanceUnit)
                     }
                     data-testid={`session-draft-step-distance-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
                     {SESSION_DRAFT_STEP_DISTANCE_PRESETS.map((value) => (
                       <option key={value} value={String(value)}>
@@ -4176,7 +4166,7 @@ export default function WorkoutEditor({
                         }))
                       }
                       data-testid={`session-draft-step-distance-custom-${index}`}
-                      className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                     />
                   </label>
                 ) : null}
@@ -4197,7 +4187,7 @@ export default function WorkoutEditor({
                   }}
                   onChange={(event) => handleTimeDurationInputChange(step.id, event.target.value)}
                   data-testid={`session-draft-step-rest-time-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </label>
             ) : step.durationMode === "fixed_rest" ? (
@@ -4212,7 +4202,7 @@ export default function WorkoutEditor({
                       updateStepDurationClock(step.id, "minutes", event.target.value)
                     }
                     data-testid={`session-draft-step-rest-minutes-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </label>
                 <label className="text-sm text-slate-700">
@@ -4225,7 +4215,7 @@ export default function WorkoutEditor({
                       updateStepDurationClock(step.id, "seconds", event.target.value)
                     }
                     data-testid={`session-draft-step-rest-seconds-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </label>
                 <div className="self-end text-sm text-slate-500">
@@ -4261,7 +4251,7 @@ export default function WorkoutEditor({
                         }))
                   }
                   data-testid={`session-draft-step-time-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </label>
             ) : step.durationMode === "send_off" && isManualPoolMode ? (
@@ -4280,7 +4270,7 @@ export default function WorkoutEditor({
                   }}
                   onChange={(event) => handleTimeDurationInputChange(step.id, event.target.value)}
                   data-testid={`session-draft-step-sendoff-time-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </label>
             ) : step.durationMode === "send_off" ? (
@@ -4295,7 +4285,7 @@ export default function WorkoutEditor({
                       updateStepDurationClock(step.id, "minutes", event.target.value)
                     }
                     data-testid={`session-draft-step-sendoff-minutes-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </label>
                 <label className="text-sm text-slate-700">
@@ -4308,7 +4298,7 @@ export default function WorkoutEditor({
                       updateStepDurationClock(step.id, "seconds", event.target.value)
                     }
                     data-testid={`session-draft-step-sendoff-seconds-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </label>
                 <div className="self-end text-sm text-slate-500">
@@ -4329,7 +4319,7 @@ export default function WorkoutEditor({
                     }))
                   }
                   data-testid={`session-draft-step-css-sendoff-offset-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.map((value) => {
                     const sign = value > 0 ? "+" : "";
@@ -4369,7 +4359,7 @@ export default function WorkoutEditor({
                     }))
                   }
                   data-testid={`session-draft-step-target-mode-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {SESSION_DRAFT_STEP_TARGET_MODES.map((value) => (
                     <option key={value} value={value}>
@@ -4392,7 +4382,7 @@ export default function WorkoutEditor({
                     }))
                   }
                   data-testid={`session-draft-step-target-effort-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {(isManualPoolMode
                     ? MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS
@@ -4418,7 +4408,7 @@ export default function WorkoutEditor({
                       updateStepTargetPace(step.id, "minutes", event.target.value)
                     }
                     data-testid={`session-draft-step-target-pace-minutes-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </label>
                 <label className="text-sm text-slate-700">
@@ -4431,7 +4421,7 @@ export default function WorkoutEditor({
                       updateStepTargetPace(step.id, "seconds", event.target.value)
                     }
                     data-testid={`session-draft-step-target-pace-seconds-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                 </label>
                 <div className="self-end text-sm text-slate-500">
@@ -4454,7 +4444,7 @@ export default function WorkoutEditor({
                     }))
                   }
                   data-testid={`session-draft-step-css-offset-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 >
                   {SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.map((value) => {
                     const sign = value > 0 ? "+" : "";
@@ -4483,7 +4473,7 @@ export default function WorkoutEditor({
                       targetSummary: event.target.value,
                     }))
                   }
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </label>
             )}
@@ -4500,7 +4490,7 @@ export default function WorkoutEditor({
                   }))
                 }
                 minRows={isManualPoolMode ? 1 : 3}
-                className="mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
             </label>
 
@@ -4582,7 +4572,7 @@ export default function WorkoutEditor({
             updateDraft("title", event.target.value);
           }}
           data-testid="session-draft-title"
-          className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
       </label>
 
@@ -4594,7 +4584,7 @@ export default function WorkoutEditor({
             onChange={(event) =>
               updateDraft("sessionType", event.target.value as SessionDraft["sessionType"])
             }
-            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           >
             {SESSION_GENERATOR_SESSION_TYPES.map((value) => (
               <option key={value} value={value}>
@@ -4619,7 +4609,7 @@ export default function WorkoutEditor({
           onChange={(event) => updateDraft("description", event.target.value)}
           data-testid="session-draft-description"
           minRows={isManualPoolMode ? 1 : 4}
-          className="mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          className="mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
       </label>
 
@@ -4739,7 +4729,7 @@ export default function WorkoutEditor({
                   value={poolLengthInput}
                   onChange={(event) => updateDraftPoolLengthInput(event.target.value)}
                   data-testid="session-draft-pool-length-input"
-                  className={`block h-11 w-full rounded-xl border bg-white px-3 pr-10 text-base text-slate-900 shadow-sm outline-none transition ${
+                  className={`block h-11 w-full rounded-xl border bg-white px-3 pr-10 text-base text-slate-900 shadow-sm transition outline-none ${
                     poolSizeInputInvalid
                       ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
                       : "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -4765,7 +4755,7 @@ export default function WorkoutEditor({
             onChange={(event) =>
               updateDraft("effort", event.target.value as SessionDraft["effort"])
             }
-            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           >
             {SESSION_GENERATOR_EFFORT_PRESETS.map((value) => (
               <option key={value} value={value}>
@@ -4846,7 +4836,7 @@ export default function WorkoutEditor({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p
-              className={`text-xs font-semibold uppercase tracking-wide ${
+              className={`text-xs font-semibold tracking-wide uppercase ${
                 garminReadiness.status === "ready" ? "text-emerald-700" : "text-amber-700"
               }`}
             >
@@ -4872,7 +4862,7 @@ export default function WorkoutEditor({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <p
-              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+              className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${
                 garminReadiness.status === "ready"
                   ? "bg-white text-emerald-700"
                   : "bg-white text-amber-700"
@@ -4916,14 +4906,14 @@ export default function WorkoutEditor({
         <section className={integratedSupportSectionClass}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                 {workoutPdfHeadingLabel}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">{workoutPdfBodyCopy}</p>
               <p
                 data-testid="workout-editor-pdf-source"
                 data-pdf-state={handoffDraftState}
-                className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+                className="mt-2 text-xs font-semibold tracking-wide text-slate-600 uppercase"
               >
                 {workoutPdfStateLabel}
               </p>
@@ -4969,7 +4959,7 @@ export default function WorkoutEditor({
       <section className={integratedSupportSectionClass}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+            <p className="text-xs font-semibold tracking-wide text-sky-700 uppercase">
               Garmin-ready JSON
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
@@ -4980,7 +4970,7 @@ export default function WorkoutEditor({
             <p
               data-testid="workout-editor-garmin-export-source"
               data-export-state={handoffDraftState}
-              className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+              className="mt-2 text-xs font-semibold tracking-wide text-slate-600 uppercase"
             >
               {garminExportStateLabel}
             </p>
@@ -5034,7 +5024,7 @@ export default function WorkoutEditor({
           <div className={supportPreviewShellClass}>
             <pre
               data-testid="workout-editor-garmin-export-preview"
-              className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
+              className="max-h-[320px] overflow-auto px-4 py-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-100"
             >
               {garminReadyExportPreview}
             </pre>
@@ -5045,7 +5035,7 @@ export default function WorkoutEditor({
       <section className={integratedSupportSectionClass}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Workout handoff
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
@@ -5055,7 +5045,7 @@ export default function WorkoutEditor({
             <p
               data-testid="workout-editor-handoff-source"
               data-handoff-state={handoffDraftState}
-              className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+              className="mt-2 text-xs font-semibold tracking-wide text-slate-600 uppercase"
             >
               {handoffStateLabel}
             </p>
@@ -5114,7 +5104,7 @@ export default function WorkoutEditor({
           <div className={supportPreviewShellClass}>
             <pre
               data-testid="workout-editor-handoff-preview"
-              className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
+              className="max-h-[320px] overflow-auto px-4 py-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-100"
             >
               {handoffText}
             </pre>
@@ -5124,7 +5114,7 @@ export default function WorkoutEditor({
 
       <section className={integratedSupportSectionClass}>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Draft JSON</p>
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Draft JSON</p>
           <p className="mt-2 text-sm font-medium text-slate-900">
             Raw builder draft for support review only.
           </p>
@@ -5150,17 +5140,17 @@ export default function WorkoutEditor({
 
       <div className="grid gap-3 border-t border-slate-200/80 pt-4 md:grid-cols-3">
         <div className={supportSummaryItemClass}>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Status</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">
             {savedWorkout ? "Accepted" : "Draft"}
           </p>
         </div>
         <div className={supportSummaryItemClass}>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Session</p>
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Session</p>
           <p className="mt-2 text-sm font-semibold text-slate-900">{metadataSummary}</p>
         </div>
         <div className={supportSummaryItemClass}>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Context</p>
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Context</p>
           <p className="mt-2 text-sm font-semibold text-slate-900">
             {draft.goalTitle ?? draft.focusText ?? "Session-only request"}
           </p>
@@ -5204,7 +5194,7 @@ export default function WorkoutEditor({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
             Advanced tools
           </p>
           {supportToolsOpen ? (
@@ -5223,7 +5213,7 @@ export default function WorkoutEditor({
         <div className="flex flex-wrap items-center gap-2">
           <p
             data-testid="workout-editor-support-tools-status"
-            className={`rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+            className={`rounded-full bg-white px-3 py-1 text-xs font-semibold tracking-wide uppercase ${
               garminReadiness.status === "ready" ? "text-emerald-700" : "text-amber-700"
             }`}
           >
@@ -5329,7 +5319,7 @@ export default function WorkoutEditor({
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Session details
               </p>
               <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-3">
@@ -5355,7 +5345,7 @@ export default function WorkoutEditor({
                 <p
                   data-testid="workout-editor-pdf-source"
                   data-pdf-state={handoffDraftState}
-                  className="sr-only mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  className="sr-only mt-1 text-xs font-semibold tracking-wide text-slate-500 uppercase"
                 >
                   {workoutPdfStateLabel}
                 </p>
@@ -5596,7 +5586,7 @@ export default function WorkoutEditor({
                       )}`}
                     >
                       <p
-                        className={`text-xs font-semibold uppercase tracking-wide ${getManualPoolCategoryLabelClass(
+                        className={`text-xs font-semibold tracking-wide uppercase ${getManualPoolCategoryLabelClass(
                           section.category
                         )}`}
                       >
@@ -5624,7 +5614,7 @@ export default function WorkoutEditor({
                               type="button"
                               data-testid={`workout-editor-view-repeat-${lineTarget.repeatGroupId}`}
                               onClick={() => openTargetedRepeatEditor(lineTarget.repeatGroupId)}
-                              className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                              className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:outline-none"
                             >
                               {lineContent}
                             </button>
@@ -5638,7 +5628,7 @@ export default function WorkoutEditor({
                               type="button"
                               data-testid={`workout-editor-view-line-${section.key}-${line.key}`}
                               onClick={() => openTargetedStepEditor(lineTarget.stepId)}
-                              className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                              className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:outline-none"
                             >
                               {lineContent}
                             </button>
@@ -5725,8 +5715,8 @@ export default function WorkoutEditor({
                     className={`rounded-2xl border p-3 sm:p-4 ${
                       pendingRemoval?.kind === "repeat" &&
                       pendingRemoval.repeatGroupId === group.repeatGroupId
-                        ? "border-dashed border-rose-300 bg-rose-50/70 ring-1 ring-inset ring-rose-100"
-                        : `border-blue-100 bg-gradient-to-b from-blue-50/70 to-white ring-1 ring-inset ring-blue-100 ${
+                        ? "border-dashed border-rose-300 bg-rose-50/70 ring-1 ring-rose-100 ring-inset"
+                        : `border-blue-100 bg-gradient-to-b from-blue-50/70 to-white ring-1 ring-blue-100 ring-inset ${
                             isManualPoolMode
                               ? `border-l-4 ${getManualPoolCategoryRailClass(
                                   getManualPoolTopLevelCategory(group)
@@ -5802,13 +5792,13 @@ export default function WorkoutEditor({
                       const repeatSummaryContent = (
                         <>
                           <p
-                            className={`text-xs font-semibold uppercase tracking-wide ${repeatLabelToneClass}`}
+                            className={`text-xs font-semibold tracking-wide uppercase ${repeatLabelToneClass}`}
                           >
                             {repeatLabel}
                           </p>
                           {isManualPoolMode && isRepeatOpen ? (
                             <p className="mt-2">
-                              <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                              <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-wide text-blue-700 uppercase">
                                 Repeat block
                               </span>
                             </p>
@@ -5816,7 +5806,7 @@ export default function WorkoutEditor({
                           <p className="mt-2 text-sm font-medium text-slate-900">{repeatSummary}</p>
                           {pendingRemoval?.kind === "repeat" &&
                           pendingRemoval.repeatGroupId === group.repeatGroupId ? (
-                            <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-700">
+                            <p className="mt-2 text-[11px] font-semibold tracking-wide text-rose-700 uppercase">
                               Will be removed
                             </p>
                           ) : null}
@@ -5960,7 +5950,7 @@ export default function WorkoutEditor({
                                     min={SESSION_DRAFT_REPEAT_MIN}
                                     max={SESSION_DRAFT_REPEAT_MAX}
                                     data-testid={`session-draft-repeat-count-${groupIndex}`}
-                                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
+                                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
                                   />
                                 </label>
                                 {hasEditableRepeatEndingRest ? (
@@ -5975,7 +5965,7 @@ export default function WorkoutEditor({
                                         )
                                       }
                                       data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
-                                      className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
+                                      className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
                                     >
                                       {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
                                         <option key={mode} value={mode}>
@@ -6270,7 +6260,7 @@ export default function WorkoutEditor({
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                     {savedWorkout ? "Saved workout" : "Draft"}
                   </span>
                   <p
@@ -6284,7 +6274,7 @@ export default function WorkoutEditor({
                   <p
                     data-testid="workout-editor-pdf-source"
                     data-pdf-state={handoffDraftState}
-                    className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="mt-2 text-xs font-semibold tracking-wide text-slate-500 uppercase"
                   >
                     {workoutPdfStateLabel}
                   </p>

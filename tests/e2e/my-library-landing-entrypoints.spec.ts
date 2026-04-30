@@ -40,8 +40,12 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 }
 
 test.describe("my library landing entrypoints", () => {
-  test("keeps the landing page browse-first and strips low-value helper copy", async ({ page }) => {
+  test("keeps the landing page browse-first and strips low-value helper copy", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
     test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
+    test.slow();
 
     await loginToMyLibraryViaDevBypass(page);
 

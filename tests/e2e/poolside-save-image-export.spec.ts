@@ -5,6 +5,7 @@ import {
   prewarmRoute,
   waitForRouteToSettle,
 } from "./utils/transient-navigation";
+import { collectHydrationConsoleMessages } from "./utils/hydration-console";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -176,10 +177,11 @@ async function openPoolsidePreviewPopup(triggerPage: Page, trigger: () => Promis
   const popupPromise = triggerPage.waitForEvent("popup");
   await trigger();
   const popup = await popupPromise;
+  const hydrationConsoleMessages = collectHydrationConsoleMessages(popup);
   await popup.waitForLoadState("domcontentloaded");
   await waitForRouteToSettle(popup);
   await expect(popup.getByTestId("poolside-preview-page")).toBeVisible({ timeout: 15_000 });
-  return popup;
+  return { popup, hydrationConsoleMessages };
 }
 
 function installSaveImageDownloadProbeScript() {
@@ -827,7 +829,10 @@ test.describe("poolside save image export", () => {
     await openMetadataPanelIfCollapsed(page);
     await page.getByTestId("session-draft-title").fill(uniqueTitle);
 
-    const localPreviewPopup = await openPoolsidePreviewPopup(page, async () => {
+    const {
+      popup: localPreviewPopup,
+      hydrationConsoleMessages: localPreviewHydrationConsoleMessages,
+    } = await openPoolsidePreviewPopup(page, async () => {
       await page.getByTestId("workout-editor-poolside-pdf-open").click();
     });
 
@@ -842,6 +847,7 @@ test.describe("poolside save image export", () => {
     await expectSaveImageDownloadCount(localPreviewPopup, 1);
     await expectSaveImageCropMatchesNote(localPreviewPopup);
     await localPreviewPopup.close();
+    expect(localPreviewHydrationConsoleMessages).toEqual([]);
 
     const firstSaveResponsePromise = page.waitForResponse(
       (response) =>
@@ -865,7 +871,10 @@ test.describe("poolside save image export", () => {
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     const savedPrintPreviewLink = await openSavedWorkoutPoolsidePanel(page, workoutId);
 
-    const savedPreviewPopup = await openPoolsidePreviewPopup(page, async () => {
+    const {
+      popup: savedPreviewPopup,
+      hydrationConsoleMessages: savedPreviewHydrationConsoleMessages,
+    } = await openPoolsidePreviewPopup(page, async () => {
       await savedPrintPreviewLink.click();
     });
 
@@ -878,5 +887,6 @@ test.describe("poolside save image export", () => {
     await expectSaveImageCropMatchesNote(savedPreviewPopup);
     await expectSaveImageNotice(savedPreviewPopup, expectedLandscapeFileName);
     await savedPreviewPopup.close();
+    expect(savedPreviewHydrationConsoleMessages).toEqual([]);
   });
 });

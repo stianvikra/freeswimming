@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { isMobileProject } from "./project-guards";
 
 async function waitForPageToSettle(page: Page) {
@@ -18,6 +18,41 @@ async function waitForPageToSettle(page: Page) {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       })
   );
+}
+
+async function openNavigationDrawer(page: Page, menu: Locator, drawer: Locator) {
+  const openAttempts: Array<() => Promise<void>> = [
+    async () => {
+      await menu.click();
+    },
+    async () => {
+      await menu.focus();
+      await page.keyboard.press("Enter");
+    },
+    async () => {
+      await menu.click();
+    },
+    async () => {
+      await menu.focus();
+      await page.keyboard.press("Space");
+    },
+  ];
+
+  for (const openAttempt of openAttempts) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await waitForPageToSettle(page);
+    await menu.scrollIntoViewIfNeeded();
+    await openAttempt();
+    await expect(drawer)
+      .toBeVisible({ timeout: 4_000 })
+      .catch(() => {});
+    if (await drawer.isVisible().catch(() => false)) {
+      return;
+    }
+    await page.waitForTimeout(250);
+  }
+
+  await expect(drawer).toBeVisible();
 }
 
 test("mobile fixed nav uses link semantics and menu toggles with Escape", async ({
@@ -49,40 +84,7 @@ test("mobile fixed nav uses link semantics and menu toggles with Escape", async 
 
   await expect(menu).toHaveAttribute("aria-pressed", "false");
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
-  const openAttempts: Array<() => Promise<void>> = [
-    async () => {
-      await menu.click();
-    },
-    async () => {
-      await menu.focus();
-      await page.keyboard.press("Enter");
-    },
-    async () => {
-      await menu.click();
-    },
-    async () => {
-      await menu.focus();
-      await page.keyboard.press("Space");
-    },
-  ];
-
-  let menuOpened = false;
-  for (const openAttempt of openAttempts) {
-    await page.keyboard.press("Escape").catch(() => {});
-    await waitForPageToSettle(page);
-    await menu.scrollIntoViewIfNeeded();
-    await openAttempt();
-    await expect(drawer)
-      .toBeVisible({ timeout: 4_000 })
-      .catch(() => {});
-    if (await drawer.isVisible().catch(() => false)) {
-      menuOpened = true;
-      break;
-    }
-    await page.waitForTimeout(250);
-  }
-
-  expect(menuOpened).toBe(true);
+  await openNavigationDrawer(page, menu, drawer);
   await expect(drawer).toBeVisible();
   await expect(menu).toHaveAttribute("aria-pressed", "true");
 
@@ -127,7 +129,7 @@ test("preview notify route hides fixed mobile nav and keeps header menu access",
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
 
   await expect(menu).toBeVisible();
-  await menu.click();
+  await openNavigationDrawer(page, menu, drawer);
   await expect(drawer).toBeVisible();
 
   await page.keyboard.press("Escape");
