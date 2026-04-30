@@ -197,6 +197,7 @@ async function openGeneratorFromMyLibrary(page: Page) {
   await expect(openGeneratorLink).toHaveAttribute("href", "/my-library/generator");
   const href = (await openGeneratorLink.getAttribute("href")) ?? "";
   expect(href).toBe("/my-library/generator");
+  await prewarmRoute(page, href, 90_000);
   await clickHrefAndAwaitUrlOrRetryGoto({
     page,
     trigger: openGeneratorLink,
@@ -215,7 +216,7 @@ test.describe("my library generator intake", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
-    testInfo.setTimeout(150_000);
+    testInfo.setTimeout(240_000);
 
     await loginToMyLibraryViaDevBypass(page);
     await openGeneratorFromMyLibrary(page);

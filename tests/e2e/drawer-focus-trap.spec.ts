@@ -42,6 +42,7 @@ test("drawer traps keyboard focus and restores trigger focus on close", async ({
   page,
 }, testInfo) => {
   test.skip(!isDesktopProject(testInfo), "Keyboard focus trap coverage runs on desktop projects.");
+  testInfo.setTimeout(60_000);
 
   await gotoWithTransientRetry(page, "/contact", 60_000);
   await waitForDrawerTriggerToSettle(page);

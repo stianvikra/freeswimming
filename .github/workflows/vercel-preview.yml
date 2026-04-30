@@ -48,7 +48,7 @@ jobs:
 
       - name: Install Vercel CLI
         if: steps.vercel-secrets.outputs.available == 'true'
-        run: npm i -g vercel@latest
+        run: npm i -g vercel@52.0.0
 
       - name: Pull Vercel project settings
         if: steps.vercel-secrets.outputs.available == 'true'

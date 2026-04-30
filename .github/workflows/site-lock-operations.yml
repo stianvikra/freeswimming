@@ -147,7 +147,7 @@ jobs:
           fi
 
       - name: Install Vercel CLI
-        run: npm i -g vercel@latest
+        run: npm i -g vercel@52.0.0
 
       - name: Validate lock prerequisites for lock_on
         if: inputs.action == 'lock_on'
