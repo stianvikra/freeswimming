@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-30-tool-integration-adoption-gate-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-30`
 - `updated`: `2026-04-30`
