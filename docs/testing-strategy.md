@@ -140,3 +140,4 @@ Useful commands:
 - Contact form validation and API protection (origin/rate-limit/anti-spam).
 - Course navigation edge states (first/last lesson behavior).
 - Recurring React hydration warnings in full E2E logs should be recorded as carry-forward diagnostics when gates pass. Promote them to a separate hardening brief if the same route warning appears in consecutive release gates or correlates with a test failure.
+- When full gates expose slow failures, flakes, or recurring non-failing warnings, use `docs/runbooks/test-gate-efficiency-and-warning-triage.md` before changing test order or adding broad retries. Prefer targeted preflight packs for changed/known-risk surfaces, then keep `verify:pre-pr` and `verify:pre-merge` as the canonical broad gates.
