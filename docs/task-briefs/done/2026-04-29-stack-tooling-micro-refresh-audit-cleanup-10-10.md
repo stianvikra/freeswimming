@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-29-stack-tooling-micro-refresh-audit-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-29`
 - `updated`: `2026-04-29`
