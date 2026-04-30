@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-30-test-gate-efficiency-and-recurring-warning-triage-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-30`
 - `updated`: `2026-04-30`
@@ -133,3 +133,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-04-30 | in-progress | started after PR #559/#560 closeout to make the learned gate-friction patterns durable before the next session-builder implementation slice | next: add runbook, testing strategy pointer, high-cost debug log entry, then run docs gates`
 - `2026-04-30 | in-progress | added test-gate efficiency runbook, testing strategy pointer, and high-cost debug log entry for the My Library full-suite route-readiness pattern | next: run docs-only gates, commit, and open PR`
+- `2026-04-30 | done | implementation PR #561 merged as 44cab3b with docs-only pre-pr/pre-merge gates and CI green | next: lifecycle closeout moved this brief to done`
