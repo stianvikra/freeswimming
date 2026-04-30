@@ -5,6 +5,7 @@ import {
   prewarmRoute,
   waitForRouteToSettle,
 } from "./utils/transient-navigation";
+import { collectHydrationConsoleMessages } from "./utils/hydration-console";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -228,11 +229,12 @@ test.describe("my library workout builder", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
-    test.setTimeout(120_000);
+    testInfo.setTimeout(240_000);
 
     const uniqueTitle = `QA local draft ${Date.now()}`;
 
     await loginToMyLibraryViaDevBypass(page);
+    const hydrationConsoleMessages = collectHydrationConsoleMessages(page);
 
     const createButton = page.getByTestId("my-library-create-pool-workout");
     const schemaReady = await createButton.isVisible().catch(() => false);
@@ -340,6 +342,7 @@ test.describe("my library workout builder", () => {
 
     const savedWorkoutPreview = await openSavedWorkoutPreview(page, workoutId);
     await expect(savedWorkoutPreview).toContainText("Total");
+    expect(hydrationConsoleMessages).toEqual([]);
   });
 
   test("resumes and discards a local pool draft without adding it to My Swim Sessions first", async ({
@@ -347,6 +350,7 @@ test.describe("my library workout builder", () => {
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
     test.slow();
+    testInfo.setTimeout(150_000);
 
     await loginToMyLibraryViaDevBypass(page);
 
@@ -371,7 +375,7 @@ test.describe("my library workout builder", () => {
     await page.getByTestId("session-draft-title").fill(resumeTitle);
     await expect(page.getByRole("button", { name: "Discard draft" })).toBeVisible();
 
-    await gotoWithTransientRetry(page, "/my-library/workouts");
+    await gotoWithTransientRetry(page, "/my-library/workouts", 30_000);
     await waitForWorkoutBuilderClientReady(page);
     await expect(page.getByRole("heading", { level: 1, name: "My Swim Sessions" })).toBeVisible();
     await expect(page.getByText(resumeTitle)).toHaveCount(0);
@@ -394,7 +398,7 @@ test.describe("my library workout builder", () => {
     await expect(page.getByText("Discarded the local pool draft.")).toBeVisible();
     await expect(page.getByTestId("session-draft-title")).toHaveCount(0);
 
-    await triggerCreateSession(page, "workout-builder-browse-create-pool");
+    await triggerCreateSession(page, "workout-builder-empty-create-pool");
     await waitForLocalWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);

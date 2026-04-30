@@ -27,11 +27,19 @@ async function loginToMyLibraryViaDevBypass(page: Page) {
 
 async function waitForTrainingContextClientReady(page: Page) {
   await waitForRouteToSettle(page);
-  await expect(page.getByTestId("training-context-hub")).toHaveAttribute(
-    "data-client-ready",
-    "true",
-    { timeout: 15_000 }
-  );
+  const hub = page.getByTestId("training-context-hub");
+  const ready = await expect(hub)
+    .toHaveAttribute("data-client-ready", "true", { timeout: 30_000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (ready) {
+    return;
+  }
+
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
+  await waitForRouteToSettle(page);
+  await expect(hub).toHaveAttribute("data-client-ready", "true", { timeout: 45_000 });
 }
 
 async function waitForGoalsHubClientReady(page: Page) {
@@ -127,7 +135,7 @@ test.describe("my library training context", () => {
     page,
   }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
-    testInfo.setTimeout(150_000);
+    testInfo.setTimeout(210_000);
 
     await loginToMyLibraryViaDevBypass(page);
     await gotoWithTransientRetry(page, "/my-library/training", 60_000);

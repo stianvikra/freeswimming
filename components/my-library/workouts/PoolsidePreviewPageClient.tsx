@@ -93,9 +93,7 @@ export default function PoolsidePreviewPageClient() {
   const [localPreviewDraft, setLocalPreviewDraft] = useState<
     StoredWorkoutPoolsidePreviewDraft | null | undefined
   >(undefined);
-  const [previewViewportWidth, setPreviewViewportWidth] = useState(() =>
-    typeof window === "undefined" ? 0 : Math.max(0, window.innerWidth - 56)
-  );
+  const [previewViewportWidth, setPreviewViewportWidth] = useState(0);
   const [embeddedPreviewHeight, setEmbeddedPreviewHeight] = useState(
     EMBEDDED_PREVIEW_MIN_READY_HEIGHT
   );
@@ -148,30 +146,47 @@ export default function PoolsidePreviewPageClient() {
   useLayoutEffect(() => {
     const viewport = previewViewportRef.current;
 
-    if (!viewport || typeof ResizeObserver === "undefined") {
+    if (!viewport) {
       return;
     }
 
-    const measure = () => {
-      setPreviewViewportWidth(viewport.getBoundingClientRect().width);
+    const resolveViewportWidth = (measuredWidth: number) => {
+      if (measuredWidth > 0) {
+        return measuredWidth;
+      }
+
+      return Math.max(0, window.innerWidth - 56);
     };
 
+    const measure = () => {
+      setPreviewViewportWidth(resolveViewportWidth(viewport.getBoundingClientRect().width));
+    };
+
+    measure();
+
+    if (typeof ResizeObserver === "undefined") {
+      const rafId = window.requestAnimationFrame(measure);
+
+      return () => {
+        window.cancelAnimationFrame(rafId);
+      };
+    }
+
     const observer = new ResizeObserver((entries) => {
-      const nextWidth = entries[0]?.contentRect.width ?? 0;
+      const nextWidth = resolveViewportWidth(entries[0]?.contentRect.width ?? 0);
       setPreviewViewportWidth((current) =>
         Math.abs(current - nextWidth) < 1 ? current : nextWidth
       );
     });
 
     observer.observe(viewport);
-    measure();
     const rafId = window.requestAnimationFrame(measure);
 
     return () => {
       window.cancelAnimationFrame(rafId);
       observer.disconnect();
     };
-  }, []);
+  }, [localPreviewDraft, previewSource.previewId, previewSource.workoutId]);
 
   const previewSourceLabel = previewSource.workoutId ? "Saved workout" : "Current builder state";
   const previewUnavailable =
@@ -452,7 +467,7 @@ export default function PoolsidePreviewPageClient() {
           <div className="border-b border-blue-100 bg-blue-50/75 px-4 py-4 sm:px-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                   Poolside Note
                 </p>
                 <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-[2rem]">
@@ -513,7 +528,7 @@ export default function PoolsidePreviewPageClient() {
 
             <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <label className="grid gap-2" htmlFor="poolside-preview-style">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Ink usage
                 </span>
                 <select
@@ -526,7 +541,7 @@ export default function PoolsidePreviewPageClient() {
                     )
                   }
                   data-testid="poolside-preview-style"
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="color">Color mode</option>
                   <option value="ink_saver">Ink saver</option>
@@ -534,7 +549,7 @@ export default function PoolsidePreviewPageClient() {
               </label>
 
               <label className="grid gap-2" htmlFor="poolside-preview-layout">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Layout
                 </span>
                 <select
@@ -547,7 +562,7 @@ export default function PoolsidePreviewPageClient() {
                     )
                   }
                   data-testid="poolside-preview-layout"
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="portrait">Portrait</option>
                   <option value="landscape">Landscape</option>
@@ -555,7 +570,7 @@ export default function PoolsidePreviewPageClient() {
               </label>
 
               <label className="grid gap-2" htmlFor="poolside-preview-notation">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Abbreviations
                 </span>
                 <select
@@ -568,7 +583,7 @@ export default function PoolsidePreviewPageClient() {
                     )
                   }
                   data-testid="poolside-preview-notation"
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="auto">Auto</option>
                   <option value="full">Complete words</option>
@@ -577,7 +592,7 @@ export default function PoolsidePreviewPageClient() {
               </label>
 
               <label className="grid gap-2" htmlFor="poolside-preview-rest-layout">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Rest placement
                 </span>
                 <select
@@ -590,7 +605,7 @@ export default function PoolsidePreviewPageClient() {
                     )
                   }
                   data-testid="poolside-preview-rest-layout"
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="auto">Auto</option>
                   <option value="inline">All inline</option>
@@ -599,7 +614,7 @@ export default function PoolsidePreviewPageClient() {
               </label>
 
               <label className="grid gap-2" htmlFor="poolside-preview-session-note">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Session note
                 </span>
                 <select
@@ -612,7 +627,7 @@ export default function PoolsidePreviewPageClient() {
                     )
                   }
                   data-testid="poolside-preview-session-note"
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="off">Hidden</option>
                   <option value="include">Shown</option>
@@ -620,7 +635,7 @@ export default function PoolsidePreviewPageClient() {
               </label>
 
               <label className="grid gap-2" htmlFor="poolside-preview-step-notes">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Step notes
                 </span>
                 <select
@@ -633,7 +648,7 @@ export default function PoolsidePreviewPageClient() {
                     )
                   }
                   data-testid="poolside-preview-step-notes"
-                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="off">Hidden</option>
                   <option value="drills_only">Drill steps</option>
@@ -682,7 +697,7 @@ export default function PoolsidePreviewPageClient() {
                     className={`relative origin-top-left ${
                       embeddedPreviewReady
                         ? "opacity-100"
-                        : "pointer-events-none absolute left-0 top-0 opacity-0"
+                        : "pointer-events-none absolute top-0 left-0 opacity-0"
                     }`}
                     aria-hidden={embeddedPreviewReady ? undefined : true}
                     style={{
