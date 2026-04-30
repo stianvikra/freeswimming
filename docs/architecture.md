@@ -8,7 +8,7 @@
 - CSS pipeline: Tailwind 4 via `@tailwindcss/postcss`, `app/globals.css`, and `tailwind.config.js`
 - Testing: Playwright (E2E), Vitest + Testing Library (unit/component)
 - Data/Auth: Supabase Postgres + Supabase Auth
-- Runtime/package manager: Node 24 (`.nvmrc`, `engines.node 24.x`) + npm 11.6.2
+- Runtime/package manager: Node 24 (`.nvmrc`, `engines.node 24.x`) + npm 11.11.0
 
 ## Runtime Boundaries
 
