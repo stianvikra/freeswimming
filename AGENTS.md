@@ -190,6 +190,7 @@ This file defines how coding agents should collaborate in this repository.
 - Start a new chat or provide a carry-forward prompt when it is the best way to preserve momentum and reduce risk, not only when context is already heavy.
 - Mandatory chat-handoff gate:
   - After every merge + local sync, and before creating a new implementation branch or starting a new active brief, assistant must explicitly assess whether to continue in the current chat or start a new chat.
+  - If `npm run post-merge:preflight` surfaces a repo-managed docs-only closeout for the just-merged workstream, complete that closeout PR in the same chat before making the chat-handoff assessment. Treat the closeout as part of the same workstream, not as a new implementation slice.
   - The post-merge handoff must include exactly one of:
     - `Chat: continue here` with a short rationale, or
     - `Chat: start new chat` with a ready-to-use carry-forward prompt.

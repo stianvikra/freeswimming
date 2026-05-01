@@ -17,7 +17,8 @@ Use this as the canonical repo path for PR sync, merge readiness, and baton pass
    - `git checkout main`
    - `git pull --ff-only origin main`
    - `npm run post-merge:preflight`
-9. Before creating a new implementation branch or starting a new active brief, complete the mandatory chat-handoff gate below.
+9. If post-merge preflight reports a repo-managed docs-only closeout for the just-merged workstream, complete that closeout PR in the same chat before handoff assessment.
+10. Before creating a new implementation branch or starting a new active brief, complete the mandatory chat-handoff gate below.
 
 Use raw `gh pr create`, raw `gh pr edit`, or manual PR-body editing only when the repo entrypoint is blocked by credentials or sandbox limits.
 
@@ -35,6 +36,8 @@ Start a new chat or provide a carry-forward prompt when that is the best way to 
 ## Mandatory Handoff Gate After Merge / Before New Implementation
 
 This gate is required after each merge + local sync and before any new implementation branch, new active brief, or major workstream pivot.
+
+If `npm run post-merge:preflight` surfaces a repo-managed docs-only closeout for the just-merged workstream, do that closeout in the same chat first. It is part of the current workstream's closeout, not a reason to start a new chat.
 
 Assessment:
 
