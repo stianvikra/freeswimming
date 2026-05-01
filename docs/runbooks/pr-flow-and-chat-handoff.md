@@ -17,6 +17,7 @@ Use this as the canonical repo path for PR sync, merge readiness, and baton pass
    - `git checkout main`
    - `git pull --ff-only origin main`
    - `npm run post-merge:preflight`
+9. Before creating a new implementation branch or starting a new active brief, complete the mandatory chat-handoff gate below.
 
 Use raw `gh pr create`, raw `gh pr edit`, or manual PR-body editing only when the repo entrypoint is blocked by credentials or sandbox limits.
 
@@ -30,6 +31,36 @@ Use raw `gh pr create`, raw `gh pr edit`, or manual PR-body editing only when th
 ## New-Chat Rule
 
 Start a new chat or provide a carry-forward prompt when that is the best way to preserve momentum and reduce risk. Heavy context is one trigger, not the only trigger.
+
+## Mandatory Handoff Gate After Merge / Before New Implementation
+
+This gate is required after each merge + local sync and before any new implementation branch, new active brief, or major workstream pivot.
+
+Assessment:
+
+1. State the latest stable checkpoint:
+   - merged PR number,
+   - merge commit,
+   - local `main` sync status,
+   - active branch or `main`.
+2. State the next intended workstream:
+   - brief path,
+   - branch name if known,
+   - whether the next work is docs/governance, maintenance, backend, or UI.
+3. Choose one outcome:
+   - `Chat: continue here` when the next step is the same workstream, context is still narrow, and no screenshot/UI implementation flow starts.
+   - `Chat: start new chat` when the primary goal changes, a new implementation slice starts, docs/maintenance switches to feature work, UI work with screenshot handoff starts, several PRs/briefs are mixed in the thread, or the current thread has become hard to trust.
+4. If the outcome is `Chat: start new chat`, provide a ready-to-use carry-forward prompt and stop before implementation.
+
+Default to a new chat for:
+
+- docs/roadmap/maintenance closeout followed by feature implementation,
+- feature A followed by feature B,
+- a new UI implementation slice that will require screenshot handoff,
+- a post-merge state where the next branch would be unrelated to the just-merged PR,
+- long threads with many PR approvals, merges, or carry-forward decisions.
+
+The owner may explicitly override the recommendation and continue in the same chat, but the assessment must still be made and recorded in the handoff.
 
 Strong triggers:
 
