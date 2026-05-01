@@ -63,6 +63,8 @@ if [ "$branch" = "$base_branch" ]; then
   exit 1
 fi
 
+bash ./scripts/lib/assert-branch-current-with-base.sh "$base_branch"
+
 open_in_safari() {
   local url="$1"
   if [ "$print_only" -eq 1 ]; then

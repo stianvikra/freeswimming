@@ -17,6 +17,37 @@
 - Shared helpers and UI primitives live in `components/ui/*`.
 - Database schema + RLS changes are stored as SQL migrations under `supabase/migrations/*`.
 
+## UI Architecture And Reference Surfaces
+
+- New UI that represents the same domain object or workflow as an existing mature surface must identify the reference surface before implementation.
+- Prefer one shared component or view-model contract over visually copying markup between routes.
+- If a new surface cannot reuse the existing component directly, it must adapt its data into the same display contract or document the exception in the active brief.
+- Visual screenshot handoff for these changes should be `after/reference`, not only standalone after-screenshots.
+- For swim workout/session step displays, use `docs/design/session-step-surface-contract.md` as the canonical Edit/Rearrange/View display contract.
+
+## Stack Practice Gates
+
+- React/Next.js:
+  - prefer shared components, typed adapter/view-model contracts, and clear server/client boundaries before route-local duplication,
+  - pages own routing and data loading; shared domain UI should live under `components/` or a narrower feature module.
+- TypeScript/domain logic:
+  - domain state changes should use canonical types, validation helpers, and deterministic guards rather than ad hoc object mutation.
+- Supabase:
+  - schema/RLS changes require explicit migrations, least-privilege policies, generated type updates, and negative-path tests.
+- External services:
+  - integrations should use official SDK/docs where practical and define secret handling, idempotency, retries, webhook verification, and support diagnostics in the brief.
+- UI/design:
+  - mature surfaces are reference contracts; new surfaces should reuse tokens/components and prove parity with screenshots when visual behavior changes.
+- Testing:
+  - shared contracts should have focused unit/component coverage, while route tests cover only route-specific flow differences.
+
+### Current Architecture Assessment
+
+- The app is on the right React path where it uses shared route components such as `WorkoutEditor`, typed draft contracts, and focused adapter helpers.
+- The main session-step architecture gap is that `WorkoutEditor` still owns too much rendering, grouping, and surface-specific mapping in one large file.
+- The 10/10 target is a smaller shared session-step view-model and renderer that manual builder, AI generator, poolside note, PDF/export, and future planner surfaces consume through typed adapters.
+- When a shared reference surface changes, the owning PR should sweep related surfaces and either update them in the same slice or record a follow-up brief with the exception.
+
 ## Data Contract (Commerce + Progress)
 
 - Core ownership and purchase tables:

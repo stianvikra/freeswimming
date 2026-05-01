@@ -63,7 +63,7 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
   - `threshold_css`
   - `speed`
   - `race_pace`
-- Supported user-facing effort choices in v1:
+- Internal generated-effort choices in v1, derived from session type rather than exposed as a primary generator input:
   - `easy`
   - `moderate`
   - `hard`
@@ -90,14 +90,13 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
   - Title is never fixed or identity-bearing.
 - Coach behavior:
   - AI should act like a professional freestyle coach matched to the swimmer level.
-  - AI should explain the session focus, why the main set was chosen, and what the swimmer should adjust if the session feels too easy or too hard.
+  - AI should preserve session focus, structure rationale, and adjustment guidance in editable draft metadata/fields, but V1 should not render bulky coach prose inside the primary step cards.
   - `coach_decides` defaults should be explicit in the request summary and generated rationale, not hidden assumptions.
 
 ## UX Direction For V1
 
 - Ask for the minimum information that materially shapes one session while keeping advanced detail optional:
   - session type,
-  - effort,
   - pool vs open water,
   - pool length when relevant,
   - distance or estimated-time target,
@@ -127,7 +126,7 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
   - keep the existing Swim Profile value.
 - Default generated pool sessions should include:
   - an easy warmup,
-  - a main set matched to session type and effort,
+  - a main set matched to session type and derived effort,
   - a cooldown,
   - unless a documented short-session or open-water rule intentionally changes that structure.
 
@@ -143,7 +142,6 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Input contract for one generated session:
   - intake handoff payload,
   - selected session type,
-  - selected effort preset,
   - selected environment,
   - selected pool length when environment is `pool`,
   - selected primary sizing mode:
@@ -168,7 +166,7 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Generation rules:
   - Garmin-familiar structured step output only,
   - deterministic warmup/main/cooldown structure rules,
-  - simple effort UX mapped to canonical threshold-based targeting when threshold context exists,
+  - session-type-derived effort mapped to canonical threshold-based targeting when threshold context exists,
   - deterministic fallback when threshold context does not exist,
   - avoid incompatible step shapes for later export/send,
   - constrain incompatible combinations explicitly:
@@ -177,7 +175,7 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
   - create one generated workout draft,
   - keep draft separate from accepted canonical workout state until review/accept,
   - show editable title suggestion(s),
-  - show coach rationale covering focus, structure, intensity, drill/kick/rest choices, and expected adaptation,
+  - preserve coach rationale covering focus, structure, intensity, drill/kick/rest choices, and expected adaptation without crowding the primary step-list UI,
   - preserve generation metadata needed for later review and analytics,
   - preserve which values came from Swim Profile, temporary override, free-text constraint, or `coach_decides`,
   - hand accepted draft into the same canonical workout payload shape later manual-builder work will reuse.
@@ -240,38 +238,62 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Mapping      | Target Threshold                                                                                                                                | Evidence                              |
-| --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Product goals and IA                          | `target`     | Users can generate one swim session from explicit choices and clearly understand `draft` vs `accepted` state with no hidden AI assumptions.     | UX flow + route/state contract        |
-| UX flow clarity                               | `target`     | Users can request, review, and hand off one generated session for editing in <= 2 minutes median without documentation.                         | e2e + timed manual QA                 |
-| Visual design quality                         | `supporting` | Supporting only: visual language should align with My Library/workout flows, but broader UI system ownership is downstream.                     | scope rationale + downstream QA       |
-| Business logic correctness and data integrity | `target`     | Generated output always validates against the canonical workout contract before acceptance and never mutates accepted workouts implicitly.      | schema tests + integration invariants |
-| Admin editor ergonomics                       | `supporting` | Supporting only: no direct admin/editor workflow is introduced in this user-facing generator slice.                                             | scope rationale                       |
-| Accessibility (a11y)                          | `target`     | Session-type, effort, pool-length, stroke, and review controls are keyboard/touch accessible with clear labels and focus recovery.              | a11y checks + e2e                     |
-| Performance (CWV + payloads)                  | `supporting` | Supporting only: one-session generation flow should avoid obvious payload bloat or blocking regressions on authenticated routes.                | scope rationale + perf review         |
-| Data placement and sync boundaries            | `target`     | Generated previews stay local/provisional until accepted, and accepted workouts become normal canonical workouts with no AI-only storage model. | data contract + integration tests     |
-| Caching and invalidation strategy             | `supporting` | Supporting only: regenerate/accept/delete actions must invalidate stale preview and workout reads deterministically.                            | cache notes + scope rationale         |
-| Reliability and failure handling              | `target`     | Invalid output, missing threshold context, and AI failures all produce recoverable states with no dead-end draft confusion.                     | negative-path tests + e2e             |
-| Security and authz                            | `target`     | Protected generation/save flows fail closed and cannot expose or save another user's private intake context or workout draft.                   | API negative-path tests               |
-| Privacy and compliance                        | `supporting` | Supporting only: prompts, constraints, and analytics must avoid leaking unnecessary private free text.                                          | payload review + scope rationale      |
-| Content governance                            | `supporting` | Supporting only: canonical workout governance is inherited from the shared workout contract and builder slices.                                 | linked brief + scope rationale        |
-| Admin workflow and editability                | `supporting` | Supporting only: editability is owned by the shared workout editor rather than a dedicated admin surface.                                       | scope rationale                       |
-| SEO and crawlability                          | `supporting` | Supporting only: authenticated generator drafts are not primary public crawl surfaces.                                                          | scope rationale                       |
-| AI discoverability                            | `supporting` | Supporting only: this slice is about private AI generation safety, not public AI-discoverable publishing.                                       | scope rationale                       |
-| Analytics and KPI observability               | `supporting` | Supporting only: generation start/success/failure/acceptance events should remain available with safe payloads.                                 | event contract notes                  |
-| Commerce and revenue ops                      | `supporting` | Supporting only: no direct billing/entitlement mutation ships in this session-generator slice.                                                  | scope rationale                       |
-| Incident response and support operations      | `supporting` | Supporting only: AI rejection and save-failure states must leave support-visible diagnostics and recovery guidance.                             | runbook/error contract                |
-| Finance and reporting operations              | `N/A`        | N/A because this slice introduces no finance/reporting mutation or ledger-affecting behavior.                                                   | explicit scope rationale              |
-| i18n operational readiness                    | `supporting` | Supporting only: labels such as session type, effort, and generated guidance must remain locale-extensible later.                               | copy review + scope rationale         |
-| Stack-fit and dependency discipline           | `target`     | Use existing app validation, storage, and test patterns; avoid new orchestration dependencies unless clearly justified.                         | dependency diff + code review         |
-| Testing and QA automation                     | `target`     | Generate/review/accept/edit handoff, invalid-output fallback, and protected negative paths are covered before merge.                            | unit/integration/e2e + verify         |
-| Scalability and cost efficiency               | `supporting` | Supporting only: one-session generation should avoid runaway retries, oversized prompts, or oversized JSON output.                              | scope rationale + usage notes         |
-| DevOps and rollback readiness                 | `target`     | The session generator can be disabled or rolled back without corrupting saved canonical workouts or manual-builder reads.                       | rollout notes + release checklist     |
+| Category                                      | Mapping      | Target Threshold                                                                                                                                                                           | Evidence                              |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- |
+| Product goals and IA                          | `target`     | Users can generate one swim session from explicit choices and clearly understand `draft` vs `accepted` state with no hidden AI assumptions.                                                | UX flow + route/state contract        |
+| UX flow clarity                               | `target`     | Users can request, review, and hand off one generated session for editing in <= 2 minutes median without documentation.                                                                    | e2e + timed manual QA                 |
+| Visual design quality                         | `target`     | Generated setup and draft-review UI must align with the mature manual pool builder surface, including mode tabs, step cards, rails, rest display, and screenshot after/reference evidence. | screenshot handoff + UI tests         |
+| Business logic correctness and data integrity | `target`     | Generated output always validates against the canonical workout contract before acceptance and never mutates accepted workouts implicitly.                                                 | schema tests + integration invariants |
+| Admin editor ergonomics                       | `supporting` | Supporting only: no direct admin/editor workflow is introduced in this user-facing generator slice.                                                                                        | scope rationale                       |
+| Accessibility (a11y)                          | `target`     | Session-type, pool-length, stroke, structure, and review controls are keyboard/touch accessible with clear labels and focus recovery.                                                      | a11y checks + e2e                     |
+| Performance (CWV + payloads)                  | `supporting` | Supporting only: one-session generation flow should avoid obvious payload bloat or blocking regressions on authenticated routes.                                                           | scope rationale + perf review         |
+| Data placement and sync boundaries            | `target`     | Generated previews stay local/provisional until accepted, and accepted workouts become normal canonical workouts with no AI-only storage model.                                            | data contract + integration tests     |
+| Caching and invalidation strategy             | `supporting` | Supporting only: regenerate/accept/delete actions must invalidate stale preview and workout reads deterministically.                                                                       | cache notes + scope rationale         |
+| Reliability and failure handling              | `target`     | Invalid output, missing threshold context, and AI failures all produce recoverable states with no dead-end draft confusion.                                                                | negative-path tests + e2e             |
+| Security and authz                            | `target`     | Protected generation/save flows fail closed and cannot expose or save another user's private intake context or workout draft.                                                              | API negative-path tests               |
+| Privacy and compliance                        | `supporting` | Supporting only: prompts, constraints, and analytics must avoid leaking unnecessary private free text.                                                                                     | payload review + scope rationale      |
+| Content governance                            | `supporting` | Supporting only: canonical workout governance is inherited from the shared workout contract and builder slices.                                                                            | linked brief + scope rationale        |
+| Admin workflow and editability                | `supporting` | Supporting only: editability is owned by the shared workout editor rather than a dedicated admin surface.                                                                                  | scope rationale                       |
+| SEO and crawlability                          | `supporting` | Supporting only: authenticated generator drafts are not primary public crawl surfaces.                                                                                                     | scope rationale                       |
+| AI discoverability                            | `supporting` | Supporting only: this slice is about private AI generation safety, not public AI-discoverable publishing.                                                                                  | scope rationale                       |
+| Analytics and KPI observability               | `supporting` | Supporting only: generation start/success/failure/acceptance events should remain available with safe payloads.                                                                            | event contract notes                  |
+| Commerce and revenue ops                      | `supporting` | Supporting only: no direct billing/entitlement mutation ships in this session-generator slice.                                                                                             | scope rationale                       |
+| Incident response and support operations      | `supporting` | Supporting only: AI rejection and save-failure states must leave support-visible diagnostics and recovery guidance.                                                                        | runbook/error contract                |
+| Finance and reporting operations              | `N/A`        | N/A because this slice introduces no finance/reporting mutation or ledger-affecting behavior.                                                                                              | explicit scope rationale              |
+| i18n operational readiness                    | `supporting` | Supporting only: labels such as session type, effort, and generated guidance must remain locale-extensible later.                                                                          | copy review + scope rationale         |
+| Stack-fit and dependency discipline           | `target`     | Use existing app validation, storage, and test patterns; avoid new orchestration dependencies unless clearly justified.                                                                    | dependency diff + code review         |
+| Testing and QA automation                     | `target`     | Generate/review/accept/edit handoff, invalid-output fallback, and protected negative paths are covered before merge.                                                                       | unit/integration/e2e + verify         |
+| Scalability and cost efficiency               | `supporting` | Supporting only: one-session generation should avoid runaway retries, oversized prompts, or oversized JSON output.                                                                         | scope rationale + usage notes         |
+| DevOps and rollback readiness                 | `target`     | The session generator can be disabled or rolled back without corrupting saved canonical workouts or manual-builder reads.                                                                  | rollout notes + release checklist     |
+
+## Stack / Architecture Best-Practice Gate
+
+- React/Next.js:
+  - reference surface is the manual pool session builder inside `WorkoutEditor`,
+  - generated draft steps must reuse the same `Edit`, `Rearrange`, and `View` step display contract instead of route-local visual forks,
+  - generator setup stays in the generator page; accepted/reviewed workout editing stays inside the shared editor boundary.
+- TypeScript/domain contract:
+  - canonical draft type remains `SessionDraft` / `SessionDraftStep`,
+  - generated rest, repeat, drill, kick, and post-set-rest output must be real draft steps, not display-only fake text,
+  - validation must keep `coach_decides` and explicit values deterministic.
+- Supabase/data layer:
+  - no schema or RLS change in this UI/generator slice,
+  - accepted generated sessions continue through the existing owner-scoped workout save/update APIs.
+- External services:
+  - no new external AI/Garmin delivery integration in this slice.
+- UI system:
+  - use `docs/design/session-step-surface-contract.md` for session-step parity,
+  - screenshot handoff must be `after/reference` against manual pool builder where practical.
+- Testing:
+  - targeted unit/component tests must cover generated repeat rests, linked top-level rests, hidden coach prose, and canonical save handoff.
+- Known architecture exception:
+  - `WorkoutEditor` still contains too much session-step grouping/rendering logic in one large file.
+  - Follow-up refactor: `docs/task-briefs/planned/2026-05-01-session-step-reference-surface-architecture-hardening-10-10.md`.
 
 ## Acceptance Criteria
 
 - Users can generate exactly one swim-session draft from explicit session choices without choosing a longer planning horizon.
-- Supported v1 inputs include pool/open-water environment, supported pool lengths, duration by distance or estimated time, session type, effort, drills/kick inclusion, and allowed strokes.
+- Supported v1 inputs include pool/open-water environment, supported pool lengths, duration by distance or estimated time, session type, optional structure preferences, and allowed strokes/equipment.
 - `technical_fault_correction` is available as a first-class coach-led technique/fault-correction option or documented subtype.
 - Drill volume, kick volume/intervals, and rest preference support explicit user input or `Coach decides` without hidden defaults.
 - Default drill choices can use FreeSwimming course-aligned drill logic where available, and custom drill/focus input remains a one-run advanced override unless a later content-governance slice says otherwise.
@@ -280,7 +302,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - If threshold/CSS context does not exist, generation still succeeds with deterministic simpler targeting guidance.
 - Generated pool sessions default to including easy warmup and cooldown structure unless documented rules intentionally exempt a special case.
 - Generated output meets the Garmin-minimum structured-workout contract and is editable through the same workflow as a manually built workout.
-- Generated output includes a coach rationale explaining focus, structure, intensity, drill/kick/rest decisions, and practical adjustment guidance.
+- Generated draft `Edit`, `Rearrange`, and `View` modes follow `docs/design/session-step-surface-contract.md`, using the manual pool session builder as the reference surface.
+- Generated output preserves coach rationale in editable draft metadata/fields, but the primary step cards stay prescription-first and do not show uncontrolled coach-note prose in V1.
 - Generated title suggestions remain editable.
 - Generated output stays in `draft` state until the user reviews and accepts it.
 - Regeneration does not silently overwrite an already accepted workout.
@@ -308,3 +331,13 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | working tree | perf trend during the implementation gate again recommended tighten after consecutive weekly green runs; decision for this generator slice is hold because no new public-route budget target was deliberately tightened in this PR and the active workstream is primarily workflow/contract delivery | next: revisit one stretch-target ratchet in the next perf-owning PR summary or brief update`
 - `2026-03-20 | working tree | continuing the same brief with the next narrow runtime slice: first canonical workout persistence for accepted AI session drafts, plus reopen/update on /my-library/generator, while still deferring the separate manual builder route, calendar/program flows, and history reconciliation | next: ship workouts schema + owner-scoped APIs + generator-page save/open/update UX, then rerun local gates`
 - `2026-05-01 | roadmap alignment | updated V1 product direction from owner coaching notes: add technical fault correction, optional drill/kick meters, rest preference, FreeSwimming course-aligned drill defaults, visible Swim Profile context with mismatch/save-back choice, and generated coach rationale while keeping calendar, history, Garmin import, multi-session generation, and post-session feedback deferred to parent roadmap/history briefs | next: implement V1 only after the roadmap-alignment docs PR is merged`
+- `2026-05-01 | working tree | implemented the coach-input V1 slice on /my-library/generator: technical fault correction, coach_decides vs explicit drill/kick/rest controls, concise Swim Profile context, deterministic draft generation with explicit drill/kick/rest output, and continued editable WorkoutEditor handoff; targeted generator tests and typecheck pass, screenshots captured for required visual review | next: wait for screenshot approval before npm run verify:pre-pr`
+- `2026-05-01 | working tree | applied owner-requested UX cleanup before screenshot approval: merged profile input/context into one optional context section, compacted session constraints, moved Save session into the shared workout editor header, kept Regenerate available, moved Garmin/JSON support surfaces behind collapsed Advanced tools, aligned generated drafts with the manual builder editor layout, and fixed form state so optional instruction edits do not reset the selected session type | next: wait for refreshed screenshot approval before npm run verify:pre-pr`
+- `2026-05-01 | working tree | applied second screenshot cleanup: renamed the page to AI swim session generator, reframed Swim Profile context as data inclusion, removed the extra generator wrapper copy, and corrected constraints layout so Optional structure sits right while Allowed strokes and Allowed equipment stack left with matching card styling | next: wait for refreshed screenshot approval before npm run verify:pre-pr`
+- `2026-05-01 | working tree | applied third screenshot cleanup: removed effort as a generator input, derives generated effort from session type, collapses generator settings after generation to remove duplicated pool/stroke/equipment context, starts generated Session details collapsed like the manual builder pattern, and refreshed Playwright screenshot artifacts | next: wait for screenshot approval before npm run verify:pre-pr`
+- `2026-05-01 | working tree | aligned generated Session steps closer to the manual pool builder: category labels, colored left rails, compact prescription-first summaries, and secondary coach notes now share the same renderer across desktop/mobile/rearrange-friendly states | next: refresh screenshots and wait for approval before npm run verify:pre-pr`
+- `2026-05-01 | working tree | aligned all generated Session steps tabs toward manual pool builder parity: Edit and Rearrange share the same rails/labels/prescription-first cards, while View now uses the same compact grouped section renderer as manual pool sessions with generator-safe raw categories | next: wait for screenshot approval before npm run verify:pre-pr`
+- `2026-05-01 | working tree | codified the reference-surface reuse gate in AGENTS/architecture docs, added the session-step surface contract, created the follow-up architecture-hardening brief, and refined generated View so linked rests embed like manual summaries while coach notes stay secondary and out of Rearrange | next: refresh screenshots and wait for approval before npm run verify:pre-pr`
+- `2026-05-01 | working tree | converted generated rest preferences into canonical workout rest steps/repeat rests, removed uncontrolled coach-note prose from generated step cards, and added the stack/architecture best-practice gate to AGENTS, task-brief template, scorecard, and this active brief | next: refresh screenshots and wait for approval before npm run verify:pre-pr`
+- `2026-05-01 | gate hardening | PR #567 exposed that the parked feature branch was based before the latest main closeout commits even though local main was synced; added a reusable branch-currency assertion to pre-PR, PR creation, and pre-merge scripts so stale feature branches fail before PR/update/merge-readiness gates | next: rerun verify:pre-pr on the rebased branch, force-push PR #567, and monitor fresh CI`
+- `2026-05-01 | ci follow-up | CI verify caught two unit-test-only issues after branch-currency hardening: PR helper tests need an explicit test-only bypass because GitHub checks out detached PR merge refs, and the generated-session metadata test needed to wait for the shared details pane to render | next: rerun full verify:pre-pr, amend, force-push PR #567, and monitor fresh CI`

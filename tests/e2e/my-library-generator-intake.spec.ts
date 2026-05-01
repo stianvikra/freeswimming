@@ -124,7 +124,9 @@ async function waitForGeneratorIntakeClientReady(page: Page) {
       timeout: 15_000,
     }
   );
-  await expect(page.getByTestId("session-generator-focus-text")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("session-generator-session-type")).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByTestId("session-generator-generate")).toBeVisible({ timeout: 15_000 });
 }
 
@@ -223,21 +225,18 @@ test.describe("my library generator intake", () => {
     await openGeneratorFromMyLibrary(page);
     await expect(
       page.getByRole("heading", {
-        name: "AI session generator",
+        name: "AI swim session generator",
         level: 1,
       })
     ).toBeVisible();
     await waitForGeneratorIntakeClientReady(page);
 
     await expect(
-      page.getByRole("heading", { name: "Saved My Library details", level: 2 })
+      page.getByRole("heading", { name: "Include data from your Swim Profile", level: 2 })
     ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Session notes and setup", level: 3 })
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Session setup", level: 3 })).toBeVisible();
     await expect(page.getByTestId("generator-intake-session-count")).toHaveCount(0);
     await expect(page.getByTestId("generator-intake-target-program")).toHaveCount(0);
-    await page.getByTestId("session-generator-focus-text").fill("Race-pace breathing control");
     await page
       .getByTestId("session-generator-constraint-text")
       .fill("Keep the first week moderate.");
@@ -268,7 +267,9 @@ test.describe("my library generator intake", () => {
     await openGeneratorFromMyLibrary(page);
     await waitForGeneratorIntakeClientReady(page);
 
-    await page.getByTestId("session-generator-focus-text").fill("Breathing timing under fatigue");
+    await page
+      .getByTestId("session-generator-constraint-text")
+      .fill("Breathing timing under fatigue.");
     await prewarmSessionDraftRoute(page);
 
     const generateResponsePromise = page.waitForResponse(
@@ -281,6 +282,7 @@ test.describe("my library generator intake", () => {
     await page.getByTestId("session-generator-generate").click();
     await generateResponsePromise;
 
+    await ensureWorkoutMetadataOpen(page);
     const titleInput = page.getByTestId("session-draft-title");
     await expect(titleInput).toBeVisible();
     await titleInput.fill("QA edited session draft");
@@ -290,6 +292,11 @@ test.describe("my library generator intake", () => {
     await firstStepName.fill("QA warmup block");
     await titleInput.fill(uniqueTitle);
 
+    await expect(page.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    await openAdvancedToolsIfCollapsed(page);
     await expect(page.getByTestId("session-generator-draft-preview")).toContainText(uniqueTitle);
     await expect(page.getByTestId("session-generator-draft-preview")).toContainText(
       "QA warmup block"

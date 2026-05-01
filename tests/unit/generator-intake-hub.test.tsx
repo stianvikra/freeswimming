@@ -214,8 +214,11 @@ describe("GeneratorIntakeHub", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Saved My Library details" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Session notes and setup" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Include data from your Swim Profile" })
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("session-generator-swim-profile-context")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Session setup" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Before you generate" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "This run only" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("generator-intake-session-count")).not.toBeInTheDocument();
@@ -234,7 +237,7 @@ describe("GeneratorIntakeHub", () => {
     fireEvent.click(screen.getByTestId("generator-intake-source-toggle"));
     fireEvent.click(screen.getByTestId("generator-intake-include-goals"));
 
-    expect(screen.getByText("4 saved sections included")).toBeInTheDocument();
+    expect(screen.getByText("4 context sections included")).toBeInTheDocument();
   });
 
   it("keeps the AI generator on the single-session path only", () => {
