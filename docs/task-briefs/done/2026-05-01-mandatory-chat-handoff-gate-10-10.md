@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-01-mandatory-chat-handoff-gate-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-01`
 - `updated`: `2026-05-01`
@@ -98,6 +98,18 @@ Critical target categories for `10/10` claim:
 
 - `npm run lint:briefs:all`: PASS for all `218` brief files.
 - `npm run verify:pre-pr`: PASS on docs-only lane, artifact `artifacts/test-runs/20260501-143831/verify.log`.
+- Closeout `npm run verify:pre-pr`: PASS on docs-only lane, artifact `artifacts/test-runs/20260501-144459/verify.log`.
+
+## Closeout Outcome
+
+- `Product goals and IA`: `5/5`
+- `Reliability and failure handling`: `5/5`
+- `Content governance`: `5/5`
+- `Stack-fit and dependency discipline`: `5/5`
+- `Testing and QA automation`: `5/5`
+- `Incident response and support operations`: `5/5`
+- `DevOps and rollback readiness`: `5/5`
+- Remaining gaps: none.
 
 ## Help/Guide And Operator Training Impact
 
@@ -114,3 +126,5 @@ Critical target categories for `10/10` claim:
 - `2026-05-01 | in-progress | started docs-only mandatory chat-handoff gate from clean main after owner flagged that the prior recommendation was not enforced before a new implementation pivot | next: update AGENTS/runbook, run docs-only gates, open PR, monitor CI, and run verify:pre-merge before merge recommendation`
 - `2026-05-01 | in-progress | added mandatory post-merge/pre-implementation chat-handoff gate to AGENTS and PR handoff runbook; all brief scorecard lint passed | next: run verify:pre-pr, commit, push, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
 - `2026-05-01 | in-progress | verify:pre-pr passed on the docs-only lane with artifact artifacts/test-runs/20260501-143831/verify.log | next: refresh docs-only gate after evidence update, commit, push, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
+- `2026-05-01 | done | PR #565 merged as f19576c and post-merge preflight flagged lifecycle closeout only; brief moved to done with all target categories closed at 5/5 | next: docs-only closeout PR`
+- `2026-05-01 | done | closeout verify:pre-pr passed on docs-only lane with artifact artifacts/test-runs/20260501-144459/verify.log | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
