@@ -5,6 +5,7 @@ Use this contract whenever the app displays, edits, rearranges, previews, prints
 ## Reference Surface
 
 - Reference implementation: manual pool session builder in `WorkoutEditor`.
+- Shared view-model and display contract: `components/my-library/workouts/sessionStepSurfaceContract.ts`.
 - Domain object: canonical workout/session draft steps from `lib/session-generator-v1/shared.ts`.
 - Consumers include manual builder, AI session generator, poolside note, PDF/export previews, and later planner/program surfaces.
 - Architecture target: route-specific surfaces should adapt data into this contract; they should not fork a separate card/tab/rest-summary visual system.
@@ -49,4 +50,4 @@ Before implementing a new session-step surface:
 - One canonical display contract per mode: `Edit`, `Rearrange`, `View`.
 - Route-specific code may supply copy or data mapping, but should not invent a separate visual system.
 - Tests should cover the shared contract once, then route-specific flows only where behavior differs.
-- Follow-up hardening: `docs/task-briefs/planned/2026-05-01-session-step-reference-surface-architecture-hardening-10-10.md` tracks extracting this from the current large `WorkoutEditor` implementation into a clearer shared view-model/renderer contract.
+- Active hardening: `docs/task-briefs/in-progress/2026-05-01-session-step-reference-surface-architecture-hardening-10-10.md` tracks extracting this from the current large `WorkoutEditor` implementation into a clearer shared view-model/renderer contract.
