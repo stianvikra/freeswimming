@@ -6,7 +6,7 @@
 - `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-03-20`
-- `updated`: `2026-03-20`
+- `updated`: `2026-05-01`
 
 ## Goal
 
@@ -59,6 +59,7 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
   - `recovery`
   - `endurance`
   - `technique`
+  - `technical_fault_correction`
   - `threshold_css`
   - `speed`
   - `race_pace`
@@ -74,6 +75,9 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Supported extra structure preferences in v1:
   - include drills
   - include kick work
+  - optional drill volume target, or `coach_decides`
+  - optional kick volume target and preferred interval length, or `coach_decides`
+  - optional rest preference, or `coach_decides`
   - allowed strokes the swimmer is comfortable using
   - optional allowed-equipment list:
     - `kickboard`
@@ -84,21 +88,43 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Naming:
   - AI provides one or more editable title suggestions.
   - Title is never fixed or identity-bearing.
+- Coach behavior:
+  - AI should act like a professional freestyle coach matched to the swimmer level.
+  - AI should explain the session focus, why the main set was chosen, and what the swimmer should adjust if the session feels too easy or too hard.
+  - `coach_decides` defaults should be explicit in the request summary and generated rationale, not hidden assumptions.
 
 ## UX Direction For V1
 
-- Ask for the minimum information that materially shapes one session:
+- Ask for the minimum information that materially shapes one session while keeping advanced detail optional:
   - session type,
   - effort,
   - pool vs open water,
   - pool length when relevant,
   - distance or estimated-time target,
   - whether drills/kick should appear,
+  - optional drill meters, or `Coach decides`,
+  - optional kick meters and interval length, or `Coach decides`,
   - which strokes can be used,
-  - optional equipment constraints.
+  - optional equipment constraints,
+  - optional rest preference, or `Coach decides`,
+  - optional free-text constraints.
+- Treat technical fault correction as a coach-led technique variant:
+  - user can name the issue in free text,
+  - default drills should come from FreeSwimming course-aligned drill logic where available,
+  - an advanced override can add a custom drill/focus without mutating the shared course content.
 - Do not force the swimmer to pick raw threshold zones as the primary UX.
 - If threshold/CSS context exists, use it behind the scenes to shape pace/zone targets in the generated workout.
 - Keep advanced exact-zone editing in the later manual workout editor rather than in the first AI input form.
+- Show the Swim Profile values that will shape generation before the user generates:
+  - current ability/distance markers where available,
+  - 400m test,
+  - CSS pace/speed,
+  - 1000m test,
+  - relevant preferred rests or prior-session defaults when available.
+- If the user enters a value that conflicts with Swim Profile, show the mismatch near the input and offer:
+  - use only for this generated session,
+  - save the new value back to Swim Profile,
+  - keep the existing Swim Profile value.
 - Default generated pool sessions should include:
   - an easy warmup,
   - a main set matched to session type and effort,
@@ -125,9 +151,19 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
     - or `estimated_time`,
   - explicit `target_distance_m` or `target_time_min`,
   - include-drills flag,
+  - optional drill-volume mode:
+    - `coach_decides`
+    - or explicit target meters,
   - include-kick flag,
+  - optional kick-volume mode:
+    - `coach_decides`
+    - or explicit target meters and preferred interval length,
   - allowed strokes list,
   - optional equipment allowlist,
+  - optional rest preference:
+    - `coach_decides`
+    - or explicit rest style/seconds where the user has a strong preference,
+  - visible Swim Profile context snapshot plus any one-run overrides,
   - optional one-run notes/constraints.
 - Generation rules:
   - Garmin-familiar structured step output only,
@@ -141,7 +177,9 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
   - create one generated workout draft,
   - keep draft separate from accepted canonical workout state until review/accept,
   - show editable title suggestion(s),
+  - show coach rationale covering focus, structure, intensity, drill/kick/rest choices, and expected adaptation,
   - preserve generation metadata needed for later review and analytics,
+  - preserve which values came from Swim Profile, temporary override, free-text constraint, or `coach_decides`,
   - hand accepted draft into the same canonical workout payload shape later manual-builder work will reuse.
 - Review/edit handoff:
   - swimmer can edit the full generated session before accepting it,
@@ -157,6 +195,8 @@ Generate one Garmin-familiar swim-session draft from reviewed generator-intake c
 - Automatic send to Garmin.
 - Full manual workout-builder route and poolside execution UX.
 - Completed-history ingestion or retrospective AI analysis.
+- Weekly schedule balancing, multi-session generation, planned-vs-actual history, Garmin activity import, fatigue/recovery ingestion, and post-session AI feedback.
+- Automatic update of Swim Profile values without explicit user confirmation when a one-run override conflicts with the saved profile.
 - Public sharing or SEO surfaces.
 
 ## Data Placement And Sync Contract (Required)
@@ -232,10 +272,15 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - Users can generate exactly one swim-session draft from explicit session choices without choosing a longer planning horizon.
 - Supported v1 inputs include pool/open-water environment, supported pool lengths, duration by distance or estimated time, session type, effort, drills/kick inclusion, and allowed strokes.
+- `technical_fault_correction` is available as a first-class coach-led technique/fault-correction option or documented subtype.
+- Drill volume, kick volume/intervals, and rest preference support explicit user input or `Coach decides` without hidden defaults.
+- Default drill choices can use FreeSwimming course-aligned drill logic where available, and custom drill/focus input remains a one-run advanced override unless a later content-governance slice says otherwise.
+- The generation form previews relevant Swim Profile context before generation, surfaces mismatches when the user enters conflicting values, and requires an explicit choice before saving new values back to Swim Profile.
 - If threshold/CSS context exists, the generator uses it for pacing/zone shaping without forcing raw zone-picking as the primary UX.
 - If threshold/CSS context does not exist, generation still succeeds with deterministic simpler targeting guidance.
 - Generated pool sessions default to including easy warmup and cooldown structure unless documented rules intentionally exempt a special case.
 - Generated output meets the Garmin-minimum structured-workout contract and is editable through the same workflow as a manually built workout.
+- Generated output includes a coach rationale explaining focus, structure, intensity, drill/kick/rest decisions, and practical adjustment guidance.
 - Generated title suggestions remain editable.
 - Generated output stays in `draft` state until the user reviews and accepts it.
 - Regeneration does not silently overwrite an already accepted workout.
@@ -262,3 +307,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | supabase | applied only 20260320191500_workouts_foundation_and_ai_session_accept.sql to the linked project and recorded that version in migration history without pushing the older unrelated 20260311100000 admin-email-template migration; linked DB now answers on public.workouts | next: finish verify:pre-pr and verify:pre-merge before PR handoff`
 - `2026-03-20 | working tree | perf trend during the implementation gate again recommended tighten after consecutive weekly green runs; decision for this generator slice is hold because no new public-route budget target was deliberately tightened in this PR and the active workstream is primarily workflow/contract delivery | next: revisit one stretch-target ratchet in the next perf-owning PR summary or brief update`
 - `2026-03-20 | working tree | continuing the same brief with the next narrow runtime slice: first canonical workout persistence for accepted AI session drafts, plus reopen/update on /my-library/generator, while still deferring the separate manual builder route, calendar/program flows, and history reconciliation | next: ship workouts schema + owner-scoped APIs + generator-page save/open/update UX, then rerun local gates`
+- `2026-05-01 | roadmap alignment | updated V1 product direction from owner coaching notes: add technical fault correction, optional drill/kick meters, rest preference, FreeSwimming course-aligned drill defaults, visible Swim Profile context with mismatch/save-back choice, and generated coach rationale while keeping calendar, history, Garmin import, multi-session generation, and post-session feedback deferred to parent roadmap/history briefs | next: implement V1 only after the roadmap-alignment docs PR is merged`
