@@ -10,6 +10,7 @@ export const SESSION_GENERATOR_SESSION_TYPES = [
   "recovery",
   "endurance",
   "technique",
+  "technical_fault_correction",
   "threshold_css",
   "speed",
   "race_pace",
@@ -33,6 +34,8 @@ export const SESSION_DRAFT_STEP_INTENSITY_PRESETS = [
   "descending",
 ] as const;
 export const SESSION_GENERATOR_SIZE_MODES = ["distance", "estimated_time"] as const;
+export const SESSION_GENERATOR_VOLUME_MODES = ["coach_decides", "explicit"] as const;
+export const SESSION_GENERATOR_REST_MODES = ["coach_decides", "explicit"] as const;
 export const SESSION_GENERATOR_STROKES = [
   "freestyle",
   "backstroke",
@@ -113,6 +116,8 @@ export type SessionGeneratorSessionType = (typeof SESSION_GENERATOR_SESSION_TYPE
 export type SessionGeneratorEffortPreset = (typeof SESSION_GENERATOR_EFFORT_PRESETS)[number];
 export type SessionDraftStepIntensityPreset = (typeof SESSION_DRAFT_STEP_INTENSITY_PRESETS)[number];
 export type SessionGeneratorSizeMode = (typeof SESSION_GENERATOR_SIZE_MODES)[number];
+export type SessionGeneratorVolumeMode = (typeof SESSION_GENERATOR_VOLUME_MODES)[number];
+export type SessionGeneratorRestMode = (typeof SESSION_GENERATOR_REST_MODES)[number];
 export type SessionGeneratorStroke = (typeof SESSION_GENERATOR_STROKES)[number];
 export type SessionGeneratorEquipment = (typeof SESSION_GENERATOR_EQUIPMENT)[number];
 export type SessionDraftPoolLengthPreset = (typeof SESSION_DRAFT_POOL_LENGTH_PRESETS)[number];
@@ -137,7 +142,14 @@ export type SessionGeneratorFormState = {
   targetDistanceM: string;
   targetTimeMin: string;
   includeDrills: boolean;
+  drillVolumeMode: SessionGeneratorVolumeMode;
+  drillTargetMeters: string;
   includeKick: boolean;
+  kickVolumeMode: SessionGeneratorVolumeMode;
+  kickTargetMeters: string;
+  kickIntervalMeters: string;
+  restMode: SessionGeneratorRestMode;
+  restSeconds: string;
   allowedStrokes: SessionGeneratorStroke[];
   equipmentAllowlist: SessionGeneratorEquipment[];
 };
@@ -151,7 +163,14 @@ export type SessionGeneratorInput = {
   targetDistanceM: number | null;
   targetTimeMin: number | null;
   includeDrills: boolean;
+  drillVolumeMode: SessionGeneratorVolumeMode;
+  drillTargetMeters: number | null;
   includeKick: boolean;
+  kickVolumeMode: SessionGeneratorVolumeMode;
+  kickTargetMeters: number | null;
+  kickIntervalMeters: number | null;
+  restMode: SessionGeneratorRestMode;
+  restSeconds: number | null;
   allowedStrokes: SessionGeneratorStroke[];
   equipmentAllowlist: SessionGeneratorEquipment[];
 };
@@ -238,6 +257,7 @@ const SESSION_TYPE_LABELS: Record<SessionGeneratorSessionType, string> = {
   recovery: "Recovery",
   endurance: "Endurance",
   technique: "Technique",
+  technical_fault_correction: "Fault correction",
   threshold_css: "Threshold / CSS",
   speed: "Speed",
   race_pace: "Race pace",
@@ -349,6 +369,26 @@ export function getSessionTypeLabel(value: SessionGeneratorSessionType) {
 
 export function getSessionEffortLabel(value: SessionGeneratorEffortPreset) {
   return EFFORT_LABELS[value];
+}
+
+export function getDefaultEffortForSessionType(
+  sessionType: SessionGeneratorSessionType
+): SessionGeneratorEffortPreset {
+  switch (sessionType) {
+    case "recovery":
+      return "easy";
+    case "technique":
+    case "technical_fault_correction":
+      return "easy";
+    case "threshold_css":
+    case "race_pace":
+      return "hard";
+    case "speed":
+      return "very_hard";
+    case "endurance":
+    default:
+      return "moderate";
+  }
 }
 
 export function getSessionStepIntensityLabel(value: SessionDraftStepIntensityPreset) {
@@ -518,18 +558,28 @@ export function getDefaultSessionGeneratorFormState(
   const defaultPoolLength = handoff.source.preferences?.poolLengthM;
   const defaultMinutes = handoff.effectiveDefaults.sessionMinutes;
   const defaultStrokes = deriveDefaultAllowedStrokes(handoff);
+  const sessionType: SessionGeneratorSessionType = handoff.source.activeFocus
+    ? "technique"
+    : "endurance";
 
   return {
     environment: "pool",
     poolLengthM:
       defaultPoolLength && isPoolLength(defaultPoolLength) ? String(defaultPoolLength) : "25",
-    sessionType: handoff.source.activeFocus ? "technique" : "endurance",
-    effort: "moderate",
+    sessionType,
+    effort: getDefaultEffortForSessionType(sessionType),
     sizeMode: defaultMinutes ? "estimated_time" : "distance",
     targetDistanceM: defaultMinutes ? "" : "2000",
     targetTimeMin: defaultMinutes ? String(defaultMinutes) : "45",
     includeDrills: Boolean(handoff.source.activeFocus),
+    drillVolumeMode: "coach_decides",
+    drillTargetMeters: "300",
     includeKick: false,
+    kickVolumeMode: "coach_decides",
+    kickTargetMeters: "200",
+    kickIntervalMeters: "50",
+    restMode: "coach_decides",
+    restSeconds: "20",
     allowedStrokes: defaultStrokes,
     equipmentAllowlist: [],
   };
@@ -540,6 +590,7 @@ export function normalizeSessionGeneratorFormState(
   handoff: GeneratorIntakeHandoffPayload
 ): SessionGeneratorFormState {
   const defaults = getDefaultSessionGeneratorFormState(handoff);
+  const sessionType = isSessionType(input?.sessionType) ? input.sessionType : defaults.sessionType;
 
   return {
     environment: isSessionEnvironment(input?.environment)
@@ -549,14 +600,28 @@ export function normalizeSessionGeneratorFormState(
       typeof input?.poolLengthM === "string" && input.poolLengthM.length > 0
         ? input.poolLengthM
         : defaults.poolLengthM,
-    sessionType: isSessionType(input?.sessionType) ? input.sessionType : defaults.sessionType,
-    effort: isEffortPreset(input?.effort) ? input.effort : defaults.effort,
+    sessionType,
+    effort: getDefaultEffortForSessionType(sessionType),
     sizeMode: isSizeMode(input?.sizeMode) ? input.sizeMode : defaults.sizeMode,
     targetDistanceM: normalizeIntegerString(input?.targetDistanceM, 5) || defaults.targetDistanceM,
     targetTimeMin: normalizeIntegerString(input?.targetTimeMin, 3) || defaults.targetTimeMin,
     includeDrills:
       typeof input?.includeDrills === "boolean" ? input.includeDrills : defaults.includeDrills,
+    drillVolumeMode: isVolumeMode(input?.drillVolumeMode)
+      ? input.drillVolumeMode
+      : defaults.drillVolumeMode,
+    drillTargetMeters:
+      normalizeIntegerString(input?.drillTargetMeters, 5) || defaults.drillTargetMeters,
     includeKick: typeof input?.includeKick === "boolean" ? input.includeKick : defaults.includeKick,
+    kickVolumeMode: isVolumeMode(input?.kickVolumeMode)
+      ? input.kickVolumeMode
+      : defaults.kickVolumeMode,
+    kickTargetMeters:
+      normalizeIntegerString(input?.kickTargetMeters, 5) || defaults.kickTargetMeters,
+    kickIntervalMeters:
+      normalizeIntegerString(input?.kickIntervalMeters, 4) || defaults.kickIntervalMeters,
+    restMode: isRestMode(input?.restMode) ? input.restMode : defaults.restMode,
+    restSeconds: normalizeIntegerString(input?.restSeconds, 3) || defaults.restSeconds,
     allowedStrokes: uniqueEnumList(
       input?.allowedStrokes,
       SESSION_GENERATOR_STROKES,
@@ -612,18 +677,72 @@ export function validateSessionGeneratorFormState(
     }
   }
 
+  const drillTargetMeters =
+    input.includeDrills && input.drillVolumeMode === "explicit"
+      ? parsePositiveInteger(input.drillTargetMeters)
+      : null;
+  if (input.includeDrills && input.drillVolumeMode === "explicit") {
+    if (drillTargetMeters === null) {
+      return { ok: false, error: "Enter drill meters or switch drills back to Coach decides." };
+    }
+    if (drillTargetMeters < 25 || drillTargetMeters > 3000) {
+      return { ok: false, error: "Drill volume must stay between 25m and 3000m." };
+    }
+  }
+
+  const kickTargetMeters =
+    input.includeKick && input.kickVolumeMode === "explicit"
+      ? parsePositiveInteger(input.kickTargetMeters)
+      : null;
+  const kickIntervalMeters =
+    input.includeKick && input.kickVolumeMode === "explicit"
+      ? parsePositiveInteger(input.kickIntervalMeters)
+      : null;
+  if (input.includeKick && input.kickVolumeMode === "explicit") {
+    if (kickTargetMeters === null || kickIntervalMeters === null) {
+      return {
+        ok: false,
+        error: "Enter kick meters and interval length or switch kick back to Coach decides.",
+      };
+    }
+    if (kickTargetMeters < 25 || kickTargetMeters > 3000) {
+      return { ok: false, error: "Kick volume must stay between 25m and 3000m." };
+    }
+    if (kickIntervalMeters < 25 || kickIntervalMeters > 400) {
+      return { ok: false, error: "Kick interval length must stay between 25m and 400m." };
+    }
+  }
+
+  const restSeconds =
+    input.restMode === "explicit" ? parsePositiveInteger(input.restSeconds) : null;
+  if (input.restMode === "explicit") {
+    if (restSeconds === null) {
+      return { ok: false, error: "Enter rest seconds or switch rest back to Coach decides." };
+    }
+    if (restSeconds < 5 || restSeconds > 180) {
+      return { ok: false, error: "Rest preference must stay between 5 and 180 seconds." };
+    }
+  }
+
   return {
     ok: true,
     value: {
       environment: input.environment,
       poolLengthM: poolLength,
       sessionType: input.sessionType,
-      effort: input.effort,
+      effort: getDefaultEffortForSessionType(input.sessionType),
       sizeMode: input.sizeMode,
       targetDistanceM: targetDistance,
       targetTimeMin: targetTime,
       includeDrills: input.includeDrills,
+      drillVolumeMode: input.drillVolumeMode,
+      drillTargetMeters,
       includeKick: input.includeKick,
+      kickVolumeMode: input.kickVolumeMode,
+      kickTargetMeters,
+      kickIntervalMeters,
+      restMode: input.restMode,
+      restSeconds,
       allowedStrokes: input.allowedStrokes,
       equipmentAllowlist: input.equipmentAllowlist,
     },
@@ -847,10 +966,6 @@ function isSessionType(value: unknown): value is SessionGeneratorSessionType {
   return SESSION_GENERATOR_SESSION_TYPES.includes(value as SessionGeneratorSessionType);
 }
 
-function isEffortPreset(value: unknown): value is SessionGeneratorEffortPreset {
-  return SESSION_GENERATOR_EFFORT_PRESETS.includes(value as SessionGeneratorEffortPreset);
-}
-
 export function isSessionDraftStepIntensityPreset(
   value: unknown
 ): value is SessionDraftStepIntensityPreset {
@@ -859,6 +974,14 @@ export function isSessionDraftStepIntensityPreset(
 
 function isSizeMode(value: unknown): value is SessionGeneratorSizeMode {
   return SESSION_GENERATOR_SIZE_MODES.includes(value as SessionGeneratorSizeMode);
+}
+
+function isVolumeMode(value: unknown): value is SessionGeneratorVolumeMode {
+  return SESSION_GENERATOR_VOLUME_MODES.includes(value as SessionGeneratorVolumeMode);
+}
+
+function isRestMode(value: unknown): value is SessionGeneratorRestMode {
+  return SESSION_GENERATOR_REST_MODES.includes(value as SessionGeneratorRestMode);
 }
 
 function getIntensityMultiplier(value: SessionDraftStepIntensityPreset) {

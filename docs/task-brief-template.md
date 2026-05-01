@@ -20,6 +20,7 @@ Use this quick check so the task execution is precise:
 - State local tooling prerequisite (Node LTS + npm installed where local validation runs)
 - State automation mode (`automation-first` default, or explicit manual checkpoints)
 - State platform scorecard mapping (`docs/quality/platform-10-10-scorecard.md`)
+- State stack/architecture best-practice impact (React/Next, TypeScript, Supabase, external services, UI primitives, tests)
 - State Help/Guide impact rule (required update or explicit `N/A` rationale for workflow changes)
 - State visual artifact rule for UI/print/layout/brand changes, including folder path and `before/after` or `after/reference` naming
 - State route/label/support-surface impact sweep rule when routes, labels, workflow actions, Help/Guide surfaces, runbooks, or support paths are removed/renamed/consolidated
@@ -89,6 +90,48 @@ Automation gate:
 - each `target` row must have non-empty threshold + evidence.
 - for `Incident response and support operations`, `Finance and reporting operations`, and `i18n operational readiness`:
   if mapped `N/A`, include explicit scope rationale in threshold or evidence (plain `N/A` is not accepted).
+
+## Stack / Architecture Best-Practice Gate (Required)
+
+For every non-trivial brief, state which stack surfaces are impacted and what best-practice pattern must be used.
+
+Include:
+
+- React/Next.js:
+  - reference surface or shared component/view-model to reuse,
+  - server/client component boundary,
+  - route/action/API boundary,
+  - cache and revalidation behavior when changed.
+- TypeScript/domain contracts:
+  - canonical types,
+  - validation layer,
+  - deterministic invariants,
+  - error/fallback model.
+- Supabase/data layer, if touched:
+  - migration path,
+  - RLS/authz boundary,
+  - indexes/performance considerations,
+  - generated type updates,
+  - negative-path tests.
+- External services/tools, if touched:
+  - official docs/SDK baseline,
+  - secret handling,
+  - idempotency and retry behavior,
+  - webhook/event verification,
+  - observability and support diagnostics.
+- UI system, if touched:
+  - mature reference surface,
+  - shared primitives/tokens,
+  - accessibility and responsive requirements,
+  - screenshot handoff comparison type.
+- Testing:
+  - unit/integration/e2e/screenshot coverage required by the changed surface.
+
+If the correct architecture improvement is larger than the current slice, record:
+
+- the minimal safe behavior shipped now,
+- the explicit exception,
+- the follow-up brief path that owns the systemic refactor.
 
 ## Data Placement And Sync Contract (Required For Stateful Features)
 

@@ -73,6 +73,22 @@ This file defines how coding agents should collaborate in this repository.
   - required Help/Guide update in same PR, or
   - explicit `N/A` rationale.
 
+## Stack Best-Practice And Architecture Gate
+
+- Every feature, refactor, integration, or data brief must state the impacted stack surfaces and the expected best-practice pattern before implementation.
+- At minimum, consider these stack surfaces when relevant:
+  - React/Next.js component composition, shared view-models, route boundaries, server/client component split, actions/API routes, and cache behavior,
+  - TypeScript contracts, validation, error modeling, and deterministic domain invariants,
+  - Supabase schema, migrations, RLS, auth boundaries, indexes, storage, and generated DB types,
+  - external services and SDKs, including official docs, least-privilege credentials, idempotency, retries, webhooks, and observability,
+  - Tailwind/UI primitives, accessibility, responsive behavior, and reference-surface reuse,
+  - test strategy across unit, integration, Playwright, negative paths, and screenshot handoff.
+- For React UI, identify the mature reference surface or shared component first. Reuse it directly, or adapt new data into its contract before creating new markup.
+- For Supabase or persisted data changes, use explicit migrations, fail-closed RLS/authz, typed contract updates, and negative-path tests.
+- For external services, prefer official SDK/docs and document webhook/retry/idempotency/secret-handling rules in the brief.
+- If the best-practice fix is larger than the active slice, keep the active patch safe and create a dated follow-up brief with the architectural target, scorecard mapping, and acceptance criteria.
+- Do not claim `10/10` architecture unless the active brief names the relevant stack surfaces, proves reuse or a justified exception, and validates the critical invariants with tests or direct evidence.
+
 ## Guardrails
 
 - Keep changes minimal and targeted.
@@ -131,8 +147,22 @@ This file defines how coding agents should collaborate in this repository.
   - use `before-<surface>-<viewport>.*` and `after-<surface>-<viewport>.*` when the same surface is shown before and after,
   - use `after-<changed-surface>-<viewport>.*` and `reference-<comparison-surface>-<viewport>.*` when the handoff is comparing the changed surface to a separate reference surface instead of a true before-state,
   - assistant must also say explicitly whether the handoff is `before/after` or `after/reference`; ambiguous filenames like `<surface>.png` are not sufficient.
+- Local Freeswimming screenshot default:
+  - before trying MCP/browser-channel capture, use `docs/runbooks/ui-debug-hypothesis-and-handoff.md` and start Next dev with `env SITE_LOCK_ENABLED=0 npm exec next dev -- -H 127.0.0.1 -p 3000`,
+  - capture against `http://127.0.0.1:3000` consistently,
+  - if Playwright browser binaries are missing, run `npx playwright install chromium`,
+  - on macOS/Codex, run Chromium screenshot scripts with escalated permissions when sandbox launch fails.
 - Owner may request visual corrections from the screenshot handoff before merge; assistant should apply those corrections, refresh the screenshots, and only then proceed to final merge readiness.
 - This is required by default for UI/print/layout/brand work, and optional for backend, docs, tooling, and other non-visual changes.
+
+## Reference Surface Reuse Gate
+
+- Before building or materially changing a UI surface that represents an existing domain object or workflow, identify the most mature reference surface in this repo.
+- Reuse the same component, view-model contract, or renderer first. If direct reuse is not practical, adapt the new data into the same display contract.
+- If the new surface intentionally differs from the reference, document the reason in the active brief and screenshot handoff.
+- For swim-session step UI, use `docs/design/session-step-surface-contract.md` and the manual pool session builder as the reference for `Edit`, `Rearrange`, and `View`.
+- Screenshot handoff for parity work must include `after/reference` artifacts where practical, not only standalone after-screenshots.
+- When changing a reference surface, sweep sibling surfaces that use the same domain object and either update them in the same PR or record the deferred parity decision in the active brief.
 
 ## UI Debugging And High-Cost Bug Protocol
 
@@ -219,8 +249,10 @@ This file defines how coding agents should collaborate in this repository.
 
 - Before opening/updating PR:
   - run `npm run verify:pre-pr`
+  - this gate must first confirm the current feature branch contains latest `origin/main`; if it fails, rebase before opening/updating the PR
 - Before merge to `main`:
   - run `npm run verify:pre-merge`
+  - this gate must also confirm the branch is current with latest `origin/main`
   - ensure required CI checks are green
 - Gate selection policy:
   - pure docs/governance diffs may use the docs-only lane automatically through `verify:pre-pr` / `verify:pre-merge`

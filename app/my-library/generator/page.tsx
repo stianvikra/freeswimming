@@ -48,7 +48,7 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
         <TrackEventOnMount
           eventName="generator_intake_viewed"
           payload={{
@@ -61,10 +61,10 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">AI session generator</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">AI swim session generator</h1>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link

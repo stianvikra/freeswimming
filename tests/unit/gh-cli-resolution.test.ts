@@ -143,6 +143,7 @@ describe("resolve-gh-cli helper", () => {
       GH_FALLBACK_PATHS: "/definitely/missing/gh",
       GH_BIN: "",
       GH_SKIP_PATH_LOOKUP: "1",
+      ASSERT_BRANCH_CURRENT_TEST_BYPASS: "1",
     });
 
     expect(result).toBe(
@@ -181,6 +182,7 @@ describe("resolve-gh-cli helper", () => {
       PATH: `${dir}:/usr/bin:/bin`,
       GH_FALLBACK_PATHS: fakeGh,
       GH_SKIP_PATH_LOOKUP: "1",
+      ASSERT_BRANCH_CURRENT_TEST_BYPASS: "1",
     });
 
     expect(result).toBe("https://github.com/stianvikra/freeswimming/pull/999");
@@ -222,6 +224,7 @@ describe("resolve-gh-cli helper", () => {
         PATH: `${dir}:/usr/bin:/bin`,
         GH_FALLBACK_PATHS: fakeGh,
         GH_SKIP_PATH_LOOKUP: "1",
+        ASSERT_BRANCH_CURRENT_TEST_BYPASS: "1",
       }
     );
 

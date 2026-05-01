@@ -45,6 +45,28 @@ For visual/export work, do not use "looks fine in preview" as proof if the failu
 - Explain whether the set is `before/after` or `after/reference`.
 - In chat, summarize what changed and what to inspect. Do not rely on compressed chat thumbnails as the only review path.
 
+## Freeswimming Local Screenshot Defaults
+
+For local UI screenshot handoffs in this repo, start from the known-good Playwright path before trying browser/MCP alternatives:
+
+1. Start the dev server bound to the same host the browser will use:
+
+   ```bash
+   env SITE_LOCK_ENABLED=0 npm exec next dev -- -H 127.0.0.1 -p 3000
+   ```
+
+2. Capture against `http://127.0.0.1:3000`, not mixed `localhost`/`127.0.0.1` hosts.
+
+3. If Playwright browser binaries are missing, install Chromium explicitly:
+
+   ```bash
+   npx playwright install chromium
+   ```
+
+4. On macOS/Codex, run screenshot scripts with escalated permissions when Chromium launch fails with sandbox or MachPort permission errors.
+
+5. Prefer repo-local Playwright scripts or Playwright CLI for reproducible artifacts. Do not default to MCP/browser-channel capture for handoff screenshots unless the local path is unavailable; MCP can fail when the Chrome channel is not installed and does not replace full-resolution artifact capture.
+
 ## High-Cost Bug Logging
 
 Log expensive or recurring bugs in `docs/runbooks/high-cost-debug-log.md`.

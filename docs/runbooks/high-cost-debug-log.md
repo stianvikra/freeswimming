@@ -51,3 +51,13 @@ Before starting a similar investigation, scan this file for matching symptoms an
   `tests/e2e/my-library-training-context.spec.ts` plus `tests/e2e/my-library-workout-builder.spec.ts` on `desktop-chromium`, filtered to the failed cases when possible.
 - Prevention: before large session-builder changes, run the relevant My Library route-readiness pack before the broad gate; classify non-failing Next dev `ECONNRESET`/aborted noise as `watch` unless it correlates with an assertion failure.
 - Evidence: PR #559, failed local run `artifacts/test-runs/20260430-143439/verify.log`, passing reruns `artifacts/test-runs/20260430-151953/verify.log` and `artifacts/test-runs/20260430-154353/verify.log`.
+
+## 2026-05-01 - AI Session Generator: screenshot capture lost time to browser/server mismatch
+
+- Surface: AI session generator screenshot handoff for `/my-library/generator`.
+- Symptom: screenshot capture took repeated attempts: Playwright Chromium cache was missing, Chrome channel was not installed, MCP attempted the same unavailable Chrome channel, `/dev/login` returned `403` on the initial host/server combination, and client state did not hydrate reliably when server/browser hosts differed.
+- Root cause: the capture path did not start from the repo's known-good local screenshot defaults. Browser binary availability, site-lock/dev-auth behavior, and Next dev host binding were discovered one failure at a time instead of being treated as first-class setup.
+- Fix pattern: install Playwright Chromium when missing, start Next dev with `env SITE_LOCK_ENABLED=0 npm exec next dev -- -H 127.0.0.1 -p 3000`, capture against `http://127.0.0.1:3000`, and run Chromium screenshot scripts with escalated permissions on macOS when sandbox launch fails.
+- Detection/probe: if screenshot capture fails with missing `chromium_headless_shell`, missing Chrome channel, `/dev/login` `403`, HMR invalid response, or `data-client-ready` never becoming `true`, check browser install and host binding before debugging product code.
+- Prevention: use `docs/runbooks/ui-debug-hypothesis-and-handoff.md` Freeswimming local screenshot defaults before trying MCP/browser-channel capture. Prefer repo-local Playwright scripts or CLI for full-resolution handoff artifacts; use MCP only as a fallback when local capture is unavailable.
+- Evidence: AI Swim Session V1 screenshots under `/Users/stianvikra/freeswimming/output/playwright/ai-swim-session-v1-2026-05-01`.

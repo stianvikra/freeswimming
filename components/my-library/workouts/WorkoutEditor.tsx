@@ -1186,6 +1186,7 @@ type ManualPoolViewSectionLine = {
   key: string;
   primaryText: string;
   secondaryText?: string | null;
+  detailText?: string | null;
   target?:
     | {
         kind: "step";
@@ -1212,7 +1213,7 @@ type ManualPoolTopLevelSectionDescriptor = {
   totalWithinCategory: number;
 };
 
-type ManualPoolEditBlock =
+type SessionStepEditBlock =
   | {
       kind: "single";
       key: string;
@@ -1366,28 +1367,128 @@ function buildManualPoolRepeatViewLine(
   };
 }
 
-function buildManualPoolTopLevelSectionDescriptors(
-  stepGroups: StepRenderGroup[]
+function buildGeneratedSessionRestValueSummary(
+  step: SessionDraftStep,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  const summary = buildWorkoutStepDurationOutputSummary(step, basePaceSecondsPer100m, {
+    environment,
+    poolLengthUnit,
+  });
+
+  if (summary.startsWith("Fixed Rest Time ")) {
+    return summary.replace("Fixed Rest Time ", "");
+  }
+
+  return summary === "Fixed Rest Time not set" ? "Not set" : summary;
+}
+
+function buildGeneratedSessionRepeatViewLine(
+  group: Extract<StepRenderGroup, { kind: "repeat" }>,
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+): ManualPoolViewSectionLine {
+  const workStep = group.entries[0]?.step ?? null;
+  const betweenStep = group.entries[1]?.step ?? null;
+
+  if (!workStep) {
+    return {
+      key: group.repeatGroupId,
+      primaryText: "Set the work interval for this repeat block.",
+      secondaryText: null,
+      target: {
+        kind: "repeat",
+        repeatGroupId: group.repeatGroupId,
+      },
+    };
+  }
+
+  const repeatCountLabel = group.repeatCount ? `${group.repeatCount} x ` : "";
+  let primaryText = `${repeatCountLabel}${buildStepSummary(
+    workStep,
+    basePaceSecondsPer100m,
+    environment,
+    poolLengthUnit
+  )}`;
+  let secondaryText: string | null = null;
+
+  if (betweenStep) {
+    if (betweenStep.category === "rest") {
+      primaryText = `${primaryText} · Interval rest ${buildGeneratedSessionRestValueSummary(
+        betweenStep,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit
+      )}`;
+    } else {
+      primaryText = `${primaryText} · Recovery ${buildStepSummary(
+        betweenStep,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit
+      )}`;
+    }
+  }
+
+  if (group.postSetRestEntry?.step) {
+    secondaryText = `Set rest ${buildGeneratedSessionRestValueSummary(
+      group.postSetRestEntry.step,
+      basePaceSecondsPer100m,
+      environment,
+      poolLengthUnit
+    )}`;
+  }
+
+  return {
+    key: group.repeatGroupId,
+    primaryText,
+    secondaryText,
+    target: {
+      kind: "repeat",
+      repeatGroupId: group.repeatGroupId,
+    },
+  };
+}
+
+function getWorkoutEditorTopLevelCategory(
+  group: StepRenderGroup,
+  options?: {
+    normalizeForManualPool?: boolean;
+  }
+) {
+  return options?.normalizeForManualPool
+    ? normalizeManualPoolStepForEditor(group.entries[0].step).category
+    : group.entries[0].step.category;
+}
+
+function buildTopLevelSectionDescriptors(
+  stepGroups: StepRenderGroup[],
+  options?: {
+    normalizeForManualPool?: boolean;
+  }
 ): ManualPoolTopLevelSectionDescriptor[] {
   const totalByCategory = new Map<string, number>();
   const seenByCategory = new Map<string, number>();
   let lastPrimaryLabel: string | null = null;
 
   for (const group of stepGroups) {
-    const category = getManualPoolTopLevelCategory(group);
+    const category = getWorkoutEditorTopLevelCategory(group, options);
     if (category === "rest") continue;
     totalByCategory.set(category, (totalByCategory.get(category) ?? 0) + 1);
   }
 
   return stepGroups.map((group, index) => {
-    const category = getManualPoolTopLevelCategory(group);
+    const category = getWorkoutEditorTopLevelCategory(group, options);
     const title = getSessionStepCategoryLabel(category);
     const previousGroup = stepGroups[index - 1] ?? null;
 
     if (
       category === "rest" &&
       previousGroup &&
-      getManualPoolTopLevelCategory(previousGroup) !== "rest" &&
+      getWorkoutEditorTopLevelCategory(previousGroup, options) !== "rest" &&
       lastPrimaryLabel
     ) {
       return {
@@ -1424,6 +1525,18 @@ function buildManualPoolTopLevelSectionDescriptors(
       totalWithinCategory: sameTypeTotal,
     };
   });
+}
+
+function buildManualPoolTopLevelSectionDescriptors(
+  stepGroups: StepRenderGroup[]
+): ManualPoolTopLevelSectionDescriptor[] {
+  return buildTopLevelSectionDescriptors(stepGroups, { normalizeForManualPool: true });
+}
+
+function buildGeneratedSessionTopLevelSectionDescriptors(
+  stepGroups: StepRenderGroup[]
+): ManualPoolTopLevelSectionDescriptor[] {
+  return buildTopLevelSectionDescriptors(stepGroups);
 }
 
 function buildManualPoolViewSections(
@@ -1495,10 +1608,107 @@ function buildManualPoolViewSections(
   return sections;
 }
 
+function buildGeneratedSessionViewSections(
+  stepGroups: StepRenderGroup[],
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  const sections: ManualPoolViewSection[] = [];
+  const consumedRestStepIds = new Set<string>();
+
+  function getOrCreateContiguousSection(category: SessionDraftStep["category"]) {
+    const title = getSessionStepCategoryLabel(category);
+    const currentSection = sections[sections.length - 1] ?? null;
+
+    if (currentSection && currentSection.category === category && currentSection.title === title) {
+      return currentSection;
+    }
+
+    const nextSection = {
+      key: `${title.toLowerCase()}-${sections.length}`,
+      title,
+      lines: [],
+      category,
+    };
+    sections.push(nextSection);
+    return nextSection;
+  }
+
+  stepGroups.forEach((group, groupIndex) => {
+    const category = getWorkoutEditorTopLevelCategory(group);
+
+    if (group.kind === "single" && consumedRestStepIds.has(group.entries[0].step.id)) {
+      return;
+    }
+
+    const section = getOrCreateContiguousSection(category);
+
+    if (group.kind === "repeat") {
+      section.lines.push(
+        buildGeneratedSessionRepeatViewLine(
+          group,
+          basePaceSecondsPer100m,
+          environment,
+          poolLengthUnit
+        )
+      );
+      return;
+    }
+
+    const entry = group.entries[0];
+    const nextGroup = stepGroups[groupIndex + 1] ?? null;
+    const linkedRestEntry =
+      entry.step.category !== "rest" &&
+      !entry.step.repeatGroupId &&
+      !entry.step.postSetRestForRepeatGroupId &&
+      nextGroup?.kind === "single" &&
+      nextGroup.entries[0].step.category === "rest" &&
+      !nextGroup.entries[0].step.repeatGroupId &&
+      !nextGroup.entries[0].step.postSetRestForRepeatGroupId
+        ? nextGroup.entries[0]
+        : null;
+
+    if (linkedRestEntry) {
+      consumedRestStepIds.add(linkedRestEntry.step.id);
+    }
+
+    section.lines.push({
+      key: entry.step.id,
+      primaryText: buildStepSummary(
+        entry.step,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit
+      ),
+      secondaryText: linkedRestEntry
+        ? `Rest ${buildGeneratedSessionRestValueSummary(
+            linkedRestEntry.step,
+            basePaceSecondsPer100m,
+            environment,
+            poolLengthUnit
+          )}`
+        : null,
+      target: {
+        kind: "step",
+        stepId: entry.step.id,
+      },
+    });
+  });
+
+  return sections;
+}
+
 function getManualPoolCategoryRailClass(category: SessionDraftStep["category"]) {
   switch (category) {
     case "warmup":
       return "border-l-sky-400";
+    case "swim":
+      return "border-l-blue-400";
+    case "drill":
+      return "border-l-cyan-500";
+    case "kick":
+      return "border-l-emerald-500";
     case "main":
       return "border-l-blue-500";
     case "cooldown":
@@ -1514,6 +1724,12 @@ function getManualPoolCategoryLabelClass(category: SessionDraftStep["category"])
   switch (category) {
     case "warmup":
       return "text-sky-700";
+    case "swim":
+      return "text-blue-700";
+    case "drill":
+      return "text-cyan-700";
+    case "kick":
+      return "text-emerald-700";
     case "main":
       return "text-blue-700";
     case "cooldown":
@@ -1529,6 +1745,12 @@ function getManualPoolViewSectionToneClass(category: SessionDraftStep["category"
   switch (category) {
     case "warmup":
       return "border-l-4 border-l-sky-400 border-sky-200";
+    case "swim":
+      return "border-l-4 border-l-blue-400 border-blue-200";
+    case "drill":
+      return "border-l-4 border-l-cyan-500 border-cyan-200";
+    case "kick":
+      return "border-l-4 border-l-emerald-500 border-emerald-200";
     case "main":
       return "border-l-4 border-l-blue-500 border-blue-200";
     case "cooldown":
@@ -1544,6 +1766,12 @@ function getManualPoolViewSectionHeaderClass(category: SessionDraftStep["categor
   switch (category) {
     case "warmup":
       return "border-b border-sky-100 bg-sky-50/70";
+    case "swim":
+      return "border-b border-blue-100 bg-blue-50/60";
+    case "drill":
+      return "border-b border-cyan-100 bg-cyan-50/70";
+    case "kick":
+      return "border-b border-emerald-100 bg-emerald-50/70";
     case "main":
       return "border-b border-blue-100 bg-blue-50/60";
     case "cooldown":
@@ -1555,11 +1783,11 @@ function getManualPoolViewSectionHeaderClass(category: SessionDraftStep["categor
   }
 }
 
-function buildManualPoolEditBlocks(
+function buildSessionStepEditBlocks(
   stepGroups: StepRenderGroup[],
   draftSteps: SessionDraftStep[]
-): ManualPoolEditBlock[] {
-  const blocks: ManualPoolEditBlock[] = [];
+): SessionStepEditBlock[] {
+  const blocks: SessionStepEditBlock[] = [];
   const consumedRestStepIds = new Set<string>();
 
   stepGroups.forEach((group, groupIndex) => {
@@ -1717,7 +1945,7 @@ export default function WorkoutEditor({
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const garminReadiness = buildWorkoutGarminReadinessReport(draft);
   const stepGroups = buildStepRenderGroups(draft.steps);
-  const showCalmBuilderLayout = copyVariant === "default";
+  const showCalmBuilderLayout = copyVariant === "default" || copyVariant === "generator";
   const isManualMetadataMode = showCalmBuilderLayout && savedWorkout?.sourceKind === "manual";
   const resolvedManualBuilderMode = manualBuilderMode
     ? manualBuilderMode
@@ -1763,7 +1991,9 @@ export default function WorkoutEditor({
   const [handoffNotice, setHandoffNotice] = useState("");
   const [handoffError, setHandoffError] = useState("");
   const [metadataOpen, setMetadataOpen] = useState(
-    () => forceMetadataOpenOnLoad || !(savedWorkout && copyVariant === "default")
+    () =>
+      forceMetadataOpenOnLoad ||
+      (copyVariant !== "generator" && !(savedWorkout && copyVariant === "default"))
   );
   const [builderViewMode, setBuilderViewMode] =
     useState<(typeof WORKOUT_VIEW_MODES)[number]>("edit");
@@ -1775,7 +2005,9 @@ export default function WorkoutEditor({
     garminExport: false,
     handoff: false,
   });
-  const [supportToolsOpen, setSupportToolsOpen] = useState(() => copyVariant !== "default");
+  const [supportToolsOpen, setSupportToolsOpen] = useState(
+    () => copyVariant !== "default" && copyVariant !== "generator"
+  );
   const [pendingCustomDistanceFocusStepId, setPendingCustomDistanceFocusStepId] = useState<
     string | null
   >(null);
@@ -1787,7 +2019,9 @@ export default function WorkoutEditor({
   const defaultPoolsideFocusIdSignature =
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions).join("|");
   const metadataStartsCollapsed =
-    showCalmBuilderLayout && savedWorkoutId !== null && !forceMetadataOpenOnLoad;
+    showCalmBuilderLayout &&
+    !forceMetadataOpenOnLoad &&
+    (copyVariant === "generator" || savedWorkoutId !== null);
   const customDistanceInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const editorCopy =
     copyVariant === "generator"
@@ -1817,8 +2051,7 @@ export default function WorkoutEditor({
           savedWorkoutSavedState: "All changes are saved to this session.",
           unsavedDraftPendingState: "This session is not saved yet.",
         };
-  const unsavedSaveButtonLabel =
-    copyVariant === "generator" ? "Accept and save workout" : "Save session";
+  const unsavedSaveButtonLabel = "Save session";
   const poolLengthQuickChoices =
     poolLengthUnit === "yd" ? YARD_POOL_SIZE_QUICK_CHOICES : MANUAL_POOL_SIZE_QUICK_CHOICES;
   const parsedPoolLengthInput = parsePoolLengthInput(poolLengthInput, poolLengthUnit);
@@ -1984,13 +2217,19 @@ export default function WorkoutEditor({
   const isRearrangeMode = builderViewMode === "rearrange";
   const isViewMode = builderViewMode === "view";
   const isSummaryOnlyMode = !isEditMode;
+  const useManualLikeStepSummaries = isManualPoolMode || copyVariant === "generator";
   const manualPoolTopLevelSectionDescriptors = useMemo(
-    () => (isManualPoolMode ? buildManualPoolTopLevelSectionDescriptors(stepGroups) : []),
-    [isManualPoolMode, stepGroups]
+    () =>
+      isManualPoolMode
+        ? buildManualPoolTopLevelSectionDescriptors(stepGroups)
+        : copyVariant === "generator"
+          ? buildGeneratedSessionTopLevelSectionDescriptors(stepGroups)
+          : [],
+    [copyVariant, isManualPoolMode, stepGroups]
   );
-  const manualPoolEditBlocks = useMemo(
-    () => (isManualPoolMode ? buildManualPoolEditBlocks(stepGroups, draft.steps) : []),
-    [draft.steps, isManualPoolMode, stepGroups]
+  const sessionStepEditBlocks = useMemo(
+    () => (useManualLikeStepSummaries ? buildSessionStepEditBlocks(stepGroups, draft.steps) : []),
+    [draft.steps, stepGroups, useManualLikeStepSummaries]
   );
   const manualPoolViewSections = useMemo(
     () =>
@@ -2004,6 +2243,23 @@ export default function WorkoutEditor({
         : [],
     [draft.basePaceSecondsPer100m, draft.steps, isManualPoolMode, poolLengthUnit, stepGroups]
   );
+  const generatedSessionViewSections = useMemo(
+    () =>
+      copyVariant === "generator"
+        ? buildGeneratedSessionViewSections(
+            stepGroups,
+            draft.basePaceSecondsPer100m,
+            draft.environment,
+            poolLengthUnit
+          )
+        : [],
+    [copyVariant, draft.basePaceSecondsPer100m, draft.environment, poolLengthUnit, stepGroups]
+  );
+  const calmViewSections = isManualPoolMode
+    ? manualPoolViewSections
+    : copyVariant === "generator"
+      ? generatedSessionViewSections
+      : [];
 
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
@@ -2020,11 +2276,11 @@ export default function WorkoutEditor({
   }, [draft.steps, openStepId]);
 
   useEffect(() => {
-    if (!isManualPoolMode || !openStepId) {
+    if (!useManualLikeStepSummaries || !openStepId) {
       return;
     }
 
-    const parentBlock = manualPoolEditBlocks.find(
+    const parentBlock = sessionStepEditBlocks.find(
       (block) =>
         block.kind === "single" &&
         block.linkedRestEntry?.step.id === openStepId &&
@@ -2034,7 +2290,7 @@ export default function WorkoutEditor({
     if (parentBlock?.kind === "single") {
       setOpenStepId(parentBlock.entry.step.id);
     }
-  }, [isManualPoolMode, manualPoolEditBlocks, openStepId]);
+  }, [openStepId, sessionStepEditBlocks, useManualLikeStepSummaries]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -2415,11 +2671,11 @@ export default function WorkoutEditor({
     markBlockMoved(movedBlockKey, movedBlockLabel, direction);
   }
 
-  function findManualPoolSingleBlockByStepId(
+  function findSessionStepSingleBlockByStepId(
     stepId: string
-  ): Extract<ManualPoolEditBlock, { kind: "single" }> | null {
+  ): Extract<SessionStepEditBlock, { kind: "single" }> | null {
     const block =
-      manualPoolEditBlocks.find((block) => {
+      sessionStepEditBlocks.find((block) => {
         if (block.kind !== "single") return false;
         return block.entry.step.id === stepId || block.linkedRestEntry?.step.id === stepId;
       }) ?? null;
@@ -2427,23 +2683,23 @@ export default function WorkoutEditor({
     return block?.kind === "single" ? block : null;
   }
 
-  function moveManualPoolSingleBlock(stepId: string, direction: -1 | 1) {
-    const sourceBlock = findManualPoolSingleBlockByStepId(stepId);
+  function moveSessionStepSingleBlock(stepId: string, direction: -1 | 1) {
+    const sourceBlock = findSessionStepSingleBlockByStepId(stepId);
     if (!sourceBlock) return;
 
-    const sourceBlockIndex = manualPoolEditBlocks.findIndex(
+    const sourceBlockIndex = sessionStepEditBlocks.findIndex(
       (block) => block.key === sourceBlock.key
     );
     const targetBlockIndex = sourceBlockIndex + direction;
     if (
       sourceBlockIndex < 0 ||
       targetBlockIndex < 0 ||
-      targetBlockIndex >= manualPoolEditBlocks.length
+      targetBlockIndex >= sessionStepEditBlocks.length
     ) {
       return;
     }
 
-    const nextBlocks = [...manualPoolEditBlocks];
+    const nextBlocks = [...sessionStepEditBlocks];
     const [movedBlock] = nextBlocks.splice(sourceBlockIndex, 1);
     if (!movedBlock) return;
     nextBlocks.splice(targetBlockIndex, 0, movedBlock);
@@ -2459,13 +2715,13 @@ export default function WorkoutEditor({
   }
 
   function insertStepAfterManualPoolSingleBlock(stepId: string) {
-    const sourceBlock = findManualPoolSingleBlockByStepId(stepId);
+    const sourceBlock = findSessionStepSingleBlockByStepId(stepId);
     if (!sourceBlock) return;
     insertStepAt(sourceBlock.endIndex + 1);
   }
 
   function buildDuplicatedManualPoolSingleBlockSteps(
-    block: Extract<ManualPoolEditBlock, { kind: "single" }>
+    block: Extract<SessionStepEditBlock, { kind: "single" }>
   ) {
     const primaryStep = block.entry.step;
     const duplicatedPrimary: SessionDraftStep = {
@@ -2484,7 +2740,7 @@ export default function WorkoutEditor({
   }
 
   function duplicateManualPoolSingleBlock(stepId: string) {
-    const sourceBlock = findManualPoolSingleBlockByStepId(stepId);
+    const sourceBlock = findSessionStepSingleBlockByStepId(stepId);
     if (!sourceBlock || sourceBlock.kind !== "single") return;
 
     const duplicatedSteps = buildDuplicatedManualPoolSingleBlockSteps(sourceBlock);
@@ -2504,7 +2760,7 @@ export default function WorkoutEditor({
   }
 
   function insertAttachedRestAfterStep(stepId: string) {
-    const sourceBlock = findManualPoolSingleBlockByStepId(stepId);
+    const sourceBlock = findSessionStepSingleBlockByStepId(stepId);
     if (!sourceBlock || sourceBlock.kind !== "single" || sourceBlock.linkedRestEntry) {
       return;
     }
@@ -2569,11 +2825,11 @@ export default function WorkoutEditor({
     const targetStep = draft.steps.find((step) => step.id === stepId);
     if (!targetStep) return;
 
-    const manualPoolParentBlock = isManualPoolMode
-      ? findManualPoolSingleBlockByStepId(stepId)
+    const sessionStepParentBlock = useManualLikeStepSummaries
+      ? findSessionStepSingleBlockByStepId(stepId)
       : null;
     const targetOpenStepId =
-      manualPoolParentBlock?.kind === "single" ? manualPoolParentBlock.entry.step.id : stepId;
+      sessionStepParentBlock?.kind === "single" ? sessionStepParentBlock.entry.step.id : stepId;
 
     setBuilderViewMode("edit");
     setMetadataOpen(false);
@@ -2790,13 +3046,15 @@ export default function WorkoutEditor({
     if (stepIndex === -1) return;
 
     const step = draft.steps[stepIndex];
-    const manualPoolBlock = isManualPoolMode ? findManualPoolSingleBlockByStepId(stepId) : null;
+    const sessionStepBlock = useManualLikeStepSummaries
+      ? findSessionStepSingleBlockByStepId(stepId)
+      : null;
     const stepIds =
-      manualPoolBlock?.kind === "single"
-        ? manualPoolBlock.steps.map((blockStep) => blockStep.id)
+      sessionStepBlock?.kind === "single"
+        ? sessionStepBlock.steps.map((blockStep) => blockStep.id)
         : [stepId];
     const label =
-      manualPoolBlock?.kind === "single" && manualPoolBlock.linkedRestEntry
+      sessionStepBlock?.kind === "single" && sessionStepBlock.linkedRestEntry
         ? `${buildStepRemovalLabel(step, stepIndex, {
             isManualPoolMode,
             basePaceSecondsPer100m: draft.basePaceSecondsPer100m,
@@ -3320,24 +3578,28 @@ export default function WorkoutEditor({
     const toggleLabel = isOpen ? "Done" : "Edit";
     const panelId = `session-draft-step-panel-${step.id}`;
     const normalizedStep = isManualPoolMode ? normalizeManualPoolStepForEditor(step) : step;
-    const topLevelDescriptor =
-      isManualPoolMode && !insideRepeatGroup
-        ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
-        : null;
-    const linkedTopLevelRestEntry =
-      isManualPoolMode && !insideRepeatGroup ? (options?.linkedTopLevelRestEntry ?? null) : null;
-    const linkedTopLevelRestStep = linkedTopLevelRestEntry?.step ?? null;
-    const manualPoolEditBlock = isManualPoolMode
-      ? findManualPoolSingleBlockByStepId(step.id)
+    const isGeneratorSummaryCard = copyVariant === "generator";
+    const useManualLikeTopLevelCard =
+      (isManualPoolMode || isGeneratorSummaryCard) && !insideRepeatGroup && !isLinkedPostSetRest;
+    const topLevelDescriptor = useManualLikeTopLevelCard
+      ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
       : null;
-    const manualPoolBlockIndex = manualPoolEditBlock
-      ? manualPoolEditBlocks.findIndex((block) => block.key === manualPoolEditBlock.key)
+    const linkedTopLevelRestEntry =
+      useManualLikeTopLevelCard && !insideRepeatGroup
+        ? (options?.linkedTopLevelRestEntry ?? null)
+        : null;
+    const linkedTopLevelRestStep = linkedTopLevelRestEntry?.step ?? null;
+    const sessionStepEditBlock = useManualLikeStepSummaries
+      ? findSessionStepSingleBlockByStepId(step.id)
+      : null;
+    const sessionStepBlockIndex = sessionStepEditBlock
+      ? sessionStepEditBlocks.findIndex((block) => block.key === sessionStepEditBlock.key)
       : -1;
-    const isTopLevelManualPoolBlock =
-      isManualPoolMode &&
+    const isTopLevelSessionStepBlock =
+      useManualLikeStepSummaries &&
       !insideRepeatGroup &&
       !isLinkedPostSetRest &&
-      manualPoolEditBlock?.kind === "single";
+      sessionStepEditBlock?.kind === "single";
     const stepLabel =
       options?.labelOverride ??
       (insideRepeatGroup
@@ -3346,7 +3608,9 @@ export default function WorkoutEditor({
           : `Repeat step ${options?.repeatStepNumber ?? 1}`
         : isManualPoolMode
           ? (topLevelDescriptor?.label ?? getSessionStepCategoryLabel(normalizedStep.category))
-          : `Step ${index + 1}`);
+          : isGeneratorSummaryCard && topLevelDescriptor
+            ? topLevelDescriptor.label
+            : `Step ${index + 1}`);
     const stepDistanceUnit = isManualPoolMode
       ? resolveManualPoolSummaryUnit(normalizedStep, poolLengthUnit)
       : poolLengthUnit;
@@ -3374,7 +3638,21 @@ export default function WorkoutEditor({
             draft.basePaceSecondsPer100m,
             poolLengthUnit
           )
-      : step.name || getSessionStepCategoryLabel(step.category);
+      : isGeneratorSummaryCard
+        ? [
+            buildStepSummary(step, draft.basePaceSecondsPer100m, draft.environment, poolLengthUnit),
+            linkedTopLevelRestStep
+              ? `Rest ${buildGeneratedSessionRestValueSummary(
+                  linkedTopLevelRestStep,
+                  draft.basePaceSecondsPer100m,
+                  draft.environment,
+                  poolLengthUnit
+                )}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        : step.name || getSessionStepCategoryLabel(step.category);
     const mobileActionKey = `step:${step.id}`;
     const mobileActionsOpen = openMobileActionKey === mobileActionKey;
     const showMobilePrimaryAddAfter = isEditMode && isOpen && !isLinkedPostSetRest;
@@ -3404,7 +3682,7 @@ export default function WorkoutEditor({
       options?.pendingInlineDelete === true ||
       (pendingRemoval?.kind === "step" && pendingRemoval.stepIds.includes(step.id));
     const topLevelCategoryLabelClass =
-      isTopLevelManualPoolBlock && !pendingDelete
+      useManualLikeTopLevelCard && !pendingDelete
         ? getManualPoolCategoryLabelClass(normalizedStep.category)
         : "text-slate-500";
     const stepNotes = isManualPoolMode && isRestStepCard ? "" : step.notes;
@@ -3418,13 +3696,13 @@ export default function WorkoutEditor({
         >
           {stepLabel}
         </p>
-        <p className="mt-1 text-base font-medium text-slate-900 sm:text-sm">{stepTitle}</p>
-        {!isManualPoolMode ? (
+        <p className="mt-1 text-sm font-medium text-slate-900">{stepTitle}</p>
+        {!isManualPoolMode && !isGeneratorSummaryCard ? (
           <p className="mt-1 text-xs font-medium text-slate-600">
             {getSessionStepCategoryLabel(step.category)}
           </p>
         ) : null}
-        {!isManualPoolMode ? (
+        {!isManualPoolMode && !isGeneratorSummaryCard ? (
           <p className="mt-2 text-xs text-slate-600">
             {buildStepSummary(
               step,
@@ -3437,7 +3715,7 @@ export default function WorkoutEditor({
         {options?.descriptionOverride ? (
           <p className="mt-2 text-xs text-slate-500">{options.descriptionOverride}</p>
         ) : null}
-        {!isManualPoolMode && step.targetSummary ? (
+        {!isManualPoolMode && !isGeneratorSummaryCard && step.targetSummary ? (
           <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
         ) : null}
         {pendingDelete ? (
@@ -3445,33 +3723,37 @@ export default function WorkoutEditor({
             Will be removed
           </p>
         ) : null}
-        {stepNotes ? <p className="mt-1 text-xs text-slate-400">{stepNotes}</p> : null}
+        {!isGeneratorSummaryCard && stepNotes ? (
+          <p className="mt-1 text-xs text-slate-400">{stepNotes}</p>
+        ) : null}
       </>
     );
-    const isTerminalManualPoolBlock =
-      isTopLevelManualPoolBlock && manualPoolBlockIndex === manualPoolEditBlocks.length - 1;
-    const moveUpDisabled = isTopLevelManualPoolBlock ? manualPoolBlockIndex <= 0 : groupIndex === 0;
-    const moveDownDisabled = isTopLevelManualPoolBlock
-      ? manualPoolBlockIndex === -1 || manualPoolBlockIndex >= manualPoolEditBlocks.length - 1
+    const isTerminalSessionStepBlock =
+      isTopLevelSessionStepBlock && sessionStepBlockIndex === sessionStepEditBlocks.length - 1;
+    const moveUpDisabled = isTopLevelSessionStepBlock
+      ? sessionStepBlockIndex <= 0
+      : groupIndex === 0;
+    const moveDownDisabled = isTopLevelSessionStepBlock
+      ? sessionStepBlockIndex === -1 || sessionStepBlockIndex >= sessionStepEditBlocks.length - 1
       : groupIndex === stepGroups.length - 1;
     const handleMoveUp = () => {
-      if (isTopLevelManualPoolBlock) {
-        moveManualPoolSingleBlock(step.id, -1);
+      if (isTopLevelSessionStepBlock) {
+        moveSessionStepSingleBlock(step.id, -1);
       } else {
         moveDraftGroup(groupIndex, -1);
       }
       setOpenMobileActionKey(null);
     };
     const handleMoveDown = () => {
-      if (isTopLevelManualPoolBlock) {
-        moveManualPoolSingleBlock(step.id, 1);
+      if (isTopLevelSessionStepBlock) {
+        moveSessionStepSingleBlock(step.id, 1);
       } else {
         moveDraftGroup(groupIndex, 1);
       }
       setOpenMobileActionKey(null);
     };
     const handleAddStepAfter = () => {
-      if (isTopLevelManualPoolBlock) {
+      if (isTopLevelSessionStepBlock) {
         insertStepAfterManualPoolSingleBlock(step.id);
       } else {
         insertStepAfterStep(step.id);
@@ -3479,15 +3761,15 @@ export default function WorkoutEditor({
       setOpenMobileActionKey(null);
     };
     const handleAddRepeatAfter = () => {
-      if (isTopLevelManualPoolBlock && manualPoolEditBlock) {
-        insertRepeatAt(manualPoolEditBlock.endIndex + 1);
+      if (isTopLevelSessionStepBlock && sessionStepEditBlock) {
+        insertRepeatAt(sessionStepEditBlock.endIndex + 1);
       } else {
         insertRepeatAfterGroup(groupIndex);
       }
       setOpenMobileActionKey(null);
     };
     const handleDuplicate = () => {
-      if (isTopLevelManualPoolBlock) {
+      if (isTopLevelSessionStepBlock) {
         duplicateManualPoolSingleBlock(step.id);
       } else {
         duplicateStep(step.id);
@@ -3498,7 +3780,7 @@ export default function WorkoutEditor({
       ? normalizeManualPoolStepForEditor(linkedTopLevelRestStep).durationMode
       : null;
     const attachedRestEditor =
-      isTopLevelManualPoolBlock && !isRestStepCard ? (
+      isTopLevelSessionStepBlock && !isRestStepCard ? (
         <div
           data-testid={`session-draft-step-linked-rest-panel-${index}`}
           className="rounded-xl border border-blue-200 bg-blue-50/60 p-3 md:col-span-2"
@@ -3515,7 +3797,7 @@ export default function WorkoutEditor({
                     )
                   : "No rest after this step."}
               </p>
-              {!linkedTopLevelRestStep && isTerminalManualPoolBlock ? (
+              {!linkedTopLevelRestStep && isTerminalSessionStepBlock ? (
                 <p className="mt-1 text-xs text-slate-500">
                   Leave it empty when this block ends the session.
                 </p>
@@ -3640,12 +3922,12 @@ export default function WorkoutEditor({
       ) : null;
     const showRearrangeControls = isRearrangeMode && !insideRepeatGroup && !isLinkedPostSetRest;
     const canUseDesktopCardOpen = desktopCardEditEnabled && isEditMode && !isOpen;
-    const stepMoveHighlightKey = isTopLevelManualPoolBlock
-      ? (manualPoolEditBlock?.key ?? `step:${step.id}`)
+    const stepMoveHighlightKey = isTopLevelSessionStepBlock
+      ? (sessionStepEditBlock?.key ?? `step:${step.id}`)
       : `step:${step.id}`;
     const stepWasRecentlyMoved = recentlyMovedBlockKey === stepMoveHighlightKey;
     const topLevelCategoryRailClass =
-      !pendingDelete && isTopLevelManualPoolBlock
+      !pendingDelete && useManualLikeTopLevelCard
         ? `border-l-4 ${getManualPoolCategoryRailClass(normalizedStep.category)}`
         : "";
     const cardStateClass = pendingDelete
@@ -3658,7 +3940,9 @@ export default function WorkoutEditor({
           ? "border-blue-100 bg-blue-50/55"
           : insideRepeatGroup
             ? "border-blue-200 bg-white"
-            : "border-slate-200 bg-slate-50/70";
+            : useManualLikeTopLevelCard
+              ? "border-blue-100 bg-white ring-1 ring-blue-100/70"
+              : "border-slate-200 bg-slate-50/70";
     const openStepCard = () => {
       setOpenMobileActionKey(null);
       setOpenStepId(step.id);
@@ -3679,7 +3963,7 @@ export default function WorkoutEditor({
         key={step.id}
         data-mobile-actions="progressive"
         data-manual-pool-category={
-          isTopLevelManualPoolBlock && !pendingDelete ? normalizedStep.category : undefined
+          isTopLevelSessionStepBlock && !pendingDelete ? normalizedStep.category : undefined
         }
         data-desktop-card-clickable={canUseDesktopCardOpen ? "true" : "false"}
         onClick={
@@ -5337,7 +5621,9 @@ export default function WorkoutEditor({
               </div>
               <p
                 data-testid="workout-editor-save-state"
-                className={`sr-only mt-2 text-sm font-medium ${saveStateToneClass}`}
+                className={`mt-2 text-sm font-medium ${saveStateToneClass} ${
+                  copyVariant === "generator" ? "" : "sr-only"
+                }`}
               >
                 {saveStateMessage}
               </p>
@@ -5466,7 +5752,9 @@ export default function WorkoutEditor({
       <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-base font-semibold text-slate-900">
-            {isManualPoolMode ? "Session steps" : "Editable draft steps"}
+            {isManualPoolMode || copyVariant === "generator"
+              ? "Session steps"
+              : "Editable draft steps"}
           </h3>
           <div className="flex flex-wrap items-center gap-3">
             {showCalmBuilderLayout ? (
@@ -5569,8 +5857,8 @@ export default function WorkoutEditor({
             </div>
           ) : null}
 
-          {isViewMode && isManualPoolMode
-            ? manualPoolViewSections.map((section) => {
+          {isViewMode && calmViewSections.length > 0
+            ? calmViewSections.map((section) => {
                 return (
                   <section
                     key={section.key}
@@ -5603,6 +5891,9 @@ export default function WorkoutEditor({
                               <p className="text-sm font-semibold text-blue-800">
                                 {line.secondaryText}
                               </p>
+                            ) : null}
+                            {line.detailText ? (
+                              <p className="text-sm leading-5 text-slate-500">{line.detailText}</p>
                             ) : null}
                           </div>
                         );
@@ -5648,7 +5939,7 @@ export default function WorkoutEditor({
             : stepGroups.map((group, groupIndex) =>
                 group.kind === "single" ? (
                   (() => {
-                    if (!isManualPoolMode || isViewMode) {
+                    if (!useManualLikeStepSummaries || isViewMode) {
                       return renderStepEditorCard(
                         group.entries[0].step,
                         group.entries[0].index,
@@ -5656,23 +5947,23 @@ export default function WorkoutEditor({
                       );
                     }
 
-                    const manualPoolBlock = manualPoolEditBlocks.find(
+                    const sessionStepBlock = sessionStepEditBlocks.find(
                       (block) =>
                         block.kind === "single" &&
                         block.groupIndex === groupIndex &&
                         block.entry.step.id === group.entries[0].step.id
                     );
 
-                    if (!manualPoolBlock || manualPoolBlock.kind !== "single") {
+                    if (!sessionStepBlock || sessionStepBlock.kind !== "single") {
                       return null;
                     }
 
                     return renderStepEditorCard(
-                      manualPoolBlock.entry.step,
-                      manualPoolBlock.entry.index,
+                      sessionStepBlock.entry.step,
+                      sessionStepBlock.entry.index,
                       groupIndex,
                       {
-                        linkedTopLevelRestEntry: manualPoolBlock.linkedRestEntry,
+                        linkedTopLevelRestEntry: sessionStepBlock.linkedRestEntry,
                       }
                     );
                   })()
@@ -5682,12 +5973,14 @@ export default function WorkoutEditor({
                     data-testid={`workout-editor-repeat-group-${groupIndex}`}
                     data-containment-style="calm"
                     data-manual-pool-category={
-                      isManualPoolMode &&
+                      useManualLikeStepSummaries &&
                       !(
                         pendingRemoval?.kind === "repeat" &&
                         pendingRemoval.repeatGroupId === group.repeatGroupId
                       )
-                        ? getManualPoolTopLevelCategory(group)
+                        ? getWorkoutEditorTopLevelCategory(group, {
+                            normalizeForManualPool: isManualPoolMode,
+                          })
                         : undefined
                     }
                     data-desktop-card-clickable={
@@ -5717,9 +6010,11 @@ export default function WorkoutEditor({
                       pendingRemoval.repeatGroupId === group.repeatGroupId
                         ? "border-dashed border-rose-300 bg-rose-50/70 ring-1 ring-rose-100 ring-inset"
                         : `border-blue-100 bg-gradient-to-b from-blue-50/70 to-white ring-1 ring-blue-100 ring-inset ${
-                            isManualPoolMode
+                            useManualLikeStepSummaries
                               ? `border-l-4 ${getManualPoolCategoryRailClass(
-                                  getManualPoolTopLevelCategory(group)
+                                  getWorkoutEditorTopLevelCategory(group, {
+                                    normalizeForManualPool: isManualPoolMode,
+                                  })
                                 )}`
                               : ""
                           }`
@@ -5748,21 +6043,23 @@ export default function WorkoutEditor({
                         poolLengthUnit,
                         group.postSetRestEntry?.step ?? null
                       );
-                      const repeatDescriptor = isManualPoolMode
+                      const repeatDescriptor = useManualLikeStepSummaries
                         ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
                         : null;
-                      const repeatCategory = isManualPoolMode
-                        ? getManualPoolTopLevelCategory(group)
+                      const repeatCategory = useManualLikeStepSummaries
+                        ? getWorkoutEditorTopLevelCategory(group, {
+                            normalizeForManualPool: isManualPoolMode,
+                          })
                         : "main";
                       const repeatLabelToneClass =
-                        isManualPoolMode &&
+                        useManualLikeStepSummaries &&
                         !(
                           pendingRemoval?.kind === "repeat" &&
                           pendingRemoval.repeatGroupId === group.repeatGroupId
                         )
                           ? getManualPoolCategoryLabelClass(repeatCategory)
                           : "text-blue-700";
-                      const repeatLabel = isManualPoolMode
+                      const repeatLabel = useManualLikeStepSummaries
                         ? (repeatDescriptor?.label ?? "Repeat")
                         : "Repeat set";
                       const isRepeatOpen = isEditMode && openRepeatGroupId === group.repeatGroupId;

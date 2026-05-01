@@ -58,7 +58,38 @@ function buildPayload(
         createdAt: "2026-03-20T10:00:00.000Z",
         updatedAt: "2026-03-20T10:00:00.000Z",
       },
-      personalRecords: [],
+      personalRecords: [
+        {
+          id: "record-400",
+          distanceM: 400,
+          stroke: "freestyle",
+          strokeLabel: "Freestyle",
+          course: "pool_25m",
+          courseLabel: "25m pool",
+          eventLabel: "400m Freestyle · 25m pool",
+          timeCentiseconds: 32055,
+          timeLabel: "5:20.55",
+          recordedOn: "2026-03-20",
+          sourceNote: null,
+          createdAt: "2026-03-20T10:00:00.000Z",
+          updatedAt: "2026-03-20T10:00:00.000Z",
+        },
+        {
+          id: "record-1000",
+          distanceM: 1000,
+          stroke: "freestyle",
+          strokeLabel: "Freestyle",
+          course: "pool_25m",
+          courseLabel: "25m pool",
+          eventLabel: "1000m Freestyle · 25m pool",
+          timeCentiseconds: 85000,
+          timeLabel: "14:10.00",
+          recordedOn: "2026-03-20",
+          sourceNote: null,
+          createdAt: "2026-03-20T10:00:00.000Z",
+          updatedAt: "2026-03-20T10:00:00.000Z",
+        },
+      ],
       openGoals: [
         {
           id: "goal-1",
@@ -242,7 +273,7 @@ describe("SessionGeneratorPanel", () => {
     vi.clearAllMocks();
   });
 
-  it("shows session information controls and lets the user clear session notes", () => {
+  it("shows session type first and keeps special instructions optional", () => {
     const onOverrideChange = vi.fn();
     const onResetOverrides = vi.fn();
 
@@ -270,18 +301,80 @@ describe("SessionGeneratorPanel", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Session notes and setup" })).toBeInTheDocument();
-    fireEvent.change(screen.getByTestId("session-generator-focus-text"), {
-      target: { value: "Race-pace breathing control" },
+    expect(screen.getByRole("heading", { name: "Session setup" })).toBeInTheDocument();
+    expect(screen.queryByTestId("session-generator-focus-text")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-generator-session-type")).toBeInTheDocument();
+    expect(screen.getByText("Special instructions (optional)")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Leave blank and the coach will decide details from the profile inputs and session choices."
+      )
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("session-generator-session-type"), {
+      target: { value: "technical_fault_correction" },
     });
     fireEvent.change(screen.getByTestId("session-generator-constraint-text"), {
       target: { value: "Keep kick work short." },
     });
+    expect(screen.getByTestId("session-generator-session-type")).toHaveValue(
+      "technical_fault_correction"
+    );
     fireEvent.click(screen.getByTestId("session-generator-reset-overrides"));
 
-    expect(onOverrideChange).toHaveBeenNthCalledWith(1, "focusText", "Race-pace breathing control");
-    expect(onOverrideChange).toHaveBeenNthCalledWith(2, "constraintText", "Keep kick work short.");
+    expect(onOverrideChange).toHaveBeenCalledWith("constraintText", "Keep kick work short.");
     expect(onResetOverrides).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows compact generation constraints and coach-choice controls for drills, kick, and rest", () => {
+    render(
+      <SessionGeneratorPanel
+        payload={buildPayload()}
+        selection={{
+          profile: true,
+          css: true,
+          preferences: true,
+          personal_records: true,
+          goals: true,
+          focus: true,
+        }}
+        overrides={{
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "",
+          constraintText: "",
+        }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
+        workoutLibrary={buildWorkoutLibrary()}
+      />
+    );
+
+    expect(screen.getByRole("heading", { name: "Generation constraints" })).toBeInTheDocument();
+    expect(screen.queryByTestId("session-generator-swim-profile-context")).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Fault correction" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("session-generator-drill-volume-explicit"));
+    fireEvent.change(screen.getByTestId("session-generator-drill-meters"), {
+      target: { value: "450" },
+    });
+    fireEvent.click(screen.getByTestId("session-generator-include-kick"));
+    fireEvent.click(screen.getByTestId("session-generator-kick-volume-explicit"));
+    fireEvent.change(screen.getByTestId("session-generator-kick-meters"), {
+      target: { value: "250" },
+    });
+    fireEvent.change(screen.getByTestId("session-generator-kick-interval"), {
+      target: { value: "25" },
+    });
+    fireEvent.click(screen.getByTestId("session-generator-rest-explicit"));
+    fireEvent.change(screen.getByTestId("session-generator-rest-seconds"), {
+      target: { value: "35" },
+    });
+
+    expect(screen.getByTestId("session-generator-drill-meters")).toHaveValue("450");
+    expect(screen.getByTestId("session-generator-kick-meters")).toHaveValue("250");
+    expect(screen.getByTestId("session-generator-kick-interval")).toHaveValue("25");
+    expect(screen.getByTestId("session-generator-rest-seconds")).toHaveValue("35");
   });
 
   it("generates and allows local editing of a draft session", async () => {
@@ -329,6 +422,17 @@ describe("SessionGeneratorPanel", () => {
     fireEvent.click(screen.getByTestId("session-generator-generate"));
 
     await waitFor(() => {
+      expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+        "This generated session is not saved to My Swim Sessions yet."
+      );
+    });
+
+    expect(screen.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
+    await waitFor(() => {
       expect(screen.getByTestId("session-draft-title")).toHaveValue(
         "Threshold / CSS 25m Pool draft"
       );
@@ -345,9 +449,141 @@ describe("SessionGeneratorPanel", () => {
 
     expect(screen.getByTestId("session-draft-title")).toHaveValue("My edited threshold draft");
     expect(screen.getByTestId("session-draft-step-name-0")).toHaveValue("Gentle warmup swim");
-    expect(screen.getByTestId("session-generator-draft-preview").textContent ?? "").toContain(
-      "My edited threshold draft"
+    expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+      "This generated session is not saved to My Swim Sessions yet."
     );
+    expect(screen.queryByTestId("session-generator-draft-preview")).not.toBeInTheDocument();
+  });
+
+  it("uses the shared session-step view contract for generated rests without coach-note noise", async () => {
+    const baseDraft = buildDraft();
+    const generatedDraftWithRest: SessionDraft = {
+      ...baseDraft,
+      steps: [
+        baseDraft.steps[0]!,
+        {
+          id: "warmup-rest",
+          category: "rest",
+          name: "Reset rest",
+          stroke: "choice",
+          intensity: "recovery",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "Reset before the main set.",
+          notes: "",
+        },
+        {
+          ...baseDraft.steps[1]!,
+          id: "main-repeat-step-1",
+          distanceM: 100,
+          repeatGroupId: "main-repeat",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "main-repeat-step-2",
+          category: "rest",
+          name: "Between-round rest",
+          stroke: "choice",
+          intensity: "recovery",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "Short recovery before the next round.",
+          notes: "",
+          repeatGroupId: "main-repeat",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "main-repeat-post-rest",
+          category: "rest",
+          name: "Post-set rest",
+          stroke: "choice",
+          intensity: "recovery",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "Reset after the main set.",
+          notes: "",
+          postSetRestForRepeatGroupId: "main-repeat",
+        },
+        baseDraft.steps[2]!,
+        {
+          id: "cooldown-rest",
+          category: "rest",
+          name: "Finish rest",
+          stroke: "choice",
+          intensity: "recovery",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "Final reset after cooldown.",
+          notes: "",
+        },
+      ],
+    };
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () =>
+        ({
+          ok: true,
+          handoff: buildPayload(),
+          draft: generatedDraftWithRest,
+        }) satisfies {
+          ok: true;
+          handoff: GeneratorIntakeHandoffPayload;
+          draft: SessionDraft;
+        },
+    } as Response);
+
+    render(
+      <SessionGeneratorPanel
+        payload={buildPayload()}
+        selection={{
+          profile: true,
+          css: true,
+          preferences: true,
+          personal_records: false,
+          goals: true,
+          focus: true,
+        }}
+        overrides={{
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "",
+          constraintText: "Keep the first half controlled.",
+        }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
+        workoutLibrary={buildWorkoutLibrary()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("session-generator-generate"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+        "This generated session is not saved to My Swim Sessions yet."
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
+
+    expect(screen.getByText(/4 x 100m · Freestyle · Moderate · Interval rest 0:30/i)).toBeVisible();
+    expect(screen.getAllByText("Set rest 0:30").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Rest 0:30").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText(/Coach note:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Suggested structure:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Swim around CSS-derived pacing/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("workout-editor-builder-mode-rearrange"));
+
+    expect(screen.queryByText(/Coach note:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Suggested structure:/i)).not.toBeInTheDocument();
   });
 
   it("accepts a generated draft into the canonical workout layer", async () => {
@@ -415,10 +651,13 @@ describe("SessionGeneratorPanel", () => {
     fireEvent.click(screen.getByTestId("session-generator-generate"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("session-draft-title")).toHaveValue(
-        "Threshold / CSS 25m Pool draft"
+      expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+        "This generated session is not saved to My Swim Sessions yet."
       );
     });
+
+    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Threshold / CSS 25m Pool draft");
 
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "Accepted threshold workout" },
@@ -438,6 +677,7 @@ describe("SessionGeneratorPanel", () => {
     );
     expect(screen.getByText("Saved session loaded.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
+    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
   }, 15_000);
 
@@ -475,6 +715,7 @@ describe("SessionGeneratorPanel", () => {
     );
 
     expect(screen.getByText("Saved session loaded.")).toBeVisible();
+    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Previously accepted workout");
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Discard changes" })).not.toBeInTheDocument();

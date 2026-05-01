@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import SessionGeneratorPanel from "@/components/my-library/generator/SessionGeneratorPanel";
 import {
@@ -10,6 +10,7 @@ import {
   getDefaultGeneratorIntakeSelection,
   normalizeGeneratorIntakeOverrides,
   normalizeGeneratorIntakeSelection,
+  type GeneratorIntakeHandoffPayload,
   type GeneratorIntakeOverrides,
   type GeneratorIntakeBlockKey,
   type GeneratorIntakeBlockSummary,
@@ -115,14 +116,19 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
   const [sourceOpen, setSourceOpen] = useState(false);
 
   const storageKey = getStorageKey(userId);
-  const payload = buildGeneratorHandoffPayload(initialSnapshot, selection, overrides, {
-    createdAt: initialSnapshot.loadedAt,
-  });
+  const payload = useMemo(
+    () =>
+      buildGeneratorHandoffPayload(initialSnapshot, selection, overrides, {
+        createdAt: initialSnapshot.loadedAt,
+      }),
+    [initialSnapshot, selection, overrides]
+  );
+  const swimProfileContext = buildSwimProfileContextRows(payload, selection);
   const selectedBlockCount = payload.includedBlocks.length;
   const sourceSummary =
     selectedBlockCount > 0
-      ? `${selectedBlockCount} saved section${selectedBlockCount === 1 ? "" : "s"} included`
-      : "No saved sections included";
+      ? `${selectedBlockCount} context section${selectedBlockCount === 1 ? "" : "s"} included`
+      : "No context sections included";
 
   // Restoring unsaved generator choices must happen after hydration because the
   // server render cannot read localStorage for this private My Library flow.
@@ -227,14 +233,12 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Saved My Library details</h2>
-            <p className="mt-2 max-w-[62ch] text-sm text-slate-600">
-              Choose which saved details this session should consider. Turning sections on or off
-              here does not change anything in My Library itself.
-            </p>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Include data from your Swim Profile
+            </h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+            <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-700 uppercase">
               {sourceSummary}
             </p>
             <button
@@ -244,10 +248,33 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
               data-testid="generator-intake-source-toggle"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              {sourceOpen ? "Hide saved details" : "Review saved details"}
+              {sourceOpen ? "Hide choices" : "Choose data"}
             </button>
           </div>
         </div>
+
+        <dl
+          className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+          data-testid="session-generator-swim-profile-context"
+        >
+          {swimProfileContext.map((row) => (
+            <div key={row.label} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+              <dt className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <span>{row.label}</span>
+                <span
+                  className={
+                    row.included
+                      ? "rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-800"
+                      : "rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-600"
+                  }
+                >
+                  {row.included ? "Included" : "Off"}
+                </span>
+              </dt>
+              <dd className="mt-1 text-sm font-medium text-slate-900">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
 
         {sourceOpen ? (
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -264,7 +291,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
                       <p className="mt-2 text-sm text-slate-700">{block.description}</p>
                     </div>
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${tone.badge}`}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${tone.badge}`}
                     >
                       {tone.label}
                     </span>
@@ -296,7 +323,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
                         data-testid={`generator-intake-include-${blockKey}`}
                         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                       />
-                      Use {toBlockLabel(blockKey)} in this session
+                      Use {toBlockLabel(blockKey)} for this generation
                     </label>
 
                     <Link
@@ -323,4 +350,61 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       />
     </div>
   );
+}
+
+function buildSwimProfileContextRows(
+  payload: GeneratorIntakeHandoffPayload,
+  selection: GeneratorIntakeSelection
+) {
+  const record400 = payload.source.personalRecords.find((record) => record.distanceM === 400);
+  const record1000 = payload.source.personalRecords.find((record) => record.distanceM === 1000);
+
+  return [
+    {
+      label: "Swimmer",
+      value:
+        payload.source.profile?.primaryName ??
+        payload.source.profile?.displayName ??
+        "No profile name",
+      included: selection.profile && Boolean(payload.source.profile),
+    },
+    {
+      label: "400m test",
+      value: record400 ? `${record400.timeLabel} ${record400.strokeLabel}` : "Not saved",
+      included: selection.personal_records && Boolean(record400),
+    },
+    {
+      label: "CSS",
+      value: payload.source.cssMetric?.paceLabel
+        ? `${payload.source.cssMetric.paceLabel}/100m`
+        : "Not saved",
+      included: selection.css && Boolean(payload.source.cssMetric),
+    },
+    {
+      label: "1000m test",
+      value: record1000 ? `${record1000.timeLabel} ${record1000.strokeLabel}` : "Not saved",
+      included: selection.personal_records && Boolean(record1000),
+    },
+    {
+      label: "Pool default",
+      value: payload.source.preferences?.poolLengthLabel ?? "No saved pool length",
+      included: selection.preferences && Boolean(payload.source.preferences?.poolLengthLabel),
+    },
+    {
+      label: "Session length",
+      value: payload.source.preferences?.preferredSessionMinutesLabel ?? "No saved preference",
+      included:
+        selection.preferences && Boolean(payload.source.preferences?.preferredSessionMinutesLabel),
+    },
+    {
+      label: "Active focus",
+      value: payload.source.activeFocus?.title ?? "No active focus",
+      included: selection.focus && Boolean(payload.source.activeFocus),
+    },
+    {
+      label: "Open goal",
+      value: payload.source.openGoals[0]?.title ?? "No open goal",
+      included: selection.goals && payload.source.openGoals.length > 0,
+    },
+  ];
 }

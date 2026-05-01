@@ -119,7 +119,14 @@ describe("session generator server", () => {
       targetDistanceM: "2400",
       targetTimeMin: "45",
       includeDrills: false,
+      drillVolumeMode: "coach_decides",
+      drillTargetMeters: "300",
       includeKick: true,
+      kickVolumeMode: "coach_decides",
+      kickTargetMeters: "200",
+      kickIntervalMeters: "50",
+      restMode: "coach_decides",
+      restSeconds: "20",
       allowedStrokes: ["freestyle", "backstroke"],
       equipmentAllowlist: ["kickboard", "fins"],
     });
@@ -134,13 +141,13 @@ describe("session generator server", () => {
     expect(draft.status).toBe("draft");
     expect(draft.titleSuggestions[0]).toContain("Threshold / CSS");
     expect(draft.usedCssPaceLabel).toBe("1:58");
-    expect(draft.steps.map((step) => step.category)).toEqual([
-      "warmup",
-      "kick",
-      "main",
-      "cooldown",
-    ]);
-    expect(draft.steps[2]?.notes).toContain("CSS");
+    expect(draft.steps[0]?.category).toBe("warmup");
+    expect(draft.steps.some((step) => step.category === "rest")).toBe(true);
+    expect(draft.steps.find((step) => step.id === "kick-repeat-1-step-1")?.repeatCount).toBe(10);
+    expect(
+      draft.steps.find((step) => step.postSetRestForRepeatGroupId === "kick-repeat-1")?.timeMin
+    ).toBeGreaterThan(0);
+    expect(draft.steps.find((step) => step.id === "main-1")?.notes).toContain("CSS");
     expect(draft.totalDistanceM).toBe(2400);
     expect(draft.estimatedDurationMin).toBeGreaterThan(0);
   });
@@ -155,7 +162,14 @@ describe("session generator server", () => {
       targetDistanceM: "2000",
       targetTimeMin: "50",
       includeDrills: true,
+      drillVolumeMode: "coach_decides",
+      drillTargetMeters: "300",
       includeKick: true,
+      kickVolumeMode: "coach_decides",
+      kickTargetMeters: "200",
+      kickIntervalMeters: "50",
+      restMode: "coach_decides",
+      restSeconds: "20",
       allowedStrokes: ["freestyle"],
       equipmentAllowlist: ["snorkel"],
     });
@@ -173,5 +187,59 @@ describe("session generator server", () => {
     expect(draft.warnings).toContain(
       "Open-water draft review skips dedicated kick blocks in this first slice."
     );
+  });
+
+  it("builds technical fault correction with explicit drill, kick, and rest choices", () => {
+    const validation = validateSessionGeneratorFormState({
+      environment: "pool",
+      poolLengthM: "25",
+      sessionType: "technical_fault_correction",
+      effort: "easy",
+      sizeMode: "distance",
+      targetDistanceM: "1800",
+      targetTimeMin: "45",
+      includeDrills: true,
+      drillVolumeMode: "explicit",
+      drillTargetMeters: "400",
+      includeKick: true,
+      kickVolumeMode: "explicit",
+      kickTargetMeters: "200",
+      kickIntervalMeters: "50",
+      restMode: "explicit",
+      restSeconds: "30",
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: ["kickboard"],
+    });
+
+    expect(validation.ok).toBe(true);
+    if (!validation.ok) return;
+
+    const draft = buildSessionDraft(buildHandoff(), validation.value);
+
+    expect(draft.sessionType).toBe("technical_fault_correction");
+    expect(draft.steps.find((step) => step.id === "warmup-rest-1")?.timeMin).toBe(0.5);
+    expect(draft.steps.find((step) => step.id === "drill-repeat-1-step-1")).toMatchObject({
+      category: "drill",
+      distanceM: 50,
+      repeatCount: 8,
+      repeatGroupId: "drill-repeat-1",
+    });
+    expect(draft.steps.find((step) => step.id === "drill-repeat-1-step-2")?.timeMin).toBe(0.5);
+    expect(
+      draft.steps.find((step) => step.postSetRestForRepeatGroupId === "drill-repeat-1")?.timeMin
+    ).toBe(0.5);
+    expect(draft.steps.find((step) => step.id === "kick-repeat-1-step-1")).toMatchObject({
+      category: "kick",
+      distanceM: 50,
+      repeatCount: 4,
+      repeatGroupId: "kick-repeat-1",
+    });
+    expect(draft.steps.find((step) => step.id === "kick-repeat-1-step-1")?.notes).toContain(
+      "200m total in 50m repeats"
+    );
+    expect(draft.steps.find((step) => step.id === "main-rest-1")?.timeMin).toBe(0.5);
+    expect(draft.steps.find((step) => step.id === "cooldown-rest-1")?.timeMin).toBe(0.5);
+    expect(draft.totalDistanceM).toBe(1800);
+    expect(draft.description).toContain("Rest: 30s requested.");
   });
 });
