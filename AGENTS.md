@@ -158,6 +158,13 @@ This file defines how coding agents should collaborate in this repository.
 ## Session Handoff Timing
 
 - Start a new chat or provide a carry-forward prompt when it is the best way to preserve momentum and reduce risk, not only when context is already heavy.
+- Mandatory chat-handoff gate:
+  - After every merge + local sync, and before creating a new implementation branch or starting a new active brief, assistant must explicitly assess whether to continue in the current chat or start a new chat.
+  - The post-merge handoff must include exactly one of:
+    - `Chat: continue here` with a short rationale, or
+    - `Chat: start new chat` with a ready-to-use carry-forward prompt.
+  - If the next step changes the primary goal, starts a new implementation slice, changes from docs/maintenance to feature work, or starts UI work with screenshot handoff, default to `Chat: start new chat`.
+  - When `Chat: start new chat` is recommended, assistant must stop before implementation work unless the owner explicitly says to continue in the same chat.
 - Strong triggers include:
   - the workstream reaches a stable checkpoint and the next primary goal changes,
   - context is mixing multiple briefs or several PRs,
