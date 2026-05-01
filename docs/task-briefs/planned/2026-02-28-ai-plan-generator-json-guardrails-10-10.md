@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-20`
+- `updated`: `2026-05-01`
 
 ## Goal
 
@@ -123,12 +123,30 @@ Generate AI-authored swim session/program drafts across explicit planning horizo
    - to competition date,
    - explicit peak/taper intent and periodization guardrails.
 
+## Program And Coach Roadmap Model
+
+- Use one canonical program model and one canonical Program Builder, not separate manual and AI program identity systems.
+- Supported long-term entrypoints should converge into the same saved program review/edit/save surface:
+  - `Build manually`: user places existing My Swim Sessions into week/day slots.
+  - `Create from weekly pattern`: user picks sessions per week, repeat duration, preferred days, and whether to repeat or progress sessions.
+  - `Let AI suggest full program`: AI proposes sessions and placements from goals, availability, date window, and competition intent.
+- AI-generated programs are proposals until reviewed and accepted.
+- Accepted AI-generated programs must be editable in the same manual Program Builder as manually assembled programs.
+- Weekly-pattern generation is a lower-risk bridge before full AI program planning:
+  - e.g. `3 sessions/week for 8 weeks`,
+  - optional preferred days,
+  - repeat the same sessions or apply simple progression,
+  - no hidden calendar or taper assumptions.
+- Full AI program planning should wait until one-session AI generation, canonical program editing, and planned-vs-actual history are stable.
+- Future adaptive coaching should consume canonical history and program intent; it must not silently rewrite planned programs without explicit user review.
+
 ## Out Of Scope
 
 - Fine-tuning custom model.
 - Full coaching recommendation engine.
 - Adaptive replanning of future schedules from completed-history signals without explicit user review.
 - Retrospective AI evaluation of completed history entries after execution.
+- Creating a second AI-only planner or AI-only program identity model separate from the canonical Program Builder.
 
 ## Data Placement And Sync Contract (Required)
 
@@ -212,6 +230,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - Users can edit generated plan without data loss.
 - Generated titles are suggestions only and can be edited before acceptance.
 - Generated output is treated as draft until the user reviews and accepts it.
+- Manual, weekly-pattern, and AI-assisted program starts converge into one canonical Program Builder after acceptance; no separate AI-only planner truth is introduced.
+- Full AI program generation preserves original goal, horizon, competition, and schedule assumptions so later planned-vs-actual history can evaluate the plan truthfully.
 - Failures are explicit and recoverable.
 - AI output never mutates canonical entity identity implicitly through renamed labels or reordered weeks/sessions.
 - Brief is scorecard-complete and identity-safe before implementation starts.
@@ -228,3 +248,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | aligned AI generation requirements to the canonical Garmin-style step model and shared threshold-based swim-zone method, and kept retrospective completed-session analysis explicitly out of this generation brief | next: request owner detail later on whether the first AI slice should generate one session, one week, or a longer program`
 - `2026-03-20 | planning | expanded generator UX to require an explicit planning-horizon choice (`session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, or `to_competition_date`), added calendar-window inputs for date-range planning, and kept competition-date generation on explicit peak/taper intent instead of hidden AI assumptions | next: decide which subset of the full horizon matrix ships first and keep the data contract/builder/history briefs aligned to the same plan-intent metadata`
 - `2026-03-20 | planning | added explicit generation-intent expectations for environment, pool length, duration mode, session/program intent, effort presets, drills/kick inclusion, and editable draft-first naming so the first AI session slice can stay Garmin-familiar without forcing raw zone-picking UX on day one | next: land a dedicated AI session generator v1 brief that turns these assumptions into one implementation-ready child slice`
+- `2026-05-01 | roadmap alignment | captured the canonical program roadmap from owner coaching notes: manual builder, weekly-pattern builder, and AI-assisted program generation should be different entrypoints into one canonical Program Builder, with full AI program planning deferred until one-session AI, program editing, and planned-vs-actual history are stable | next: keep V1 AI session implementation small and preserve these V2/V3 constraints for later program/history work`

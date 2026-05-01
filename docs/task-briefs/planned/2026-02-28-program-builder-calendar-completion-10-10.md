@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-25`
+- `updated`: `2026-05-01`
 
 ## Goal
 
@@ -33,6 +33,13 @@ Enable users to manually turn workouts into clear weekly programs with determini
   - simple progression controls,
   - rest day support,
   - editing/review of canonically saved programs regardless of whether the original source was manual assembly or an accepted AI-generated plan.
+- Multiple start modes for the same canonical builder, not separate planning systems:
+  - manual week/day planning,
+  - later weekly-pattern creation such as `3 sessions/week for 8 weeks`,
+  - later accepted AI-generated program proposals.
+- Flexible real-life planning:
+  - preferred days are planning guidance, not rigid outcome truth,
+  - missed, moved, partial, or cancelled sessions must flow through canonical history/completion state rather than overwriting the original plan.
 - Planner-facing status visibility:
   - show scheduled vs completed vs cancelled state from canonical history/completion records,
   - expose clear handoff entry points into completion/history flows where needed.
@@ -49,6 +56,8 @@ Enable users to manually turn workouts into clear weekly programs with determini
 - External activity imports.
 - Garmin partner sync.
 - Canonical training-history detail, manual completion/cancel comments, and retrospective evaluation logic.
+- Owning planned-vs-actual truth locally inside the planner.
+- A second AI-specific program builder or program identity model.
 - Canonical program persistence bootstrapping that is now owned by the narrower `2026-03-25-canonical-program-foundation-and-library-shell-10-10` brief.
 
 ## Data Placement And Sync Contract (Required)
@@ -124,6 +133,8 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - Users can manually build and edit their own weekly programs quickly.
 - Accepted AI-generated programs can be edited in the same planner after canonical save without creating a parallel planner identity model.
+- Weekly-pattern generated programs, when later implemented, are saved into the same canonical Program Builder rather than a separate template-only planner.
+- Planner UX distinguishes planned date/day from actual completion state and reads actual outcomes from canonical history records.
 - Planner completion/cancelled state is reliable because it is read from canonical history/completion records, not planner-local flags.
 - Program metrics align with canonical workout data.
 - Data-boundary and conflict rules are implemented exactly as specified in this brief.
@@ -145,3 +156,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | narrowed this brief to the manual program builder and planner-status track, and moved canonical done/cancel/comments/history ownership into a separate training-history brief so scheduling truth and outcome truth stay cleanly separated | next: keep planner UI aligned to canonical history state instead of adding planner-local completion flags`
 - `2026-03-20 | planning | clarified that accepted AI-generated plans across supported fixed-duration, date-range, and competition-date horizons should still converge into this same editable planner after canonical save, while horizon selection and competition intent remain upstream generator concerns | next: keep later planner implementation compatible with AI-authored plan metadata without turning this brief into a generation brief`
 - `2026-03-25 | planning | split the minimal canonical program entity/API/editor bootstrap into the narrower \`docs/task-briefs/done/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md\` so this brief can stay focused on richer planner calendar UX, summaries, and completion/history handoff after the base program surface exists | next: layer planner-specific UX and status behavior on top of the canonical foundation instead of recreating persistence contracts here`
+- `2026-05-01 | roadmap alignment | recorded the owner-driven program model: keep one canonical Program Builder with manual, weekly-pattern, and accepted AI proposal entrypoints; do not store completion truth as planner-local flags; planned days remain flexible guidance while actual done/moved/skipped outcomes come from the training-history brief | next: implement planner improvements only after V1 AI session and relevant history contracts are scoped`

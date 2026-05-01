@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-03-20`
-- `updated`: `2026-03-20`
+- `updated`: `2026-05-01`
 
 ## Goal
 
@@ -52,7 +52,14 @@ Establish a canonical training-history system so planned sessions can move into 
 - Manual outcome actions:
   - mark scheduled session `done`,
   - mark scheduled session `cancelled`,
+  - mark scheduled session `completed_on_another_day`,
+  - mark scheduled session `partly_completed`,
+  - move an incomplete planned session to a later planned date without pretending it was completed,
   - optional edit/add manual comment on the history entry.
+- Planned-vs-actual truth:
+  - preserve the original planned program/session/date,
+  - capture the actual completion date when different,
+  - capture whether the session was completed as planned, completed on another day, partly completed, skipped/cancelled, or moved forward.
 - History UX:
   - timeline/list of completed and cancelled sessions,
   - detail surface with outcome source, timestamps, and comments,
@@ -67,6 +74,7 @@ Establish a canonical training-history system so planned sessions can move into 
 - Retrospective AI-readiness hooks:
   - canonical history payload can later feed AI evaluation of individual sessions and longer-term progress against goals,
   - linked plan-intent metadata should preserve planning horizon, any original date window, and any competition-date/peak intent that shaped the original plan.
+  - later adaptive AI should be able to compare planned vs actual behavior without mutating history truth or silently rewriting the active program.
 
 ## Child Slice Sequencing
 
@@ -92,6 +100,8 @@ Establish a canonical training-history system so planned sessions can move into 
 - Server-canonical:
   - `training_history_entry`,
   - final outcome state,
+  - original planned date/day and actual completion date when known,
+  - completion relationship such as `as_planned`, `on_another_day`, `partial`, `skipped`, `moved_forward`, or `needs_review`,
   - source metadata,
   - timestamps,
   - manual comments,
@@ -109,6 +119,7 @@ Establish a canonical training-history system so planned sessions can move into 
   - provider reconciliation must never silently delete manual comments or overwrite conflicting outcomes.
 - Conflict policy:
   - `manual_cancelled` vs provider `completed`, duplicate provider matches, or unresolved provider-to-session matches must enter explicit `needs_review` state instead of silent coercion.
+  - If the app prompts about an uncompleted planned session, the user choice must produce an explicit planned-vs-actual record or planning update; it must not silently delete plan evidence.
 - Invalidation:
   - any history mutation invalidates planner completion indicators, adherence summaries, history lists/details, and later retrospective-AI input views.
 
@@ -167,7 +178,9 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - Users can mark a scheduled session `done` manually and see it appear in training history as `completed`.
 - Users can mark a scheduled session `cancelled` manually and see it appear in training history as `cancelled`.
+- Users can record that a planned session was completed on another day, partly completed, skipped, or moved forward without losing the original planned date.
 - Manual comments persist on history entries without breaking canonical identity or later reconciliation.
+- Program history can show planned vs actual adherence for a saved program without rewriting the original plan.
 - Planner/calendar views read canonical history outcome state rather than maintaining a second completion truth.
 - Conflicting provider/manual outcomes enter explicit `needs_review` state instead of silent overwrite.
 - Later retrospective AI evaluation can consume canonical history entries and comments without becoming the source of truth for outcome state.
@@ -186,3 +199,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 
 - `2026-03-20 | planning | created a dedicated history/completion parent brief so manual done/cancel/comments, later Garmin Activity API reconciliation, and retrospective AI evaluation have one canonical state model instead of being split across planner and send-to-Garmin slices | next: use this brief to keep planner, Garmin send, and later provider-ingest work from inventing parallel completion/history truth`
 - `2026-03-20 | planning | clarified that retrospective evaluation should retain original plan-intent context such as planning horizon, explicit date window, and explicit competition-date peak/taper intent, so future AI review can judge sessions against what the plan was actually trying to do | next: keep later history schema and AI evaluation slices aligned to canonical plan-intent metadata rather than mutable week labels`
+- `2026-05-01 | roadmap alignment | captured owner real-life scheduling requirements: preserve planned and actual states separately, support completed-as-planned, completed-on-another-day, partly-completed, skipped/cancelled, and moved-forward outcomes, and keep later AI feedback/adaptive replanning dependent on canonical history instead of planner-local flags | next: keep AI session V1 free of history implementation while preserving these contracts for the later program/history slice`
