@@ -348,7 +348,7 @@ export async function loadAthleteProfileSnapshot(
       : null;
   const personalRecordsLoadError =
     personalRecordsResult.error && personalRecordsSchemaReady
-      ? "Could not load personal records right now."
+      ? "Could not load best times right now."
       : null;
   const swimCapabilityLimitsLoadError =
     swimCapabilityLimitsResult.error && swimCapabilityLimitsSchemaReady

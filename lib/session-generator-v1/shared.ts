@@ -818,7 +818,7 @@ export function validateSessionGeneratorFormState(
     drillTargetMeters &&
     skillLimits.drill.maxRepeatDistanceM > drillTargetMeters
   ) {
-    return { ok: false, error: "Max drill repeat cannot be longer than drill volume." };
+    return { ok: false, error: "Drill max length cannot be longer than drill total." };
   }
 
   if (
@@ -827,7 +827,7 @@ export function validateSessionGeneratorFormState(
     kickTargetMeters &&
     skillLimits.kick.maxRepeatDistanceM > kickTargetMeters
   ) {
-    return { ok: false, error: "Max kick repeat cannot be longer than kick volume." };
+    return { ok: false, error: "Kick max length cannot be longer than kick total." };
   }
 
   if (input.allowedStrokes.length === 1 && targetDistance !== null) {

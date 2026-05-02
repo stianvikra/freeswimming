@@ -68,9 +68,9 @@ function formatProfileSkillLimitText(limit: ProfileSkillLimit | null | undefined
   if (!limit) return "";
 
   return [
-    limit.maxRepeatDistanceLabel ? `repeat max ${limit.maxRepeatDistanceLabel}` : null,
-    limit.targetTotalDistanceLabel ? `approx ${limit.targetTotalDistanceLabel} total` : null,
-    limit.maxTotalDistanceLabel ? `total max ${limit.maxTotalDistanceLabel}` : null,
+    limit.maxRepeatDistanceLabel ? `max length ${limit.maxRepeatDistanceLabel}` : null,
+    limit.targetTotalDistanceLabel ? `approx ${limit.targetTotalDistanceLabel}/session` : null,
+    limit.maxTotalDistanceLabel ? `max ${limit.maxTotalDistanceLabel}/session` : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -740,14 +740,14 @@ export default function SessionGeneratorPanel({
                         </legend>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           <LimitNumberField
-                            label="Repeat max"
+                            label="Max length"
                             unit={formState.poolLengthUnit}
                             value={formState.drillMaxRepeatDistance}
                             testId="session-generator-drill-max-repeat"
                             onChange={(value) => updateFormState("drillMaxRepeatDistance", value)}
                           />
                           <LimitNumberField
-                            label="Approx total"
+                            label="Approx per session"
                             unit={formState.poolLengthUnit}
                             value={formState.drillApproxTotalDistance}
                             testId="session-generator-drill-approx-total"
@@ -762,14 +762,14 @@ export default function SessionGeneratorPanel({
                         </legend>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           <LimitNumberField
-                            label="Repeat max"
+                            label="Max length"
                             unit={formState.poolLengthUnit}
                             value={formState.kickIntervalMeters}
                             testId="session-generator-kick-interval"
                             onChange={(value) => updateFormState("kickIntervalMeters", value)}
                           />
                           <LimitNumberField
-                            label="Approx total"
+                            label="Approx per session"
                             unit={formState.poolLengthUnit}
                             value={formState.kickApproxTotalDistance}
                             testId="session-generator-kick-approx-total"
@@ -817,7 +817,7 @@ export default function SessionGeneratorPanel({
                               </legend>
                               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                                 <LimitNumberField
-                                  label="Repeat max"
+                                  label="Max length"
                                   unit={formState.poolLengthUnit}
                                   value={strokeLimit.maxRepeatDistance}
                                   testId={`session-generator-stroke-limit-${stroke}-repeat`}
@@ -826,7 +826,7 @@ export default function SessionGeneratorPanel({
                                   }
                                 />
                                 <LimitNumberField
-                                  label="Total max"
+                                  label="Max per session"
                                   unit={formState.poolLengthUnit}
                                   value={strokeLimit.maxTotalDistance}
                                   testId={`session-generator-stroke-limit-${stroke}-total`}
@@ -894,7 +894,7 @@ export default function SessionGeneratorPanel({
                       data-testid="session-generator-constraint-text"
                       rows={4}
                       className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="Example: Use only catch-up, fingertip drag, and 6-1-6 drills; avoid paddles."
+                      placeholder="Anything you want your AI coach to consider before generating the session."
                     />
                   </label>
                 </div>
@@ -1034,7 +1034,7 @@ export default function SessionGeneratorPanel({
                           onChange={() => updateFormState("sizeMode", "estimated_time")}
                           data-testid="session-generator-size-time"
                         />
-                        Estimated time
+                        Estimated duration
                       </label>
                     </div>
 
@@ -1054,7 +1054,7 @@ export default function SessionGeneratorPanel({
                       </label>
                     ) : (
                       <label className="mt-4 block text-sm text-slate-700">
-                        Estimated duration
+                        Duration
                         <div className="relative mt-2">
                           <input
                             type="text"
@@ -1133,7 +1133,7 @@ export default function SessionGeneratorPanel({
                           {profileDrillLimitText ||
                           (isSkillLimitOverride && formState.drillMaxRepeatDistance) ? (
                             <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                              Drill repeat max:{" "}
+                              Drill max length:{" "}
                               <span className="font-medium text-slate-900">
                                 {isSkillLimitOverride && formState.drillMaxRepeatDistance
                                   ? `${formState.drillMaxRepeatDistance}${formState.poolLengthUnit}`
@@ -1195,7 +1195,7 @@ export default function SessionGeneratorPanel({
                               {profileKickLimitText ||
                               (isSkillLimitOverride && formState.kickIntervalMeters) ? (
                                 <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                                  Kick repeat max:{" "}
+                                  Kick max length:{" "}
                                   <span className="font-medium text-slate-900">
                                     {isSkillLimitOverride && formState.kickIntervalMeters
                                       ? `${formState.kickIntervalMeters}${formState.poolLengthUnit}`
@@ -1300,7 +1300,7 @@ export default function SessionGeneratorPanel({
                 <p className="text-sm text-slate-600">
                   {draft
                     ? "Change settings here only when you want to regenerate the draft."
-                    : "Generate an editable draft, then save it to My Swim Sessions when it is ready."}
+                    : "Generated draft will be editable."}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <button

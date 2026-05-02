@@ -71,7 +71,7 @@ describe("AthleteProfileHub", () => {
       screen.getByText("Unsaved swimmer-profile edits were restored on this device.")
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Unsaved personal-record edits were restored on this device.")
+      screen.getByText("Unsaved best-time edits were restored on this device.")
     ).toBeInTheDocument();
   });
 
@@ -305,7 +305,7 @@ describe("AthleteProfileHub", () => {
     fireEvent.click(screen.getByTestId("athlete-record-save"));
 
     await waitFor(() => {
-      expect(screen.getByText("Personal record saved.")).toBeInTheDocument();
+      expect(screen.getByText("Best time saved.")).toBeInTheDocument();
     });
 
     await waitFor(() => {
@@ -321,7 +321,7 @@ describe("AthleteProfileHub", () => {
     fireEvent.click(screen.getByTestId("athlete-record-delete-record-1"));
 
     await waitFor(() => {
-      expect(screen.getByText("Personal record deleted.")).toBeInTheDocument();
+      expect(screen.getByText("Best time deleted.")).toBeInTheDocument();
     });
 
     expect(screen.queryByText("100m Freestyle · 25m pool")).not.toBeInTheDocument();

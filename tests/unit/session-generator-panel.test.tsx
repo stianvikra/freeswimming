@@ -375,7 +375,7 @@ describe("SessionGeneratorPanel", () => {
       "From Swim Profile"
     );
     expect(screen.getByTestId("session-generator-profile-limits-card")).toHaveTextContent(
-      "repeat max 25m"
+      "max length 25m"
     );
     expect(screen.getByTestId("session-generator-pool-size-inline-row")).toHaveAttribute(
       "data-layout",
@@ -470,8 +470,9 @@ describe("SessionGeneratorPanel", () => {
       "aria-expanded",
       "false"
     );
-    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
     await waitFor(() => {
+      if (!screen.queryByTestId("session-draft-title"))
+        fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
       expect(screen.getByTestId("session-draft-title")).toHaveValue(
         "Threshold / CSS 25m Pool draft"
       );

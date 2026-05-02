@@ -120,10 +120,10 @@ const BLOCK_META: Record<
     manageLabel: "Edit preferences",
   },
   personal_records: {
-    label: "Personal records",
-    description: "Saved benchmark swims the generator can use as background.",
+    label: "Best times",
+    description: "Saved best times the generator can use as background.",
     manageHref: "/my-library/profile",
-    manageLabel: "Edit personal records",
+    manageLabel: "Edit best times",
   },
   goals: {
     label: "Open goals",
@@ -367,15 +367,15 @@ function buildGeneratorIntakeBlocks(input: {
       available: athleteProfileSnapshot.personalRecords.length > 0,
       summary:
         athleteProfileSnapshot.personalRecords.length > 0
-          ? `${athleteProfileSnapshot.personalRecords.length} saved record${
+          ? `${athleteProfileSnapshot.personalRecords.length} best time${
               athleteProfileSnapshot.personalRecords.length === 1 ? "" : "s"
             }, latest benchmark ${athleteProfileSnapshot.personalRecords[0]?.eventLabel ?? "available"}.`
-          : "No personal records saved yet.",
+          : "No best times saved yet.",
       missingReason: resolveMissingReason({
         available: athleteProfileSnapshot.personalRecords.length > 0,
         schemaReady: athleteProfileSnapshot.personalRecordsSchemaReady,
         loadError: athleteProfileSnapshot.personalRecordsLoadError,
-        emptyReason: "Add personal records if later generation should see benchmark events.",
+        emptyReason: "Add best times if later generation should see benchmark events.",
       }),
       sourceIds: athleteProfileSnapshot.personalRecords.map((record) => record.id),
       lastUpdatedAt: athleteProfileSnapshot.personalRecords[0]?.updatedAt ?? null,

@@ -368,7 +368,7 @@ function SwimProfileDataCollapsedSummary({
         <SwimProfileSummaryRow
           title="Not in Swim Profile"
           rows={unavailableRows}
-          emptyLabel="Nothing missing"
+          emptyLabel="None"
           tone="missing"
         />
       ) : null}
@@ -467,7 +467,7 @@ function buildSwimProfileDataRows(
       },
       {
         key: "personal_records" as const,
-        label: "Personal records",
+        label: "Best times",
         summary: personalRecordsSummary || "Not in Swim Profile",
         manageHref: "/my-library/profile",
       },

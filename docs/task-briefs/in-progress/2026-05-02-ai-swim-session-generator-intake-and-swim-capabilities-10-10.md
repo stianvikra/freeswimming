@@ -24,7 +24,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 | Reliability and failure handling              | `target`     | Missing schema/data, invalid limits, offline save, and over-limit duration fail clearly.                 | Negative tests                | `5/5` |
 | Security and authz                            | `supporting` | Existing auth boundary is preserved; new capability route fails closed.                                  | Route tests                   | `4/5` |
 | Privacy and compliance                        | `target`     | No automatic name/age/focus context; local draft copy is browser-scoped.                                 | Payload/copy tests            | `5/5` |
-| Content governance                            | `target`     | Uses current labels: Swim Profile, Session Rules, Pool size, Select strokes/equipment, repeat max.       | Copy assertions               | `5/5` |
+| Content governance                            | `target`     | Uses current labels: Swim Profile, Session Rules, Pool size, Select strokes/equipment, max length.       | Copy assertions               | `5/5` |
 | Admin workflow and editability                | `N/A`        | N/A: no admin roles, publish states, or support workflow changed.                                        | Scope review                  | `N/A` |
 | SEO and crawlability                          | `N/A`        | N/A: private/authenticated UI, no public metadata or sitemap changes.                                    | Scope review                  | `N/A` |
 | AI discoverability                            | `N/A`        | N/A: private generator UI, no public crawlable AI-discovery surface.                                     | Scope review                  | `N/A` |

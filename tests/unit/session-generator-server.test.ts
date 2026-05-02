@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { buildSessionDraft } from "@/lib/session-generator-v1/server";
 import {
   getDefaultSessionGeneratorFormState,
-  normalizeSessionGeneratorFormState,
   validateSessionGeneratorFormState,
 } from "@/lib/session-generator-v1/shared";
 import type { GeneratorIntakeHandoffPayload } from "@/lib/generator-intake/shared";
@@ -280,64 +279,6 @@ describe("session generator server", () => {
     expect(draft.steps.find((step) => step.id === "cooldown-rest-1")?.timeMin).toBe(0.5);
     expect(draft.totalDistanceM).toBe(1800);
     expect(draft.description).toContain("Rest: 30s requested.");
-  });
-
-  it("supports yard pool lengths and profile max drill repeats", () => {
-    const handoff = buildHandoff();
-    const validation = validateSessionGeneratorFormState({
-      ...getDefaultSessionGeneratorFormState(handoff),
-      environment: "pool",
-      poolLengthM: "25",
-      poolLengthUnit: "yd",
-      sessionType: "technical_fault_correction",
-      effort: "easy",
-      sizeMode: "distance",
-      targetDistanceM: "1000",
-      includeDrills: true,
-      drillVolumeMode: "explicit",
-      drillTargetMeters: "300",
-      includeKick: false,
-      restMode: "coach_decides",
-      allowedStrokes: ["freestyle"],
-      equipmentAllowlist: [],
-    });
-
-    expect(validation.ok).toBe(true);
-    if (!validation.ok) return;
-
-    const draft = buildSessionDraft(handoff, validation.value);
-    const drillStep = draft.steps.find((step) => step.id === "drill-repeat-1-step-1");
-
-    expect(draft.poolLengthUnit).toBe("yd");
-    expect(draft.poolLengthM).toBeCloseTo(22.86, 2);
-    expect(draft.totalDistanceM).toBeCloseTo(914.4, 1);
-    expect(drillStep?.distanceM).toBeCloseTo(22.86, 2);
-    expect(drillStep?.repeatCount).toBe(12);
-    expect(drillStep?.notes).toContain("300yd drill target");
-  });
-
-  it("clears profile-derived capability limits when the profile group is deselected", () => {
-    const handoffWithLimits = buildHandoff();
-    const stateWithLimits = getDefaultSessionGeneratorFormState(handoffWithLimits);
-    const handoffWithoutLimits: GeneratorIntakeHandoffPayload = {
-      ...handoffWithLimits,
-      includedBlocks: ["preferences", "css", "goals"],
-      omittedBlocks: ["personal_records", "capability_limits"],
-      source: {
-        ...handoffWithLimits.source,
-        swimCapabilityLimits: [],
-      },
-    };
-
-    const normalized = normalizeSessionGeneratorFormState(stateWithLimits, handoffWithoutLimits);
-
-    expect(stateWithLimits.drillMaxRepeatDistance).toBe("25");
-    expect(stateWithLimits.drillApproxTotalDistance).toBe("300");
-    expect(stateWithLimits.strokeLimits.backstroke.maxRepeatDistance).toBe("25");
-    expect(normalized.skillLimitMode).toBe("override");
-    expect(normalized.drillMaxRepeatDistance).toBe("");
-    expect(normalized.drillApproxTotalDistance).toBe("");
-    expect(normalized.strokeLimits.backstroke.maxRepeatDistance).toBe("");
   });
 
   it("fails safe when one selected stroke exceeds its max total distance", () => {

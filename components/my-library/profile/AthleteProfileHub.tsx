@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import {
   SWIM_CAPABILITY_STROKES,
-  formatSwimCapabilityLimitSummary,
   getSwimCapabilityStrokeLabel,
   type SwimCapabilityLimitInput,
   type SwimCapabilityStroke,
@@ -108,12 +107,17 @@ type SectionSummaryCopy = {
 
 const CAPABILITY_INPUT_CLASS =
   "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const PROFILE_SECTION_HEADER_CLASS =
+  "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between";
+const PROFILE_SECTION_TOGGLE_CLASS =
+  "inline-flex h-10 items-center justify-center self-end rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:self-auto";
 
 function CapabilityInputField({
   label,
   testId,
   value,
   placeholder = "",
+  unit = "m",
   inputMode = "decimal",
   onChange,
 }: {
@@ -121,21 +125,27 @@ function CapabilityInputField({
   testId: string;
   value: string;
   placeholder?: string;
+  unit?: string;
   inputMode?: "decimal" | "numeric";
   onChange: (value: string) => void;
 }) {
   return (
     <label className="space-y-2 text-sm font-medium text-slate-700">
       <span>{label}</span>
-      <input
-        data-testid={testId}
-        type="text"
-        inputMode={inputMode}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className={CAPABILITY_INPUT_CLASS}
-      />
+      <span className="relative block">
+        <input
+          data-testid={testId}
+          type="text"
+          inputMode={inputMode}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className={`${CAPABILITY_INPUT_CLASS} pr-10`}
+        />
+        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold text-slate-500">
+          {unit}
+        </span>
+      </span>
     </label>
   );
 }
@@ -481,57 +491,18 @@ function buildPreferencesSectionSummary(snapshot: AthleteProfileSnapshot): Secti
   };
 }
 
-function buildCapabilitiesSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
-  if (!snapshot.swimCapabilityLimitsSchemaReady) {
-    return {
-      summary: "Stroke and skill limits are still syncing.",
-      detail: "Open this section later to save max repeat lengths.",
-      hasData: false,
-    };
-  }
-
-  if (snapshot.swimCapabilityLimitsLoadError) {
-    return {
-      summary: "Could not load stroke and skill limits.",
-      detail: snapshot.swimCapabilityLimitsLoadError,
-      hasData: false,
-    };
-  }
-
-  if (snapshot.swimCapabilityLimits.length === 0) {
-    return {
-      summary: "No stroke or skill limits saved yet.",
-      detail: "Add max repeat lengths when a stroke, drill, or kick breaks down early.",
-      hasData: false,
-    };
-  }
-
-  const summary = snapshot.swimCapabilityLimits
-    .slice(0, 3)
-    .map((limit) => formatSwimCapabilityLimitSummary(limit))
-    .join(" · ");
-
-  return {
-    summary,
-    detail: `${snapshot.swimCapabilityLimits.length} limit${
-      snapshot.swimCapabilityLimits.length === 1 ? "" : "s"
-    } saved for AI session generation.`,
-    hasData: true,
-  };
-}
-
 function buildRecordsSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
   if (!snapshot.personalRecordsSchemaReady) {
     return {
-      summary: "Personal records are still syncing.",
-      detail: "Open this section later to manage saved bests.",
+      summary: "Best times are still syncing.",
+      detail: "Open this section later to manage saved best times.",
       hasData: false,
     };
   }
 
   if (snapshot.personalRecordsLoadError) {
     return {
-      summary: "Could not load personal records.",
+      summary: "Could not load best times.",
       detail: snapshot.personalRecordsLoadError,
       hasData: false,
     };
@@ -539,14 +510,14 @@ function buildRecordsSectionSummary(snapshot: AthleteProfileSnapshot): SectionSu
 
   if (snapshot.personalRecords.length === 0) {
     return {
-      summary: "No personal records saved yet.",
+      summary: "No best times saved yet.",
       detail: "Start with the events you use most in training.",
       hasData: false,
     };
   }
 
   return {
-    summary: `${snapshot.personalRecords.length} current record${
+    summary: `${snapshot.personalRecords.length} best time${
       snapshot.personalRecords.length === 1 ? "" : "s"
     } saved.`,
     detail: snapshot.personalRecords
@@ -1139,20 +1110,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     event.preventDefault();
 
     if (!snapshot.personalRecordsSchemaReady) {
-      setSectionStatus(
-        "records",
-        "Personal records are still syncing in this environment.",
-        "error"
-      );
+      setSectionStatus("records", "Best times are still syncing in this environment.", "error");
       return;
     }
 
     if (!isOnline) {
-      setSectionStatus(
-        "records",
-        "You are offline. Reconnect before saving personal records.",
-        "error"
-      );
+      setSectionStatus("records", "You are offline. Reconnect before saving best times.", "error");
       return;
     }
 
@@ -1178,7 +1141,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       if (!response.ok) {
         setSectionStatus(
           "records",
-          await parseError(response, "Could not save personal record right now."),
+          await parseError(response, "Could not save best time right now."),
           "error"
         );
         return;
@@ -1186,7 +1149,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setSectionStatus("records", "Could not save personal record right now.", "error");
+        setSectionStatus("records", "Could not save best time right now.", "error");
         return;
       }
 
@@ -1200,7 +1163,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       setRecordDraftRecovered(false);
       setSectionStatus(
         "records",
-        isEditing ? "Personal record updated." : "Personal record saved.",
+        isEditing ? "Best time updated." : "Best time saved.",
         "success",
         { collapse: true }
       );
@@ -1214,7 +1177,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         hasRecordedOn: Boolean(savedRecord?.recordedOn),
       });
     } catch {
-      setSectionStatus("records", "Could not save personal record right now.", "error");
+      setSectionStatus("records", "Could not save best time right now.", "error");
     } finally {
       setPendingRecordSave(false);
     }
@@ -1222,24 +1185,20 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
   async function deletePersonalRecord(record: PersonalRecordView) {
     if (!snapshot.personalRecordsSchemaReady) {
-      setSectionStatus(
-        "records",
-        "Personal records are still syncing in this environment.",
-        "error"
-      );
+      setSectionStatus("records", "Best times are still syncing in this environment.", "error");
       return;
     }
 
     if (!isOnline) {
       setSectionStatus(
         "records",
-        "You are offline. Reconnect before deleting personal records.",
+        "You are offline. Reconnect before deleting best times.",
         "error"
       );
       return;
     }
 
-    if (!window.confirm(`Delete ${record.eventLabel}?`)) {
+    if (!window.confirm(`Delete best time ${record.eventLabel}?`)) {
       return;
     }
 
@@ -1255,7 +1214,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       if (!response.ok) {
         setSectionStatus(
           "records",
-          await parseError(response, "Could not delete personal record right now."),
+          await parseError(response, "Could not delete best time right now."),
           "error"
         );
         return;
@@ -1263,7 +1222,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setSectionStatus("records", "Could not delete personal record right now.", "error");
+        setSectionStatus("records", "Could not delete best time right now.", "error");
         return;
       }
 
@@ -1275,13 +1234,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         setRecordDraftRecovered(false);
       }
 
-      setSectionStatus("records", "Personal record deleted.", "success");
+      setSectionStatus("records", "Best time deleted.", "success");
 
       void sendClientAnalyticsEvent("personal_record_deleted", {
         eventLabel: record.eventLabel,
       });
     } catch {
-      setSectionStatus("records", "Could not delete personal record right now.", "error");
+      setSectionStatus("records", "Could not delete best time right now.", "error");
     } finally {
       setPendingRecordDeleteId(null);
     }
@@ -1343,8 +1302,8 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setSectionStatus(
       "records",
       recordDraft.editingRecordId
-        ? "Draft reset to saved personal record."
-        : "Draft reset to a new personal record.",
+        ? "Draft reset to saved best time."
+        : "Draft reset to a new best time.",
       "success"
     );
   }
@@ -1353,7 +1312,15 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setRecordDraft(buildPersonalRecordDraft(record));
     setRecordDraftRecovered(false);
     setSectionOpen("records", true);
-    setSectionStatus("records", `Editing ${record.eventLabel}.`, "success");
+    setActiveStatusSection(null);
+    setActionError("");
+    setActionSuccess("");
+    window.setTimeout(() => {
+      document.getElementById("athlete-record-form")?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }, 0);
   }
 
   function startNewRecord() {
@@ -1361,7 +1328,15 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     clearStorageValue(recordStorageKey);
     setRecordDraftRecovered(false);
     setSectionOpen("records", true);
-    setSectionStatus("records", "Ready to add a new personal record.", "success");
+    setActiveStatusSection(null);
+    setActionError("");
+    setActionSuccess("");
+    window.setTimeout(() => {
+      document.getElementById("athlete-record-form")?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }, 0);
   }
 
   function toggleAvailableDay(day: TrainingWeekday) {
@@ -1387,7 +1362,6 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const profileSummary = buildProfileSectionSummary(snapshot);
   const cssSummary = buildCssSectionSummary(snapshot);
   const preferencesSummary = buildPreferencesSectionSummary(snapshot);
-  const capabilitiesSummary = buildCapabilitiesSectionSummary(snapshot);
   const recordsSummary = buildRecordsSectionSummary(snapshot);
   const profileNotice = getSectionNotice("profile");
   const cssNotice = getSectionNotice("css");
@@ -1405,8 +1379,8 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     >
       {!isOnline ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
-          You are offline. Unsaved profile, CSS, preferences, and personal-record changes stay on
-          this device until you reconnect and save.
+          You are offline. Unsaved profile, CSS, preferences, and best-time changes stay on this
+          device until you reconnect and save.
         </div>
       ) : null}
 
@@ -1436,7 +1410,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       {recordDraftRecovered ? (
         <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
-          Unsaved personal-record edits were restored on this device.
+          Unsaved best-time edits were restored on this device.
         </div>
       ) : null}
 
@@ -1463,7 +1437,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         data-section-open={sectionOpenState.profile ? "true" : "false"}
         className="rounded-3xl border border-slate-200 bg-white p-5"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
             <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
               Swimmer profile
@@ -1485,13 +1459,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             aria-expanded={sectionOpenState.profile}
             aria-controls="athlete-profile-section-body-profile"
             onClick={() => toggleSection("profile")}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className={PROFILE_SECTION_TOGGLE_CLASS}
           >
-            {sectionOpenState.profile
-              ? "Collapse"
-              : profileSummary.hasData
-                ? "Edit profile"
-                : "Open profile"}
+            {sectionOpenState.profile ? "Collapse" : "Edit"}
           </button>
         </div>
 
@@ -1623,7 +1593,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         data-section-open={sectionOpenState.css ? "true" : "false"}
         className="rounded-3xl border border-slate-200 bg-white p-5"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
             <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">CSS</p>
             <div className="flex flex-wrap items-center gap-2">
@@ -1643,9 +1613,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             aria-expanded={sectionOpenState.css}
             aria-controls="athlete-profile-section-body-css"
             onClick={() => toggleSection("css")}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className={PROFILE_SECTION_TOGGLE_CLASS}
           >
-            {sectionOpenState.css ? "Collapse" : cssSummary.hasData ? "Edit CSS" : "Open CSS"}
+            {sectionOpenState.css ? "Collapse" : "Edit"}
           </button>
         </div>
 
@@ -1757,7 +1727,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         data-section-open={sectionOpenState.preferences ? "true" : "false"}
         className="rounded-3xl border border-slate-200 bg-white p-5"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
             <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
               Preferences
@@ -1779,13 +1749,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             aria-expanded={sectionOpenState.preferences}
             aria-controls="athlete-profile-section-body-preferences"
             onClick={() => toggleSection("preferences")}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className={PROFILE_SECTION_TOGGLE_CLASS}
           >
-            {sectionOpenState.preferences
-              ? "Collapse"
-              : preferencesSummary.hasData
-                ? "Edit preferences"
-                : "Open preferences"}
+            {sectionOpenState.preferences ? "Collapse" : "Edit"}
           </button>
         </div>
 
@@ -1945,7 +1911,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         data-section-open={sectionOpenState.capabilities ? "true" : "false"}
         className="rounded-3xl border border-slate-200 bg-white p-5"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
             <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
               Swim capabilities
@@ -1958,8 +1924,6 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 </span>
               ) : null}
             </div>
-            <p className="text-sm font-medium text-slate-900">{capabilitiesSummary.summary}</p>
-            <p className="text-sm text-slate-600">{capabilitiesSummary.detail}</p>
           </div>
           <button
             type="button"
@@ -1967,13 +1931,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             aria-expanded={sectionOpenState.capabilities}
             aria-controls="athlete-profile-section-body-capabilities"
             onClick={() => toggleSection("capabilities")}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className={PROFILE_SECTION_TOGGLE_CLASS}
           >
-            {sectionOpenState.capabilities
-              ? "Collapse"
-              : capabilitiesSummary.hasData
-                ? "Edit limits"
-                : "Open limits"}
+            {sectionOpenState.capabilities ? "Collapse" : "Edit"}
           </button>
         </div>
 
@@ -2003,30 +1963,20 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <p className="max-w-2xl text-sm text-slate-600">
-                Save max repeat lengths where form quality breaks down. The AI generator uses these
-                by default and can override them for one session only.
-              </p>
-              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                Private to your account
-              </div>
-            </div>
-
             {!snapshot.swimCapabilityLimitsSchemaReady ? (
-              <p className="mt-5 text-sm text-amber-800">
+              <p className="text-sm text-amber-800">
                 Stroke and skill limits are still syncing in this environment.
               </p>
             ) : snapshot.swimCapabilityLimitsLoadError ? (
-              <p className="mt-5 text-sm text-rose-700">{snapshot.swimCapabilityLimitsLoadError}</p>
+              <p className="text-sm text-rose-700">{snapshot.swimCapabilityLimitsLoadError}</p>
             ) : (
               <>
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                     <legend className="px-1 text-sm font-semibold text-slate-900">Drills</legend>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <CapabilityInputField
-                        label="Max drill repeat (m)"
+                        label="Max length"
                         testId="athlete-capability-drill-max-repeat"
                         value={capabilityLimitsDraft.drillMaxRepeatDistanceM}
                         placeholder="25"
@@ -2035,7 +1985,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                         }
                       />
                       <CapabilityInputField
-                        label="Default drill total (m)"
+                        label="Approx per session"
                         testId="athlete-capability-drill-target-total"
                         value={capabilityLimitsDraft.drillTargetTotalDistanceM}
                         placeholder="200"
@@ -2051,7 +2001,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     <legend className="px-1 text-sm font-semibold text-slate-900">Kick</legend>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <CapabilityInputField
-                        label="Max kick repeat (m)"
+                        label="Max length"
                         testId="athlete-capability-kick-max-repeat"
                         value={capabilityLimitsDraft.kickMaxRepeatDistanceM}
                         placeholder="25"
@@ -2060,7 +2010,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                         }
                       />
                       <CapabilityInputField
-                        label="Default kick total (m)"
+                        label="Approx per session"
                         testId="athlete-capability-kick-target-total"
                         value={capabilityLimitsDraft.kickTargetTotalDistanceM}
                         placeholder="200"
@@ -2091,7 +2041,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                           </p>
                           <div className="mt-3 grid gap-3 sm:grid-cols-2">
                             <CapabilityInputField
-                              label="Max repeat (m)"
+                              label="Max length"
                               testId={`athlete-capability-stroke-${stroke}-max-repeat`}
                               value={strokeDraft.maxRepeatDistanceM}
                               onChange={(value) =>
@@ -2103,7 +2053,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                               }
                             />
                             <CapabilityInputField
-                              label="Max total (m)"
+                              label="Max per session"
                               testId={`athlete-capability-stroke-${stroke}-max-total`}
                               value={strokeDraft.maxTotalDistanceM}
                               inputMode="numeric"
@@ -2148,13 +2098,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         data-section-open={sectionOpenState.records ? "true" : "false"}
         className="rounded-3xl border border-slate-200 bg-white p-5"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
             <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
-              Personal records
+              Best times
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-slate-900">Event bests</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Best times</h2>
               {hasUnsavedRecordChanges ? (
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
                   Unsaved edits
@@ -2170,13 +2120,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             aria-expanded={sectionOpenState.records}
             aria-controls="athlete-profile-section-body-records"
             onClick={() => toggleSection("records")}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className={PROFILE_SECTION_TOGGLE_CLASS}
           >
-            {sectionOpenState.records
-              ? "Collapse"
-              : recordsSummary.hasData
-                ? "Edit records"
-                : "Open records"}
+            {sectionOpenState.records ? "Collapse" : "Edit"}
           </button>
         </div>
 
@@ -2205,27 +2151,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <p className="max-w-2xl text-sm text-slate-600">
-                Save one private current best per event so later generator work can reuse trusted
-                event context without guessing.
-              </p>
-              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                One current record per event
-              </div>
-            </div>
-
             {!snapshot.personalRecordsSchemaReady ? (
-              <p className="mt-5 text-sm text-amber-800">
-                Personal records are still syncing in this environment.
+              <p className="text-sm text-amber-800">
+                Best times are still syncing in this environment.
               </p>
             ) : snapshot.personalRecordsLoadError ? (
-              <p className="mt-5 text-sm text-rose-700">{snapshot.personalRecordsLoadError}</p>
+              <p className="text-sm text-rose-700">{snapshot.personalRecordsLoadError}</p>
             ) : (
-              <div className="mt-5 space-y-4">
+              <div className="space-y-4">
                 {snapshot.personalRecords.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
-                    No personal records saved yet. Start with the events you use most in training.
+                    No best times saved yet. Start with the events you use most in training.
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -2234,20 +2170,22 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                         key={record.id}
                         className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <h3 className="text-base font-semibold text-slate-900">
-                              {record.eventLabel}
-                            </h3>
-                            <p className="mt-1 text-sm text-slate-600">
-                              {record.timeLabel}
-                              {record.recordedOn ? ` · ${record.recordedOn}` : ""}
-                            </p>
+                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                              <h3 className="text-base font-semibold text-slate-900">
+                                {record.eventLabel}
+                              </h3>
+                              <p className="text-sm text-slate-600">
+                                {record.timeLabel}
+                                {record.recordedOn ? ` · ${record.recordedOn}` : ""}
+                              </p>
+                            </div>
                             {record.sourceNote ? (
                               <p className="mt-2 text-sm text-slate-600">{record.sourceNote}</p>
                             ) : null}
                           </div>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2 self-end sm:self-auto">
                             <button
                               type="button"
                               data-testid={`athlete-record-edit-${record.id}`}
@@ -2273,35 +2211,30 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 )}
 
                 <form
+                  id="athlete-record-form"
                   onSubmit={savePersonalRecord}
                   className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="text-base font-semibold text-slate-900">
-                        {currentEditedRecord ? "Edit personal record" : "Add personal record"}
+                        {currentEditedRecord ? "Edit best time" : "Add best time"}
                       </h3>
                       <p className="mt-2 text-sm text-slate-600">
-                        Use explicit event identity and swimmer-friendly time input: `59.87`,
-                        `1:02.34`, or `1:01:02.34`.
+                        Enter time as 59.87, 1:02.34, or 1:01:02.34.
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {currentEditedRecord ? (
-                        <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-                          Editing {currentEditedRecord.eventLabel}
-                        </div>
-                      ) : null}
-                      {currentEditedRecord ? (
+                    {currentEditedRecord ? (
+                      <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={startNewRecord}
                           className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                         >
-                          Start new
+                          Add new
                         </button>
-                      ) : null}
-                    </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -2427,8 +2360,8 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                       {pendingRecordSave
                         ? "Saving..."
                         : currentEditedRecord
-                          ? "Update personal record"
-                          : "Save personal record"}
+                          ? "Update best time"
+                          : "Save best time"}
                     </button>
                     <button
                       data-testid="athlete-record-reset"

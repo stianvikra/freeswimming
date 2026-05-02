@@ -173,7 +173,7 @@ test.describe("my library athlete profile", () => {
       await expect(page.getByTestId("athlete-record-distance-m")).toHaveValue("200");
       await expect(page.getByTestId("athlete-record-time")).toHaveValue("2:24.18");
       await expect(
-        page.getByText("Unsaved personal-record edits were restored on this device.")
+        page.getByText("Unsaved best-time edits were restored on this device.")
       ).toBeVisible();
     }
   });
@@ -215,7 +215,7 @@ test.describe("my library athlete profile", () => {
     await page.getByTestId("athlete-record-save").click();
 
     await createRecordResponse;
-    await expect(page.getByText("Personal record saved.")).toBeVisible();
+    await expect(page.getByText("Best time saved.")).toBeVisible();
     await expect(page.getByTestId("athlete-profile-section-records")).toHaveAttribute(
       "data-section-open",
       "false"

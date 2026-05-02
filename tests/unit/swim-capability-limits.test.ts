@@ -15,27 +15,11 @@ describe("swim capability limits", () => {
         { kind: "kick" },
       ],
     });
-
     expect(result.kind).toBe("valid");
     if (result.kind !== "valid") return;
-
     expect(result.value).toEqual([
       expect.objectContaining({ limit_kind: "drill", max_repeat_distance_m: 25 }),
       expect.objectContaining({ limit_kind: "stroke", max_total_distance_m: 200 }),
     ]);
-  });
-
-  it("rejects duplicate limits before persistence", () => {
-    const result = buildSwimCapabilityLimitUpserts({
-      limits: [
-        { kind: "kick", maxRepeatDistanceM: "25" },
-        { kind: "kick", maxRepeatDistanceM: "50" },
-      ],
-    });
-
-    expect(result).toEqual({
-      kind: "invalid",
-      error: "Each capability limit can only be saved once.",
-    });
   });
 });

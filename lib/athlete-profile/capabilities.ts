@@ -94,9 +94,9 @@ export function formatSwimCapabilityLimitSummary(limit: SwimCapabilityLimitSumma
         ? "Kick"
         : (limit.strokeLabel ?? "Stroke");
   const details = [
-    limit.maxRepeatDistanceLabel ? `repeat max ${limit.maxRepeatDistanceLabel}` : null,
-    limit.maxTotalDistanceLabel ? `total max ${limit.maxTotalDistanceLabel}` : null,
-    limit.targetTotalDistanceLabel ? `approx ${limit.targetTotalDistanceLabel} total` : null,
+    limit.maxRepeatDistanceLabel ? `max length ${limit.maxRepeatDistanceLabel}` : null,
+    limit.maxTotalDistanceLabel ? `max ${limit.maxTotalDistanceLabel}/session` : null,
+    limit.targetTotalDistanceLabel ? `approx ${limit.targetTotalDistanceLabel}/session` : null,
   ].filter(Boolean);
 
   return details.length > 0 ? `${label}: ${details.join(", ")}` : label;
