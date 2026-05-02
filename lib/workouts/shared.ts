@@ -2466,7 +2466,7 @@ export function normalizeSessionDraftForWorkoutPersistence(
     return { ok: false, error: "Choose a supported session effort before saving." };
   }
 
-  const normalizedTargetDistanceM = normalizeNullableInteger(input.targetDistanceM);
+  const normalizedTargetDistanceM = normalizeNullableDistance(input.targetDistanceM);
   const normalizedTargetTimeMin = normalizeNullableInteger(input.targetTimeMin);
   const sizeMode =
     input.sizeMode === "distance" || input.sizeMode === "estimated_time"

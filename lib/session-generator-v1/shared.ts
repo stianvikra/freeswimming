@@ -777,6 +777,9 @@ export function validateSessionGeneratorFormState(
     if (drillTargetMeters < 25 || drillTargetMeters > 3000) {
       return { ok: false, error: "Drill volume must stay between 25m and 3000m." };
     }
+    if (input.environment === "pool" && poolLength && drillTargetMeters < poolLength) {
+      return { ok: false, error: "Drill distance must be at least one pool length." };
+    }
   }
 
   const kickTargetMeters =
@@ -807,6 +810,9 @@ export function validateSessionGeneratorFormState(
     if (kickTargetMeters < 25 || kickTargetMeters > 3000) {
       return { ok: false, error: "Kick volume must stay between 25m and 3000m." };
     }
+    if (input.environment === "pool" && poolLength && kickTargetMeters < poolLength) {
+      return { ok: false, error: "Kick distance must be at least one pool length." };
+    }
     if (kickIntervalMeters < 25 || kickIntervalMeters > 400) {
       return { ok: false, error: "Max kick repeat must stay between 25m and 400m." };
     }
@@ -822,12 +828,105 @@ export function validateSessionGeneratorFormState(
   }
 
   if (
+    input.environment === "pool" &&
+    input.includeDrills &&
+    poolLength &&
+    skillLimits.drill.maxRepeatDistanceM &&
+    skillLimits.drill.maxRepeatDistanceM < poolLength
+  ) {
+    return { ok: false, error: "Drill max length must be at least one pool length." };
+  }
+
+  if (
+    input.environment === "pool" &&
+    input.includeDrills &&
+    poolLength &&
+    skillLimits.drill.targetTotalDistanceM &&
+    skillLimits.drill.targetTotalDistanceM < poolLength
+  ) {
+    return { ok: false, error: "Drill approx per session must be at least one pool length." };
+  }
+
+  if (
+    input.includeDrills &&
+    drillTargetMeters &&
+    skillLimits.drill.targetTotalDistanceM &&
+    drillTargetMeters > skillLimits.drill.targetTotalDistanceM
+  ) {
+    return {
+      ok: false,
+      error: "Drill distance cannot exceed drill approx per session.",
+    };
+  }
+
+  if (
     input.includeKick &&
     skillLimits.kick.maxRepeatDistanceM &&
     kickTargetMeters &&
     skillLimits.kick.maxRepeatDistanceM > kickTargetMeters
   ) {
     return { ok: false, error: "Kick max length cannot be longer than kick total." };
+  }
+
+  if (
+    input.environment === "pool" &&
+    input.includeKick &&
+    poolLength &&
+    skillLimits.kick.maxRepeatDistanceM &&
+    skillLimits.kick.maxRepeatDistanceM < poolLength
+  ) {
+    return { ok: false, error: "Kick max length must be at least one pool length." };
+  }
+
+  if (
+    input.environment === "pool" &&
+    input.includeKick &&
+    poolLength &&
+    skillLimits.kick.targetTotalDistanceM &&
+    skillLimits.kick.targetTotalDistanceM < poolLength
+  ) {
+    return { ok: false, error: "Kick approx per session must be at least one pool length." };
+  }
+
+  if (
+    input.includeKick &&
+    kickTargetMeters &&
+    skillLimits.kick.targetTotalDistanceM &&
+    kickTargetMeters > skillLimits.kick.targetTotalDistanceM
+  ) {
+    return {
+      ok: false,
+      error: "Kick distance cannot exceed kick approx per session.",
+    };
+  }
+
+  if (
+    input.environment === "pool" &&
+    input.sizeMode === "distance" &&
+    targetDistance &&
+    poolLength
+  ) {
+    const expectedDrillDistance =
+      input.includeDrills && input.drillVolumeMode === "explicit"
+        ? (drillTargetMeters ?? 0)
+        : input.includeDrills
+          ? (skillLimits.drill.targetTotalDistanceM ?? poolLength)
+          : 0;
+    const expectedKickDistance =
+      input.includeKick && input.kickVolumeMode === "explicit"
+        ? (kickTargetMeters ?? 0)
+        : input.includeKick
+          ? (skillLimits.kick.targetTotalDistanceM ?? poolLength)
+          : 0;
+    const minimumCoreDistance = poolLength * 3;
+
+    if (expectedDrillDistance + expectedKickDistance + minimumCoreDistance > targetDistance) {
+      return {
+        ok: false,
+        error:
+          "Session Rules leave no room for warmup, main work, and cooldown. Lower drill/kick distance or raise the target distance.",
+      };
+    }
   }
 
   if (input.allowedStrokes.length === 1 && targetDistance !== null) {

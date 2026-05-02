@@ -296,4 +296,49 @@ describe("session generator route", () => {
     expect(payload.ok).toBe(false);
     expect(payload.error).toContain("Program generation stays deferred");
   });
+
+  it("returns a deterministic validation error when session rules cannot fit the target", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue(buildRouteClient("user-1"));
+
+    const response = await postSessionDraft(
+      new Request("http://127.0.0.1:3000/api/my-library/generator/session-draft", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          overrides: {
+            targetType: "session",
+          },
+          input: {
+            environment: "pool",
+            poolLengthM: "25",
+            poolLengthUnit: "m",
+            sessionType: "endurance",
+            sizeMode: "distance",
+            targetDistanceM: "400",
+            includeDrills: true,
+            drillVolumeMode: "explicit",
+            drillTargetMeters: "300",
+            drillMaxRepeatDistance: "50",
+            drillApproxTotalDistance: "300",
+            includeKick: true,
+            kickVolumeMode: "explicit",
+            kickTargetMeters: "200",
+            kickIntervalMeters: "50",
+            kickApproxTotalDistance: "200",
+            skillLimitMode: "override",
+            allowedStrokes: ["freestyle"],
+            equipmentAllowlist: ["kickboard"],
+          },
+        }),
+      })
+    );
+
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toContain("Session Rules leave no room");
+  });
 });
