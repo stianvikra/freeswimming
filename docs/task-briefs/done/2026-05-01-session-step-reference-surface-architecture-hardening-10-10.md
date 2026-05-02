@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-01-session-step-reference-surface-architecture-hardening-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-01`
-- `updated`: `2026-05-01`
+- `updated`: `2026-05-02`
 
 ## Goal
 
@@ -122,12 +122,36 @@ Critical target categories for `10/10` claim:
 
 ## Validation
 
-- `npm run lint:briefs`
-- targeted unit/component tests for session-step adapters and `WorkoutEditor`
-- targeted Playwright screenshot handoff for manual reference vs generated session
-- `npm run typecheck`
-- `npm run verify:pre-pr`
-- `npm run verify:pre-merge`
+- `./node_modules/.bin/vitest run tests/unit/session-step-surface-contract.test.ts tests/unit/workout-builder-hub.test.tsx tests/unit/session-generator-panel.test.tsx`: PASS, 72 tests.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS.
+- `npm run lint:briefs:all`: PASS, 220 briefs.
+- `git diff --check`: PASS.
+- Targeted Playwright screenshot handoff for manual reference vs generated session: PASS, 2 captures.
+- `npm run verify:pre-pr`: PASS, full-public lane, `artifacts/test-runs/20260501-232627`; Playwright `107 passed`, `349 skipped`.
+- GitHub CI for PR #570: PASS (`Analyze`, `CodeQL`, `Vercel`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `verify`).
+- `npm run verify:pre-merge`: PASS on `502ba2d`; marker `artifacts/verify-pre-merge/20260501-220949.json`; Playwright `108 passed`, `348 skipped`; private-gate regression correctly skipped because `SITE_LOCK_ENABLED!=1`.
+
+## Completion Record
+
+- PR: https://github.com/stianvikra/freeswimming/pull/570
+- Merge commit: `bb7e92f refactor: harden session step surface contract (#570)`
+- Delivered scope:
+  - extracted the shared session-step display/view-model contract into `components/my-library/workouts/sessionStepSurfaceContract.ts`,
+  - updated `WorkoutEditor` to consume shared helpers and removed temporary inline mode-button styling,
+  - preserved generated-session linked rest and note display behavior through typed adapter outputs,
+  - updated `docs/design/session-step-surface-contract.md`,
+  - added focused adapter/component coverage in `tests/unit/session-step-surface-contract.test.ts` and `tests/unit/workout-builder-hub.test.tsx`.
+- Screenshot evidence:
+  - owner approved the `after/reference` handoff on `2026-05-01`,
+  - artifacts are in `/Users/stianvikra/freeswimming/output/playwright/session-step-reference-surface-architecture-hardening-2026-05-01`,
+  - mobile overlay caveat was resolved by isolating external dev/bottom overlays in regenerated captures.
+- DevOps/workflow changes: none beyond the shared UI contract, tests, design docs, and brief lifecycle.
+- Secrets used: none.
+- Continuity notes:
+  - local `main` was synced to `bb7e92f` after merge,
+  - `npm run post-merge:preflight` surfaced this lifecycle closeout,
+  - perf trend recommended considering a future stretch-target tighten after consecutive green runs; that was held out of this UI refactor and recorded in PR context.
 
 ## Help/Guide And Operator Training Impact
 
@@ -144,3 +168,4 @@ Critical target categories for `10/10` claim:
 - `2026-05-01 | planned | created from the AI swim session V1 screenshot-review findings: generated session UI should reuse the manual pool builder's session-step contract systemically instead of drifting through route-local visual copies | next: execute after the V1 generator screenshot-gated slice is approved or split if the V1 PR needs to stay smaller`
 - `2026-05-01 | in-progress | moved brief from planned to in-progress and extracted session-step view-model/display helpers from WorkoutEditor into components/my-library/workouts/sessionStepSurfaceContract.ts | next: add focused adapter tests, run targeted validation, then capture after/reference screenshots`
 - `2026-05-01 | screenshot-review | removed the temporary inline builder mode button styling, added a stable session-step surface test id for handoff capture, regenerated after/reference desktop and mobile screenshots with external dev overlays isolated, and passed targeted adapter/component validation | next: owner screenshot approval before verify:pre-pr`
+- `2026-05-02 | merged | PR #570 merged to main as bb7e92f after screenshot approval, local verify:pre-pr, green CI, and local verify:pre-merge; post-merge preflight requested this docs-only lifecycle closeout | next: closeout PR`
