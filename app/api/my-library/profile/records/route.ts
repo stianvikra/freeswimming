@@ -80,7 +80,7 @@ export async function POST(request: Request) {
   if (isPersonalRecordsSchemaMissing(result.error)) {
     return applySupabaseCookies(
       noStoreJson(
-        { ok: false, error: "Personal records are still syncing in this environment." },
+        { ok: false, error: "Best times are still syncing in this environment." },
         { status: 503 }
       )
     );
@@ -91,8 +91,7 @@ export async function POST(request: Request) {
       noStoreJson(
         {
           ok: false,
-          error:
-            "A personal record for this event already exists. Edit the existing record instead.",
+          error: "A best time for this event already exists. Edit the existing time instead.",
         },
         { status: 409 }
       )
@@ -102,10 +101,7 @@ export async function POST(request: Request) {
   if (result.error) {
     console.error("[PersonalRecordsApi] Could not create personal record", result.error);
     return applySupabaseCookies(
-      noStoreJson(
-        { ok: false, error: "Could not save personal record right now." },
-        { status: 500 }
-      )
+      noStoreJson({ ok: false, error: "Could not save best time right now." }, { status: 500 })
     );
   }
 

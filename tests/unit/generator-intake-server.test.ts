@@ -14,10 +14,12 @@ function buildAthleteProfileSnapshot(): AthleteProfileSnapshot {
     metricsSchemaReady: true,
     preferencesSchemaReady: true,
     personalRecordsSchemaReady: true,
+    swimCapabilityLimitsSchemaReady: true,
     loadError: null,
     metricsLoadError: null,
     preferencesLoadError: null,
     personalRecordsLoadError: null,
+    swimCapabilityLimitsLoadError: null,
     profile: {
       id: "profile-1",
       displayName: "Poolside Stian",
@@ -65,6 +67,22 @@ function buildAthleteProfileSnapshot(): AthleteProfileSnapshot {
         timeLabel: "5:20.55",
         recordedOn: "2026-03-20",
         sourceNote: null,
+        createdAt: "2026-03-20T10:00:00.000Z",
+        updatedAt: "2026-03-20T10:00:00.000Z",
+      },
+    ],
+    swimCapabilityLimits: [
+      {
+        id: "limit-drill-1",
+        kind: "drill",
+        stroke: null,
+        strokeLabel: null,
+        maxRepeatDistanceM: 25,
+        maxRepeatDistanceLabel: "25m",
+        maxTotalDistanceM: null,
+        maxTotalDistanceLabel: null,
+        targetTotalDistanceM: 300,
+        targetTotalDistanceLabel: "300m",
         createdAt: "2026-03-20T10:00:00.000Z",
         updatedAt: "2026-03-20T10:00:00.000Z",
       },
@@ -180,18 +198,17 @@ describe("generator intake server helpers", () => {
     });
 
     const selection = normalizeGeneratorIntakeSelection(snapshot, {
-      profile: true,
       css: true,
       preferences: true,
       personal_records: true,
       goals: true,
-      focus: true,
+      capability_limits: true,
     });
 
-    expect(selection.profile).toBe(true);
+    expect(selection.preferences).toBe(true);
     expect(selection.css).toBe(false);
     expect(selection.goals).toBe(false);
-    expect(selection.focus).toBe(true);
+    expect(selection.capability_limits).toBe(true);
   });
 
   it("builds deterministic handoff payloads from included blocks and overrides", () => {
@@ -206,12 +223,11 @@ describe("generator intake server helpers", () => {
     const payload = buildGeneratorHandoffPayload(
       snapshot,
       {
-        profile: true,
-        css: true,
         preferences: true,
+        css: true,
         personal_records: false,
         goals: false,
-        focus: true,
+        capability_limits: true,
       },
       {
         targetType: "program",
@@ -226,10 +242,11 @@ describe("generator intake server helpers", () => {
     );
 
     expect(payload.createdAt).toBe("2026-03-20T10:05:00.000Z");
-    expect(payload.includedBlocks).toEqual(["profile", "css", "preferences", "focus"]);
+    expect(payload.includedBlocks).toEqual(["preferences", "css", "capability_limits"]);
     expect(payload.omittedBlocks).toContain("goals");
-    expect(payload.source.profile?.id).toBe("profile-1");
+    expect(payload.source.profile).toBeNull();
     expect(payload.source.personalRecords).toEqual([]);
+    expect(payload.source.swimCapabilityLimits).toHaveLength(1);
     expect(payload.source.openGoals).toEqual([]);
     expect(payload.overrides.targetType).toBe("program");
     expect(payload.overrides.desiredSessionCount).toBe(4);
@@ -240,7 +257,7 @@ describe("generator intake server helpers", () => {
     expect(payload.notesIncluded).toBe(false);
   });
 
-  it("marks focus intake unavailable when multiple open focuses need a primary selection", () => {
+  it("keeps active focus out of selectable V1 intake blocks", () => {
     const snapshot = buildGeneratorIntakeSnapshot({
       athleteProfileSnapshot: buildAthleteProfileSnapshot(),
       trainingContextSnapshot: {
@@ -268,12 +285,8 @@ describe("generator intake server helpers", () => {
       loadedAt: "2026-03-20T10:00:00.000Z",
     });
 
-    expect(snapshot.blocks.focus.available).toBe(false);
-    expect(snapshot.blocks.focus.summary).toBe(
-      "Multiple open focuses are saved, but no primary focus is selected yet."
-    );
-    expect(snapshot.blocks.focus.missingReason).toBe(
-      "Choose one primary focus in My Library if you want intake to use a single technical cue."
-    );
+    expect(snapshot.activeFocus).toBeNull();
+    expect(Object.keys(snapshot.blocks)).not.toContain("focus");
+    expect(Object.keys(snapshot.blocks)).not.toContain("profile");
   });
 });

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Create/open PR with GitHub CLI when available, then open in active Safari tab.
+# Create/open PR with GitHub CLI when available, then open it safely in Safari.
 # Falls back to Safari "new PR" URL when gh is missing or not authenticated.
 #
 # Usage:

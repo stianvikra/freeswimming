@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import SessionGeneratorPanel from "@/components/my-library/generator/SessionGeneratorPanel";
 import {
-  GENERATOR_INTAKE_BLOCK_KEYS,
   buildGeneratorHandoffPayload,
   getDefaultGeneratorIntakeSelection,
   normalizeGeneratorIntakeOverrides,
@@ -13,7 +12,6 @@ import {
   type GeneratorIntakeHandoffPayload,
   type GeneratorIntakeOverrides,
   type GeneratorIntakeBlockKey,
-  type GeneratorIntakeBlockSummary,
   type GeneratorIntakeSelection,
   type GeneratorIntakeSnapshot,
 } from "@/lib/generator-intake/shared";
@@ -32,8 +30,17 @@ type StoredDraft = {
 };
 
 const STORAGE_KEY_PREFIX = "my-library-generator-intake-draft:";
-const BLOCK_COPY_ORDER = [...GENERATOR_INTAKE_BLOCK_KEYS];
 type SessionOnlyOverrideKey = "focusText" | "constraintText";
+type SwimProfileDataStatus = "Included" | "Excluded" | "Not in Swim Profile" | "Unavailable";
+
+type SwimProfileDataRow = {
+  key: GeneratorIntakeBlockKey;
+  label: string;
+  status: SwimProfileDataStatus;
+  summary: string;
+  manageHref: string;
+  actionLabel: "Add" | "Edit";
+};
 
 function getStorageKey(userId: string) {
   return `${STORAGE_KEY_PREFIX}${userId}`;
@@ -59,40 +66,22 @@ function serializeValue(value: unknown) {
   return JSON.stringify(value);
 }
 
-function buildBlockTone(block: GeneratorIntakeBlockSummary) {
-  if (block.state === "available") {
+function buildStatusTone(status: SwimProfileDataStatus) {
+  if (status === "Included") {
     return {
-      container: "border-emerald-200 bg-emerald-50/50",
       badge: "bg-emerald-100 text-emerald-800",
-      label: "Available now",
     };
   }
 
-  if (block.state === "syncing") {
+  if (status === "Unavailable") {
     return {
-      container: "border-amber-200 bg-amber-50/60",
       badge: "bg-amber-100 text-amber-800",
-      label: "Syncing",
-    };
-  }
-
-  if (block.state === "error") {
-    return {
-      container: "border-rose-200 bg-rose-50/70",
-      badge: "bg-rose-100 text-rose-800",
-      label: "Needs retry",
     };
   }
 
   return {
-    container: "border-slate-200 bg-slate-50/70",
     badge: "bg-slate-200 text-slate-700",
-    label: "Optional",
   };
-}
-
-function toBlockLabel(key: GeneratorIntakeBlockKey) {
-  return key.replaceAll("_", " ");
 }
 
 function normalizeSessionOnlyOverrides(overrides: StoredDraft["overrides"] | null | undefined) {
@@ -123,12 +112,21 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       }),
     [initialSnapshot, selection, overrides]
   );
-  const swimProfileContext = buildSwimProfileContextRows(payload, selection);
-  const selectedBlockCount = payload.includedBlocks.length;
+  const swimProfileDataRows = buildSwimProfileDataRows(snapshot, payload, selection);
+  const availableRowCount = swimProfileDataRows.filter(
+    (row) => row.status === "Included" || row.status === "Excluded"
+  ).length;
+  const includedRows = swimProfileDataRows.filter((row) => row.status === "Included");
+  const excludedRows = swimProfileDataRows.filter((row) => row.status === "Excluded");
+  const unavailableRows = swimProfileDataRows.filter(
+    (row) => row.status === "Not in Swim Profile" || row.status === "Unavailable"
+  );
   const sourceSummary =
-    selectedBlockCount > 0
-      ? `${selectedBlockCount} context section${selectedBlockCount === 1 ? "" : "s"} included`
-      : "No context sections included";
+    availableRowCount === 0
+      ? "No profile data"
+      : includedRows.length === availableRowCount
+        ? "All included"
+        : `${includedRows.length}/${availableRowCount} included`;
 
   // Restoring unsaved generator choices must happen after hydration because the
   // server render cannot read localStorage for this private My Library flow.
@@ -204,6 +202,18 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
     setOverrides(normalizeSessionOnlyOverrides(null));
   }
 
+  function resetRecoveredDraft() {
+    const fallbackSelection = getDefaultGeneratorIntakeSelection(initialSnapshot);
+    const fallbackOverrides = normalizeSessionOnlyOverrides(null);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {}
+    setSelection(fallbackSelection);
+    setOverrides(fallbackOverrides);
+    setDraftRecovered(false);
+    setStaleSourceWarning("");
+  }
+
   return (
     <div
       data-testid="generator-intake-hub"
@@ -211,10 +221,20 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       className="space-y-6"
     >
       {draftRecovered ? (
-        <section className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
-          <p className="text-sm text-emerald-900">
-            Your unsaved AI session generator choices were restored on this device.
-          </p>
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-emerald-950">
+              Generator draft settings restored.
+            </p>
+            <p className="text-xs text-emerald-900">Saved locally in this browser.</p>
+          </div>
+          <button
+            type="button"
+            onClick={resetRecoveredDraft}
+            className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50"
+          >
+            Reset
+          </button>
         </section>
       ) : null}
 
@@ -233,9 +253,10 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Include data from your Swim Profile
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">Use Swim Profile data</h2>
+            {sourceOpen ? (
+              <p className="mt-1 text-sm text-slate-600">Choose what this session can use.</p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-700 uppercase">
@@ -248,96 +269,67 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
               data-testid="generator-intake-source-toggle"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              {sourceOpen ? "Hide choices" : "Choose data"}
+              {sourceOpen ? "Done" : "Change"}
             </button>
           </div>
         </div>
 
-        <dl
-          className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-          data-testid="session-generator-swim-profile-context"
-        >
-          {swimProfileContext.map((row) => (
-            <div key={row.label} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-              <dt className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                <span>{row.label}</span>
-                <span
-                  className={
-                    row.included
-                      ? "rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-800"
-                      : "rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-600"
-                  }
-                >
-                  {row.included ? "Included" : "Off"}
-                </span>
-              </dt>
-              <dd className="mt-1 text-sm font-medium text-slate-900">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
+        <div className="mt-5" data-testid="session-generator-swim-profile-context">
+          {sourceOpen ? (
+            <ul className="divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-slate-50/70">
+              {swimProfileDataRows.map((row) => {
+                const tone = buildStatusTone(row.status);
+                const checkboxId = `generator-intake-${row.key}`;
+                const block = snapshot.blocks[row.key];
 
-        {sourceOpen ? (
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            {BLOCK_COPY_ORDER.map((blockKey) => {
-              const block = snapshot.blocks[blockKey];
-              const tone = buildBlockTone(block);
-              const checkboxId = `generator-intake-${blockKey}`;
-
-              return (
-                <article key={block.key} className={`rounded-2xl border p-4 ${tone.container}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="mt-1 text-base font-semibold text-slate-900">{block.label}</h3>
-                      <p className="mt-2 text-sm text-slate-700">{block.description}</p>
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${tone.badge}`}
-                    >
-                      {tone.label}
-                    </span>
-                  </div>
-
-                  <p className="mt-4 text-sm text-slate-700">{block.summary}</p>
-
-                  {block.missingReason ? (
-                    <p className="mt-2 text-sm text-slate-600">{block.missingReason}</p>
-                  ) : null}
-
-                  {block.lastUpdatedAt ? (
-                    <p className="mt-2 text-xs text-slate-500">
-                      Last updated: {block.lastUpdatedAt}
-                    </p>
-                  ) : null}
-
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                    <label
-                      htmlFor={checkboxId}
-                      className="inline-flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-900"
-                    >
+                return (
+                  <li
+                    key={row.key}
+                    className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
                       <input
                         id={checkboxId}
                         type="checkbox"
-                        checked={selection[blockKey]}
+                        checked={selection[row.key]}
                         disabled={!block.available}
-                        onChange={() => toggleBlock(blockKey)}
-                        data-testid={`generator-intake-include-${blockKey}`}
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        onChange={() => toggleBlock(row.key)}
+                        data-testid={`generator-intake-include-${row.key}`}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                       />
-                      Use {toBlockLabel(blockKey)} for this generation
-                    </label>
-
-                    <Link
-                      href={block.manageHref}
-                      className="text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
-                    >
-                      {block.manageLabel}
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : null}
+                      <label htmlFor={checkboxId} className="min-w-0 cursor-pointer">
+                        <span className="block text-sm font-semibold text-slate-900">
+                          {row.label}
+                        </span>
+                        <span className="mt-1 block text-sm text-slate-600">{row.summary}</span>
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-3 pl-7 sm:pl-0">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide whitespace-nowrap uppercase ${tone.badge}`}
+                      >
+                        {row.status}
+                      </span>
+                      <Link
+                        href={row.manageHref}
+                        aria-label={`${row.actionLabel} ${row.label}`}
+                        className="text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+                      >
+                        {row.actionLabel}
+                      </Link>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <SwimProfileDataCollapsedSummary
+              includedRows={includedRows}
+              unavailableRows={unavailableRows}
+              excludedRows={excludedRows}
+            />
+          )}
+        </div>
       </section>
 
       <SessionGeneratorPanel
@@ -352,59 +344,186 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
   );
 }
 
-function buildSwimProfileContextRows(
+function SwimProfileDataCollapsedSummary({
+  includedRows,
+  unavailableRows,
+  excludedRows,
+}: {
+  includedRows: SwimProfileDataRow[];
+  unavailableRows: SwimProfileDataRow[];
+  excludedRows: SwimProfileDataRow[];
+}) {
+  return (
+    <div
+      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+      data-testid="generator-intake-profile-summary"
+    >
+      <SwimProfileSummaryRow
+        title="Included"
+        rows={includedRows}
+        emptyLabel="None included"
+        tone="included"
+      />
+      {unavailableRows.length > 0 ? (
+        <SwimProfileSummaryRow
+          title="Not in Swim Profile"
+          rows={unavailableRows}
+          emptyLabel="None"
+          tone="missing"
+        />
+      ) : null}
+      {excludedRows.length > 0 ? (
+        <SwimProfileSummaryRow
+          title="Excluded"
+          rows={excludedRows}
+          emptyLabel="None excluded"
+          tone="excluded"
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function SwimProfileSummaryRow({
+  title,
+  rows,
+  emptyLabel,
+  tone,
+}: {
+  title: string;
+  rows: SwimProfileDataRow[];
+  emptyLabel: string;
+  tone: "included" | "missing" | "excluded";
+}) {
+  const chipClasses =
+    tone === "included"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+      : tone === "missing"
+        ? "border-slate-200 bg-white text-slate-700"
+        : "border-amber-200 bg-amber-50 text-amber-900";
+
+  return (
+    <div className="grid gap-2 border-b border-slate-200 py-3 first:pt-0 last:border-b-0 last:pb-0 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-start">
+      <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{title}</h3>
+      {rows.length > 0 ? (
+        <ul className="flex min-w-0 flex-wrap gap-2">
+          {rows.map((row) => (
+            <li key={row.key}>
+              <span
+                className={`inline-flex max-w-full items-center rounded-full border px-3 py-1 text-sm font-medium ${chipClasses}`}
+              >
+                {row.label}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-500">{emptyLabel}</p>
+      )}
+    </div>
+  );
+}
+
+function buildSwimProfileDataRows(
+  snapshot: GeneratorIntakeSnapshot,
   payload: GeneratorIntakeHandoffPayload,
   selection: GeneratorIntakeSelection
-) {
+): SwimProfileDataRow[] {
   const record400 = payload.source.personalRecords.find((record) => record.distanceM === 400);
   const record1000 = payload.source.personalRecords.find((record) => record.distanceM === 1000);
+  const personalRecordsSummary =
+    snapshot.blocks.personal_records.available && snapshot.blocks.personal_records.summary
+      ? snapshot.blocks.personal_records.summary
+      : [
+          record400 ? `400m ${record400.timeLabel} ${record400.strokeLabel}` : null,
+          record1000 ? `1000m ${record1000.timeLabel} ${record1000.strokeLabel}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+  const preferences = payload.source.preferences ?? snapshot.preferences;
+  const cssMetric = payload.source.cssMetric ?? snapshot.cssMetric;
+  const goals = payload.source.openGoals.length > 0 ? payload.source.openGoals : snapshot.openGoals;
+  const limits =
+    payload.source.swimCapabilityLimits.length > 0
+      ? payload.source.swimCapabilityLimits
+      : snapshot.swimCapabilityLimits;
 
-  return [
-    {
-      label: "Swimmer",
-      value:
-        payload.source.profile?.primaryName ??
-        payload.source.profile?.displayName ??
-        "No profile name",
-      included: selection.profile && Boolean(payload.source.profile),
-    },
-    {
-      label: "400m test",
-      value: record400 ? `${record400.timeLabel} ${record400.strokeLabel}` : "Not saved",
-      included: selection.personal_records && Boolean(record400),
-    },
-    {
-      label: "CSS",
-      value: payload.source.cssMetric?.paceLabel
-        ? `${payload.source.cssMetric.paceLabel}/100m`
-        : "Not saved",
-      included: selection.css && Boolean(payload.source.cssMetric),
-    },
-    {
-      label: "1000m test",
-      value: record1000 ? `${record1000.timeLabel} ${record1000.strokeLabel}` : "Not saved",
-      included: selection.personal_records && Boolean(record1000),
-    },
-    {
-      label: "Pool default",
-      value: payload.source.preferences?.poolLengthLabel ?? "No saved pool length",
-      included: selection.preferences && Boolean(payload.source.preferences?.poolLengthLabel),
-    },
-    {
-      label: "Session length",
-      value: payload.source.preferences?.preferredSessionMinutesLabel ?? "No saved preference",
-      included:
-        selection.preferences && Boolean(payload.source.preferences?.preferredSessionMinutesLabel),
-    },
-    {
-      label: "Active focus",
-      value: payload.source.activeFocus?.title ?? "No active focus",
-      included: selection.focus && Boolean(payload.source.activeFocus),
-    },
-    {
-      label: "Open goal",
-      value: payload.source.openGoals[0]?.title ?? "No open goal",
-      included: selection.goals && payload.source.openGoals.length > 0,
-    },
-  ];
+  return buildRowsFromDefinitions(
+    [
+      {
+        key: "preferences" as const,
+        label: "Training preferences",
+        summary:
+          [preferences?.poolLengthLabel, preferences?.preferredSessionMinutesLabel]
+            .filter(Boolean)
+            .join(" · ") || "Not in Swim Profile",
+        manageHref: "/my-library/profile",
+      },
+      {
+        key: "css" as const,
+        label: "CSS pace",
+        summary: cssMetric?.paceLabel ? `${cssMetric.paceLabel}/100m` : "Not in Swim Profile",
+        manageHref: "/my-library/profile",
+      },
+      {
+        key: "personal_records" as const,
+        label: "Best times",
+        summary: personalRecordsSummary || "Not in Swim Profile",
+        manageHref: "/my-library/profile",
+      },
+      {
+        key: "goals" as const,
+        label: "Goals",
+        summary: goals[0]?.title ?? "Not in Swim Profile",
+        manageHref: "/my-library/goals",
+      },
+      {
+        key: "capability_limits" as const,
+        label: "Stroke and skill limits",
+        summary:
+          limits.length > 0 ? snapshot.blocks.capability_limits.summary : "Not in Swim Profile",
+        manageHref: "/my-library/profile",
+      },
+    ],
+    snapshot,
+    selection
+  );
+}
+
+function buildRowsFromDefinitions(
+  rows: Array<
+    Pick<SwimProfileDataRow, "key" | "label" | "manageHref"> & {
+      summary: string;
+    }
+  >,
+  snapshot: GeneratorIntakeSnapshot,
+  selection: GeneratorIntakeSelection
+): SwimProfileDataRow[] {
+  return rows.map((row) => {
+    const block = snapshot.blocks[row.key];
+    const status = resolveDataRowStatus(row.key, snapshot, selection);
+    const isAddAction = status === "Not in Swim Profile";
+
+    return {
+      ...row,
+      status,
+      summary: block.available ? row.summary : (block.missingReason ?? "Not in Swim Profile"),
+      actionLabel: isAddAction ? "Add" : "Edit",
+    };
+  });
+}
+
+function resolveDataRowStatus(
+  key: GeneratorIntakeBlockKey,
+  snapshot: GeneratorIntakeSnapshot,
+  selection: GeneratorIntakeSelection
+): SwimProfileDataStatus {
+  const block = snapshot.blocks[key];
+  if (!block.available) {
+    return block.state === "error" || block.state === "syncing"
+      ? "Unavailable"
+      : "Not in Swim Profile";
+  }
+
+  return selection[key] ? "Included" : "Excluded";
 }

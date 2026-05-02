@@ -85,7 +85,7 @@ export async function PUT(
   if (isPersonalRecordsSchemaMissing(result.error)) {
     return applySupabaseCookies(
       noStoreJson(
-        { ok: false, error: "Personal records are still syncing in this environment." },
+        { ok: false, error: "Best times are still syncing in this environment." },
         { status: 503 }
       )
     );
@@ -96,7 +96,7 @@ export async function PUT(
       noStoreJson(
         {
           ok: false,
-          error: "A personal record for this event already exists. Update that record instead.",
+          error: "A best time for this event already exists. Update that time instead.",
         },
         { status: 409 }
       )
@@ -106,16 +106,13 @@ export async function PUT(
   if (result.error) {
     console.error("[PersonalRecordsApi] Could not update personal record", result.error);
     return applySupabaseCookies(
-      noStoreJson(
-        { ok: false, error: "Could not update personal record right now." },
-        { status: 500 }
-      )
+      noStoreJson({ ok: false, error: "Could not update best time right now." }, { status: 500 })
     );
   }
 
   if (!result.data) {
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Personal record not found." }, { status: 404 })
+      noStoreJson({ ok: false, error: "Best time not found." }, { status: 404 })
     );
   }
 
@@ -157,7 +154,7 @@ export async function DELETE(
   if (isPersonalRecordsSchemaMissing(result.error)) {
     return applySupabaseCookies(
       noStoreJson(
-        { ok: false, error: "Personal records are still syncing in this environment." },
+        { ok: false, error: "Best times are still syncing in this environment." },
         { status: 503 }
       )
     );
@@ -166,16 +163,13 @@ export async function DELETE(
   if (result.error) {
     console.error("[PersonalRecordsApi] Could not delete personal record", result.error);
     return applySupabaseCookies(
-      noStoreJson(
-        { ok: false, error: "Could not delete personal record right now." },
-        { status: 500 }
-      )
+      noStoreJson({ ok: false, error: "Could not delete best time right now." }, { status: 500 })
     );
   }
 
   if (!result.data) {
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Personal record not found." }, { status: 404 })
+      noStoreJson({ ok: false, error: "Best time not found." }, { status: 404 })
     );
   }
 

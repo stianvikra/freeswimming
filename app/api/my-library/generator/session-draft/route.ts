@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   }
 
   const formState = normalizeSessionGeneratorFormState(body.input ?? null, handoff);
-  const validation = validateSessionGeneratorFormState(formState);
+  const validation = validateSessionGeneratorFormState(formState, handoff);
 
   if (!validation.ok) {
     return applySupabaseCookies(

@@ -36,6 +36,7 @@ export const SESSION_DRAFT_STEP_INTENSITY_PRESETS = [
 export const SESSION_GENERATOR_SIZE_MODES = ["distance", "estimated_time"] as const;
 export const SESSION_GENERATOR_VOLUME_MODES = ["coach_decides", "explicit"] as const;
 export const SESSION_GENERATOR_REST_MODES = ["coach_decides", "explicit"] as const;
+export const SESSION_GENERATOR_SKILL_LIMIT_MODES = ["profile", "override"] as const;
 export const SESSION_GENERATOR_STROKES = [
   "freestyle",
   "backstroke",
@@ -118,6 +119,7 @@ export type SessionDraftStepIntensityPreset = (typeof SESSION_DRAFT_STEP_INTENSI
 export type SessionGeneratorSizeMode = (typeof SESSION_GENERATOR_SIZE_MODES)[number];
 export type SessionGeneratorVolumeMode = (typeof SESSION_GENERATOR_VOLUME_MODES)[number];
 export type SessionGeneratorRestMode = (typeof SESSION_GENERATOR_REST_MODES)[number];
+export type SessionGeneratorSkillLimitMode = (typeof SESSION_GENERATOR_SKILL_LIMIT_MODES)[number];
 export type SessionGeneratorStroke = (typeof SESSION_GENERATOR_STROKES)[number];
 export type SessionGeneratorEquipment = (typeof SESSION_GENERATOR_EQUIPMENT)[number];
 export type SessionDraftPoolLengthPreset = (typeof SESSION_DRAFT_POOL_LENGTH_PRESETS)[number];
@@ -133,9 +135,39 @@ export type SessionDraftRepeatEndingRestMode =
 export type SessionDraftPoolLengthUnit = (typeof SESSION_DRAFT_POOL_LENGTH_UNITS)[number];
 export type SessionDraftPoolLength = number;
 
+export type SessionGeneratorStrokeLimitFormState = Record<
+  SessionGeneratorStroke,
+  {
+    maxRepeatDistance: string;
+    maxTotalDistance: string;
+  }
+>;
+
+export type SessionGeneratorSkillLimits = {
+  source: "profile" | "override" | "none";
+  drill: {
+    maxRepeatDistanceM: number | null;
+    targetTotalDistanceM: number | null;
+  };
+  kick: {
+    maxRepeatDistanceM: number | null;
+    targetTotalDistanceM: number | null;
+  };
+  strokes: Partial<
+    Record<
+      SessionGeneratorStroke,
+      {
+        maxRepeatDistanceM: number | null;
+        maxTotalDistanceM: number | null;
+      }
+    >
+  >;
+};
+
 export type SessionGeneratorFormState = {
   environment: SessionGeneratorEnvironment;
   poolLengthM: string;
+  poolLengthUnit: SessionDraftPoolLengthUnit;
   sessionType: SessionGeneratorSessionType;
   effort: SessionGeneratorEffortPreset;
   sizeMode: SessionGeneratorSizeMode;
@@ -144,10 +176,15 @@ export type SessionGeneratorFormState = {
   includeDrills: boolean;
   drillVolumeMode: SessionGeneratorVolumeMode;
   drillTargetMeters: string;
+  drillMaxRepeatDistance: string;
+  drillApproxTotalDistance: string;
   includeKick: boolean;
   kickVolumeMode: SessionGeneratorVolumeMode;
   kickTargetMeters: string;
   kickIntervalMeters: string;
+  kickApproxTotalDistance: string;
+  skillLimitMode: SessionGeneratorSkillLimitMode;
+  strokeLimits: SessionGeneratorStrokeLimitFormState;
   restMode: SessionGeneratorRestMode;
   restSeconds: string;
   allowedStrokes: SessionGeneratorStroke[];
@@ -156,7 +193,8 @@ export type SessionGeneratorFormState = {
 
 export type SessionGeneratorInput = {
   environment: SessionGeneratorEnvironment;
-  poolLengthM: SessionGeneratorPoolLength | null;
+  poolLengthM: number | null;
+  poolLengthUnit: SessionDraftPoolLengthUnit;
   sessionType: SessionGeneratorSessionType;
   effort: SessionGeneratorEffortPreset;
   sizeMode: SessionGeneratorSizeMode;
@@ -165,10 +203,12 @@ export type SessionGeneratorInput = {
   includeDrills: boolean;
   drillVolumeMode: SessionGeneratorVolumeMode;
   drillTargetMeters: number | null;
+  drillMaxRepeatDistanceM: number | null;
   includeKick: boolean;
   kickVolumeMode: SessionGeneratorVolumeMode;
   kickTargetMeters: number | null;
   kickIntervalMeters: number | null;
+  skillLimits: SessionGeneratorSkillLimits;
   restMode: SessionGeneratorRestMode;
   restSeconds: number | null;
   allowedStrokes: SessionGeneratorStroke[];
@@ -558,26 +598,33 @@ export function getDefaultSessionGeneratorFormState(
   const defaultPoolLength = handoff.source.preferences?.poolLengthM;
   const defaultMinutes = handoff.effectiveDefaults.sessionMinutes;
   const defaultStrokes = deriveDefaultAllowedStrokes(handoff);
-  const sessionType: SessionGeneratorSessionType = handoff.source.activeFocus
-    ? "technique"
-    : "endurance";
+  const sessionType: SessionGeneratorSessionType = "endurance";
+  const poolLengthUnit: SessionDraftPoolLengthUnit = "m";
+  const profileLimits = buildSkillLimitFormStateFromHandoff(handoff, poolLengthUnit);
+  const hasProfileSkillLimits = handoff.source.swimCapabilityLimits.length > 0;
 
   return {
     environment: "pool",
     poolLengthM:
       defaultPoolLength && isPoolLength(defaultPoolLength) ? String(defaultPoolLength) : "25",
+    poolLengthUnit,
     sessionType,
     effort: getDefaultEffortForSessionType(sessionType),
     sizeMode: defaultMinutes ? "estimated_time" : "distance",
     targetDistanceM: defaultMinutes ? "" : "2000",
     targetTimeMin: defaultMinutes ? String(defaultMinutes) : "45",
-    includeDrills: Boolean(handoff.source.activeFocus),
+    includeDrills: false,
     drillVolumeMode: "coach_decides",
     drillTargetMeters: "300",
+    drillMaxRepeatDistance: profileLimits.drillMaxRepeatDistance,
+    drillApproxTotalDistance: profileLimits.drillApproxTotalDistance,
     includeKick: false,
     kickVolumeMode: "coach_decides",
     kickTargetMeters: "200",
-    kickIntervalMeters: "50",
+    kickIntervalMeters: profileLimits.kickMaxRepeatDistance || "50",
+    kickApproxTotalDistance: profileLimits.kickApproxTotalDistance,
+    skillLimitMode: hasProfileSkillLimits ? "profile" : "override",
+    strokeLimits: profileLimits.strokeLimits,
     restMode: "coach_decides",
     restSeconds: "20",
     allowedStrokes: defaultStrokes,
@@ -591,6 +638,17 @@ export function normalizeSessionGeneratorFormState(
 ): SessionGeneratorFormState {
   const defaults = getDefaultSessionGeneratorFormState(handoff);
   const sessionType = isSessionType(input?.sessionType) ? input.sessionType : defaults.sessionType;
+  const poolLengthUnit = resolveSessionDraftPoolLengthUnit(input?.poolLengthUnit);
+  const profileLimits = buildSkillLimitFormStateFromHandoff(handoff, poolLengthUnit);
+  const hasProfileSkillLimits = handoff.source.swimCapabilityLimits.length > 0;
+  const requestedSkillLimitMode = isSkillLimitMode(input?.skillLimitMode)
+    ? input.skillLimitMode
+    : defaults.skillLimitMode;
+  const skillLimitMode: SessionGeneratorSkillLimitMode = hasProfileSkillLimits
+    ? requestedSkillLimitMode
+    : "override";
+  const shouldUseProfileLimitFallback = hasProfileSkillLimits && skillLimitMode === "profile";
+  const limitInput = !hasProfileSkillLimits && requestedSkillLimitMode === "profile" ? null : input;
 
   return {
     environment: isSessionEnvironment(input?.environment)
@@ -600,6 +658,7 @@ export function normalizeSessionGeneratorFormState(
       typeof input?.poolLengthM === "string" && input.poolLengthM.length > 0
         ? input.poolLengthM
         : defaults.poolLengthM,
+    poolLengthUnit,
     sessionType,
     effort: getDefaultEffortForSessionType(sessionType),
     sizeMode: isSizeMode(input?.sizeMode) ? input.sizeMode : defaults.sizeMode,
@@ -612,6 +671,12 @@ export function normalizeSessionGeneratorFormState(
       : defaults.drillVolumeMode,
     drillTargetMeters:
       normalizeIntegerString(input?.drillTargetMeters, 5) || defaults.drillTargetMeters,
+    drillMaxRepeatDistance:
+      normalizeDecimalString(limitInput?.drillMaxRepeatDistance, 5) ||
+      (shouldUseProfileLimitFallback ? profileLimits.drillMaxRepeatDistance : ""),
+    drillApproxTotalDistance:
+      normalizeDecimalString(limitInput?.drillApproxTotalDistance, 5) ||
+      (shouldUseProfileLimitFallback ? profileLimits.drillApproxTotalDistance : ""),
     includeKick: typeof input?.includeKick === "boolean" ? input.includeKick : defaults.includeKick,
     kickVolumeMode: isVolumeMode(input?.kickVolumeMode)
       ? input.kickVolumeMode
@@ -619,7 +684,17 @@ export function normalizeSessionGeneratorFormState(
     kickTargetMeters:
       normalizeIntegerString(input?.kickTargetMeters, 5) || defaults.kickTargetMeters,
     kickIntervalMeters:
-      normalizeIntegerString(input?.kickIntervalMeters, 4) || defaults.kickIntervalMeters,
+      normalizeDecimalString(limitInput?.kickIntervalMeters, 5) ||
+      (shouldUseProfileLimitFallback ? profileLimits.kickMaxRepeatDistance : "") ||
+      defaults.kickIntervalMeters,
+    kickApproxTotalDistance:
+      normalizeDecimalString(limitInput?.kickApproxTotalDistance, 5) ||
+      (shouldUseProfileLimitFallback ? profileLimits.kickApproxTotalDistance : ""),
+    skillLimitMode,
+    strokeLimits: normalizeStrokeLimitFormState(
+      limitInput?.strokeLimits,
+      shouldUseProfileLimitFallback ? profileLimits.strokeLimits : createEmptyStrokeLimitFormState()
+    ),
     restMode: isRestMode(input?.restMode) ? input.restMode : defaults.restMode,
     restSeconds: normalizeIntegerString(input?.restSeconds, 3) || defaults.restSeconds,
     allowedStrokes: uniqueEnumList(
@@ -636,9 +711,13 @@ export function normalizeSessionGeneratorFormState(
 }
 
 export function validateSessionGeneratorFormState(
-  input: SessionGeneratorFormState
+  input: SessionGeneratorFormState,
+  handoff?: GeneratorIntakeHandoffPayload
 ): { ok: true; value: SessionGeneratorInput } | { ok: false; error: string } {
-  const poolLength = input.environment === "pool" ? parsePoolLength(input.poolLengthM) : null;
+  const poolLengthUnit = input.environment === "pool" ? input.poolLengthUnit : "m";
+  const poolLength =
+    input.environment === "pool" ? parsePoolLength(input.poolLengthM, poolLengthUnit) : null;
+  const distanceUnitLabel = input.environment === "pool" ? poolLengthUnit : "m";
 
   if (input.environment === "pool" && poolLength === null) {
     return { ok: false, error: "Choose a supported pool length before generating a session." };
@@ -649,7 +728,9 @@ export function validateSessionGeneratorFormState(
   }
 
   const targetDistance =
-    input.sizeMode === "distance" ? parsePositiveInteger(input.targetDistanceM) : null;
+    input.sizeMode === "distance"
+      ? parsePositiveDistanceAsMeters(input.targetDistanceM, distanceUnitLabel)
+      : null;
   const targetTime =
     input.sizeMode === "estimated_time" ? parsePositiveInteger(input.targetTimeMin) : null;
 
@@ -667,23 +748,31 @@ export function validateSessionGeneratorFormState(
 
   if (input.sizeMode === "estimated_time") {
     if (targetTime === null) {
-      return { ok: false, error: "Enter an estimated session length in minutes for this draft." };
+      return { ok: false, error: "Enter a duration in minutes." };
     }
-    if (targetTime < 15 || targetTime > 180) {
+    if (targetTime > 600) {
       return {
         ok: false,
-        error: "Time-based sessions must stay between 15 and 180 minutes in this first slice.",
+        error: "Session time limit exceeded. Use 600 min or less.",
       };
     }
   }
 
   const drillTargetMeters =
     input.includeDrills && input.drillVolumeMode === "explicit"
-      ? parsePositiveInteger(input.drillTargetMeters)
+      ? parsePositiveDistanceAsMeters(input.drillTargetMeters, distanceUnitLabel)
       : null;
+  const skillLimits = buildSkillLimitsFromFormState(input, distanceUnitLabel, handoff);
+  if (skillLimits === null) {
+    return {
+      ok: false,
+      error: `Use valid ${distanceUnitLabel} values for stroke and skill limits.`,
+    };
+  }
+
   if (input.includeDrills && input.drillVolumeMode === "explicit") {
     if (drillTargetMeters === null) {
-      return { ok: false, error: "Enter drill meters or switch drills back to Coach decides." };
+      return { ok: false, error: "Enter drill distance or switch drills back to Coach decides." };
     }
     if (drillTargetMeters < 25 || drillTargetMeters > 3000) {
       return { ok: false, error: "Drill volume must stay between 25m and 3000m." };
@@ -692,24 +781,64 @@ export function validateSessionGeneratorFormState(
 
   const kickTargetMeters =
     input.includeKick && input.kickVolumeMode === "explicit"
-      ? parsePositiveInteger(input.kickTargetMeters)
+      ? parsePositiveDistanceAsMeters(input.kickTargetMeters, distanceUnitLabel)
+      : null;
+  const parsedKickIntervalMeters =
+    input.includeKick && input.kickVolumeMode === "explicit" && input.kickIntervalMeters
+      ? parsePositiveDistanceAsMeters(input.kickIntervalMeters, distanceUnitLabel)
       : null;
   const kickIntervalMeters =
     input.includeKick && input.kickVolumeMode === "explicit"
-      ? parsePositiveInteger(input.kickIntervalMeters)
+      ? (parsedKickIntervalMeters ?? skillLimits.kick.maxRepeatDistanceM)
       : null;
   if (input.includeKick && input.kickVolumeMode === "explicit") {
+    if (input.kickIntervalMeters && parsedKickIntervalMeters === null) {
+      return {
+        ok: false,
+        error: "Use a valid max kick repeat or leave it blank to use the Swim Profile limit.",
+      };
+    }
     if (kickTargetMeters === null || kickIntervalMeters === null) {
       return {
         ok: false,
-        error: "Enter kick meters and interval length or switch kick back to Coach decides.",
+        error: "Enter kick distance and max kick repeat or switch kick back to Coach decides.",
       };
     }
     if (kickTargetMeters < 25 || kickTargetMeters > 3000) {
       return { ok: false, error: "Kick volume must stay between 25m and 3000m." };
     }
     if (kickIntervalMeters < 25 || kickIntervalMeters > 400) {
-      return { ok: false, error: "Kick interval length must stay between 25m and 400m." };
+      return { ok: false, error: "Max kick repeat must stay between 25m and 400m." };
+    }
+  }
+
+  if (
+    input.includeDrills &&
+    skillLimits.drill.maxRepeatDistanceM &&
+    drillTargetMeters &&
+    skillLimits.drill.maxRepeatDistanceM > drillTargetMeters
+  ) {
+    return { ok: false, error: "Drill max length cannot be longer than drill total." };
+  }
+
+  if (
+    input.includeKick &&
+    skillLimits.kick.maxRepeatDistanceM &&
+    kickTargetMeters &&
+    skillLimits.kick.maxRepeatDistanceM > kickTargetMeters
+  ) {
+    return { ok: false, error: "Kick max length cannot be longer than kick total." };
+  }
+
+  if (input.allowedStrokes.length === 1 && targetDistance !== null) {
+    const onlyStroke = input.allowedStrokes[0];
+    const limit = onlyStroke ? skillLimits.strokes[onlyStroke] : null;
+    if (limit?.maxTotalDistanceM && limit.maxTotalDistanceM < targetDistance) {
+      return {
+        ok: false,
+        error:
+          "Selected stroke limits are lower than the target distance. Add another stroke or lower the session size.",
+      };
     }
   }
 
@@ -729,6 +858,7 @@ export function validateSessionGeneratorFormState(
     value: {
       environment: input.environment,
       poolLengthM: poolLength,
+      poolLengthUnit,
       sessionType: input.sessionType,
       effort: getDefaultEffortForSessionType(input.sessionType),
       sizeMode: input.sizeMode,
@@ -737,10 +867,12 @@ export function validateSessionGeneratorFormState(
       includeDrills: input.includeDrills,
       drillVolumeMode: input.drillVolumeMode,
       drillTargetMeters,
+      drillMaxRepeatDistanceM: skillLimits.drill.maxRepeatDistanceM,
       includeKick: input.includeKick,
       kickVolumeMode: input.kickVolumeMode,
       kickTargetMeters,
       kickIntervalMeters,
+      skillLimits,
       restMode: input.restMode,
       restSeconds,
       allowedStrokes: input.allowedStrokes,
@@ -752,7 +884,7 @@ export function validateSessionGeneratorFormState(
 export function roundDistanceForEnvironment(
   distanceM: number,
   environment: SessionGeneratorEnvironment,
-  poolLengthM: SessionGeneratorPoolLength | null
+  poolLengthM: number | null
 ) {
   const roundingUnit = environment === "pool" ? (poolLengthM ?? 25) : 50;
   if (roundingUnit <= 0) return Math.max(0, Math.round(distanceM));
@@ -930,6 +1062,14 @@ function normalizeIntegerString(value: unknown, maxLength: number) {
   return value.replace(/[^\d]/g, "").slice(0, maxLength);
 }
 
+function normalizeDecimalString(value: unknown, maxLength: number) {
+  if (typeof value !== "string") return "";
+  const normalized = value.replace(/[^\d.]/g, "").slice(0, maxLength);
+  const [whole = "", ...decimalParts] = normalized.split(".");
+  if (decimalParts.length === 0) return whole;
+  return `${whole}.${decimalParts.join("").slice(0, 2)}`;
+}
+
 function parsePositiveInteger(value: string) {
   if (!/^\d+$/.test(value)) return null;
   const parsed = Number.parseInt(value, 10);
@@ -937,10 +1077,259 @@ function parsePositiveInteger(value: string) {
   return parsed;
 }
 
-function parsePoolLength(value: string): SessionGeneratorPoolLength | null {
+function parsePositiveDistanceAsMeters(value: string, unit: SessionDraftPoolLengthUnit) {
   if (!/^\d+(\.\d+)?$/.test(value)) return null;
   const parsed = Number.parseFloat(value);
-  return isPoolLength(parsed) ? parsed : null;
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return convertPoolUnitValueToMeters(parsed, unit);
+}
+
+function parsePoolLength(value: string, unit: SessionDraftPoolLengthUnit): number | null {
+  const parsed = parsePositiveDistanceAsMeters(value, unit);
+  return parsed !== null && normalizeSessionDraftPoolLength(parsed) !== null ? parsed : null;
+}
+
+function formatDistanceForForm(value: number | null | undefined, unit: SessionDraftPoolLengthUnit) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
+  const converted = convertMetersToPoolUnitValue(value, unit);
+  return converted.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function createEmptyStrokeLimitFormState(): SessionGeneratorStrokeLimitFormState {
+  return SESSION_GENERATOR_STROKES.reduce((result, stroke) => {
+    result[stroke] = {
+      maxRepeatDistance: "",
+      maxTotalDistance: "",
+    };
+    return result;
+  }, {} as SessionGeneratorStrokeLimitFormState);
+}
+
+function buildSkillLimitFormStateFromHandoff(
+  handoff: GeneratorIntakeHandoffPayload,
+  unit: SessionDraftPoolLengthUnit
+) {
+  const strokeLimits = createEmptyStrokeLimitFormState();
+  let drillMaxRepeatDistance = "";
+  let drillApproxTotalDistance = "";
+  let kickMaxRepeatDistance = "";
+  let kickApproxTotalDistance = "";
+
+  for (const limit of handoff.source.swimCapabilityLimits) {
+    if (limit.kind === "drill") {
+      drillMaxRepeatDistance = formatDistanceForForm(limit.maxRepeatDistanceM, unit);
+      drillApproxTotalDistance = formatDistanceForForm(limit.targetTotalDistanceM, unit);
+      continue;
+    }
+
+    if (limit.kind === "kick") {
+      kickMaxRepeatDistance = formatDistanceForForm(limit.maxRepeatDistanceM, unit);
+      kickApproxTotalDistance = formatDistanceForForm(limit.targetTotalDistanceM, unit);
+      continue;
+    }
+
+    if (limit.kind === "stroke" && limit.stroke && strokeLimits[limit.stroke]) {
+      strokeLimits[limit.stroke] = {
+        maxRepeatDistance: formatDistanceForForm(limit.maxRepeatDistanceM, unit),
+        maxTotalDistance: formatDistanceForForm(limit.maxTotalDistanceM, unit),
+      };
+    }
+  }
+
+  return {
+    drillMaxRepeatDistance,
+    drillApproxTotalDistance,
+    kickMaxRepeatDistance,
+    kickApproxTotalDistance,
+    strokeLimits,
+  };
+}
+
+function normalizeStrokeLimitFormState(
+  value: unknown,
+  fallback: SessionGeneratorStrokeLimitFormState
+): SessionGeneratorStrokeLimitFormState {
+  const input = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const next = createEmptyStrokeLimitFormState();
+
+  for (const stroke of SESSION_GENERATOR_STROKES) {
+    const row =
+      input[stroke] && typeof input[stroke] === "object"
+        ? (input[stroke] as Record<string, unknown>)
+        : {};
+    next[stroke] = {
+      maxRepeatDistance:
+        normalizeDecimalString(row.maxRepeatDistance, 5) || fallback[stroke].maxRepeatDistance,
+      maxTotalDistance:
+        normalizeDecimalString(row.maxTotalDistance, 5) || fallback[stroke].maxTotalDistance,
+    };
+  }
+
+  return next;
+}
+
+function buildSkillLimitsFromFormState(
+  input: SessionGeneratorFormState,
+  unit: SessionDraftPoolLengthUnit,
+  handoff?: GeneratorIntakeHandoffPayload
+): SessionGeneratorSkillLimits | null {
+  const profileLimits = handoff ? buildProfileSkillLimitsFromHandoff(handoff) : null;
+  const useProfileBase = Boolean(
+    profileLimits && (input.skillLimitMode === "profile" || input.skillLimitMode === "override")
+  );
+  const shouldReadFormLimits = input.skillLimitMode === "override" || !useProfileBase;
+  const drillMaxRepeatDistanceM =
+    shouldReadFormLimits && input.drillMaxRepeatDistance
+      ? parsePositiveDistanceAsMeters(input.drillMaxRepeatDistance, unit)
+      : null;
+  const drillTargetTotalDistanceM =
+    shouldReadFormLimits && input.drillApproxTotalDistance
+      ? parsePositiveDistanceAsMeters(input.drillApproxTotalDistance, unit)
+      : null;
+  const kickMaxRepeatDistanceM =
+    shouldReadFormLimits && input.kickIntervalMeters
+      ? parsePositiveDistanceAsMeters(input.kickIntervalMeters, unit)
+      : null;
+  const kickTargetTotalDistanceM =
+    shouldReadFormLimits && input.kickApproxTotalDistance
+      ? parsePositiveDistanceAsMeters(input.kickApproxTotalDistance, unit)
+      : null;
+  const strokes: SessionGeneratorSkillLimits["strokes"] = {};
+
+  if (shouldReadFormLimits && input.drillMaxRepeatDistance && drillMaxRepeatDistanceM === null) {
+    return null;
+  }
+  if (
+    shouldReadFormLimits &&
+    input.drillApproxTotalDistance &&
+    drillTargetTotalDistanceM === null
+  ) {
+    return null;
+  }
+  if (shouldReadFormLimits && input.kickIntervalMeters && kickMaxRepeatDistanceM === null) {
+    return null;
+  }
+  if (shouldReadFormLimits && input.kickApproxTotalDistance && kickTargetTotalDistanceM === null) {
+    return null;
+  }
+
+  if (shouldReadFormLimits) {
+    for (const stroke of SESSION_GENERATOR_STROKES) {
+      const draft = input.strokeLimits[stroke];
+      const maxRepeatDistanceM = draft.maxRepeatDistance
+        ? parsePositiveDistanceAsMeters(draft.maxRepeatDistance, unit)
+        : null;
+      const maxTotalDistanceM = draft.maxTotalDistance
+        ? parsePositiveDistanceAsMeters(draft.maxTotalDistance, unit)
+        : null;
+
+      if (draft.maxRepeatDistance && maxRepeatDistanceM === null) return null;
+      if (draft.maxTotalDistance && maxTotalDistanceM === null) return null;
+
+      if (maxRepeatDistanceM !== null || maxTotalDistanceM !== null) {
+        strokes[stroke] = {
+          maxRepeatDistanceM,
+          maxTotalDistanceM,
+        };
+      }
+    }
+  }
+
+  const baseLimits = useProfileBase ? profileLimits : null;
+  const mergedStrokes: SessionGeneratorSkillLimits["strokes"] = {
+    ...(baseLimits?.strokes ?? {}),
+    ...strokes,
+  };
+  const hasFormLimit =
+    drillMaxRepeatDistanceM !== null ||
+    drillTargetTotalDistanceM !== null ||
+    kickMaxRepeatDistanceM !== null ||
+    kickTargetTotalDistanceM !== null ||
+    Object.keys(strokes).length > 0;
+  const hasAnyLimit =
+    drillMaxRepeatDistanceM !== null ||
+    drillTargetTotalDistanceM !== null ||
+    kickMaxRepeatDistanceM !== null ||
+    kickTargetTotalDistanceM !== null ||
+    Object.keys(mergedStrokes).length > 0 ||
+    Boolean(
+      baseLimits?.drill.maxRepeatDistanceM ||
+      baseLimits?.drill.targetTotalDistanceM ||
+      baseLimits?.kick.maxRepeatDistanceM ||
+      baseLimits?.kick.targetTotalDistanceM
+    );
+
+  return {
+    source: hasFormLimit
+      ? input.skillLimitMode === "profile"
+        ? "profile"
+        : "override"
+      : hasAnyLimit
+        ? "profile"
+        : "none",
+    drill: {
+      maxRepeatDistanceM: drillMaxRepeatDistanceM ?? baseLimits?.drill.maxRepeatDistanceM ?? null,
+      targetTotalDistanceM:
+        drillTargetTotalDistanceM ?? baseLimits?.drill.targetTotalDistanceM ?? null,
+    },
+    kick: {
+      maxRepeatDistanceM: kickMaxRepeatDistanceM ?? baseLimits?.kick.maxRepeatDistanceM ?? null,
+      targetTotalDistanceM:
+        kickTargetTotalDistanceM ?? baseLimits?.kick.targetTotalDistanceM ?? null,
+    },
+    strokes: mergedStrokes,
+  };
+}
+
+function buildProfileSkillLimitsFromHandoff(
+  handoff: GeneratorIntakeHandoffPayload
+): SessionGeneratorSkillLimits | null {
+  if (handoff.source.swimCapabilityLimits.length === 0) return null;
+
+  const profileLimits: SessionGeneratorSkillLimits = {
+    source: "profile",
+    drill: {
+      maxRepeatDistanceM: null,
+      targetTotalDistanceM: null,
+    },
+    kick: {
+      maxRepeatDistanceM: null,
+      targetTotalDistanceM: null,
+    },
+    strokes: {},
+  };
+
+  for (const limit of handoff.source.swimCapabilityLimits) {
+    if (limit.kind === "drill") {
+      profileLimits.drill = {
+        maxRepeatDistanceM: limit.maxRepeatDistanceM,
+        targetTotalDistanceM: limit.targetTotalDistanceM,
+      };
+      continue;
+    }
+
+    if (limit.kind === "kick") {
+      profileLimits.kick = {
+        maxRepeatDistanceM: limit.maxRepeatDistanceM,
+        targetTotalDistanceM: limit.targetTotalDistanceM,
+      };
+      continue;
+    }
+
+    if (
+      limit.kind === "stroke" &&
+      limit.stroke &&
+      SESSION_GENERATOR_STROKES.includes(limit.stroke as SessionGeneratorStroke)
+    ) {
+      const stroke = limit.stroke as SessionGeneratorStroke;
+      profileLimits.strokes[stroke] = {
+        maxRepeatDistanceM: limit.maxRepeatDistanceM,
+        maxTotalDistanceM: limit.maxTotalDistanceM,
+      };
+    }
+  }
+
+  return profileLimits;
 }
 
 function uniqueEnumList<T extends string>(
@@ -982,6 +1371,10 @@ function isVolumeMode(value: unknown): value is SessionGeneratorVolumeMode {
 
 function isRestMode(value: unknown): value is SessionGeneratorRestMode {
   return SESSION_GENERATOR_REST_MODES.includes(value as SessionGeneratorRestMode);
+}
+
+function isSkillLimitMode(value: unknown): value is SessionGeneratorSkillLimitMode {
+  return SESSION_GENERATOR_SKILL_LIMIT_MODES.includes(value as SessionGeneratorSkillLimitMode);
 }
 
 function getIntensityMultiplier(value: SessionDraftStepIntensityPreset) {

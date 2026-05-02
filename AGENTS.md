@@ -326,7 +326,11 @@ This file defines how coding agents should collaborate in this repository.
   - validation evidence (commands + results),
   - risk/regression notes,
   - follow-up items (if any).
-- Open PR/review/merge links in Safari and make the Safari tab active when possible.
+- Open PR/review/merge links in Safari without overwriting the owner's active tab:
+  - first check whether Safari is open on the same desktop/space as VS Code when practical,
+  - reuse an existing tab for the same PR when one is already open,
+  - otherwise open a new tab,
+  - never replace the URL in the currently active Safari tab unless that tab already belongs to the target PR.
 - Prefer `npm run pr:create:safari` for PR handoff:
   - auto-creates PR when `gh` CLI auth is available,
   - otherwise falls back to Safari PR page.

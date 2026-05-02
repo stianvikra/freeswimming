@@ -4,24 +4,27 @@ import { useEffect, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
 import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
-import type {
-  GeneratorIntakeHandoffPayload,
-  GeneratorIntakeOverrides,
-  GeneratorIntakeSelection,
+import {
+  type GeneratorIntakeHandoffPayload,
+  type GeneratorIntakeOverrides,
+  type GeneratorIntakeSelection,
 } from "@/lib/generator-intake/shared";
 import {
+  SESSION_DRAFT_POOL_LENGTH_UNITS,
   SESSION_GENERATOR_ENVIRONMENTS,
   SESSION_GENERATOR_EQUIPMENT,
-  SESSION_GENERATOR_POOL_LENGTHS,
   SESSION_GENERATOR_SESSION_TYPES,
   SESSION_GENERATOR_STROKES,
   formatPoolLengthLabel,
+  convertMetersToPoolUnitValue,
+  convertPoolUnitValueToMeters,
   getDefaultSessionGeneratorFormState,
   getSessionEnvironmentLabel,
   getSessionEquipmentLabel,
   getSessionStrokeLabel,
   getSessionTypeLabel,
   normalizeSessionGeneratorFormState,
+  validateSessionGeneratorFormState,
   type SessionDraft,
   type SessionDraftApiResponse,
   type SessionGeneratorEquipment,
@@ -35,6 +38,8 @@ import type {
 } from "@/lib/workouts/shared";
 import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 
+const POOL_LENGTH_QUICK_CHOICES = [25, 50] as const;
+
 type Props = {
   payload: GeneratorIntakeHandoffPayload;
   selection: GeneratorIntakeSelection;
@@ -43,6 +48,143 @@ type Props = {
   onResetOverrides: () => void;
   workoutLibrary: WorkoutLibrarySnapshot;
 };
+
+type ProfileSkillLimit = GeneratorIntakeHandoffPayload["source"]["swimCapabilityLimits"][number];
+
+function createEmptyStrokeLimitFormState(): SessionGeneratorFormState["strokeLimits"] {
+  return SESSION_GENERATOR_STROKES.reduce(
+    (result, stroke) => {
+      result[stroke] = {
+        maxRepeatDistance: "",
+        maxTotalDistance: "",
+      };
+      return result;
+    },
+    {} as SessionGeneratorFormState["strokeLimits"]
+  );
+}
+
+function formatProfileSkillLimitText(limit: ProfileSkillLimit | null | undefined) {
+  if (!limit) return "";
+
+  return [
+    limit.maxRepeatDistanceLabel ? `max length ${limit.maxRepeatDistanceLabel}` : null,
+    limit.targetTotalDistanceLabel ? `approx ${limit.targetTotalDistanceLabel}/session` : null,
+    limit.maxTotalDistanceLabel ? `max ${limit.maxTotalDistanceLabel}/session` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function getProfileSkillLimitName(limit: ProfileSkillLimit) {
+  if (limit.kind === "drill") return "Drills";
+  if (limit.kind === "kick") return "Kick";
+
+  return limit.strokeLabel ?? "Stroke";
+}
+
+function formatPoolQuickChoiceLabel(
+  value: number,
+  unit: SessionGeneratorFormState["poolLengthUnit"]
+) {
+  return unit === "yd" ? `${value}yd` : formatPoolLengthLabel(value, unit);
+}
+
+function formatDistanceForForm(
+  value: number | null | undefined,
+  unit: SessionGeneratorFormState["poolLengthUnit"]
+) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
+  const converted = convertMetersToPoolUnitValue(value, unit);
+  return converted.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function parseDistanceForComparison(
+  value: string,
+  unit: SessionGeneratorFormState["poolLengthUnit"]
+) {
+  const parsed = Number.parseFloat(value.replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return convertPoolUnitValueToMeters(parsed, unit);
+}
+
+function isDistanceChangedFromProfile(
+  value: string,
+  profileMeters: number | null | undefined,
+  unit: SessionGeneratorFormState["poolLengthUnit"]
+) {
+  const parsedMeters = value ? parseDistanceForComparison(value, unit) : null;
+  if (typeof profileMeters !== "number" || !Number.isFinite(profileMeters) || profileMeters <= 0) {
+    return parsedMeters !== null;
+  }
+  if (parsedMeters === null) return true;
+
+  return Math.abs(parsedMeters - profileMeters) > 0.01;
+}
+
+function getLimitStatusLabel(hasProfileValue: boolean, hasChangedValue: boolean) {
+  if (hasChangedValue) return "Changed";
+  if (hasProfileValue) return "Profile active";
+  return "No profile value";
+}
+
+function getLimitStatusClass(label: string) {
+  if (label === "Changed") {
+    return "bg-blue-100 text-blue-800";
+  }
+  if (label === "Profile active") {
+    return "bg-slate-200 text-slate-700";
+  }
+
+  return "bg-slate-100 text-slate-500";
+}
+
+const LIMIT_INPUT_CLASS =
+  "mt-2 block h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+
+function LimitLegend({ label, status }: { label: string; status: string }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <span>{label}</span>
+      <span
+        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap uppercase ${getLimitStatusClass(
+          status
+        )}`}
+      >
+        {status}
+      </span>
+    </span>
+  );
+}
+
+function LimitNumberField({
+  label,
+  unit,
+  value,
+  testId,
+  onChange,
+}: {
+  label: string;
+  unit: SessionGeneratorFormState["poolLengthUnit"];
+  value: string;
+  testId: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block text-sm text-slate-700">
+      {label} ({unit})
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        data-testid={testId}
+        placeholder=""
+        className={LIMIT_INPUT_CLASS}
+      />
+    </label>
+  );
+}
 
 export default function SessionGeneratorPanel({
   payload,
@@ -64,6 +206,7 @@ export default function SessionGeneratorPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [regenerateSettingsOpen, setRegenerateSettingsOpen] = useState(false);
+  const [skillLimitsExpanded, setSkillLimitsExpanded] = useState(false);
   const [discardUndoDraft, setDiscardUndoDraft] = useState<WorkoutEditorRecord["draft"] | null>(
     null
   );
@@ -75,6 +218,7 @@ export default function SessionGeneratorPanel({
       setError("");
       setSuccess("");
       setRegenerateSettingsOpen(false);
+      setSkillLimitsExpanded(false);
       setDiscardUndoDraft(null);
       return;
     }
@@ -84,12 +228,13 @@ export default function SessionGeneratorPanel({
     setError("");
     setSuccess("");
     setRegenerateSettingsOpen(false);
+    setSkillLimitsExpanded(false);
     setDiscardUndoDraft(null);
   }, [workoutLibrary.selectedWorkout]);
 
   useEffect(() => {
     if (workoutLibrary.selectedWorkout) return;
-    setFormState(getDefaultSessionGeneratorFormState(payload));
+    setFormState((current) => normalizeSessionGeneratorFormState(current, payload));
   }, [payload, workoutLibrary.selectedWorkout]);
 
   useEffect(() => {
@@ -111,6 +256,96 @@ export default function SessionGeneratorPanel({
     ? haveWorkoutDraftChanges(draft, savedWorkout.draft)
     : true;
   const showGeneratorSettings = !draft || regenerateSettingsOpen;
+  const hasProfileSkillLimits =
+    selection.capability_limits && payload.source.swimCapabilityLimits.length > 0;
+  const profileDrillLimit = hasProfileSkillLimits
+    ? payload.source.swimCapabilityLimits.find(
+        (limit) => limit.kind === "drill" && limit.maxRepeatDistanceM
+      )
+    : null;
+  const profileKickLimit = hasProfileSkillLimits
+    ? payload.source.swimCapabilityLimits.find(
+        (limit) => limit.kind === "kick" && limit.maxRepeatDistanceM
+      )
+    : null;
+  const profileSkillLimitSummaryItems = hasProfileSkillLimits
+    ? payload.source.swimCapabilityLimits
+        .map((limit) => ({
+          id: limit.id,
+          name: getProfileSkillLimitName(limit),
+          details: formatProfileSkillLimitText(limit),
+        }))
+        .filter((item) => item.details)
+        .slice(0, 4)
+    : [];
+  const profileSkillLimitOverflowCount = hasProfileSkillLimits
+    ? Math.max(payload.source.swimCapabilityLimits.length - profileSkillLimitSummaryItems.length, 0)
+    : 0;
+  const profileDrillLimitText = formatProfileSkillLimitText(profileDrillLimit);
+  const profileKickLimitText = formatProfileSkillLimitText(profileKickLimit);
+  const isSkillLimitOverride = formState.skillLimitMode === "override" || !hasProfileSkillLimits;
+  const showSkillLimitEditor = isSkillLimitOverride && skillLimitsExpanded;
+  const getProfileStrokeLimit = (stroke: SessionGeneratorStroke) =>
+    hasProfileSkillLimits
+      ? payload.source.swimCapabilityLimits.find(
+          (limit) => limit.kind === "stroke" && limit.stroke === stroke
+        )
+      : null;
+  const hasProfileDrillValue = Boolean(
+    profileDrillLimit?.maxRepeatDistanceM || profileDrillLimit?.targetTotalDistanceM
+  );
+  const drillLimitStatus = getLimitStatusLabel(
+    hasProfileDrillValue,
+    isDistanceChangedFromProfile(
+      formState.drillMaxRepeatDistance,
+      profileDrillLimit?.maxRepeatDistanceM,
+      formState.poolLengthUnit
+    ) ||
+      isDistanceChangedFromProfile(
+        formState.drillApproxTotalDistance,
+        profileDrillLimit?.targetTotalDistanceM,
+        formState.poolLengthUnit
+      )
+  );
+  const hasProfileKickValue = Boolean(
+    profileKickLimit?.maxRepeatDistanceM || profileKickLimit?.targetTotalDistanceM
+  );
+  const kickLimitStatus = getLimitStatusLabel(
+    hasProfileKickValue,
+    isDistanceChangedFromProfile(
+      formState.kickIntervalMeters,
+      profileKickLimit?.maxRepeatDistanceM,
+      formState.poolLengthUnit
+    ) ||
+      isDistanceChangedFromProfile(
+        formState.kickApproxTotalDistance,
+        profileKickLimit?.targetTotalDistanceM,
+        formState.poolLengthUnit
+      )
+  );
+
+  function getProfileLimitFormPatch(unit: SessionGeneratorFormState["poolLengthUnit"]) {
+    const strokeLimits = createEmptyStrokeLimitFormState();
+    const drillLimit = payload.source.swimCapabilityLimits.find((limit) => limit.kind === "drill");
+    const kickLimit = payload.source.swimCapabilityLimits.find((limit) => limit.kind === "kick");
+
+    for (const limit of payload.source.swimCapabilityLimits) {
+      if (limit.kind !== "stroke" || !limit.stroke || !strokeLimits[limit.stroke]) continue;
+
+      strokeLimits[limit.stroke] = {
+        maxRepeatDistance: formatDistanceForForm(limit.maxRepeatDistanceM, unit),
+        maxTotalDistance: formatDistanceForForm(limit.maxTotalDistanceM, unit),
+      };
+    }
+
+    return {
+      drillMaxRepeatDistance: formatDistanceForForm(drillLimit?.maxRepeatDistanceM, unit),
+      drillApproxTotalDistance: formatDistanceForForm(drillLimit?.targetTotalDistanceM, unit),
+      kickIntervalMeters: formatDistanceForForm(kickLimit?.maxRepeatDistanceM, unit),
+      kickApproxTotalDistance: formatDistanceForForm(kickLimit?.targetTotalDistanceM, unit),
+      strokeLimits,
+    };
+  }
 
   function applyOverrideChange(key: "focusText" | "constraintText", value: string) {
     setError("");
@@ -141,6 +376,59 @@ export default function SessionGeneratorPanel({
     setSuccess("");
   }
 
+  function updateStrokeLimit(
+    stroke: SessionGeneratorStroke,
+    key: keyof SessionGeneratorFormState["strokeLimits"][SessionGeneratorStroke],
+    value: string
+  ) {
+    updateFormState("strokeLimits", {
+      ...formState.strokeLimits,
+      [stroke]: {
+        ...formState.strokeLimits[stroke],
+        [key]: value,
+      },
+    });
+  }
+
+  function updateSkillLimitMode(mode: SessionGeneratorFormState["skillLimitMode"]) {
+    setFormState((current) =>
+      normalizeSessionGeneratorFormState(
+        {
+          ...current,
+          ...(hasProfileSkillLimits
+            ? getProfileLimitFormPatch(current.poolLengthUnit)
+            : {
+                drillMaxRepeatDistance: current.drillMaxRepeatDistance,
+                drillApproxTotalDistance: current.drillApproxTotalDistance,
+                kickIntervalMeters: current.kickIntervalMeters,
+                kickApproxTotalDistance: current.kickApproxTotalDistance,
+                strokeLimits: current.strokeLimits,
+              }),
+          skillLimitMode: mode,
+        },
+        payload
+      )
+    );
+    setSkillLimitsExpanded(mode === "override");
+    setError("");
+    setSuccess("");
+  }
+
+  function updatePoolLengthUnit(unit: SessionGeneratorFormState["poolLengthUnit"]) {
+    setFormState((current) =>
+      normalizeSessionGeneratorFormState(
+        {
+          ...current,
+          poolLengthUnit: unit,
+          poolLengthM: unit === "yd" ? "25" : "25",
+        },
+        payload
+      )
+    );
+    setError("");
+    setSuccess("");
+  }
+
   function toggleStroke(stroke: SessionGeneratorStroke) {
     const exists = formState.allowedStrokes.includes(stroke);
     updateFormState(
@@ -162,10 +450,17 @@ export default function SessionGeneratorPanel({
   }
 
   async function generateDraft() {
-    setIsGenerating(true);
     setError("");
     setSuccess("");
     setDiscardUndoDraft(null);
+
+    const validation = validateSessionGeneratorFormState(formState, payload);
+    if (!validation.ok) {
+      setError(validation.error);
+      return;
+    }
+
+    setIsGenerating(true);
 
     try {
       const response = await fetch("/api/my-library/generator/session-draft", {
@@ -358,22 +653,216 @@ export default function SessionGeneratorPanel({
 
           {showGeneratorSettings ? (
             <>
+              <section
+                className="rounded-2xl border border-slate-200 bg-white p-4"
+                data-testid="session-generator-profile-limits-card"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Stroke and skill limits
+                    </h3>
+                    {!hasProfileSkillLimits ? (
+                      <p className="mt-1 text-sm text-slate-600">
+                        Add limits for this session generation only.
+                      </p>
+                    ) : null}
+                  </div>
+                  {hasProfileSkillLimits ? (
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold tracking-wide text-emerald-800 uppercase">
+                      {isSkillLimitOverride ? "Session-specific" : "From Swim Profile"}
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                      Not in Swim Profile
+                    </span>
+                  )}
+                </div>
+
+                {hasProfileSkillLimits && !showSkillLimitEditor ? (
+                  <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <ul className="grid gap-1.5 text-sm text-slate-700 sm:grid-cols-2">
+                        {profileSkillLimitSummaryItems.map((item) => (
+                          <li key={item.id} className="min-w-0">
+                            <span className="font-medium text-slate-900">{item.name}:</span>{" "}
+                            {item.details}
+                          </li>
+                        ))}
+                        {profileSkillLimitOverflowCount > 0 ? (
+                          <li className="text-slate-500">
+                            +{profileSkillLimitOverflowCount} more from Swim Profile
+                          </li>
+                        ) : null}
+                      </ul>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateSkillLimitMode("override")}
+                      data-testid="session-generator-skill-limits-override"
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      Change for this session
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <p className="max-w-2xl text-sm text-slate-600">
+                        {hasProfileSkillLimits
+                          ? "Adjust limits for this session generation only."
+                          : "Add limits for this session generation only."}
+                      </p>
+                      {hasProfileSkillLimits ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateSkillLimitMode("profile")}
+                            className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                          >
+                            Reset to Swim Profile
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSkillLimitsExpanded(false)}
+                            className="inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-3 text-sm font-medium text-white transition hover:bg-slate-800 active:bg-slate-950"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                        <legend className="px-1 text-sm font-medium text-slate-900">
+                          <LimitLegend label="Drills" status={drillLimitStatus} />
+                        </legend>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <LimitNumberField
+                            label="Max length"
+                            unit={formState.poolLengthUnit}
+                            value={formState.drillMaxRepeatDistance}
+                            testId="session-generator-drill-max-repeat"
+                            onChange={(value) => updateFormState("drillMaxRepeatDistance", value)}
+                          />
+                          <LimitNumberField
+                            label="Approx per session"
+                            unit={formState.poolLengthUnit}
+                            value={formState.drillApproxTotalDistance}
+                            testId="session-generator-drill-approx-total"
+                            onChange={(value) => updateFormState("drillApproxTotalDistance", value)}
+                          />
+                        </div>
+                      </fieldset>
+
+                      <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                        <legend className="px-1 text-sm font-medium text-slate-900">
+                          <LimitLegend label="Kick" status={kickLimitStatus} />
+                        </legend>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <LimitNumberField
+                            label="Max length"
+                            unit={formState.poolLengthUnit}
+                            value={formState.kickIntervalMeters}
+                            testId="session-generator-kick-interval"
+                            onChange={(value) => updateFormState("kickIntervalMeters", value)}
+                          />
+                          <LimitNumberField
+                            label="Approx per session"
+                            unit={formState.poolLengthUnit}
+                            value={formState.kickApproxTotalDistance}
+                            testId="session-generator-kick-approx-total"
+                            onChange={(value) => updateFormState("kickApproxTotalDistance", value)}
+                          />
+                        </div>
+                      </fieldset>
+                    </div>
+
+                    <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                      <legend className="px-1 text-sm font-medium text-slate-900">
+                        Stroke limits
+                      </legend>
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        {SESSION_GENERATOR_STROKES.map((stroke) => {
+                          const strokeLimit = formState.strokeLimits[stroke];
+                          const profileLimit = getProfileStrokeLimit(stroke);
+                          const hasProfileValue = Boolean(
+                            profileLimit?.maxRepeatDistanceM || profileLimit?.maxTotalDistanceM
+                          );
+                          const statusLabel = getLimitStatusLabel(
+                            hasProfileValue,
+                            isDistanceChangedFromProfile(
+                              strokeLimit.maxRepeatDistance,
+                              profileLimit?.maxRepeatDistanceM,
+                              formState.poolLengthUnit
+                            ) ||
+                              isDistanceChangedFromProfile(
+                                strokeLimit.maxTotalDistance,
+                                profileLimit?.maxTotalDistanceM,
+                                formState.poolLengthUnit
+                              )
+                          );
+
+                          return (
+                            <fieldset
+                              key={stroke}
+                              className="rounded-xl border border-slate-200 bg-white p-3"
+                            >
+                              <legend className="px-1 text-sm font-medium text-slate-900">
+                                <LimitLegend
+                                  label={getSessionStrokeLabel(stroke)}
+                                  status={statusLabel}
+                                />
+                              </legend>
+                              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                <LimitNumberField
+                                  label="Max length"
+                                  unit={formState.poolLengthUnit}
+                                  value={strokeLimit.maxRepeatDistance}
+                                  testId={`session-generator-stroke-limit-${stroke}-repeat`}
+                                  onChange={(value) =>
+                                    updateStrokeLimit(stroke, "maxRepeatDistance", value)
+                                  }
+                                />
+                                <LimitNumberField
+                                  label="Max per session"
+                                  unit={formState.poolLengthUnit}
+                                  value={strokeLimit.maxTotalDistance}
+                                  testId={`session-generator-stroke-limit-${stroke}-total`}
+                                  onChange={(value) =>
+                                    updateStrokeLimit(stroke, "maxTotalDistance", value)
+                                  }
+                                />
+                              </div>
+                            </fieldset>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+                  </div>
+                )}
+              </section>
+
               <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-base font-semibold text-slate-900">Session setup</h3>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleResetOverrides}
-                    data-testid="session-generator-reset-overrides"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                  >
-                    Clear optional instructions
-                  </button>
+                  {overrides.constraintText ? (
+                    <button
+                      type="button"
+                      onClick={handleResetOverrides}
+                      data-testid="session-generator-reset-overrides"
+                      aria-label="Clear additional instructions"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
                 </div>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
                   <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:col-span-2">
                     Session type
                     <select
@@ -396,7 +885,7 @@ export default function SessionGeneratorPanel({
                   </label>
 
                   <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:col-span-2">
-                    Special instructions (optional)
+                    Additional instructions (optional)
                     <textarea
                       value={overrides.constraintText}
                       onChange={(event) =>
@@ -405,19 +894,18 @@ export default function SessionGeneratorPanel({
                       data-testid="session-generator-constraint-text"
                       rows={4}
                       className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="Example: I want to fix dropped elbow, avoid paddles, or keep fatigue low."
+                      placeholder="Anything you want your AI coach to consider before generating the session."
                     />
-                    <span className="mt-2 block text-xs text-slate-500">
-                      Leave blank and the coach will decide details from the profile inputs and
-                      session choices.
-                    </span>
                   </label>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <h3 className="text-base font-semibold text-slate-900">Generation constraints</h3>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div
+                data-testid="session-generator-rules-card"
+                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+              >
+                <h3 className="text-base font-semibold text-slate-900">Session Rules</h3>
+                <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
                   <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
                     <legend className="px-1 text-sm font-semibold text-slate-900">
                       Environment
@@ -442,24 +930,88 @@ export default function SessionGeneratorPanel({
                   </fieldset>
 
                   {formState.environment === "pool" ? (
-                    <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-                      Pool length
-                      <select
-                        value={formState.poolLengthM}
-                        onChange={(event) => updateFormState("poolLengthM", event.target.value)}
-                        data-testid="session-generator-pool-length"
-                        className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <legend className="px-1 text-sm font-semibold text-slate-900">
+                        Pool size
+                      </legend>
+                      <div
+                        data-testid="session-generator-pool-size-inline-row"
+                        data-layout="compact-inline"
+                        className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3"
                       >
-                        {SESSION_GENERATOR_POOL_LENGTHS.map((value) => (
-                          <option key={value} value={String(value)}>
-                            {formatPoolLengthLabel(value)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        <div
+                          role="group"
+                          aria-label="Pool size unit"
+                          className="flex shrink-0 flex-wrap items-center gap-2"
+                        >
+                          {SESSION_DRAFT_POOL_LENGTH_UNITS.map((unit) => (
+                            <button
+                              key={unit}
+                              type="button"
+                              aria-pressed={formState.poolLengthUnit === unit}
+                              onClick={() => updatePoolLengthUnit(unit)}
+                              data-testid={`session-generator-pool-length-unit-${unit}`}
+                              className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
+                                formState.poolLengthUnit === unit
+                                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                              }`}
+                            >
+                              {unit === "m" ? "Meters" : "Yards"}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div
+                          role="group"
+                          aria-label="Common pool sizes"
+                          className="flex shrink-0 flex-wrap items-center gap-2"
+                        >
+                          {POOL_LENGTH_QUICK_CHOICES.map((value) => {
+                            const isSelected = formState.poolLengthM === String(value);
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => updateFormState("poolLengthM", String(value))}
+                                className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
+                                  isSelected
+                                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                                }`}
+                              >
+                                {formatPoolQuickChoiceLabel(value, formState.poolLengthUnit)}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="min-w-0 shrink-0">
+                          <div className="relative w-[8.75rem] sm:w-[9.25rem]">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              aria-label={`Exact pool size (${formState.poolLengthUnit})`}
+                              value={formState.poolLengthM}
+                              onChange={(event) =>
+                                updateFormState("poolLengthM", event.target.value)
+                              }
+                              data-testid="session-generator-pool-length"
+                              className="block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 pr-10 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                            />
+                            <span
+                              aria-hidden="true"
+                              className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-slate-500"
+                            >
+                              {formState.poolLengthUnit}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </fieldset>
                   ) : null}
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4 md:col-start-1 md:row-start-2">
+                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
                     <legend className="px-1 text-sm font-semibold text-slate-900">
                       Session size
                     </legend>
@@ -482,13 +1034,13 @@ export default function SessionGeneratorPanel({
                           onChange={() => updateFormState("sizeMode", "estimated_time")}
                           data-testid="session-generator-size-time"
                         />
-                        Estimated time
+                        Estimated duration
                       </label>
                     </div>
 
                     {formState.sizeMode === "distance" ? (
                       <label className="mt-4 block text-sm text-slate-700">
-                        Target distance (m)
+                        Target distance ({formState.poolLengthUnit})
                         <input
                           type="text"
                           inputMode="numeric"
@@ -502,20 +1054,30 @@ export default function SessionGeneratorPanel({
                       </label>
                     ) : (
                       <label className="mt-4 block text-sm text-slate-700">
-                        Estimated duration (15-180 min)
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={formState.targetTimeMin}
-                          onChange={(event) => updateFormState("targetTimeMin", event.target.value)}
-                          data-testid="session-generator-target-time"
-                          className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        />
+                        Duration
+                        <div className="relative mt-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formState.targetTimeMin}
+                            onChange={(event) =>
+                              updateFormState("targetTimeMin", event.target.value)
+                            }
+                            data-testid="session-generator-target-time"
+                            className="block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 pr-14 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                          />
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-slate-500"
+                          >
+                            min
+                          </span>
+                        </div>
                       </label>
                     )}
                   </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4 md:col-start-2 md:row-span-3 md:row-start-2">
+                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
                     <legend className="px-1 text-sm font-semibold text-slate-900">
                       Optional structure
                     </legend>
@@ -555,7 +1117,7 @@ export default function SessionGeneratorPanel({
                           </label>
                           {formState.drillVolumeMode === "explicit" ? (
                             <label className="block text-sm text-slate-700">
-                              Drill meters
+                              Drill distance ({formState.poolLengthUnit})
                               <input
                                 type="text"
                                 inputMode="numeric"
@@ -567,6 +1129,20 @@ export default function SessionGeneratorPanel({
                                 className="mt-2 block h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                               />
                             </label>
+                          ) : null}
+                          {profileDrillLimitText ||
+                          (isSkillLimitOverride && formState.drillMaxRepeatDistance) ? (
+                            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                              Drill max length:{" "}
+                              <span className="font-medium text-slate-900">
+                                {isSkillLimitOverride && formState.drillMaxRepeatDistance
+                                  ? `${formState.drillMaxRepeatDistance}${formState.poolLengthUnit}`
+                                  : profileDrillLimit?.maxRepeatDistanceLabel}
+                              </span>
+                              {isSkillLimitOverride && formState.drillMaxRepeatDistance
+                                ? " for this session"
+                                : " from Swim Profile"}
+                            </p>
                           ) : null}
                         </div>
                       ) : null}
@@ -599,12 +1175,12 @@ export default function SessionGeneratorPanel({
                               onChange={() => updateFormState("kickVolumeMode", "explicit")}
                               data-testid="session-generator-kick-volume-explicit"
                             />
-                            Set kick meters and interval
+                            Set kick distance
                           </label>
                           {formState.kickVolumeMode === "explicit" ? (
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="grid gap-3">
                               <label className="block text-sm text-slate-700">
-                                Kick meters
+                                Kick distance ({formState.poolLengthUnit})
                                 <input
                                   type="text"
                                   inputMode="numeric"
@@ -616,19 +1192,20 @@ export default function SessionGeneratorPanel({
                                   className="mt-2 block h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                                 />
                               </label>
-                              <label className="block text-sm text-slate-700">
-                                Kick interval (m)
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={formState.kickIntervalMeters}
-                                  onChange={(event) =>
-                                    updateFormState("kickIntervalMeters", event.target.value)
-                                  }
-                                  data-testid="session-generator-kick-interval"
-                                  className="mt-2 block h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                                />
-                              </label>
+                              {profileKickLimitText ||
+                              (isSkillLimitOverride && formState.kickIntervalMeters) ? (
+                                <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                                  Kick max length:{" "}
+                                  <span className="font-medium text-slate-900">
+                                    {isSkillLimitOverride && formState.kickIntervalMeters
+                                      ? `${formState.kickIntervalMeters}${formState.poolLengthUnit}`
+                                      : profileKickLimit?.maxRepeatDistanceLabel}
+                                  </span>
+                                  {isSkillLimitOverride && formState.kickIntervalMeters
+                                    ? " for this session"
+                                    : " from Swim Profile"}
+                                </p>
+                              ) : null}
                             </div>
                           ) : null}
                         </div>
@@ -673,9 +1250,9 @@ export default function SessionGeneratorPanel({
                     </div>
                   </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4 md:col-start-1 md:row-start-3">
+                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
                     <legend className="px-1 text-sm font-semibold text-slate-900">
-                      Allowed strokes
+                      Select strokes
                     </legend>
                     <div className="mt-3 flex flex-wrap gap-3">
                       {SESSION_GENERATOR_STROKES.map((stroke) => (
@@ -695,9 +1272,9 @@ export default function SessionGeneratorPanel({
                     </div>
                   </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4 md:col-start-1 md:row-start-4">
+                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
                     <legend className="px-1 text-sm font-semibold text-slate-900">
-                      Allowed equipment
+                      Select equipment
                     </legend>
                     <div className="mt-3 flex flex-wrap gap-3">
                       {SESSION_GENERATOR_EQUIPMENT.map((item) => (
@@ -723,7 +1300,7 @@ export default function SessionGeneratorPanel({
                 <p className="text-sm text-slate-600">
                   {draft
                     ? "Change settings here only when you want to regenerate the draft."
-                    : "Generate an editable draft, then save it to My Swim Sessions when it is ready."}
+                    : "Generated draft will be editable."}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <button

@@ -13,14 +13,17 @@ function buildSnapshot(profile?: AthleteProfileSnapshot["profile"]): AthleteProf
     metricsSchemaReady: true,
     preferencesSchemaReady: true,
     personalRecordsSchemaReady: true,
+    swimCapabilityLimitsSchemaReady: true,
     loadError: null,
     metricsLoadError: null,
     preferencesLoadError: null,
     personalRecordsLoadError: null,
+    swimCapabilityLimitsLoadError: null,
     profile: profile ?? null,
     cssMetric: null,
     preferences: null,
     personalRecords: [],
+    swimCapabilityLimits: [],
   };
 }
 
@@ -65,10 +68,10 @@ describe("AthleteProfileHub", () => {
     expect(screen.getByTestId("athlete-record-distance-m")).toHaveValue(200);
     expect(screen.getByTestId("athlete-record-time")).toHaveValue("2:24.18");
     expect(
-      screen.getByText("Unsaved athlete-profile edits were restored on this device.")
+      screen.getByText("Unsaved swimmer-profile edits were restored on this device.")
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Unsaved personal-record edits were restored on this device.")
+      screen.getByText("Unsaved best-time edits were restored on this device.")
     ).toBeInTheDocument();
   });
 
@@ -109,7 +112,7 @@ describe("AthleteProfileHub", () => {
     fireEvent.click(screen.getByTestId("athlete-profile-save"));
 
     await waitFor(() => {
-      expect(screen.getByText("Athlete profile saved.")).toBeInTheDocument();
+      expect(screen.getByText("Swimmer profile saved.")).toBeInTheDocument();
     });
 
     await waitFor(() => {
@@ -302,7 +305,7 @@ describe("AthleteProfileHub", () => {
     fireEvent.click(screen.getByTestId("athlete-record-save"));
 
     await waitFor(() => {
-      expect(screen.getByText("Personal record saved.")).toBeInTheDocument();
+      expect(screen.getByText("Best time saved.")).toBeInTheDocument();
     });
 
     await waitFor(() => {
@@ -318,7 +321,7 @@ describe("AthleteProfileHub", () => {
     fireEvent.click(screen.getByTestId("athlete-record-delete-record-1"));
 
     await waitFor(() => {
-      expect(screen.getByText("Personal record deleted.")).toBeInTheDocument();
+      expect(screen.getByText("Best time deleted.")).toBeInTheDocument();
     });
 
     expect(screen.queryByText("100m Freestyle · 25m pool")).not.toBeInTheDocument();
@@ -331,7 +334,7 @@ describe("AthleteProfileHub", () => {
         new Response(
           JSON.stringify({
             ok: false,
-            error: "Could not save athlete profile right now.",
+            error: "Could not save swimmer profile right now.",
           }),
           {
             status: 500,
@@ -351,7 +354,7 @@ describe("AthleteProfileHub", () => {
     fireEvent.click(screen.getByTestId("athlete-profile-save"));
 
     await waitFor(() => {
-      expect(screen.getByText("Could not save athlete profile right now.")).toBeInTheDocument();
+      expect(screen.getByText("Could not save swimmer profile right now.")).toBeInTheDocument();
     });
 
     expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(

@@ -36,14 +36,17 @@ function buildSnapshot() {
     metricsSchemaReady: true,
     preferencesSchemaReady: true,
     personalRecordsSchemaReady: true,
+    swimCapabilityLimitsSchemaReady: true,
     loadError: null,
     metricsLoadError: null,
     preferencesLoadError: null,
     personalRecordsLoadError: null,
+    swimCapabilityLimitsLoadError: null,
     profile: null,
     cssMetric: null,
     preferences: null,
     personalRecords: [],
+    swimCapabilityLimits: [],
   };
 }
 

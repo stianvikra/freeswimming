@@ -2,19 +2,20 @@ import type {
   AthleteProfileSnapshot,
   AthleteProfileView,
   PersonalRecordView,
+  SwimCapabilityLimitView,
   TrainingMetricView,
   TrainingPreferencesView,
 } from "@/lib/athlete-profile/server";
+import { formatSwimCapabilityLimitSummary } from "@/lib/athlete-profile/capabilities";
 import { GOAL_ACTIVE_STATUS_VALUES, type GoalView } from "@/lib/goals/mvp";
 import type { TrainingContextSnapshot, TrainingFocusView } from "@/lib/training-context/server";
 
 export const GENERATOR_INTAKE_BLOCK_KEYS = [
-  "profile",
-  "css",
   "preferences",
+  "css",
   "personal_records",
   "goals",
-  "focus",
+  "capability_limits",
 ] as const;
 
 export const GENERATOR_TARGET_TYPES = ["session", "program"] as const;
@@ -59,11 +60,13 @@ export type GeneratorIntakeSnapshot = {
   preferencesSchemaReady: boolean;
   personalRecordsSchemaReady: boolean;
   trainingContextSchemaReady: boolean;
+  swimCapabilityLimitsSchemaReady: boolean;
   goalsLoadError: string | null;
   profile: AthleteProfileView | null;
   cssMetric: TrainingMetricView | null;
   preferences: TrainingPreferencesView | null;
   personalRecords: PersonalRecordView[];
+  swimCapabilityLimits: SwimCapabilityLimitView[];
   openGoals: GoalView[];
   activeFocus: TrainingFocusView | null;
   blocks: Record<GeneratorIntakeBlockKey, GeneratorIntakeBlockSummary>;
@@ -81,6 +84,7 @@ export type GeneratorIntakeHandoffPayload = {
     cssMetric: TrainingMetricView | null;
     preferences: TrainingPreferencesView | null;
     personalRecords: PersonalRecordView[];
+    swimCapabilityLimits: SwimCapabilityLimitView[];
     openGoals: GoalView[];
     activeFocus: TrainingFocusView | null;
   };
@@ -103,12 +107,6 @@ const BLOCK_META: Record<
   GeneratorIntakeBlockKey,
   Pick<GeneratorIntakeBlockSummary, "label" | "description" | "manageHref" | "manageLabel">
 > = {
-  profile: {
-    label: "Athlete profile",
-    description: "Name and swimmer profile details loaded from My Library.",
-    manageHref: "/my-library/profile",
-    manageLabel: "Edit athlete profile",
-  },
   css: {
     label: "CSS pace",
     description: "Current CSS pace loaded from My Library.",
@@ -122,10 +120,10 @@ const BLOCK_META: Record<
     manageLabel: "Edit preferences",
   },
   personal_records: {
-    label: "Personal records",
-    description: "Saved benchmark swims the generator can use as background.",
+    label: "Best times",
+    description: "Saved best times the generator can use as background.",
     manageHref: "/my-library/profile",
-    manageLabel: "Edit personal records",
+    manageLabel: "Edit best times",
   },
   goals: {
     label: "Open goals",
@@ -133,11 +131,11 @@ const BLOCK_META: Record<
     manageHref: "/my-library/goals",
     manageLabel: "Edit goals",
   },
-  focus: {
-    label: "Primary focus cue",
-    description: "Your current main swim focus from My Library.",
-    manageHref: "/my-library/training",
-    manageLabel: "Edit focuses",
+  capability_limits: {
+    label: "Stroke and skill limits",
+    description: "Saved max repeat and total-distance limits from Swim Profile.",
+    manageHref: "/my-library/profile",
+    manageLabel: "Edit limits",
   },
 };
 
@@ -183,13 +181,13 @@ export function normalizeGeneratorIntakeSelection(
   selection: Partial<GeneratorIntakeSelection> | null | undefined
 ): GeneratorIntakeSelection {
   return {
-    profile: snapshot.blocks.profile.available && Boolean(selection?.profile ?? true),
-    css: snapshot.blocks.css.available && Boolean(selection?.css ?? true),
     preferences: snapshot.blocks.preferences.available && Boolean(selection?.preferences ?? true),
+    css: snapshot.blocks.css.available && Boolean(selection?.css ?? true),
     personal_records:
       snapshot.blocks.personal_records.available && Boolean(selection?.personal_records ?? true),
     goals: snapshot.blocks.goals.available && Boolean(selection?.goals ?? true),
-    focus: snapshot.blocks.focus.available && Boolean(selection?.focus ?? true),
+    capability_limits:
+      snapshot.blocks.capability_limits.available && Boolean(selection?.capability_limits ?? true),
   };
 }
 
@@ -213,6 +211,7 @@ export function buildGeneratorIntakeSnapshot(input: {
     input.athleteProfileSnapshot.metricsLoadError,
     input.athleteProfileSnapshot.preferencesLoadError,
     input.athleteProfileSnapshot.personalRecordsLoadError,
+    input.athleteProfileSnapshot.swimCapabilityLimitsLoadError,
     input.trainingContextSnapshot.loadError,
     input.goalsLoadError,
   ].filter((value): value is string => Boolean(value));
@@ -224,9 +223,8 @@ export function buildGeneratorIntakeSnapshot(input: {
       cssMetric: input.athleteProfileSnapshot.cssMetric,
       preferences: input.athleteProfileSnapshot.preferences,
       personalRecords: input.athleteProfileSnapshot.personalRecords,
+      swimCapabilityLimits: input.athleteProfileSnapshot.swimCapabilityLimits,
       openGoals: input.openGoals,
-      activeFocus: input.trainingContextSnapshot.activeFocus,
-      focusNeedsPrimarySelection: input.trainingContextSnapshot.focusNeedsPrimarySelection,
     }),
     loadError:
       loadErrors.length > 0
@@ -237,12 +235,14 @@ export function buildGeneratorIntakeSnapshot(input: {
     metricsSchemaReady: input.athleteProfileSnapshot.metricsSchemaReady,
     preferencesSchemaReady: input.athleteProfileSnapshot.preferencesSchemaReady,
     personalRecordsSchemaReady: input.athleteProfileSnapshot.personalRecordsSchemaReady,
+    swimCapabilityLimitsSchemaReady: input.athleteProfileSnapshot.swimCapabilityLimitsSchemaReady,
     trainingContextSchemaReady: input.trainingContextSnapshot.schemaReady,
     goalsLoadError: input.goalsLoadError,
     profile: input.athleteProfileSnapshot.profile,
     cssMetric: input.athleteProfileSnapshot.cssMetric,
     preferences: input.athleteProfileSnapshot.preferences,
     personalRecords: input.athleteProfileSnapshot.personalRecords,
+    swimCapabilityLimits: input.athleteProfileSnapshot.swimCapabilityLimits,
     openGoals: input.openGoals,
     activeFocus: input.trainingContextSnapshot.activeFocus,
     blocks,
@@ -267,12 +267,15 @@ export function buildGeneratorHandoffPayload(
   const constraintText = normalizeNullableText(normalizedOverrides.constraintText);
 
   const source = {
-    profile: normalizedSelection.profile ? snapshot.profile : null,
+    profile: null,
     cssMetric: normalizedSelection.css ? snapshot.cssMetric : null,
     preferences: normalizedSelection.preferences ? snapshot.preferences : null,
     personalRecords: normalizedSelection.personal_records ? snapshot.personalRecords : [],
+    swimCapabilityLimits: normalizedSelection.capability_limits
+      ? snapshot.swimCapabilityLimits
+      : [],
     openGoals: normalizedSelection.goals ? snapshot.openGoals : [],
-    activeFocus: normalizedSelection.focus ? snapshot.activeFocus : null,
+    activeFocus: null,
   };
 
   return {
@@ -302,8 +305,7 @@ export function buildGeneratorHandoffPayload(
         (normalizedSelection.preferences
           ? (snapshot.preferences?.preferredSessionMinutes ?? null)
           : null),
-      focusText:
-        focusText ?? (normalizedSelection.focus ? (snapshot.activeFocus?.title ?? null) : null),
+      focusText,
     },
   };
 }
@@ -321,43 +323,9 @@ function buildGeneratorIntakeBlocks(input: {
   goalsLoadError: string | null;
 }): Record<GeneratorIntakeBlockKey, GeneratorIntakeBlockSummary> {
   const { athleteProfileSnapshot, trainingContextSnapshot, openGoals, goalsLoadError } = input;
-  const selectedFocus = trainingContextSnapshot.activeFocus;
-  const focusNeedsPrimarySelection = trainingContextSnapshot.focusNeedsPrimarySelection;
+  void trainingContextSnapshot;
 
   return {
-    profile: buildBlockSummary("profile", {
-      available: Boolean(athleteProfileSnapshot.profile),
-      summary: athleteProfileSnapshot.profile
-        ? [
-            athleteProfileSnapshot.profile.primaryName ?? "Private swimmer",
-            athleteProfileSnapshot.profile.ageBandLabel,
-          ]
-            .filter(Boolean)
-            .join(" · ")
-        : "No athlete profile saved yet.",
-      missingReason: resolveMissingReason({
-        available: Boolean(athleteProfileSnapshot.profile),
-        schemaReady: athleteProfileSnapshot.profileSchemaReady,
-        loadError: athleteProfileSnapshot.loadError,
-        emptyReason: "Add a saved athlete profile before you want it to prefill later generation.",
-      }),
-      sourceIds: athleteProfileSnapshot.profile ? [athleteProfileSnapshot.profile.id] : [],
-      lastUpdatedAt: athleteProfileSnapshot.profile?.updatedAt ?? null,
-    }),
-    css: buildBlockSummary("css", {
-      available: Boolean(athleteProfileSnapshot.cssMetric),
-      summary: athleteProfileSnapshot.cssMetric
-        ? `CSS ${athleteProfileSnapshot.cssMetric.paceLabel}/100m`
-        : "No CSS pace saved yet.",
-      missingReason: resolveMissingReason({
-        available: Boolean(athleteProfileSnapshot.cssMetric),
-        schemaReady: athleteProfileSnapshot.metricsSchemaReady,
-        loadError: athleteProfileSnapshot.metricsLoadError,
-        emptyReason: "Save a current CSS pace if you want later generator work to use it.",
-      }),
-      sourceIds: athleteProfileSnapshot.cssMetric ? [athleteProfileSnapshot.cssMetric.id] : [],
-      lastUpdatedAt: athleteProfileSnapshot.cssMetric?.updatedAt ?? null,
-    }),
     preferences: buildBlockSummary("preferences", {
       available: Boolean(athleteProfileSnapshot.preferences),
       summary: athleteProfileSnapshot.preferences
@@ -381,19 +349,33 @@ function buildGeneratorIntakeBlocks(input: {
       sourceIds: athleteProfileSnapshot.preferences ? [athleteProfileSnapshot.preferences.id] : [],
       lastUpdatedAt: athleteProfileSnapshot.preferences?.updatedAt ?? null,
     }),
+    css: buildBlockSummary("css", {
+      available: Boolean(athleteProfileSnapshot.cssMetric),
+      summary: athleteProfileSnapshot.cssMetric
+        ? `CSS ${athleteProfileSnapshot.cssMetric.paceLabel}/100m`
+        : "No CSS pace saved yet.",
+      missingReason: resolveMissingReason({
+        available: Boolean(athleteProfileSnapshot.cssMetric),
+        schemaReady: athleteProfileSnapshot.metricsSchemaReady,
+        loadError: athleteProfileSnapshot.metricsLoadError,
+        emptyReason: "Save a current CSS pace if you want later generator work to use it.",
+      }),
+      sourceIds: athleteProfileSnapshot.cssMetric ? [athleteProfileSnapshot.cssMetric.id] : [],
+      lastUpdatedAt: athleteProfileSnapshot.cssMetric?.updatedAt ?? null,
+    }),
     personal_records: buildBlockSummary("personal_records", {
       available: athleteProfileSnapshot.personalRecords.length > 0,
       summary:
         athleteProfileSnapshot.personalRecords.length > 0
-          ? `${athleteProfileSnapshot.personalRecords.length} saved record${
+          ? `${athleteProfileSnapshot.personalRecords.length} best time${
               athleteProfileSnapshot.personalRecords.length === 1 ? "" : "s"
             }, latest benchmark ${athleteProfileSnapshot.personalRecords[0]?.eventLabel ?? "available"}.`
-          : "No personal records saved yet.",
+          : "No best times saved yet.",
       missingReason: resolveMissingReason({
         available: athleteProfileSnapshot.personalRecords.length > 0,
         schemaReady: athleteProfileSnapshot.personalRecordsSchemaReady,
         loadError: athleteProfileSnapshot.personalRecordsLoadError,
-        emptyReason: "Add personal records if later generation should see benchmark events.",
+        emptyReason: "Add best times if later generation should see benchmark events.",
       }),
       sourceIds: athleteProfileSnapshot.personalRecords.map((record) => record.id),
       lastUpdatedAt: athleteProfileSnapshot.personalRecords[0]?.updatedAt ?? null,
@@ -413,30 +395,29 @@ function buildGeneratorIntakeBlocks(input: {
       sourceIds: openGoals.map((goal) => goal.id),
       lastUpdatedAt: null,
     }),
-    focus: buildBlockSummary("focus", {
-      available: Boolean(selectedFocus),
-      summary: selectedFocus
-        ? [
-            selectedFocus.title,
-            selectedFocus.goalTitle ? `linked to ${selectedFocus.goalTitle}` : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")
-        : focusNeedsPrimarySelection
-          ? "Multiple open focuses are saved, but no primary focus is selected yet."
-          : "No primary focus set right now.",
+    capability_limits: buildBlockSummary("capability_limits", {
+      available: athleteProfileSnapshot.swimCapabilityLimits.length > 0,
+      summary:
+        athleteProfileSnapshot.swimCapabilityLimits.length > 0
+          ? buildCapabilityLimitsSummary(athleteProfileSnapshot.swimCapabilityLimits)
+          : "No stroke or skill limits saved yet.",
       missingReason: resolveMissingReason({
-        available: Boolean(selectedFocus),
-        schemaReady: trainingContextSnapshot.schemaReady,
-        loadError: trainingContextSnapshot.loadError,
-        emptyReason: focusNeedsPrimarySelection
-          ? "Choose one primary focus in My Library if you want intake to use a single technical cue."
-          : "Set one primary focus if you want a current technical priority in intake.",
+        available: athleteProfileSnapshot.swimCapabilityLimits.length > 0,
+        schemaReady: athleteProfileSnapshot.swimCapabilityLimitsSchemaReady,
+        loadError: athleteProfileSnapshot.swimCapabilityLimitsLoadError,
+        emptyReason:
+          "Add saved limits if the generator should avoid repeats or stroke totals you cannot execute well yet.",
       }),
-      sourceIds: selectedFocus ? [selectedFocus.id] : [],
-      lastUpdatedAt: selectedFocus?.updatedAt ?? null,
+      sourceIds: athleteProfileSnapshot.swimCapabilityLimits.map((limit) => limit.id),
+      lastUpdatedAt: athleteProfileSnapshot.swimCapabilityLimits[0]?.updatedAt ?? null,
     }),
   };
+}
+
+export function buildCapabilityLimitsSummary(limits: SwimCapabilityLimitView[]) {
+  const summaries = limits.map((limit) => formatSwimCapabilityLimitSummary(limit)).filter(Boolean);
+
+  return summaries.length > 0 ? summaries.slice(0, 3).join(" · ") : "Saved limits available.";
 }
 
 function buildBlockSummary(

@@ -6,6 +6,13 @@ import {
   type AthleteProfileRow,
 } from "@/lib/athlete-profile/mvp";
 import {
+  formatSwimCapabilityDistance,
+  getSwimCapabilityStrokeLabel,
+  type SwimCapabilityLimitKind,
+  type SwimCapabilityLimitRow,
+  type SwimCapabilityStroke,
+} from "@/lib/athlete-profile/capabilities";
+import {
   formatCssSecondsPer100m,
   getPoolLengthLabel,
   getSessionDurationLabel,
@@ -30,6 +37,7 @@ import {
 import {
   isAthleteProfileSchemaMissing,
   isPersonalRecordsSchemaMissing,
+  isSwimCapabilityLimitsSchemaMissing,
   isTrainingMetricSchemaMissing,
   isTrainingPreferencesSchemaMissing,
 } from "@/lib/athlete-profile/schema";
@@ -80,6 +88,18 @@ export const PERSONAL_RECORD_SELECT = `
   time_centiseconds,
   recorded_on,
   source_note,
+  created_at,
+  updated_at
+`;
+
+export const SWIM_CAPABILITY_LIMIT_SELECT = `
+  id,
+  user_id,
+  limit_kind,
+  stroke,
+  max_repeat_distance_m,
+  max_total_distance_m,
+  target_total_distance_m,
   created_at,
   updated_at
 `;
@@ -137,19 +157,37 @@ export type PersonalRecordView = {
   updatedAt: string;
 };
 
+export type SwimCapabilityLimitView = {
+  id: string;
+  kind: SwimCapabilityLimitKind;
+  stroke: SwimCapabilityStroke | null;
+  strokeLabel: string | null;
+  maxRepeatDistanceM: number | null;
+  maxRepeatDistanceLabel: string | null;
+  maxTotalDistanceM: number | null;
+  maxTotalDistanceLabel: string | null;
+  targetTotalDistanceM: number | null;
+  targetTotalDistanceLabel: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type AthleteProfileSnapshot = {
   profileSchemaReady: boolean;
   metricsSchemaReady: boolean;
   preferencesSchemaReady: boolean;
   personalRecordsSchemaReady: boolean;
+  swimCapabilityLimitsSchemaReady: boolean;
   loadError: string | null;
   metricsLoadError: string | null;
   preferencesLoadError: string | null;
   personalRecordsLoadError: string | null;
+  swimCapabilityLimitsLoadError: string | null;
   profile: AthleteProfileView | null;
   cssMetric: TrainingMetricView | null;
   preferences: TrainingPreferencesView | null;
   personalRecords: PersonalRecordView[];
+  swimCapabilityLimits: SwimCapabilityLimitView[];
 };
 
 export function buildAthleteProfileView(row: AthleteProfileRow): AthleteProfileView {
@@ -230,38 +268,76 @@ export function buildPersonalRecordView(row: PersonalRecordRow): PersonalRecordV
   };
 }
 
+export function buildSwimCapabilityLimitView(row: SwimCapabilityLimitRow): SwimCapabilityLimitView {
+  const kind = row.limit_kind as SwimCapabilityLimitKind;
+  const stroke = (row.stroke as SwimCapabilityStroke | null) ?? null;
+  const maxRepeatDistanceM =
+    row.max_repeat_distance_m === null ? null : Number(row.max_repeat_distance_m);
+  const maxTotalDistanceM =
+    row.max_total_distance_m === null ? null : Number(row.max_total_distance_m);
+  const targetTotalDistanceM =
+    row.target_total_distance_m === null ? null : Number(row.target_total_distance_m);
+
+  return {
+    id: row.id,
+    kind,
+    stroke,
+    strokeLabel: stroke ? getSwimCapabilityStrokeLabel(stroke) : null,
+    maxRepeatDistanceM,
+    maxRepeatDistanceLabel: formatSwimCapabilityDistance(maxRepeatDistanceM),
+    maxTotalDistanceM,
+    maxTotalDistanceLabel: formatSwimCapabilityDistance(maxTotalDistanceM),
+    targetTotalDistanceM,
+    targetTotalDistanceLabel: formatSwimCapabilityDistance(targetTotalDistanceM),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export async function loadAthleteProfileSnapshot(
   supabase: TypedSupabaseClient,
   userId: string
 ): Promise<AthleteProfileSnapshot> {
-  const [profileResult, cssMetricResult, preferencesResult, personalRecordsResult] =
-    await Promise.all([
-      supabase
-        .from("athlete_profiles")
-        .select(ATHLETE_PROFILE_SELECT)
-        .eq("user_id", userId)
-        .maybeSingle(),
-      supabase
-        .from("training_metrics")
-        .select(TRAINING_METRIC_SELECT)
-        .eq("user_id", userId)
-        .eq("metric_key", "css")
-        .maybeSingle(),
-      supabase
-        .from("training_preferences")
-        .select(TRAINING_PREFERENCES_SELECT)
-        .eq("user_id", userId)
-        .maybeSingle(),
-      supabase.from("personal_records").select(PERSONAL_RECORD_SELECT).eq("user_id", userId),
-    ]);
+  const [
+    profileResult,
+    cssMetricResult,
+    preferencesResult,
+    personalRecordsResult,
+    swimCapabilityLimitsResult,
+  ] = await Promise.all([
+    supabase
+      .from("athlete_profiles")
+      .select(ATHLETE_PROFILE_SELECT)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("training_metrics")
+      .select(TRAINING_METRIC_SELECT)
+      .eq("user_id", userId)
+      .eq("metric_key", "css")
+      .maybeSingle(),
+    supabase
+      .from("training_preferences")
+      .select(TRAINING_PREFERENCES_SELECT)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase.from("personal_records").select(PERSONAL_RECORD_SELECT).eq("user_id", userId),
+    supabase
+      .from("swim_capability_limits")
+      .select(SWIM_CAPABILITY_LIMIT_SELECT)
+      .eq("user_id", userId),
+  ]);
 
   const profileSchemaReady = !isAthleteProfileSchemaMissing(profileResult.error);
   const metricsSchemaReady = !isTrainingMetricSchemaMissing(cssMetricResult.error);
   const preferencesSchemaReady = !isTrainingPreferencesSchemaMissing(preferencesResult.error);
   const personalRecordsSchemaReady = !isPersonalRecordsSchemaMissing(personalRecordsResult.error);
+  const swimCapabilityLimitsSchemaReady = !isSwimCapabilityLimitsSchemaMissing(
+    swimCapabilityLimitsResult.error
+  );
 
   const loadError =
-    profileResult.error && profileSchemaReady ? "Could not load athlete profile right now." : null;
+    profileResult.error && profileSchemaReady ? "Could not load swimmer profile right now." : null;
   const metricsLoadError =
     cssMetricResult.error && metricsSchemaReady
       ? "Could not load training metrics right now."
@@ -272,7 +348,11 @@ export async function loadAthleteProfileSnapshot(
       : null;
   const personalRecordsLoadError =
     personalRecordsResult.error && personalRecordsSchemaReady
-      ? "Could not load personal records right now."
+      ? "Could not load best times right now."
+      : null;
+  const swimCapabilityLimitsLoadError =
+    swimCapabilityLimitsResult.error && swimCapabilityLimitsSchemaReady
+      ? "Could not load stroke and skill limits right now."
       : null;
 
   if (loadError) {
@@ -300,15 +380,24 @@ export async function loadAthleteProfileSnapshot(
     );
   }
 
+  if (swimCapabilityLimitsLoadError) {
+    console.error(
+      "[AthleteProfile] Failed loading swim capability limits snapshot",
+      swimCapabilityLimitsResult.error
+    );
+  }
+
   return {
     profileSchemaReady,
     metricsSchemaReady,
     preferencesSchemaReady,
     personalRecordsSchemaReady,
+    swimCapabilityLimitsSchemaReady,
     loadError,
     metricsLoadError,
     preferencesLoadError,
     personalRecordsLoadError,
+    swimCapabilityLimitsLoadError,
     profile: profileResult.data ? buildAthleteProfileView(profileResult.data) : null,
     cssMetric: cssMetricResult.data ? buildTrainingMetricView(cssMetricResult.data) : null,
     preferences: preferencesResult.data
@@ -319,6 +408,10 @@ export async function loadAthleteProfileSnapshot(
         ? [...personalRecordsResult.data]
             .sort(comparePersonalRecordRows)
             .map((row) => buildPersonalRecordView(row))
+        : [],
+    swimCapabilityLimits:
+      swimCapabilityLimitsResult.data && swimCapabilityLimitsSchemaReady
+        ? swimCapabilityLimitsResult.data.map((row) => buildSwimCapabilityLimitView(row))
         : [],
   };
 }

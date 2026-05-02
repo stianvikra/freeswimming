@@ -65,3 +65,16 @@ export function isPersonalRecordsSchemaMissing(
     "source_note",
   ]);
 }
+
+export function isSwimCapabilityLimitsSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  return isSchemaMissing(error, [
+    "swim_capability_limits",
+    "limit_kind",
+    "stroke",
+    "max_repeat_distance_m",
+    "max_total_distance_m",
+    "target_total_distance_m",
+  ]);
+}

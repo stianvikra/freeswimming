@@ -78,6 +78,17 @@ async function waitForAthleteProfileClientReady(page: Page) {
   }
 }
 
+async function openAthleteProfileSection(page: Page, section: "css" | "preferences" | "records") {
+  const sectionPanel = page.getByTestId(`athlete-profile-section-${section}`);
+  await expect(sectionPanel).toBeVisible();
+  if ((await sectionPanel.getAttribute("data-section-open")) === "true") {
+    return;
+  }
+
+  await page.getByTestId(`athlete-profile-section-toggle-${section}`).click();
+  await expect(sectionPanel).toHaveAttribute("data-section-open", "true");
+}
+
 test.describe("my library athlete profile", () => {
   test("opens training setup from My Library and preserves drafts after reload", async ({
     page,
@@ -121,10 +132,14 @@ test.describe("my library athlete profile", () => {
     const hasPersonalRecordControls = (await personalRecordDistanceInput.count()) > 0;
 
     await displayNameInput.fill("Pool draft");
+    await openAthleteProfileSection(page, "css");
     await page.getByTestId("athlete-profile-css-pace").fill("1:58");
+    await openAthleteProfileSection(page, "preferences");
     await page.getByTestId("athlete-preferences-day-monday").check();
+    await page.getByTestId("athlete-preferences-weekly-session-count").fill("13");
     await page.getByTestId("athlete-preferences-session-minutes").selectOption("60");
     if (hasPersonalRecordControls) {
+      await openAthleteProfileSection(page, "records");
       await personalRecordDistanceInput.fill("200");
       await page.getByTestId("athlete-record-stroke").selectOption("freestyle");
       await page.getByTestId("athlete-record-course").selectOption("pool_25m");
@@ -140,21 +155,25 @@ test.describe("my library athlete profile", () => {
     ).toBeVisible();
     await waitForAthleteProfileClientReady(page);
     await expect(page.getByTestId("athlete-profile-display-name")).toHaveValue("Pool draft");
+    await openAthleteProfileSection(page, "css");
     await expect(page.getByTestId("athlete-profile-css-pace")).toHaveValue("1:58");
+    await openAthleteProfileSection(page, "preferences");
     await expect(page.getByTestId("athlete-preferences-day-monday")).toBeChecked();
+    await expect(page.getByTestId("athlete-preferences-weekly-session-count")).toHaveValue("13");
     await expect(page.getByTestId("athlete-preferences-session-minutes")).toHaveValue("60");
     await expect(
-      page.getByText("Unsaved athlete-profile edits were restored on this device.")
+      page.getByText("Unsaved swimmer-profile edits were restored on this device.")
     ).toBeVisible();
     await expect(page.getByText("Unsaved CSS edits were restored on this device.")).toBeVisible();
     await expect(
       page.getByText("Unsaved training preferences edits were restored on this device.")
     ).toBeVisible();
     if (hasPersonalRecordControls) {
+      await openAthleteProfileSection(page, "records");
       await expect(page.getByTestId("athlete-record-distance-m")).toHaveValue("200");
       await expect(page.getByTestId("athlete-record-time")).toHaveValue("2:24.18");
       await expect(
-        page.getByText("Unsaved personal-record edits were restored on this device.")
+        page.getByText("Unsaved best-time edits were restored on this device.")
       ).toBeVisible();
     }
   });
@@ -196,7 +215,7 @@ test.describe("my library athlete profile", () => {
     await page.getByTestId("athlete-record-save").click();
 
     await createRecordResponse;
-    await expect(page.getByText("Personal record saved.")).toBeVisible();
+    await expect(page.getByText("Best time saved.")).toBeVisible();
     await expect(page.getByTestId("athlete-profile-section-records")).toHaveAttribute(
       "data-section-open",
       "false"
