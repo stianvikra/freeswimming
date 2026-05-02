@@ -73,7 +73,7 @@ export async function PUT(request: Request) {
       noStoreJson(
         {
           ok: false,
-          error: "Add at least one valid athlete profile detail before saving.",
+          error: "Add at least one valid swimmer profile detail before saving.",
         },
         { status: 400 }
       )
@@ -97,7 +97,7 @@ export async function PUT(request: Request) {
       noStoreJson(
         {
           ok: false,
-          error: "Athlete profile is still syncing in this environment.",
+          error: "Swimmer profile is still syncing in this environment.",
         },
         { status: 503 }
       )
@@ -105,10 +105,10 @@ export async function PUT(request: Request) {
   }
 
   if (result.error) {
-    console.error("[AthleteProfileApi] Could not save athlete profile", result.error);
+    console.error("[AthleteProfileApi] Could not save swimmer profile", result.error);
     return applySupabaseCookies(
       noStoreJson(
-        { ok: false, error: "Could not save athlete profile right now." },
+        { ok: false, error: "Could not save swimmer profile right now." },
         { status: 500 }
       )
     );

@@ -232,7 +232,7 @@ test.describe("my library generator intake", () => {
     await waitForGeneratorIntakeClientReady(page);
 
     await expect(
-      page.getByRole("heading", { name: "Include data from your Swim Profile", level: 2 })
+      page.getByRole("heading", { name: "Use Swim Profile data", level: 2 })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Session setup", level: 3 })).toBeVisible();
     await expect(page.getByTestId("generator-intake-session-count")).toHaveCount(0);
@@ -246,12 +246,13 @@ test.describe("my library generator intake", () => {
     await sourceToggle.click();
     await expect(sourceToggle).toHaveAttribute("aria-expanded", "true", { timeout: 15_000 });
 
-    await expect(page.getByRole("heading", { name: "Athlete profile", level: 3 })).toBeVisible({
+    await expect(page.getByText("CSS pace")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByRole("link", { name: "Edit athlete profile" })).toBeVisible({
+    await expect(page.getByRole("link", { name: "Edit CSS pace" })).toBeVisible({
       timeout: 15_000,
     });
+    await expect(page.getByText("Swimmer identity")).toHaveCount(0);
   });
 
   test("accepts one generated session draft and reopens it in the workout builder route", async ({

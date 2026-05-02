@@ -128,7 +128,7 @@ export default async function MyLibraryPage() {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
         <TrackEventOnMount
           eventName="library_viewed"
           payload={{
@@ -174,7 +174,7 @@ export default async function MyLibraryPage() {
                   <h2 className="text-lg font-semibold text-slate-900">My Swim Profile</h2>
                   {!athleteProfileSnapshot.profileSchemaReady ? (
                     <p className="mt-2 text-sm text-slate-600">
-                      This athlete profile foundation is still syncing in this environment.
+                      This swimmer profile foundation is still syncing in this environment.
                     </p>
                   ) : mySwimProfileSummary.length > 0 ? (
                     <p className="mt-2 text-sm text-slate-600">
@@ -318,7 +318,7 @@ export default async function MyLibraryPage() {
                     <h2 className="text-lg font-semibold text-slate-900">
                       Program builder preview
                     </h2>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Optional
                     </span>
                   </div>
@@ -385,7 +385,7 @@ export default async function MyLibraryPage() {
                     key={product.id}
                     className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                    <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
                       Owned
                     </p>
                     <h3 className="mt-1 text-base font-semibold text-slate-900">{product.title}</h3>
@@ -412,7 +412,7 @@ export default async function MyLibraryPage() {
                     key={productId}
                     className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                    <p className="text-xs font-semibold tracking-wide text-amber-700 uppercase">
                       Owned
                     </p>
                     <h3 className="mt-1 text-base font-semibold text-slate-900">Purchased item</h3>

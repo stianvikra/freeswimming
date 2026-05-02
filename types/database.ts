@@ -992,6 +992,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      swim_capability_limits: {
+        Row: {
+          created_at: string;
+          id: string;
+          limit_kind: string;
+          max_repeat_distance_m: number | null;
+          max_total_distance_m: number | null;
+          stroke: string | null;
+          target_total_distance_m: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          limit_kind: string;
+          max_repeat_distance_m?: number | null;
+          max_total_distance_m?: number | null;
+          stroke?: string | null;
+          target_total_distance_m?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          limit_kind?: string;
+          max_repeat_distance_m?: number | null;
+          max_total_distance_m?: number | null;
+          stroke?: string | null;
+          target_total_distance_m?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       programs: {
         Row: {
           created_at: string;

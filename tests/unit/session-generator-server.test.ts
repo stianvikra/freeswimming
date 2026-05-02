@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildSessionDraft } from "@/lib/session-generator-v1/server";
-import { validateSessionGeneratorFormState } from "@/lib/session-generator-v1/shared";
+import {
+  getDefaultSessionGeneratorFormState,
+  normalizeSessionGeneratorFormState,
+  validateSessionGeneratorFormState,
+} from "@/lib/session-generator-v1/shared";
 import type { GeneratorIntakeHandoffPayload } from "@/lib/generator-intake/shared";
 
 function buildHandoff(): GeneratorIntakeHandoffPayload {
@@ -9,20 +13,10 @@ function buildHandoff(): GeneratorIntakeHandoffPayload {
     createdAt: "2026-03-20T12:00:00.000Z",
     sourceFingerprint: "fingerprint-1",
     notesIncluded: false,
-    includedBlocks: ["profile", "css", "preferences", "goals", "focus"],
+    includedBlocks: ["preferences", "css", "goals", "capability_limits"],
     omittedBlocks: ["personal_records"],
     source: {
-      profile: {
-        id: "profile-1",
-        displayName: "Poolside Stian",
-        firstName: "Stian",
-        lastName: "Vikra",
-        primaryName: "Poolside Stian",
-        ageBand: "35_44",
-        ageBandLabel: "35-44",
-        createdAt: "2026-03-20T10:00:00.000Z",
-        updatedAt: "2026-03-20T10:00:00.000Z",
-      },
+      profile: null,
       cssMetric: {
         id: "metric-1",
         metricKey: "css",
@@ -75,22 +69,37 @@ function buildHandoff(): GeneratorIntakeHandoffPayload {
           },
         },
       ],
-      activeFocus: {
-        id: "focus-1",
-        title: "Breathing timing",
-        details: "Keep the head quiet through the inhale.",
-        status: "open",
-        statusLabel: "Open",
-        isPrimary: true,
-        goalId: "goal-1",
-        goalTitle: "Swim 1500m stronger",
-        contextType: null,
-        contextRef: null,
-        createdAt: "2026-03-20T10:00:00.000Z",
-        updatedAt: "2026-03-20T10:00:00.000Z",
-        completedAt: null,
-        archivedAt: null,
-      },
+      swimCapabilityLimits: [
+        {
+          id: "limit-drill-1",
+          kind: "drill",
+          stroke: null,
+          strokeLabel: null,
+          maxRepeatDistanceM: 25,
+          maxRepeatDistanceLabel: "25m",
+          maxTotalDistanceM: null,
+          maxTotalDistanceLabel: null,
+          targetTotalDistanceM: 300,
+          targetTotalDistanceLabel: "300m",
+          createdAt: "2026-03-20T10:00:00.000Z",
+          updatedAt: "2026-03-20T10:00:00.000Z",
+        },
+        {
+          id: "limit-backstroke-1",
+          kind: "stroke",
+          stroke: "backstroke",
+          strokeLabel: "Backstroke",
+          maxRepeatDistanceM: 25,
+          maxRepeatDistanceLabel: "25m",
+          maxTotalDistanceM: 200,
+          maxTotalDistanceLabel: "200m",
+          targetTotalDistanceM: null,
+          targetTotalDistanceLabel: null,
+          createdAt: "2026-03-20T10:00:00.000Z",
+          updatedAt: "2026-03-20T10:00:00.000Z",
+        },
+      ],
+      activeFocus: null,
     },
     overrides: {
       targetType: "session",
@@ -103,16 +112,19 @@ function buildHandoff(): GeneratorIntakeHandoffPayload {
       targetType: "session",
       sessionCount: 3,
       sessionMinutes: 45,
-      focusText: "Breathing timing",
+      focusText: null,
     },
   };
 }
 
 describe("session generator server", () => {
   it("builds a pool threshold draft with CSS-aware main-set guidance", () => {
+    const handoff = buildHandoff();
     const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
       environment: "pool",
       poolLengthM: "25",
+      poolLengthUnit: "m",
       sessionType: "threshold_css",
       effort: "moderate",
       sizeMode: "distance",
@@ -134,7 +146,7 @@ describe("session generator server", () => {
     expect(validation.ok).toBe(true);
     if (!validation.ok) return;
 
-    const draft = buildSessionDraft(buildHandoff(), validation.value, {
+    const draft = buildSessionDraft(handoff, validation.value, {
       createdAt: "2026-03-20T12:05:00.000Z",
     });
 
@@ -143,7 +155,7 @@ describe("session generator server", () => {
     expect(draft.usedCssPaceLabel).toBe("1:58");
     expect(draft.steps[0]?.category).toBe("warmup");
     expect(draft.steps.some((step) => step.category === "rest")).toBe(true);
-    expect(draft.steps.find((step) => step.id === "kick-repeat-1-step-1")?.repeatCount).toBe(10);
+    expect(draft.steps.find((step) => step.id === "kick-repeat-1-step-1")?.repeatCount).toBe(5);
     expect(
       draft.steps.find((step) => step.postSetRestForRepeatGroupId === "kick-repeat-1")?.timeMin
     ).toBeGreaterThan(0);
@@ -153,9 +165,12 @@ describe("session generator server", () => {
   });
 
   it("guards open-water drafts away from dedicated drill and kick blocks", () => {
+    const handoff = buildHandoff();
     const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
       environment: "open_water",
       poolLengthM: "25",
+      poolLengthUnit: "m",
       sessionType: "endurance",
       effort: "moderate",
       sizeMode: "estimated_time",
@@ -177,7 +192,7 @@ describe("session generator server", () => {
     expect(validation.ok).toBe(true);
     if (!validation.ok) return;
 
-    const draft = buildSessionDraft(buildHandoff(), validation.value);
+    const draft = buildSessionDraft(handoff, validation.value);
 
     expect(draft.environment).toBe("open_water");
     expect(draft.steps.map((step) => step.category)).toEqual(["warmup", "main", "cooldown"]);
@@ -189,10 +204,33 @@ describe("session generator server", () => {
     );
   });
 
+  it("allows broad estimated durations but blocks sessions over ten hours", () => {
+    const handoff = buildHandoff();
+    const validLongSession = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      sizeMode: "estimated_time",
+      targetTimeMin: "600",
+    });
+    const tooLongSession = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      sizeMode: "estimated_time",
+      targetTimeMin: "601",
+    });
+
+    expect(validLongSession.ok).toBe(true);
+    expect(tooLongSession).toEqual({
+      ok: false,
+      error: "Session time limit exceeded. Use 600 min or less.",
+    });
+  });
+
   it("builds technical fault correction with explicit drill, kick, and rest choices", () => {
+    const handoff = buildHandoff();
     const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
       environment: "pool",
       poolLengthM: "25",
+      poolLengthUnit: "m",
       sessionType: "technical_fault_correction",
       effort: "easy",
       sizeMode: "distance",
@@ -201,6 +239,7 @@ describe("session generator server", () => {
       includeDrills: true,
       drillVolumeMode: "explicit",
       drillTargetMeters: "400",
+      drillMaxRepeatDistance: "50",
       includeKick: true,
       kickVolumeMode: "explicit",
       kickTargetMeters: "200",
@@ -214,7 +253,7 @@ describe("session generator server", () => {
     expect(validation.ok).toBe(true);
     if (!validation.ok) return;
 
-    const draft = buildSessionDraft(buildHandoff(), validation.value);
+    const draft = buildSessionDraft(handoff, validation.value);
 
     expect(draft.sessionType).toBe("technical_fault_correction");
     expect(draft.steps.find((step) => step.id === "warmup-rest-1")?.timeMin).toBe(0.5);
@@ -235,11 +274,91 @@ describe("session generator server", () => {
       repeatGroupId: "kick-repeat-1",
     });
     expect(draft.steps.find((step) => step.id === "kick-repeat-1-step-1")?.notes).toContain(
-      "200m total in 50m repeats"
+      "200m total in 50m max repeats"
     );
     expect(draft.steps.find((step) => step.id === "main-rest-1")?.timeMin).toBe(0.5);
     expect(draft.steps.find((step) => step.id === "cooldown-rest-1")?.timeMin).toBe(0.5);
     expect(draft.totalDistanceM).toBe(1800);
     expect(draft.description).toContain("Rest: 30s requested.");
+  });
+
+  it("supports yard pool lengths and profile max drill repeats", () => {
+    const handoff = buildHandoff();
+    const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      environment: "pool",
+      poolLengthM: "25",
+      poolLengthUnit: "yd",
+      sessionType: "technical_fault_correction",
+      effort: "easy",
+      sizeMode: "distance",
+      targetDistanceM: "1000",
+      includeDrills: true,
+      drillVolumeMode: "explicit",
+      drillTargetMeters: "300",
+      includeKick: false,
+      restMode: "coach_decides",
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: [],
+    });
+
+    expect(validation.ok).toBe(true);
+    if (!validation.ok) return;
+
+    const draft = buildSessionDraft(handoff, validation.value);
+    const drillStep = draft.steps.find((step) => step.id === "drill-repeat-1-step-1");
+
+    expect(draft.poolLengthUnit).toBe("yd");
+    expect(draft.poolLengthM).toBeCloseTo(22.86, 2);
+    expect(draft.totalDistanceM).toBeCloseTo(914.4, 1);
+    expect(drillStep?.distanceM).toBeCloseTo(22.86, 2);
+    expect(drillStep?.repeatCount).toBe(12);
+    expect(drillStep?.notes).toContain("300yd drill target");
+  });
+
+  it("clears profile-derived capability limits when the profile group is deselected", () => {
+    const handoffWithLimits = buildHandoff();
+    const stateWithLimits = getDefaultSessionGeneratorFormState(handoffWithLimits);
+    const handoffWithoutLimits: GeneratorIntakeHandoffPayload = {
+      ...handoffWithLimits,
+      includedBlocks: ["preferences", "css", "goals"],
+      omittedBlocks: ["personal_records", "capability_limits"],
+      source: {
+        ...handoffWithLimits.source,
+        swimCapabilityLimits: [],
+      },
+    };
+
+    const normalized = normalizeSessionGeneratorFormState(stateWithLimits, handoffWithoutLimits);
+
+    expect(stateWithLimits.drillMaxRepeatDistance).toBe("25");
+    expect(stateWithLimits.drillApproxTotalDistance).toBe("300");
+    expect(stateWithLimits.strokeLimits.backstroke.maxRepeatDistance).toBe("25");
+    expect(normalized.skillLimitMode).toBe("override");
+    expect(normalized.drillMaxRepeatDistance).toBe("");
+    expect(normalized.drillApproxTotalDistance).toBe("");
+    expect(normalized.strokeLimits.backstroke.maxRepeatDistance).toBe("");
+  });
+
+  it("fails safe when one selected stroke exceeds its max total distance", () => {
+    const handoff = buildHandoff();
+    const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      environment: "pool",
+      poolLengthM: "25",
+      poolLengthUnit: "m",
+      sessionType: "endurance",
+      sizeMode: "distance",
+      targetDistanceM: "400",
+      includeDrills: false,
+      includeKick: false,
+      allowedStrokes: ["backstroke"],
+    });
+
+    expect(validation).toEqual({
+      ok: false,
+      error:
+        "Selected stroke limits are lower than the target distance. Add another stroke or lower the session size.",
+    });
   });
 });

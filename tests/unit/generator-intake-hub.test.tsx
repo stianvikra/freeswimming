@@ -18,6 +18,7 @@ function buildSnapshot(): GeneratorIntakeSnapshot {
     metricsSchemaReady: true,
     preferencesSchemaReady: true,
     personalRecordsSchemaReady: true,
+    swimCapabilityLimitsSchemaReady: true,
     trainingContextSchemaReady: true,
     goalsLoadError: null,
     profile: {
@@ -55,6 +56,22 @@ function buildSnapshot(): GeneratorIntakeSnapshot {
       updatedAt: "2026-03-20T10:00:00.000Z",
     },
     personalRecords: [],
+    swimCapabilityLimits: [
+      {
+        id: "limit-drill-1",
+        kind: "drill",
+        stroke: null,
+        strokeLabel: null,
+        maxRepeatDistanceM: 25,
+        maxRepeatDistanceLabel: "25m",
+        maxTotalDistanceM: null,
+        maxTotalDistanceLabel: null,
+        targetTotalDistanceM: 300,
+        targetTotalDistanceLabel: "300m",
+        createdAt: "2026-03-20T10:00:00.000Z",
+        updatedAt: "2026-03-20T10:00:00.000Z",
+      },
+    ],
     openGoals: [
       {
         id: "goal-1",
@@ -100,19 +117,19 @@ function buildSnapshot(): GeneratorIntakeSnapshot {
       archivedAt: null,
     },
     blocks: {
-      profile: {
-        key: "profile",
-        label: "Athlete profile",
-        description: "Profile description",
+      preferences: {
+        key: "preferences",
+        label: "Training preferences",
+        description: "Preferences description",
         state: "available",
         available: true,
         includedByDefault: true,
-        summary: "Poolside Stian · 35-44",
+        summary: "25m pool · 3 sessions/week · 60 min",
         missingReason: null,
-        sourceIds: ["profile-1"],
+        sourceIds: ["pref-1"],
         lastUpdatedAt: "2026-03-20T10:00:00.000Z",
         manageHref: "/my-library/profile",
-        manageLabel: "Edit athlete profile",
+        manageLabel: "Edit preferences",
       },
       css: {
         key: "css",
@@ -127,20 +144,6 @@ function buildSnapshot(): GeneratorIntakeSnapshot {
         lastUpdatedAt: "2026-03-20T10:00:00.000Z",
         manageHref: "/my-library/profile",
         manageLabel: "Edit CSS",
-      },
-      preferences: {
-        key: "preferences",
-        label: "Training preferences",
-        description: "Preferences description",
-        state: "available",
-        available: true,
-        includedByDefault: true,
-        summary: "25m pool · 3 sessions/week · 60 min",
-        missingReason: null,
-        sourceIds: ["pref-1"],
-        lastUpdatedAt: "2026-03-20T10:00:00.000Z",
-        manageHref: "/my-library/profile",
-        manageLabel: "Edit preferences",
       },
       personal_records: {
         key: "personal_records",
@@ -170,19 +173,19 @@ function buildSnapshot(): GeneratorIntakeSnapshot {
         manageHref: "/my-library/goals",
         manageLabel: "Edit goals",
       },
-      focus: {
-        key: "focus",
-        label: "Primary focus cue",
-        description: "Focus description",
+      capability_limits: {
+        key: "capability_limits",
+        label: "Stroke and skill limits",
+        description: "Limits description",
         state: "available",
         available: true,
         includedByDefault: true,
-        summary: "Breathing timing · linked to Swim 1500m stronger",
+        summary: "1 saved swim capability limit.",
         missingReason: null,
-        sourceIds: ["focus-1"],
+        sourceIds: ["limit-drill-1"],
         lastUpdatedAt: "2026-03-20T10:00:00.000Z",
-        manageHref: "/my-library/training",
-        manageLabel: "Edit focuses",
+        manageHref: "/my-library/profile",
+        manageLabel: "Edit limits",
       },
     },
   };
@@ -214,10 +217,15 @@ describe("GeneratorIntakeHub", () => {
       />
     );
 
-    expect(
-      screen.getByRole("heading", { name: "Include data from your Swim Profile" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Use Swim Profile data" })).toBeInTheDocument();
     expect(screen.getByTestId("session-generator-swim-profile-context")).toBeInTheDocument();
+    expect(screen.getByTestId("generator-intake-profile-summary")).toHaveTextContent(
+      "Training preferences"
+    );
+    expect(screen.getByTestId("generator-intake-profile-summary")).toHaveTextContent("CSS pace");
+    expect(screen.getByTestId("generator-intake-profile-summary")).toHaveTextContent(
+      "Not in Swim Profile"
+    );
     expect(screen.getByRole("heading", { name: "Session setup" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Before you generate" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "This run only" })).not.toBeInTheDocument();
@@ -237,7 +245,7 @@ describe("GeneratorIntakeHub", () => {
     fireEvent.click(screen.getByTestId("generator-intake-source-toggle"));
     fireEvent.click(screen.getByTestId("generator-intake-include-goals"));
 
-    expect(screen.getByText("4 context sections included")).toBeInTheDocument();
+    expect(screen.getByText("3/4 included")).toBeInTheDocument();
   });
 
   it("keeps the AI generator on the single-session path only", () => {

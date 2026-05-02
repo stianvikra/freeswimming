@@ -314,6 +314,10 @@ describe("workouts routes", () => {
       data: [],
       error: null,
     });
+    const swimCapabilityLimitsEq = vi.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    });
     const from = vi.fn((table: string) => {
       if (table === "workouts") {
         const eqId = vi.fn(() => ({ maybeSingle: workoutMaybeSingle }));
@@ -344,6 +348,11 @@ describe("workouts routes", () => {
       if (table === "personal_records") {
         return {
           select: vi.fn(() => ({ eq: personalRecordsEq })),
+        };
+      }
+      if (table === "swim_capability_limits") {
+        return {
+          select: vi.fn(() => ({ eq: swimCapabilityLimitsEq })),
         };
       }
       throw new Error(`Unexpected table mock: ${table}`);
@@ -415,6 +424,10 @@ describe("workouts routes", () => {
       data: [],
       error: null,
     });
+    const swimCapabilityLimitsEq = vi.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    });
     const from = vi.fn((table: string) => {
       if (table === "workouts") {
         const eqId = vi.fn(() => ({ maybeSingle: workoutMaybeSingle }));
@@ -445,6 +458,11 @@ describe("workouts routes", () => {
       if (table === "personal_records") {
         return {
           select: vi.fn(() => ({ eq: personalRecordsEq })),
+        };
+      }
+      if (table === "swim_capability_limits") {
+        return {
+          select: vi.fn(() => ({ eq: swimCapabilityLimitsEq })),
         };
       }
       throw new Error(`Unexpected table mock: ${table}`);
@@ -545,6 +563,10 @@ describe("workouts routes", () => {
       data: [],
       error: null,
     });
+    const swimCapabilityLimitsEq = vi.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    });
     const from = vi.fn((table: string) => {
       if (table === "workouts") {
         const eqId = vi.fn(() => ({ maybeSingle: workoutMaybeSingle }));
@@ -575,6 +597,11 @@ describe("workouts routes", () => {
       if (table === "personal_records") {
         return {
           select: vi.fn(() => ({ eq: personalRecordsEq })),
+        };
+      }
+      if (table === "swim_capability_limits") {
+        return {
+          select: vi.fn(() => ({ eq: swimCapabilityLimitsEq })),
         };
       }
       throw new Error(`Unexpected table mock: ${table}`);

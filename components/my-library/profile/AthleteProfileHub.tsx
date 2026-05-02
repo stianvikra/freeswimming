@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import {
+  SWIM_CAPABILITY_STROKES,
+  formatSwimCapabilityLimitSummary,
+  getSwimCapabilityStrokeLabel,
+  type SwimCapabilityLimitInput,
+  type SwimCapabilityStroke,
+} from "@/lib/athlete-profile/capabilities";
+import {
   ATHLETE_AGE_BAND_OPTIONS,
   buildAthleteProfilePrimaryName,
   type AthleteAgeBand,
@@ -25,6 +32,7 @@ import type {
   AthleteProfileSnapshot,
   AthleteProfileView,
   PersonalRecordView,
+  SwimCapabilityLimitView,
   TrainingMetricView,
   TrainingPreferencesView,
 } from "@/lib/athlete-profile/server";
@@ -72,7 +80,23 @@ type PersonalRecordDraft = {
   sourceNote: string;
 };
 
-type ProfileSectionKey = "profile" | "css" | "preferences" | "records";
+type CapabilityLimitsDraft = {
+  drillMaxRepeatDistanceM: string;
+  drillTargetTotalDistanceM: string;
+  kickMaxRepeatDistanceM: string;
+  kickTargetTotalDistanceM: string;
+  strokeLimits: Record<
+    SwimCapabilityStroke,
+    {
+      maxRepeatDistanceM: string;
+      maxTotalDistanceM: string;
+    }
+  >;
+};
+
+type TopLevelCapabilityLimitKey = Exclude<keyof CapabilityLimitsDraft, "strokeLimits">;
+
+type ProfileSectionKey = "profile" | "css" | "preferences" | "capabilities" | "records";
 
 type SectionDisclosureState = Record<ProfileSectionKey, boolean>;
 
@@ -81,6 +105,40 @@ type SectionSummaryCopy = {
   detail: string;
   hasData: boolean;
 };
+
+const CAPABILITY_INPUT_CLASS =
+  "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+
+function CapabilityInputField({
+  label,
+  testId,
+  value,
+  placeholder = "",
+  inputMode = "decimal",
+  onChange,
+}: {
+  label: string;
+  testId: string;
+  value: string;
+  placeholder?: string;
+  inputMode?: "decimal" | "numeric";
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="space-y-2 text-sm font-medium text-slate-700">
+      <span>{label}</span>
+      <input
+        data-testid={testId}
+        type="text"
+        inputMode={inputMode}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className={CAPABILITY_INPUT_CLASS}
+      />
+    </label>
+  );
+}
 
 function buildProfileDraft(profile: AthleteProfileView | null): AthleteProfileDraft {
   return {
@@ -128,7 +186,83 @@ function buildPersonalRecordDraft(record: PersonalRecordView | null): PersonalRe
   };
 }
 
-function getStorageKey(userId: string, scope: "profile" | "css" | "preferences" | "records") {
+function createEmptyCapabilityLimitsDraft(): CapabilityLimitsDraft {
+  return {
+    drillMaxRepeatDistanceM: "",
+    drillTargetTotalDistanceM: "",
+    kickMaxRepeatDistanceM: "",
+    kickTargetTotalDistanceM: "",
+    strokeLimits: SWIM_CAPABILITY_STROKES.reduce(
+      (result, stroke) => {
+        result[stroke] = {
+          maxRepeatDistanceM: "",
+          maxTotalDistanceM: "",
+        };
+        return result;
+      },
+      {} as CapabilityLimitsDraft["strokeLimits"]
+    ),
+  };
+}
+
+function formatCapabilityDraftDistance(value: number | null | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? rounded.toFixed(0) : String(rounded);
+}
+
+function buildCapabilityLimitsDraft(limits: SwimCapabilityLimitView[]): CapabilityLimitsDraft {
+  const draft = createEmptyCapabilityLimitsDraft();
+
+  for (const limit of limits) {
+    if (limit.kind === "drill") {
+      draft.drillMaxRepeatDistanceM = formatCapabilityDraftDistance(limit.maxRepeatDistanceM);
+      draft.drillTargetTotalDistanceM = formatCapabilityDraftDistance(limit.targetTotalDistanceM);
+      continue;
+    }
+
+    if (limit.kind === "kick") {
+      draft.kickMaxRepeatDistanceM = formatCapabilityDraftDistance(limit.maxRepeatDistanceM);
+      draft.kickTargetTotalDistanceM = formatCapabilityDraftDistance(limit.targetTotalDistanceM);
+      continue;
+    }
+
+    if (limit.kind === "stroke" && limit.stroke) {
+      draft.strokeLimits[limit.stroke] = {
+        maxRepeatDistanceM: formatCapabilityDraftDistance(limit.maxRepeatDistanceM),
+        maxTotalDistanceM: formatCapabilityDraftDistance(limit.maxTotalDistanceM),
+      };
+    }
+  }
+
+  return draft;
+}
+
+function buildCapabilityLimitInputs(draft: CapabilityLimitsDraft): SwimCapabilityLimitInput[] {
+  return [
+    {
+      kind: "drill",
+      maxRepeatDistanceM: draft.drillMaxRepeatDistanceM,
+      targetTotalDistanceM: draft.drillTargetTotalDistanceM,
+    },
+    {
+      kind: "kick",
+      maxRepeatDistanceM: draft.kickMaxRepeatDistanceM,
+      targetTotalDistanceM: draft.kickTargetTotalDistanceM,
+    },
+    ...SWIM_CAPABILITY_STROKES.map((stroke) => ({
+      kind: "stroke",
+      stroke,
+      maxRepeatDistanceM: draft.strokeLimits[stroke].maxRepeatDistanceM,
+      maxTotalDistanceM: draft.strokeLimits[stroke].maxTotalDistanceM,
+    })),
+  ];
+}
+
+function getStorageKey(
+  userId: string,
+  scope: "profile" | "css" | "preferences" | "capabilities" | "records"
+) {
   return `my-library-athlete-profile-${scope}-draft:${userId}`;
 }
 
@@ -179,12 +313,14 @@ function buildDefaultDisclosureState({
   hasProfileDraft,
   hasCssDraft,
   hasPreferencesDraft,
+  hasCapabilitiesDraft,
   hasRecordDraft,
 }: {
   snapshot: AthleteProfileSnapshot;
   hasProfileDraft: boolean;
   hasCssDraft: boolean;
   hasPreferencesDraft: boolean;
+  hasCapabilitiesDraft: boolean;
   hasRecordDraft: boolean;
 }): SectionDisclosureState {
   return {
@@ -203,6 +339,11 @@ function buildDefaultDisclosureState({
       !snapshot.preferencesSchemaReady ||
       Boolean(snapshot.preferencesLoadError) ||
       !snapshot.preferences,
+    capabilities:
+      hasCapabilitiesDraft ||
+      !snapshot.swimCapabilityLimitsSchemaReady ||
+      Boolean(snapshot.swimCapabilityLimitsLoadError) ||
+      snapshot.swimCapabilityLimits.length === 0,
     records:
       hasRecordDraft ||
       !snapshot.personalRecordsSchemaReady ||
@@ -219,6 +360,8 @@ function normalizeDisclosureState(
     profile: typeof value.profile === "boolean" ? value.profile : fallback.profile,
     css: typeof value.css === "boolean" ? value.css : fallback.css,
     preferences: typeof value.preferences === "boolean" ? value.preferences : fallback.preferences,
+    capabilities:
+      typeof value.capabilities === "boolean" ? value.capabilities : fallback.capabilities,
     records: typeof value.records === "boolean" ? value.records : fallback.records,
   };
 }
@@ -226,7 +369,7 @@ function normalizeDisclosureState(
 function buildProfileSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
   if (!snapshot.profileSchemaReady) {
     return {
-      summary: "Athlete profile is still syncing.",
+      summary: "Swimmer profile is still syncing.",
       detail: "Open this section later to save swimmer details.",
       hasData: false,
     };
@@ -234,7 +377,7 @@ function buildProfileSectionSummary(snapshot: AthleteProfileSnapshot): SectionSu
 
   if (snapshot.loadError) {
     return {
-      summary: "Could not load athlete profile.",
+      summary: "Could not load swimmer profile.",
       detail: snapshot.loadError,
       hasData: false,
     };
@@ -242,7 +385,7 @@ function buildProfileSectionSummary(snapshot: AthleteProfileSnapshot): SectionSu
 
   if (!snapshot.profile) {
     return {
-      summary: "No athlete profile saved yet.",
+      summary: "No swimmer profile saved yet.",
       detail: "Start with the swimmer name and age band you want this space to use.",
       hasData: false,
     };
@@ -338,6 +481,45 @@ function buildPreferencesSectionSummary(snapshot: AthleteProfileSnapshot): Secti
   };
 }
 
+function buildCapabilitiesSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
+  if (!snapshot.swimCapabilityLimitsSchemaReady) {
+    return {
+      summary: "Stroke and skill limits are still syncing.",
+      detail: "Open this section later to save max repeat lengths.",
+      hasData: false,
+    };
+  }
+
+  if (snapshot.swimCapabilityLimitsLoadError) {
+    return {
+      summary: "Could not load stroke and skill limits.",
+      detail: snapshot.swimCapabilityLimitsLoadError,
+      hasData: false,
+    };
+  }
+
+  if (snapshot.swimCapabilityLimits.length === 0) {
+    return {
+      summary: "No stroke or skill limits saved yet.",
+      detail: "Add max repeat lengths when a stroke, drill, or kick breaks down early.",
+      hasData: false,
+    };
+  }
+
+  const summary = snapshot.swimCapabilityLimits
+    .slice(0, 3)
+    .map((limit) => formatSwimCapabilityLimitSummary(limit))
+    .join(" · ");
+
+  return {
+    summary,
+    detail: `${snapshot.swimCapabilityLimits.length} limit${
+      snapshot.swimCapabilityLimits.length === 1 ? "" : "s"
+    } saved for AI session generation.`,
+    hasData: true,
+  };
+}
+
 function buildRecordsSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
   if (!snapshot.personalRecordsSchemaReady) {
     return {
@@ -390,6 +572,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const [preferencesDraft, setPreferencesDraft] = useState(() =>
     buildPreferencesDraft(initialSnapshot.preferences)
   );
+  const [capabilityLimitsDraft, setCapabilityLimitsDraft] = useState(() =>
+    buildCapabilityLimitsDraft(initialSnapshot.swimCapabilityLimits)
+  );
   const [recordDraft, setRecordDraft] = useState(() => buildPersonalRecordDraft(null));
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
@@ -402,22 +587,26 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       hasProfileDraft: false,
       hasCssDraft: false,
       hasPreferencesDraft: false,
+      hasCapabilitiesDraft: false,
       hasRecordDraft: false,
     })
   );
   const [pendingProfileSave, setPendingProfileSave] = useState(false);
   const [pendingCssSave, setPendingCssSave] = useState(false);
   const [pendingPreferencesSave, setPendingPreferencesSave] = useState(false);
+  const [pendingCapabilityLimitsSave, setPendingCapabilityLimitsSave] = useState(false);
   const [pendingRecordSave, setPendingRecordSave] = useState(false);
   const [pendingRecordDeleteId, setPendingRecordDeleteId] = useState<string | null>(null);
   const [profileDraftRecovered, setProfileDraftRecovered] = useState(false);
   const [cssDraftRecovered, setCssDraftRecovered] = useState(false);
   const [preferencesDraftRecovered, setPreferencesDraftRecovered] = useState(false);
+  const [capabilityLimitsDraftRecovered, setCapabilityLimitsDraftRecovered] = useState(false);
   const [recordDraftRecovered, setRecordDraftRecovered] = useState(false);
 
   const profileStorageKey = useMemo(() => getStorageKey(userId, "profile"), [userId]);
   const cssStorageKey = useMemo(() => getStorageKey(userId, "css"), [userId]);
   const preferencesStorageKey = useMemo(() => getStorageKey(userId, "preferences"), [userId]);
+  const capabilityLimitsStorageKey = useMemo(() => getStorageKey(userId, "capabilities"), [userId]);
   const recordStorageKey = useMemo(() => getStorageKey(userId, "records"), [userId]);
   const disclosureStorageKey = useMemo(() => getDisclosureStorageKey(userId), [userId]);
 
@@ -429,6 +618,10 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const savedPreferencesDraft = useMemo(
     () => buildPreferencesDraft(snapshot.preferences),
     [snapshot.preferences]
+  );
+  const savedCapabilityLimitsDraft = useMemo(
+    () => buildCapabilityLimitsDraft(snapshot.swimCapabilityLimits),
+    [snapshot.swimCapabilityLimits]
   );
   const savedRecordDraft = useMemo(
     () =>
@@ -450,6 +643,10 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     () => serializeDraft(preferencesDraft) !== serializeDraft(savedPreferencesDraft),
     [preferencesDraft, savedPreferencesDraft]
   );
+  const hasUnsavedCapabilityLimitsChanges = useMemo(
+    () => serializeDraft(capabilityLimitsDraft) !== serializeDraft(savedCapabilityLimitsDraft),
+    [capabilityLimitsDraft, savedCapabilityLimitsDraft]
+  );
   const hasUnsavedRecordChanges = useMemo(
     () => serializeDraft(recordDraft) !== serializeDraft(savedRecordDraft),
     [recordDraft, savedRecordDraft]
@@ -461,11 +658,18 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     const nextProfileFallback = buildProfileDraft(initialSnapshot.profile);
     const nextCssFallback = buildCssMetricDraft(initialSnapshot.cssMetric);
     const nextPreferencesFallback = buildPreferencesDraft(initialSnapshot.preferences);
+    const nextCapabilityLimitsFallback = buildCapabilityLimitsDraft(
+      initialSnapshot.swimCapabilityLimits
+    );
     const nextRecordFallback = buildPersonalRecordDraft(null);
 
     const storedProfileDraft = getStorageValue(profileStorageKey, nextProfileFallback);
     const storedCssDraft = getStorageValue(cssStorageKey, nextCssFallback);
     const storedPreferencesDraft = getStorageValue(preferencesStorageKey, nextPreferencesFallback);
+    const storedCapabilityLimitsDraft = getStorageValue(
+      capabilityLimitsStorageKey,
+      nextCapabilityLimitsFallback
+    );
     const storedRecordDraft = getStorageValue(recordStorageKey, nextRecordFallback);
     const fallbackDisclosureState = buildDefaultDisclosureState({
       snapshot: initialSnapshot,
@@ -473,6 +677,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       hasCssDraft: serializeDraft(storedCssDraft) !== serializeDraft(nextCssFallback),
       hasPreferencesDraft:
         serializeDraft(storedPreferencesDraft) !== serializeDraft(nextPreferencesFallback),
+      hasCapabilitiesDraft:
+        serializeDraft(storedCapabilityLimitsDraft) !==
+        serializeDraft(nextCapabilityLimitsFallback),
       hasRecordDraft: serializeDraft(storedRecordDraft) !== serializeDraft(nextRecordFallback),
     });
     const storedDisclosureState = normalizeDisclosureState(
@@ -483,6 +690,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setProfileDraft(storedProfileDraft);
     setCssDraft(storedCssDraft);
     setPreferencesDraft(storedPreferencesDraft);
+    setCapabilityLimitsDraft(storedCapabilityLimitsDraft);
     setRecordDraft(storedRecordDraft);
     setSectionOpenState(storedDisclosureState);
 
@@ -492,6 +700,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setCssDraftRecovered(serializeDraft(storedCssDraft) !== serializeDraft(nextCssFallback));
     setPreferencesDraftRecovered(
       serializeDraft(storedPreferencesDraft) !== serializeDraft(nextPreferencesFallback)
+    );
+    setCapabilityLimitsDraftRecovered(
+      serializeDraft(storedCapabilityLimitsDraft) !== serializeDraft(nextCapabilityLimitsFallback)
     );
     setRecordDraftRecovered(
       serializeDraft(storedRecordDraft) !== serializeDraft(nextRecordFallback)
@@ -518,12 +729,14 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     };
   }, [
     cssStorageKey,
+    capabilityLimitsStorageKey,
     disclosureStorageKey,
     initialSnapshot,
     initialSnapshot.cssMetric,
     initialSnapshot.personalRecords,
     initialSnapshot.preferences,
     initialSnapshot.profile,
+    initialSnapshot.swimCapabilityLimits,
     preferencesStorageKey,
     profileStorageKey,
     recordStorageKey,
@@ -555,6 +768,15 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
     setStorageValue(preferencesStorageKey, preferencesDraft);
   }, [preferencesDraft, preferencesStorageKey, savedPreferencesDraft]);
+
+  useEffect(() => {
+    if (serializeDraft(capabilityLimitsDraft) === serializeDraft(savedCapabilityLimitsDraft)) {
+      clearStorageValue(capabilityLimitsStorageKey);
+      return;
+    }
+
+    setStorageValue(capabilityLimitsStorageKey, capabilityLimitsDraft);
+  }, [capabilityLimitsDraft, capabilityLimitsStorageKey, savedCapabilityLimitsDraft]);
 
   useEffect(() => {
     if (serializeDraft(recordDraft) === serializeDraft(savedRecordDraft)) {
@@ -632,14 +854,14 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     event.preventDefault();
 
     if (!snapshot.profileSchemaReady) {
-      setSectionStatus("profile", "Athlete profile is still syncing in this environment.", "error");
+      setSectionStatus("profile", "Swimmer profile is still syncing in this environment.", "error");
       return;
     }
 
     if (!isOnline) {
       setSectionStatus(
         "profile",
-        "You are offline. Reconnect before saving athlete profile.",
+        "You are offline. Reconnect before saving swimmer profile.",
         "error"
       );
       return;
@@ -661,7 +883,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       if (!response.ok) {
         setSectionStatus(
           "profile",
-          await parseError(response, "Could not save athlete profile right now."),
+          await parseError(response, "Could not save swimmer profile right now."),
           "error"
         );
         return;
@@ -669,7 +891,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       const payload = (await response.json().catch(() => null)) as ApiError | null;
       if (!payload?.ok || !payload.snapshot) {
-        setSectionStatus("profile", "Could not save athlete profile right now.", "error");
+        setSectionStatus("profile", "Could not save swimmer profile right now.", "error");
         return;
       }
 
@@ -678,14 +900,14 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       setProfileDraft(nextDraft);
       clearStorageValue(profileStorageKey);
       setProfileDraftRecovered(false);
-      setSectionStatus("profile", "Athlete profile saved.", "success", { collapse: true });
+      setSectionStatus("profile", "Swimmer profile saved.", "success", { collapse: true });
 
       void sendClientAnalyticsEvent("athlete_profile_saved", {
         hasAgeBand: Boolean(payload.snapshot.profile?.ageBand),
         hasDisplayName: Boolean(payload.snapshot.profile?.displayName),
       });
     } catch {
-      setSectionStatus("profile", "Could not save athlete profile right now.", "error");
+      setSectionStatus("profile", "Could not save swimmer profile right now.", "error");
     } finally {
       setPendingProfileSave(false);
     }
@@ -826,6 +1048,90 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       setSectionStatus("preferences", "Could not save training preferences right now.", "error");
     } finally {
       setPendingPreferencesSave(false);
+    }
+  }
+
+  async function saveCapabilityLimits(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!snapshot.swimCapabilityLimitsSchemaReady) {
+      setSectionStatus(
+        "capabilities",
+        "Stroke and skill limits are still syncing in this environment.",
+        "error"
+      );
+      return;
+    }
+
+    if (!isOnline) {
+      setSectionStatus(
+        "capabilities",
+        "You are offline. Reconnect before saving stroke and skill limits.",
+        "error"
+      );
+      return;
+    }
+
+    setPendingCapabilityLimitsSave(true);
+    setSectionStatus("capabilities", "", "success");
+    setSectionOpen("capabilities", true);
+
+    try {
+      const response = await fetch("/api/my-library/profile/capabilities", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          limits: buildCapabilityLimitInputs(capabilityLimitsDraft),
+        }),
+      });
+
+      if (!response.ok) {
+        setSectionStatus(
+          "capabilities",
+          await parseError(response, "Could not save stroke and skill limits right now."),
+          "error"
+        );
+        return;
+      }
+
+      const payload = (await response.json().catch(() => null)) as ApiError | null;
+      if (!payload?.ok || !payload.snapshot) {
+        setSectionStatus(
+          "capabilities",
+          "Could not save stroke and skill limits right now.",
+          "error"
+        );
+        return;
+      }
+
+      const nextDraft = buildCapabilityLimitsDraft(payload.snapshot.swimCapabilityLimits);
+      setSnapshot(payload.snapshot);
+      setCapabilityLimitsDraft(nextDraft);
+      clearStorageValue(capabilityLimitsStorageKey);
+      setCapabilityLimitsDraftRecovered(false);
+      setSectionStatus(
+        "capabilities",
+        payload.snapshot.swimCapabilityLimits.length > 0
+          ? "Stroke and skill limits saved."
+          : "Stroke and skill limits cleared.",
+        "success",
+        { collapse: true }
+      );
+
+      void sendClientAnalyticsEvent("athlete_profile_saved", {
+        section: "stroke_skill_limits",
+        limitCount: payload.snapshot.swimCapabilityLimits.length,
+      });
+    } catch {
+      setSectionStatus(
+        "capabilities",
+        "Could not save stroke and skill limits right now.",
+        "error"
+      );
+    } finally {
+      setPendingCapabilityLimitsSave(false);
     }
   }
 
@@ -985,7 +1291,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     setProfileDraft(savedProfileDraft);
     clearStorageValue(profileStorageKey);
     setProfileDraftRecovered(false);
-    setSectionStatus("profile", "Draft reset to saved athlete profile.", "success");
+    setSectionStatus("profile", "Draft reset to saved swimmer profile.", "success");
   }
 
   function resetCssDraftToSaved() {
@@ -1000,6 +1306,34 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
     clearStorageValue(preferencesStorageKey);
     setPreferencesDraftRecovered(false);
     setSectionStatus("preferences", "Draft reset to saved training preferences.", "success");
+  }
+
+  function resetCapabilityLimitsDraftToSaved() {
+    setCapabilityLimitsDraft(savedCapabilityLimitsDraft);
+    clearStorageValue(capabilityLimitsStorageKey);
+    setCapabilityLimitsDraftRecovered(false);
+    setSectionStatus("capabilities", "Draft reset to saved stroke and skill limits.", "success");
+  }
+
+  function updateCapabilityLimitDraft(key: TopLevelCapabilityLimitKey, value: string) {
+    setCapabilityLimitsDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateStrokeCapabilityLimitDraft(
+    stroke: SwimCapabilityStroke,
+    key: keyof CapabilityLimitsDraft["strokeLimits"][SwimCapabilityStroke],
+    value: string
+  ) {
+    setCapabilityLimitsDraft((current) => ({
+      ...current,
+      strokeLimits: {
+        ...current.strokeLimits,
+        [stroke]: {
+          ...current.strokeLimits[stroke],
+          [key]: value,
+        },
+      },
+    }));
   }
 
   function resetRecordDraftToSaved() {
@@ -1053,10 +1387,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const profileSummary = buildProfileSectionSummary(snapshot);
   const cssSummary = buildCssSectionSummary(snapshot);
   const preferencesSummary = buildPreferencesSectionSummary(snapshot);
+  const capabilitiesSummary = buildCapabilitiesSectionSummary(snapshot);
   const recordsSummary = buildRecordsSectionSummary(snapshot);
   const profileNotice = getSectionNotice("profile");
   const cssNotice = getSectionNotice("css");
   const preferencesNotice = getSectionNotice("preferences");
+  const capabilitiesNotice = getSectionNotice("capabilities");
   const recordsNotice = getSectionNotice("records");
   const globalActionError = activeStatusSection === null ? actionError : "";
   const globalActionSuccess = activeStatusSection === null ? actionSuccess : "";
@@ -1076,7 +1412,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       {profileDraftRecovered ? (
         <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
-          Unsaved athlete-profile edits were restored on this device.
+          Unsaved swimmer-profile edits were restored on this device.
         </div>
       ) : null}
 
@@ -1089,6 +1425,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       {preferencesDraftRecovered ? (
         <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
           Unsaved training preferences edits were restored on this device.
+        </div>
+      ) : null}
+
+      {capabilityLimitsDraftRecovered ? (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+          Unsaved stroke and skill limit edits were restored on this device.
         </div>
       ) : null}
 
@@ -1123,11 +1465,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Athlete profile
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+              Swimmer profile
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-slate-900">Athlete identity</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Swimmer identity</h2>
               {hasUnsavedProfileChanges ? (
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
                   Unsaved edits
@@ -1199,7 +1541,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     setProfileDraft((current) => ({ ...current, displayName: event.target.value }))
                   }
                   placeholder="How you want your swimmer profile to read"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
 
@@ -1214,7 +1556,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                       ageBand: event.target.value as AthleteAgeBand | "",
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">Not set</option>
                   {ATHLETE_AGE_BAND_OPTIONS.map((option) => (
@@ -1235,7 +1577,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     setProfileDraft((current) => ({ ...current, firstName: event.target.value }))
                   }
                   placeholder="Optional"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
 
@@ -1249,7 +1591,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     setProfileDraft((current) => ({ ...current, lastName: event.target.value }))
                   }
                   placeholder="Optional"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
             </div>
@@ -1261,7 +1603,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 disabled={pendingProfileSave || !isOnline}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {pendingProfileSave ? "Saving..." : "Save athlete profile"}
+                {pendingProfileSave ? "Saving..." : "Save swimmer profile"}
               </button>
               <button
                 type="button"
@@ -1283,7 +1625,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">CSS</p>
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">CSS</p>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">Current CSS pace</h2>
               {hasUnsavedCssChanges ? (
@@ -1355,7 +1697,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     setCssDraft((current) => ({ ...current, pace: event.target.value }))
                   }
                   placeholder="1:58"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
 
@@ -1368,7 +1710,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                   onChange={(event) =>
                     setCssDraft((current) => ({ ...current, recordedOn: event.target.value }))
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
 
@@ -1382,7 +1724,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                   }
                   placeholder="Optional note about the test set or source"
                   rows={3}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
             </div>
@@ -1417,7 +1759,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
               Preferences
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -1494,7 +1836,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                       poolLengthM: event.target.value as TrainingPreferencesDraft["poolLengthM"],
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">Not set</option>
                   {TRAINING_POOL_LENGTH_OPTIONS.map((option) => (
@@ -1520,7 +1862,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     }))
                   }
                   placeholder="5"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
 
@@ -1536,7 +1878,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                         .value as TrainingPreferencesDraft["preferredSessionMinutes"],
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">Not set</option>
                   {TRAINING_SESSION_DURATION_OPTIONS.map((option) => (
@@ -1599,13 +1941,216 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       </section>
 
       <section
+        data-testid="athlete-profile-section-capabilities"
+        data-section-open={sectionOpenState.capabilities ? "true" : "false"}
+        className="rounded-3xl border border-slate-200 bg-white p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+              Swim capabilities
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">Stroke and skill limits</h2>
+              {hasUnsavedCapabilityLimitsChanges ? (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                  Unsaved edits
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm font-medium text-slate-900">{capabilitiesSummary.summary}</p>
+            <p className="text-sm text-slate-600">{capabilitiesSummary.detail}</p>
+          </div>
+          <button
+            type="button"
+            data-testid="athlete-profile-section-toggle-capabilities"
+            aria-expanded={sectionOpenState.capabilities}
+            aria-controls="athlete-profile-section-body-capabilities"
+            onClick={() => toggleSection("capabilities")}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            {sectionOpenState.capabilities
+              ? "Collapse"
+              : capabilitiesSummary.hasData
+                ? "Edit limits"
+                : "Open limits"}
+          </button>
+        </div>
+
+        {capabilitiesNotice && !sectionOpenState.capabilities ? (
+          <div
+            className={`mt-4 ${getNoticeClasses(capabilitiesNotice.kind)}`}
+            role={capabilitiesNotice.kind === "error" ? "alert" : undefined}
+            aria-live={capabilitiesNotice.kind === "success" ? "polite" : undefined}
+          >
+            {capabilitiesNotice.message}
+          </div>
+        ) : null}
+
+        {sectionOpenState.capabilities ? (
+          <form
+            id="athlete-profile-section-body-capabilities"
+            onSubmit={saveCapabilityLimits}
+            className="mt-5 border-t border-slate-200 pt-5"
+          >
+            {capabilitiesNotice ? (
+              <div
+                className={`${getNoticeClasses(capabilitiesNotice.kind)} mb-4`}
+                role={capabilitiesNotice.kind === "error" ? "alert" : undefined}
+                aria-live={capabilitiesNotice.kind === "success" ? "polite" : undefined}
+              >
+                {capabilitiesNotice.message}
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="max-w-2xl text-sm text-slate-600">
+                Save max repeat lengths where form quality breaks down. The AI generator uses these
+                by default and can override them for one session only.
+              </p>
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                Private to your account
+              </div>
+            </div>
+
+            {!snapshot.swimCapabilityLimitsSchemaReady ? (
+              <p className="mt-5 text-sm text-amber-800">
+                Stroke and skill limits are still syncing in this environment.
+              </p>
+            ) : snapshot.swimCapabilityLimitsLoadError ? (
+              <p className="mt-5 text-sm text-rose-700">{snapshot.swimCapabilityLimitsLoadError}</p>
+            ) : (
+              <>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <legend className="px-1 text-sm font-semibold text-slate-900">Drills</legend>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <CapabilityInputField
+                        label="Max drill repeat (m)"
+                        testId="athlete-capability-drill-max-repeat"
+                        value={capabilityLimitsDraft.drillMaxRepeatDistanceM}
+                        placeholder="25"
+                        onChange={(value) =>
+                          updateCapabilityLimitDraft("drillMaxRepeatDistanceM", value)
+                        }
+                      />
+                      <CapabilityInputField
+                        label="Default drill total (m)"
+                        testId="athlete-capability-drill-target-total"
+                        value={capabilityLimitsDraft.drillTargetTotalDistanceM}
+                        placeholder="200"
+                        inputMode="numeric"
+                        onChange={(value) =>
+                          updateCapabilityLimitDraft("drillTargetTotalDistanceM", value)
+                        }
+                      />
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <legend className="px-1 text-sm font-semibold text-slate-900">Kick</legend>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <CapabilityInputField
+                        label="Max kick repeat (m)"
+                        testId="athlete-capability-kick-max-repeat"
+                        value={capabilityLimitsDraft.kickMaxRepeatDistanceM}
+                        placeholder="25"
+                        onChange={(value) =>
+                          updateCapabilityLimitDraft("kickMaxRepeatDistanceM", value)
+                        }
+                      />
+                      <CapabilityInputField
+                        label="Default kick total (m)"
+                        testId="athlete-capability-kick-target-total"
+                        value={capabilityLimitsDraft.kickTargetTotalDistanceM}
+                        placeholder="200"
+                        inputMode="numeric"
+                        onChange={(value) =>
+                          updateCapabilityLimitDraft("kickTargetTotalDistanceM", value)
+                        }
+                      />
+                    </div>
+                  </fieldset>
+                </div>
+
+                <fieldset className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <legend className="px-1 text-sm font-semibold text-slate-900">
+                    Stroke limits
+                  </legend>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {SWIM_CAPABILITY_STROKES.map((stroke) => {
+                      const strokeDraft = capabilityLimitsDraft.strokeLimits[stroke];
+
+                      return (
+                        <div
+                          key={stroke}
+                          className="rounded-xl border border-slate-200 bg-white p-3"
+                        >
+                          <p className="text-sm font-semibold text-slate-900">
+                            {getSwimCapabilityStrokeLabel(stroke)}
+                          </p>
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            <CapabilityInputField
+                              label="Max repeat (m)"
+                              testId={`athlete-capability-stroke-${stroke}-max-repeat`}
+                              value={strokeDraft.maxRepeatDistanceM}
+                              onChange={(value) =>
+                                updateStrokeCapabilityLimitDraft(
+                                  stroke,
+                                  "maxRepeatDistanceM",
+                                  value
+                                )
+                              }
+                            />
+                            <CapabilityInputField
+                              label="Max total (m)"
+                              testId={`athlete-capability-stroke-${stroke}-max-total`}
+                              value={strokeDraft.maxTotalDistanceM}
+                              inputMode="numeric"
+                              onChange={(value) =>
+                                updateStrokeCapabilityLimitDraft(stroke, "maxTotalDistanceM", value)
+                              }
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <button
+                    data-testid="athlete-capabilities-save"
+                    type="submit"
+                    disabled={pendingCapabilityLimitsSave || !isOnline}
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    {pendingCapabilityLimitsSave ? "Saving..." : "Save limits"}
+                  </button>
+                  <button
+                    data-testid="athlete-capabilities-reset"
+                    type="button"
+                    onClick={resetCapabilityLimitsDraftToSaved}
+                    disabled={!hasUnsavedCapabilityLimitsChanges}
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                  >
+                    Reset draft
+                  </button>
+                </div>
+              </>
+            )}
+          </form>
+        ) : null}
+      </section>
+
+      <section
         data-testid="athlete-profile-section-records"
         data-section-open={sectionOpenState.records ? "true" : "false"}
         className="rounded-3xl border border-slate-200 bg-white p-5"
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
               Personal records
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -1775,7 +2320,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                           }))
                         }
                         placeholder="100"
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       />
                     </label>
 
@@ -1790,7 +2335,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                             stroke: event.target.value as PersonalRecordStroke | "",
                           }))
                         }
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       >
                         <option value="">Choose stroke</option>
                         {PERSONAL_RECORD_STROKE_OPTIONS.map((option) => (
@@ -1812,7 +2357,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                             course: event.target.value as PersonalRecordCourse | "",
                           }))
                         }
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       >
                         <option value="">Choose course</option>
                         {PERSONAL_RECORD_COURSE_OPTIONS.map((option) => (
@@ -1834,7 +2379,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                           setRecordDraft((current) => ({ ...current, time: event.target.value }))
                         }
                         placeholder="1:02.34"
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       />
                     </label>
 
@@ -1850,7 +2395,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                             recordedOn: event.target.value,
                           }))
                         }
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       />
                     </label>
 
@@ -1867,7 +2412,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                         }
                         placeholder="Optional note about meet, set, or source"
                         rows={3}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       />
                     </label>
                   </div>

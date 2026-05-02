@@ -21,20 +21,10 @@ function buildPayload(
     createdAt: "2026-03-20T12:00:00.000Z",
     sourceFingerprint: "fingerprint-1",
     notesIncluded: false,
-    includedBlocks: ["profile", "css", "preferences", "goals", "focus"],
-    omittedBlocks: ["personal_records"],
+    includedBlocks: ["preferences", "css", "personal_records", "goals", "capability_limits"],
+    omittedBlocks: [],
     source: {
-      profile: {
-        id: "profile-1",
-        displayName: "Poolside Stian",
-        firstName: "Stian",
-        lastName: "Vikra",
-        primaryName: "Poolside Stian",
-        ageBand: "35_44",
-        ageBandLabel: "35-44",
-        createdAt: "2026-03-20T10:00:00.000Z",
-        updatedAt: "2026-03-20T10:00:00.000Z",
-      },
+      profile: null,
       cssMetric: {
         id: "metric-1",
         metricKey: "css",
@@ -118,22 +108,51 @@ function buildPayload(
           },
         },
       ],
-      activeFocus: {
-        id: "focus-1",
-        title: "Breathing timing",
-        details: "Keep the head quiet through the inhale.",
-        status: "open",
-        statusLabel: "Open",
-        isPrimary: true,
-        goalId: "goal-1",
-        goalTitle: "Swim 1500m stronger",
-        contextType: null,
-        contextRef: null,
-        createdAt: "2026-03-20T10:00:00.000Z",
-        updatedAt: "2026-03-20T10:00:00.000Z",
-        completedAt: null,
-        archivedAt: null,
-      },
+      swimCapabilityLimits: [
+        {
+          id: "limit-drill-1",
+          kind: "drill",
+          stroke: null,
+          strokeLabel: null,
+          maxRepeatDistanceM: 25,
+          maxRepeatDistanceLabel: "25m",
+          maxTotalDistanceM: null,
+          maxTotalDistanceLabel: null,
+          targetTotalDistanceM: 300,
+          targetTotalDistanceLabel: "300m",
+          createdAt: "2026-03-20T10:00:00.000Z",
+          updatedAt: "2026-03-20T10:00:00.000Z",
+        },
+        {
+          id: "limit-kick-1",
+          kind: "kick",
+          stroke: null,
+          strokeLabel: null,
+          maxRepeatDistanceM: 50,
+          maxRepeatDistanceLabel: "50m",
+          maxTotalDistanceM: null,
+          maxTotalDistanceLabel: null,
+          targetTotalDistanceM: 200,
+          targetTotalDistanceLabel: "200m",
+          createdAt: "2026-03-20T10:00:00.000Z",
+          updatedAt: "2026-03-20T10:00:00.000Z",
+        },
+        {
+          id: "limit-backstroke-1",
+          kind: "stroke",
+          stroke: "backstroke",
+          strokeLabel: "Backstroke",
+          maxRepeatDistanceM: 25,
+          maxRepeatDistanceLabel: "25m",
+          maxTotalDistanceM: 300,
+          maxTotalDistanceLabel: "300m",
+          targetTotalDistanceM: null,
+          targetTotalDistanceLabel: null,
+          createdAt: "2026-03-20T10:00:00.000Z",
+          updatedAt: "2026-03-20T10:00:00.000Z",
+        },
+      ],
+      activeFocus: null,
     },
     overrides: {
       targetType: "session",
@@ -147,7 +166,7 @@ function buildPayload(
       targetType: "session",
       sessionCount: 3,
       sessionMinutes: 45,
-      focusText: "Breathing timing",
+      focusText: null,
     },
   };
 }
@@ -163,6 +182,7 @@ function buildDraft(): SessionDraft {
     titleSuggestions: ["Threshold / CSS 25m Pool draft", "Moderate Threshold / CSS session"],
     description: "Threshold session in pool mode.",
     environment: "pool",
+    poolLengthUnit: "m",
     poolLengthM: 25,
     sessionType: "threshold_css",
     effort: "moderate",
@@ -281,12 +301,11 @@ describe("SessionGeneratorPanel", () => {
       <SessionGeneratorPanel
         payload={buildPayload()}
         selection={{
-          profile: true,
-          css: true,
           preferences: true,
+          css: true,
           personal_records: false,
           goals: true,
-          focus: true,
+          capability_limits: true,
         }}
         overrides={{
           targetType: "session",
@@ -304,12 +323,12 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByRole("heading", { name: "Session setup" })).toBeInTheDocument();
     expect(screen.queryByTestId("session-generator-focus-text")).not.toBeInTheDocument();
     expect(screen.getByTestId("session-generator-session-type")).toBeInTheDocument();
-    expect(screen.getByText("Special instructions (optional)")).toBeInTheDocument();
+    expect(screen.getByText("Additional instructions (optional)")).toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Leave blank and the coach will decide details from the profile inputs and session choices."
       )
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
     fireEvent.change(screen.getByTestId("session-generator-session-type"), {
       target: { value: "technical_fault_correction" },
     });
@@ -325,17 +344,16 @@ describe("SessionGeneratorPanel", () => {
     expect(onResetOverrides).toHaveBeenCalledTimes(1);
   });
 
-  it("shows compact generation constraints and coach-choice controls for drills, kick, and rest", () => {
+  it("shows compact Session Rules with manual-builder pool controls and profile-limit overrides", () => {
     render(
       <SessionGeneratorPanel
         payload={buildPayload()}
         selection={{
-          profile: true,
-          css: true,
           preferences: true,
+          css: true,
           personal_records: true,
           goals: true,
-          focus: true,
+          capability_limits: true,
         }}
         overrides={{
           targetType: "session",
@@ -350,10 +368,31 @@ describe("SessionGeneratorPanel", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Generation constraints" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Session Rules" })).toBeInTheDocument();
     expect(screen.queryByTestId("session-generator-swim-profile-context")).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Fault correction" })).toBeInTheDocument();
+    expect(screen.getByTestId("session-generator-profile-limits-card")).toHaveTextContent(
+      "From Swim Profile"
+    );
+    expect(screen.getByTestId("session-generator-profile-limits-card")).toHaveTextContent(
+      "repeat max 25m"
+    );
+    expect(screen.getByTestId("session-generator-pool-size-inline-row")).toHaveAttribute(
+      "data-layout",
+      "compact-inline"
+    );
+    expect(screen.getByRole("button", { name: "Meters" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Yards" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "25m" })).toBeVisible();
+    expect(screen.getByLabelText("Exact pool size (m)")).toHaveValue("25");
 
+    fireEvent.click(screen.getByTestId("session-generator-skill-limits-override"));
+    expect(screen.getByTestId("session-generator-profile-limits-card")).toHaveTextContent(
+      "Session-specific"
+    );
+    expect(screen.getByTestId("session-generator-kick-interval")).toHaveValue("50");
+    expect(screen.getByTestId("session-generator-kick-approx-total")).toHaveValue("200");
+    fireEvent.click(screen.getByTestId("session-generator-include-drills"));
     fireEvent.click(screen.getByTestId("session-generator-drill-volume-explicit"));
     fireEvent.change(screen.getByTestId("session-generator-drill-meters"), {
       target: { value: "450" },
@@ -374,6 +413,7 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByTestId("session-generator-drill-meters")).toHaveValue("450");
     expect(screen.getByTestId("session-generator-kick-meters")).toHaveValue("250");
     expect(screen.getByTestId("session-generator-kick-interval")).toHaveValue("25");
+    expect(screen.getByTestId("session-generator-kick-approx-total")).toHaveValue("200");
     expect(screen.getByTestId("session-generator-rest-seconds")).toHaveValue("35");
   });
 
@@ -392,12 +432,11 @@ describe("SessionGeneratorPanel", () => {
       <SessionGeneratorPanel
         payload={buildPayload()}
         selection={{
-          profile: true,
-          css: true,
           preferences: true,
+          css: true,
           personal_records: false,
           goals: true,
-          focus: true,
+          capability_limits: true,
         }}
         overrides={{
           targetType: "session",
@@ -543,12 +582,11 @@ describe("SessionGeneratorPanel", () => {
       <SessionGeneratorPanel
         payload={buildPayload()}
         selection={{
-          profile: true,
-          css: true,
           preferences: true,
+          css: true,
           personal_records: false,
           goals: true,
-          focus: true,
+          capability_limits: true,
         }}
         overrides={{
           targetType: "session",
@@ -628,12 +666,11 @@ describe("SessionGeneratorPanel", () => {
       <SessionGeneratorPanel
         payload={buildPayload()}
         selection={{
-          profile: true,
-          css: true,
           preferences: true,
+          css: true,
           personal_records: false,
           goals: true,
-          focus: true,
+          capability_limits: true,
         }}
         overrides={{
           targetType: "session",
@@ -678,7 +715,9 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByText("Saved session loaded.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
     fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
-    expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
+    await waitFor(() => {
+      expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
+    });
   }, 15_000);
 
   it("loads a previously accepted workout into the same editor", async () => {
@@ -686,12 +725,11 @@ describe("SessionGeneratorPanel", () => {
       <SessionGeneratorPanel
         payload={buildPayload()}
         selection={{
-          profile: true,
-          css: true,
           preferences: true,
+          css: true,
           personal_records: false,
           goals: true,
-          focus: true,
+          capability_limits: true,
         }}
         overrides={{
           targetType: "session",
@@ -727,12 +765,11 @@ describe("SessionGeneratorPanel", () => {
       <SessionGeneratorPanel
         payload={buildPayload()}
         selection={{
-          profile: true,
-          css: true,
           preferences: true,
+          css: true,
           personal_records: false,
           goals: true,
-          focus: true,
+          capability_limits: true,
         }}
         overrides={{
           targetType: "session",
@@ -786,12 +823,11 @@ describe("SessionGeneratorPanel", () => {
       <SessionGeneratorPanel
         payload={buildPayload()}
         selection={{
-          profile: true,
-          css: true,
           preferences: true,
+          css: true,
           personal_records: false,
           goals: true,
-          focus: true,
+          capability_limits: true,
         }}
         overrides={{
           targetType: "session",

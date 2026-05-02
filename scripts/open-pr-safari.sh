@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Open PR URL in active Safari tab.
+# Open PR URL in Safari without replacing the owner's active tab.
 # Usage:
 #   bash scripts/open-pr-safari.sh
 #   bash scripts/open-pr-safari.sh <branch>
@@ -107,9 +107,51 @@ if [ -n "$gh_resolution_message" ]; then
   echo "[open-pr-safari] ${gh_resolution_message}"
 fi
 
-osascript \
-  -e 'tell application "Safari" to activate' \
-  -e 'tell application "Safari" to if (count of windows) = 0 then make new document' \
-  -e "tell application \"Safari\" to set URL of front document to \"${pr_url}\""
+osascript <<OSA
+set targetUrl to "${pr_url}"
+on comparableUrl(rawUrl)
+  set comparable to rawUrl
+  set AppleScript's text item delimiters to "#"
+  set comparable to text item 1 of comparable
+  set AppleScript's text item delimiters to "?"
+  set comparable to text item 1 of comparable
+  set AppleScript's text item delimiters to ""
+  if comparable ends with "/" then set comparable to text 1 thru -2 of comparable
+  return comparable
+end comparableUrl
+
+tell application "Safari"
+  activate
+  if (count of windows) = 0 then
+    make new document with properties {URL:targetUrl}
+  else
+    set targetComparableUrl to my comparableUrl(targetUrl)
+    set matchedWindow to missing value
+    set matchedTab to missing value
+    repeat with safariWindow in windows
+      repeat with safariTab in tabs of safariWindow
+        set tabUrl to URL of safariTab
+        set tabComparableUrl to my comparableUrl(tabUrl)
+        if tabComparableUrl is targetComparableUrl or tabComparableUrl starts with (targetComparableUrl & "/") then
+          set matchedWindow to safariWindow
+          set matchedTab to safariTab
+          exit repeat
+        end if
+      end repeat
+      if matchedTab is not missing value then exit repeat
+    end repeat
+
+    if matchedTab is not missing value then
+      set current tab of matchedWindow to matchedTab
+      set index of matchedWindow to 1
+    else
+      tell front window
+        set createdTab to make new tab at end of tabs with properties {URL:targetUrl}
+        set current tab to createdTab
+      end tell
+    end if
+  end if
+end tell
+OSA
 
 echo "[open-pr-safari] Opened: ${pr_url}"

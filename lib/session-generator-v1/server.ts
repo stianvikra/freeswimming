@@ -2,6 +2,7 @@ import type { GeneratorIntakeHandoffPayload } from "@/lib/generator-intake/share
 import {
   buildSessionTargetSummary,
   computeSessionDraftDerivedTotals,
+  formatDistanceMetersLabel,
   formatPoolLengthLabel,
   getSessionEffortLabel,
   getSessionEnvironmentLabel,
@@ -12,7 +13,6 @@ import {
   type SessionDraftStep,
   type SessionDraftStepCategory,
   type SessionGeneratorInput,
-  type SessionGeneratorPoolLength,
   type SessionGeneratorSessionType,
   type SessionGeneratorStroke,
 } from "@/lib/session-generator-v1/shared";
@@ -30,6 +30,9 @@ type SegmentPlan = {
   cooldown: number;
   swim: number;
 };
+
+const DISTANCE_EPSILON = 0.001;
+const DISTANCE_PRECISION_FACTOR = 10000;
 
 export function buildSessionDraft(
   handoff: GeneratorIntakeHandoffPayload,
@@ -98,6 +101,7 @@ export function buildSessionDraft(
     titleSuggestions,
     description,
     environment: adjustedInput.environment,
+    poolLengthUnit: adjustedInput.poolLengthUnit,
     poolLengthM: adjustedInput.poolLengthM,
     sessionType: adjustedInput.sessionType,
     effort: adjustedInput.effort,
@@ -132,6 +136,7 @@ function applyGuardrails(input: SessionGeneratorInput, warnings: string[]): Sess
     ...input,
     includeDrills: false,
     includeKick: false,
+    poolLengthUnit: "m" as const,
     poolLengthM: null,
   };
 
@@ -291,6 +296,7 @@ function buildDistanceBasedSteps(input: {
     segments.kick = explicitKick;
     segments.main = Math.max(roundingUnit, segments.main - difference);
   }
+  applySkillLimitSegmentCaps(sessionInput, segments, roundingUnit);
   const strokeChoice = selectStrokeChoice(sessionInput.allowedStrokes);
   const restSeconds =
     sessionInput.environment === "pool" ? resolvePoolRestSeconds(sessionInput) : null;
@@ -537,9 +543,9 @@ function buildPoolRepeatBlock(input: {
 }) {
   const repeatDistanceM = input.repeatDistanceM;
   if (!repeatDistanceM || repeatDistanceM <= 0) return null;
-  if (input.totalDistanceM % repeatDistanceM !== 0) return null;
+  if (!isDistanceDivisibleBy(input.totalDistanceM, repeatDistanceM)) return null;
 
-  const repeatCount = input.totalDistanceM / repeatDistanceM;
+  const repeatCount = Math.round(input.totalDistanceM / repeatDistanceM);
   if (repeatCount < 2 || repeatCount > 20) return null;
 
   const repeatEndingRestMode = input.restSeconds ? "skip_last_rest" : "use_last_rest";
@@ -578,19 +584,97 @@ function buildPoolRepeatBlock(input: {
 function chooseDrillRepeatDistance(sessionInput: SessionGeneratorInput, totalDistanceM: number) {
   const poolLength = sessionInput.poolLengthM ?? 25;
   const preferred = poolLength >= 50 ? 100 : 50;
-  if (totalDistanceM % preferred === 0) return preferred;
-  return totalDistanceM % poolLength === 0 ? poolLength : null;
+  return chooseCappedRepeatDistance({
+    totalDistanceM,
+    preferredDistanceM: preferred,
+    fallbackDistanceM: poolLength,
+    maxRepeatDistanceM: sessionInput.skillLimits.drill.maxRepeatDistanceM,
+  });
 }
 
 function chooseKickRepeatDistance(sessionInput: SessionGeneratorInput, totalDistanceM: number) {
-  if (sessionInput.kickIntervalMeters && totalDistanceM % sessionInput.kickIntervalMeters === 0) {
+  const maxRepeatDistanceM =
+    sessionInput.skillLimits.kick.maxRepeatDistanceM ?? sessionInput.kickIntervalMeters;
+  if (
+    sessionInput.kickIntervalMeters &&
+    isDistanceDivisibleBy(totalDistanceM, sessionInput.kickIntervalMeters) &&
+    (!maxRepeatDistanceM || sessionInput.kickIntervalMeters <= maxRepeatDistanceM)
+  ) {
     return sessionInput.kickIntervalMeters;
   }
 
   const poolLength = sessionInput.poolLengthM ?? 25;
   const preferred = poolLength >= 50 ? 50 : 25;
-  if (totalDistanceM % preferred === 0) return preferred;
-  return totalDistanceM % poolLength === 0 ? poolLength : null;
+  return chooseCappedRepeatDistance({
+    totalDistanceM,
+    preferredDistanceM: preferred,
+    fallbackDistanceM: poolLength,
+    maxRepeatDistanceM,
+  });
+}
+
+function applySkillLimitSegmentCaps(
+  sessionInput: SessionGeneratorInput,
+  segments: Record<SessionDraftStepCategory, number>,
+  roundingUnit: number
+) {
+  const maxDrillRepeat = sessionInput.skillLimits.drill.maxRepeatDistanceM;
+  if (segments.drill > 0 && maxDrillRepeat) {
+    const maxDrillTotal = maxDrillRepeat * 20;
+    if (segments.drill > maxDrillTotal) {
+      const difference = segments.drill - maxDrillTotal;
+      segments.drill = roundDistanceForEnvironment(
+        maxDrillTotal,
+        sessionInput.environment,
+        sessionInput.poolLengthM
+      );
+      segments.main = Math.max(roundingUnit, segments.main + difference);
+    }
+  }
+
+  const maxKickRepeat = sessionInput.skillLimits.kick.maxRepeatDistanceM;
+  if (segments.kick > 0 && maxKickRepeat) {
+    const maxKickTotal = maxKickRepeat * 20;
+    if (segments.kick > maxKickTotal) {
+      const difference = segments.kick - maxKickTotal;
+      segments.kick = roundDistanceForEnvironment(
+        maxKickTotal,
+        sessionInput.environment,
+        sessionInput.poolLengthM
+      );
+      segments.main = Math.max(roundingUnit, segments.main + difference);
+    }
+  }
+}
+
+function chooseCappedRepeatDistance(input: {
+  totalDistanceM: number;
+  preferredDistanceM: number;
+  fallbackDistanceM: number;
+  maxRepeatDistanceM: number | null | undefined;
+}) {
+  const maxRepeatDistanceM = input.maxRepeatDistanceM ?? null;
+  const candidates = [
+    input.preferredDistanceM,
+    input.fallbackDistanceM,
+    maxRepeatDistanceM,
+    maxRepeatDistanceM && input.fallbackDistanceM > maxRepeatDistanceM ? maxRepeatDistanceM : null,
+  ]
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+    .filter((value) => !maxRepeatDistanceM || value <= maxRepeatDistanceM)
+    .sort((a, b) => b - a);
+
+  for (const candidate of candidates) {
+    if (isDistanceDivisibleBy(input.totalDistanceM, candidate)) return candidate;
+  }
+
+  return null;
+}
+
+function isDistanceDivisibleBy(totalDistanceM: number, repeatDistanceM: number) {
+  if (repeatDistanceM <= 0) return false;
+  const quotient = totalDistanceM / repeatDistanceM;
+  return Math.abs(quotient - Math.round(quotient)) < 0.001;
 }
 
 function buildTimeBasedSteps(input: {
@@ -696,19 +780,34 @@ function allocateRoundedValues(
     );
   }
 
-  let currentTotal = categories.reduce((sum, category) => sum + result[category], 0);
+  let currentTotal = sumSegmentDistances(result, categories);
+  let adjustmentCount = 0;
 
-  while (currentTotal !== total) {
+  while (Math.abs(currentTotal - total) > DISTANCE_EPSILON && adjustmentCount < 1000) {
     const diff = total - currentTotal;
     const targetCategory: SessionDraftStepCategory =
       diff > 0 ? "main" : result.cooldown > roundingUnit ? "cooldown" : "main";
-    const nextValue = result[targetCategory] + Math.sign(diff) * roundingUnit;
+    const nextValue = roundGeneratorDistance(
+      result[targetCategory] + Math.sign(diff) * roundingUnit
+    );
     if (nextValue < 0) break;
     result[targetCategory] = nextValue;
-    currentTotal = categories.reduce((sum, category) => sum + result[category], 0);
+    currentTotal = sumSegmentDistances(result, categories);
+    adjustmentCount += 1;
   }
 
   return result;
+}
+
+function sumSegmentDistances(
+  result: Record<SessionDraftStepCategory, number>,
+  categories: SessionDraftStepCategory[]
+) {
+  return roundGeneratorDistance(categories.reduce((sum, category) => sum + result[category], 0));
+}
+
+function roundGeneratorDistance(value: number) {
+  return Math.round(value * DISTANCE_PRECISION_FACTOR) / DISTANCE_PRECISION_FACTOR;
 }
 
 function allocateMinuteSegments(totalMinutes: number, plan: SegmentPlan) {
@@ -775,35 +874,40 @@ function buildDistanceMainSetNote(input: {
 }) {
   const { input: sessionInput, mainDistanceM, usedCssPaceLabel, focusText } = input;
   const poolLength = sessionInput.poolLengthM ?? 25;
-  const repeatDistance = chooseRepeatDistance(sessionInput.sessionType, poolLength);
+  const strokeChoice = selectStrokeChoice(sessionInput.allowedStrokes);
+  const repeatDistance = chooseRepeatDistance(sessionInput, poolLength, strokeChoice);
+  const repeatDistanceLabel = formatDistanceMetersLabel(
+    repeatDistance,
+    sessionInput.poolLengthUnit
+  );
   const repeats = Math.max(1, Math.round(mainDistanceM / repeatDistance));
   const focusSentence = focusText ? ` Keep ${focusText.toLowerCase()} in every repeat.` : "";
 
   if (sessionInput.sessionType === "threshold_css") {
     if (usedCssPaceLabel) {
-      return `Suggested structure: ${repeats} x ${repeatDistance}m holding around CSS (${usedCssPaceLabel}/100m) with 15-20s easy rest.${focusSentence}`;
+      return `Suggested structure: ${repeats} x ${repeatDistanceLabel} holding around CSS (${usedCssPaceLabel}/100m) with 15-20s easy rest.${focusSentence}`;
     }
 
-    return `Suggested structure: ${repeats} x ${repeatDistance}m at strong sustainable effort with 15-20s easy rest.${focusSentence}`;
+    return `Suggested structure: ${repeats} x ${repeatDistanceLabel} at strong sustainable effort with 15-20s easy rest.${focusSentence}`;
   }
 
   if (sessionInput.sessionType === "speed") {
-    return `Suggested structure: ${repeats} x ${repeatDistance}m fast, clean, and controlled with generous easy rest between repeats.${focusSentence}`;
+    return `Suggested structure: ${repeats} x ${repeatDistanceLabel} fast, clean, and controlled with generous easy rest between repeats.${focusSentence}`;
   }
 
   if (sessionInput.sessionType === "race_pace") {
-    return `Suggested structure: ${repeats} x ${repeatDistance}m around goal race rhythm with short controlled rest between repeats.${focusSentence}`;
+    return `Suggested structure: ${repeats} x ${repeatDistanceLabel} around goal race rhythm with short controlled rest between repeats.${focusSentence}`;
   }
 
   if (sessionInput.sessionType === "technique") {
-    return `Suggested structure: ${repeats} x ${repeatDistance}m as drill + swim or cue-led swimming, keeping form quality higher than raw speed.${focusSentence}`;
+    return `Suggested structure: ${repeats} x ${repeatDistanceLabel} as drill + swim or cue-led swimming, keeping form quality higher than raw speed.${focusSentence}`;
   }
 
   if (sessionInput.sessionType === "technical_fault_correction") {
-    return `Suggested structure: ${repeats} x ${repeatDistance}m as fault cue + swim, stopping any repeat where the old pattern returns.${focusSentence}${buildRestPreferenceText(sessionInput)}`;
+    return `Suggested structure: ${repeats} x ${repeatDistanceLabel} as fault cue + swim, stopping any repeat where the old pattern returns.${focusSentence}${buildRestPreferenceText(sessionInput)}`;
   }
 
-  return `Suggested structure: ${repeats} x ${repeatDistance}m at a ${getSessionEffortLabel(sessionInput.effort).toLowerCase()} aerobic rhythm with consistent pacing.${focusSentence}${buildRestPreferenceText(sessionInput)}`;
+  return `Suggested structure: ${repeats} x ${repeatDistanceLabel} at a ${getSessionEffortLabel(sessionInput.effort).toLowerCase()} aerobic rhythm with consistent pacing.${focusSentence}${buildRestPreferenceText(sessionInput)}`;
 }
 
 function buildOpenWaterMainSetNote(input: {
@@ -835,7 +939,13 @@ function buildKickNote(sessionInput: SessionGeneratorInput, constraintText: stri
     sessionInput.kickVolumeMode === "explicit" &&
     sessionInput.kickTargetMeters &&
     sessionInput.kickIntervalMeters
-      ? ` Planned as ${sessionInput.kickTargetMeters}m total in ${sessionInput.kickIntervalMeters}m repeats.`
+      ? ` Planned as ${formatDistanceMetersLabel(
+          sessionInput.kickTargetMeters,
+          sessionInput.poolLengthUnit
+        )} total in ${formatDistanceMetersLabel(
+          sessionInput.kickIntervalMeters,
+          sessionInput.poolLengthUnit
+        )} max repeats.`
       : " Coach decided the kick volume from the session size and effort.";
 
   return `${equipmentText}${volumeText}${constraintText ? ` Keep this aligned with the run constraint: ${constraintText}` : ""}`;
@@ -848,7 +958,10 @@ function buildDrillNote(sessionInput: SessionGeneratorInput, focusText: string |
       : focusText;
   const volumeText =
     sessionInput.drillVolumeMode === "explicit" && sessionInput.drillTargetMeters
-      ? `${sessionInput.drillTargetMeters}m drill target from this request.`
+      ? `${formatDistanceMetersLabel(
+          sessionInput.drillTargetMeters,
+          sessionInput.poolLengthUnit
+        )} drill target from this request.`
       : "Coach decided the drill volume from the session type and total size.";
 
   if (focusCue) {
@@ -873,7 +986,7 @@ function buildTitleSuggestions(
 ) {
   const environmentLabel =
     input.environment === "pool" && input.poolLengthM
-      ? `${formatPoolLengthLabel(input.poolLengthM)} ${getSessionEnvironmentLabel(input.environment)}`
+      ? `${formatPoolLengthLabel(input.poolLengthM, input.poolLengthUnit)} ${getSessionEnvironmentLabel(input.environment)}`
       : getSessionEnvironmentLabel(input.environment);
   const sessionLabel = getSessionTypeLabel(input.sessionType);
   const primary = `${sessionLabel} ${environmentLabel} draft`;
@@ -902,12 +1015,12 @@ function buildDraftDescription(input: {
     input.input.drillVolumeMode === "coach_decides" && input.input.includeDrills
       ? "Drill volume: coach decides."
       : input.input.drillTargetMeters
-        ? `Drill volume: ${input.input.drillTargetMeters}m requested.`
+        ? `Drill volume: ${formatDistanceMetersLabel(input.input.drillTargetMeters, input.input.poolLengthUnit)} requested.`
         : null,
     input.input.kickVolumeMode === "coach_decides" && input.input.includeKick
       ? "Kick volume: coach decides."
       : input.input.kickTargetMeters
-        ? `Kick volume: ${input.input.kickTargetMeters}m requested.`
+        ? `Kick volume: ${formatDistanceMetersLabel(input.input.kickTargetMeters, input.input.poolLengthUnit)} requested.`
         : null,
     input.input.restMode === "coach_decides"
       ? "Rest: coach decides."
@@ -921,15 +1034,28 @@ function buildDraftDescription(input: {
 }
 
 function chooseRepeatDistance(
-  sessionType: SessionGeneratorSessionType,
-  poolLength: SessionGeneratorPoolLength
+  sessionInput: SessionGeneratorInput,
+  poolLength: number,
+  strokeChoice: SessionGeneratorStroke | "choice"
 ) {
-  if (sessionType === "speed") return poolLength >= 50 ? 50 : 25;
-  if (sessionType === "technique" || sessionType === "technical_fault_correction") {
-    return poolLength >= 50 ? 100 : 50;
+  const sessionType = sessionInput.sessionType;
+  const strokeLimit =
+    strokeChoice !== "choice" ? sessionInput.skillLimits.strokes[strokeChoice] : null;
+  const maxRepeatDistanceM = strokeLimit?.maxRepeatDistanceM ?? null;
+  const preferred = (() => {
+    if (sessionType === "speed") return poolLength >= 50 ? 50 : 25;
+    if (sessionType === "technique" || sessionType === "technical_fault_correction") {
+      return poolLength >= 50 ? 100 : 50;
+    }
+    if (sessionType === "threshold_css" || sessionType === "race_pace") return 100;
+    return poolLength >= 50 ? 200 : 100;
+  })();
+
+  if (maxRepeatDistanceM && preferred > maxRepeatDistanceM) {
+    return maxRepeatDistanceM;
   }
-  if (sessionType === "threshold_css" || sessionType === "race_pace") return 100;
-  return poolLength >= 50 ? 200 : 100;
+
+  return preferred;
 }
 
 function selectStrokeChoice(
