@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-02-ai-swim-session-generator-output-correctness-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-02`
-- `updated`: `2026-05-02`
+- `updated`: `2026-05-03`
 
 ## Goal
 
@@ -174,3 +174,4 @@ Critical target categories for `10/10` claim:
 
 - `2026-05-02 | in-progress | created brief from owner-approved output-correctness/parity scope after audit identified generator/save invariant gaps | next: implement domain invariants and targeted coverage`
 - `2026-05-02 | in-progress | implemented generated output invariants, pool target rebalance, drill/kick/stroke repeat shaping, route output fail-closed validation, yard persistence normalization, and targeted coverage | next: run brief lint and verify:pre-pr`
+- `2026-05-03 | done | PR #574 merged as c1259e9 with local verify:pre-pr, verify:pre-merge, and CI green | next: no implementation follow-up for this brief`
