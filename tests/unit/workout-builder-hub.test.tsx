@@ -1828,9 +1828,25 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-builder-mode-edit")).toBeVisible();
     expect(screen.getByTestId("workout-editor-builder-mode-rearrange")).toBeVisible();
     expect(screen.getByTestId("workout-editor-builder-mode-view")).toBeVisible();
+    expect(screen.getByTestId("workout-editor-builder-mode-edit")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByTestId("workout-editor-builder-mode-view")).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
 
     fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
 
+    expect(screen.getByTestId("workout-editor-builder-mode-edit")).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(screen.getByTestId("workout-editor-builder-mode-view")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
     expect(screen.queryByTestId("session-draft-add-step")).not.toBeInTheDocument();
     expect(screen.queryByTestId("session-draft-add-repeat")).not.toBeInTheDocument();
     expect(screen.queryByTestId("workout-editor-metadata-toggle")).not.toBeInTheDocument();

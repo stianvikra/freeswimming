@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-01-session-step-reference-surface-architecture-hardening-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-01`
 - `updated`: `2026-05-01`
@@ -142,3 +142,5 @@ Critical target categories for `10/10` claim:
 ## Checkpoint Log
 
 - `2026-05-01 | planned | created from the AI swim session V1 screenshot-review findings: generated session UI should reuse the manual pool builder's session-step contract systemically instead of drifting through route-local visual copies | next: execute after the V1 generator screenshot-gated slice is approved or split if the V1 PR needs to stay smaller`
+- `2026-05-01 | in-progress | moved brief from planned to in-progress and extracted session-step view-model/display helpers from WorkoutEditor into components/my-library/workouts/sessionStepSurfaceContract.ts | next: add focused adapter tests, run targeted validation, then capture after/reference screenshots`
+- `2026-05-01 | screenshot-review | removed the temporary inline builder mode button styling, added a stable session-step surface test id for handoff capture, regenerated after/reference desktop and mobile screenshots with external dev overlays isolated, and passed targeted adapter/component validation | next: owner screenshot approval before verify:pre-pr`
