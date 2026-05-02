@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildSessionDraft } from "@/lib/session-generator-v1/server";
+import {
+  buildSessionDraft,
+  validateGeneratedSessionDraftOutput,
+} from "@/lib/session-generator-v1/server";
 import {
   getDefaultSessionGeneratorFormState,
   validateSessionGeneratorFormState,
 } from "@/lib/session-generator-v1/shared";
+import { normalizeSessionDraftForWorkoutPersistence } from "@/lib/workouts/shared";
 import type { GeneratorIntakeHandoffPayload } from "@/lib/generator-intake/shared";
 
 function buildHandoff(): GeneratorIntakeHandoffPayload {
@@ -116,6 +120,15 @@ function buildHandoff(): GeneratorIntakeHandoffPayload {
   };
 }
 
+function sumCategoryDistance(
+  draft: ReturnType<typeof buildSessionDraft>,
+  category: "drill" | "kick"
+) {
+  return draft.steps
+    .filter((step) => step.category === category && step.durationMode === "distance")
+    .reduce((total, step) => total + (step.distanceM ?? 0) * (step.repeatCount ?? 1), 0);
+}
+
 describe("session generator server", () => {
   it("builds a pool threshold draft with CSS-aware main-set guidance", () => {
     const handoff = buildHandoff();
@@ -158,7 +171,7 @@ describe("session generator server", () => {
     expect(
       draft.steps.find((step) => step.postSetRestForRepeatGroupId === "kick-repeat-1")?.timeMin
     ).toBeGreaterThan(0);
-    expect(draft.steps.find((step) => step.id === "main-1")?.notes).toContain("CSS");
+    expect(draft.steps.find((step) => step.category === "main")?.notes).toContain("CSS");
     expect(draft.totalDistanceM).toBe(2400);
     expect(draft.estimatedDurationMin).toBeGreaterThan(0);
   });
@@ -239,12 +252,14 @@ describe("session generator server", () => {
       drillVolumeMode: "explicit",
       drillTargetMeters: "400",
       drillMaxRepeatDistance: "50",
+      drillApproxTotalDistance: "400",
       includeKick: true,
       kickVolumeMode: "explicit",
       kickTargetMeters: "200",
       kickIntervalMeters: "50",
       restMode: "explicit",
       restSeconds: "30",
+      skillLimitMode: "override",
       allowedStrokes: ["freestyle"],
       equipmentAllowlist: ["kickboard"],
     });
@@ -301,5 +316,224 @@ describe("session generator server", () => {
       error:
         "Selected stroke limits are lower than the target distance. Add another stroke or lower the session size.",
     });
+  });
+
+  it("keeps yard pool rules canonical while preserving selected unit intent", () => {
+    const handoff = buildHandoff();
+    const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      environment: "pool",
+      poolLengthM: "25",
+      poolLengthUnit: "yd",
+      sessionType: "endurance",
+      sizeMode: "distance",
+      targetDistanceM: "1000",
+      includeDrills: false,
+      includeKick: false,
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: [],
+    });
+
+    expect(validation.ok).toBe(true);
+    if (!validation.ok) return;
+
+    const draft = buildSessionDraft(handoff, validation.value);
+    const outputValidation = validateGeneratedSessionDraftOutput(validation.value, draft);
+
+    expect(outputValidation).toEqual({ ok: true });
+    expect(draft.poolLengthUnit).toBe("yd");
+    expect(draft.poolLengthM).toBeCloseTo(22.86, 2);
+    expect(draft.targetDistanceM).toBeCloseTo(914.4, 4);
+    expect(draft.totalDistanceM).toBeCloseTo(914.4, 4);
+    for (const step of draft.steps.filter((step) => step.durationMode === "distance")) {
+      expect(((step.distanceM ?? 0) / (draft.poolLengthM ?? 1)) % 1).toBeCloseTo(0, 4);
+    }
+
+    const persistenceResult = normalizeSessionDraftForWorkoutPersistence(draft);
+
+    expect(persistenceResult.ok).toBe(true);
+    if (!persistenceResult.ok) return;
+    expect(persistenceResult.value.poolLengthUnit).toBe("yd");
+    expect(persistenceResult.value.poolLengthM).toBeCloseTo(22.86, 2);
+    expect(persistenceResult.value.targetDistanceM).toBeCloseTo(914.4, 4);
+    expect(persistenceResult.value.totalDistanceM).toBeCloseTo(914.4, 4);
+  });
+
+  it("keeps generated pool time targets within the requested duration", () => {
+    const handoff = buildHandoff();
+    const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      environment: "pool",
+      poolLengthM: "25",
+      poolLengthUnit: "m",
+      sessionType: "endurance",
+      sizeMode: "estimated_time",
+      targetTimeMin: "45",
+      includeDrills: false,
+      includeKick: false,
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: [],
+    });
+
+    expect(validation.ok).toBe(true);
+    if (!validation.ok) return;
+
+    const draft = buildSessionDraft(handoff, validation.value);
+
+    expect(validateGeneratedSessionDraftOutput(validation.value, draft)).toEqual({ ok: true });
+    expect(draft.estimatedDurationMin).toBeGreaterThanOrEqual(44);
+    expect(draft.estimatedDurationMin).toBeLessThanOrEqual(46);
+  });
+
+  it("uses drill and kick approx-per-session limits as output volume targets", () => {
+    const handoff = buildHandoff();
+    const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      environment: "pool",
+      poolLengthM: "25",
+      poolLengthUnit: "m",
+      sessionType: "endurance",
+      sizeMode: "distance",
+      targetDistanceM: "1600",
+      includeDrills: true,
+      drillVolumeMode: "coach_decides",
+      drillMaxRepeatDistance: "25",
+      drillApproxTotalDistance: "300",
+      includeKick: true,
+      kickVolumeMode: "coach_decides",
+      kickIntervalMeters: "50",
+      kickApproxTotalDistance: "200",
+      skillLimitMode: "override",
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: ["kickboard"],
+    });
+
+    expect(validation.ok).toBe(true);
+    if (!validation.ok) return;
+
+    const draft = buildSessionDraft(handoff, validation.value);
+
+    expect(validateGeneratedSessionDraftOutput(validation.value, draft)).toEqual({ ok: true });
+    expect(sumCategoryDistance(draft, "drill")).toBe(300);
+    expect(sumCategoryDistance(draft, "kick")).toBe(200);
+    expect(
+      draft.steps
+        .filter((step) => step.category === "drill" && step.durationMode === "distance")
+        .every((step) => (step.distanceM ?? 0) <= 25)
+    ).toBe(true);
+    expect(
+      draft.steps
+        .filter((step) => step.category === "kick" && step.durationMode === "distance")
+        .every((step) => (step.distanceM ?? 0) <= 50)
+    ).toBe(true);
+    expect(draft.steps.some((step) => step.equipment === "kickboard")).toBe(true);
+  });
+
+  it("fails fast when drill and kick rules leave no room for core swimming", () => {
+    const handoff = buildHandoff();
+    const validation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      environment: "pool",
+      poolLengthM: "25",
+      poolLengthUnit: "m",
+      sessionType: "endurance",
+      sizeMode: "distance",
+      targetDistanceM: "400",
+      includeDrills: true,
+      drillVolumeMode: "explicit",
+      drillTargetMeters: "300",
+      drillMaxRepeatDistance: "50",
+      drillApproxTotalDistance: "300",
+      includeKick: true,
+      kickVolumeMode: "explicit",
+      kickTargetMeters: "200",
+      kickIntervalMeters: "50",
+      kickApproxTotalDistance: "200",
+      skillLimitMode: "override",
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: ["kickboard"],
+    });
+
+    expect(validation).toEqual({
+      ok: false,
+      error:
+        "Session Rules leave no room for warmup, main work, and cooldown. Lower drill/kick distance or raise the target distance.",
+    });
+  });
+
+  it("fails fast when approximate drill or kick volume is shorter than one pool length", () => {
+    const handoff = buildHandoff();
+    const drillValidation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      environment: "pool",
+      poolLengthM: "50",
+      poolLengthUnit: "m",
+      includeDrills: true,
+      drillVolumeMode: "coach_decides",
+      drillMaxRepeatDistance: "50",
+      drillApproxTotalDistance: "25",
+      includeKick: false,
+      skillLimitMode: "override",
+    });
+    const kickValidation = validateSessionGeneratorFormState({
+      ...getDefaultSessionGeneratorFormState(handoff),
+      environment: "pool",
+      poolLengthM: "50",
+      poolLengthUnit: "m",
+      includeDrills: false,
+      includeKick: true,
+      kickVolumeMode: "coach_decides",
+      kickIntervalMeters: "50",
+      kickApproxTotalDistance: "25",
+      skillLimitMode: "override",
+    });
+
+    expect(drillValidation).toEqual({
+      ok: false,
+      error: "Drill approx per session must be at least one pool length.",
+    });
+    expect(kickValidation).toEqual({
+      ok: false,
+      error: "Kick approx per session must be at least one pool length.",
+    });
+  });
+
+  it("structures generated stroke work so max length limits are real workout steps", () => {
+    const handoff = buildHandoff();
+    const defaults = getDefaultSessionGeneratorFormState(handoff);
+    const validation = validateSessionGeneratorFormState({
+      ...defaults,
+      environment: "pool",
+      poolLengthM: "25",
+      poolLengthUnit: "m",
+      sessionType: "threshold_css",
+      sizeMode: "distance",
+      targetDistanceM: "1200",
+      includeDrills: false,
+      includeKick: false,
+      skillLimitMode: "override",
+      strokeLimits: {
+        ...defaults.strokeLimits,
+        freestyle: {
+          maxRepeatDistance: "100",
+          maxTotalDistance: "1200",
+        },
+      },
+      allowedStrokes: ["freestyle"],
+      equipmentAllowlist: [],
+    });
+
+    expect(validation.ok).toBe(true);
+    if (!validation.ok) return;
+
+    const draft = buildSessionDraft(handoff, validation.value);
+    const freestyleDistanceSteps = draft.steps.filter(
+      (step) => step.stroke === "freestyle" && step.durationMode === "distance"
+    );
+
+    expect(validateGeneratedSessionDraftOutput(validation.value, draft)).toEqual({ ok: true });
+    expect(freestyleDistanceSteps.length).toBeGreaterThan(1);
+    expect(freestyleDistanceSteps.every((step) => (step.distanceM ?? 0) <= 100)).toBe(true);
+    expect(draft.totalDistanceM).toBe(1200);
   });
 });

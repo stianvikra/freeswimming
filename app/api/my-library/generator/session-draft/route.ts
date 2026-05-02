@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { buildGeneratorHandoffPayload } from "@/lib/generator-intake/shared";
 import { loadGeneratorIntakeSnapshot } from "@/lib/generator-intake/server";
-import { buildSessionDraft } from "@/lib/session-generator-v1/server";
+import {
+  buildSessionDraft,
+  validateGeneratedSessionDraftOutput,
+} from "@/lib/session-generator-v1/server";
 import {
   normalizeSessionGeneratorFormState,
   validateSessionGeneratorFormState,
@@ -75,6 +78,13 @@ export async function POST(request: Request) {
   }
 
   const draft = buildSessionDraft(handoff, validation.value);
+  const outputValidation = validateGeneratedSessionDraftOutput(validation.value, draft);
+
+  if (!outputValidation.ok) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: outputValidation.error }, { status: 422 })
+    );
+  }
 
   return applySupabaseCookies(
     noStoreJson({
