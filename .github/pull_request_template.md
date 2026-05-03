@@ -48,6 +48,7 @@
 - [ ] Docs updated for behavior/contract changes
 - [ ] Changed task briefs include full 10/10 scorecard mapping (all categories marked target/supporting/N/A)
 - [ ] Every `target` scorecard row has measurable threshold + evidence source
+- [ ] Changed `done` task briefs include achieved score + evidence for every target category and explicit `10/10 claim: yes/no`
 - [ ] If claiming `10/10`: critical target categories are listed and each is scored `5/5`
 - [ ] PR is <= 500 changed lines, or intentionally split/explained
 - [ ] No secrets or sensitive data added

@@ -27,6 +27,8 @@ When moving to `done/`, add a completion record:
 - PR link and merge info
 - delivered feature/files summary
 - test evidence summary (local + Vercel preview for changed flows)
+- achieved score + evidence table covering every scorecard category mapped `target`
+- explicit `10/10 claim: yes/no` line
 - DevOps/workflow changes
 - secrets used (names only, never values)
 - continuity notes (how to reconstruct context from git/PR if chat history is unavailable)
@@ -61,7 +63,8 @@ Before moving any brief to `done/`, run a final closeout gate:
    - business logic/data integrity check for changed stateful flows,
    - security/privacy/compliance check for auth/data/payments,
    - performance/regression sanity check so adjacent app flows are not degraded.
-   - score target categories from `docs/quality/platform-10-10-scorecard.md` (`0-5`) and record results.
+   - score target categories from `docs/quality/platform-10-10-scorecard.md` (`0-5`) and record results with evidence.
+   - list critical target categories and only claim `10/10` when each critical target is `5/5`.
 3. cleanup readiness:
    - tests + manual QA evidence recorded in brief,
    - PR/branch ready for merge and post-merge hygiene.
