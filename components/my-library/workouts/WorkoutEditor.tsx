@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Ellipsis } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -11,6 +10,13 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
+import {
+  RemovalConfirm,
+  SessionStepRepeatSummaryCard,
+  SessionStepSummaryCard,
+  SessionStepSurfaceRenderer,
+  type SessionStepSurfaceMode,
+} from "@/components/my-library/workouts/SessionStepSurfaceRenderer";
 import {
   MANUAL_POOL_REST_DURATION_MODES,
   applyRecommendedStepFocus,
@@ -34,8 +40,6 @@ import {
   getManualPoolCategoryRailClass,
   getManualPoolDrillNameInputValue,
   getManualPoolDurationModesForCategory,
-  getManualPoolViewSectionHeaderClass,
-  getManualPoolViewSectionToneClass,
   getRecommendedStepFocus,
   getStepDurationModeEditorLabel,
   getStepTargetModeEditorLabel,
@@ -201,13 +205,6 @@ const MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS = [
   "ascending",
   "descending",
 ] as const satisfies readonly SessionDraftStepIntensityPreset[];
-const WORKOUT_VIEW_MODES = ["edit", "rearrange", "view"] as const;
-const WORKOUT_VIEW_MODE_LABELS: Record<(typeof WORKOUT_VIEW_MODES)[number], string> = {
-  edit: "Edit",
-  rearrange: "Rearrange",
-  view: "View",
-};
-
 type LastRemovedBlock = {
   kind: "step" | "repeat";
   label: string;
@@ -227,15 +224,9 @@ type SupportSectionKey = "readiness" | "garminExport" | "handoff";
 const CUSTOM_DISTANCE_VALUE = "custom";
 const EMPTY_WORKOUT_POOLSIDE_FOCUS_OPTIONS: WorkoutPoolsideFocusOption[] = [];
 const DESKTOP_CARD_EDIT_MEDIA_QUERY = "(hover: hover) and (pointer: fine)";
-const CARD_EDIT_IGNORE_SELECTOR =
-  "button, a, input, select, textarea, summary, [role='button'], [role='link'], [data-card-edit-ignore='true']";
 
 function getPoolBuilderAutoTitle(environment: SessionGeneratorEnvironment | null | undefined) {
   return environment === "pool" ? "Untitled pool session" : null;
-}
-
-function shouldIgnoreCardEditClick(target: EventTarget | null) {
-  return target instanceof Element && Boolean(target.closest(CARD_EDIT_IGNORE_SELECTOR));
 }
 
 function syncAutoGrowingTextareaHeight(node: HTMLTextAreaElement, minRows: number) {
@@ -794,8 +785,7 @@ export default function WorkoutEditor({
       forceMetadataOpenOnLoad ||
       (copyVariant !== "generator" && !(savedWorkout && copyVariant === "default"))
   );
-  const [builderViewMode, setBuilderViewMode] =
-    useState<(typeof WORKOUT_VIEW_MODES)[number]>("edit");
+  const [builderViewMode, setBuilderViewMode] = useState<SessionStepSurfaceMode>("edit");
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions)
   );
@@ -992,25 +982,6 @@ export default function WorkoutEditor({
   const supportPreviewShellClass =
     "mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950";
   const supportSummaryItemClass = "rounded-xl bg-slate-100/80 p-3 sm:p-4";
-  const mobileSummaryToggleClass =
-    "w-full rounded-2xl text-left outline-none transition focus-visible:ring-2 focus-visible:ring-blue-200";
-  const mobileIconButtonBaseClass =
-    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition";
-  const mobileActionToggleClass = `${mobileIconButtonBaseClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100`;
-  const getMobileExpandToggleClass = (expanded: boolean) =>
-    `${mobileIconButtonBaseClass} ${
-      expanded
-        ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 active:bg-blue-100"
-        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-    }`;
-  const mobileActionPanelClass = "mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-2.5";
-  const mobileSecondaryActionClass =
-    "inline-flex min-h-10 w-full items-center justify-start rounded-xl border px-3 py-2 text-sm font-medium transition";
-  const rearrangeMoveButtonClass =
-    "inline-flex h-10 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-10";
-  const recentlyMovedBlockClass = "bg-teal-50/80 shadow-sm ring-2 ring-inset ring-teal-300";
-  const desktopHeaderStackClass = "flex items-start justify-between gap-3";
-  const desktopSummaryBlockClass = "min-w-0 flex-1";
   const desktopRepeatControlRowClass = "grid gap-3";
   const isEditMode = builderViewMode === "edit";
   const isRearrangeMode = builderViewMode === "rearrange";
@@ -2374,7 +2345,6 @@ export default function WorkoutEditor({
     const insideRepeatGroup = options?.insideRepeatGroup ?? false;
     const isLinkedPostSetRest = options?.isLinkedPostSetRest ?? false;
     const isOpen = isEditMode && openStepId === step.id;
-    const toggleLabel = isOpen ? "Done" : "Edit";
     const panelId = `session-draft-step-panel-${step.id}`;
     const normalizedStep = isManualPoolMode ? normalizeManualPoolStepForEditor(step) : step;
     const isGeneratorSummaryCard = copyVariant === "generator";
@@ -2488,45 +2458,23 @@ export default function WorkoutEditor({
     const showManualPoolDrillNameField =
       isManualPoolMode && !isMinimalRestEditor && isManualPoolDrillNameRelevantStep(normalizedStep);
     const manualPoolDrillNameHelpId = `session-draft-step-drill-name-help-${step.id}`;
-    const stepSummaryContent = (
-      <>
-        <p
-          className={`text-xs font-semibold tracking-wide uppercase ${topLevelCategoryLabelClass}`}
-        >
-          {stepLabel}
-        </p>
-        <p className="mt-1 text-sm font-medium text-slate-900">{stepTitle}</p>
-        {!isManualPoolMode && !isGeneratorSummaryCard ? (
-          <p className="mt-1 text-xs font-medium text-slate-600">
-            {getSessionStepCategoryLabel(step.category)}
-          </p>
-        ) : null}
-        {!isManualPoolMode && !isGeneratorSummaryCard ? (
-          <p className="mt-2 text-xs text-slate-600">
-            {buildStepSummary(
-              step,
-              draft.basePaceSecondsPer100m,
-              draft.environment,
-              poolLengthUnit
-            )}
-          </p>
-        ) : null}
-        {options?.descriptionOverride ? (
-          <p className="mt-2 text-xs text-slate-500">{options.descriptionOverride}</p>
-        ) : null}
-        {!isManualPoolMode && !isGeneratorSummaryCard && step.targetSummary ? (
-          <p className="mt-1 text-xs text-slate-500">{step.targetSummary}</p>
-        ) : null}
-        {pendingDelete ? (
-          <p className="mt-2 text-[11px] font-semibold tracking-wide text-rose-700 uppercase">
-            Will be removed
-          </p>
-        ) : null}
-        {!isGeneratorSummaryCard && stepNotes ? (
-          <p className="mt-1 text-xs text-slate-400">{stepNotes}</p>
-        ) : null}
-      </>
-    );
+    const stepSummary = {
+      label: stepLabel,
+      title: stepTitle,
+      labelClassName: topLevelCategoryLabelClass,
+      categoryLabel:
+        !isManualPoolMode && !isGeneratorSummaryCard
+          ? getSessionStepCategoryLabel(step.category)
+          : null,
+      description:
+        options?.descriptionOverride ??
+        (!isManualPoolMode && !isGeneratorSummaryCard
+          ? buildStepSummary(step, draft.basePaceSecondsPer100m, draft.environment, poolLengthUnit)
+          : null),
+      targetSummary: !isManualPoolMode && !isGeneratorSummaryCard ? step.targetSummary : null,
+      pendingDelete,
+      notes: !isGeneratorSummaryCard ? stepNotes : null,
+    };
     const isTerminalSessionStepBlock =
       isTopLevelSessionStepBlock && sessionStepBlockIndex === sessionStepEditBlocks.length - 1;
     const moveUpDisabled = isTopLevelSessionStepBlock
@@ -2756,888 +2704,1004 @@ export default function WorkoutEditor({
         setOpenRepeatGroupId(normalizedStep.repeatGroupId);
       }
     };
-
-    return (
-      <article
-        key={step.id}
-        data-mobile-actions="progressive"
-        data-manual-pool-category={
-          isTopLevelSessionStepBlock && !pendingDelete ? normalizedStep.category : undefined
-        }
-        data-desktop-card-clickable={canUseDesktopCardOpen ? "true" : "false"}
-        onClick={
-          canUseDesktopCardOpen
-            ? (event) => {
-                if (shouldIgnoreCardEditClick(event.target)) {
-                  return;
-                }
-
-                openStepCard();
+    const toggleMobileStepActions = () =>
+      setOpenMobileActionKey((current) => (current === mobileActionKey ? null : mobileActionKey));
+    const requestRemoveStep = () => {
+      requestStepRemoval(step.id);
+      setOpenMobileActionKey(null);
+    };
+    const editPanel = isOpen ? (
+      <div id={panelId} className="mt-4 grid gap-4 md:grid-cols-2">
+        {isManualPoolMode ? null : (
+          <label className="text-sm text-slate-700">
+            Step name
+            <input
+              type="text"
+              value={step.name}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
               }
-            : undefined
-        }
-        className={`rounded-2xl border p-3 transition sm:p-4 ${cardStateClass} ${topLevelCategoryRailClass} ${
-          stepWasRecentlyMoved ? recentlyMovedBlockClass : ""
-        } ${
-          canUseDesktopCardOpen && !pendingDelete
-            ? "cursor-pointer hover:border-blue-200 hover:bg-white hover:shadow-sm"
-            : ""
-        }`}
-      >
-        <div className={desktopHeaderStackClass}>
-          <div className={desktopSummaryBlockClass}>
-            {isSummaryOnlyMode || showRearrangeControls ? (
-              <div data-testid={`session-draft-step-mobile-summary-${index}`} className="sm:hidden">
-                {stepSummaryContent}
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={toggleStepCard}
-                aria-expanded={isOpen}
-                aria-controls={panelId}
-                data-testid={`session-draft-step-mobile-summary-${index}`}
-                className={`${mobileSummaryToggleClass} sm:hidden`}
+              data-testid={`session-draft-step-name-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </label>
+        )}
+
+        <label className="text-sm text-slate-700">
+          {isManualPoolMode ? "Step Type" : "Category"}
+          <select
+            value={stepCategoryValue}
+            disabled={isLinkedPostSetRest}
+            onChange={(event) =>
+              updateDraftStep(step.id, (current) =>
+                applyRecommendedStepFocus(current, {
+                  category: event.target.value as SessionDraftStepCategory,
+                })
+              )
+            }
+            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          >
+            {(isLinkedPostSetRest
+              ? (["rest"] as const)
+              : isManualPoolMode
+                ? MANUAL_POOL_VISIBLE_STEP_CATEGORIES
+                : SESSION_DRAFT_STEP_CATEGORIES
+            ).map((value) => (
+              <option key={value} value={value}>
+                {getSessionStepCategoryLabel(value)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {isMinimalRestEditor ? null : (
+          <label className="text-sm text-slate-700">
+            {isManualPoolMode ? "Stroke Type" : "Stroke pattern"}
+            <select
+              value={stepStrokeValue}
+              onChange={(event) => {
+                const nextStroke = event.target.value as SessionDraftStep["stroke"];
+
+                updateDraftStep(step.id, (current) =>
+                  applyRecommendedStepFocus(current, {
+                    stroke: nextStroke,
+                  })
+                );
+              }}
+              data-testid={`session-draft-step-stroke-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {(isManualPoolMode
+                ? MANUAL_POOL_VISIBLE_STEP_STROKES
+                : SESSION_DRAFT_STEP_STROKES
+              ).map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStepStrokeLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {isMinimalRestEditor ? null : (
+          <label className="text-sm text-slate-700">
+            {isManualPoolMode ? "Drill Type" : "Focus tag"}
+            <select
+              value={stepDrillTypeValue}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  drillType: event.target.value as NonNullable<SessionDraftStep["drillType"]>,
+                }))
+              }
+              data-testid={`session-draft-step-drill-type-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_DRAFT_STEP_DRILL_TYPES.map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStepDrillTypeLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {showManualPoolDrillNameField ? (
+          <div className="text-sm text-slate-700">
+            <label htmlFor={`session-draft-step-drill-name-${step.id}`}>Drill name</label>
+            <input
+              id={`session-draft-step-drill-name-${step.id}`}
+              type="text"
+              value={getManualPoolDrillNameInputValue(normalizedStep)}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
+              aria-describedby={manualPoolDrillNameHelpId}
+              placeholder="Catch drill"
+              data-testid={`session-draft-step-drill-name-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+            <p id={manualPoolDrillNameHelpId} className="mt-2 text-sm text-slate-500">
+              Names the drill. Use Notes for execution cues.
+            </p>
+          </div>
+        ) : null}
+
+        {isManualPoolMode || isMinimalRestEditor ? null : (
+          <>
+            <p className="text-sm text-slate-500 md:col-span-2">
+              {buildStepStrokeGuidance(step, isManualPoolMode)}
+            </p>
+            <p className="text-sm text-slate-500 md:col-span-2">
+              {buildStepFocusGuidance(step, isManualPoolMode)}
+            </p>
+          </>
+        )}
+
+        {isMinimalRestEditor ? null : (
+          <label className="text-sm text-slate-700">
+            Equipment
+            <select
+              value={stepEquipmentValue}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  equipment: event.target.value as NonNullable<SessionDraftStep["equipment"]>,
+                }))
+              }
+              data-testid={`session-draft-step-equipment-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_DRAFT_STEP_EQUIPMENT.map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStepEquipmentLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {isManualPoolMode || isMinimalRestEditor ? null : (
+          <label className="text-sm text-slate-700">
+            Effort
+            <select
+              value={stepIntensityValue}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  intensity: event.target.value as SessionDraftStepIntensityPreset,
+                }))
+              }
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {(isManualPoolMode
+                ? MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS
+                : SESSION_DRAFT_STEP_INTENSITY_PRESETS
+              ).map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStepIntensityLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <label className="text-sm text-slate-700">
+          {isManualPoolMode ? "Duration" : "Duration mode"}
+          <select
+            value={stepDurationModeValue}
+            onChange={(event) =>
+              updateStepDurationMode(step.id, event.target.value as SessionDraftStepDurationMode)
+            }
+            data-testid={`session-draft-step-duration-mode-${index}`}
+            className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          >
+            {(isManualPoolMode
+              ? getManualPoolDurationModesForCategory(stepCategoryValue)
+              : SESSION_DRAFT_STEP_DURATION_MODES
+            ).map((value) => (
+              <option key={value} value={value}>
+                {getStepDurationModeEditorLabel(value, isManualPoolMode)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {step.durationMode === "distance" ? (
+          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-2">
+            <label className="text-sm text-slate-700">
+              Distance
+              <select
+                value={
+                  selectedDistancePreset ? String(selectedDistancePreset) : CUSTOM_DISTANCE_VALUE
+                }
+                onChange={(event) =>
+                  updateStepDistanceSelection(step.id, event.target.value, stepDistanceUnit)
+                }
+                data-testid={`session-draft-step-distance-${index}`}
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
-                {stepSummaryContent}
-              </button>
-            )}
-            <div data-testid={`session-draft-step-summary-${index}`} className="hidden sm:block">
-              {stepSummaryContent}
+                {SESSION_DRAFT_STEP_DISTANCE_PRESETS.map((value) => (
+                  <option key={value} value={String(value)}>
+                    {stepDistanceUnit === "yd" ? `${value}yd` : formatDistanceMetersLabel(value)}
+                  </option>
+                ))}
+                <option value={CUSTOM_DISTANCE_VALUE}>Custom distance</option>
+              </select>
+            </label>
+            {!selectedDistancePreset ? (
+              <label className="text-sm text-slate-700">
+                {`Custom distance (${stepDistanceUnit})`}
+                <input
+                  ref={(node) => {
+                    customDistanceInputRefs.current[step.id] = node;
+                  }}
+                  type="text"
+                  inputMode="decimal"
+                  value={formatEditableDistance(step.distanceM, stepDistanceUnit)}
+                  onChange={(event) =>
+                    updateDraftStep(step.id, (current) => ({
+                      ...current,
+                      distanceM: parseDistanceInput(event.target.value, stepDistanceUnit),
+                    }))
+                  }
+                  data-testid={`session-draft-step-distance-custom-${index}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </label>
+            ) : null}
+          </div>
+        ) : step.durationMode === "fixed_rest" && isManualPoolMode ? (
+          <label className="text-sm text-slate-700">
+            Rest time
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="MM:SS"
+              value={timeDurationInputs[step.id] ?? ""}
+              onFocus={() => {
+                timeDurationInputFocusRef.current[step.id] = true;
+              }}
+              onBlur={() => {
+                commitTimeDurationInput(step.id);
+              }}
+              onChange={(event) => handleTimeDurationInputChange(step.id, event.target.value)}
+              data-testid={`session-draft-step-rest-time-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </label>
+        ) : step.durationMode === "fixed_rest" ? (
+          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
+            <label className="text-sm text-slate-700">
+              Minutes
+              <input
+                type="text"
+                inputMode="numeric"
+                value={getDurationMinutes(step.timeMin)}
+                onChange={(event) =>
+                  updateStepDurationClock(step.id, "minutes", event.target.value)
+                }
+                data-testid={`session-draft-step-rest-minutes-${index}`}
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              Seconds
+              <input
+                type="text"
+                inputMode="numeric"
+                value={getDurationSeconds(step.timeMin)}
+                onChange={(event) =>
+                  updateStepDurationClock(step.id, "seconds", event.target.value)
+                }
+                data-testid={`session-draft-step-rest-seconds-${index}`}
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </label>
+            <div className="self-end text-sm text-slate-500">
+              {step.timeMin
+                ? `Fixed Rest Time ${formatClockDurationLabel(step.timeMin)}`
+                : "Set Fixed Rest Time"}
             </div>
           </div>
-          {isEditMode ? (
-            <div className="hidden shrink-0 sm:flex">
-              <button
-                type="button"
-                onClick={toggleStepCard}
-                aria-expanded={isOpen}
-                aria-controls={panelId}
-                data-testid={`session-draft-step-toggle-${index}`}
-                className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm transition ${
-                  isOpen
-                    ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                {toggleLabel}
-              </button>
-            </div>
-          ) : null}
-          {showRearrangeControls ? (
-            <div
-              data-testid={`session-draft-step-rearrange-controls-${index}`}
-              className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap"
-            >
-              <button
-                type="button"
-                onClick={handleMoveUp}
-                disabled={moveUpDisabled}
-                aria-label="Move up"
-                title="Move up"
-                data-testid={`session-draft-step-rearrange-move-up-${index}`}
-                className={rearrangeMoveButtonClass}
-              >
-                <ArrowUp aria-hidden="true" className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleMoveDown}
-                disabled={moveDownDisabled}
-                aria-label="Move down"
-                title="Move down"
-                data-testid={`session-draft-step-rearrange-move-down-${index}`}
-                className={rearrangeMoveButtonClass}
-              >
-                <ArrowDown aria-hidden="true" className="size-4" />
-              </button>
-            </div>
-          ) : isEditMode ? (
-            <div className="flex shrink-0 items-start gap-2 sm:hidden">
-              <button
-                type="button"
-                onClick={toggleStepCard}
-                aria-expanded={isOpen}
-                aria-controls={panelId}
-                aria-label={isOpen ? "Hide step details" : "Show step details"}
-                data-testid={`session-draft-step-mobile-toggle-${index}`}
-                className={getMobileExpandToggleClass(isOpen)}
-              >
-                {isOpen ? (
-                  <ChevronUp aria-hidden="true" className="size-4" />
-                ) : (
-                  <ChevronDown aria-hidden="true" className="size-4" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenMobileActionKey((current) =>
-                    current === mobileActionKey ? null : mobileActionKey
-                  )
+        ) : step.durationMode === "time" ? (
+          <label className="text-sm text-slate-700">
+            {isManualPoolMode ? "Time" : "Time (min)"}
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder={isManualPoolMode ? "MM:SS" : undefined}
+              value={isManualPoolMode ? (timeDurationInputs[step.id] ?? "") : (step.timeMin ?? "")}
+              onFocus={() => {
+                if (!isManualPoolMode) return;
+                timeDurationInputFocusRef.current[step.id] = true;
+              }}
+              onBlur={() => {
+                if (!isManualPoolMode) return;
+                commitTimeDurationInput(step.id);
+              }}
+              onChange={(event) =>
+                isManualPoolMode
+                  ? handleTimeDurationInputChange(step.id, event.target.value)
+                  : updateDraftStep(step.id, (current) => ({
+                      ...current,
+                      timeMin: parsePositiveNumber(event.target.value),
+                    }))
+              }
+              data-testid={`session-draft-step-time-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </label>
+        ) : step.durationMode === "send_off" && isManualPoolMode ? (
+          <label className="text-sm text-slate-700">
+            Send-off time
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="MM:SS"
+              value={timeDurationInputs[step.id] ?? ""}
+              onFocus={() => {
+                timeDurationInputFocusRef.current[step.id] = true;
+              }}
+              onBlur={() => {
+                commitTimeDurationInput(step.id);
+              }}
+              onChange={(event) => handleTimeDurationInputChange(step.id, event.target.value)}
+              data-testid={`session-draft-step-sendoff-time-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </label>
+        ) : step.durationMode === "send_off" ? (
+          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
+            <label className="text-sm text-slate-700">
+              Minutes
+              <input
+                type="text"
+                inputMode="numeric"
+                value={getDurationMinutes(step.timeMin)}
+                onChange={(event) =>
+                  updateStepDurationClock(step.id, "minutes", event.target.value)
                 }
-                aria-expanded={mobileActionsOpen}
-                aria-controls={`session-draft-step-mobile-actions-panel-${step.id}`}
-                data-testid={`session-draft-step-mobile-actions-toggle-${index}`}
-                className={mobileActionToggleClass}
-              >
-                <Ellipsis className="size-5" />
-                <span className="sr-only">
-                  {mobileActionsOpen ? "Hide step actions" : "Show step actions"}
-                </span>
-              </button>
+                data-testid={`session-draft-step-sendoff-minutes-${index}`}
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              Seconds
+              <input
+                type="text"
+                inputMode="numeric"
+                value={getDurationSeconds(step.timeMin)}
+                onChange={(event) =>
+                  updateStepDurationClock(step.id, "seconds", event.target.value)
+                }
+                data-testid={`session-draft-step-sendoff-seconds-${index}`}
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </label>
+            <div className="self-end text-sm text-slate-500">
+              {step.timeMin
+                ? `Send-Off Time ${formatClockDurationLabel(step.timeMin)}`
+                : "Set Send-Off Time"}
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : step.durationMode === "css_send_off" ? (
+          <label className="text-sm text-slate-700 md:col-span-2">
+            CSS-Based Send-Off Time
+            <select
+              value={String(step.cssSendOffOffsetSeconds ?? 0)}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  cssSendOffOffsetSeconds: Number.parseInt(event.target.value, 10),
+                }))
+              }
+              data-testid={`session-draft-step-css-sendoff-offset-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.map((value) => {
+                const sign = value > 0 ? "+" : "";
+                return (
+                  <option key={value} value={String(value)}>
+                    {`CSS ${sign}${value}s (${formatClockDurationLabelFromSeconds(
+                      draft.basePaceSecondsPer100m + value
+                    )})`}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+        ) : null}
 
-        {isEditMode && mobileActionsOpen ? (
-          <div
-            id={`session-draft-step-mobile-actions-panel-${step.id}`}
-            data-testid={`session-draft-step-mobile-actions-panel-${index}`}
-            className={`${mobileActionPanelClass} sm:hidden`}
-          >
-            <div className="mt-2 grid gap-2">
-              {!showMobilePrimaryAddAfter && !isLinkedPostSetRest ? (
-                <button
-                  type="button"
-                  onClick={handleAddStepAfter}
-                  data-testid={`session-draft-step-mobile-add-after-${index}`}
-                  className={`${mobileSecondaryActionClass} border-blue-200 bg-white text-blue-800 hover:bg-blue-50`}
-                >
-                  Add step after
-                </button>
-              ) : null}
-              {!showMobilePrimaryAddRepeatAfter && !insideRepeatGroup && !isLinkedPostSetRest ? (
-                <button
-                  type="button"
-                  onClick={handleAddRepeatAfter}
-                  data-testid={`session-draft-step-mobile-add-repeat-after-${index}`}
-                  className={`${mobileSecondaryActionClass} border-blue-200 bg-white text-blue-800 hover:bg-blue-50`}
-                >
-                  Add repeat after
-                </button>
-              ) : null}
-              {isLinkedPostSetRest ? null : (
-                <button
-                  type="button"
-                  onClick={handleDuplicate}
-                  data-testid={`session-draft-step-mobile-duplicate-${index}`}
-                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100`}
-                >
-                  Duplicate
-                </button>
-              )}
-              {isLinkedPostSetRest ? null : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    requestStepRemoval(step.id);
-                    setOpenMobileActionKey(null);
-                  }}
-                  data-testid={`session-draft-step-mobile-remove-${index}`}
-                  className={`${mobileSecondaryActionClass} border-rose-200 bg-white text-rose-700 hover:bg-rose-50`}
-                >
-                  Delete
-                </button>
-              )}
+        {isMinimalRestEditor ? null : (
+          <label className="text-sm text-slate-700">
+            {isManualPoolMode ? "Target" : "Target mode"}
+            <select
+              value={stepTargetModeValue}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  targetMode: event.target.value as NonNullable<SessionDraftStep["targetMode"]>,
+                  effortTarget:
+                    event.target.value === "effort"
+                      ? (current.effortTarget ?? current.intensity)
+                      : null,
+                  targetPaceSecondsPer100m:
+                    event.target.value === "target_pace" ? current.targetPaceSecondsPer100m : null,
+                  cssTargetOffsetSeconds:
+                    event.target.value === "css_target_pace"
+                      ? (current.cssTargetOffsetSeconds ?? 0)
+                      : null,
+                }))
+              }
+              data-testid={`session-draft-step-target-mode-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {SESSION_DRAFT_STEP_TARGET_MODES.map((value) => (
+                <option key={value} value={value}>
+                  {getStepTargetModeEditorLabel(value, isManualPoolMode)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {!isMinimalRestEditor && stepTargetModeValue === "effort" ? (
+          <label className="text-sm text-slate-700">
+            {isManualPoolMode ? "Effort" : "Target effort"}
+            <select
+              value={stepEffortTargetValue}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  effortTarget: event.target.value as SessionDraftStepIntensityPreset,
+                }))
+              }
+              data-testid={`session-draft-step-target-effort-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              {(isManualPoolMode
+                ? MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS
+                : SESSION_DRAFT_STEP_INTENSITY_PRESETS
+              ).map((value) => (
+                <option key={value} value={value}>
+                  {getSessionStepIntensityLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        {!isMinimalRestEditor && stepTargetModeValue === "target_pace" ? (
+          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
+            <label className="text-sm text-slate-700">
+              Pace minutes
+              <input
+                type="text"
+                inputMode="numeric"
+                value={getPaceMinutes(step.targetPaceSecondsPer100m)}
+                onChange={(event) => updateStepTargetPace(step.id, "minutes", event.target.value)}
+                data-testid={`session-draft-step-target-pace-minutes-${index}`}
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </label>
+            <label className="text-sm text-slate-700">
+              Pace seconds
+              <input
+                type="text"
+                inputMode="numeric"
+                value={getPaceSeconds(step.targetPaceSecondsPer100m)}
+                onChange={(event) => updateStepTargetPace(step.id, "seconds", event.target.value)}
+                data-testid={`session-draft-step-target-pace-seconds-${index}`}
+                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              />
+            </label>
+            <div className="self-end text-sm text-slate-500">
+              {step.targetPaceSecondsPer100m
+                ? formatPaceSecondsPer100m(step.targetPaceSecondsPer100m, poolLengthUnit)
+                : "Set pace"}
             </div>
           </div>
         ) : null}
 
-        {isEditMode && showMobilePrimaryAddAfter ? (
-          <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
-            <button
-              type="button"
-              onClick={handleAddStepAfter}
-              data-testid={`session-draft-step-mobile-primary-add-after-${index}`}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+        {!isMinimalRestEditor && stepTargetModeValue === "css_target_pace" ? (
+          <label className="text-sm text-slate-700 md:col-span-2">
+            CSS pace offset
+            <select
+              value={String(step.cssTargetOffsetSeconds ?? 0)}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  cssTargetOffsetSeconds: Number.parseInt(event.target.value, 10),
+                }))
+              }
+              data-testid={`session-draft-step-css-offset-${index}`}
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             >
-              Add after
-            </button>
-            {showMobilePrimaryAddRepeatAfter ? (
+              {SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.map((value) => {
+                const sign = value > 0 ? "+" : "";
+                return (
+                  <option key={value} value={String(value)}>
+                    {`CSS ${sign}${value}s (${formatPaceSecondsPer100m(
+                      draft.basePaceSecondsPer100m + value,
+                      poolLengthUnit
+                    )})`}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+        ) : null}
+
+        {isManualPoolMode || isMinimalRestEditor ? null : (
+          <label className="text-sm text-slate-700 md:col-span-2">
+            Target notes
+            <input
+              type="text"
+              value={step.targetSummary}
+              onChange={(event) =>
+                updateDraftStep(step.id, (current) => ({
+                  ...current,
+                  targetSummary: event.target.value,
+                }))
+              }
+              className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </label>
+        )}
+
+        <label className="text-sm text-slate-700 md:col-span-2">
+          {isManualPoolMode ? "Notes" : "Notes"}
+          <AutoGrowingTextarea
+            aria-label={isManualPoolMode ? "Notes" : "Notes"}
+            value={step.notes}
+            onChange={(event) =>
+              updateDraftStep(step.id, (current) => ({
+                ...current,
+                notes: event.target.value,
+              }))
+            }
+            minRows={isManualPoolMode ? 1 : 3}
+            className="mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          />
+        </label>
+
+        {attachedRestEditor}
+
+        {isEditMode ? (
+          <div
+            data-testid={`session-draft-step-desktop-actions-${index}`}
+            data-desktop-layout="bottom"
+            className="hidden flex-wrap items-center gap-2 border-t border-slate-200 pt-3 sm:flex md:col-span-2"
+          >
+            {isLinkedPostSetRest ? null : (
+              <button
+                type="button"
+                onClick={handleAddStepAfter}
+                data-testid={`session-draft-step-add-after-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+              >
+                Add step after
+              </button>
+            )}
+            {!insideRepeatGroup && !isLinkedPostSetRest ? (
               <button
                 type="button"
                 onClick={handleAddRepeatAfter}
-                data-testid={`session-draft-step-mobile-primary-add-repeat-after-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100"
+                data-testid={`session-draft-step-add-repeat-after-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
               >
-                Repeat after
+                Add repeat after
               </button>
             ) : null}
-          </div>
-        ) : null}
-
-        {pendingDelete ? (
-          <div
-            data-testid="workout-editor-removal-confirm"
-            className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/90 p-3"
-          >
-            <p className="text-sm font-medium text-rose-950">
-              Delete <span className="font-semibold">{pendingRemoval?.label ?? "this step"}</span>?
-            </p>
-            <p className="mt-1 text-sm text-rose-900">
-              This builder change stays local until you save, and you can still undo it right after
-              deletion.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            {isLinkedPostSetRest ? null : (
               <button
                 type="button"
-                onClick={confirmPendingRemoval}
-                data-testid="workout-editor-removal-confirm-button"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
+                onClick={handleDuplicate}
+                data-testid={`session-draft-step-duplicate-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50"
               >
-                Delete now
+                Duplicate
               </button>
+            )}
+            {isLinkedPostSetRest ? null : (
               <button
                 type="button"
-                onClick={cancelPendingRemoval}
-                data-testid="workout-editor-removal-cancel-button"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-900 transition hover:bg-rose-100 active:bg-rose-200"
+                onClick={() => requestStepRemoval(step.id)}
+                data-testid={`session-draft-step-remove-${index}`}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
               >
-                Keep it
+                Delete
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setOpenStepId(null)}
+              data-testid={`session-draft-step-done-bottom-${index}`}
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 sm:ml-auto"
+            >
+              Done
+            </button>
           </div>
         ) : null}
+      </div>
+    ) : null;
 
-        {isOpen ? (
-          <div id={panelId} className="mt-4 grid gap-4 md:grid-cols-2">
-            {isManualPoolMode ? null : (
+    return (
+      <SessionStepSummaryCard
+        key={step.id}
+        stepId={step.id}
+        index={index}
+        panelId={panelId}
+        dataManualPoolCategory={
+          isTopLevelSessionStepBlock && !pendingDelete ? normalizedStep.category : undefined
+        }
+        canUseDesktopCardOpen={canUseDesktopCardOpen}
+        cardStateClass={cardStateClass}
+        categoryRailClass={topLevelCategoryRailClass}
+        isEditMode={isEditMode}
+        isSummaryOnlyMode={isSummaryOnlyMode}
+        isOpen={isOpen}
+        mobileActionsOpen={mobileActionsOpen}
+        pendingDelete={pendingDelete}
+        removalLabel={pendingRemoval?.label ?? null}
+        showRearrangeControls={showRearrangeControls}
+        showMobilePrimaryAddAfter={showMobilePrimaryAddAfter}
+        showMobilePrimaryAddRepeatAfter={showMobilePrimaryAddRepeatAfter}
+        canAddRepeatAfter={!insideRepeatGroup && !isLinkedPostSetRest}
+        isLinkedPostSetRest={isLinkedPostSetRest}
+        moveUpDisabled={moveUpDisabled}
+        moveDownDisabled={moveDownDisabled}
+        wasRecentlyMoved={stepWasRecentlyMoved}
+        summary={stepSummary}
+        editPanel={editPanel}
+        onOpen={openStepCard}
+        onToggle={toggleStepCard}
+        onToggleMobileActions={toggleMobileStepActions}
+        onMoveUp={handleMoveUp}
+        onMoveDown={handleMoveDown}
+        onAddStepAfter={handleAddStepAfter}
+        onAddRepeatAfter={handleAddRepeatAfter}
+        onDuplicate={handleDuplicate}
+        onRequestRemove={requestRemoveStep}
+        onConfirmRemoval={confirmPendingRemoval}
+        onCancelRemoval={cancelPendingRemoval}
+      />
+    );
+  }
+
+  function renderRepeatSummaryCard(
+    group: Extract<StepRenderGroup, { kind: "repeat" }>,
+    groupIndex: number
+  ) {
+    const pendingRepeatDelete =
+      pendingRemoval?.kind === "repeat" && pendingRemoval.repeatGroupId === group.repeatGroupId;
+    const repeatSummary = buildRepeatSummary(
+      group.entries,
+      group.repeatCount,
+      draft.basePaceSecondsPer100m,
+      group.repeatEndingRestMode,
+      poolLengthUnit,
+      group.postSetRestEntry?.step ?? null
+    );
+    const repeatDescriptor = useManualLikeStepSummaries
+      ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
+      : null;
+    const repeatCategory = useManualLikeStepSummaries
+      ? getWorkoutEditorTopLevelCategory(group, {
+          normalizeForManualPool: isManualPoolMode,
+        })
+      : "main";
+    const repeatLabelToneClass =
+      useManualLikeStepSummaries && !pendingRepeatDelete
+        ? getManualPoolCategoryLabelClass(repeatCategory)
+        : "text-blue-700";
+    const repeatLabel = useManualLikeStepSummaries
+      ? (repeatDescriptor?.label ?? "Repeat")
+      : "Repeat set";
+    const isRepeatOpen = isEditMode && openRepeatGroupId === group.repeatGroupId;
+    const hasEditableRepeatEndingRest = Boolean(
+      draft.environment === "pool" &&
+      (() => {
+        const lastEntry = group.entries[group.entries.length - 1];
+        return lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step);
+      })()
+    );
+    const repeatMobileActionKey = `repeat:${group.repeatGroupId}`;
+    const repeatMobileActionsOpen = openMobileActionKey === repeatMobileActionKey;
+    const hasRepeatRestConflict = Boolean(
+      hasEditableRepeatEndingRest &&
+      group.postSetRestEntry?.step &&
+      group.repeatEndingRestMode === "use_last_rest"
+    );
+    const repeatConflictKeptBoth = repeatConflictKeepBoth[group.repeatGroupId] === true;
+    const showRepeatRestConflict = hasRepeatRestConflict && !repeatConflictKeptBoth;
+    const showRepeatRestReplacementConfirm =
+      repeatConflictPendingReplacement === group.repeatGroupId;
+    const repeatCanUseDesktopCardOpen =
+      desktopCardEditEnabled && isEditMode && openRepeatGroupId !== group.repeatGroupId;
+    const repeatCategoryRailClass =
+      useManualLikeStepSummaries && !pendingRepeatDelete
+        ? `border-l-4 ${getManualPoolCategoryRailClass(repeatCategory)}`
+        : "";
+
+    const openRepeatCard = () => {
+      setOpenMobileActionKey(null);
+      setOpenStepId(null);
+      setOpenRepeatGroupId(group.repeatGroupId);
+    };
+    const toggleRepeatMobileActions = () =>
+      setOpenMobileActionKey((current) =>
+        current === repeatMobileActionKey ? null : repeatMobileActionKey
+      );
+    const addStepAfterRepeat = () => {
+      insertStepAfterGroup(groupIndex);
+      setOpenMobileActionKey(null);
+    };
+    const addRepeatAfterRepeat = () => {
+      insertRepeatAfterGroup(groupIndex);
+      setOpenMobileActionKey(null);
+    };
+    const duplicateRepeat = () => {
+      duplicateRepeatGroup(group.repeatGroupId);
+      setOpenMobileActionKey(null);
+    };
+    const requestRemoveRepeat = () => {
+      requestRepeatGroupRemoval(group.repeatGroupId);
+      setOpenMobileActionKey(null);
+    };
+
+    const repeatEditPanel =
+      isEditMode && isRepeatOpen ? (
+        <div className="mt-4 space-y-3">
+          <div className={desktopRepeatControlRowClass}>
+            <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
               <label className="text-sm text-slate-700">
-                Step name
+                Repeat count
                 <input
                   type="text"
-                  value={step.name}
+                  inputMode="numeric"
+                  value={group.repeatCount ?? ""}
                   onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
+                    updateRepeatGroupCount(group.repeatGroupId, event.target.value)
                   }
-                  data-testid={`session-draft-step-name-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  min={SESSION_DRAFT_REPEAT_MIN}
+                  max={SESSION_DRAFT_REPEAT_MAX}
+                  data-testid={`session-draft-repeat-count-${groupIndex}`}
+                  className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
                 />
               </label>
-            )}
-
-            <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Step Type" : "Category"}
-              <select
-                value={stepCategoryValue}
-                disabled={isLinkedPostSetRest}
-                onChange={(event) =>
-                  updateDraftStep(step.id, (current) =>
-                    applyRecommendedStepFocus(current, {
-                      category: event.target.value as SessionDraftStepCategory,
-                    })
-                  )
-                }
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                {(isLinkedPostSetRest
-                  ? (["rest"] as const)
-                  : isManualPoolMode
-                    ? MANUAL_POOL_VISIBLE_STEP_CATEGORIES
-                    : SESSION_DRAFT_STEP_CATEGORIES
-                ).map((value) => (
-                  <option key={value} value={value}>
-                    {getSessionStepCategoryLabel(value)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {isMinimalRestEditor ? null : (
-              <label className="text-sm text-slate-700">
-                {isManualPoolMode ? "Stroke Type" : "Stroke pattern"}
-                <select
-                  value={stepStrokeValue}
-                  onChange={(event) => {
-                    const nextStroke = event.target.value as SessionDraftStep["stroke"];
-
-                    updateDraftStep(step.id, (current) =>
-                      applyRecommendedStepFocus(current, {
-                        stroke: nextStroke,
-                      })
-                    );
-                  }}
-                  data-testid={`session-draft-step-stroke-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  {(isManualPoolMode
-                    ? MANUAL_POOL_VISIBLE_STEP_STROKES
-                    : SESSION_DRAFT_STEP_STROKES
-                  ).map((value) => (
-                    <option key={value} value={value}>
-                      {getSessionStepStrokeLabel(value)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            {isMinimalRestEditor ? null : (
-              <label className="text-sm text-slate-700">
-                {isManualPoolMode ? "Drill Type" : "Focus tag"}
-                <select
-                  value={stepDrillTypeValue}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      drillType: event.target.value as NonNullable<SessionDraftStep["drillType"]>,
-                    }))
-                  }
-                  data-testid={`session-draft-step-drill-type-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  {SESSION_DRAFT_STEP_DRILL_TYPES.map((value) => (
-                    <option key={value} value={value}>
-                      {getSessionStepDrillTypeLabel(value)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            {showManualPoolDrillNameField ? (
-              <div className="text-sm text-slate-700">
-                <label htmlFor={`session-draft-step-drill-name-${step.id}`}>Drill name</label>
-                <input
-                  id={`session-draft-step-drill-name-${step.id}`}
-                  type="text"
-                  value={getManualPoolDrillNameInputValue(normalizedStep)}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  aria-describedby={manualPoolDrillNameHelpId}
-                  placeholder="Catch drill"
-                  data-testid={`session-draft-step-drill-name-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-                <p id={manualPoolDrillNameHelpId} className="mt-2 text-sm text-slate-500">
-                  Names the drill. Use Notes for execution cues.
-                </p>
-              </div>
-            ) : null}
-
-            {isManualPoolMode || isMinimalRestEditor ? null : (
-              <>
-                <p className="text-sm text-slate-500 md:col-span-2">
-                  {buildStepStrokeGuidance(step, isManualPoolMode)}
-                </p>
-                <p className="text-sm text-slate-500 md:col-span-2">
-                  {buildStepFocusGuidance(step, isManualPoolMode)}
-                </p>
-              </>
-            )}
-
-            {isMinimalRestEditor ? null : (
-              <label className="text-sm text-slate-700">
-                Equipment
-                <select
-                  value={stepEquipmentValue}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      equipment: event.target.value as NonNullable<SessionDraftStep["equipment"]>,
-                    }))
-                  }
-                  data-testid={`session-draft-step-equipment-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  {SESSION_DRAFT_STEP_EQUIPMENT.map((value) => (
-                    <option key={value} value={value}>
-                      {getSessionStepEquipmentLabel(value)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            {isManualPoolMode || isMinimalRestEditor ? null : (
-              <label className="text-sm text-slate-700">
-                Effort
-                <select
-                  value={stepIntensityValue}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      intensity: event.target.value as SessionDraftStepIntensityPreset,
-                    }))
-                  }
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  {(isManualPoolMode
-                    ? MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS
-                    : SESSION_DRAFT_STEP_INTENSITY_PRESETS
-                  ).map((value) => (
-                    <option key={value} value={value}>
-                      {getSessionStepIntensityLabel(value)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            <label className="text-sm text-slate-700">
-              {isManualPoolMode ? "Duration" : "Duration mode"}
-              <select
-                value={stepDurationModeValue}
-                onChange={(event) =>
-                  updateStepDurationMode(
-                    step.id,
-                    event.target.value as SessionDraftStepDurationMode
-                  )
-                }
-                data-testid={`session-draft-step-duration-mode-${index}`}
-                className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              >
-                {(isManualPoolMode
-                  ? getManualPoolDurationModesForCategory(stepCategoryValue)
-                  : SESSION_DRAFT_STEP_DURATION_MODES
-                ).map((value) => (
-                  <option key={value} value={value}>
-                    {getStepDurationModeEditorLabel(value, isManualPoolMode)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {step.durationMode === "distance" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-2">
+              {hasEditableRepeatEndingRest ? (
                 <label className="text-sm text-slate-700">
-                  Distance
+                  Rest after last repeat
                   <select
-                    value={
-                      selectedDistancePreset
-                        ? String(selectedDistancePreset)
-                        : CUSTOM_DISTANCE_VALUE
-                    }
+                    value={group.repeatEndingRestMode}
                     onChange={(event) =>
-                      updateStepDistanceSelection(step.id, event.target.value, stepDistanceUnit)
+                      updateRepeatGroupEndingRestMode(
+                        group.repeatGroupId,
+                        event.target.value as SessionDraftRepeatEndingRestMode
+                      )
                     }
-                    data-testid={`session-draft-step-distance-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
+                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
                   >
-                    {SESSION_DRAFT_STEP_DISTANCE_PRESETS.map((value) => (
-                      <option key={value} value={String(value)}>
-                        {stepDistanceUnit === "yd"
-                          ? `${value}yd`
-                          : formatDistanceMetersLabel(value)}
+                    {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {getSessionDraftRepeatEndingRestModeLabel(mode)}
                       </option>
                     ))}
-                    <option value={CUSTOM_DISTANCE_VALUE}>Custom distance</option>
                   </select>
                 </label>
-                {!selectedDistancePreset ? (
-                  <label className="text-sm text-slate-700">
-                    {`Custom distance (${stepDistanceUnit})`}
-                    <input
-                      ref={(node) => {
-                        customDistanceInputRefs.current[step.id] = node;
-                      }}
-                      type="text"
-                      inputMode="decimal"
-                      value={formatEditableDistance(step.distanceM, stepDistanceUnit)}
-                      onChange={(event) =>
-                        updateDraftStep(step.id, (current) => ({
-                          ...current,
-                          distanceM: parseDistanceInput(event.target.value, stepDistanceUnit),
-                        }))
-                      }
-                      data-testid={`session-draft-step-distance-custom-${index}`}
-                      className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
-                  </label>
+              ) : null}
+            </div>
+            {showRepeatRestConflict ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-3">
+                <p className="text-sm font-medium text-amber-950">
+                  This creates two rests in a row.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateRepeatGroupEndingRestMode(group.repeatGroupId, "skip_last_rest")
+                    }
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-amber-200 bg-white px-3 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
+                  >
+                    Use separate rest step
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRepeatConflictPendingReplacement(group.repeatGroupId)}
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+                  >
+                    Use repeat rest time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRepeatConflictKeepBoth((current) => ({
+                        ...current,
+                        [group.repeatGroupId]: true,
+                      }));
+                      setRepeatConflictPendingReplacement((current) =>
+                        current === group.repeatGroupId ? null : current
+                      );
+                    }}
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Keep both
+                  </button>
+                </div>
+                {showRepeatRestReplacementConfirm ? (
+                  <div className="mt-3 rounded-xl border border-rose-200 bg-white p-3">
+                    <p className="text-sm font-medium text-rose-950">
+                      Delete the separate rest step and use repeat rest time?
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => removeRepeatPostSetRestStep(group.repeatGroupId)}
+                        className="inline-flex h-9 items-center justify-center rounded-xl bg-rose-600 px-3 text-sm font-semibold text-white transition hover:bg-rose-500"
+                      >
+                        Delete rest step
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRepeatConflictPendingReplacement((current) =>
+                            current === group.repeatGroupId ? null : current
+                          )
+                        }
+                        className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 ) : null}
-              </div>
-            ) : step.durationMode === "fixed_rest" && isManualPoolMode ? (
-              <label className="text-sm text-slate-700">
-                Rest time
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="MM:SS"
-                  value={timeDurationInputs[step.id] ?? ""}
-                  onFocus={() => {
-                    timeDurationInputFocusRef.current[step.id] = true;
-                  }}
-                  onBlur={() => {
-                    commitTimeDurationInput(step.id);
-                  }}
-                  onChange={(event) => handleTimeDurationInputChange(step.id, event.target.value)}
-                  data-testid={`session-draft-step-rest-time-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-              </label>
-            ) : step.durationMode === "fixed_rest" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
-                <label className="text-sm text-slate-700">
-                  Minutes
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={getDurationMinutes(step.timeMin)}
-                    onChange={(event) =>
-                      updateStepDurationClock(step.id, "minutes", event.target.value)
-                    }
-                    data-testid={`session-draft-step-rest-minutes-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-                <label className="text-sm text-slate-700">
-                  Seconds
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={getDurationSeconds(step.timeMin)}
-                    onChange={(event) =>
-                      updateStepDurationClock(step.id, "seconds", event.target.value)
-                    }
-                    data-testid={`session-draft-step-rest-seconds-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-                <div className="self-end text-sm text-slate-500">
-                  {step.timeMin
-                    ? `Fixed Rest Time ${formatClockDurationLabel(step.timeMin)}`
-                    : "Set Fixed Rest Time"}
-                </div>
-              </div>
-            ) : step.durationMode === "time" ? (
-              <label className="text-sm text-slate-700">
-                {isManualPoolMode ? "Time" : "Time (min)"}
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder={isManualPoolMode ? "MM:SS" : undefined}
-                  value={
-                    isManualPoolMode ? (timeDurationInputs[step.id] ?? "") : (step.timeMin ?? "")
-                  }
-                  onFocus={() => {
-                    if (!isManualPoolMode) return;
-                    timeDurationInputFocusRef.current[step.id] = true;
-                  }}
-                  onBlur={() => {
-                    if (!isManualPoolMode) return;
-                    commitTimeDurationInput(step.id);
-                  }}
-                  onChange={(event) =>
-                    isManualPoolMode
-                      ? handleTimeDurationInputChange(step.id, event.target.value)
-                      : updateDraftStep(step.id, (current) => ({
-                          ...current,
-                          timeMin: parsePositiveNumber(event.target.value),
-                        }))
-                  }
-                  data-testid={`session-draft-step-time-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-              </label>
-            ) : step.durationMode === "send_off" && isManualPoolMode ? (
-              <label className="text-sm text-slate-700">
-                Send-off time
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="MM:SS"
-                  value={timeDurationInputs[step.id] ?? ""}
-                  onFocus={() => {
-                    timeDurationInputFocusRef.current[step.id] = true;
-                  }}
-                  onBlur={() => {
-                    commitTimeDurationInput(step.id);
-                  }}
-                  onChange={(event) => handleTimeDurationInputChange(step.id, event.target.value)}
-                  data-testid={`session-draft-step-sendoff-time-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-              </label>
-            ) : step.durationMode === "send_off" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
-                <label className="text-sm text-slate-700">
-                  Minutes
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={getDurationMinutes(step.timeMin)}
-                    onChange={(event) =>
-                      updateStepDurationClock(step.id, "minutes", event.target.value)
-                    }
-                    data-testid={`session-draft-step-sendoff-minutes-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-                <label className="text-sm text-slate-700">
-                  Seconds
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={getDurationSeconds(step.timeMin)}
-                    onChange={(event) =>
-                      updateStepDurationClock(step.id, "seconds", event.target.value)
-                    }
-                    data-testid={`session-draft-step-sendoff-seconds-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-                <div className="self-end text-sm text-slate-500">
-                  {step.timeMin
-                    ? `Send-Off Time ${formatClockDurationLabel(step.timeMin)}`
-                    : "Set Send-Off Time"}
-                </div>
-              </div>
-            ) : step.durationMode === "css_send_off" ? (
-              <label className="text-sm text-slate-700 md:col-span-2">
-                CSS-Based Send-Off Time
-                <select
-                  value={String(step.cssSendOffOffsetSeconds ?? 0)}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      cssSendOffOffsetSeconds: Number.parseInt(event.target.value, 10),
-                    }))
-                  }
-                  data-testid={`session-draft-step-css-sendoff-offset-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  {SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.map((value) => {
-                    const sign = value > 0 ? "+" : "";
-                    return (
-                      <option key={value} value={String(value)}>
-                        {`CSS ${sign}${value}s (${formatClockDurationLabelFromSeconds(
-                          draft.basePaceSecondsPer100m + value
-                        )})`}
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-            ) : null}
-
-            {isMinimalRestEditor ? null : (
-              <label className="text-sm text-slate-700">
-                {isManualPoolMode ? "Target" : "Target mode"}
-                <select
-                  value={stepTargetModeValue}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      targetMode: event.target.value as NonNullable<SessionDraftStep["targetMode"]>,
-                      effortTarget:
-                        event.target.value === "effort"
-                          ? (current.effortTarget ?? current.intensity)
-                          : null,
-                      targetPaceSecondsPer100m:
-                        event.target.value === "target_pace"
-                          ? current.targetPaceSecondsPer100m
-                          : null,
-                      cssTargetOffsetSeconds:
-                        event.target.value === "css_target_pace"
-                          ? (current.cssTargetOffsetSeconds ?? 0)
-                          : null,
-                    }))
-                  }
-                  data-testid={`session-draft-step-target-mode-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  {SESSION_DRAFT_STEP_TARGET_MODES.map((value) => (
-                    <option key={value} value={value}>
-                      {getStepTargetModeEditorLabel(value, isManualPoolMode)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            {!isMinimalRestEditor && stepTargetModeValue === "effort" ? (
-              <label className="text-sm text-slate-700">
-                {isManualPoolMode ? "Effort" : "Target effort"}
-                <select
-                  value={stepEffortTargetValue}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      effortTarget: event.target.value as SessionDraftStepIntensityPreset,
-                    }))
-                  }
-                  data-testid={`session-draft-step-target-effort-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  {(isManualPoolMode
-                    ? MANUAL_POOL_VISIBLE_STEP_INTENSITY_PRESETS
-                    : SESSION_DRAFT_STEP_INTENSITY_PRESETS
-                  ).map((value) => (
-                    <option key={value} value={value}>
-                      {getSessionStepIntensityLabel(value)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-
-            {!isMinimalRestEditor && stepTargetModeValue === "target_pace" ? (
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]">
-                <label className="text-sm text-slate-700">
-                  Pace minutes
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={getPaceMinutes(step.targetPaceSecondsPer100m)}
-                    onChange={(event) =>
-                      updateStepTargetPace(step.id, "minutes", event.target.value)
-                    }
-                    data-testid={`session-draft-step-target-pace-minutes-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-                <label className="text-sm text-slate-700">
-                  Pace seconds
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={getPaceSeconds(step.targetPaceSecondsPer100m)}
-                    onChange={(event) =>
-                      updateStepTargetPace(step.id, "seconds", event.target.value)
-                    }
-                    data-testid={`session-draft-step-target-pace-seconds-${index}`}
-                    className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </label>
-                <div className="self-end text-sm text-slate-500">
-                  {step.targetPaceSecondsPer100m
-                    ? formatPaceSecondsPer100m(step.targetPaceSecondsPer100m, poolLengthUnit)
-                    : "Set pace"}
-                </div>
-              </div>
-            ) : null}
-
-            {!isMinimalRestEditor && stepTargetModeValue === "css_target_pace" ? (
-              <label className="text-sm text-slate-700 md:col-span-2">
-                CSS pace offset
-                <select
-                  value={String(step.cssTargetOffsetSeconds ?? 0)}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      cssTargetOffsetSeconds: Number.parseInt(event.target.value, 10),
-                    }))
-                  }
-                  data-testid={`session-draft-step-css-offset-${index}`}
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  {SESSION_DRAFT_STEP_CSS_TARGET_OFFSETS.map((value) => {
-                    const sign = value > 0 ? "+" : "";
-                    return (
-                      <option key={value} value={String(value)}>
-                        {`CSS ${sign}${value}s (${formatPaceSecondsPer100m(
-                          draft.basePaceSecondsPer100m + value,
-                          poolLengthUnit
-                        )})`}
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-            ) : null}
-
-            {isManualPoolMode || isMinimalRestEditor ? null : (
-              <label className="text-sm text-slate-700 md:col-span-2">
-                Target notes
-                <input
-                  type="text"
-                  value={step.targetSummary}
-                  onChange={(event) =>
-                    updateDraftStep(step.id, (current) => ({
-                      ...current,
-                      targetSummary: event.target.value,
-                    }))
-                  }
-                  className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-              </label>
-            )}
-
-            <label className="text-sm text-slate-700 md:col-span-2">
-              {isManualPoolMode ? "Notes" : "Notes"}
-              <AutoGrowingTextarea
-                aria-label={isManualPoolMode ? "Notes" : "Notes"}
-                value={step.notes}
-                onChange={(event) =>
-                  updateDraftStep(step.id, (current) => ({
-                    ...current,
-                    notes: event.target.value,
-                  }))
-                }
-                minRows={isManualPoolMode ? 1 : 3}
-                className="mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
-            </label>
-
-            {attachedRestEditor}
-
-            {isEditMode ? (
-              <div
-                data-testid={`session-draft-step-desktop-actions-${index}`}
-                data-desktop-layout="bottom"
-                className="hidden flex-wrap items-center gap-2 border-t border-slate-200 pt-3 sm:flex md:col-span-2"
-              >
-                {isLinkedPostSetRest ? null : (
-                  <button
-                    type="button"
-                    onClick={handleAddStepAfter}
-                    data-testid={`session-draft-step-add-after-${index}`}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
-                  >
-                    Add step after
-                  </button>
-                )}
-                {!insideRepeatGroup && !isLinkedPostSetRest ? (
-                  <button
-                    type="button"
-                    onClick={handleAddRepeatAfter}
-                    data-testid={`session-draft-step-add-repeat-after-${index}`}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
-                  >
-                    Add repeat after
-                  </button>
-                ) : null}
-                {isLinkedPostSetRest ? null : (
-                  <button
-                    type="button"
-                    onClick={handleDuplicate}
-                    data-testid={`session-draft-step-duplicate-${index}`}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Duplicate
-                  </button>
-                )}
-                {isLinkedPostSetRest ? null : (
-                  <button
-                    type="button"
-                    onClick={() => requestStepRemoval(step.id)}
-                    data-testid={`session-draft-step-remove-${index}`}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-                  >
-                    Delete
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setOpenStepId(null)}
-                  data-testid={`session-draft-step-done-bottom-${index}`}
-                  className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 sm:ml-auto"
-                >
-                  Done
-                </button>
               </div>
             ) : null}
           </div>
-        ) : null}
-      </article>
+
+          {group.entries.map((entry, repeatIndex) =>
+            renderStepEditorCard(entry.step, entry.index, groupIndex, {
+              insideRepeatGroup: true,
+              repeatStepNumber: repeatIndex + 1,
+              labelOverride:
+                repeatIndex === 0
+                  ? isManualPoolMode
+                    ? (manualPoolTopLevelSectionDescriptors[groupIndex]?.label ?? "Repeat")
+                    : "Work interval"
+                  : entry.step.category === "rest"
+                    ? isManualPoolMode
+                      ? buildLinkedRestLabel(
+                          manualPoolTopLevelSectionDescriptors[groupIndex]?.label ?? "Repeat",
+                          "interval"
+                        )
+                      : "Between-interval recovery"
+                    : undefined,
+              descriptionOverride:
+                entry.step.category === "rest" && isManualPoolMode ? null : undefined,
+            })
+          )}
+          {group.postSetRestEntry
+            ? renderStepEditorCard(
+                group.postSetRestEntry.step,
+                group.postSetRestEntry.index,
+                groupIndex,
+                {
+                  labelOverride: isManualPoolMode
+                    ? buildLinkedRestLabel(
+                        manualPoolTopLevelSectionDescriptors[groupIndex]?.label ?? "Repeat",
+                        "set"
+                      )
+                    : "Post-set rest",
+                  descriptionOverride: null,
+                  isLinkedPostSetRest: true,
+                  pendingInlineDelete: repeatConflictPendingReplacement === group.repeatGroupId,
+                }
+              )
+            : null}
+          {pendingRepeatDelete ? (
+            <RemovalConfirm
+              label={pendingRemoval?.label ?? null}
+              fallbackLabel="this repeat block"
+              onConfirm={confirmPendingRemoval}
+              onCancel={cancelPendingRemoval}
+            />
+          ) : null}
+          <div
+            data-testid={`session-draft-repeat-desktop-actions-${groupIndex}`}
+            data-desktop-layout="bottom"
+            className="hidden flex-wrap items-end gap-2 border-t border-blue-100 pt-3 sm:flex"
+          >
+            <button
+              type="button"
+              onClick={addStepAfterRepeat}
+              data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+            >
+              Add step after
+            </button>
+            <button
+              type="button"
+              onClick={addRepeatAfterRepeat}
+              data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+            >
+              Add repeat after
+            </button>
+            <button
+              type="button"
+              onClick={duplicateRepeat}
+              data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+            >
+              Duplicate repeat
+            </button>
+            <button
+              type="button"
+              onClick={requestRemoveRepeat}
+              data-testid={`session-draft-repeat-remove-${groupIndex}`}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+            >
+              Delete repeat
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleRepeatEditor(group.repeatGroupId)}
+              data-testid={`session-draft-repeat-done-bottom-${groupIndex}`}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 sm:ml-auto"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ) : null;
+
+    return (
+      <SessionStepRepeatSummaryCard
+        key={group.repeatGroupId}
+        repeatGroupId={group.repeatGroupId}
+        groupIndex={groupIndex}
+        dataManualPoolCategory={
+          useManualLikeStepSummaries && !pendingRepeatDelete ? repeatCategory : undefined
+        }
+        categoryRailClass={repeatCategoryRailClass}
+        dataDesktopCardClickable={repeatCanUseDesktopCardOpen}
+        pendingDelete={pendingRepeatDelete}
+        isEditMode={isEditMode}
+        isRearrangeMode={isRearrangeMode}
+        isOpen={isRepeatOpen}
+        isManualPoolMode={isManualPoolMode}
+        mobileActionsOpen={repeatMobileActionsOpen}
+        moveUpDisabled={groupIndex === 0}
+        moveDownDisabled={groupIndex === stepGroups.length - 1}
+        wasRecentlyMoved={recentlyMovedBlockKey === `repeat:${group.repeatGroupId}`}
+        summary={{
+          label: repeatLabel,
+          title: repeatSummary,
+          labelClassName: repeatLabelToneClass,
+          pendingDelete: pendingRepeatDelete,
+          showRepeatBlockBadge: isRepeatOpen,
+        }}
+        editPanel={repeatEditPanel}
+        onOpen={openRepeatCard}
+        onToggle={() => toggleRepeatEditor(group.repeatGroupId)}
+        onToggleMobileActions={toggleRepeatMobileActions}
+        onMoveUp={() => moveDraftGroup(groupIndex, -1, repeatLabel)}
+        onMoveDown={() => moveDraftGroup(groupIndex, 1, repeatLabel)}
+        onAddStepAfter={addStepAfterRepeat}
+        onAddRepeatAfter={addRepeatAfterRepeat}
+        onDuplicate={duplicateRepeat}
+        onRequestRemove={requestRemoveRepeat}
+      />
     );
   }
 
@@ -4548,810 +4612,59 @@ export default function WorkoutEditor({
         metadataFields
       )}
 
-      <div
-        data-testid="workout-editor-session-steps-surface"
-        className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"
+      <SessionStepSurfaceRenderer
+        mode={builderViewMode}
+        title={
+          isManualPoolMode || copyVariant === "generator" ? "Session steps" : "Editable draft steps"
+        }
+        showModeTabs={showCalmBuilderLayout}
+        showAddActions={isEditMode}
+        hasSteps={stepGroups.length > 0}
+        rearrangeLiveMessage={rearrangeLiveMessage}
+        lastRemovedLabel={lastRemovedBlock?.label ?? null}
+        viewSections={calmViewSections}
+        onModeChange={setBuilderViewMode}
+        onAddStep={addStep}
+        onAddRepeat={addRepeat}
+        onUndoLastRemoval={undoLastRemoval}
+        onDismissLastRemoval={() => setLastRemovedBlock(null)}
+        onOpenViewStep={openTargetedStepEditor}
+        onOpenViewRepeat={openTargetedRepeatEditor}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-base font-semibold text-slate-900">
-            {isManualPoolMode || copyVariant === "generator"
-              ? "Session steps"
-              : "Editable draft steps"}
-          </h3>
-          <div className="flex flex-wrap items-center gap-3">
-            {showCalmBuilderLayout ? (
-              <div
-                role="group"
-                aria-label="Builder mode"
-                className="inline-flex rounded-xl border border-blue-100 bg-blue-50/60 p-1"
-              >
-                {WORKOUT_VIEW_MODES.map((mode) => {
-                  const isSelected = builderViewMode === mode;
-
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setBuilderViewMode(mode)}
-                      aria-pressed={isSelected}
-                      data-testid={`workout-editor-builder-mode-${mode}`}
-                      className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm font-semibold transition ${
-                        isSelected
-                          ? "border border-blue-200 bg-blue-600 text-white shadow-sm"
-                          : "text-blue-900/70 hover:text-blue-900"
-                      }`}
-                    >
-                      {WORKOUT_VIEW_MODE_LABELS[mode]}
-                    </button>
+        {stepGroups.map((group, groupIndex) =>
+          group.kind === "single"
+            ? (() => {
+                if (!useManualLikeStepSummaries || isViewMode) {
+                  return renderStepEditorCard(
+                    group.entries[0].step,
+                    group.entries[0].index,
+                    groupIndex
                   );
-                })}
-              </div>
-            ) : null}
-            {isEditMode ? (
-              <div className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-3">
-                <button
-                  type="button"
-                  onClick={addStep}
-                  data-testid="session-draft-add-step"
-                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:h-10 sm:px-4"
-                >
-                  Add step
-                </button>
-                <button
-                  type="button"
-                  onClick={addRepeat}
-                  data-testid="session-draft-add-repeat"
-                  className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200 sm:h-10 sm:px-4"
-                >
-                  Add repeat
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </div>
+                }
 
-        <div className="mt-4 space-y-4">
-          <p data-testid="workout-editor-rearrange-live" className="sr-only" aria-live="polite">
-            {rearrangeLiveMessage}
-          </p>
-
-          {stepGroups.length === 0 ? (
-            <div
-              data-testid="session-draft-empty-steps"
-              className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-3 sm:p-4"
-            >
-              <p className="text-sm font-medium text-slate-900">
-                Start from a clean empty session.
-              </p>
-              <p className="mt-1 text-sm text-slate-600">
-                Add your first step or repeat block below when you are ready to build from scratch.
-              </p>
-            </div>
-          ) : null}
-
-          {lastRemovedBlock ? (
-            <div
-              data-testid="workout-editor-removal-undo"
-              className="rounded-2xl border border-blue-200 bg-blue-50/90 p-3 sm:p-4"
-            >
-              <p className="text-sm font-medium text-blue-950">
-                Deleted <span className="font-semibold">{lastRemovedBlock.label}</span>.
-              </p>
-              <p className="mt-1 text-sm text-blue-900">
-                Undo restores it to the same local spot before you save this workout.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={undoLastRemoval}
-                  data-testid="workout-editor-removal-undo-button"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-                >
-                  Undo delete
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLastRemovedBlock(null)}
-                  data-testid="workout-editor-removal-dismiss-button"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-900 transition hover:bg-blue-100 active:bg-blue-200"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {isViewMode && calmViewSections.length > 0
-            ? calmViewSections.map((section) => {
-                return (
-                  <section
-                    key={section.key}
-                    data-testid={`workout-editor-view-section-${section.key}`}
-                    data-view-category={section.category}
-                    className={`overflow-hidden rounded-2xl border bg-white ${getManualPoolViewSectionToneClass(
-                      section.category
-                    )}`}
-                  >
-                    <div
-                      className={`px-4 py-3 ${getManualPoolViewSectionHeaderClass(
-                        section.category
-                      )}`}
-                    >
-                      <p
-                        className={`text-xs font-semibold tracking-wide uppercase ${getManualPoolCategoryLabelClass(
-                          section.category
-                        )}`}
-                      >
-                        {section.title}
-                      </p>
-                    </div>
-                    <div className="divide-y divide-slate-200/80">
-                      {section.lines.map((line) => {
-                        const lineTarget = line.target;
-                        const lineContent = (
-                          <div className="space-y-2">
-                            <p className="text-base leading-6 text-slate-900">{line.primaryText}</p>
-                            {line.secondaryText ? (
-                              <p className="text-sm font-semibold text-blue-800">
-                                {line.secondaryText}
-                              </p>
-                            ) : null}
-                            {line.detailText ? (
-                              <p className="text-sm leading-5 text-slate-500">{line.detailText}</p>
-                            ) : null}
-                          </div>
-                        );
-
-                        if (lineTarget?.kind === "repeat") {
-                          return (
-                            <button
-                              key={line.key}
-                              type="button"
-                              data-testid={`workout-editor-view-repeat-${lineTarget.repeatGroupId}`}
-                              onClick={() => openTargetedRepeatEditor(lineTarget.repeatGroupId)}
-                              className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:outline-none"
-                            >
-                              {lineContent}
-                            </button>
-                          );
-                        }
-
-                        if (lineTarget?.kind === "step") {
-                          return (
-                            <button
-                              key={line.key}
-                              type="button"
-                              data-testid={`workout-editor-view-line-${section.key}-${line.key}`}
-                              onClick={() => openTargetedStepEditor(lineTarget.stepId)}
-                              className="block w-full px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:outline-none"
-                            >
-                              {lineContent}
-                            </button>
-                          );
-                        }
-
-                        return (
-                          <div key={line.key} className="px-4 py-3">
-                            {lineContent}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
+                const sessionStepBlock = sessionStepEditBlocks.find(
+                  (block) =>
+                    block.kind === "single" &&
+                    block.groupIndex === groupIndex &&
+                    block.entry.step.id === group.entries[0].step.id
                 );
-              })
-            : stepGroups.map((group, groupIndex) =>
-                group.kind === "single" ? (
-                  (() => {
-                    if (!useManualLikeStepSummaries || isViewMode) {
-                      return renderStepEditorCard(
-                        group.entries[0].step,
-                        group.entries[0].index,
-                        groupIndex
-                      );
-                    }
 
-                    const sessionStepBlock = sessionStepEditBlocks.find(
-                      (block) =>
-                        block.kind === "single" &&
-                        block.groupIndex === groupIndex &&
-                        block.entry.step.id === group.entries[0].step.id
-                    );
+                if (!sessionStepBlock || sessionStepBlock.kind !== "single") {
+                  return null;
+                }
 
-                    if (!sessionStepBlock || sessionStepBlock.kind !== "single") {
-                      return null;
-                    }
-
-                    return renderStepEditorCard(
-                      sessionStepBlock.entry.step,
-                      sessionStepBlock.entry.index,
-                      groupIndex,
-                      {
-                        linkedTopLevelRestEntry: sessionStepBlock.linkedRestEntry,
-                      }
-                    );
-                  })()
-                ) : (
-                  <section
-                    key={group.repeatGroupId}
-                    data-testid={`workout-editor-repeat-group-${groupIndex}`}
-                    data-containment-style="calm"
-                    data-manual-pool-category={
-                      useManualLikeStepSummaries &&
-                      !(
-                        pendingRemoval?.kind === "repeat" &&
-                        pendingRemoval.repeatGroupId === group.repeatGroupId
-                      )
-                        ? getWorkoutEditorTopLevelCategory(group, {
-                            normalizeForManualPool: isManualPoolMode,
-                          })
-                        : undefined
-                    }
-                    data-desktop-card-clickable={
-                      desktopCardEditEnabled &&
-                      isEditMode &&
-                      openRepeatGroupId !== group.repeatGroupId
-                        ? "true"
-                        : "false"
-                    }
-                    onClick={
-                      desktopCardEditEnabled &&
-                      isEditMode &&
-                      openRepeatGroupId !== group.repeatGroupId
-                        ? (event) => {
-                            if (shouldIgnoreCardEditClick(event.target)) {
-                              return;
-                            }
-
-                            setOpenMobileActionKey(null);
-                            setOpenStepId(null);
-                            setOpenRepeatGroupId(group.repeatGroupId);
-                          }
-                        : undefined
-                    }
-                    className={`rounded-2xl border p-3 sm:p-4 ${
-                      pendingRemoval?.kind === "repeat" &&
-                      pendingRemoval.repeatGroupId === group.repeatGroupId
-                        ? "border-dashed border-rose-300 bg-rose-50/70 ring-1 ring-rose-100 ring-inset"
-                        : `border-blue-100 bg-gradient-to-b from-blue-50/70 to-white ring-1 ring-blue-100 ring-inset ${
-                            useManualLikeStepSummaries
-                              ? `border-l-4 ${getManualPoolCategoryRailClass(
-                                  getWorkoutEditorTopLevelCategory(group, {
-                                    normalizeForManualPool: isManualPoolMode,
-                                  })
-                                )}`
-                              : ""
-                          }`
-                    } ${
-                      recentlyMovedBlockKey === `repeat:${group.repeatGroupId}`
-                        ? recentlyMovedBlockClass
-                        : ""
-                    } ${
-                      desktopCardEditEnabled &&
-                      isEditMode &&
-                      openRepeatGroupId !== group.repeatGroupId &&
-                      !(
-                        pendingRemoval?.kind === "repeat" &&
-                        pendingRemoval.repeatGroupId === group.repeatGroupId
-                      )
-                        ? "cursor-pointer hover:shadow-sm"
-                        : ""
-                    }`}
-                  >
-                    {(() => {
-                      const repeatSummary = buildRepeatSummary(
-                        group.entries,
-                        group.repeatCount,
-                        draft.basePaceSecondsPer100m,
-                        group.repeatEndingRestMode,
-                        poolLengthUnit,
-                        group.postSetRestEntry?.step ?? null
-                      );
-                      const repeatDescriptor = useManualLikeStepSummaries
-                        ? (manualPoolTopLevelSectionDescriptors[groupIndex] ?? null)
-                        : null;
-                      const repeatCategory = useManualLikeStepSummaries
-                        ? getWorkoutEditorTopLevelCategory(group, {
-                            normalizeForManualPool: isManualPoolMode,
-                          })
-                        : "main";
-                      const repeatLabelToneClass =
-                        useManualLikeStepSummaries &&
-                        !(
-                          pendingRemoval?.kind === "repeat" &&
-                          pendingRemoval.repeatGroupId === group.repeatGroupId
-                        )
-                          ? getManualPoolCategoryLabelClass(repeatCategory)
-                          : "text-blue-700";
-                      const repeatLabel = useManualLikeStepSummaries
-                        ? (repeatDescriptor?.label ?? "Repeat")
-                        : "Repeat set";
-                      const isRepeatOpen = isEditMode && openRepeatGroupId === group.repeatGroupId;
-                      const repeatToggleLabel = isRepeatOpen ? "Done" : "Edit";
-                      const hasEditableRepeatEndingRest = Boolean(
-                        draft.environment === "pool" &&
-                        (() => {
-                          const lastEntry = group.entries[group.entries.length - 1];
-                          return lastEntry && isSessionDraftRepeatEndingRestStep(lastEntry.step);
-                        })()
-                      );
-                      const repeatMobileActionKey = `repeat:${group.repeatGroupId}`;
-                      const repeatMobileActionsOpen = openMobileActionKey === repeatMobileActionKey;
-                      const hasRepeatRestConflict = Boolean(
-                        hasEditableRepeatEndingRest &&
-                        group.postSetRestEntry?.step &&
-                        group.repeatEndingRestMode === "use_last_rest"
-                      );
-                      const repeatConflictKeptBoth =
-                        repeatConflictKeepBoth[group.repeatGroupId] === true;
-                      const showRepeatRestConflict =
-                        hasRepeatRestConflict && !repeatConflictKeptBoth;
-                      const showRepeatRestReplacementConfirm =
-                        repeatConflictPendingReplacement === group.repeatGroupId;
-                      const repeatMoveUpDisabled = groupIndex === 0;
-                      const repeatMoveDownDisabled = groupIndex === stepGroups.length - 1;
-                      const repeatSummaryContent = (
-                        <>
-                          <p
-                            className={`text-xs font-semibold tracking-wide uppercase ${repeatLabelToneClass}`}
-                          >
-                            {repeatLabel}
-                          </p>
-                          {isManualPoolMode && isRepeatOpen ? (
-                            <p className="mt-2">
-                              <span className="inline-flex rounded-full border border-blue-200 bg-white px-3 py-1 text-[11px] font-semibold tracking-wide text-blue-700 uppercase">
-                                Repeat block
-                              </span>
-                            </p>
-                          ) : null}
-                          <p className="mt-2 text-sm font-medium text-slate-900">{repeatSummary}</p>
-                          {pendingRemoval?.kind === "repeat" &&
-                          pendingRemoval.repeatGroupId === group.repeatGroupId ? (
-                            <p className="mt-2 text-[11px] font-semibold tracking-wide text-rose-700 uppercase">
-                              Will be removed
-                            </p>
-                          ) : null}
-                        </>
-                      );
-
-                      return (
-                        <div className="space-y-3">
-                          <div className={desktopHeaderStackClass}>
-                            <div className={desktopSummaryBlockClass}>
-                              {isRearrangeMode ? (
-                                <div
-                                  data-testid={`session-draft-repeat-mobile-summary-${groupIndex}`}
-                                  className="sm:hidden"
-                                >
-                                  {repeatSummaryContent}
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => toggleRepeatEditor(group.repeatGroupId)}
-                                  aria-expanded={isRepeatOpen}
-                                  data-testid={`session-draft-repeat-mobile-summary-${groupIndex}`}
-                                  className={`${mobileSummaryToggleClass} sm:hidden`}
-                                >
-                                  {repeatSummaryContent}
-                                </button>
-                              )}
-                              <div
-                                data-testid={`session-draft-repeat-summary-${groupIndex}`}
-                                className="hidden sm:block"
-                              >
-                                {repeatSummaryContent}
-                              </div>
-                            </div>
-                            {isEditMode ? (
-                              <div className="hidden shrink-0 sm:flex">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleRepeatEditor(group.repeatGroupId)}
-                                  aria-expanded={isRepeatOpen}
-                                  data-testid={`session-draft-repeat-toggle-${groupIndex}`}
-                                  className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm transition ${
-                                    isRepeatOpen
-                                      ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
-                                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  {repeatToggleLabel}
-                                </button>
-                              </div>
-                            ) : null}
-                            {isRearrangeMode ? (
-                              <div
-                                data-testid={`session-draft-repeat-rearrange-controls-${groupIndex}`}
-                                className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => moveDraftGroup(groupIndex, -1, repeatLabel)}
-                                  disabled={repeatMoveUpDisabled}
-                                  aria-label="Move up"
-                                  title="Move up"
-                                  data-testid={`session-draft-repeat-rearrange-move-up-${groupIndex}`}
-                                  className={rearrangeMoveButtonClass}
-                                >
-                                  <ArrowUp aria-hidden="true" className="size-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => moveDraftGroup(groupIndex, 1, repeatLabel)}
-                                  disabled={repeatMoveDownDisabled}
-                                  aria-label="Move down"
-                                  title="Move down"
-                                  data-testid={`session-draft-repeat-rearrange-move-down-${groupIndex}`}
-                                  className={rearrangeMoveButtonClass}
-                                >
-                                  <ArrowDown aria-hidden="true" className="size-4" />
-                                </button>
-                              </div>
-                            ) : isEditMode ? (
-                              <div className="flex shrink-0 items-start gap-2 sm:hidden">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleRepeatEditor(group.repeatGroupId)}
-                                  aria-expanded={isRepeatOpen}
-                                  aria-label={
-                                    isRepeatOpen ? "Hide repeat details" : "Show repeat details"
-                                  }
-                                  data-testid={`session-draft-repeat-mobile-toggle-${groupIndex}`}
-                                  className={getMobileExpandToggleClass(isRepeatOpen)}
-                                >
-                                  {isRepeatOpen ? (
-                                    <ChevronUp aria-hidden="true" className="size-4" />
-                                  ) : (
-                                    <ChevronDown aria-hidden="true" className="size-4" />
-                                  )}
-                                </button>
-                                {isRepeatOpen ? (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setOpenMobileActionKey((current) =>
-                                        current === repeatMobileActionKey
-                                          ? null
-                                          : repeatMobileActionKey
-                                      )
-                                    }
-                                    aria-expanded={repeatMobileActionsOpen}
-                                    aria-controls={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
-                                    data-testid={`session-draft-repeat-mobile-actions-toggle-${groupIndex}`}
-                                    className={mobileActionToggleClass}
-                                  >
-                                    <Ellipsis className="size-5" />
-                                    <span className="sr-only">
-                                      {repeatMobileActionsOpen
-                                        ? "Hide repeat actions"
-                                        : "Show repeat actions"}
-                                    </span>
-                                  </button>
-                                ) : null}
-                              </div>
-                            ) : null}
-                          </div>
-
-                          {isEditMode && isRepeatOpen ? (
-                            <div className={desktopRepeatControlRowClass}>
-                              <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-end sm:gap-2">
-                                <label className="text-sm text-slate-700">
-                                  Repeat count
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={group.repeatCount ?? ""}
-                                    onChange={(event) =>
-                                      updateRepeatGroupCount(
-                                        group.repeatGroupId,
-                                        event.target.value
-                                      )
-                                    }
-                                    min={SESSION_DRAFT_REPEAT_MIN}
-                                    max={SESSION_DRAFT_REPEAT_MAX}
-                                    data-testid={`session-draft-repeat-count-${groupIndex}`}
-                                    className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:w-28"
-                                  />
-                                </label>
-                                {hasEditableRepeatEndingRest ? (
-                                  <label className="text-sm text-slate-700">
-                                    Rest after last repeat
-                                    <select
-                                      value={group.repeatEndingRestMode}
-                                      onChange={(event) =>
-                                        updateRepeatGroupEndingRestMode(
-                                          group.repeatGroupId,
-                                          event.target.value as SessionDraftRepeatEndingRestMode
-                                        )
-                                      }
-                                      data-testid={`session-draft-repeat-ending-rest-mode-${groupIndex}`}
-                                      className="mt-2 block h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 sm:min-w-[15rem]"
-                                    >
-                                      {SESSION_DRAFT_REPEAT_ENDING_REST_MODES.map((mode) => (
-                                        <option key={mode} value={mode}>
-                                          {getSessionDraftRepeatEndingRestModeLabel(mode)}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
-                                ) : null}
-                              </div>
-                              {showRepeatRestConflict ? (
-                                <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-3">
-                                  <p className="text-sm font-medium text-amber-950">
-                                    This creates two rests in a row.
-                                  </p>
-                                  <div className="mt-3 flex flex-wrap gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        updateRepeatGroupEndingRestMode(
-                                          group.repeatGroupId,
-                                          "skip_last_rest"
-                                        )
-                                      }
-                                      className="inline-flex h-9 items-center justify-center rounded-xl border border-amber-200 bg-white px-3 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
-                                    >
-                                      Use separate rest step
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setRepeatConflictPendingReplacement(group.repeatGroupId)
-                                      }
-                                      className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
-                                    >
-                                      Use repeat rest time
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setRepeatConflictKeepBoth((current) => ({
-                                          ...current,
-                                          [group.repeatGroupId]: true,
-                                        }));
-                                        setRepeatConflictPendingReplacement((current) =>
-                                          current === group.repeatGroupId ? null : current
-                                        );
-                                      }}
-                                      className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                                    >
-                                      Keep both
-                                    </button>
-                                  </div>
-                                  {showRepeatRestReplacementConfirm ? (
-                                    <div className="mt-3 rounded-xl border border-rose-200 bg-white p-3">
-                                      <p className="text-sm font-medium text-rose-950">
-                                        Delete the separate rest step and use repeat rest time?
-                                      </p>
-                                      <div className="mt-3 flex flex-wrap gap-2">
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeRepeatPostSetRestStep(group.repeatGroupId)
-                                          }
-                                          className="inline-flex h-9 items-center justify-center rounded-xl bg-rose-600 px-3 text-sm font-semibold text-white transition hover:bg-rose-500"
-                                        >
-                                          Delete rest step
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setRepeatConflictPendingReplacement((current) =>
-                                              current === group.repeatGroupId ? null : current
-                                            )
-                                          }
-                                          className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                                        >
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : null}
-                                </div>
-                              ) : null}
-                            </div>
-                          ) : null}
-
-                          {isEditMode && isRepeatOpen ? (
-                            <div className="sm:hidden">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  insertStepAfterGroup(groupIndex);
-                                  setOpenMobileActionKey(null);
-                                }}
-                                data-testid={`session-draft-repeat-mobile-primary-add-step-after-${groupIndex}`}
-                                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
-                              >
-                                Add step after
-                              </button>
-                            </div>
-                          ) : null}
-
-                          {isEditMode && isRepeatOpen && repeatMobileActionsOpen ? (
-                            <div
-                              id={`session-draft-repeat-mobile-actions-panel-${group.repeatGroupId}`}
-                              data-testid={`session-draft-repeat-mobile-actions-panel-${groupIndex}`}
-                              className={`${mobileActionPanelClass} sm:hidden`}
-                            >
-                              <div className="mt-2 grid gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    insertRepeatAfterGroup(groupIndex);
-                                    setOpenMobileActionKey(null);
-                                  }}
-                                  data-testid={`session-draft-repeat-mobile-add-repeat-after-${groupIndex}`}
-                                  className={`${mobileSecondaryActionClass} border-blue-200 bg-white text-blue-800 hover:bg-blue-50`}
-                                >
-                                  Add repeat after
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    duplicateRepeatGroup(group.repeatGroupId);
-                                    setOpenMobileActionKey(null);
-                                  }}
-                                  data-testid={`session-draft-repeat-mobile-duplicate-${groupIndex}`}
-                                  className={`${mobileSecondaryActionClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-100`}
-                                >
-                                  Duplicate repeat
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    requestRepeatGroupRemoval(group.repeatGroupId);
-                                    setOpenMobileActionKey(null);
-                                  }}
-                                  data-testid={`session-draft-repeat-mobile-remove-${groupIndex}`}
-                                  className={`${mobileSecondaryActionClass} border-rose-200 bg-white text-rose-700 hover:bg-rose-50`}
-                                >
-                                  Delete repeat
-                                </button>
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })()}
-
-                    {isEditMode && openRepeatGroupId === group.repeatGroupId ? (
-                      <div className="mt-4 space-y-3">
-                        {group.entries.map((entry, repeatIndex) =>
-                          renderStepEditorCard(entry.step, entry.index, groupIndex, {
-                            insideRepeatGroup: true,
-                            repeatStepNumber: repeatIndex + 1,
-                            labelOverride:
-                              repeatIndex === 0
-                                ? isManualPoolMode
-                                  ? (manualPoolTopLevelSectionDescriptors[groupIndex]?.label ??
-                                    "Repeat")
-                                  : "Work interval"
-                                : entry.step.category === "rest"
-                                  ? isManualPoolMode
-                                    ? buildLinkedRestLabel(
-                                        manualPoolTopLevelSectionDescriptors[groupIndex]?.label ??
-                                          "Repeat",
-                                        "interval"
-                                      )
-                                    : "Between-interval recovery"
-                                  : undefined,
-                            descriptionOverride:
-                              entry.step.category === "rest" && isManualPoolMode ? null : undefined,
-                          })
-                        )}
-                        {group.postSetRestEntry
-                          ? renderStepEditorCard(
-                              group.postSetRestEntry.step,
-                              group.postSetRestEntry.index,
-                              groupIndex,
-                              {
-                                labelOverride: isManualPoolMode
-                                  ? buildLinkedRestLabel(
-                                      manualPoolTopLevelSectionDescriptors[groupIndex]?.label ??
-                                        "Repeat",
-                                      "set"
-                                    )
-                                  : "Post-set rest",
-                                descriptionOverride: null,
-                                isLinkedPostSetRest: true,
-                                pendingInlineDelete:
-                                  repeatConflictPendingReplacement === group.repeatGroupId,
-                              }
-                            )
-                          : null}
-                        {pendingRemoval?.kind === "repeat" &&
-                        pendingRemoval.repeatGroupId === group.repeatGroupId ? (
-                          <div
-                            data-testid="workout-editor-removal-confirm"
-                            className="rounded-2xl border border-rose-200 bg-rose-50/90 p-3"
-                          >
-                            <p className="text-sm font-medium text-rose-950">
-                              Delete{" "}
-                              <span className="font-semibold">
-                                {pendingRemoval?.label ?? "this repeat block"}
-                              </span>
-                              ?
-                            </p>
-                            <p className="mt-1 text-sm text-rose-900">
-                              This builder change stays local until you save, and you can still undo
-                              it right after deletion.
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={confirmPendingRemoval}
-                                data-testid="workout-editor-removal-confirm-button"
-                                className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
-                              >
-                                Delete now
-                              </button>
-                              <button
-                                type="button"
-                                onClick={cancelPendingRemoval}
-                                data-testid="workout-editor-removal-cancel-button"
-                                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-900 transition hover:bg-rose-100 active:bg-rose-200"
-                              >
-                                Keep it
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
-                        <div
-                          data-testid={`session-draft-repeat-desktop-actions-${groupIndex}`}
-                          data-desktop-layout="bottom"
-                          className="hidden flex-wrap items-end gap-2 border-t border-blue-100 pt-3 sm:flex"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => insertStepAfterGroup(groupIndex)}
-                            data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                          >
-                            Add step after
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => insertRepeatAfterGroup(groupIndex)}
-                            data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                          >
-                            Add repeat after
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => duplicateRepeatGroup(group.repeatGroupId)}
-                            data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
-                          >
-                            Duplicate repeat
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => requestRepeatGroupRemoval(group.repeatGroupId)}
-                            data-testid={`session-draft-repeat-remove-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
-                          >
-                            Delete repeat
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleRepeatEditor(group.repeatGroupId)}
-                            data-testid={`session-draft-repeat-done-bottom-${groupIndex}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 sm:ml-auto"
-                          >
-                            Done
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </section>
-                )
-              )}
-        </div>
-      </div>
+                return renderStepEditorCard(
+                  sessionStepBlock.entry.step,
+                  sessionStepBlock.entry.index,
+                  groupIndex,
+                  {
+                    linkedTopLevelRestEntry: sessionStepBlock.linkedRestEntry,
+                  }
+                );
+              })()
+            : renderRepeatSummaryCard(group, groupIndex)
+        )}
+      </SessionStepSurfaceRenderer>
 
       {poolsideNotePanel}
 

@@ -6,6 +6,7 @@ Use this contract whenever the app displays, edits, rearranges, previews, prints
 
 - Reference implementation: manual pool session builder in `WorkoutEditor`.
 - Shared view-model and display contract: `components/my-library/workouts/sessionStepSurfaceContract.ts`.
+- Shared React renderer boundary: `components/my-library/workouts/SessionStepSurfaceRenderer.tsx`.
 - Domain object: canonical workout/session draft steps from `lib/session-generator-v1/shared.ts`.
 - Consumers include manual builder, AI session generator, poolside note, PDF/export previews, and later planner/program surfaces.
 - Architecture target: route-specific surfaces should adapt data into this contract; they should not fork a separate card/tab/rest-summary visual system.
@@ -48,6 +49,7 @@ Before implementing a new session-step surface:
 
 - One canonical data contract for session steps.
 - One canonical display contract per mode: `Edit`, `Rearrange`, `View`.
-- Route-specific code may supply copy or data mapping, but should not invent a separate visual system.
+- Route-specific code may supply copy, callbacks, or data mapping, but should not invent a separate visual system.
+- Renderer inputs are display-only; canonical draft mutation, save/export/PDF behavior, and edit-field state stay with the owning route/editor.
 - Tests should cover the shared contract once, then route-specific flows only where behavior differs.
-- Active hardening: `docs/task-briefs/in-progress/2026-05-01-session-step-reference-surface-architecture-hardening-10-10.md` tracks extracting this from the current large `WorkoutEditor` implementation into a clearer shared view-model/renderer contract.
+- Prior hardening: `docs/task-briefs/done/2026-05-01-session-step-reference-surface-architecture-hardening-10-10.md` extracted the shared view-model/display helpers. Current renderer extraction is tracked by `docs/task-briefs/in-progress/2026-05-03-session-step-shared-view-model-renderer-10-10.md`.
