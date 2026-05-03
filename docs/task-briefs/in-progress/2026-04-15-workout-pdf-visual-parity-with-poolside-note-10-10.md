@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-15-workout-pdf-visual-parity-with-poolside-note-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
-- `updated`: `2026-04-15`
+- `updated`: `2026-05-03`
 
 ## Goal
 
@@ -32,6 +32,10 @@ Make the standard workout PDF feel like the same premium FreeSwimming print syst
   - [/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-02-28-workout-builder-and-poolside-execution-10-10.md)
 - Upstream workout PDF/export delivery:
   - [/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-02-28-workout-export-adapters-garmin-ready-pdf-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-02-28-workout-export-adapters-garmin-ready-pdf-10-10.md)
+- Session-step reference contract:
+  - [/Users/stianvikra/freeswimming/docs/design/session-step-surface-contract.md](/Users/stianvikra/freeswimming/docs/design/session-step-surface-contract.md)
+  - [/Users/stianvikra/freeswimming/components/my-library/workouts/sessionStepSurfaceContract.ts](/Users/stianvikra/freeswimming/components/my-library/workouts/sessionStepSurfaceContract.ts)
+  - [/Users/stianvikra/freeswimming/components/my-library/workouts/SessionStepSurfaceRenderer.tsx](/Users/stianvikra/freeswimming/components/my-library/workouts/SessionStepSurfaceRenderer.tsx)
 - Upstream poolside-note design system direction:
   - [/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-15-poolside-note-brand-surface-reframe-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-15-poolside-note-brand-surface-reframe-10-10.md)
   - [/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-15-poolside-note-header-clarity-and-landscape-parity-10-10.md](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-04-15-poolside-note-header-clarity-and-landscape-parity-10-10.md)
@@ -48,6 +52,7 @@ Make the standard workout PDF feel like the same premium FreeSwimming print syst
   - no Garmin/export payload contract change,
   - no builder authoring logic change unless strictly needed for PDF truthfulness,
   - no poolside-note redesign inside this brief,
+  - no direct React reuse of `SessionStepSurfaceRenderer` inside the PDF HTML renderer; use its contract as the semantic reference only,
   - no new dependency.
 
 ## Product Direction Locked By This Brief
@@ -174,9 +179,10 @@ Critical target categories for `10/10` claim in this brief:
 2. The PDF retains a distinct full-reference role and is not a visual clone of the Poolside Note.
 3. Header hierarchy, brand treatment, and session summary blocks are visually deliberate and consistently composed.
 4. Rest/repeat/totals/focus terminology is aligned where the two artifacts represent the same underlying meaning.
-5. Preview/open/print flow remains stable and does not blank or print empty output.
-6. Canonical workout content remains truthful and unchanged by the redesign.
-7. Relevant tests and `verify:pre-pr` / `verify:pre-merge` pass when this brief is executed.
+5. Standard PDF step grouping, rest display, and repeat copy follow the shared session-step display contract where the PDF represents the same canonical step data.
+6. Preview/open/print flow remains stable and does not blank or print empty output.
+7. Canonical workout content remains truthful and unchanged by the redesign.
+8. Relevant tests and `verify:pre-pr` / `verify:pre-merge` pass when this brief is executed.
 
 ## Validation
 
@@ -234,3 +240,7 @@ Critical target categories for `10/10` claim in this brief:
 ## Checkpoint Log
 
 - `2026-04-15 | planning | created the dedicated planned brief for aligning the standard workout PDF with the newer Poolside Note brand and print-system quality bar, while explicitly keeping the two artifacts distinct in job and composition | next: execute this brief separately after the current builder slice is merged or explicitly handed off`
+- `2026-05-03 | in-progress | started implementation after PR #578/#579 landed; updated scope so the standard PDF follows Poolside Note visually and the shared session-step contract semantically, while keeping the React renderer out of the PDF HTML path | next: implement PDF model/rendering changes and capture after/reference screenshot handoff before pre-PR gates`
+- `2026-05-03 | screenshot handoff | standard PDF now has a Poolside-family header, summary strip, sectioned step rendering, and shared-contract rest/repeat semantics while Poolside Note stays unchanged as the reference; targeted validation passed: typecheck, workouts-shared vitest, eslint on touched code/tests, and lint:briefs:all; after/reference artifacts are in /Users/stianvikra/freeswimming/output/workout-pdf-poolside-parity-2026-05-03 | next: wait for owner screenshot approval before npm run verify:pre-pr`
+- `2026-05-03 | screenshot approved | owner approved after/reference screenshot handoff in chat | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-03 | pre-pr gate green | npm run verify:pre-pr passed after screenshot approval; performance budgets stayed green and are held unchanged for this PDF-only slice | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`

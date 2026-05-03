@@ -212,6 +212,11 @@ export type WorkoutPdfModelStep = {
   label: string;
   title: string;
   summary: string;
+  category?: SessionDraftStep["category"];
+  categoryLabel?: string;
+  prescription?: string | null;
+  secondarySummary?: string | null;
+  secondaryDetails?: string[];
   targetNotes: string | null;
   notes: string | null;
   reviewDetails: string[];
@@ -223,6 +228,11 @@ export type WorkoutPdfModelBlock =
       label: string;
       title: string;
       summary: string;
+      category?: SessionDraftStep["category"];
+      categoryLabel?: string;
+      prescription?: string | null;
+      secondarySummary?: string | null;
+      secondaryDetails?: string[];
       targetNotes: string | null;
       notes: string | null;
       reviewDetails: string[];
@@ -232,9 +242,21 @@ export type WorkoutPdfModelBlock =
       label: string;
       title: string;
       summary: string;
+      category?: SessionDraftStep["category"];
+      categoryLabel?: string;
+      prescription?: string | null;
+      secondarySummary?: string | null;
+      secondaryDetails?: string[];
       reviewDetails: string[];
       steps: WorkoutPdfModelStep[];
     };
+
+export type WorkoutPdfModelSection = {
+  key: string;
+  title: string;
+  category: SessionDraftStep["category"];
+  blocks: WorkoutPdfModelBlock[];
+};
 
 export type WorkoutPdfModel = {
   fileName: string;
@@ -262,6 +284,7 @@ export type WorkoutPdfModel = {
   constraintText: string | null;
   warnings: string[];
   readiness: WorkoutGarminReadinessReport;
+  standardSections: WorkoutPdfModelSection[];
   blocks: WorkoutPdfModelBlock[];
   poolsideLineItems: WorkoutPoolsideLineItem[];
   poolsideLines: string[];
@@ -899,6 +922,7 @@ export function buildWorkoutPdfModel(
       constraintText: null,
       warnings: [],
       readiness,
+      standardSections: [],
       blocks: [],
       poolsideLineItems,
       poolsideLines,
@@ -977,6 +1001,7 @@ export function buildWorkoutPdfModel(
       steps,
     };
   });
+  const standardSections = buildWorkoutPdfStandardSections(draft, issuesByStepId, poolLengthUnit);
 
   return {
     fileName,
@@ -1004,11 +1029,381 @@ export function buildWorkoutPdfModel(
     constraintText: draft.constraintText || null,
     warnings: draft.warnings,
     readiness,
+    standardSections,
     blocks,
     poolsideLineItems,
     poolsideLines,
     totalDistanceLabel,
   };
+}
+
+function buildWorkoutPdfStandardSections(
+  draft: SessionDraft,
+  issuesByStepId: Map<string, string[]>,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  const groups = buildWorkoutHandoffGroups(draft.steps);
+  const sections: WorkoutPdfModelSection[] = [];
+  let displayIndex = 0;
+
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+    const group = groups[groupIndex];
+    if (!group) continue;
+
+    displayIndex += 1;
+    const label = `${displayIndex}.`;
+
+    if (group.kind === "single") {
+      const entry = group.entries[0];
+      const linkedRest = collectWorkoutPdfLinkedRestGroups(
+        groups.slice(groupIndex + 1),
+        draft.environment,
+        null
+      );
+      const block = buildWorkoutPdfStandardSingleBlock(entry, label, {
+        basePaceSecondsPer100m: draft.basePaceSecondsPer100m,
+        environment: draft.environment,
+        poolLengthUnit,
+        issuesByStepId,
+        linkedRestSteps: linkedRest.steps,
+        linkedRestMode: "standalone",
+      });
+
+      pushWorkoutPdfStandardSection(sections, block.category ?? entry.step.category, [block]);
+      groupIndex += linkedRest.consumedGroups;
+      continue;
+    }
+
+    const postSetRest = collectWorkoutPdfLinkedRestGroups(
+      groups.slice(groupIndex + 1),
+      draft.environment,
+      group.repeatGroupId
+    );
+    const block = buildWorkoutPdfStandardRepeatBlock(group, label, {
+      basePaceSecondsPer100m: draft.basePaceSecondsPer100m,
+      environment: draft.environment,
+      poolLengthUnit,
+      issuesByStepId,
+      postSetRestSteps: postSetRest.steps,
+    });
+
+    pushWorkoutPdfStandardSection(
+      sections,
+      block.category ?? getWorkoutPoolsideGroupCategory(group),
+      [block]
+    );
+    groupIndex += postSetRest.consumedGroups;
+  }
+
+  return sections;
+}
+
+function pushWorkoutPdfStandardSection(
+  sections: WorkoutPdfModelSection[],
+  category: SessionDraftStep["category"],
+  blocks: WorkoutPdfModelBlock[]
+) {
+  if (blocks.length === 0) {
+    return;
+  }
+
+  const title = getSessionStepCategoryLabel(category);
+  const previousSection = sections[sections.length - 1];
+  if (previousSection?.category === category) {
+    previousSection.blocks.push(...blocks);
+    return;
+  }
+
+  sections.push({
+    key: `${category}-${sections.length}`,
+    title,
+    category,
+    blocks,
+  });
+}
+
+function collectWorkoutPdfLinkedRestGroups(
+  followingGroups: WorkoutHandoffGroup[],
+  environment: SessionGeneratorEnvironment,
+  repeatGroupId: string | null
+) {
+  const steps: SessionDraftStep[] = [];
+  let consumedGroups = 0;
+
+  for (const nextGroup of followingGroups) {
+    if (nextGroup.kind !== "single") {
+      break;
+    }
+
+    const nextStep = nextGroup.entries[0]?.step;
+    if (!nextStep || !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment)) {
+      break;
+    }
+
+    if (repeatGroupId) {
+      if (nextStep.postSetRestForRepeatGroupId !== repeatGroupId) {
+        break;
+      }
+    } else if (nextStep.postSetRestForRepeatGroupId) {
+      break;
+    }
+
+    steps.push(nextStep);
+    consumedGroups += 1;
+  }
+
+  return { steps, consumedGroups };
+}
+
+function buildWorkoutPdfStandardSingleBlock(
+  entry: WorkoutHandoffEntry,
+  label: string,
+  options: {
+    basePaceSecondsPer100m: number;
+    environment: SessionGeneratorEnvironment;
+    poolLengthUnit: SessionDraftPoolLengthUnit;
+    issuesByStepId: Map<string, string[]>;
+    linkedRestSteps: SessionDraftStep[];
+    linkedRestMode: "standalone" | "repeat";
+  }
+): WorkoutPdfModelBlock {
+  const step = entry.step;
+  const categoryLabel = getSessionStepCategoryLabel(step.category);
+  const isRecoveryStep = isWorkoutPoolsideRecoveryStep(step, options.environment);
+  const prescription = isRecoveryStep
+    ? buildWorkoutPoolsideRecoveryText(
+        step,
+        options.basePaceSecondsPer100m,
+        options.environment,
+        options.poolLengthUnit,
+        "standalone"
+      )
+    : buildWorkoutPoolsideIntervalLabel(
+        step,
+        options.basePaceSecondsPer100m,
+        options.environment,
+        options.poolLengthUnit
+      );
+  const linkedRestSummary = buildWorkoutPoolsideRecoverySummary(
+    options.linkedRestSteps,
+    options.basePaceSecondsPer100m,
+    options.environment,
+    options.poolLengthUnit,
+    options.linkedRestMode
+  );
+
+  return {
+    kind: "single",
+    label,
+    title: step.name,
+    summary: `${categoryLabel} · ${buildWorkoutHandoffStepSummary(
+      step,
+      options.basePaceSecondsPer100m,
+      options.environment,
+      options.poolLengthUnit
+    )}`,
+    category: step.category,
+    categoryLabel,
+    prescription,
+    secondarySummary: linkedRestSummary,
+    secondaryDetails: buildWorkoutPdfLinkedRestDetails(options.linkedRestSteps),
+    targetNotes: step.targetSummary || null,
+    notes: step.notes || null,
+    reviewDetails: [
+      ...(options.issuesByStepId.get(step.id) ?? []),
+      ...options.linkedRestSteps.flatMap(
+        (restStep) => options.issuesByStepId.get(restStep.id) ?? []
+      ),
+    ],
+  };
+}
+
+function buildWorkoutPdfStandardRepeatBlock(
+  group: Extract<WorkoutHandoffGroup, { kind: "repeat" }>,
+  label: string,
+  options: {
+    basePaceSecondsPer100m: number;
+    environment: SessionGeneratorEnvironment;
+    poolLengthUnit: SessionDraftPoolLengthUnit;
+    issuesByStepId: Map<string, string[]>;
+    postSetRestSteps: SessionDraftStep[];
+  }
+): WorkoutPdfModelBlock {
+  const category = getWorkoutPoolsideGroupCategory(group);
+  const categoryLabel = getSessionStepCategoryLabel(category);
+  const steps = buildWorkoutPdfStandardRepeatSteps(group, label, options);
+  const lastStep = steps[steps.length - 1];
+  const postSetRestSummary = buildWorkoutPoolsideRecoverySummary(
+    options.postSetRestSteps,
+    options.basePaceSecondsPer100m,
+    options.environment,
+    options.poolLengthUnit,
+    "repeat"
+  );
+
+  if (lastStep && postSetRestSummary) {
+    lastStep.secondarySummary = [lastStep.secondarySummary, postSetRestSummary]
+      .filter(Boolean)
+      .join(" · ");
+    lastStep.secondaryDetails = [
+      ...(lastStep.secondaryDetails ?? []),
+      ...buildWorkoutPdfLinkedRestDetails(options.postSetRestSteps),
+    ];
+    lastStep.reviewDetails = [
+      ...lastStep.reviewDetails,
+      ...options.postSetRestSteps.flatMap((step) => options.issuesByStepId.get(step.id) ?? []),
+    ];
+  }
+
+  const firstInterval = steps.find((step) => step.category !== "rest") ?? steps[0] ?? null;
+
+  return {
+    kind: "repeat",
+    label,
+    title: "Repeat block",
+    summary: buildWorkoutHandoffRepeatSummary(
+      group.entries,
+      group.repeatCount,
+      options.basePaceSecondsPer100m,
+      group.repeatEndingRestMode,
+      options.poolLengthUnit
+    ),
+    category,
+    categoryLabel,
+    prescription: firstInterval
+      ? `${group.repeatCount ?? "Set"} x ${firstInterval.prescription ?? firstInterval.summary}`
+      : null,
+    secondarySummary: null,
+    secondaryDetails: [],
+    reviewDetails: Array.from(new Set(steps.flatMap((step) => step.reviewDetails))),
+    steps,
+  };
+}
+
+function buildWorkoutPdfStandardRepeatSteps(
+  group: Extract<WorkoutHandoffGroup, { kind: "repeat" }>,
+  blockLabel: string,
+  options: {
+    basePaceSecondsPer100m: number;
+    environment: SessionGeneratorEnvironment;
+    poolLengthUnit: SessionDraftPoolLengthUnit;
+    issuesByStepId: Map<string, string[]>;
+  }
+) {
+  const steps: WorkoutPdfModelStep[] = [];
+
+  for (let index = 0; index < group.entries.length; index += 1) {
+    const entry = group.entries[index];
+    const step = entry?.step;
+    if (!entry || !step) continue;
+
+    if (isWorkoutPoolsideRecoveryStep(step, options.environment)) {
+      steps.push(
+        buildWorkoutPdfStandardRepeatStep(entry, `${blockLabel}${steps.length + 1}`, options, {
+          linkedRestSteps: [],
+          isRecoveryStep: true,
+        })
+      );
+      continue;
+    }
+
+    const linkedRestSteps: SessionDraftStep[] = [];
+    let nextIndex = index + 1;
+
+    while (nextIndex < group.entries.length) {
+      const nextStep = group.entries[nextIndex]?.step;
+      if (!nextStep || !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, options.environment)) {
+        break;
+      }
+      linkedRestSteps.push(nextStep);
+      nextIndex += 1;
+    }
+
+    steps.push(
+      buildWorkoutPdfStandardRepeatStep(entry, `${blockLabel}${steps.length + 1}`, options, {
+        linkedRestSteps,
+        isRecoveryStep: false,
+      })
+    );
+
+    if (linkedRestSteps.length > 0) {
+      index = nextIndex - 1;
+    }
+  }
+
+  return steps;
+}
+
+function buildWorkoutPdfStandardRepeatStep(
+  entry: WorkoutHandoffEntry,
+  label: string,
+  options: {
+    basePaceSecondsPer100m: number;
+    environment: SessionGeneratorEnvironment;
+    poolLengthUnit: SessionDraftPoolLengthUnit;
+    issuesByStepId: Map<string, string[]>;
+  },
+  display: {
+    linkedRestSteps: SessionDraftStep[];
+    isRecoveryStep: boolean;
+  }
+): WorkoutPdfModelStep {
+  const step = entry.step;
+  const categoryLabel = getSessionStepCategoryLabel(step.category);
+  const prescription = display.isRecoveryStep
+    ? buildWorkoutPoolsideRecoveryText(
+        step,
+        options.basePaceSecondsPer100m,
+        options.environment,
+        options.poolLengthUnit,
+        "interval"
+      )
+    : buildWorkoutPoolsideIntervalLabel(
+        step,
+        options.basePaceSecondsPer100m,
+        options.environment,
+        options.poolLengthUnit
+      );
+  const linkedRestSummary = buildWorkoutPoolsideRecoverySummary(
+    display.linkedRestSteps,
+    options.basePaceSecondsPer100m,
+    options.environment,
+    options.poolLengthUnit,
+    "repeat"
+  );
+
+  return {
+    label,
+    title: step.name,
+    summary: `${categoryLabel} · ${buildWorkoutHandoffStepSummary(
+      step,
+      options.basePaceSecondsPer100m,
+      options.environment,
+      options.poolLengthUnit
+    )}`,
+    category: step.category,
+    categoryLabel,
+    prescription,
+    secondarySummary: linkedRestSummary,
+    secondaryDetails: buildWorkoutPdfLinkedRestDetails(display.linkedRestSteps),
+    targetNotes: step.targetSummary || null,
+    notes: step.notes || null,
+    reviewDetails: [
+      ...(options.issuesByStepId.get(step.id) ?? []),
+      ...display.linkedRestSteps.flatMap(
+        (restStep) => options.issuesByStepId.get(restStep.id) ?? []
+      ),
+    ],
+  };
+}
+
+function buildWorkoutPdfLinkedRestDetails(steps: SessionDraftStep[]) {
+  return steps
+    .flatMap((step) => [
+      step.targetSummary ? `Rest target: ${step.targetSummary}` : null,
+      step.notes ? `Rest note: ${step.notes}` : null,
+    ])
+    .filter((detail): detail is string => Boolean(detail));
 }
 
 export function buildWorkoutPdfHtmlDocument(
@@ -1102,6 +1497,26 @@ function buildStandardWorkoutPdfHtmlDocument(
   const fontFaceCss = buildPdfBrandFontFaceCss(fontUrl);
   const logoHtml = buildPdfBrandLockupHtml(model.logoUrl);
   const isEmbeddedPreview = previewChrome === "embedded";
+  const totalDistanceValue = model.totalDistanceLabel?.replace(/^Total:\s*/, "") ?? null;
+  const standardSections =
+    model.standardSections.length > 0
+      ? model.standardSections
+      : [
+          {
+            key: "steps-0",
+            title: "Steps",
+            category: "main" as const,
+            blocks: model.blocks,
+          },
+        ];
+  const totalDistanceHtml = totalDistanceValue
+    ? `
+        <div class="hero-total-pill" data-testid="workout-pdf-total">
+          <span class="hero-total-label">Total</span>
+          <span class="hero-total-value">${escapeHtml(totalDistanceValue)}</span>
+        </div>
+      `
+    : "";
   const reviewDetailsHtml =
     model.readiness.issues.length > 0
       ? `
@@ -1181,15 +1596,20 @@ function buildStandardWorkoutPdfHtmlDocument(
     <style>
       :root {
         color-scheme: light;
-        --ink: #172033;
-        --muted: #51607a;
-        --line: rgba(15, 23, 42, 0.12);
-        --page: #e8eef8;
+        --ink: #10213c;
+        --muted: #42506b;
+        --line: rgba(16, 33, 60, 0.14);
+        --page: #dbe8ff;
         --surface: #ffffff;
-        --surface-soft: #eff6ff;
-        --surface-muted: #f8fbff;
+        --surface-soft: #eff5ff;
+        --surface-muted: #f9fbff;
         --accent: #1d4ed8;
-        --accent-soft: rgba(29, 78, 216, 0.1);
+        --accent-strong: #163ea8;
+        --accent-soft: rgba(29, 78, 216, 0.12);
+        --teal: #0f766e;
+        --teal-soft: rgba(15, 118, 110, 0.1);
+        --amber: #b45309;
+        --amber-soft: rgba(245, 158, 11, 0.14);
         --warn: #9a3412;
         --warn-soft: rgba(245, 158, 11, 0.14);
         --notice: rgba(29, 78, 216, 0.08);
@@ -1273,30 +1693,38 @@ function buildStandardWorkoutPdfHtmlDocument(
       }
 
       .shell {
-        padding: 24px 16px 40px;
+        padding: 14px 12px 24px;
       }
 
       .page {
-        max-width: 920px;
+        max-width: 900px;
         margin: 0 auto;
         background: var(--surface);
-        border: 1px solid rgba(23, 32, 51, 0.08);
-        border-radius: 28px;
+        border: 1px solid rgba(16, 33, 60, 0.08);
+        border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 28px 80px rgba(23, 32, 51, 0.14);
+        box-shadow: 0 18px 42px rgba(16, 33, 60, 0.13);
       }
 
       .hero {
-        padding: 32px;
-        background: linear-gradient(145deg, #eff6ff, #f8fbff 58%, #ffffff);
-        border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+        display: grid;
+        gap: 18px;
+        padding: 24px 26px;
+        background: linear-gradient(165deg, #eff5ff 0%, #f9fbff 68%, #ffffff 100%);
+        border-bottom: 1px solid rgba(16, 33, 60, 0.08);
       }
 
-      .hero-brand {
+      .hero-top-row,
+      .hero-main {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
+        align-items: flex-start;
+        justify-content: space-between;
         gap: 16px;
+      }
+
+      .hero-main {
+        align-items: end;
       }
 
       .brand-mark {
@@ -1306,8 +1734,8 @@ function buildStandardWorkoutPdfHtmlDocument(
 
       .brand-logo {
         display: block;
-        width: 176px;
-        max-width: min(52vw, 176px);
+        width: 190px;
+        max-width: min(52vw, 190px);
         height: auto;
       }
 
@@ -1326,19 +1754,26 @@ function buildStandardWorkoutPdfHtmlDocument(
 
       .eyebrow {
         margin: 0;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--accent);
+        color: var(--section-accent, var(--accent-strong));
       }
 
       .hero-tagline {
-        margin: 6px 0 0;
-        color: var(--muted);
-        font-size: 0.95rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
+        display: grid;
+        justify-items: end;
+        margin: 0;
+        color: rgba(16, 33, 60, 0.72);
+        font-size: 1.2rem;
+        font-weight: 740;
+        letter-spacing: 0;
+        line-height: 0.86;
+      }
+
+      .hero-tagline-accent {
+        color: var(--accent);
       }
 
       .source-pill {
@@ -1355,33 +1790,32 @@ function buildStandardWorkoutPdfHtmlDocument(
       }
 
       h1 {
-        margin: 18px 0 0;
-        font-size: clamp(2rem, 5vw, 3.2rem);
+        margin: 8px 0 0;
+        font-size: clamp(2rem, 4.2vw, 2.75rem);
         font-weight: 800;
-        letter-spacing: -0.03em;
+        letter-spacing: 0;
         line-height: 1.04;
       }
 
       .lede {
-        margin: 14px 0 0;
+        margin: 10px 0 0;
         max-width: 42rem;
         font-size: 1rem;
-        line-height: 1.65;
+        line-height: 1.55;
         color: var(--muted);
       }
 
-      .meta-grid {
+      .summary-strip {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 24px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
       }
 
       .meta-card {
-        border: 1px solid rgba(23, 32, 51, 0.08);
-        border-radius: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
         background: rgba(255, 255, 255, 0.82);
-        padding: 14px 16px;
+        padding: 10px 12px;
       }
 
       .meta-label {
@@ -1394,14 +1828,14 @@ function buildStandardWorkoutPdfHtmlDocument(
       }
 
       .meta-value {
-        margin: 8px 0 0;
-        font-size: 15px;
+        margin: 6px 0 0;
+        font-size: 13px;
         font-weight: 600;
-        line-height: 1.5;
+        line-height: 1.38;
       }
 
       .body {
-        padding: 28px 32px 36px;
+        padding: 20px 24px 26px;
       }
 
       .notice {
@@ -1440,23 +1874,66 @@ function buildStandardWorkoutPdfHtmlDocument(
         border: 1px solid rgba(82, 96, 121, 0.16);
       }
 
-      .section-title {
-        margin: 28px 0 16px;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--muted);
+      .workout-sections,
+      .section-blocks,
+      .steps,
+      .step-list {
+        display: grid;
+        gap: 12px;
       }
 
-      .steps {
-        display: grid;
-        gap: 14px;
+      .workout-section {
+        --section-accent: var(--accent-strong);
+        --section-soft: var(--surface-soft);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fff;
+      }
+
+      .workout-section[data-step-category="warmup"] {
+        --section-accent: var(--teal);
+        --section-soft: var(--teal-soft);
+      }
+
+      .workout-section[data-step-category="main"],
+      .workout-section[data-step-category="swim"] {
+        --section-accent: var(--accent-strong);
+        --section-soft: var(--surface-soft);
+      }
+
+      .workout-section[data-step-category="cooldown"] {
+        --section-accent: var(--amber);
+        --section-soft: var(--amber-soft);
+      }
+
+      .workout-section[data-step-category="rest"] {
+        --section-accent: var(--muted);
+        --section-soft: rgba(82, 96, 121, 0.08);
+      }
+
+      .workout-section-head {
+        padding: 10px 14px;
+        background: var(--section-soft);
+        border-bottom: 1px solid rgba(16, 33, 60, 0.08);
+      }
+
+      .section-title {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--section-accent);
+      }
+
+      .section-blocks {
+        padding: 12px;
       }
 
       .step-block {
         border: 1px solid var(--line);
-        border-radius: 24px;
+        border-radius: 12px;
         background: #fff;
         overflow: hidden;
       }
@@ -1464,48 +1941,72 @@ function buildStandardWorkoutPdfHtmlDocument(
       .step-block-head {
         display: flex;
         flex-wrap: wrap;
-        align-items: baseline;
-        justify-content: space-between;
+        align-items: flex-start;
+        justify-content: flex-start;
         gap: 10px;
-        padding: 18px 20px 14px;
-        border-bottom: 1px solid rgba(23, 32, 51, 0.08);
-        background: var(--surface-soft);
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(16, 33, 60, 0.08);
+        background: var(--surface-muted);
+      }
+
+      .step-block-head > div {
+        min-width: 0;
+        flex: 1 1 auto;
       }
 
       .step-kicker {
         margin: 0;
-        font-size: 11px;
-        font-weight: 700;
+        font-size: 10px;
+        font-weight: 800;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: var(--accent);
+        color: var(--section-accent, var(--accent-strong));
+      }
+
+      .step-number {
+        flex: 0 0 auto;
+        min-width: 34px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.92);
+        padding: 5px 8px;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--accent-strong);
       }
 
       .step-title {
-        margin: 8px 0 0;
-        font-size: 1.1rem;
+        margin: 7px 0 0;
+        font-size: 0.95rem;
         font-weight: 700;
+        color: var(--ink);
       }
 
-      .step-summary {
+      .step-prescription {
         margin: 6px 0 0;
-        color: var(--muted);
-        line-height: 1.6;
+        color: var(--ink);
+        font-size: 1.05rem;
+        font-weight: 760;
+        line-height: 1.38;
+      }
+
+      .step-secondary {
+        margin: 6px 0 0;
+        color: var(--section-accent, var(--accent-strong));
+        font-size: 0.9rem;
+        font-weight: 720;
+        line-height: 1.35;
       }
 
       .step-body {
-        padding: 18px 20px 20px;
-      }
-
-      .step-list {
-        display: grid;
-        gap: 12px;
+        padding: 14px 16px 16px;
       }
 
       .repeat-step {
-        border: 1px solid rgba(23, 32, 51, 0.08);
-        border-radius: 18px;
-        padding: 14px 16px;
+        border: 1px solid rgba(16, 33, 60, 0.1);
+        border-radius: 12px;
+        padding: 12px 14px;
         background: var(--surface-muted);
       }
 
@@ -1525,7 +2026,7 @@ function buildStandardWorkoutPdfHtmlDocument(
       }
 
       .footer-note {
-        margin-top: 28px;
+        margin-top: 20px;
         border-top: 1px solid var(--line);
         padding-top: 16px;
         font-size: 0.95rem;
@@ -1539,12 +2040,13 @@ function buildStandardWorkoutPdfHtmlDocument(
           flex-direction: column;
         }
 
-        .hero-brand {
+        .hero-top-row,
+        .hero-main {
           align-items: flex-start;
           flex-direction: column;
         }
 
-        .meta-grid {
+        .summary-strip {
           grid-template-columns: 1fr;
         }
 
@@ -1575,6 +2077,7 @@ function buildStandardWorkoutPdfHtmlDocument(
           box-shadow: none;
         }
 
+        .workout-section,
         .step-block,
         .repeat-step,
         .meta-card,
@@ -1613,17 +2116,24 @@ function buildStandardWorkoutPdfHtmlDocument(
     <main class="shell">
       <article class="page" data-testid="workout-pdf-print-view" data-pdf-variant="standard">
         <header class="hero">
-          <div class="hero-brand">
-            ${logoHtml}
-            <div>
-              <p class="eyebrow">freeswimming.org</p>
-              <p class="hero-tagline">Learn. Drill. Swim.</p>
+          <div class="hero-top-row">
+            <div class="hero-brand-lockup">${logoHtml}</div>
+            <div class="hero-tagline" aria-hidden="true">
+              <span>Learn.</span>
+              <span>Drill.</span>
+              <span class="hero-tagline-accent">Swim.</span>
             </div>
           </div>
-          <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
-          <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
-          <p class="lede">${escapeHtml(model.sessionSummary)}</p>
-          <div class="meta-grid">
+          <div class="hero-main">
+            <div>
+              <p class="eyebrow">Workout PDF</p>
+              <h1 data-testid="workout-pdf-title">${escapeHtml(model.title)}</h1>
+              <p class="lede">${escapeHtml(model.sessionSummary)}</p>
+              <p class="source-pill" data-testid="workout-pdf-source">Source: ${escapeHtml(model.sourceLabel)}</p>
+            </div>
+            ${totalDistanceHtml}
+          </div>
+          <div class="summary-strip">
             ${contextCards}
           </div>
         </header>
@@ -1640,10 +2150,7 @@ function buildStandardWorkoutPdfHtmlDocument(
           }
           ${warningsHtml}
           ${reviewDetailsHtml}
-          <h2 class="section-title">Steps</h2>
-          <section class="steps">
-            ${model.blocks.map((block) => renderWorkoutPdfBlockHtml(block, detailLabels)).join("")}
-          </section>
+          ${renderWorkoutPdfStandardSectionsHtml(standardSections, detailLabels)}
           <p class="footer-note">
             This print view reflects the ${
               model.draftState === "canonical" ? "saved canonical workout" : "current local draft"
@@ -3109,52 +3616,101 @@ export function buildWorkoutStepDurationOutputSummary(
   }
 }
 
+function renderWorkoutPdfStandardSectionsHtml(
+  sections: WorkoutPdfModelSection[],
+  detailLabels: WorkoutStepDetailLabels
+) {
+  if (sections.length === 0) {
+    return "";
+  }
+
+  return `
+    <section class="workout-sections" aria-label="Workout steps">
+      ${sections
+        .map(
+          (section) => `
+            <section class="workout-section" data-step-category="${escapeHtml(section.category)}">
+              <div class="workout-section-head">
+                <h2 class="section-title">${escapeHtml(section.title)}</h2>
+              </div>
+              <div class="section-blocks">
+                ${section.blocks.map((block) => renderWorkoutPdfBlockHtml(block, detailLabels)).join("")}
+              </div>
+            </section>
+          `
+        )
+        .join("")}
+    </section>
+  `;
+}
+
 function renderWorkoutPdfBlockHtml(
   block: WorkoutPdfModelBlock,
   detailLabels: WorkoutStepDetailLabels
 ) {
   if (block.kind === "single") {
+    const prescription = block.prescription ?? block.summary;
+    const secondaryHtml = block.secondarySummary
+      ? `<p class="step-secondary">${escapeHtml(block.secondarySummary)}</p>`
+      : "";
+
     return `
       <article class="step-block">
         <div class="step-block-head">
+          <p class="step-number">${escapeHtml(block.label)}</p>
           <div>
-            <p class="step-kicker">${escapeHtml(block.label)}</p>
+            <p class="step-kicker">${escapeHtml(block.categoryLabel ?? "Step")}</p>
+            <p class="step-prescription">${escapeHtml(prescription)}</p>
+            ${secondaryHtml}
             <h3 class="step-title">${escapeHtml(block.title)}</h3>
-            <p class="step-summary">${escapeHtml(block.summary)}</p>
           </div>
         </div>
         <div class="step-body">
           ${renderWorkoutPdfDetailList(block.targetNotes, block.notes, detailLabels)}
+          ${renderWorkoutPdfSecondaryDetailList(block.secondaryDetails ?? [])}
           ${renderWorkoutPdfReviewList(block.reviewDetails)}
         </div>
       </article>
     `;
   }
 
+  const prescription = block.prescription ?? block.summary;
+
   return `
     <article class="step-block">
       <div class="step-block-head">
+        <p class="step-number">${escapeHtml(block.label)}</p>
         <div>
-          <p class="step-kicker">${escapeHtml(block.label)}</p>
+          <p class="step-kicker">${escapeHtml(block.categoryLabel ?? "Repeat")}</p>
           <h3 class="step-title">${escapeHtml(block.title)}</h3>
-          <p class="step-summary">${escapeHtml(block.summary)}</p>
+          <p class="step-prescription">${escapeHtml(prescription)}</p>
+          <p class="step-secondary">${escapeHtml(block.summary)}</p>
         </div>
       </div>
       <div class="step-body">
         ${renderWorkoutPdfReviewList(block.reviewDetails)}
         <div class="step-list">
           ${block.steps
-            .map(
-              (step) => `
+            .map((step) => {
+              const stepPrescription = step.prescription ?? step.summary;
+              const secondaryHtml = step.secondarySummary
+                ? `<p class="step-secondary">${escapeHtml(step.secondarySummary)}</p>`
+                : "";
+
+              return `
                 <section class="repeat-step">
-                  <p class="step-kicker">${escapeHtml(step.label)}</p>
+                  <p class="step-kicker">${escapeHtml(step.categoryLabel ?? step.label)} · ${escapeHtml(
+                    step.label
+                  )}</p>
+                  <p class="step-prescription">${escapeHtml(stepPrescription)}</p>
+                  ${secondaryHtml}
                   <h4 class="step-title">${escapeHtml(step.title)}</h4>
-                  <p class="step-summary">${escapeHtml(step.summary)}</p>
                   ${renderWorkoutPdfDetailList(step.targetNotes, step.notes, detailLabels)}
+                  ${renderWorkoutPdfSecondaryDetailList(step.secondaryDetails ?? [])}
                   ${renderWorkoutPdfReviewList(step.reviewDetails)}
                 </section>
-              `
-            )
+              `;
+            })
             .join("")}
         </div>
       </div>
@@ -3473,6 +4029,16 @@ function renderWorkoutPdfDetailList(
   }
 
   return `<ul class="detail-list">${items.join("")}</ul>`;
+}
+
+function renderWorkoutPdfSecondaryDetailList(details: string[]) {
+  if (details.length === 0) {
+    return "";
+  }
+
+  return `<ul class="detail-list">${details
+    .map((detail) => `<li>${escapeHtml(detail)}</li>`)
+    .join("")}</ul>`;
 }
 
 function renderWorkoutPdfReviewList(reviewDetails: string[]) {
