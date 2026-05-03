@@ -2,6 +2,7 @@
 
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 const BRIEF_ROOT = "docs/task-briefs";
 const SCORECARD_PATH = "docs/quality/platform-10-10-scorecard.md";
@@ -190,10 +191,195 @@ function findBriefScorecardTable(text) {
   });
 }
 
-function lintBrief(filePath, canonicalCategories) {
-  const content = readFileSync(filePath, "utf8");
+function findCloseoutScoreTable(text) {
+  const tables = extractMarkdownTables(text);
+  return tables.find((table) => {
+    const headers = table.header.map((value) => normalizeCellText(value));
+    const hasCategory = headers.some((header) => header.includes("category"));
+    const hasAchievedScore = headers.some(
+      (header) =>
+        (header.includes("achieved") && header.includes("score")) ||
+        header.includes("score outcome")
+    );
+    const hasEvidence = headers.some((header) => header.includes("evidence"));
+    const isPlanningScorecard = headers.some((header) => header.includes("expected closeout"));
+
+    return hasCategory && hasAchievedScore && hasEvidence && !isPlanningScorecard;
+  });
+}
+
+function parseLifecycleStatus(filePath, content) {
+  const pathStatusMatch = filePath.match(/^docs\/task-briefs\/([^/]+)\//);
+  const metadataStatusMatch = content.match(/^\s*-\s*`?status`?\s*:\s*`?([^`\n]+?)`?\s*$/im);
+  const metadataStatus = metadataStatusMatch?.[1]?.trim().toLowerCase() ?? "";
+
+  if (metadataStatus) return metadataStatus;
+  return pathStatusMatch?.[1]?.trim().toLowerCase() ?? "";
+}
+
+function parseScoreValue(input) {
+  const normalized = input
+    .replace(/[`*_]/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+  const match = normalized.match(/^([0-5])(?:\/5)?$/);
+  if (!match) return null;
+  return Number.parseInt(match[1], 10);
+}
+
+function parseCriticalTargetCategories(content) {
+  const lines = content.split(/\r?\n/);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!/critical target categories/i.test(lines[index])) continue;
+
+    const categories = [];
+    for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+      const line = lines[cursor].trim();
+
+      if (!line) {
+        if (categories.length > 0) break;
+        continue;
+      }
+
+      if (line.startsWith("##") || line.startsWith("|")) break;
+
+      if (line.startsWith("-")) {
+        const category = line
+          .replace(/^-\s*/, "")
+          .replace(/`/g, "")
+          .replace(/\s*\(.+\)\s*$/, "")
+          .trim();
+        if (category) categories.push(category);
+      }
+    }
+
+    if (categories.length > 0) return categories;
+  }
+
+  return [];
+}
+
+function parseCloseoutClaim(content) {
+  const claimLine =
+    content.match(/^\s*-\s*`?10\/10 claim`?\s*:\s*(.+)$/im) ??
+    content.match(/^\s*10\/10 claim\s*:\s*(.+)$/im);
+  const rawClaim = claimLine?.[1]?.trim() ?? "";
+  if (!rawClaim) return null;
+
+  if (/\b(no|not claimed|not claiming|n\/a|none)\b/i.test(rawClaim)) {
+    return "no";
+  }
+
+  if (/\b(yes|claimed|confirmed|pass|all critical target categories)\b/i.test(rawClaim)) {
+    return "yes";
+  }
+
+  return null;
+}
+
+function validateDoneBriefCloseout(content, targetCategories) {
+  const errors = [];
+  const closeoutScoreTable = findCloseoutScoreTable(content);
+
+  if (!content.includes("## Completion Record")) {
+    errors.push("Done brief is missing `## Completion Record`.");
+  }
+
+  if (!closeoutScoreTable) {
+    errors.push(
+      "Done brief is missing a closeout score table with `Category`, `Achieved Score`, and `Evidence` columns."
+    );
+    return errors;
+  }
+
+  const closeoutHeader = closeoutScoreTable.header.map((value) => normalizeCellText(value));
+  const categoryIndex = closeoutHeader.findIndex((value) => value.includes("category"));
+  const scoreIndex = closeoutHeader.findIndex(
+    (value) =>
+      (value.includes("achieved") && value.includes("score")) ||
+      value.includes("score outcome")
+  );
+  const evidenceIndex = closeoutHeader.findIndex((value) => value.includes("evidence"));
+  const closeoutRowsByCategory = new Map();
+
+  for (const row of closeoutScoreTable.rows) {
+    const category = row[categoryIndex] ?? "";
+    if (!category.trim()) continue;
+    closeoutRowsByCategory.set(normalizeCategory(category), row);
+  }
+
+  const targetCategoryKeys = targetCategories.map((category) => normalizeCategory(category));
+  for (const category of targetCategories) {
+    const categoryKey = normalizeCategory(category);
+    const row = closeoutRowsByCategory.get(categoryKey);
+
+    if (!row) {
+      errors.push(`Done brief closeout score table is missing target category "${category}".`);
+      continue;
+    }
+
+    const score = parseScoreValue(row[scoreIndex] ?? "");
+    if (score === null) {
+      errors.push(
+        `Done brief closeout score for target category "${category}" must be a value from 0-5 or 0/5-5/5.`
+      );
+      continue;
+    }
+
+    if (!nonEmptyValue(row[evidenceIndex] ?? "")) {
+      errors.push(`Done brief closeout score for target category "${category}" has empty evidence.`);
+    }
+
+    if (
+      score < 4 &&
+      !/\b(defer|deferred|follow-up|gap|blocked|accepted|owner-approved)\b/i.test(
+        row.join(" ")
+      )
+    ) {
+      errors.push(
+        `Done brief target category "${category}" scored below 4/5 without explicit deferral or gap rationale.`
+      );
+    }
+  }
+
+  const criticalCategories = parseCriticalTargetCategories(content);
+  if (criticalCategories.length === 0) {
+    errors.push("Done brief must list critical target categories for the 10/10 claim gate.");
+  }
+
+  for (const category of criticalCategories) {
+    if (!targetCategoryKeys.includes(normalizeCategory(category))) {
+      errors.push(
+        `Critical target category "${category}" is not mapped as a scorecard target category.`
+      );
+    }
+  }
+
+  const closeoutClaim = parseCloseoutClaim(content);
+  if (!closeoutClaim) {
+    errors.push("Done brief must include an explicit `10/10 claim: yes/no` line.");
+  }
+
+  if (closeoutClaim === "yes") {
+    for (const category of criticalCategories) {
+      const row = closeoutRowsByCategory.get(normalizeCategory(category));
+      const score = row ? parseScoreValue(row[scoreIndex] ?? "") : null;
+      if (score !== 5) {
+        errors.push(
+          `Done brief claims 10/10 but critical target category "${category}" is not scored 5/5.`
+        );
+      }
+    }
+  }
+
+  return errors;
+}
+
+export function lintBriefText(filePath, content, canonicalCategories, options = {}) {
   const errors = [];
   const warnings = [];
+  const targetCategories = [];
 
   if (!content.includes("docs/quality/platform-10-10-scorecard.md")) {
     errors.push("Missing explicit scorecard reference to docs/quality/platform-10-10-scorecard.md.");
@@ -239,6 +425,7 @@ function lintBrief(filePath, canonicalCategories) {
     }
 
     if (mapping === "target") {
+      targetCategories.push(categoryRaw.replace(/[`*_]/g, "").trim());
       if (thresholdIndex >= 0 && !nonEmptyValue(row[thresholdIndex] ?? "")) {
         errors.push(`Category "${categoryRaw}" is target but has empty threshold.`);
       }
@@ -275,10 +462,18 @@ function lintBrief(filePath, canonicalCategories) {
     );
   }
 
+  if (options.enforceDoneCloseout === true && parseLifecycleStatus(filePath, content) === "done") {
+    errors.push(...validateDoneBriefCloseout(content, targetCategories));
+  }
+
   return { filePath, errors, warnings };
 }
 
-function main() {
+export function lintBrief(filePath, canonicalCategories, options = {}) {
+  return lintBriefText(filePath, readFileSync(filePath, "utf8"), canonicalCategories, options);
+}
+
+export function main() {
   const args = parseArgs(process.argv.slice(2));
   const canonicalCategories = parseCanonicalCategories();
   const baseRef = detectBaseRef();
@@ -294,7 +489,9 @@ function main() {
     process.exit(0);
   }
 
-  const results = files.map((file) => lintBrief(file, canonicalCategories));
+  const results = files.map((file) =>
+    lintBrief(file, canonicalCategories, { enforceDoneCloseout: !args.all })
+  );
   const errorResults = results.filter((result) => result.errors.length > 0);
 
   for (const result of results) {
@@ -325,4 +522,6 @@ function main() {
   console.log(`[brief-lint] All ${results.length} changed brief file(s) passed.`);
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

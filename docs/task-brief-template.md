@@ -88,6 +88,7 @@ Automation gate:
 - changed briefs must pass `npm run lint:briefs`,
 - include all canonical scorecard categories (`target`/`supporting`/`N/A`),
 - each `target` row must have non-empty threshold + evidence.
+- changed `done` briefs must include completion score evidence for every `target` category plus an explicit `10/10 claim: yes/no` line.
 - for `Incident response and support operations`, `Finance and reporting operations`, and `i18n operational readiness`:
   if mapped `N/A`, include explicit scope rationale in threshold or evidence (plain `N/A` is not accepted).
 
@@ -481,6 +482,7 @@ Run this gate before proposing lifecycle move/cleanup:
     - 10/10 claim: all critical target categories `5/5`.
 - Cleanup readiness:
   - confirm tests/QA evidence is captured in brief.
+  - record achieved closeout scores and evidence for every target scorecard category.
   - confirm branch/PR status is ready for post-merge hygiene.
 - Assistant prompting contract:
   - assistant must ask owner explicitly:
@@ -493,6 +495,19 @@ Run this gate before proposing lifecycle move/cleanup:
 - `PR`: link to merged PR
 - `merge`: source branch -> target branch
 - `result`: short outcome summary
+- `10/10 claim`: yes/no - one-line rationale
+
+| Category            | Achieved Score | Evidence                                                    | Gaps / Notes               |
+| ------------------- | -------------- | ----------------------------------------------------------- | -------------------------- |
+| `<target category>` | `0/5-5/5`      | command, CI, screenshot, review, or explicit scope evidence | none or deferred follow-up |
+
+Closeout table rules:
+
+- include one row for every scorecard category mapped `target`,
+- use scores in `0-5` or `0/5-5/5` form,
+- include non-empty evidence for every target row,
+- list critical target categories in the brief and score each `5/5` before claiming `10/10`,
+- if any target score is below `4/5`, include an explicit accepted gap or follow-up rationale.
 
 ## Merge Handoff (owner action, required)
 
