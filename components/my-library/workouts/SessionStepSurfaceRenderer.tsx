@@ -228,12 +228,14 @@ export function SessionStepSurfaceRenderer({
 
 type SessionStepViewSectionsProps = {
   sections: readonly SessionStepViewSection[];
-  onOpenStep: (stepId: string) => void;
-  onOpenRepeat: (repeatGroupId: string) => void;
+  sectionTestIdPrefix?: string;
+  onOpenStep?: (stepId: string) => void;
+  onOpenRepeat?: (repeatGroupId: string) => void;
 };
 
-function SessionStepViewSections({
+export function SessionStepViewSections({
   sections,
+  sectionTestIdPrefix = "workout-editor-view-section",
   onOpenStep,
   onOpenRepeat,
 }: SessionStepViewSectionsProps) {
@@ -242,7 +244,7 @@ function SessionStepViewSections({
       {sections.map((section) => (
         <section
           key={section.key}
-          data-testid={`workout-editor-view-section-${section.key}`}
+          data-testid={`${sectionTestIdPrefix}-${section.key}`}
           data-view-category={section.category}
           className={`overflow-hidden rounded-2xl border bg-white ${getManualPoolViewSectionToneClass(
             section.category
@@ -272,7 +274,7 @@ function SessionStepViewSections({
                 </div>
               );
 
-              if (lineTarget?.kind === "repeat") {
+              if (lineTarget?.kind === "repeat" && onOpenRepeat) {
                 return (
                   <button
                     key={line.key}
@@ -286,7 +288,7 @@ function SessionStepViewSections({
                 );
               }
 
-              if (lineTarget?.kind === "step") {
+              if (lineTarget?.kind === "step" && onOpenStep) {
                 return (
                   <button
                     key={line.key}

@@ -80,6 +80,7 @@ export type WorkoutSummaryPreviewLineItem = {
 export type WorkoutSummaryPreviewSection = {
   key: string;
   title: string;
+  category?: SessionDraftStep["category"] | null;
   rows: WorkoutSummaryPreviewLineItem[];
 };
 
@@ -4410,14 +4411,7 @@ export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | unde
 }
 
 export function buildWorkoutSummaryPreviewSections(draft: SessionDraft | null | undefined) {
-  return buildRawWorkoutPoolsideSectionsForDraft(draft).map((section) => ({
-    key: section.key,
-    title: section.title,
-    rows: section.items.map((lineItem) => ({
-      text: lineItem.text,
-      secondaryText: lineItem.secondaryText ?? null,
-    })),
-  }));
+  return buildWorkoutSummaryViewSections(draft);
 }
 
 export function buildWorkoutSummaryPreviewLineItems(draft: SessionDraft | null | undefined) {
@@ -4429,6 +4423,233 @@ export function buildWorkoutSummaryPreviewLineItems(draft: SessionDraft | null |
 
 function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
   return buildWorkoutPoolsideLineItemsForDraft(draft).items.map(formatWorkoutPoolsideLineItemText);
+}
+
+function buildWorkoutSummaryViewSections(
+  draft: SessionDraft | null | undefined
+): WorkoutSummaryPreviewSection[] {
+  if (!draft) {
+    return [];
+  }
+
+  const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
+  const groups = buildWorkoutHandoffGroups(draft.steps);
+  const sections: WorkoutSummaryPreviewSection[] = [];
+
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+    const group = groups[groupIndex];
+    if (!group) continue;
+
+    if (group.kind === "single") {
+      const result = buildWorkoutSummarySingleViewRows(
+        group.entries[0],
+        groups.slice(groupIndex + 1),
+        draft.basePaceSecondsPer100m,
+        draft.environment,
+        poolLengthUnit
+      );
+      const section = getOrCreateWorkoutSummaryPreviewSection(sections, result.category);
+      section.rows.push(...result.rows);
+      groupIndex += result.consumedFollowingGroups;
+      continue;
+    }
+
+    const result = buildWorkoutSummaryRepeatViewRow(
+      group,
+      groups.slice(groupIndex + 1),
+      draft.basePaceSecondsPer100m,
+      draft.environment,
+      poolLengthUnit
+    );
+    const section = getOrCreateWorkoutSummaryPreviewSection(sections, result.category);
+    section.rows.push(result.row);
+    groupIndex += result.consumedFollowingGroups;
+  }
+
+  return sections.filter((section) => section.rows.length > 0);
+}
+
+function getOrCreateWorkoutSummaryPreviewSection(
+  sections: WorkoutSummaryPreviewSection[],
+  category: SessionDraftStep["category"]
+) {
+  const title = getSessionStepCategoryLabel(category);
+  const currentSection = sections[sections.length - 1] ?? null;
+
+  if (currentSection?.category === category && currentSection.title === title) {
+    return currentSection;
+  }
+
+  const nextSection: WorkoutSummaryPreviewSection = {
+    key: `${title.toLowerCase().replace(/\s+/g, "-")}-${sections.length}`,
+    title,
+    category,
+    rows: [],
+  };
+  sections.push(nextSection);
+  return nextSection;
+}
+
+function buildWorkoutSummarySingleViewRows(
+  entry: WorkoutHandoffEntry | undefined,
+  followingGroups: WorkoutHandoffGroup[],
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  const fallbackCategory: SessionDraftStep["category"] = "main";
+  if (!entry) {
+    return {
+      category: fallbackCategory,
+      rows: [],
+      consumedFollowingGroups: 0,
+    };
+  }
+
+  if (isWorkoutPoolsideRecoveryStep(entry.step, environment)) {
+    return {
+      category: entry.step.category,
+      rows: [
+        {
+          text: buildWorkoutPoolsideRecoveryText(
+            entry.step,
+            basePaceSecondsPer100m,
+            environment,
+            poolLengthUnit,
+            "standalone"
+          ),
+          secondaryText: null,
+        },
+      ],
+      consumedFollowingGroups: 0,
+    };
+  }
+
+  const linkedRestSteps: SessionDraftStep[] = [];
+  let consumedFollowingGroups = 0;
+
+  for (const nextGroup of followingGroups) {
+    if (nextGroup.kind !== "single") {
+      break;
+    }
+
+    const nextStep = nextGroup.entries[0]?.step;
+    if (
+      !nextStep ||
+      !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment) ||
+      nextStep.postSetRestForRepeatGroupId
+    ) {
+      break;
+    }
+
+    linkedRestSteps.push(nextStep);
+    consumedFollowingGroups += 1;
+  }
+
+  return {
+    category: entry.step.category,
+    rows: [
+      {
+        text: buildWorkoutPoolsideIntervalLabel(
+          entry.step,
+          basePaceSecondsPer100m,
+          environment,
+          poolLengthUnit
+        ),
+        secondaryText: buildWorkoutPoolsideRecoverySummary(
+          linkedRestSteps,
+          basePaceSecondsPer100m,
+          environment,
+          poolLengthUnit,
+          "standalone"
+        ),
+      },
+    ],
+    consumedFollowingGroups,
+  };
+}
+
+function buildWorkoutSummaryRepeatViewRow(
+  group: Extract<WorkoutHandoffGroup, { kind: "repeat" }>,
+  followingGroups: WorkoutHandoffGroup[],
+  basePaceSecondsPer100m: number,
+  environment: SessionGeneratorEnvironment,
+  poolLengthUnit: SessionDraftPoolLengthUnit
+) {
+  const workEntry = group.entries.find(
+    (entry) => !isWorkoutPoolsideRecoveryStep(entry.step, environment)
+  );
+  const workStep = workEntry?.step ?? group.entries[0]?.step ?? null;
+  const category = getWorkoutPoolsideGroupCategory(group);
+  const repeatCountLabel = group.repeatCount ? `${group.repeatCount} x ` : "";
+  let text = workStep
+    ? `${repeatCountLabel}${buildWorkoutPoolsideIntervalLabel(
+        workStep,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit
+      )}`
+    : "Set the work interval for this repeat block.";
+
+  const workEntryIndex =
+    workEntry !== undefined ? group.entries.findIndex((entry) => entry === workEntry) : -1;
+  const followingEntry = workEntryIndex >= 0 ? group.entries[workEntryIndex + 1] : null;
+  const followingStep = followingEntry?.step ?? null;
+
+  if (followingStep) {
+    if (shouldInlineWorkoutPoolsideRecoveryStep(followingStep, environment)) {
+      text = `${text} · ${buildWorkoutPoolsideRecoveryText(
+        followingStep,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit,
+        "interval"
+      )}`;
+    } else {
+      text = `${text} · Recovery ${buildWorkoutPoolsideIntervalLabel(
+        followingStep,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit
+      )}`;
+    }
+  }
+
+  const postSetRestSteps: SessionDraftStep[] = [];
+  let consumedFollowingGroups = 0;
+
+  for (const nextGroup of followingGroups) {
+    if (nextGroup.kind !== "single") {
+      break;
+    }
+
+    const nextStep = nextGroup.entries[0]?.step;
+    if (
+      !nextStep ||
+      !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment) ||
+      nextStep.postSetRestForRepeatGroupId !== group.repeatGroupId
+    ) {
+      break;
+    }
+
+    postSetRestSteps.push(nextStep);
+    consumedFollowingGroups += 1;
+  }
+
+  return {
+    category,
+    row: {
+      text,
+      secondaryText: buildWorkoutPoolsideRecoverySummary(
+        postSetRestSteps,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit,
+        "repeat"
+      ),
+    },
+    consumedFollowingGroups,
+  };
 }
 
 type WorkoutPoolsideFormattingOptions = {
@@ -4445,6 +4666,7 @@ type WorkoutPoolsideFormattingResult = {
 type WorkoutPoolsideSection = {
   key: string;
   title: string;
+  category: SessionDraftStep["category"];
   items: WorkoutPoolsideLineItem[];
 };
 
@@ -4466,6 +4688,7 @@ function getWorkoutPoolsideGroupCategory(group: WorkoutHandoffGroup) {
 
 function pushWorkoutPoolsideSection(
   sections: WorkoutPoolsideSection[],
+  category: SessionDraftStep["category"],
   title: string,
   items: WorkoutPoolsideLineItem[]
 ) {
@@ -4474,7 +4697,7 @@ function pushWorkoutPoolsideSection(
   }
 
   const previousSection = sections[sections.length - 1];
-  if (previousSection?.title === title) {
+  if (previousSection?.category === category && previousSection.title === title) {
     previousSection.items.push(...items);
     return;
   }
@@ -4482,6 +4705,7 @@ function pushWorkoutPoolsideSection(
   sections.push({
     key: `${title.toLowerCase().replace(/\s+/g, "-")}-${sections.length}`,
     title,
+    category,
     items: [...items],
   });
 }
@@ -4498,7 +4722,8 @@ function buildRawWorkoutPoolsideSectionsForDraft(draft: SessionDraft | null | un
   for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
     const group = groups[groupIndex];
     if (!group) continue;
-    const sectionTitle = getSessionStepCategoryLabel(getWorkoutPoolsideGroupCategory(group));
+    const sectionCategory = getWorkoutPoolsideGroupCategory(group);
+    const sectionTitle = getSessionStepCategoryLabel(sectionCategory);
 
     if (group.kind === "single") {
       const result = buildWorkoutPoolsideSingleGroupLineItems(
@@ -4508,7 +4733,7 @@ function buildRawWorkoutPoolsideSectionsForDraft(draft: SessionDraft | null | un
         draft.environment,
         poolLengthUnit
       );
-      pushWorkoutPoolsideSection(sections, sectionTitle, result.items);
+      pushWorkoutPoolsideSection(sections, sectionCategory, sectionTitle, result.items);
       if (result.consumedFollowingGroups > 0) {
         groupIndex += result.consumedFollowingGroups;
       }
@@ -4524,7 +4749,7 @@ function buildRawWorkoutPoolsideSectionsForDraft(draft: SessionDraft | null | un
       draft.environment,
       poolLengthUnit
     );
-    pushWorkoutPoolsideSection(sections, sectionTitle, result.items);
+    pushWorkoutPoolsideSection(sections, sectionCategory, sectionTitle, result.items);
     if (result.consumedFollowingGroups > 0) {
       groupIndex += result.consumedFollowingGroups;
     }
