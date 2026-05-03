@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-03-10-10-closeout-evidence-enforcement`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-03`
 - `updated`: `2026-05-03`
@@ -167,9 +167,34 @@ Critical target categories for `10/10` claim:
 
 ## Completion Record
 
-- To be filled after merge.
+- Completed: `2026-05-03`
+- Merged PR: `#576`
+- Merge commit: `9b78bf2`
+- Implementation commit: `0c44edd`
+- Outcome: changed `done` task briefs now require achieved target scores, closeout evidence, critical target categories, and an explicit `10/10 claim: yes/no` state.
+
+Critical target categories for `10/10` claim:
+
+- `Product goals and IA`
+- `Business logic correctness and data integrity`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+- `DevOps and rollback readiness`
+
+- `10/10 claim`: yes
+
+| Category                                      | Achieved Score | Evidence                                                                                                    | Notes                                             |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#576` merged with template, README, PR checklist, and generated PR-body updates for auditable closeout. | Future closeout quality is repository-enforced.   |
+| Business logic correctness and data integrity | `5/5`          | `tests/unit/task-brief-scorecard-lint.test.ts`, `npm run verify:pre-pr`, and `npm run verify:pre-merge`.    | Parser is deterministic and file-read only.       |
+| Reliability and failure handling              | `5/5`          | Negative-path unit tests cover missing closeout table and invalid 10/10 claim evidence.                     | Malformed changed `done` briefs fail closed.      |
+| Content governance                            | `5/5`          | `docs/task-brief-template.md`, `docs/task-briefs/README.md`, and PR checklist now document the rule.        | Closeout evidence shape is part of repo workflow. |
+| Stack-fit and dependency discipline           | `5/5`          | Implemented in the existing Node lint script and Vitest tests with no new dependencies.                     | No runtime framework or CI service added.         |
+| Testing and QA automation                     | `5/5`          | Targeted unit tests, `lint:briefs:all`, lint, typecheck, full `verify:pre-pr`, CI, and pre-merge passed.    | Coverage includes valid and invalid closeouts.    |
+| DevOps and rollback readiness                 | `5/5`          | PR `#576` CI passed, local `merge:preflight` passed, and rollback is `git revert 9b78bf2`.                  | Docs/tooling change is reversible as one merge.   |
 
 ## Checkpoint Log
 
 - `2026-05-03 | working tree | created in-progress governance brief after owner approved doing the systemic 10/10 enforcement slice before the session-step renderer implementation | next: implement closeout lint enforcement, tests, and docs updates`
 - `2026-05-03 | working tree | implemented changed-done closeout lint enforcement, focused Vitest coverage, and template/PR checklist docs updates; targeted tests, lint:briefs:all, lint, and typecheck pass | next: run pre-PR gate, commit, push, and open PR`
+- `2026-05-03 | 9b78bf2 | PR #576 merged after green CI, local verify:pre-merge, and merge preflight; post-merge preflight requested brief closeout | next: close out brief in docs-only follow-up PR`
