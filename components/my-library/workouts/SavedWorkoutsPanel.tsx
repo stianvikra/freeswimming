@@ -4,9 +4,17 @@ import Link from "next/link";
 import { ChevronUp, Ellipsis } from "lucide-react";
 import { useEffect, useState } from "react";
 import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
+import { SessionStepViewSections } from "@/components/my-library/workouts/SessionStepSurfaceRenderer";
+import type {
+  SessionStepViewSection,
+  SessionStepViewSectionLine,
+} from "@/components/my-library/workouts/sessionStepSurfaceContract";
 import {
+  SESSION_DRAFT_STEP_CATEGORIES,
   formatDistanceMetersLabel,
+  getSessionStepCategoryLabel,
   resolveSessionDraftPoolLengthUnit,
+  type SessionDraftStep,
 } from "@/lib/session-generator-v1/shared";
 import { buildWorkoutPoolsidePreviewHref } from "@/lib/workouts/poolside-preview";
 import type { WorkoutPoolsideFocusOption, WorkoutSummary } from "@/lib/workouts/shared";
@@ -45,19 +53,19 @@ type Props = {
   swimmerName?: string | null;
 };
 
-type QuickPreviewRow = {
-  key: string;
-  primaryText: string;
-  secondaryText?: string | null;
-};
+function inferQuickPreviewCategory(title: string | null | undefined): SessionDraftStep["category"] {
+  const normalizedTitle = title?.trim().toLowerCase() ?? "";
 
-type QuickPreviewSection = {
-  key: string;
-  title?: string | null;
-  rows: QuickPreviewRow[];
-};
+  return (
+    SESSION_DRAFT_STEP_CATEGORIES.find(
+      (category) => getSessionStepCategoryLabel(category).toLowerCase() === normalizedTitle
+    ) ?? "main"
+  );
+}
 
-function buildQuickPreviewRowsFromPreviewText(workout: WorkoutSummary): QuickPreviewRow[] {
+function buildQuickPreviewRowsFromPreviewText(
+  workout: WorkoutSummary
+): SessionStepViewSectionLine[] {
   if (!workout.previewText) {
     return [];
   }
@@ -85,12 +93,13 @@ function buildQuickPreviewRowsFromPreviewText(workout: WorkoutSummary): QuickPre
     });
 }
 
-function buildQuickPreviewSections(workout: WorkoutSummary): QuickPreviewSection[] {
+function buildQuickPreviewSections(workout: WorkoutSummary): SessionStepViewSection[] {
   if (workout.previewSections && workout.previewSections.length > 0) {
     return workout.previewSections.map((section, sectionIndex) => ({
       key: section.key || `${workout.id}-preview-section-${sectionIndex}`,
       title: section.title,
-      rows: section.rows.map((lineItem, lineIndex) => ({
+      category: section.category ?? inferQuickPreviewCategory(section.title),
+      lines: section.rows.map((lineItem, lineIndex) => ({
         key: `${section.key || `${workout.id}-preview-section-${sectionIndex}`}-line-${lineIndex}`,
         primaryText: lineItem.text,
         secondaryText: lineItem.secondaryText ?? null,
@@ -102,8 +111,9 @@ function buildQuickPreviewSections(workout: WorkoutSummary): QuickPreviewSection
     return [
       {
         key: `${workout.id}-preview-section-0`,
-        title: null,
-        rows: workout.previewLineItems.map((lineItem, index) => ({
+        title: "Workout",
+        category: "main",
+        lines: workout.previewLineItems.map((lineItem, index) => ({
           key: `${workout.id}-preview-${index}`,
           primaryText: lineItem.text,
           secondaryText: lineItem.secondaryText ?? null,
@@ -117,8 +127,9 @@ function buildQuickPreviewSections(workout: WorkoutSummary): QuickPreviewSection
     ? [
         {
           key: `${workout.id}-preview-section-0`,
-          title: null,
-          rows: fallbackRows,
+          title: "Workout",
+          category: "main",
+          lines: fallbackRows,
         },
       ]
     : [];
@@ -205,7 +216,10 @@ export default function SavedWorkoutsPanel({
   }, [poolsideWorkoutId, workouts]);
 
   useEffect(() => {
-    if (mobileActionsWorkoutId && !workouts.some((workout) => workout.id === mobileActionsWorkoutId)) {
+    if (
+      mobileActionsWorkoutId &&
+      !workouts.some((workout) => workout.id === mobileActionsWorkoutId)
+    ) {
       setMobileActionsWorkoutId(null);
     }
   }, [mobileActionsWorkoutId, workouts]);
@@ -269,7 +283,7 @@ export default function SavedWorkoutsPanel({
           <div>
             <h3 className="text-sm font-semibold text-slate-900">{heading}</h3>
             {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
-            <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mt-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
               {workouts.length} saved session{workouts.length === 1 ? "" : "s"}
             </p>
           </div>
@@ -294,7 +308,9 @@ export default function SavedWorkoutsPanel({
               <div>
                 <p className="text-sm font-semibold text-slate-900">Library cleanup</p>
                 {bulkSelectionMode ? (
-                  <p className="mt-1 text-sm text-slate-600">{selectedWorkoutIds.length} selected</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {selectedWorkoutIds.length} selected
+                  </p>
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -614,36 +630,14 @@ export default function SavedWorkoutsPanel({
                     className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
                   >
                     <div className="space-y-3">
-                      {quickPreviewSections.map((section) => (
-                        <section
-                          key={section.key}
-                          className="rounded-xl border border-white/80 bg-white px-3 py-3"
-                        >
-                          {section.title ? (
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              {section.title}
-                            </p>
-                          ) : null}
-                          <div className={`${section.title ? "mt-2" : ""} space-y-2`}>
-                            {section.rows.map((line) => (
-                              <div key={line.key}>
-                                <p className="text-sm leading-6 text-slate-800">
-                                  {line.primaryText}
-                                </p>
-                                {line.secondaryText ? (
-                                  <p className="text-sm font-semibold text-blue-800">
-                                    {line.secondaryText}
-                                  </p>
-                                ) : null}
-                              </div>
-                            ))}
-                          </div>
-                        </section>
-                      ))}
+                      <SessionStepViewSections
+                        sections={quickPreviewSections}
+                        sectionTestIdPrefix={`saved-workouts-preview-section-${workout.id}`}
+                      />
                     </div>
                     {totalDistanceQuickLabel ? (
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                        <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                           Total
                         </p>
                         <p className="text-lg font-semibold text-slate-900">

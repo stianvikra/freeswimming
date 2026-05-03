@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import {
   SessionStepSummaryCard,
   SessionStepSurfaceRenderer,
+  SessionStepViewSections,
 } from "@/components/my-library/workouts/SessionStepSurfaceRenderer";
 import type { SessionStepViewSection } from "@/components/my-library/workouts/sessionStepSurfaceContract";
 
@@ -153,6 +154,22 @@ it("renders view sections from presentation input and delegates targeted callbac
 
   expect(callbacks.onOpenViewStep).toHaveBeenCalledWith("warmup-step");
   expect(callbacks.onOpenViewRepeat).toHaveBeenCalledWith("main-repeat");
+});
+
+it("renders shared view sections as read-only when no open callbacks are provided", () => {
+  render(
+    <SessionStepViewSections sections={viewSections} sectionTestIdPrefix="saved-preview-section" />
+  );
+
+  expect(screen.getByTestId("saved-preview-section-warmup-0")).toHaveAttribute(
+    "data-view-category",
+    "warmup"
+  );
+  expect(screen.getByText("400m · Freestyle · Easy")).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: /400m · Freestyle · Easy/i })
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /4 x 100m/i })).not.toBeInTheDocument();
 });
 
 it("renders shared single-step chrome and delegates card/delete actions", () => {

@@ -549,6 +549,11 @@ describe("workouts server", () => {
     expect(editorRecord.draft.title).toBe("Threshold / CSS 25m Pool draft");
     expect(summary.title).toBe("Threshold / CSS 25m Pool draft");
     expect(summary.totalDistanceM).toBe(2200);
+    expect(summary.previewSections?.map((section) => section.category)).toEqual([
+      "warmup",
+      "main",
+      "cooldown",
+    ]);
   });
 
   it("tolerates legacy persisted workout rows without a description", () => {

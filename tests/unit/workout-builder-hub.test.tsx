@@ -2959,6 +2959,19 @@ describe("WorkoutBuilderHub", () => {
       "8 x 25m Kick · Easy"
     );
     expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("Rest 0:20");
+    expect(screen.getByTestId("saved-workouts-preview-section-workout-2-warmup-0")).toHaveAttribute(
+      "data-view-category",
+      "warmup"
+    );
+    expect(screen.getByTestId("saved-workouts-preview-section-workout-2-main-1")).toHaveAttribute(
+      "data-view-category",
+      "main"
+    );
+    expect(
+      within(screen.getByTestId("saved-workouts-preview-workout-2")).queryByRole("button", {
+        name: /8 x 25m kick/i,
+      })
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workouts-preview-workout-2")).toHaveTextContent("Total");
     expect(screen.queryByText("Select session")).not.toBeInTheDocument();
 

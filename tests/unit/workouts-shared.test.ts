@@ -1925,6 +1925,12 @@ describe("workouts shared readiness", () => {
       "Cooldown",
       "Main",
     ]);
+    expect(sections.map((section) => section.category)).toEqual([
+      "warmup",
+      "main",
+      "cooldown",
+      "main",
+    ]);
     expect(sections[0]?.rows[0]).toMatchObject({
       text: "400m · Freestyle · Easy",
       secondaryText: "Rest 0:30",
