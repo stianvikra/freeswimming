@@ -429,6 +429,19 @@ describe("workouts shared readiness", () => {
       title: "Warmup swim",
       summary: "Warmup · 400m · Freestyle · Easy",
     });
+    expect(model.standardSections).toHaveLength(1);
+    expect(model.standardSections[0]).toMatchObject({
+      title: "Warmup",
+      category: "warmup",
+      blocks: [
+        {
+          kind: "single",
+          categoryLabel: "Warmup",
+          prescription: "400m · Freestyle · Easy",
+          secondarySummary: null,
+        },
+      ],
+    });
   });
 
   it("surfaces missing pool size clearly in shared workout summaries", () => {
@@ -453,6 +466,141 @@ describe("workouts shared readiness", () => {
 
     expect(html).toContain("<h2>Session note</h2>");
     expect(html).toContain("Readiness coverage for workout builder handoff.");
+    expect(html).toContain('class="hero-tagline"');
+    expect(html).toContain('class="workout-section"');
+    expect(html).toContain('data-testid="workout-pdf-total"');
+    expect(html).toContain("Learn.");
+    expect(html).toContain("Swim.");
+    expect(html).toContain("400m · Freestyle · Easy");
+  });
+
+  it("links standard PDF top-level rests to the preceding work step", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      totalDistanceM: 400,
+      steps: [
+        {
+          ...buildDraft().steps[0],
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Warmup rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "Let the breathing settle.",
+          notes: "Keep shoulders relaxed.",
+        },
+      ],
+    };
+    const model = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+    });
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "standard",
+    });
+
+    expect(model.blocks).toHaveLength(2);
+    expect(model.standardSections[0]?.blocks).toHaveLength(1);
+    expect(model.standardSections[0]?.blocks[0]).toMatchObject({
+      kind: "single",
+      prescription: "400m · Freestyle · Easy",
+      secondarySummary: "Rest 0:30",
+      secondaryDetails: [
+        "Rest target: Let the breathing settle.",
+        "Rest note: Keep shoulders relaxed.",
+      ],
+    });
+    expect(html).toContain("Rest 0:30");
+    expect(html).toContain("Rest target: Let the breathing settle.");
+    expect(html).toContain("Rest note: Keep shoulders relaxed.");
+  });
+
+  it("embeds standard PDF repeat interval and post-set rests in repeat lines", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      totalDistanceM: 400,
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Main repeat swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-3",
+          category: "rest",
+          name: "Set rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.75,
+          targetSummary: "",
+          notes: "Reset before cool down.",
+          postSetRestForRepeatGroupId: "repeat-1",
+        },
+      ],
+    };
+    const model = buildWorkoutPdfModel(draft, {
+      draftState: "canonical",
+    });
+    const repeatBlock = model.standardSections[0]?.blocks[0];
+    const html = buildWorkoutPdfHtmlDocument(draft, {
+      draftState: "canonical",
+      variant: "standard",
+    });
+
+    expect(model.blocks).toHaveLength(2);
+    expect(repeatBlock).toMatchObject({
+      kind: "repeat",
+      categoryLabel: "Main",
+      prescription: "4 x 100m · Freestyle · Moderate",
+      summary: "4 rounds · 100m + 0:30 per round · Final rest skipped",
+    });
+    if (repeatBlock?.kind !== "repeat") {
+      throw new Error("Expected standard repeat block.");
+    }
+
+    expect(repeatBlock.steps).toHaveLength(1);
+    expect(repeatBlock.steps[0]).toMatchObject({
+      prescription: "100m · Freestyle · Moderate",
+      secondarySummary: "Interval rest 0:30 · Set rest 0:45",
+      secondaryDetails: ["Rest note: Reset before cool down."],
+    });
+    expect(html).toContain("4 x 100m · Freestyle · Moderate");
+    expect(html).toContain("Interval rest 0:30 · Set rest 0:45");
+    expect(html).toContain("Rest note: Reset before cool down.");
   });
 
   it("keeps pool execution wording aligned across handoff, pdf, export, and poolside outputs", () => {
