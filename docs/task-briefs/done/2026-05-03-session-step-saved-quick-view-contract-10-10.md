@@ -3,10 +3,11 @@
 ## Metadata
 
 - `id`: `2026-05-03-session-step-saved-quick-view-contract-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-03`
 - `updated`: `2026-05-03`
+- `mode`: `merged + closeout`
 
 ## Goal
 
@@ -133,9 +134,55 @@ Critical target categories for `10/10` claim: `UX flow clarity`, `Visual design 
 - Preserve existing quick-view button labels and test IDs where practical.
 - Do not change poolside/PDF/Garmin/program output paths in this slice.
 
+## Completion Record
+
+- Completed: `2026-05-03`
+- Merged PR: `#582`
+- Merge commit: `a04d9d3`
+- Implementation commit: `8c406a0`
+- Outcome: saved-workout `Quick View` now adapts preview data into the shared session-step `View` section renderer, including read-only rendering, section category identity, repeat/rest summaries, and legacy category fallback.
+- Screenshot handoff: owner-approved after/reference captures in `/Users/stianvikra/freeswimming/output/session-step-saved-quick-view-2026-05-03`.
+- Validation:
+  - targeted Vitest: PASS, `tests/unit/session-step-surface-renderer.test.tsx`, `tests/unit/workouts-shared.test.ts`, `tests/unit/workouts-server.test.ts`, `tests/unit/workout-builder-hub.test.tsx`;
+  - `npm run verify:pre-pr`: PASS on `8c406a0`, full lane, `artifacts/test-runs/20260503-205034`;
+  - GitHub CI for PR `#582`: PASS (`Analyze`, `CodeQL`, `Vercel`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `verify`);
+  - `npm run verify:pre-merge`: PASS on `8c406a0`, marker `artifacts/verify-pre-merge/20260503-192024.json`.
+- Perf-budget decision: hold/carry-forward. The gate recommended `tighten` after green trend evidence, but this UI parity slice intentionally did not change public route budgets and defers that decision to the maintenance/performance workstream.
+- Rollback: revert merge commit `a04d9d3`; no schema, data repair, cache purge, finance action, or customer communication is required.
+
+## Closeout Score Outcome
+
+Critical target categories for `10/10` claim:
+
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+
+- `10/10 claim`: yes
+
+| Category                                      | Achieved Score | Evidence                                                                                     | Notes                                                                    |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | PR `#582`, shared renderer reuse, and approved screenshots.                                  | Saved session previews now use the reference view section contract.      |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff and saved quick-view component tests.                      | Preview stays compact, read-only, sectioned, and total-aware.            |
+| Visual design quality                         | `5/5`          | After/reference desktop and mobile captures.                                                 | Saved cards reuse shared section styling, tones, spacing, and wrapping.  |
+| Business logic correctness and data integrity | `5/5`          | `workouts-shared`, `workouts-server`, and hub tests plus full gates.                         | Categories, linked rests, repeat rests, set rests, and totals preserved. |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions and full Playwright lane.                                         | Quick View is read-only without misleading open/edit controls.           |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency/server read; build and perf budgets passed.                                | Budget tightening deferred by explicit hold/carry-forward decision.      |
+| Data placement and sync boundaries            | `5/5`          | Data contract review and code diff.                                                          | Saved workout rows remain server-canonical; preview data is derived.     |
+| Reliability and failure handling              | `5/5`          | Legacy category fallback tests and full verification.                                        | Missing historical category data renders deterministically.              |
+| Content governance                            | `5/5`          | Contract doc update and shared rest/repeat wording.                                          | Section labels and rest wording remain centralized.                      |
+| Stack-fit and dependency discipline           | `5/5`          | React/TypeScript shared renderer reuse, existing Tailwind tokens, and zero new dependencies. | No new framework, API, or external service introduced.                   |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, CI, and `verify:pre-merge`.            | Local and remote gates passed before merge.                              |
+| Scalability and cost efficiency               | `5/5`          | Shared view contract reduces saved-preview drift without adding runtime infrastructure.      | Future session-step consumers can adapt into the same renderer.          |
+| DevOps and rollback readiness                 | `5/5`          | Single merged PR with no migration; rollback is `git revert a04d9d3`.                        | Post-merge preflight surfaced this lifecycle closeout.                   |
+
 ## Checkpoint Log
 
 - `2026-05-03 | in-progress | created implementation brief from post-merge scope review; saved-workout Quick View is the next small session-step contract consumer after PR #578/#581 | next: implement shared view-section reuse and targeted tests`
 - `2026-05-03 | implementation | exported shared read-only view-section rendering, moved saved-workout Quick View onto the session-step view section contract, added category-preserving summary preview sections with legacy fallback, and updated focused tests/docs | next: screenshot handoff before verify:pre-pr`
 - `2026-05-03 | screenshot-review | targeted validation passed: lint, typecheck, lint:briefs:all, and focused Vitest suite; after/reference screenshots captured in /Users/stianvikra/freeswimming/output/session-step-saved-quick-view-2026-05-03 | next: owner visual approval or corrections before verify:pre-pr`
 - `2026-05-03 | pre-pr gate | owner approved screenshot handoff; `npm run verify:pre-pr` passed full lane (`167`unit files /`870`unit tests, production build, perf budgets, and Playwright`108 passed`/`348 skipped`) | perf-budget trend recommended `tighten`, decision: `hold/carry-forward` because this UI parity slice does not own public route budgets and repo cadence already records the latest 2026-04-26 ratchet as too recent for another non-maintenance threshold change | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
+- `2026-05-03 | merged | PR #582 merged to main as a04d9d3 after owner screenshot approval, local verify:pre-pr, green CI, and local verify:pre-merge | next: post-merge preflight`
+- `2026-05-03 | done | post-merge preflight surfaced this lifecycle closeout; brief moved from in-progress to done with all target categories closed at 5/5 and 10/10 claim recorded | next: docs-only closeout PR`
