@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-05-03-session-step-shared-view-model-renderer-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-03`
 - `updated`: `2026-05-03`
-- `mode`: `implementation approved`
+- `mode`: `merged + closeout`
 
 ## Goal
 
@@ -87,6 +87,50 @@ Critical target categories for `10/10` claim: `UX flow clarity`, `Visual design 
 - Before PR: `npm run lint:briefs`, targeted unit/component tests, screenshot handoff, `npm run verify:pre-pr`.
 - Before merge recommendation: required CI green and `npm run verify:pre-merge`.
 
+## Completion Record
+
+- Completed: `2026-05-03`
+- Merged PR: `#578`
+- Merge commit: `ca16aa2`
+- Implementation commit: `474b15a`
+- Outcome: `Edit`, `Rearrange`, and `View` session-step chrome now share `SessionStepSurfaceRenderer`; `WorkoutEditor` retains draft mutation, persistence/export/PDF orchestration, and editable fields.
+- Screenshot handoff: owner-approved after/reference captures in `/Users/stianvikra/freeswimming/output/session-step-shared-renderer-2026-05-03`.
+- Validation:
+  - targeted Vitest: PASS, `tests/unit/session-step-surface-renderer.test.tsx`, `tests/unit/session-step-surface-contract.test.ts`, `tests/unit/workout-builder-hub.test.tsx`, `tests/unit/session-generator-panel.test.tsx`;
+  - `npm run verify:pre-pr`: PASS, full lane, `artifacts/test-runs/20260503-163254/verify.log`;
+  - GitHub CI for PR `#578`: PASS (`Analyze`, `CodeQL`, `Vercel`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `verify`);
+  - `npm run verify:pre-merge`: PASS on `474b15a`, marker `artifacts/verify-pre-merge/20260503-151333.json`, Playwright `108 passed`, `348 skipped`.
+- Perf-budget decision: hold. The gate recommended considering a future stretch-target tighten after green trend evidence, but this renderer extraction intentionally did not change route budgets.
+- Rollback: revert merge commit `ca16aa2`; no schema, data repair, cache purge, finance action, or customer communication is required.
+
+## Closeout Score Outcome
+
+Critical target categories for `10/10` claim:
+
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+
+- `10/10 claim`: yes
+
+| Category                                      | Achieved Score | Evidence                                                                                       | Notes                                                   |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#578`, design contract update, and approved screenshots.                                   | Manual and generated surfaces use the shared renderer.  |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff and renderer unit tests.                                     | Edit/Rearrange/View hierarchy stayed stable.            |
+| Visual design quality                         | `5/5`          | After/reference desktop and mobile captures.                                                   | No intended visual drift from the reference surface.    |
+| Business logic correctness and data integrity | `5/5`          | Renderer tests, existing contract tests, full pre-PR and pre-merge gates.                      | Renderer is presentation-only and does not mutate data. |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions plus full Playwright lane.                                          | Labels and button semantics preserved.                  |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependencies, build/perf budgets passed in gates.                                       | Budget tightening deferred by explicit hold decision.   |
+| Data placement and sync boundaries            | `5/5`          | Component boundary docs and diff review.                                                       | Draft/server ownership unchanged.                       |
+| Reliability and failure handling              | `5/5`          | Empty, undo, section, repeat, delete, and mobile action tests.                                 | Fallback UI remains deterministic.                      |
+| Content governance                            | `5/5`          | Contract review and shared copy/summary rendering.                                             | Step/rest wording remains centralized.                  |
+| Stack-fit and dependency discipline           | `5/5`          | React/TypeScript composition with existing Tailwind/lucide patterns and zero new dependencies. | No external service or framework change.                |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, CI, and `verify:pre-merge`.              | Local and remote gates passed before merge.             |
+| Scalability and cost efficiency               | `5/5`          | Shared renderer replaces duplicated presentation ownership without runtime infrastructure.     | Future session-step parity work has a smaller surface.  |
+| DevOps and rollback readiness                 | `5/5`          | Single merged PR with no migration; rollback is `git revert ca16aa2`.                          | Post-merge preflight surfaced this lifecycle closeout.  |
+
 ## Checkpoint Log
 
 - `2026-05-03 | planning | audited current session-step architecture after PR #570/#574/#575; shared view-model helpers exist, but WorkoutEditor still owns most React rendering and mode orchestration | next: discuss scope before implementation`
@@ -95,3 +139,5 @@ Critical target categories for `10/10` claim: `UX flow clarity`, `Visual design 
 - `2026-05-03 | in-progress | owner approved after/reference screenshot handoff for manual builder Edit/Rearrange/View and generator consumer View parity | next: run verify:pre-pr`
 - `2026-05-03 | in-progress | npm run verify:pre-pr first hit transient poolside save-image metrics navigation failure outside renderer scope; isolated rerun passed; no e2e helper change is kept in this PR after size-check reduction | next: rerun gate before PR update`
 - `2026-05-03 | in-progress | npm run verify:pre-pr passed full lane on size-check-compatible diff (108 passed, 348 skipped; log artifacts/test-runs/20260503-163254/verify.log). Perf trend recommended tighten after 3 weekly green runs, but decision is hold without owner approval to change budgets | next: amend, push, PR, CI, verify:pre-merge`
+- `2026-05-03 | merged | PR #578 merged to main as ca16aa2 after owner screenshot approval, local verify:pre-pr, green CI, and local verify:pre-merge | next: post-merge preflight`
+- `2026-05-03 | done | post-merge preflight surfaced this lifecycle closeout; brief moved from in-progress to done with all target categories closed at 5/5 and 10/10 claim recorded | next: docs-only closeout PR`
