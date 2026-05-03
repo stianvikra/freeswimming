@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-15-workout-pdf-visual-parity-with-poolside-note-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-15`
 - `updated`: `2026-05-03`
@@ -237,6 +237,48 @@ Critical target categories for `10/10` claim in this brief:
   - no missing rests or repeats,
   - no preview/export mismatch.
 
+## Completion Record
+
+- Completed: `2026-05-03`
+- Merged PR: `#580`
+- Merge commit: `2a3a73c`
+- Implementation commit: `aebe36e`
+- Outcome: standard workout PDFs now share the Poolside Note print family through a Poolside-family header, summary strip, sectioned step rendering, and shared-contract rest/repeat semantics while keeping Poolside Note unchanged as the faster lane-side reference.
+- Screenshot handoff: owner-approved after/reference captures in `/Users/stianvikra/freeswimming/output/workout-pdf-poolside-parity-2026-05-03`.
+- Validation:
+  - targeted TypeScript/ESLint/Vitest: PASS, including `npx vitest run tests/unit/workouts-shared.test.ts` with `45` tests;
+  - `npm run verify:pre-pr`: PASS on `aebe36e`, full-public lane, `artifacts/test-runs/20260503-184819`;
+  - GitHub CI for PR `#580`: PASS (`Analyze`, `CodeQL`, `Vercel`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `verify`);
+  - `npm run verify:pre-merge`: PASS on `aebe36e`, marker `artifacts/verify-pre-merge/20260503-173002.json`, Playwright `107 passed`, `349 skipped`.
+- Perf-budget decision: hold. The gate recommended tightening after three weekly green runs with 25.1% margin, but this PDF-only parity slice does not target route budgets; tightening belongs in a dedicated performance-governance follow-up.
+- Rollback: revert merge commit `2a3a73c`; no schema, data repair, cache purge, finance action, or customer communication is required.
+
+## Closeout Score Outcome
+
+Critical target categories for `10/10` claim:
+
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Testing and QA automation`
+
+- `10/10 claim`: yes
+
+| Category                                      | Achieved Score | Evidence                                                                                             | Notes                                                             |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#580`, approved after/reference screenshots, and Poolside Note comparison artifacts.             | Standard PDF remains the fuller reference artifact.               |
+| UX flow clarity                               | `5/5`          | Screenshot approval plus generated PDF hierarchy/summary assertions.                                 | Header, totals, focus, and sections scan clearly.                 |
+| Visual design quality                         | `5/5`          | Desktop/mobile standard PDF after captures compared with Poolside Note reference captures.           | Same print family without cloning Poolside Note layout.           |
+| Business logic correctness and data integrity | `5/5`          | `workouts-shared` unit tests, full pre-PR gate, CI, and pre-merge gate.                              | Canonical workout content, distances, rests, repeats unchanged.   |
+| Accessibility (a11y)                          | `5/5`          | Full Playwright lane and print HTML/code review.                                                     | Readable hierarchy and contrast preserved.                        |
+| Data placement and sync boundaries            | `5/5`          | Code review of presentation-only `standardSections` model and unchanged persistence boundaries.      | No new persisted presentation state.                              |
+| Reliability and failure handling              | `5/5`          | Full Playwright gate plus PDF export coverage in existing program/workout flows.                     | Preview/export flow stayed nonblank and deterministic.            |
+| Content governance                            | `5/5`          | Copy audit and unit assertions for section labels, linked rests, interval rests, and post-set rests. | PDF wording aligns with the shared session-step display contract. |
+| Stack-fit and dependency discipline           | `5/5`          | Existing PDF HTML renderer reused; no dependency or alternate print engine added.                    | React renderer remains a semantic reference, not a PDF runtime.   |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, CI, and `verify:pre-merge`.                    | Local and remote gates passed before merge.                       |
+| Performance (CWV + payloads)                  | `5/5`          | Build and perf budgets passed in pre-PR and pre-merge gates.                                         | Budget tightening intentionally deferred to perf governance.      |
+| DevOps and rollback readiness                 | `5/5`          | Single merged PR with no migration; rollback is `git revert 2a3a73c`.                                | Post-merge preflight surfaced this lifecycle closeout.            |
+
 ## Checkpoint Log
 
 - `2026-04-15 | planning | created the dedicated planned brief for aligning the standard workout PDF with the newer Poolside Note brand and print-system quality bar, while explicitly keeping the two artifacts distinct in job and composition | next: execute this brief separately after the current builder slice is merged or explicitly handed off`
@@ -244,3 +286,5 @@ Critical target categories for `10/10` claim in this brief:
 - `2026-05-03 | screenshot handoff | standard PDF now has a Poolside-family header, summary strip, sectioned step rendering, and shared-contract rest/repeat semantics while Poolside Note stays unchanged as the reference; targeted validation passed: typecheck, workouts-shared vitest, eslint on touched code/tests, and lint:briefs:all; after/reference artifacts are in /Users/stianvikra/freeswimming/output/workout-pdf-poolside-parity-2026-05-03 | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-03 | screenshot approved | owner approved after/reference screenshot handoff in chat | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-05-03 | pre-pr gate green | npm run verify:pre-pr passed after screenshot approval; performance budgets stayed green and are held unchanged for this PDF-only slice | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-03 | merged | PR #580 merged to main as 2a3a73c after owner screenshot approval, local verify:pre-pr, green CI, and local verify:pre-merge | next: post-merge preflight`
+- `2026-05-03 | done | post-merge preflight surfaced this lifecycle closeout; brief moved from in-progress to done with all target categories closed at 5/5 and 10/10 claim recorded | next: docs-only closeout PR`
