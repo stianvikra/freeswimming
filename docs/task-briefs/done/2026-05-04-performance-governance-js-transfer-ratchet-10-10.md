@@ -3,10 +3,11 @@
 ## Metadata
 
 - `id`: `2026-05-04-performance-governance-js-transfer-ratchet-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-04`
 - `updated`: `2026-05-04`
+- `mode`: `shipped`
 
 ## Goal
 
@@ -165,6 +166,50 @@ Critical target categories for a `10/10` claim in this brief:
 - The docs must make the current default and latest tighten/hold/revert decision unambiguous.
 - Rollback must be a single-threshold reversal with no migration or cleanup burden.
 
+## Closeout Summary
+
+- PR `#594` merged to `main` as squash commit `f65ecef` on `2026-05-04`.
+- Shipped behavior:
+  - JS transfer default budget tightened from `425kb` to `400kb`,
+  - canonical performance governance docs now record the `2026-05-04` `tighten` decision,
+  - perf-budget recommendation output now references the active brief/PR summary instead of stale `AW-010` wording.
+- No UI, route behavior, auth, data, commerce, analytics, Help/Guide, or i18n behavior changed.
+- No screenshot handoff was required because the shipped diff is script/docs governance only.
+- Rollback path remains simple: revert `f65ecef` or restore the JS transfer default to `425kb` and update the ratchet docs.
+
+## Closeout Validation
+
+- `npm run test:perf:trend` recommended `tighten` with `4` weekly green runs and `25.1%` worst margin before the ratchet.
+- `npm run test:perf:budgets` passed with JS transfer `400kb`; route JS medians were `/` `318.4kb`, `/plans` `270.3kb`, `/course` `297.3kb`, and `/my-library` `269.4kb`.
+- `npm run lint:quality-gates` passed.
+- `npm run lint:briefs:all` passed.
+- `npm run verify:pre-pr` passed on final implementation commit `6605a9c`: lint, typecheck, `168` unit files / `879` tests, build, perf budgets with `20.4%` worst margin, and Playwright `107` passed / `349` skipped.
+- GitHub PR `#594` checks passed: `verify`, `e2e-smoke`, `site-lock-smoke`, `CodeQL`, `Analyze (javascript-typescript)`, `size-check`, `deploy-preview`, `Vercel`, and `Vercel Preview Comments`.
+- `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260504-182341.json`.
+- `npm run post-merge:preflight` on `main` after `f65ecef` surfaced this docs-only lifecycle closeout.
+
+## Closeout Score Outcome
+
+Critical target categories for `10/10` claim:
+
+- `Performance (CWV + payloads)`
+- `Content governance`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+- `DevOps and rollback readiness`
+
+- `10/10 claim`: yes
+
+| Category                            | Achieved Score | Evidence                                                                                         | Notes                                                              |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Product goals and IA                | `5/5`          | PR `#594`, merged commit `f65ecef`, and governance docs state one clear ratchet outcome.         | No product IA or route behavior changed.                           |
+| Performance (CWV + payloads)        | `5/5`          | Fresh perf budget PASS with JS transfer `400kb`, `20.4%` worst margin, and full verify evidence. | Latest route medians preserve more than the required `15%` margin. |
+| Content governance                  | `5/5`          | Performance runbook, maintenance cadence, testing strategy, coverage scorecard, and this brief.  | Current default and latest decision are unambiguous.               |
+| Stack-fit and dependency discipline | `5/5`          | Existing Next/Playwright perf script reused; no dependency or parallel measurement system added. | No stack exception.                                                |
+| Testing and QA automation           | `5/5`          | Targeted perf checks, lint gates, `verify:pre-pr`, green CI, and `verify:pre-merge` passed.      | Existing non-failing warnings are carry-forward only.              |
+| Scalability and cost efficiency     | `5/5`          | Lower JS transfer threshold catches future payload drift earlier while keeping route headroom.   | No runtime cost increase.                                          |
+| DevOps and rollback readiness       | `5/5`          | One reversible threshold step and docs update; PR `#594` merged cleanly.                         | Rollback is `git revert f65ecef` or threshold restore to `425kb`.  |
+
 ## 10/10 Cross-Cut Categories
 
 - Content governance and source-of-truth
@@ -215,3 +260,5 @@ Critical target categories for a `10/10` claim in this brief:
 - `2026-05-04 | in-progress | started performance-governance ratchet from clean main 19175a2 after post-merge preflight; trend recommendation was tighten with 4 weekly green runs and 25.1% worst margin | next: tighten JS transfer default to 400kb, update governance docs, and run targeted perf validation`
 - `2026-05-04 | in-progress | tightened JS transfer default to 400kb, refreshed governance docs, and ran targeted validation: npm run lint:quality-gates PASS, npm run lint:briefs:all PASS, npm run test:perf:trend recommended tighten, npm run test:perf:budgets PASS with worst margin 20.4% and route JS medians / 318.4kb, /plans 270.3kb, /course 297.3kb, /my-library 269.4kb | next: rerun targeted lint after final script wording polish, then npm run verify:pre-pr`
 - `2026-05-04 | in-progress | npm run verify:pre-pr PASS on full lane for commit aea7610: branch-current, lint:briefs, lint:quality-gates, admin/env/PR-body lint, lint, typecheck, 168 unit files / 879 tests, build, perf budgets with JS transfer 400kb and 20.4% worst margin, and Playwright 107 passed / 349 skipped | next: amend checkpoint, rerun verify:pre-pr on final commit, push, and open PR`
+- `2026-05-04 | merged | PR #594 merged to main as f65ecef after final commit 6605a9c passed local verify:pre-pr, GitHub CI, and local verify:pre-merge; post-merge preflight surfaced this lifecycle closeout | next: move brief to done and open docs-only closeout PR`
+- `2026-05-04 | done | moved brief from in-progress to done with all target categories closed at 5/5 and 10/10 claim recorded | next: validate docs-only closeout PR`
