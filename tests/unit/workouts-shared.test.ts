@@ -4,6 +4,7 @@ import {
   buildWorkoutPdfFileName,
   buildWorkoutPdfHtmlDocument,
   buildWorkoutPdfModel,
+  buildWorkoutStepDisplaySections,
   buildWorkoutSummaryPreviewSections,
   getDefaultWorkoutPoolsideFocusIds,
   buildWorkoutGarminReadyExport,
@@ -1833,7 +1834,7 @@ describe("workouts shared readiness", () => {
   });
 
   it("builds ordered summary preview sections without merging non-contiguous section labels", () => {
-    const sections = buildWorkoutSummaryPreviewSections({
+    const draft: SessionDraft = {
       ...buildDraft(),
       steps: [
         {
@@ -1917,8 +1918,40 @@ describe("workouts shared readiness", () => {
           notes: "",
         },
       ],
-    });
+    };
+    const displaySections = buildWorkoutStepDisplaySections(draft);
+    const sections = buildWorkoutSummaryPreviewSections(draft);
 
+    expect(displaySections.map((section) => section.title)).toEqual([
+      "Warmup",
+      "Main",
+      "Cooldown",
+      "Main",
+    ]);
+    expect(displaySections[0]?.lines[0]).toMatchObject({
+      key: "step-1",
+      kind: "step",
+      primaryText: "400m · Freestyle · Easy",
+      secondaryText: "Rest 0:30",
+      category: "warmup",
+      sourceStepIds: ["step-1", "step-2"],
+      target: {
+        kind: "step",
+        stepId: "step-1",
+      },
+    });
+    expect(displaySections[1]?.lines[0]).toMatchObject({
+      key: "repeat-1",
+      kind: "repeat",
+      primaryText: "4 x 100m · Freestyle · Moderate · Interval rest 0:30",
+      secondaryText: null,
+      category: "main",
+      sourceStepIds: ["step-3", "step-4"],
+      target: {
+        kind: "repeat",
+        repeatGroupId: "repeat-1",
+      },
+    });
     expect(sections.map((section) => section.title)).toEqual([
       "Warmup",
       "Main",
@@ -1937,6 +1970,75 @@ describe("workouts shared readiness", () => {
     });
     expect(sections[1]?.rows[0]?.text).toContain("4 x 100m · Freestyle · Moderate");
     expect(sections[3]?.rows[0]?.text).toContain("25m · Freestyle · Kick · Kickboard · Easy");
+  });
+
+  it("derives post-set rests once in the shared display model and preview rows", () => {
+    const draft: SessionDraft = {
+      ...buildDraft(),
+      steps: [
+        {
+          id: "step-1",
+          category: "main",
+          name: "Repeat work",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-3",
+          category: "rest",
+          name: "Post set rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.75,
+          targetSummary: "",
+          notes: "",
+          postSetRestForRepeatGroupId: "repeat-1",
+        },
+      ],
+    };
+
+    const displaySections = buildWorkoutStepDisplaySections(draft);
+    const previewSections = buildWorkoutSummaryPreviewSections(draft);
+
+    expect(displaySections).toHaveLength(1);
+    expect(displaySections[0]?.lines).toHaveLength(1);
+    expect(displaySections[0]?.lines[0]).toMatchObject({
+      kind: "repeat",
+      primaryText: "4 x 100m · Freestyle · Moderate · Interval rest 0:30",
+      secondaryText: "Set rest 0:45",
+      sourceStepIds: ["step-1", "step-2", "step-3"],
+    });
+    expect(previewSections[0]?.rows).toEqual([
+      {
+        text: "4 x 100m · Freestyle · Moderate · Interval rest 0:30",
+        secondaryText: "Set rest 0:45",
+      },
+    ]);
   });
 
   it("keeps explicit inline rests accented without merging them into the primary line text", () => {

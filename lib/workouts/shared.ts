@@ -84,6 +84,33 @@ export type WorkoutSummaryPreviewSection = {
   rows: WorkoutSummaryPreviewLineItem[];
 };
 
+export type WorkoutStepDisplayTarget =
+  | {
+      kind: "step";
+      stepId: string;
+    }
+  | {
+      kind: "repeat";
+      repeatGroupId: string;
+    };
+
+export type WorkoutStepDisplayLine = {
+  key: string;
+  kind: "step" | "repeat" | "rest";
+  primaryText: string;
+  secondaryText?: string | null;
+  category: SessionDraftStep["category"];
+  sourceStepIds: string[];
+  target?: WorkoutStepDisplayTarget;
+};
+
+export type WorkoutStepDisplaySection = {
+  key: string;
+  title: string;
+  category: SessionDraftStep["category"];
+  lines: WorkoutStepDisplayLine[];
+};
+
 export type WorkoutEditorRecord = {
   id: string;
   createdAt: string;
@@ -1043,7 +1070,7 @@ function buildWorkoutPdfStandardSections(
   issuesByStepId: Map<string, string[]>,
   poolLengthUnit: SessionDraftPoolLengthUnit
 ) {
-  const groups = buildWorkoutHandoffGroups(draft.steps);
+  const groups = buildWorkoutStepDisplayGroups(draft.steps);
   const sections: WorkoutPdfModelSection[] = [];
   let displayIndex = 0;
 
@@ -1056,36 +1083,31 @@ function buildWorkoutPdfStandardSections(
 
     if (group.kind === "single") {
       const entry = group.entries[0];
-      const linkedRest = collectWorkoutPdfLinkedRestGroups(
+      const linkedRestSteps = collectWorkoutPdfTopLevelLinkedRestSteps(
         groups.slice(groupIndex + 1),
-        draft.environment,
-        null
+        draft.environment
       );
       const block = buildWorkoutPdfStandardSingleBlock(entry, label, {
         basePaceSecondsPer100m: draft.basePaceSecondsPer100m,
         environment: draft.environment,
         poolLengthUnit,
         issuesByStepId,
-        linkedRestSteps: linkedRest.steps,
+        linkedRestSteps,
         linkedRestMode: "standalone",
       });
 
       pushWorkoutPdfStandardSection(sections, block.category ?? entry.step.category, [block]);
-      groupIndex += linkedRest.consumedGroups;
+      groupIndex += linkedRestSteps.length;
       continue;
     }
 
-    const postSetRest = collectWorkoutPdfLinkedRestGroups(
-      groups.slice(groupIndex + 1),
-      draft.environment,
-      group.repeatGroupId
-    );
+    const postSetRestSteps = group.postSetRestEntry ? [group.postSetRestEntry.step] : [];
     const block = buildWorkoutPdfStandardRepeatBlock(group, label, {
       basePaceSecondsPer100m: draft.basePaceSecondsPer100m,
       environment: draft.environment,
       poolLengthUnit,
       issuesByStepId,
-      postSetRestSteps: postSetRest.steps,
+      postSetRestSteps,
     });
 
     pushWorkoutPdfStandardSection(
@@ -1093,7 +1115,6 @@ function buildWorkoutPdfStandardSections(
       block.category ?? getWorkoutPoolsideGroupCategory(group),
       [block]
     );
-    groupIndex += postSetRest.consumedGroups;
   }
 
   return sections;
@@ -1123,13 +1144,11 @@ function pushWorkoutPdfStandardSection(
   });
 }
 
-function collectWorkoutPdfLinkedRestGroups(
-  followingGroups: WorkoutHandoffGroup[],
-  environment: SessionGeneratorEnvironment,
-  repeatGroupId: string | null
+function collectWorkoutPdfTopLevelLinkedRestSteps(
+  followingGroups: WorkoutStepDisplayGroup[],
+  environment: SessionGeneratorEnvironment
 ) {
   const steps: SessionDraftStep[] = [];
-  let consumedGroups = 0;
 
   for (const nextGroup of followingGroups) {
     if (nextGroup.kind !== "single") {
@@ -1141,19 +1160,10 @@ function collectWorkoutPdfLinkedRestGroups(
       break;
     }
 
-    if (repeatGroupId) {
-      if (nextStep.postSetRestForRepeatGroupId !== repeatGroupId) {
-        break;
-      }
-    } else if (nextStep.postSetRestForRepeatGroupId) {
-      break;
-    }
-
     steps.push(nextStep);
-    consumedGroups += 1;
   }
 
-  return { steps, consumedGroups };
+  return steps;
 }
 
 function buildWorkoutPdfStandardSingleBlock(
@@ -4411,7 +4421,15 @@ export function buildWorkoutSummaryPreviewText(draft: SessionDraft | null | unde
 }
 
 export function buildWorkoutSummaryPreviewSections(draft: SessionDraft | null | undefined) {
-  return buildWorkoutSummaryViewSections(draft);
+  return buildWorkoutStepDisplaySections(draft).map((section) => ({
+    key: section.key,
+    title: section.title,
+    category: section.category,
+    rows: section.lines.map((line) => ({
+      text: line.primaryText,
+      secondaryText: line.secondaryText ?? null,
+    })),
+  }));
 }
 
 export function buildWorkoutSummaryPreviewLineItems(draft: SessionDraft | null | undefined) {
@@ -4425,52 +4443,52 @@ function buildWorkoutPoolsideLines(draft: SessionDraft | null | undefined) {
   return buildWorkoutPoolsideLineItemsForDraft(draft).items.map(formatWorkoutPoolsideLineItemText);
 }
 
-function buildWorkoutSummaryViewSections(
+export function buildWorkoutStepDisplaySections(
   draft: SessionDraft | null | undefined
-): WorkoutSummaryPreviewSection[] {
+): WorkoutStepDisplaySection[] {
   if (!draft) {
     return [];
   }
 
   const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
-  const groups = buildWorkoutHandoffGroups(draft.steps);
-  const sections: WorkoutSummaryPreviewSection[] = [];
+  const groups = buildWorkoutStepDisplayGroups(draft.steps);
+  const sections: WorkoutStepDisplaySection[] = [];
 
   for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
     const group = groups[groupIndex];
     if (!group) continue;
 
     if (group.kind === "single") {
-      const result = buildWorkoutSummarySingleViewRows(
+      const result = buildWorkoutStepDisplaySingleLine(
         group.entries[0],
         groups.slice(groupIndex + 1),
         draft.basePaceSecondsPer100m,
         draft.environment,
         poolLengthUnit
       );
-      const section = getOrCreateWorkoutSummaryPreviewSection(sections, result.category);
-      section.rows.push(...result.rows);
+      const section = getOrCreateWorkoutStepDisplaySection(sections, result.category);
+      if (result.line) {
+        section.lines.push(result.line);
+      }
       groupIndex += result.consumedFollowingGroups;
       continue;
     }
 
-    const result = buildWorkoutSummaryRepeatViewRow(
+    const line = buildWorkoutStepDisplayRepeatLine(
       group,
-      groups.slice(groupIndex + 1),
       draft.basePaceSecondsPer100m,
       draft.environment,
       poolLengthUnit
     );
-    const section = getOrCreateWorkoutSummaryPreviewSection(sections, result.category);
-    section.rows.push(result.row);
-    groupIndex += result.consumedFollowingGroups;
+    const section = getOrCreateWorkoutStepDisplaySection(sections, line.category);
+    section.lines.push(line);
   }
 
-  return sections.filter((section) => section.rows.length > 0);
+  return sections.filter((section) => section.lines.length > 0);
 }
 
-function getOrCreateWorkoutSummaryPreviewSection(
-  sections: WorkoutSummaryPreviewSection[],
+function getOrCreateWorkoutStepDisplaySection(
+  sections: WorkoutStepDisplaySection[],
   category: SessionDraftStep["category"]
 ) {
   const title = getSessionStepCategoryLabel(category);
@@ -4480,19 +4498,19 @@ function getOrCreateWorkoutSummaryPreviewSection(
     return currentSection;
   }
 
-  const nextSection: WorkoutSummaryPreviewSection = {
+  const nextSection: WorkoutStepDisplaySection = {
     key: `${title.toLowerCase().replace(/\s+/g, "-")}-${sections.length}`,
     title,
     category,
-    rows: [],
+    lines: [],
   };
   sections.push(nextSection);
   return nextSection;
 }
 
-function buildWorkoutSummarySingleViewRows(
+function buildWorkoutStepDisplaySingleLine(
   entry: WorkoutHandoffEntry | undefined,
-  followingGroups: WorkoutHandoffGroup[],
+  followingGroups: WorkoutStepDisplayGroup[],
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
@@ -4501,7 +4519,7 @@ function buildWorkoutSummarySingleViewRows(
   if (!entry) {
     return {
       category: fallbackCategory,
-      rows: [],
+      line: null,
       consumedFollowingGroups: 0,
     };
   }
@@ -4509,18 +4527,24 @@ function buildWorkoutSummarySingleViewRows(
   if (isWorkoutPoolsideRecoveryStep(entry.step, environment)) {
     return {
       category: entry.step.category,
-      rows: [
-        {
-          text: buildWorkoutPoolsideRecoveryText(
-            entry.step,
-            basePaceSecondsPer100m,
-            environment,
-            poolLengthUnit,
-            "standalone"
-          ),
-          secondaryText: null,
+      line: {
+        key: entry.step.id,
+        kind: "rest" as const,
+        primaryText: buildWorkoutPoolsideRecoveryText(
+          entry.step,
+          basePaceSecondsPer100m,
+          environment,
+          poolLengthUnit,
+          "standalone"
+        ),
+        secondaryText: null,
+        category: entry.step.category,
+        sourceStepIds: [entry.step.id],
+        target: {
+          kind: "step" as const,
+          stepId: entry.step.id,
         },
-      ],
+      },
       consumedFollowingGroups: 0,
     };
   }
@@ -4548,30 +4572,35 @@ function buildWorkoutSummarySingleViewRows(
 
   return {
     category: entry.step.category,
-    rows: [
-      {
-        text: buildWorkoutPoolsideIntervalLabel(
-          entry.step,
-          basePaceSecondsPer100m,
-          environment,
-          poolLengthUnit
-        ),
-        secondaryText: buildWorkoutPoolsideRecoverySummary(
-          linkedRestSteps,
-          basePaceSecondsPer100m,
-          environment,
-          poolLengthUnit,
-          "standalone"
-        ),
+    line: {
+      key: entry.step.id,
+      kind: "step" as const,
+      primaryText: buildWorkoutPoolsideIntervalLabel(
+        entry.step,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit
+      ),
+      secondaryText: buildWorkoutPoolsideRecoverySummary(
+        linkedRestSteps,
+        basePaceSecondsPer100m,
+        environment,
+        poolLengthUnit,
+        "standalone"
+      ),
+      category: entry.step.category,
+      sourceStepIds: [entry.step.id, ...linkedRestSteps.map((step) => step.id)],
+      target: {
+        kind: "step" as const,
+        stepId: entry.step.id,
       },
-    ],
+    },
     consumedFollowingGroups,
   };
 }
 
-function buildWorkoutSummaryRepeatViewRow(
-  group: Extract<WorkoutHandoffGroup, { kind: "repeat" }>,
-  followingGroups: WorkoutHandoffGroup[],
+function buildWorkoutStepDisplayRepeatLine(
+  group: Extract<WorkoutStepDisplayGroup, { kind: "repeat" }>,
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
@@ -4615,40 +4644,28 @@ function buildWorkoutSummaryRepeatViewRow(
     }
   }
 
-  const postSetRestSteps: SessionDraftStep[] = [];
-  let consumedFollowingGroups = 0;
-
-  for (const nextGroup of followingGroups) {
-    if (nextGroup.kind !== "single") {
-      break;
-    }
-
-    const nextStep = nextGroup.entries[0]?.step;
-    if (
-      !nextStep ||
-      !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment) ||
-      nextStep.postSetRestForRepeatGroupId !== group.repeatGroupId
-    ) {
-      break;
-    }
-
-    postSetRestSteps.push(nextStep);
-    consumedFollowingGroups += 1;
-  }
+  const postSetRestSteps = group.postSetRestEntry ? [group.postSetRestEntry.step] : [];
 
   return {
     category,
-    row: {
-      text,
-      secondaryText: buildWorkoutPoolsideRecoverySummary(
-        postSetRestSteps,
-        basePaceSecondsPer100m,
-        environment,
-        poolLengthUnit,
-        "repeat"
-      ),
+    key: group.repeatGroupId,
+    kind: "repeat" as const,
+    primaryText: text,
+    secondaryText: buildWorkoutPoolsideRecoverySummary(
+      postSetRestSteps,
+      basePaceSecondsPer100m,
+      environment,
+      poolLengthUnit,
+      "repeat"
+    ),
+    sourceStepIds: [
+      ...group.entries.map((entry) => entry.step.id),
+      ...postSetRestSteps.map((step) => step.id),
+    ],
+    target: {
+      kind: "repeat" as const,
+      repeatGroupId: group.repeatGroupId,
     },
-    consumedFollowingGroups,
   };
 }
 
@@ -4716,7 +4733,7 @@ function buildRawWorkoutPoolsideSectionsForDraft(draft: SessionDraft | null | un
   }
 
   const poolLengthUnit = getWorkoutPoolLengthUnit(draft);
-  const groups = buildWorkoutHandoffGroups(draft.steps);
+  const groups = buildWorkoutStepDisplayGroups(draft.steps);
   const sections: WorkoutPoolsideSection[] = [];
 
   for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
@@ -4743,16 +4760,12 @@ function buildRawWorkoutPoolsideSectionsForDraft(draft: SessionDraft | null | un
     const result = buildWorkoutPoolsideRepeatGroupLineItems(
       group.entries,
       group.repeatCount,
-      group.repeatGroupId,
-      groups.slice(groupIndex + 1),
+      group.postSetRestEntry ? [group.postSetRestEntry.step] : [],
       draft.basePaceSecondsPer100m,
       draft.environment,
       poolLengthUnit
     );
     pushWorkoutPoolsideSection(sections, sectionCategory, sectionTitle, result.items);
-    if (result.consumedFollowingGroups > 0) {
-      groupIndex += result.consumedFollowingGroups;
-    }
   }
 
   return sections;
@@ -4760,7 +4773,7 @@ function buildRawWorkoutPoolsideSectionsForDraft(draft: SessionDraft | null | un
 
 function buildWorkoutPoolsideSingleGroupLineItems(
   entry: WorkoutHandoffEntry | undefined,
-  followingGroups: WorkoutHandoffGroup[],
+  followingGroups: WorkoutStepDisplayGroup[],
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
@@ -4833,8 +4846,7 @@ function buildWorkoutPoolsideSingleGroupLineItems(
 function buildWorkoutPoolsideRepeatGroupLineItems(
   entries: WorkoutHandoffEntry[],
   repeatCount: number | null,
-  repeatGroupId: string,
-  followingGroups: WorkoutHandoffGroup[],
+  postSetRestSteps: SessionDraftStep[],
   basePaceSecondsPer100m: number,
   environment: SessionGeneratorEnvironment,
   poolLengthUnit: SessionDraftPoolLengthUnit
@@ -4894,29 +4906,8 @@ function buildWorkoutPoolsideRepeatGroupLineItems(
     }
   }
 
-  const trailingPostSetRestSteps: SessionDraftStep[] = [];
-  let consumedFollowingGroups = 0;
-
-  for (const nextGroup of followingGroups) {
-    if (nextGroup.kind !== "single") {
-      break;
-    }
-
-    const nextStep = nextGroup.entries[0]?.step;
-    if (
-      !nextStep ||
-      !shouldInlineWorkoutPoolsideRecoveryStep(nextStep, environment) ||
-      nextStep.postSetRestForRepeatGroupId !== repeatGroupId
-    ) {
-      break;
-    }
-
-    trailingPostSetRestSteps.push(nextStep);
-    consumedFollowingGroups += 1;
-  }
-
   const trailingPostSetRestText = buildWorkoutPoolsideRecoverySummary(
-    trailingPostSetRestSteps,
+    postSetRestSteps,
     basePaceSecondsPer100m,
     environment,
     poolLengthUnit,
@@ -4938,21 +4929,21 @@ function buildWorkoutPoolsideRepeatGroupLineItems(
           .join(" · "),
         stepNoteCandidates: [
           ...(lastInterval.stepNoteCandidates ?? []),
-          ...buildWorkoutPoolsideStepNoteCandidates(trailingPostSetRestSteps),
+          ...buildWorkoutPoolsideStepNoteCandidates(postSetRestSteps),
         ],
       };
     } else {
       lineItems.push({
         kind: "recovery",
         text: trailingPostSetRestText,
-        stepNoteCandidates: buildWorkoutPoolsideStepNoteCandidates(trailingPostSetRestSteps),
+        stepNoteCandidates: buildWorkoutPoolsideStepNoteCandidates(postSetRestSteps),
       });
     }
   }
 
   return {
     items: lineItems,
-    consumedFollowingGroups,
+    consumedFollowingGroups: 0,
   };
 }
 
@@ -5279,6 +5270,12 @@ type WorkoutHandoffGroup =
       entries: WorkoutHandoffEntry[];
     };
 
+type WorkoutStepDisplayGroup =
+  | Extract<WorkoutHandoffGroup, { kind: "single" }>
+  | (Extract<WorkoutHandoffGroup, { kind: "repeat" }> & {
+      postSetRestEntry: WorkoutHandoffEntry | null;
+    });
+
 function buildWorkoutEnvironmentSummary(draft: SessionDraft) {
   if (draft.environment !== "pool") {
     return getSessionEnvironmentLabel(draft.environment);
@@ -5332,6 +5329,54 @@ function buildWorkoutHandoffGroups(steps: SessionDraftStep[]): WorkoutHandoffGro
       entries,
     });
     index = nextIndex - 1;
+  }
+
+  return groups;
+}
+
+function buildWorkoutStepDisplayGroups(steps: SessionDraftStep[]): WorkoutStepDisplayGroup[] {
+  const groups: WorkoutStepDisplayGroup[] = [];
+
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+
+    if (!step) continue;
+
+    if (!step.repeatGroupId) {
+      groups.push({
+        kind: "single",
+        entries: [{ step, index }],
+      });
+      continue;
+    }
+
+    const entries: WorkoutHandoffEntry[] = [{ step, index }];
+    let nextIndex = index + 1;
+
+    while (nextIndex < steps.length && steps[nextIndex]?.repeatGroupId === step.repeatGroupId) {
+      const nextStep = steps[nextIndex];
+      if (!nextStep) break;
+      entries.push({ step: nextStep, index: nextIndex });
+      nextIndex += 1;
+    }
+
+    const postSetRestStep =
+      steps[nextIndex]?.postSetRestForRepeatGroupId === step.repeatGroupId
+        ? steps[nextIndex]
+        : null;
+    const postSetRestEntry = postSetRestStep ? { step: postSetRestStep, index: nextIndex } : null;
+
+    groups.push({
+      kind: "repeat",
+      repeatGroupId: step.repeatGroupId,
+      repeatCount: step.repeatCount ?? null,
+      repeatEndingRestMode: resolveSessionDraftRepeatEndingRestMode(
+        step.repeatEndingRestMode ?? null
+      ),
+      entries,
+      postSetRestEntry,
+    });
+    index = postSetRestEntry ? nextIndex : nextIndex - 1;
   }
 
   return groups;
