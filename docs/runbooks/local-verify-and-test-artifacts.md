@@ -85,6 +85,7 @@ Quality-gate evidence:
 - `npm run lint:quality-gates` classifies changed files, prints triggered quality-risk surfaces, and lists required evidence plus remaining human review categories.
 - Non-docs changes must include a changed `docs/task-briefs/in-progress/...` brief with required evidence language for triggered surfaces.
 - Pure docs/governance changes keep the docs-only fast path unless they change quality-policy surfaces that require explicit gate evidence.
+- If the gate misses a high-risk class or becomes noisy, calibrate it with `docs/runbooks/quality-gates-calibration.md` before weakening requirements.
 
 Pre-merge evidence marker (for PR body refresh automation):
 
