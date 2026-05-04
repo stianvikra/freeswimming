@@ -79,6 +79,7 @@ Critical target categories for `10/10` claim: `UX flow clarity`, `Visual design 
 - `tests/unit/program-export-routes.test.ts`
 - Existing workout shared tests where needed
 - `docs/design/session-step-surface-contract.md`
+- `AGENTS.md` and `docs/runbooks/ui-debug-hypothesis-and-handoff.md` for screenshot artifact handoff governance clarified during owner review
 - Screenshot handoff for Program PDF after/reference parity
 
 ## Out Of Scope
@@ -132,3 +133,4 @@ Revert this PR. No schema rollback, data repair, cache purge, finance action, or
 - `2026-05-04 | in-progress | created implementation brief after owner explicitly requested execution of program PDF session-step parity from clean main | next: implement derived session-step sections in Program PDF and targeted coverage`
 - `2026-05-04 | implementation + screenshot-review | Program PDF now derives scheduled-workout sections from the shared workout preview-section contract; targeted tests, typecheck, lint, and lint:briefs:all pass; after/reference screenshots captured in /Users/stianvikra/freeswimming/output/program-pdf-session-step-parity-2026-05-04 | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-04 | pre-pr gate | owner approved screenshot handoff; npm run verify:pre-pr passed full lane including lint, typecheck, unit, build, perf budgets, and Playwright e2e; perf budget trend recommended tightening after 4 weekly green runs, but budget changes are held out of this PDF parity PR and should be handled in the dedicated performance-budget track | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-04 | screenshot governance follow-up | owner flagged inconsistent screenshot artifact folder linking and timestamp ambiguity; AGENTS.md and the UI debug handoff runbook now require clickable Screenshot artifacts links, timestamped artifact folders, capture timestamps, final-handoff link repetition, and explicit regenerate/no-visual-change-after-capture handling | next: rerun gates on updated PR, merge #585, run post-merge preflight`

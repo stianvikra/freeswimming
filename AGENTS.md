@@ -138,10 +138,14 @@ This file defines how coding agents should collaborate in this repository.
   6. run `npm run verify:pre-merge` and summarize merge readiness.
 - For visual work, this screenshot approval stop overrides the normal automation-first flow. Assistant should not continue into `verify:pre-pr`, PR creation, or `verify:pre-merge` until the owner has approved the screenshot handoff or explicitly waived that review.
 - Handoff must include:
-  - an absolute filesystem folder link to the full-resolution screenshot artifacts,
+  - a clickable absolute filesystem folder link to the full-resolution screenshot artifacts, labeled `Screenshot artifacts`,
+  - the capture timestamp as `Captured: YYYY-MM-DD HH:MM` in local time,
   - `2-4` representative screenshots from the changed surface,
   - one short explanation per screenshot describing what changed and what the owner should verify,
   - explicit note of any known visual caveat or remaining judgment call.
+- Screenshot artifact folders must include date and time in the folder name, for example `output/<scope>-YYYY-MM-DD-HHMMSS`, so screenshot evidence cannot be confused with later commit, gate, or PR timestamps.
+- Do not provide screenshot artifact folders only as backticked text paths; every screenshot handoff and final merge-ready handoff for UI/print/layout/brand work must repeat the same clickable `Screenshot artifacts` folder link.
+- If product-rendering files, styles, assets, or export HTML change after screenshot capture, regenerate the screenshots before continuing. If no visual/rendering files changed after capture, state that explicitly in the final merge-ready handoff.
 - Chat-embedded screenshot previews are secondary only; owner review should be possible from the linked artifact folder without relying on compressed chat thumbnails.
 - Screenshot filenames must make the comparison type explicit:
   - use `before-<surface>-<viewport>.*` and `after-<surface>-<viewport>.*` when the same surface is shown before and after,

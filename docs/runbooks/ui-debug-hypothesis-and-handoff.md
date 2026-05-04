@@ -35,14 +35,18 @@ For visual/export work, do not use "looks fine in preview" as proof if the failu
 
 ## Screenshot And Artifact Handoff
 
-- Store full-resolution artifacts in a stable folder under `output/` or the relevant test artifact folder.
-- Give the owner the absolute filesystem folder path.
+- Store full-resolution artifacts in a stable, timestamped folder under `output/` or the relevant test artifact folder.
+- Use folder names that include the scope, date, and time, for example `output/<scope>-YYYY-MM-DD-HHMMSS`.
+- Give the owner a clickable absolute filesystem folder link labeled `Screenshot artifacts`; do not provide only a backticked path.
+- Include `Captured: YYYY-MM-DD HH:MM` in local time next to the artifact link.
 - Use filenames that include:
   - `before-` or `after-`,
   - the surface,
   - viewport/device,
   - important state or option.
 - Explain whether the set is `before/after` or `after/reference`.
+- In the final merge-ready handoff, repeat the same clickable `Screenshot artifacts` folder link.
+- If product-rendering files, styles, assets, or export HTML change after capture, regenerate the screenshots. If no visual/rendering files changed after capture, say so explicitly in the final merge-ready handoff.
 - In chat, summarize what changed and what to inspect. Do not rely on compressed chat thumbnails as the only review path.
 
 ## Freeswimming Local Screenshot Defaults
