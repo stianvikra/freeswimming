@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-05-04-session-step-export-display-model-consolidation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-04`
 - `updated`: `2026-05-04`
-- `mode`: `end-to-end implementation`
+- `mode`: `merged + closeout`
 
 ## Goal
 
@@ -132,9 +132,55 @@ N/A with rationale: this slice changes authenticated preview/export internals an
 
 Revert this PR. No schema rollback, data repair, cache purge, finance action, or customer communication is required.
 
+## Completion Record
+
+- Completed: `2026-05-04`
+- Merged PR: `#587`
+- Merge commit: `2feb906`
+- Implementation commit: `3c016af`
+- Outcome: export and preview display semantics now derive from shared `WorkoutStepDisplaySection` data for summary preview, Workout PDF section assembly, and poolside grouping, with post-set rest ownership handled once.
+- Screenshot handoff: owner-approved after/reference captures in `/Users/stianvikra/freeswimming/output/session-step-export-display-model-2026-05-04-094938`.
+- Validation:
+  - targeted tests: PASS, `tests/unit/workouts-shared.test.ts`, `tests/unit/program-export-routes.test.ts`, `tests/unit/workout-builder-hub.test.tsx`, `tests/unit/session-step-surface-contract.test.ts`, `tests/unit/workouts-routes.test.ts`;
+  - `npm run verify:pre-pr`: PASS on `3c016af`, full lane, `artifacts/test-runs/20260504-095358`;
+  - GitHub CI for PR `#587`: PASS after one rerun of `verify`; initial failed job was a unit-run teardown timer flake from `PoolsidePreviewPageClient`, while rerun passed;
+  - `npm run verify:pre-merge`: PASS on `3c016af`, marker `artifacts/verify-pre-merge/20260504-082613.json`;
+  - `npm run merge:preflight -- --assert-ready`: PASS before merge.
+- Perf-budget decision: hold/defer. The gate recommended tightening one stretch target after four green weekly runs, but this export display-model slice intentionally did not own public route performance budgets.
+- Rollback: revert merge commit `2feb906`; no schema, data repair, cache purge, finance action, or customer communication is required.
+
+## Closeout Score Outcome
+
+Critical target categories for `10/10` claim:
+
+- `Business logic correctness and data integrity`
+- `Visual design quality`
+- `Reliability and failure handling`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+
+- `10/10 claim`: yes
+
+| Category                                      | Achieved Score | Evidence                                                                                       | Notes                                                                                               |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#587`, contract doc update, and approved screenshot handoff.                               | Export and preview surfaces now share one coherent session-step interpretation.                     |
+| UX flow clarity                               | `5/5`          | Focused tests, owner-approved screenshots, and print/export review.                            | Builder, saved preview, Workout PDF, Program PDF, and poolside comparisons remain aligned.          |
+| Visual design quality                         | `5/5`          | After/reference screenshot artifacts.                                                          | Poolside color and ink-saver variants were clarified; no visual/rendering files changed afterward.  |
+| Business logic correctness and data integrity | `5/5`          | `workouts-shared` tests, focused route/component tests, CI, and full local gates.              | Order, category identity, linked rests, interval rests, post-set rests, and source IDs are covered. |
+| Performance (CWV + payloads)                  | `5/5`          | Zero new dependency/server read; build and perf budgets passed.                                | Budget tightening recommendation is carried to the dedicated performance-budget track.              |
+| Data placement and sync boundaries            | `5/5`          | Data-boundary review and code diff.                                                            | Saved workouts/programs stay server-canonical; display sections are derived read-only data.         |
+| Reliability and failure handling              | `5/5`          | Targeted tests, route/export assertions, `verify:pre-pr`, CI rerun, and `verify:pre-merge`.    | Empty/missing/review-needed paths keep deterministic fallback behavior.                             |
+| Content governance                            | `5/5`          | Shared model and `docs/design/session-step-surface-contract.md` update.                        | Section labels and compact rest/repeat wording are centralized.                                     |
+| Stack-fit and dependency discipline           | `5/5`          | TypeScript domain helper reuse and zero new dependencies.                                      | Non-React display data feeds print/export while React UI keeps `SessionStepSurfaceRenderer`.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, CI, `verify:pre-merge`, merge preflight. | Local and remote gates passed before merge; CI flake resolved by one allowed rerun.                 |
+| Scalability and cost efficiency               | `5/5`          | Architecture review and diff review.                                                           | Duplicate local export interpreters were reduced without adding runtime services or heavy assets.   |
+| DevOps and rollback readiness                 | `5/5`          | Single merged PR, no migration, and post-merge preflight closeout.                             | Rollback is `git revert 2feb906`.                                                                   |
+
 ## Checkpoint Log
 
 - `2026-05-04 | in-progress | created implementation brief from owner command to implement session-step export display-model consolidation from clean main | next: extract shared display model and migrate focused consumers`
 - `2026-05-04 | implementation | added shared WorkoutStepDisplaySection model, migrated summary preview, standard Workout PDF section assembly, and poolside section grouping to the shared display grouping with post-set rest ownership; updated contract docs and focused tests | validation: typecheck PASS, targeted unit PASS 128 tests, lint:briefs:all PASS, scoped eslint PASS | next: capture screenshot handoff before verify:pre-pr`
 - `2026-05-04 | screenshot-review | captured clarified after/reference artifacts in /Users/stianvikra/freeswimming/output/session-step-export-display-model-2026-05-04-094938 for Workout PDF, Program PDF, saved Quick View, poolside color/ink-saver notes, and builder View reference | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-04 | pre-pr | owner approved screenshot handoff; npm run verify:pre-pr PASS full lane with 107 Playwright passed / 349 skipped, 872 unit passed, build PASS, perf budgets PASS | perf trend recommended tightening one stretch target after 4 green weeks; hold/defer in this PR because active scope is export display-model consolidation | next: commit, push, open PR, monitor CI`
+- `2026-05-04 | merged | PR #587 merged to main as 2feb906 after owner screenshot approval, local verify:pre-pr, green CI after one allowed verify rerun, local verify:pre-merge, and merge preflight | next: post-merge brief closeout`
+- `2026-05-04 | done | post-merge preflight surfaced this lifecycle closeout; brief moved from in-progress to done with all target categories closed at 5/5 and 10/10 claim recorded | next: docs-only closeout PR`
