@@ -49,7 +49,7 @@ const BUDGETS = {
   lcpMs: Number(process.env.PERF_BUDGET_LCP_MS ?? 2500),
   cls: Number(process.env.PERF_BUDGET_CLS ?? 0.1),
   tbtMs: Number(process.env.PERF_BUDGET_TBT_MS ?? 200),
-  jsTransferKb: Number(process.env.PERF_BUDGET_JS_TRANSFER_KB ?? 425),
+  jsTransferKb: Number(process.env.PERF_BUDGET_JS_TRANSFER_KB ?? 400),
   cssTransferKb: Number(process.env.PERF_BUDGET_CSS_TRANSFER_KB ?? 160),
   requestCount: Number(process.env.PERF_BUDGET_REQUEST_COUNT ?? 130),
 };
@@ -524,7 +524,7 @@ async function run() {
       );
       if (recommendation.decision === "tighten") {
         console.log(
-          "[perf-budget-trend] Action: tighten one stretch target step and record the decision in AW-010 checkpoint/PR summary."
+          "[perf-budget-trend] Action: tighten one stretch target step and record the decision in the active brief checkpoint/PR summary."
         );
       }
     }

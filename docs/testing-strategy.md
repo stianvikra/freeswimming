@@ -132,8 +132,9 @@ Useful commands:
   - assistant must explicitly ask owner whether to tighten budgets toward stretch targets.
 - Tighten one step at a time to avoid flaky regressions.
 - Record each tighten/hold/revert decision in the relevant brief or PR summary.
-- Current ratchet baseline: JS transfer default budget tightened from `450kb` to `425kb` on `2026-04-26`; wait for two new weekly green runs before another step.
-- Latest audit decision: on `2026-04-29`, `npm run test:perf:trend` still recommended `tighten` (`3` weekly green runs, `25.2%` worst margin), but the decision is `hold` because the `2026-04-26` ratchet is too recent. Revisit during the next maintenance baseline after two new weekly green cycles.
+- Current ratchet baseline: JS transfer default budget tightened from `425kb` to `400kb` on `2026-05-04`; wait for two new weekly green runs before another step.
+- Previous audit decision: on `2026-04-29`, `npm run test:perf:trend` still recommended `tighten` (`3` weekly green runs, `25.2%` worst margin), but the decision was `hold` because the `2026-04-26` ratchet was too recent.
+- Latest audit decision: on `2026-05-04`, `npm run test:perf:trend` recommended `tighten` (`4` weekly green runs, `25.1%` worst margin), so JS transfer default moved from `425kb` to `400kb` in the dedicated performance-governance slice.
 
 ## Accessibility
 
