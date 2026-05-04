@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-04-program-pdf-session-step-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-04`
 - `updated`: `2026-05-04`
@@ -128,9 +128,40 @@ N/A with rationale: this slice changes an authenticated print artifact only; it 
 
 Revert this PR. No schema rollback, data repair, cache purge, finance action, or customer communication is required.
 
+## Closeout Score Outcome
+
+Critical target categories for `10/10` claim:
+
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+
+- `10/10 claim`: yes
+
+| Category                                      | Achieved Score | Evidence                                                                                           | Notes                                                                                             |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#585`, Program PDF model/render diff, and approved screenshot handoff.                         | Program PDF now exposes scheduled workout structure inside the program artifact.                  |
+| UX flow clarity                               | `5/5`          | Unit assertions, Program export E2E, and owner-approved screenshots.                               | Week/day/workout/section/step hierarchy is scan-friendly without opening separate workout PDFs.   |
+| Visual design quality                         | `5/5`          | After/reference screenshot handoff.                                                                | Section cards use print-safe category rhythm and remain compact.                                  |
+| Business logic correctness and data integrity | `5/5`          | `programs-export`, route tests, shared workout tests, CI, and full local gates.                    | Order, category identity, linked rest, repeat rest, post-set rest, and review states are covered. |
+| Accessibility (a11y)                          | `5/5`          | HTML assertions, semantic section labels, and Playwright lane.                                     | Printable HTML keeps readable headings and deterministic review fallback text.                    |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency/server read; build and perf budgets passed.                                      | Perf trend recommended tighten; decision held for dedicated performance-budget track.             |
+| Data placement and sync boundaries            | `5/5`          | Data-boundary review and code diff.                                                                | Saved program/workout records stay server-canonical; step sections are derived display data.      |
+| Reliability and failure handling              | `5/5`          | Missing-workout/review-state assertions and full gates.                                            | Missing references still render review diagnostics instead of blank PDF content.                  |
+| Security and authz                            | `5/5`          | Existing protected route tests and CI.                                                             | Auth boundary unchanged; protected Program PDF export remains fail-closed.                        |
+| Content governance                            | `5/5`          | Shared workout display helper reuse and contract doc update.                                       | Section labels and rest/repeat wording stay centralized.                                          |
+| Stack-fit and dependency discipline           | `5/5`          | TypeScript export helper reuse and zero new dependencies.                                          | Program PDF keeps existing server-generated HTML print stack.                                     |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, CI, and `verify:pre-merge` on final PR head. | Local and remote gates passed before merge.                                                       |
+| Scalability and cost efficiency               | `5/5`          | Architecture review and export snapshot path.                                                      | No duplicate render engine or additional runtime service introduced.                              |
+| DevOps and rollback readiness                 | `5/5`          | Single merged PR, no migration, and post-merge preflight closeout.                                 | Rollback is `git revert fc1381d`.                                                                 |
+
 ## Checkpoint Log
 
 - `2026-05-04 | in-progress | created implementation brief after owner explicitly requested execution of program PDF session-step parity from clean main | next: implement derived session-step sections in Program PDF and targeted coverage`
 - `2026-05-04 | implementation + screenshot-review | Program PDF now derives scheduled-workout sections from the shared workout preview-section contract; targeted tests, typecheck, lint, and lint:briefs:all pass; after/reference screenshots captured in /Users/stianvikra/freeswimming/output/program-pdf-session-step-parity-2026-05-04 | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-04 | pre-pr gate | owner approved screenshot handoff; npm run verify:pre-pr passed full lane including lint, typecheck, unit, build, perf budgets, and Playwright e2e; perf budget trend recommended tightening after 4 weekly green runs, but budget changes are held out of this PDF parity PR and should be handled in the dedicated performance-budget track | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-05-04 | screenshot governance follow-up | owner flagged inconsistent screenshot artifact folder linking and timestamp ambiguity; AGENTS.md and the UI debug handoff runbook now require clickable Screenshot artifacts links, timestamped artifact folders, capture timestamps, final-handoff link repetition, and explicit regenerate/no-visual-change-after-capture handling | next: rerun gates on updated PR, merge #585, run post-merge preflight`
+- `2026-05-04 | merged | PR #585 merged to main as fc1381d after owner screenshot approval, local verify:pre-pr, green CI, local verify:pre-merge, and screenshot handoff governance update; no visual/rendering files changed after the approved screenshot capture, only docs governance changed | next: post-merge brief closeout`
+- `2026-05-04 | done | post-merge preflight surfaced this lifecycle closeout; brief moved from in-progress to done with all target categories closed at 5/5 and 10/10 claim recorded | next: docs-only closeout PR`
