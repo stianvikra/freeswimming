@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ProgramBuilderHub from "@/components/my-library/programs/ProgramBuilderHub";
 import type {
@@ -31,6 +31,26 @@ function buildWorkoutSummary(overrides?: Partial<WorkoutSummary>): WorkoutSummar
     acceptedAt: "2026-03-25T12:05:00.000Z",
     sourceKind: "manual",
     status: "accepted",
+    previewSections: [
+      {
+        key: "warmup-0",
+        title: "Warmup",
+        category: "warmup",
+        rows: [{ text: "400m freestyle easy" }],
+      },
+      {
+        key: "main-1",
+        title: "Main",
+        category: "main",
+        rows: [{ text: "6 x 100m threshold", secondaryText: "Rest 20 sec" }],
+      },
+      {
+        key: "cooldown-2",
+        title: "Cooldown",
+        category: "cooldown",
+        rows: [{ text: "200m choice easy" }],
+      },
+    ],
     ...overrides,
   };
 }
@@ -170,6 +190,14 @@ describe("ProgramBuilderHub", () => {
     fireEvent.click(screen.getByTestId("program-day-add-week-0-day-0"));
 
     expect(screen.getByRole("button", { name: "Remove" })).toBeVisible();
+    expect(
+      screen.getByLabelText("Scheduled workout step preview for Threshold builder workout")
+    ).toBeVisible();
+    expect(screen.getByText("Warmup")).toBeVisible();
+    expect(screen.getByText("400m freestyle easy")).toBeVisible();
+    expect(screen.getByText("6 x 100m threshold")).toBeVisible();
+    expect(screen.getByText("Rest 20 sec")).toBeVisible();
+    expect(screen.getByText("Cooldown")).toBeVisible();
     expect(screen.getByTestId("program-editor-save-state")).toHaveTextContent(
       "Unsaved changes stay local until you save this program."
     );
@@ -209,6 +237,52 @@ describe("ProgramBuilderHub", () => {
       position: 0,
     });
     expect(screen.getByTestId("program-builder-save")).toBeDisabled();
+  });
+
+  it("keeps scheduled cards useful when workout preview sections are missing", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => buildProgramExportPreview(),
+    } as Response);
+
+    render(
+      <ProgramBuilderHub
+        programLibrary={buildProgramLibrary({
+          selectedProgram: buildProgramRecord({
+            weeks: [
+              {
+                id: "week-1",
+                label: "Week 1",
+                assignments: [
+                  {
+                    id: "assignment-no-preview",
+                    workoutId: "workout-1",
+                    dayIndex: 0,
+                    position: 0,
+                  },
+                ],
+              },
+            ],
+          }),
+          availableWorkouts: [buildWorkoutSummary({ previewSections: [] })],
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("program-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    const assignmentCard = screen.getByTestId("program-assignment-card-assignment-no-preview");
+    expect(within(assignmentCard).getByText("Threshold builder workout")).toBeVisible();
+    expect(within(assignmentCard).getByText("2200m · ~45 min")).toBeVisible();
+    expect(
+      screen.queryByTestId("program-assignment-step-preview-assignment-no-preview")
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove" })).toBeVisible();
   });
 
   it("shows canonical export preview, downloads json, and opens the program pdf print view", async () => {

@@ -9,7 +9,7 @@ Use this contract whenever the app displays, edits, rearranges, previews, prints
 - Shared React renderer boundary: `components/my-library/workouts/SessionStepSurfaceRenderer.tsx`.
 - Shared export/display model: `buildWorkoutStepDisplaySections` in `lib/workouts/shared.ts`.
 - Domain object: canonical workout/session draft steps from `lib/session-generator-v1/shared.ts`.
-- Current consumers include manual builder, AI session generator, saved-workout Quick View, and Program PDF scheduled-workout sections.
+- Current consumers include manual builder, AI session generator, saved-workout Quick View, Program Builder scheduled-workout cards, and Program PDF scheduled-workout sections.
 - Later consumers include poolside note and remaining PDF/export or planner surfaces that still need step-detail parity.
 - Architecture target: route-specific surfaces should adapt data into this contract; they should not fork a separate card/tab/rest-summary visual system.
 
