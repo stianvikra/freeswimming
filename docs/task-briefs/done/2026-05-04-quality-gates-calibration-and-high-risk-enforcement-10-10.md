@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-04-quality-gates-calibration-and-high-risk-enforcement-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-04`
 - `updated`: `2026-05-04`
@@ -241,3 +241,4 @@ Use `npm run pr:create:safari` by default for PR creation/handoff.
 - `2026-05-04 | working tree | owner approved recommended V2 quality-gates calibration slice; branch created, recent PR sample reviewed, and active brief opened | next: implement policy/test/runbook updates`
 - `2026-05-04 | working tree | implemented blocking evidence metadata for high-risk quality-gate requirements, added calibration runbook, and passed targeted validation: lint:quality-gates, targeted Vitest, lint:briefs:all, lint, typecheck, and full unit suite | next: run npm run verify:pre-pr`
 - `2026-05-04 | working tree | npm run verify:pre-pr PASS on full lane: branch-current, quality gates, lint/admin/env/pr-body, lint, typecheck, unit, build, perf budgets, and Playwright 107 passed / 349 skipped; perf trend recommended tighten after four weekly green runs, held for separate performance-budget slice to avoid scope creep | next: commit, push, open PR, and run npm run verify:pre-merge`
+- `2026-05-04 | 49afb8d | PR #596 merged after CI green and npm run gate:pre-merge PASS; post-merge preflight requested brief closeout | next: move brief to done and validate docs-only closeout`
