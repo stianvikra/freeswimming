@@ -8,8 +8,8 @@ Use this contract whenever the app displays, edits, rearranges, previews, prints
 - Shared view-model and display contract: `components/my-library/workouts/sessionStepSurfaceContract.ts`.
 - Shared React renderer boundary: `components/my-library/workouts/SessionStepSurfaceRenderer.tsx`.
 - Domain object: canonical workout/session draft steps from `lib/session-generator-v1/shared.ts`.
-- Current consumers include manual builder, AI session generator, and saved-workout Quick View.
-- Later consumers include poolside note, PDF/export previews, and planner/program surfaces.
+- Current consumers include manual builder, AI session generator, saved-workout Quick View, and Program PDF scheduled-workout sections.
+- Later consumers include poolside note and remaining PDF/export or planner surfaces that still need step-detail parity.
 - Architecture target: route-specific surfaces should adapt data into this contract; they should not fork a separate card/tab/rest-summary visual system.
 
 ## Required Behavior
@@ -53,4 +53,4 @@ Before implementing a new session-step surface:
 - Route-specific code may supply copy, callbacks, or data mapping, but should not invent a separate visual system.
 - Renderer inputs are display-only; canonical draft mutation, save/export/PDF behavior, and edit-field state stay with the owning route/editor.
 - Tests should cover the shared contract once, then route-specific flows only where behavior differs.
-- Prior hardening: `docs/task-briefs/done/2026-05-01-session-step-reference-surface-architecture-hardening-10-10.md` extracted the shared view-model/display helpers, and `docs/task-briefs/done/2026-05-03-session-step-shared-view-model-renderer-10-10.md` extracted the shared React renderer. Saved-workout Quick View parity is tracked by `docs/task-briefs/in-progress/2026-05-03-session-step-saved-quick-view-contract-10-10.md`.
+- Prior hardening: `docs/task-briefs/done/2026-05-01-session-step-reference-surface-architecture-hardening-10-10.md` extracted the shared view-model/display helpers, and `docs/task-briefs/done/2026-05-03-session-step-shared-view-model-renderer-10-10.md` extracted the shared React renderer. Saved-workout Quick View parity is tracked by `docs/task-briefs/done/2026-05-03-session-step-saved-quick-view-contract-10-10.md`; Program PDF scheduled-workout parity is tracked by `docs/task-briefs/in-progress/2026-05-04-program-pdf-session-step-parity-10-10.md`.

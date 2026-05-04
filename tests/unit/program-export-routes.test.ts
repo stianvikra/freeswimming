@@ -222,5 +222,8 @@ describe("program export routes", () => {
     expect(body).toContain("Program PDF print view");
     expect(body).toContain("Print / Save PDF");
     expect(body).toContain("Program export shell");
+    expect(body).toContain('aria-label="Scheduled workout steps"');
+    expect(body).toContain('data-step-category="warmup"');
+    expect(body).toContain("400m · Freestyle · Easy");
   });
 });
