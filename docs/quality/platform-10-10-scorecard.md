@@ -78,6 +78,8 @@ For each active brief, mark each category as `target`, `supporting`, or `N/A`, a
 5. A brief may only claim `10/10` if all declared critical target categories are `5/5`.
 6. If a brief changes admin/user workflows, labels, or failure/recovery behavior, Help/Guide impact must be documented:
    - update required in same PR, or explicit `N/A` rationale.
+7. Non-docs changes must pass `npm run lint:quality-gates`, which checks that changed files have a changed in-progress brief and that the brief contains the required evidence contract for triggered quality-risk surfaces.
+8. `npm run lint:quality-gates` does not replace review judgment; its output explicitly lists scorecard categories where evidence still needs human sufficiency review.
 
 ## Analytics / GA Recommendation
 

@@ -13,6 +13,8 @@ Use this runbook for reliable local validation when private-access (site lock) i
   - `npm run verify:public`
 - Run docs/governance-only verification directly:
   - `npm run verify:docs-only`
+- Run only the systemic quality evidence classifier:
+  - `npm run lint:quality-gates`
 - Run full verify with automatic local log + artifact capture:
   - `npm run verify:open:log`
 - Run production-start performance budget gate only:
@@ -77,6 +79,12 @@ Optional overrides:
   - `artifacts/test-runs/latest`
 
 This folder is git-ignored and kept locally.
+
+Quality-gate evidence:
+
+- `npm run lint:quality-gates` classifies changed files, prints triggered quality-risk surfaces, and lists required evidence plus remaining human review categories.
+- Non-docs changes must include a changed `docs/task-briefs/in-progress/...` brief with required evidence language for triggered surfaces.
+- Pure docs/governance changes keep the docs-only fast path unless they change quality-policy surfaces that require explicit gate evidence.
 
 Pre-merge evidence marker (for PR body refresh automation):
 

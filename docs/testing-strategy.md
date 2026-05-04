@@ -51,6 +51,12 @@ The 8192 MB default was set after the Tailwind 4 migration because full local E2
 3. Manual local QA on dev URL for changed user flows.
 4. Manual Vercel preview QA for changed user flows (same flows verified in preview).
 
+Quality-gate evidence rule:
+
+- `npm run lint:quality-gates` runs inside both the full and docs-only verification lanes.
+- For non-docs changes, it requires a changed `docs/task-briefs/in-progress/...` brief and checks that the brief contains evidence language for each triggered quality-risk surface.
+- The gate output also lists scorecard categories where human review is still required, so a passing gate is not treated as a substitute for product, design, architecture, or risk judgment.
+
 Docs-only lane rule:
 
 - `npm run verify:pre-pr` and `npm run verify:pre-merge` keep the same command names for all PRs.
