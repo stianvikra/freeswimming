@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
+import { getManualPoolCategoryLabelClass } from "@/components/my-library/workouts/sessionStepSurfaceContract";
 import {
   buildProgramGarminReadyExportFileName,
   buildProgramPdfFileName,
@@ -18,6 +19,11 @@ import {
   type ProgramSaveApiResponse,
   type ProgramSummary,
 } from "@/lib/programs/shared";
+import type {
+  WorkoutSummary,
+  WorkoutSummaryPreviewLineItem,
+  WorkoutSummaryPreviewSection,
+} from "@/lib/workouts/shared";
 
 type Props = {
   programLibrary: ProgramLibrarySnapshot;
@@ -28,6 +34,7 @@ type RetryablePreviewError = Error & {
 };
 
 const PROGRAM_EXPORT_PREVIEW_TIMEOUT_MS = 15_000;
+const PROGRAM_SCHEDULED_WORKOUT_PREVIEW_ROW_LIMIT = 6;
 
 function buildProgramExportPreviewError(message: string, status?: number): RetryablePreviewError {
   const error = new Error(message) as RetryablePreviewError;
@@ -75,6 +82,101 @@ function reindexAssignments(assignments: ProgramAssignment[]) {
         ...assignment,
         position,
       }))
+  );
+}
+
+type VisibleWorkoutPreviewSection = Omit<WorkoutSummaryPreviewSection, "rows"> & {
+  rows: WorkoutSummaryPreviewLineItem[];
+};
+
+function buildVisibleWorkoutPreviewSections(
+  sections: WorkoutSummaryPreviewSection[] | null | undefined
+): {
+  visibleSections: VisibleWorkoutPreviewSection[];
+  hiddenRowCount: number;
+} {
+  let remainingRows = PROGRAM_SCHEDULED_WORKOUT_PREVIEW_ROW_LIMIT;
+  let hiddenRowCount = 0;
+  const visibleSections: VisibleWorkoutPreviewSection[] = [];
+
+  for (const section of sections ?? []) {
+    const rows = section.rows.filter((row) => row.text.trim().length > 0);
+    if (rows.length === 0) continue;
+
+    if (remainingRows <= 0) {
+      hiddenRowCount += rows.length;
+      continue;
+    }
+
+    const visibleRows = rows.slice(0, remainingRows);
+    hiddenRowCount += rows.length - visibleRows.length;
+    visibleSections.push({
+      ...section,
+      rows: visibleRows,
+    });
+    remainingRows -= visibleRows.length;
+  }
+
+  return { visibleSections, hiddenRowCount };
+}
+
+function ScheduledWorkoutStepPreview({
+  assignmentId,
+  workout,
+}: {
+  assignmentId: string;
+  workout: WorkoutSummary;
+}) {
+  const { visibleSections, hiddenRowCount } = buildVisibleWorkoutPreviewSections(
+    workout.previewSections
+  );
+
+  if (visibleSections.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid={`program-assignment-step-preview-${assignmentId}`}
+      aria-label={`Scheduled workout step preview for ${workout.title}`}
+      className="mt-3 space-y-2 border-t border-slate-100 pt-3"
+    >
+      {visibleSections.map((section) => {
+        const category = section.category ?? "main";
+
+        return (
+          <div key={section.key} className="space-y-1.5">
+            <p
+              className={`text-[11px] font-semibold tracking-wide uppercase ${getManualPoolCategoryLabelClass(
+                category
+              )}`}
+            >
+              {section.title}
+            </p>
+            <div className="space-y-1 border-l border-slate-200 pl-2">
+              {section.rows.map((row, rowIndex) => (
+                <div key={`${section.key}-${rowIndex}`} className="space-y-0.5">
+                  <p className="text-xs leading-5 break-words text-slate-800">{row.text}</p>
+                  {row.secondaryText ? (
+                    <p className="text-xs leading-5 font-semibold text-blue-800">
+                      {row.secondaryText}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+      {hiddenRowCount > 0 ? (
+        <p
+          data-testid={`program-assignment-step-preview-more-${assignmentId}`}
+          className="text-xs font-medium text-slate-500"
+        >
+          +{hiddenRowCount} more scheduled step{hiddenRowCount === 1 ? "" : "s"}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -474,7 +576,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
               className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             />
           ) : null}
-          <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+          <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold tracking-wide text-blue-700 uppercase">
             Canonical program
           </p>
         </div>
@@ -587,7 +689,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
               <div className="max-w-[48rem]">
                 <label
                   htmlFor="program-draft-title"
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  className="text-xs font-semibold tracking-wide text-slate-500 uppercase"
                 >
                   Program title
                 </label>
@@ -600,7 +702,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                     setDraftTitle(event.target.value);
                     setSuccess("");
                   }}
-                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
                 />
                 <p data-testid="program-editor-save-state" className="mt-3 text-sm text-slate-600">
                   {hasUnsavedChanges
@@ -650,12 +752,12 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                       shell simple and canonical.
                     </p>
                   </div>
-                  <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                     {week.assignments.length} scheduled
                   </p>
                 </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {PROGRAM_WEEKDAY_LABELS.map((dayLabel, dayIndex) => {
                     const pickerKey = `${week.id}-${dayIndex}`;
                     const dayAssignments = days[dayIndex];
@@ -663,7 +765,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                     return (
                       <div
                         key={dayLabel}
-                        className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3"
+                        className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3"
                       >
                         <p className="text-sm font-semibold text-slate-900">{dayLabel}</p>
                         <div className="mt-3 flex flex-col gap-2">
@@ -676,7 +778,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                 [pickerKey]: event.target.value,
                               }))
                             }
-                            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
                           >
                             <option value="">Choose workout</option>
                             {availableWorkouts.map((workout) => (
@@ -690,7 +792,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                             data-testid={`program-day-add-week-${weekIndex}-day-${dayIndex}`}
                             onClick={() => addAssignment(week.id, dayIndex)}
                             disabled={!pickerSelections[pickerKey]}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Add workout
                           </button>
@@ -705,9 +807,10 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                               return (
                                 <div
                                   key={assignment.id}
-                                  className="rounded-xl border border-white bg-white p-3 shadow-sm"
+                                  data-testid={`program-assignment-card-${assignment.id}`}
+                                  className="min-w-0 rounded-xl border border-white bg-white p-3 shadow-sm"
                                 >
-                                  <p className="text-sm font-medium text-slate-900">
+                                  <p className="text-sm font-medium break-words text-slate-900">
                                     {workout?.title ?? "Missing workout reference"}
                                   </p>
                                   <p className="mt-1 text-xs text-slate-500">
@@ -725,8 +828,15 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                       : assignment.workoutId}
                                   </p>
 
+                                  {workout ? (
+                                    <ScheduledWorkoutStepPreview
+                                      assignmentId={assignment.id}
+                                      workout={workout}
+                                    />
+                                  ) : null}
+
                                   <div className="mt-3 space-y-2">
-                                    <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    <label className="block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                                       Move to day
                                     </label>
                                     <select
@@ -797,7 +907,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                <p className="text-xs font-semibold tracking-wide text-sky-700 uppercase">
                   Garmin-ready JSON
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-900">
@@ -808,7 +918,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                 <p
                   data-testid="program-editor-garmin-export-source"
                   data-export-state="canonical"
-                  className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+                  className="mt-2 text-xs font-semibold tracking-wide text-slate-600 uppercase"
                 >
                   {programExportStateLabel}
                 </p>
@@ -857,7 +967,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
               <pre
                 data-testid="program-editor-garmin-export-preview"
-                className="max-h-[320px] overflow-auto whitespace-pre-wrap px-4 py-4 text-xs leading-relaxed text-slate-100"
+                className="max-h-[320px] overflow-auto px-4 py-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-100"
               >
                 {programExportPreview ||
                   (isProgramExportLoading
@@ -870,7 +980,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                <p className="text-xs font-semibold tracking-wide text-amber-700 uppercase">
                   Program PDF
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-900">
@@ -880,7 +990,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                 <p
                   data-testid="program-editor-pdf-source"
                   data-pdf-state="canonical"
-                  className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600"
+                  className="mt-2 text-xs font-semibold tracking-wide text-slate-600 uppercase"
                 >
                   {programPdfStateLabel}
                 </p>
