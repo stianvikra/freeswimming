@@ -16,29 +16,33 @@ Reference: docs/quality/platform-10-10-scorecard.md
 - Uses a quality-gate policy matrix and scorecard mapping.
 - Reuses the reference surface or shared component where UI is touched.
 - Session-step changes use docs/design/session-step-surface-contract.md and shared renderer.
-- API and auth changes require validation, invariant, deterministic behavior, fail-closed authz, unauthorized 401/403 coverage, and negative-path tests.
-- Data work states server-canonical storage, migration, RLS, sync, cache, invalidation, and freshness.
-- External SDK work uses official docs, webhook verification, idempotency, retry, observability, diagnostic, and support evidence.
+- API and auth changes require validation, invariant, deterministic behavior, fail-closed authz, unauthorized 401/403 coverage, no unexpected 500 failure-mode evidence, and negative-path tests.
+- Data work states server-canonical storage, migration, RLS, sync, cache, invalidation, freshness, forbidden/unauthorized negative-path evidence, and fail-closed behavior.
+- External SDK work uses official docs, webhook verification, idempotency, retry, observability, diagnostic, support, failure, and negative-path evidence.
 
 ## Visual Evidence
 
-- Screenshot artifact handoff is required for UI, PDF, export, print, and actual consumed artifact checks.
+- Screenshot artifacts use an artifact folder under output/ with before/after or after/reference naming.
+- Owner screenshot approval stop is required for UI, PDF, export, print, and actual consumed artifact checks.
+- UI changes include keyboard, focus, semantic, responsive, and a11y evidence.
 - Use docs/runbooks/ui-debug-hypothesis-and-handoff.md for high-cost visual/export bugs.
 
 ## Help/Guide And Operator Training Impact
 
 - Route-label-support-surface-impact-sweep covers impact sweep, Help/Guide, and support surface fallout.
+- Impact sweep evidence includes identifiers searched, surfaces checked, and fallout handled.
 
 ## Security, Privacy, And Compliance
 
 - No secrets, privacy leaks, sensitive data, or unsafe analytics event payloads.
-- Stripe, entitlement, checkout, reconciliation, finance, and commerce notes are required when touched.
+- Stripe, entitlement, checkout, refund, invoice, reconciliation, finance, commerce, unauthorized, forbidden, and payment negative-path notes are required when touched.
 
 ## Observability And KPI Contract
 
 - Analytics KPI event evidence must be no-PII and safe payload only.
-- Performance budget, payload, cost, and scale evidence is required.
+- Performance budget, payload, cost, scale, route-level CWV, LCP, JS transfer, and payload budget evidence is required.
 - i18n, locale, localization, and translation readiness evidence is required.
+- Unknown surface classification rationale and stack-fit scope rationale are required for unclassified runtime files.
 
 ## Validation
 
@@ -100,10 +104,116 @@ describe("quality gate evidence", () => {
 
     expect(report.ok).toBe(false);
     expect(report.errors.join("\n")).toContain(
-      "Session-step, workout, and program domain is missing brief evidence for session-step reference contract"
+      "Session-step, workout, and program domain is missing standard brief evidence for session-step reference contract"
     );
     expect(report.errors.join("\n")).toContain(
-      "UI, layout, and brand is missing brief evidence for screenshot evidence path"
+      "UI, layout, and brand is missing blocking brief evidence for screenshot artifact handoff"
+    );
+  });
+
+  it("requires blocking screenshot approval and naming evidence for UI changes", () => {
+    const report = buildQualityGateReport({
+      changedFiles: ["components/ExamplePanel.tsx"],
+      briefRecords: [
+        {
+          path: "docs/task-briefs/in-progress/2026-05-04-example.md",
+          content: `
+            The implementation reuses the reference surface and shared component.
+            Screenshot review will happen.
+            Testing covers the changed behavior.
+          `,
+        },
+      ],
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.blockingMissingEvidence.map((evidence) => evidence.label)).toContain(
+      "screenshot artifact handoff"
+    );
+    expect(report.blockingMissingEvidence.map((evidence) => evidence.label)).toContain(
+      "owner screenshot approval stop"
+    );
+    expect(report.blockingMissingEvidence.map((evidence) => evidence.label)).toContain(
+      "screenshot comparison naming"
+    );
+  });
+
+  it("requires route sweep identifiers and checked surfaces for support changes", () => {
+    const report = buildQualityGateReport({
+      changedFiles: ["app/help/page.tsx"],
+      briefRecords: [
+        {
+          path: "docs/task-briefs/in-progress/2026-05-04-example.md",
+          content: `
+            The route-label-support-surface-impact-sweep runbook is used.
+            Screenshot artifacts use an artifact folder under output/ with before/after naming.
+            Owner screenshot approval stop is required.
+            The UI reuses a reference surface with keyboard, focus, semantic, and responsive evidence.
+          `,
+        },
+      ],
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.blockingMissingEvidence.map((evidence) => evidence.label)).toContain(
+      "sweep identifiers and surfaces"
+    );
+  });
+
+  it("requires payment negative-path evidence for commerce changes", () => {
+    const report = buildQualityGateReport({
+      changedFiles: ["app/api/stripe/checkout/route.ts"],
+      briefRecords: [
+        {
+          path: "docs/task-briefs/in-progress/2026-05-04-example.md",
+          content: `
+            Uses official Stripe SDK docs, webhook verification, idempotency, retry, observability, diagnostic, support, and reconciliation evidence.
+            API behavior has validation, invariant, deterministic, no unexpected 500, and fail-closed 401/403 coverage.
+            Privacy and no secrets boundaries are documented.
+          `,
+        },
+      ],
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.blockingMissingEvidence.map((evidence) => evidence.label)).toContain(
+      "payment negative-path evidence"
+    );
+  });
+
+  it("requires route-level speed or payload evidence for performance changes", () => {
+    const report = buildQualityGateReport({
+      changedFiles: ["scripts/run-perf-budget-check.mjs"],
+      briefRecords: [
+        {
+          path: "docs/task-briefs/in-progress/2026-05-04-example.md",
+          content: `
+            Performance, budget, payload, cost, scale, targeted unit script tests, verify:pre-pr, rollback, devops, and reversible implementation are documented.
+          `,
+        },
+      ],
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.blockingMissingEvidence.map((evidence) => evidence.label)).toContain(
+      "route-level speed or payload target"
+    );
+  });
+
+  it("requires classification rationale for unknown runtime surfaces", () => {
+    const report = buildQualityGateReport({
+      changedFiles: ["config/unclassified-runtime.json"],
+      briefRecords: [
+        {
+          path: "docs/task-briefs/in-progress/2026-05-04-example.md",
+          content: "Targeted tests and rollback evidence are present.",
+        },
+      ],
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.blockingMissingEvidence.map((evidence) => evidence.label)).toContain(
+      "unknown surface classification rationale"
     );
   });
 

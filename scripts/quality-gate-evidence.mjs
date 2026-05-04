@@ -256,20 +256,53 @@ const POLICY_REQUIREMENTS = {
     {
       label: "reference surface or shared UI contract",
       any: ["reference surface", "reference-surface", "shared component", "view-model"],
+      priority: "blocking",
     },
     {
-      label: "screenshot evidence path",
-      any: ["screenshot", "artifact", "visual qa"],
+      label: "screenshot artifact handoff",
+      any: ["screenshot artifacts", "artifact folder", "screenshot artifact handoff", "output/"],
+      priority: "blocking",
+    },
+    {
+      label: "owner screenshot approval stop",
+      any: [
+        "owner screenshot approval",
+        "screenshot approval stop",
+        "visual review stop",
+        "owner approval stop",
+      ],
+      priority: "blocking",
+    },
+    {
+      label: "screenshot comparison naming",
+      any: ["before/after", "after/reference", "before-", "after-", "reference-"],
+      priority: "blocking",
+    },
+    {
+      label: "accessibility and responsive evidence",
+      any: ["keyboard", "focus", "semantic", "responsive", "a11y", "accessibility"],
     },
   ],
   print_export_screenshot: [
     {
       label: "artifact-level validation",
       any: ["artifact", "screenshot", "pdf", "export", "print"],
+      priority: "blocking",
     },
     {
       label: "high-cost UI/export debug path",
       any: ["ui-debug-hypothesis-and-handoff", "high-cost", "actual consumed artifact"],
+      priority: "blocking",
+    },
+    {
+      label: "owner visual approval stop",
+      any: [
+        "owner screenshot approval",
+        "screenshot approval stop",
+        "visual review stop",
+        "owner approval stop",
+      ],
+      priority: "blocking",
     },
   ],
   session_step_domain: [
@@ -291,46 +324,80 @@ const POLICY_REQUIREMENTS = {
         "help/guide",
         "support surface",
       ],
+      priority: "blocking",
+    },
+    {
+      label: "sweep identifiers and surfaces",
+      any: [
+        "identifiers searched",
+        "surfaces checked",
+        "directories/surfaces",
+        "fallout handled",
+      ],
+      priority: "blocking",
     },
   ],
   api_server: [
     {
       label: "failure and negative-path evidence",
       any: ["negative-path", "negative path", "fail-closed", "401", "403"],
+      priority: "blocking",
+    },
+    {
+      label: "unexpected 500/failure-mode evidence",
+      any: ["no unexpected 500", "unexpected 500", "failure-mode", "failure mode"],
+      priority: "blocking",
     },
     {
       label: "validation/invariant contract",
       any: ["validation", "invariant", "deterministic"],
+      priority: "blocking",
     },
   ],
   auth_security: [
     {
       label: "fail-closed security evidence",
       any: ["fail-closed", "negative-path", "negative path", "authz", "unauthorized"],
+      priority: "blocking",
     },
     {
       label: "privacy/secrets boundary",
       any: ["secret", "privacy", "sensitive", "no secrets"],
+      priority: "blocking",
     },
   ],
   data_schema: [
     {
       label: "data boundary and migration evidence",
       any: ["server-canonical", "migration", "rls", "data placement", "sync"],
+      priority: "blocking",
     },
     {
       label: "cache/invalidation evidence",
       any: ["cache", "invalidation", "freshness"],
+      priority: "blocking",
+    },
+    {
+      label: "data negative-path or fail-closed evidence",
+      any: ["negative-path", "negative path", "fail-closed", "forbidden", "unauthorized", "rls"],
+      priority: "blocking",
     },
   ],
   external_services: [
     {
       label: "official integration pattern",
       any: ["official", "sdk", "webhook", "idempotency", "retry"],
+      priority: "blocking",
     },
     {
       label: "support diagnostics",
       any: ["observability", "diagnostic", "support"],
+      priority: "blocking",
+    },
+    {
+      label: "external-service failure evidence",
+      any: ["negative-path", "negative path", "idempotency", "retry", "webhook", "failure"],
+      priority: "blocking",
     },
   ],
   analytics_kpi: [
@@ -343,12 +410,24 @@ const POLICY_REQUIREMENTS = {
     {
       label: "commerce and reconciliation evidence",
       any: ["stripe", "entitlement", "checkout", "reconciliation", "finance"],
+      priority: "blocking",
+    },
+    {
+      label: "payment negative-path evidence",
+      any: ["negative-path", "negative path", "refund", "invoice", "unauthorized", "forbidden"],
+      priority: "blocking",
     },
   ],
   performance_cost: [
     {
       label: "performance and cost evidence",
       any: ["performance", "budget", "payload", "cost", "scale"],
+      priority: "blocking",
+    },
+    {
+      label: "route-level speed or payload target",
+      any: ["route-level", "cwv", "lcp", "js transfer", "payload budget"],
+      priority: "blocking",
     },
   ],
   i18n_content: [
@@ -371,6 +450,19 @@ const POLICY_REQUIREMENTS = {
     {
       label: "test evidence mapping",
       any: ["targeted tests", "targeted unit", "testing", "qa automation"],
+    },
+  ],
+  unknown_runtime: [
+    {
+      label: "unknown surface classification rationale",
+      any: [
+        "unknown surface",
+        "classification rationale",
+        "classification exception",
+        "stack-fit",
+        "scope rationale",
+      ],
+      priority: "blocking",
     },
   ],
 };
@@ -446,6 +538,7 @@ function getRequiredEvidence(classes, options = {}) {
     (POLICY_REQUIREMENTS[changeClass.id] ?? []).map((requirement) => ({
       changeClassId: changeClass.id,
       changeClassLabel: changeClass.label,
+      priority: requirement.priority ?? "standard",
       ...requirement,
     }))
   );
@@ -462,6 +555,7 @@ export function buildQualityGateReport(options) {
   const requiredEvidence = getRequiredEvidence(classes, { docsOnly: nonDocsFiles.length === 0 });
   const errors = [];
   const missingEvidence = [];
+  const blockingMissingEvidence = [];
   const humanJudgmentRequired = [];
 
   if (changedFiles.length === 0) {
@@ -473,6 +567,7 @@ export function buildQualityGateReport(options) {
       nonDocsFiles,
       requiredEvidence,
       missingEvidence,
+      blockingMissingEvidence,
       humanJudgmentRequired: [
         "No changed files were detected; no quality evidence requirements were triggered.",
       ],
@@ -497,10 +592,14 @@ export function buildQualityGateReport(options) {
     }
   }
 
+  blockingMissingEvidence.push(
+    ...missingEvidence.filter((evidence) => evidence.priority === "blocking")
+  );
+
   if (missingEvidence.length > 0) {
     for (const evidence of missingEvidence) {
       errors.push(
-        `${evidence.changeClassLabel} is missing brief evidence for ${evidence.label}. Expected one of: ${evidence.any.join(
+        `${evidence.changeClassLabel} is missing ${evidence.priority} brief evidence for ${evidence.label}. Expected one of: ${evidence.any.join(
           ", "
         )}.`
       );
@@ -525,6 +624,7 @@ export function buildQualityGateReport(options) {
     nonDocsFiles,
     requiredEvidence,
     missingEvidence,
+    blockingMissingEvidence,
     humanJudgmentRequired,
     errors,
   };
@@ -580,7 +680,16 @@ function printSummary(report, baseRef) {
     console.log("[quality-gate] Required evidence:");
     for (const evidence of report.requiredEvidence) {
       const missing = report.missingEvidence.includes(evidence) ? "missing" : "present";
-      console.log(`- ${evidence.changeClassLabel}: ${evidence.label} [${missing}]`);
+      console.log(
+        `- ${evidence.changeClassLabel}: ${evidence.label} (${evidence.priority}) [${missing}]`
+      );
+    }
+  }
+
+  if (report.blockingMissingEvidence.length > 0) {
+    console.log("[quality-gate] Blocking missing evidence:");
+    for (const evidence of report.blockingMissingEvidence) {
+      console.log(`- ${evidence.changeClassLabel}: ${evidence.label}`);
     }
   }
 
