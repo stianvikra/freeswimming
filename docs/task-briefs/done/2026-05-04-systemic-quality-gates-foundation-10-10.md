@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-05-04-systemic-quality-gates-foundation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-04`
 - `updated`: `2026-05-04`
-- `mode`: `end-to-end implementation`
+- `mode`: `shipped`
 
 ## Goal
 
@@ -56,6 +56,43 @@ Critical target categories for `10/10` claim:
 - Testing and QA automation
 - Scalability and cost efficiency
 - DevOps and rollback readiness
+
+## Completion Record
+
+- `completed`: `2026-05-04`
+- `merged_pr`: `#591`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/591`
+- `squash_commit`: `7c37919`
+- `implementation_commit`: `3c45e72`
+- `10/10 claim`: yes - all critical target categories are scored `5/5` with local gate, CI, and merge-preflight evidence.
+
+| Category                                      | Achieved Score | Evidence                                                                                    | Gaps / Notes                                        |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | `lint:quality-gates` classifies changed product/support surfaces and active brief evidence. | No runtime IA changes in this slice.                |
+| UX flow clarity                               | `5/5`          | Gate requires flow-state evidence for UI/workflow classes and passed targeted tests.        | Non-runtime governance slice.                       |
+| Visual design quality                         | `5/5`          | UI/print/layout classes require screenshot evidence; no visual files changed.               | Screenshot handoff N/A for this docs/tooling PR.    |
+| Business logic correctness and data integrity | `5/5`          | Classifier/policy behavior covered by `tests/unit/quality-gate-evidence.test.ts`.           | No product data mutation changed.                   |
+| Admin editor ergonomics                       | `5/5`          | Admin/support workflow classes require Help/Guide or runbook evidence.                      | No admin runtime surface changed.                   |
+| Accessibility (a11y)                          | `5/5`          | UI classes require keyboard/focus/semantic evidence; full Playwright gate passed.           | No a11y-affecting UI diff.                          |
+| Performance (CWV + payloads)                  | `5/5`          | Full perf budget gate passed in `verify:pre-pr`; trend decision recorded in PR body.        | Budget tightening deferred to dedicated slice.      |
+| Data placement and sync boundaries            | `5/5`          | Active brief documents no runtime persistence and future data-boundary requirements.        | No schema/storage change.                           |
+| Caching and invalidation strategy             | `5/5`          | Gate matrix requires cache/freshness evidence for data/schema classes.                      | No cache behavior changed.                          |
+| Reliability and failure handling              | `5/5`          | API/export/UI classes require failure evidence; full CI and local gates passed.             | No new runtime failure path.                        |
+| Security and authz                            | `5/5`          | Security classes require fail-closed/negative-path evidence; CI security smoke passed.      | No authz code changed.                              |
+| Privacy and compliance                        | `5/5`          | Gate output and docs require no secrets/PII in evidence artifacts.                          | No sensitive data touched.                          |
+| Content governance                            | `5/5`          | Scorecard, architecture, testing, and verify runbooks updated with gate behavior.           | No user-facing content payload changed.             |
+| Admin workflow and editability                | `5/5`          | Route/label/support class requires impact-sweep or Help/Guide rationale.                    | No admin workflow label/action changed.             |
+| SEO and crawlability                          | `5/5`          | Public route/metadata classes mapped to SEO evidence in the policy matrix.                  | No public route or metadata changed.                |
+| AI discoverability                            | `5/5`          | AI/content discoverability requirements represented in the scorecard mapping.               | No AI runtime output changed.                       |
+| Analytics and KPI observability               | `5/5`          | Analytics/KPI class requires safe event and no-PII evidence.                                | No tracking payload changed.                        |
+| Commerce and revenue ops                      | `5/5`          | Commerce/finance class requires Stripe/reconciliation evidence.                             | No payment or entitlement code changed.             |
+| Incident response and support operations      | `5/5`          | Support/runbook impact classes and evidence requirements added to the gate.                 | No live incident process changed.                   |
+| Finance and reporting operations              | `5/5`          | Finance/reporting class requires reconciliation evidence when touched.                      | No finance runtime path changed.                    |
+| i18n operational readiness                    | `5/5`          | i18n/content class requires locale-readiness evidence.                                      | No localization-bearing copy changed.               |
+| Stack-fit and dependency discipline           | `5/5`          | No dependency added; deterministic repo-local Node script and docs aligned.                 | No stack exception.                                 |
+| Testing and QA automation                     | `5/5`          | Unit tests, `verify:pre-pr`, CI, `verify:pre-merge`, and `merge:preflight` passed.          | Existing NO_COLOR/passkey warning is carry-forward. |
+| Scalability and cost efficiency               | `5/5`          | Performance/cost class represented; perf budget passed and tightening decision recorded.    | Tightening held for follow-up performance slice.    |
+| DevOps and rollback readiness                 | `5/5`          | PR #591 merged cleanly; rollback is `git revert 7c37919`; closeout PR is docs-only.         | No deployment migration required.                   |
 
 | Category                                      | Mapping  | Target Threshold / Scope Rationale                                                                                                                                        | Evidence                                                  | Expected Closeout Score |
 | --------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------- |
@@ -320,7 +357,7 @@ N/A for this implementation slice because it changes docs, scripts, package veri
 
 ## Git Rhythm Defaults
 
-When this planned brief is later executed:
+When this implementation brief is executed:
 
 - create a feature branch from current `main`,
 - commit and push after the planned brief is moved to `in-progress` and after each validated implementation checkpoint,
@@ -331,18 +368,14 @@ When this planned brief is later executed:
 
 ## Automation Mode
 
-Planning creation mode:
-
-- plan-only documentation update.
-
-Future implementation mode:
+Implementation mode:
 
 - automation-first once owner explicitly asks to execute this brief,
 - pause only for sandbox approvals, missing credentials, screenshot approval if visual behavior changes, or real product/quality-gate decisions.
 
 ## Branch Hygiene Defaults
 
-When execution starts:
+During execution:
 
 - work from a feature branch based on updated `main`,
 - after merge and local sync, run post-merge preflight,
@@ -351,11 +384,11 @@ When execution starts:
 
 ## PR Browser Rule
 
-When execution starts and a PR is opened or updated, use the repo Safari PR workflow by default and avoid replacing the owner active tab unless it already belongs to the target PR.
+When a PR is opened or updated, use the repo Safari PR workflow by default and avoid replacing the owner active tab unless it already belongs to the target PR.
 
 ## Manual QA URL Rule
 
-N/A for this planning-only brief.
+N/A for this docs/tooling implementation.
 
 If future implementation includes browser QA, assistant opens exact local or preview URLs in Safari by default and gives one concrete owner action at a time.
 
@@ -365,3 +398,5 @@ If future implementation includes browser QA, assistant opens exact local or pre
 - `2026-05-04 | working tree | owner approved end-to-end implementation; brief moved to in-progress, V1 quality-gate evidence classifier added, verify/docs-only lanes wired to lint:quality-gates, and operator docs updated | next: run targeted script/unit/brief validation`
 - `2026-05-04 | working tree | targeted validation passed: npm run lint:quality-gates PASS, npx vitest run tests/unit/quality-gate-evidence.test.ts PASS, npm run lint PASS, npm run typecheck PASS, npm run lint:briefs:all PASS | next: run npm run verify:pre-pr full lane`
 - `2026-05-04 | working tree | npm run verify:pre-pr PASS on full lane: branch-current, lint:quality-gates, lint/admin/env/pr-body, lint, typecheck, unit, build, perf budgets, and Playwright all green; Playwright result 108 passed / 348 skipped | next: commit scoped implementation and rerun verify:pre-pr on final commit`
+- `2026-05-04 | 3c45e72 | implementation committed, pushed, and opened as PR #591; npm run verify:pre-pr PASS on current HEAD, GitHub CI PASS, npm run verify:pre-merge PASS, and npm run merge:preflight -- --assert-ready PASS | next: owner-approved merge`
+- `2026-05-04 | 7c37919 | PR #591 squash-merged to main; post-merge preflight requested this docs-only closeout move from in-progress to done | next: ship closeout PR`
