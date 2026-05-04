@@ -70,7 +70,7 @@
     "stripe": "^22.1.0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.2",
+    "@axe-core/playwright": "^4.11.3",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4.2.4",
     "@testing-library/jest-dom": "^6.9.1",
@@ -83,9 +83,9 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "husky": "^9.1.7",
-    "jsdom": "^29.1.0",
+    "jsdom": "^29.1.1",
     "lint-staged": "^16.4.0",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.13",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4.2.4",
