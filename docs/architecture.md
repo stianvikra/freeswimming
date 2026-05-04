@@ -27,6 +27,9 @@
 
 ## Stack Practice Gates
 
+- Systemic quality gate:
+  - `npm run lint:quality-gates` classifies changed files by quality-risk surface, maps them to scorecard evidence, and fails non-docs changes that lack a changed in-progress brief or required evidence language.
+  - The gate is intentionally not a replacement for product/design/architecture judgment; it makes required evidence and remaining human review explicit before broad verification.
 - React/Next.js:
   - prefer shared components, typed adapter/view-model contracts, and clear server/client boundaries before route-local duplication,
   - pages own routing and data loading; shared domain UI should live under `components/` or a narrower feature module.
