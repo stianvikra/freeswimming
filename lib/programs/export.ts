@@ -6,8 +6,10 @@ import {
 } from "@/lib/programs/shared";
 import {
   buildWorkoutGarminReadyExport,
+  buildWorkoutSummaryPreviewSections,
   type WorkoutEditorRecord,
   type WorkoutGarminReadyExport,
+  type WorkoutSummaryPreviewSection,
 } from "@/lib/workouts/shared";
 import { BRAND_FONT_PUBLIC_PATH, BRAND_PDF_LOGO_PATH } from "@/lib/brand";
 
@@ -85,6 +87,7 @@ type ProgramPdfAssignment = {
   metaLine: string | null;
   status: "ready" | "review";
   reviewDetails: string[];
+  stepSections: WorkoutSummaryPreviewSection[];
 };
 
 type ProgramPdfDay = {
@@ -291,6 +294,9 @@ export function buildProgramPdfModel(
               )
               .filter((issue): issue is ProgramExportIssue => Boolean(issue))
               .map((issue) => issue.detail),
+          stepSections: workoutsById.has(assignment.workoutId)
+            ? buildWorkoutSummaryPreviewSections(workoutsById.get(assignment.workoutId)?.draft)
+            : [],
         })),
       })),
     })),
@@ -743,6 +749,77 @@ export function buildProgramPdfHtmlDocument(
         margin-top: 6px;
       }
 
+      .assignment-sections {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .assignment-section {
+        --section-accent: var(--accent);
+        --section-surface: #f8fbff;
+        border-left: 4px solid var(--section-accent);
+        background: var(--section-surface);
+        padding: 10px 0 10px 12px;
+      }
+
+      .assignment-section[data-step-category="warmup"] {
+        --section-accent: #2563eb;
+        --section-surface: #eff6ff;
+      }
+
+      .assignment-section[data-step-category="main"],
+      .assignment-section[data-step-category="swim"] {
+        --section-accent: #0f766e;
+        --section-surface: #ecfdf5;
+      }
+
+      .assignment-section[data-step-category="cooldown"] {
+        --section-accent: #7c3aed;
+        --section-surface: #f5f3ff;
+      }
+
+      .assignment-section[data-step-category="rest"] {
+        --section-accent: #64748b;
+        --section-surface: #f8fafc;
+      }
+
+      .assignment-section-title {
+        margin: 0;
+        color: var(--section-accent);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .assignment-step-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .assignment-step-row {
+        display: grid;
+        gap: 3px;
+      }
+
+      .assignment-step-primary,
+      .assignment-step-secondary {
+        margin: 0;
+        line-height: 1.45;
+      }
+
+      .assignment-step-primary {
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .assignment-step-secondary {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
       .footer-note {
         margin-top: 24px;
         border-top: 1px solid var(--line);
@@ -1020,6 +1097,7 @@ function renderProgramPdfAssignmentHtml(assignment: ProgramPdfAssignment) {
         </ul>
       `
       : "";
+  const stepSectionsHtml = renderProgramPdfAssignmentStepSectionsHtml(assignment.stepSections);
 
   return `
     <article class="assignment-card">
@@ -1036,7 +1114,47 @@ function renderProgramPdfAssignmentHtml(assignment: ProgramPdfAssignment) {
           : ""
       }
       ${reviewListHtml}
+      ${stepSectionsHtml}
     </article>
+  `;
+}
+
+function renderProgramPdfAssignmentStepSectionsHtml(sections: WorkoutSummaryPreviewSection[]) {
+  if (sections.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="assignment-sections" aria-label="Scheduled workout steps">
+      ${sections
+        .map(
+          (section) => `
+            <section
+              class="assignment-section"
+              data-step-category="${escapeHtml(section.category ?? "main")}"
+            >
+              <h5 class="assignment-section-title">${escapeHtml(section.title)}</h5>
+              <div class="assignment-step-list">
+                ${section.rows
+                  .map(
+                    (row) => `
+                      <div class="assignment-step-row">
+                        <p class="assignment-step-primary">${escapeHtml(row.text)}</p>
+                        ${
+                          row.secondaryText
+                            ? `<p class="assignment-step-secondary">${escapeHtml(row.secondaryText)}</p>`
+                            : ""
+                        }
+                      </div>
+                    `
+                  )
+                  .join("")}
+              </div>
+            </section>
+          `
+        )
+        .join("")}
+    </div>
   `;
 }
 

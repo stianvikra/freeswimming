@@ -5,6 +5,7 @@ import {
   buildProgramGarminReadyExportFileName,
   buildProgramPdfFileName,
   buildProgramPdfHtmlDocument,
+  buildProgramPdfModel,
 } from "@/lib/programs/export";
 import type { ProgramEditorRecord } from "@/lib/programs/shared";
 import type { WorkoutEditorRecord } from "@/lib/workouts/shared";
@@ -222,6 +223,116 @@ describe("program exports", () => {
     expect(html).toContain("Monday");
     expect(html).toContain("Printable review workout");
     expect(html).toContain("Ready for the planned Garmin/export handoff.");
-    expect(html).not.toContain("Reverse IM order (RIMO)");
+    expect(html).toContain("Reverse IM order (RIMO)");
+  });
+
+  it("renders scheduled workout step sections in program PDF from the shared workout view contract", () => {
+    const draft = buildDraft({
+      title: "Structured threshold swim",
+      totalDistanceM: 600,
+      steps: [
+        {
+          id: "step-1",
+          category: "warmup",
+          name: "Warmup swim",
+          stroke: "freestyle",
+          intensity: "easy",
+          durationMode: "distance",
+          distanceM: 200,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-2",
+          category: "rest",
+          name: "Warmup rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.5,
+          targetSummary: "",
+          notes: "",
+        },
+        {
+          id: "step-3",
+          category: "main",
+          name: "Main repeat swim",
+          stroke: "freestyle",
+          intensity: "moderate",
+          durationMode: "distance",
+          distanceM: 100,
+          timeMin: null,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-4",
+          category: "rest",
+          name: "Repeat rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.25,
+          targetSummary: "",
+          notes: "",
+          repeatGroupId: "repeat-1",
+          repeatCount: 4,
+          repeatEndingRestMode: "skip_last_rest",
+        },
+        {
+          id: "step-5",
+          category: "rest",
+          name: "Set rest",
+          stroke: "choice",
+          intensity: "easy",
+          durationMode: "fixed_rest",
+          distanceM: null,
+          timeMin: 0.75,
+          targetSummary: "",
+          notes: "",
+          postSetRestForRepeatGroupId: "repeat-1",
+        },
+      ],
+    });
+    const program = buildProgramRecord();
+    const workoutsById = new Map([["workout-1", buildWorkoutRecord({ draft })]]);
+    const model = buildProgramPdfModel(program, workoutsById, {
+      exportedAt: "2026-03-25T18:30:00.000Z",
+    });
+    const html = buildProgramPdfHtmlDocument(program, workoutsById, {
+      exportedAt: "2026-03-25T18:30:00.000Z",
+    });
+    const assignment = model.weeks[0]?.days[0]?.assignments[0];
+
+    expect(assignment?.stepSections).toMatchObject([
+      {
+        title: "Warmup",
+        category: "warmup",
+        rows: [{ text: "200m · Freestyle · Easy", secondaryText: "Rest 0:30" }],
+      },
+      {
+        title: "Main",
+        category: "main",
+        rows: [
+          {
+            text: expect.stringContaining("4 x 100m · Freestyle · Moderate"),
+            secondaryText: "Set rest 0:45",
+          },
+        ],
+      },
+    ]);
+    expect(html).toContain('aria-label="Scheduled workout steps"');
+    expect(html).toContain('data-step-category="warmup"');
+    expect(html).toContain('data-step-category="main"');
+    expect(html).toContain("200m · Freestyle · Easy");
+    expect(html).toContain("Rest 0:30");
+    expect(html).toContain("4 x 100m · Freestyle · Moderate");
+    expect(html).toContain("Set rest 0:45");
   });
 });
