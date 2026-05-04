@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-04-program-builder-scheduled-workout-step-preview-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-04`
 - `updated`: `2026-05-04`
@@ -123,9 +123,39 @@ N/A with rationale: this slice only adds read-only detail inside an authenticate
 
 Revert this PR. No schema rollback, data repair, cache purge, finance action, or customer communication is required.
 
+## Closeout Score Outcome
+
+Critical target categories for `10/10` claim:
+
+- `Product goals and IA`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+
+- `10/10 claim`: yes
+
+| Category                                      | Achieved Score | Evidence                                                                                                      | Notes                                                                                                     |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#589`, Program Builder diff, session-step surface contract update, and approved screenshot handoff.       | Scheduled workouts now expose the same compact step structure as reference surfaces.                      |
+| UX flow clarity                               | `5/5`          | Focused component tests and desktop/mobile screenshot approval.                                               | Users can scan assigned day structure without opening export/PDF.                                         |
+| Visual design quality                         | `5/5`          | After/reference screenshots in `output/program-builder-step-preview-parity-2026-05-04-131036`.                | Desktop/mobile cards fit without overlap; no product-rendering files changed after capture.               |
+| Business logic correctness and data integrity | `5/5`          | Component tests, typecheck, code review, local gates, and green CI.                                           | The UI consumes existing read-only `WorkoutSummary.previewSections`; assignment semantics did not change. |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions and full verification lane.                                                        | Preview text remains semantic readable content; no new unlabeled controls were added.                     |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency/fetch; `npm run verify:pre-pr`, perf budgets, CI, and `verify:pre-merge` passed.            | Perf trend tightening is deferred to the dedicated AW-010 track.                                          |
+| Data placement and sync boundaries            | `5/5`          | Data-boundary review and unchanged API/database diff.                                                         | Saved programs/workouts remain server-canonical; previews are derived from the current snapshot.          |
+| Reliability and failure handling              | `5/5`          | Tests cover missing preview sections and fallback content.                                                    | Missing workouts and no-preview workouts keep deterministic useful cards.                                 |
+| Content governance                            | `5/5`          | Shared preview-section contract reuse and `docs/design/session-step-surface-contract.md` update.              | Section labels/rest wording remain centralized through existing workout summary helpers.                  |
+| Stack-fit and dependency discipline           | `5/5`          | Existing React/TypeScript contracts reused; zero new dependencies.                                            | No program-local parser or parallel step interpreter was introduced.                                      |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, green CI, `verify:pre-merge`, and post-merge preflight. | Local and remote gates passed before merge; PR-body CI failure was corrected and rerun green.             |
+| Scalability and cost efficiency               | `5/5`          | Row-limited rendering and already-loaded summary data.                                                        | Planner cards avoid unbounded step expansion and add no service/runtime cost.                             |
+| DevOps and rollback readiness                 | `5/5`          | PR `#589` merged, no migration, and post-merge closeout.                                                      | Rollback is `git revert eb1ab50`.                                                                         |
+
 ## Checkpoint Log
 
 - `2026-05-04 | in-progress | created implementation brief from owner command to implement Program Builder scheduled workout step preview parity from clean main | next: render existing workout preview sections in scheduled cards and add focused tests`
 - `2026-05-04 | implementation | Program Builder scheduled workout cards now render compact read-only step previews from existing workout summary preview sections with fallback coverage for missing preview data; widened the planner day grid and fixed mobile overflow with min-width/full-width controls; targeted component test, typecheck, scoped ESLint, and lint:briefs:all pass | next: capture after/reference screenshot handoff before verify:pre-pr`
 - `2026-05-04 | screenshot-review | captured after/reference artifacts in /Users/stianvikra/freeswimming/output/program-builder-step-preview-parity-2026-05-04-131036 for Program Builder scheduled cards on desktop/mobile plus Program PDF reference; visual files were regenerated after the mobile overflow fix | next: owner screenshot approval or corrections before npm run verify:pre-pr`
-- `2026-05-04 | pre-pr | owner approved screenshot handoff; npm run verify:pre-pr passed the full lane with lint, typecheck, unit tests, build, perf budgets, and E2E (108 passed, 348 skipped); perf trend recommended tightening after four consecutive weekly green runs, held out of this parity PR and recorded for PR summary follow-up | next: commit, push, open PR, monitor CI`
+- `2026-05-04 | pre-pr | owner approved screenshot handoff; npm run verify:pre-pr passed the full lane on commit eca3cf6 with lint, typecheck, unit tests, build, perf budgets, and E2E (107 passed, 349 skipped); perf trend recommended tightening after four consecutive weekly green runs, held out of this parity PR and recorded for PR summary follow-up | next: commit, push, open PR, monitor CI`
+- `2026-05-04 | merged | PR #589 merged to main as eb1ab50 after owner screenshot approval, local verify:pre-pr, green CI after PR-body correction and rerun, local verify:pre-merge, and post-merge preflight | next: brief lifecycle closeout`
+- `2026-05-04 | done | post-merge preflight surfaced this lifecycle closeout; brief moved from in-progress to done with all target categories closed at 5/5 and 10/10 claim recorded | next: docs-only closeout PR`
