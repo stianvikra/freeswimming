@@ -112,6 +112,12 @@ emails, cookies, or tokens.
 | Before        | `<redacted count>`       | `<path + count>`    | `<class>`      | baseline                                           |
 | After         | `<redacted count>`       | `<path + count>`    | `<class>`      | hold, optimize further, temporary Pro, or rollback |
 
+Also record the latest available log timestamp for `edge_logs`, `auth_logs`, and `postgres_logs`.
+If the after window returns `0` rows and the latest relevant log timestamp is still before the
+deployment timestamp, treat the result as insufficient refresh or insufficient traffic, not final
+success evidence. Rerun after the latest `edge_logs` timestamp is later than the deployment and the
+window has either real production traffic or an owner-approved controlled anonymous smoke visit.
+
 Minimum after-metrics:
 
 - `/auth/v1/user` total and highest source class.
