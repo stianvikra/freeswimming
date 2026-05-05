@@ -5,18 +5,15 @@ import ActionButton from "@/components/ActionButton";
 import PressLink from "@/components/ui/PressLink";
 import { BRAND_USAGE } from "@/lib/brand";
 import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   let showDashboardCta = false;
-  if (user) {
+  if (supabase && user) {
     const adminRole = await resolveAdminRoleFromSupabase(supabase, user, {
       allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
     });
@@ -39,11 +36,11 @@ export default async function HomePage() {
             />
 
             <div className="mx-auto max-w-[34rem]">
-              <p className="text-[15px] font-medium leading-6 text-slate-700 sm:text-[16px]">
+              <p className="text-[15px] leading-6 font-medium text-slate-700 sm:text-[16px]">
                 Olympic dreams? <span className="font-semibold text-slate-900">Wrong channel.</span>
               </p>
 
-              <h1 className="mx-auto mt-1.5 max-w-[13ch] text-[30px] font-semibold leading-[1.02] text-slate-900 sm:mt-2 sm:text-[40px]">
+              <h1 className="mx-auto mt-1.5 max-w-[13ch] text-[30px] leading-[1.02] font-semibold text-slate-900 sm:mt-2 sm:text-[40px]">
                 Adult learner?
               </h1>
 

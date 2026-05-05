@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import PoolsidePreviewPageClient from "@/components/my-library/workouts/PoolsidePreviewPageClient";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -34,10 +34,7 @@ function buildCurrentSearch(searchParams: Record<string, string | string[] | und
 
 export default async function PoolsidePreviewPage({ searchParams }: Props) {
   const resolvedSearchParams = await searchParams;
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   if (!user) {
     redirect(

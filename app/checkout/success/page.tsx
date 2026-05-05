@@ -1,7 +1,7 @@
 import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -15,17 +15,14 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   const params = await searchParams;
   const rawSessionId = typeof params.session_id === "string" ? params.session_id : "";
   const sessionId = rawSessionId.startsWith("{") ? "" : rawSessionId;
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getServerSupabaseUserIfAuthCookiePresent();
   const libraryHref = user ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
   const libraryCta = user ? "Download from My Library" : "Sign in to My Library";
   const claimHref = "/claim?next=%2Fmy-library";
 
   return (
     <SiteChrome>
-      <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 pb-16 pt-28">
+      <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 pt-28 pb-16">
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Thanks, your payment was received</h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">

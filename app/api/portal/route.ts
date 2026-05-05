@@ -4,7 +4,7 @@ import { attachGuestEntitlementsByEmail, normalizeEmail } from "@/lib/commerce/e
 import { getSafePortalReturnPath, pickActiveStripeCustomerId } from "@/lib/commerce/portal";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/supabase/env";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { createStripeClient } from "@/lib/stripe/server";
 
 type PortalBody = {
@@ -25,7 +25,9 @@ function jsonNoStore(body: unknown, status = 200) {
 
 async function resolveStripeCustomerId(params: {
   stripe: Stripe;
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+  supabase: NonNullable<
+    Awaited<ReturnType<typeof getServerSupabaseUserIfAuthCookiePresent>>["supabase"]
+  >;
   userId: string;
   userEmail: string | null;
 }): Promise<string | null> {
@@ -110,12 +112,9 @@ export async function POST(request: Request) {
   }
 
   const returnPath = getSafePortalReturnPath(body.returnPath, "/my-library");
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     return jsonNoStore({ ok: false, error: "Unauthorized." }, 401);
   }
 

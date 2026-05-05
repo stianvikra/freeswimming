@@ -7,7 +7,7 @@ import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
 import SiteChrome from "@/components/SiteChrome";
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import { requestMagicLink, verifySignInCode } from "@/app/auth/sign-in/actions";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -23,10 +23,7 @@ export const metadata: Metadata = {
 export default async function SignInPage({ searchParams }: Props) {
   const params = await searchParams;
   const nextPath = getSafeNextPath(typeof params.next === "string" ? params.next : null);
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   if (user) {
     redirect(nextPath);
@@ -42,7 +39,7 @@ export default async function SignInPage({ searchParams }: Props) {
 
   return (
     <SiteChrome>
-      <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 pb-16 pt-28">
+      <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 pt-28 pb-16">
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Sign in to My Library</h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
@@ -83,7 +80,7 @@ export default async function SignInPage({ searchParams }: Props) {
                       required
                       readOnly
                       defaultValue={email}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 shadow-sm ring-blue-300 transition outline-none focus:ring-2"
                     />
                   </div>
                   <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
@@ -102,7 +99,7 @@ export default async function SignInPage({ searchParams }: Props) {
                         autoComplete="one-time-code"
                         autoFocus
                         required
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm ring-blue-300 transition outline-none focus:ring-2"
                         placeholder="123456"
                       />
                     </div>
@@ -136,7 +133,7 @@ export default async function SignInPage({ searchParams }: Props) {
                     autoComplete="email"
                     required
                     defaultValue={email}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm outline-none ring-blue-300 transition focus:ring-2"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm ring-blue-300 transition outline-none focus:ring-2"
                     placeholder="you@example.com"
                   />
                 </div>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
 import TrackCheckoutCancel from "@/components/analytics/TrackCheckoutCancel";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
@@ -35,12 +35,9 @@ function getKindCopy(product: CatalogProduct) {
 }
 
 export default async function MyLibraryPage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     redirect("/auth/sign-in?next=%2Fmy-library");
   }
 

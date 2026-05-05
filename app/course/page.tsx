@@ -734,6 +734,8 @@ function CoursePageClient() {
   }, [previewEnabled, previewMode, previewModeParam]);
 
   useEffect(() => {
+    if (!authStateLoaded || !signedInUserId) return;
+
     let cancelled = false;
 
     const loadRuntimeFlags = async () => {
@@ -763,7 +765,7 @@ function CoursePageClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authStateLoaded, signedInUserId]);
 
   const mainMenuItems = useMemo(
     () => getMainMenuItems({ includeDashboard: dashboardVisible }),
@@ -898,14 +900,17 @@ function CoursePageClient() {
     let mounted = true;
     const supabase = createBrowserSupabaseClient();
 
-    void supabase.auth.getUser().then(({ data, error }) => {
+    void supabase.auth.getSession().then(({ data, error }) => {
       if (!mounted) return;
       if (error) {
         setSignedInUserId(null);
+        setDashboardVisible(false);
         setAuthStateLoaded(true);
         return;
       }
-      setSignedInUserId(data.user?.id ?? null);
+      const nextSignedInUserId = data.session?.user.id ?? null;
+      setSignedInUserId(nextSignedInUserId);
+      if (!nextSignedInUserId) setDashboardVisible(false);
       setAuthStateLoaded(true);
     });
 
@@ -913,7 +918,9 @@ function CoursePageClient() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      setSignedInUserId(session?.user?.id ?? null);
+      const nextSignedInUserId = session?.user?.id ?? null;
+      setSignedInUserId(nextSignedInUserId);
+      if (!nextSignedInUserId) setDashboardVisible(false);
       setAuthStateLoaded(true);
     });
 
@@ -2106,7 +2113,7 @@ function CoursePageClient() {
       <div
         aria-hidden
         className={cx(
-          "pointer-events-none fixed bottom-[calc(88px+env(safe-area-inset-bottom))] top-[72px] z-40 sm:hidden",
+          "pointer-events-none fixed top-[72px] bottom-[calc(88px+env(safe-area-inset-bottom))] z-40 sm:hidden",
           swipeHint.direction === "prev" ? "left-0" : "right-0"
         )}
         style={{ width: `${swipeShapeWidth}px` }}
@@ -2138,7 +2145,7 @@ function CoursePageClient() {
         </div>
         <div
           className={cx(
-            "bg-white/92 absolute left-1/2 top-1/2 flex h-[72px] w-[44px] items-center justify-center rounded-full border text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.12)] transition-[transform,opacity,color,border-color,background-color] duration-[120ms] ease-out",
+            "absolute top-1/2 left-1/2 flex h-[72px] w-[44px] items-center justify-center rounded-full border bg-white/92 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.12)] transition-[transform,opacity,color,border-color,background-color] duration-[120ms] ease-out",
             swipeNearThreshold
               ? "border-blue-300/88 bg-blue-50/92 text-blue-700"
               : "border-slate-300/82"
@@ -2172,9 +2179,9 @@ function CoursePageClient() {
   const swipeNuxToast =
     showSwipeNux && !drawerOpen ? (
       <div className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-40 px-5 sm:hidden">
-        <div className="border-slate-200/78 mx-auto max-w-[520px] rounded-2xl border bg-white/95 px-4 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.12)] backdrop-blur-sm">
+        <div className="mx-auto max-w-[520px] rounded-2xl border border-slate-200/78 bg-white/95 px-4 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.12)] backdrop-blur-sm">
           <div className="flex items-start gap-3">
-            <p className="flex-1 text-[12px] font-medium leading-5 text-slate-700">
+            <p className="flex-1 text-[12px] leading-5 font-medium text-slate-700">
               Swipe from either side to switch lessons, or use{" "}
               <span className="font-semibold">Lessons</span> and{" "}
               <span className="font-semibold">Next/Prev</span>.
@@ -2199,7 +2206,7 @@ function CoursePageClient() {
         className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[75] px-4 sm:bottom-6"
       >
         <div className="mx-auto max-w-[520px] rounded-[22px] border border-emerald-200/70 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(16,185,129,0.14),rgba(255,255,255,0)_62%),rgba(255,255,255,0.97)] p-4 shadow-[0_16px_46px_rgba(15,23,42,0.16)] backdrop-blur-sm">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
+          <div className="text-[11px] font-semibold tracking-[0.08em] text-emerald-700 uppercase">
             Progress backup
           </div>
           <h3 className="mt-1 text-[17px] font-semibold text-slate-900">
@@ -2238,7 +2245,7 @@ function CoursePageClient() {
         className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[70] px-4 sm:bottom-6"
       >
         <div className="mx-auto max-w-[520px] rounded-[22px] border border-blue-200/70 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.14),rgba(255,255,255,0)_62%),rgba(255,255,255,0.95)] p-4 shadow-[0_16px_46px_rgba(15,23,42,0.16)] backdrop-blur-sm">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">
+          <div className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
             Quick access
           </div>
           <h3 className="mt-1 text-[17px] font-semibold text-slate-900">Install app</h3>
@@ -2249,7 +2256,7 @@ function CoursePageClient() {
             </p>
           ) : null}
           {showInstallIosGuide ? (
-            <div className="bg-white/88 mt-2 rounded-2xl border border-blue-100/70 p-3">
+            <div className="mt-2 rounded-2xl border border-blue-100/70 bg-white/88 p-3">
               <p className="text-[13px] font-semibold text-slate-900">
                 Install on iPhone/iPad (Safari)
               </p>
@@ -2261,7 +2268,7 @@ function CoursePageClient() {
             </div>
           ) : null}
           {showInstallMacSafariGuide ? (
-            <div className="bg-white/88 mt-2 rounded-2xl border border-blue-100/70 p-3">
+            <div className="mt-2 rounded-2xl border border-blue-100/70 bg-white/88 p-3">
               <p className="text-[13px] font-semibold text-slate-900">Install on Mac (Safari)</p>
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
                 <li>Open File in Safari.</li>
@@ -2559,7 +2566,7 @@ function CoursePageClient() {
           />
           {previewBanner}
 
-          <section className="lg:bg-white/96 mt-2 rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)] lg:border-slate-300/70 lg:shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
+          <section className="mt-2 rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex items-center justify-between gap-2">
@@ -2591,7 +2598,7 @@ function CoursePageClient() {
                         ? "bg-blue-50 text-blue-700 ring-blue-100/80"
                         : markDoneBlockedByGate
                           ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
-                          : "bg-white/92 ring-slate-200/72 text-slate-700"
+                          : "bg-white/92 text-slate-700 ring-slate-200/72"
                     )}
                   >
                     {isLessonDone ? "Done" : "Mark as done"}
@@ -2674,7 +2681,7 @@ function CoursePageClient() {
                   onClick={toggleOverview}
                   aria-expanded={overviewExpanded}
                   aria-controls="course-overview-details"
-                  className="bg-white/92 inline-flex min-h-[42px] items-center justify-center rounded-2xl px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70 lg:bg-white lg:ring-slate-300/70"
+                  className="inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70 lg:bg-white lg:ring-slate-300/70"
                 >
                   {overviewExpanded ? "Hide details" : "Overview details"}
                 </PressButton>
@@ -2743,10 +2750,10 @@ function CoursePageClient() {
             {overviewExpanded ? (
               <div
                 id="course-overview-details"
-                className="border-slate-200/68 bg-white/78 lg:bg-white/92 mt-2 rounded-2xl border p-3 lg:border-slate-300/65"
+                className="mt-2 rounded-2xl border border-slate-200/68 bg-white/78 p-3 lg:border-slate-300/65 lg:bg-white/92"
               >
-                <div className="bg-slate-50/72 rounded-2xl border border-slate-200/70 p-3">
-                  <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/72 p-3">
+                  <div className="text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
                     Jump to lesson
                   </div>
                   {previewLessonMeta ? (
@@ -2779,7 +2786,7 @@ function CoursePageClient() {
                             Module {previewLessonMeta.moduleIndex} of{" "}
                             {previewLessonMeta.moduleCount}
                           </span>
-                          <span className="mt-0.5 block text-[10px] font-medium leading-[1.15] text-slate-600">
+                          <span className="mt-0.5 block text-[10px] leading-[1.15] font-medium text-slate-600">
                             Lesson {previewLessonMeta.globalLessonIndex} of {totalLessons}
                           </span>
                         </span>
@@ -2822,7 +2829,7 @@ function CoursePageClient() {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="mt-3 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  <div className="mt-3 text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
                     Additional information
                   </div>
                 </div>
@@ -2845,13 +2852,13 @@ function CoursePageClient() {
             ) : null}
           </section>
 
-          <section className="border-slate-200/72 bg-white/96 mt-3 rounded-[24px] border p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)] lg:border-slate-300/70 lg:bg-white">
+          <section className="mt-3 rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)] lg:border-slate-300/70 lg:bg-white">
             <div className="relative overflow-hidden rounded-[20px] shadow-[0_12px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/75">
               {!showVideoOverlay ? (
                 <>
                   <div
                     aria-hidden
-                    className="absolute inset-y-0 left-0 z-[3] w-[22%] min-w-[68px] max-w-[112px] touch-pan-y"
+                    className="absolute inset-y-0 left-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
                     onTouchStart={(event) => beginSwipeFromVideoEdge("prev", event)}
                     onTouchMove={(event) => {
                       event.stopPropagation();
@@ -2868,7 +2875,7 @@ function CoursePageClient() {
                   />
                   <div
                     aria-hidden
-                    className="absolute inset-y-0 right-0 z-[3] w-[22%] min-w-[68px] max-w-[112px] touch-pan-y"
+                    className="absolute inset-y-0 right-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
                     onTouchStart={(event) => beginSwipeFromVideoEdge("next", event)}
                     onTouchMove={(event) => {
                       event.stopPropagation();
@@ -2902,7 +2909,7 @@ function CoursePageClient() {
                   }
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(59,130,246,0.06),rgba(255,255,255,0))]" />
-                  <div className="from-slate-900/16 absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t via-slate-900/5 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-900/16 via-slate-900/5 to-transparent" />
                   <div className="relative flex h-full flex-col gap-3">
                     <div className="flex items-center justify-between gap-3">
                       <span className="flex min-w-0 items-center gap-2">
@@ -2912,19 +2919,19 @@ function CoursePageClient() {
                           className="h-8 w-auto shrink-0"
                           sizes="32px"
                         />
-                        <span className="bg-white/82 truncate rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600 ring-1 ring-slate-200/70">
+                        <span className="truncate rounded-full bg-white/82 px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] text-slate-600 uppercase ring-1 ring-slate-200/70">
                           {overviewLabel.moduleName}
                         </span>
                       </span>
                       {overviewLabel.duration ? (
-                        <span className="bg-white/88 shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
+                        <span className="shrink-0 rounded-full bg-white/88 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
                           {overviewLabel.duration}
                         </span>
                       ) : null}
                     </div>
 
                     <div className="mt-auto pb-4 text-center sm:pb-5">
-                      <div className="mx-auto line-clamp-2 max-w-[26ch] text-[18px] font-semibold leading-tight text-slate-900 sm:text-[20px]">
+                      <div className="mx-auto line-clamp-2 max-w-[26ch] text-[18px] leading-tight font-semibold text-slate-900 sm:text-[20px]">
                         {activeLesson.title}
                       </div>
                       <div className="mt-3 flex items-center justify-center">
@@ -2965,7 +2972,7 @@ function CoursePageClient() {
             ) : null}
 
             {videoLoadState === "failed" ? (
-              <div className="bg-white/82 mt-2 rounded-2xl border border-slate-200/70 px-3 py-2 text-[12px] font-medium text-slate-600">
+              <div className="mt-2 rounded-2xl border border-slate-200/70 bg-white/82 px-3 py-2 text-[12px] font-medium text-slate-600">
                 Video did not load.{" "}
                 <PressLink
                   tier="nav"
@@ -3020,7 +3027,7 @@ function CoursePageClient() {
                   {showCommonMistakesSection ? (
                     <div
                       className={cx(
-                        "border-slate-200/72 bg-white/78 lg:border-slate-300/68 rounded-2xl border p-3 lg:bg-white/90",
+                        "rounded-2xl border border-slate-200/72 bg-white/78 p-3 lg:border-slate-300/68 lg:bg-white/90",
                         showGoalSection || showCuesSection ? "mt-5" : ""
                       )}
                     >
@@ -3059,13 +3066,13 @@ function CoursePageClient() {
               {showLessonSecondaryColumn ? (
                 <div
                   className={cx(
-                    "border-slate-200/72 lg:border-slate-300/68 lg:bg-white/96 rounded-[24px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.92))] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:shadow-[0_16px_36px_rgba(15,23,42,0.08)]",
+                    "rounded-[24px] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.92))] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:border-slate-300/68 lg:bg-white/96 lg:shadow-[0_16px_36px_rgba(15,23,42,0.08)]",
                     showLessonPrimaryColumn ? "" : "lg:col-span-3"
                   )}
                 >
                   {showDrillSection ? (
                     <>
-                      <div className="ring-slate-200/72 inline-flex rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1">
+                      <div className="inline-flex rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/72">
                         {drillBadgeLabel}
                       </div>
 
@@ -3084,7 +3091,7 @@ function CoursePageClient() {
                   {showPassOrNextCard ? (
                     <div className={cx(showDrillSection ? "mt-5 p-4" : "p-4", supportCardClass)}>
                       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-                        <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                        <div className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
                           {showPassCriteria ? "Pass criteria" : "Next step"}
                         </div>
                         {showPassCriteria ? (
@@ -3100,7 +3107,7 @@ function CoursePageClient() {
                                 ? "bg-blue-50 text-blue-700 ring-blue-100/80"
                                 : markDoneBlockedByGate
                                   ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
-                                  : "bg-white/92 ring-slate-200/72 text-slate-700 hover:bg-slate-50"
+                                  : "bg-white/92 text-slate-700 ring-slate-200/72 hover:bg-slate-50"
                             )}
                           >
                             {isLessonDone ? "Done" : "Mark as done"}
@@ -3124,7 +3131,7 @@ function CoursePageClient() {
                                 <li key={criterionId}>
                                   <label
                                     htmlFor={criterionId}
-                                    className="bg-white/76 flex cursor-pointer items-start gap-2 rounded-xl px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
+                                    className="flex cursor-pointer items-start gap-2 rounded-xl bg-white/76 px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
                                   >
                                     <input
                                       id={criterionId}
@@ -3152,7 +3159,7 @@ function CoursePageClient() {
                         </div>
                       )}
                       {showPassCriteria ? (
-                        <p className="border-slate-200/72 mt-2 border-t pt-2 text-[12px] font-medium leading-5 text-slate-500">
+                        <p className="mt-2 border-t border-slate-200/72 pt-2 text-[12px] leading-5 font-medium text-slate-500">
                           {doneGateRequired
                             ? activeLessonProgressStatus === "in_progress"
                               ? "Keep checking off what feels true. When all items are true, mark the lesson done."
@@ -3168,7 +3175,7 @@ function CoursePageClient() {
                   {showExtraHelpCard ? (
                     <div
                       className={cx(
-                        "border-slate-200/68 rounded-2xl border bg-white/80 p-4",
+                        "rounded-2xl border border-slate-200/68 bg-white/80 p-4",
                         showDrillSection || showPassOrNextCard ? "mt-5" : ""
                       )}
                     >

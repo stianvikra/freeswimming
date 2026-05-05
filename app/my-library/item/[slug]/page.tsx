@@ -5,7 +5,7 @@ import SiteChrome from "@/components/SiteChrome";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import { getLibraryItemActionCopy } from "@/lib/commerce/library-item-actions";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { getCatalogProductBySlug } from "@/lib/commerce/catalog";
 
 type Params = Promise<{ slug: string }>;
@@ -25,12 +25,9 @@ export default async function LibraryItemPage({ params }: Props) {
   const product = getCatalogProductBySlug(slug);
   if (!product) notFound();
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     redirect(`/auth/sign-in?next=${encodeURIComponent(`/my-library/item/${slug}`)}`);
   }
 
@@ -68,7 +65,7 @@ export default async function LibraryItemPage({ params }: Props) {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
           <h1 className="text-3xl font-bold text-slate-900">{displayTitle}</h1>
           <p className="mt-3 text-sm text-slate-600">{actionCopy.description}</p>

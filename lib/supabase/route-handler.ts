@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { Database } from "@/types/database";
+import { hasSupabaseAuthTokenCookie } from "@/lib/supabase/auth-cookie";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>;
@@ -12,8 +13,7 @@ type PendingCookie = {
   options?: CookieSetOptions;
 };
 
-export async function createRouteHandlerSupabaseClient() {
-  const cookieStore = await cookies();
+function createRouteHandlerSupabaseClientFromCookieStore(cookieStore: CookieStore) {
   const pendingCookies: PendingCookie[] = [];
 
   const supabase = createServerClient<Database>(getSupabaseUrl(), getSupabaseAnonKey(), {
@@ -41,4 +41,16 @@ export async function createRouteHandlerSupabaseClient() {
   };
 
   return { supabase, applySupabaseCookies };
+}
+
+export async function createRouteHandlerSupabaseClient() {
+  const cookieStore = await cookies();
+  return createRouteHandlerSupabaseClientFromCookieStore(cookieStore);
+}
+
+export async function createRouteHandlerSupabaseClientIfAuthCookiePresent() {
+  const cookieStore = await cookies();
+  if (!hasSupabaseAuthTokenCookie(cookieStore.getAll())) return null;
+
+  return createRouteHandlerSupabaseClientFromCookieStore(cookieStore);
 }

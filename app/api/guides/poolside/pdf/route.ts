@@ -8,7 +8,7 @@ import {
   GUIDE_POOLSIDE_PRODUCT_ID,
 } from "@/lib/guides/guide-poolside";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -23,12 +23,9 @@ function jsonNoStore(body: unknown, status = 200) {
 }
 
 export async function GET() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     return jsonNoStore({ ok: false, error: "Unauthorized." }, 401);
   }
 

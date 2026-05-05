@@ -5,7 +5,7 @@ import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import TrainingContextHub, {
   type TrainingGoalPrefill,
 } from "@/components/my-library/training/TrainingContextHub";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 
 export const dynamic = "force-dynamic";
@@ -38,12 +38,9 @@ function getGoalPrefill(
 
 export default async function MyLibraryTrainingPage({ searchParams }: Props) {
   const params = await searchParams;
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     redirect("/auth/sign-in?next=%2Fmy-library%2Ftraining");
   }
 
@@ -52,7 +49,7 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
         <TrackEventOnMount
           eventName="training_context_viewed"
           payload={{
@@ -64,7 +61,7 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                 My Library
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">My Training</h1>

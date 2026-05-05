@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/supabase/env";
 import { getCatalogProductById, getCatalogProducts } from "@/lib/commerce/catalog";
@@ -60,10 +60,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { user } = await getServerSupabaseUserIfAuthCookiePresent();
 
     const stripe = createStripeClient();
     const appUrl = getAppUrl();
