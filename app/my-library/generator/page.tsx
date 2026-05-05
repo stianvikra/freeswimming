@@ -5,7 +5,7 @@ import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import GeneratorIntakeHub from "@/components/my-library/generator/GeneratorIntakeHub";
 import type { GeneratorIntakeBlockSummary } from "@/lib/generator-intake/shared";
 import { loadGeneratorIntakeSnapshot } from "@/lib/generator-intake/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 
 export const dynamic = "force-dynamic";
@@ -31,12 +31,9 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
     redirect(`/my-library/workouts/${selectedWorkoutId}`);
   }
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     redirect("/auth/sign-in?next=%2Fmy-library%2Fgenerator");
   }
 

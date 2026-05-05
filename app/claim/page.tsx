@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getSafeNextPath } from "@/lib/auth/next-path";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -30,10 +30,7 @@ export default async function ClaimPage({ searchParams }: Props) {
   const nextPath = getSafeNextPath(getOptionalQueryString(params.next));
   const prefilledEmail = getOptionalQueryString(params.email) ?? "";
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   if (user) {
     redirect(nextPath);
@@ -47,7 +44,7 @@ export default async function ClaimPage({ searchParams }: Props) {
 
   return (
     <SiteChrome>
-      <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 pb-16 pt-28">
+      <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 pt-28 pb-16">
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Claim your purchases and progress</h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">

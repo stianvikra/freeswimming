@@ -11,17 +11,14 @@ import {
   GUIDE_POOLSIDE_SLUG,
 } from "@/lib/guides/guide-poolside";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function GuidePoolsidePage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     redirect("/auth/sign-in?next=%2Fguides%2Fpoolside");
   }
 
@@ -49,7 +46,7 @@ export default async function GuidePoolsidePage() {
   if (!entitlement) {
     return (
       <SiteChrome>
-        <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+        <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
           <div className="rounded-3xl border border-amber-200 bg-amber-50/60 p-8 shadow-[0_14px_45px_rgba(15,23,42,0.10)]">
             <h1 className="text-3xl font-bold text-slate-900">Guide access required</h1>
             <p className="mt-3 text-sm leading-relaxed text-slate-700">
@@ -79,7 +76,7 @@ export default async function GuidePoolsidePage() {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 p-4">
           <p className="max-w-[660px] text-sm text-slate-600">
             Open drills one by one in the interactive guide and keep the PDF for offline access at

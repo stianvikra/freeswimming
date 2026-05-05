@@ -3,13 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const {
   attachGuestEntitlementsByEmailMock,
   createAdminSupabaseClientMock,
-  createServerSupabaseClientMock,
+  getServerSupabaseUserIfAuthCookiePresentMock,
   createStripeClientMock,
   getAppUrlMock,
 } = vi.hoisted(() => ({
   attachGuestEntitlementsByEmailMock: vi.fn(),
   createAdminSupabaseClientMock: vi.fn(),
-  createServerSupabaseClientMock: vi.fn(),
+  getServerSupabaseUserIfAuthCookiePresentMock: vi.fn(),
   createStripeClientMock: vi.fn(),
   getAppUrlMock: vi.fn(),
 }));
@@ -24,7 +24,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  createServerSupabaseClient: createServerSupabaseClientMock,
+  getServerSupabaseUserIfAuthCookiePresent: getServerSupabaseUserIfAuthCookiePresentMock,
 }));
 
 vi.mock("@/lib/supabase/env", () => ({
@@ -87,16 +87,6 @@ function buildPortalSupabaseClient(input: {
   });
 
   return {
-    auth: {
-      getUser: vi.fn().mockResolvedValue({
-        data: {
-          user: {
-            id: "11111111-1111-4111-8111-111111111111",
-            email: "Swimmer@Example.com",
-          },
-        },
-      }),
-    },
     from,
     select,
   };
@@ -140,7 +130,15 @@ describe("/api/portal route", () => {
       },
     });
     const stripe = buildStripeClient();
-    createServerSupabaseClientMock.mockResolvedValue(supabase);
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({
+      supabase,
+      user: {
+        id: "11111111-1111-4111-8111-111111111111",
+        email: "Swimmer@Example.com",
+      },
+      error: null,
+      hasAuthCookie: true,
+    });
     createStripeClientMock.mockReturnValue(stripe);
 
     const response = await POST(
@@ -175,7 +173,15 @@ describe("/api/portal route", () => {
       },
     });
     const stripe = buildStripeClient();
-    createServerSupabaseClientMock.mockResolvedValue(supabase);
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({
+      supabase,
+      user: {
+        id: "11111111-1111-4111-8111-111111111111",
+        email: "Swimmer@Example.com",
+      },
+      error: null,
+      hasAuthCookie: true,
+    });
     createStripeClientMock.mockReturnValue(stripe);
 
     const response = await POST(buildRequest({ returnPath: "/my-library" }));

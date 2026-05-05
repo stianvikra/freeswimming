@@ -1,12 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
+import { hasSupabaseAuthTokenCookie } from "@/lib/supabase/auth-cookie";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export async function updateSupabaseSession(request: NextRequest) {
   let response = NextResponse.next({
     request,
   });
+
+  if (!hasSupabaseAuthTokenCookie(request.cookies.getAll())) {
+    return response;
+  }
 
   const supabase = createServerClient<Database>(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {

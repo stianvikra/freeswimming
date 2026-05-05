@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-supabase-runtime-auth-cache-and-egress-aftercare-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-05`
@@ -116,6 +116,74 @@ No persisted product entity identity changes are planned. Route params, slugs, t
 - Capture Supabase after-metrics and update runbook/checklist evidence.
 - Update tests for any touched auth/cache behavior.
 
+## Runtime Supabase Inventory And Decisions
+
+| Surface                                                                       | Classification                                 | Before                                                                                                                                     | Decision                                                                                                                                     |
+| ----------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `proxy.ts` -> `updateSupabaseSession`                                         | cross-route auth refresh                       | Called Supabase `auth.getUser()` for every non-static request, including anonymous public traffic.                                         | Skip Supabase entirely unless a non-empty `sb-*-auth-token` cookie is present; signed-in sessions still refresh through middleware.          |
+| `components/SiteChrome.tsx`                                                   | client chrome auth/admin affordance            | Called browser `auth.getUser()` on every page and fetched `/api/runtime/flags` for anonymous sessions.                                     | Use client session state for display-only auth affordance; fetch runtime flags only when a browser session exists.                           |
+| `app/course/page.tsx`                                                         | public course with optional user progress sync | Called browser `auth.getUser()` before deciding whether to hydrate/sync progress, and fetched runtime flags for anonymous course visitors. | Use client session state for sync eligibility and runtime flag fetches; `/api/progress/course` remains server-authoritative and `no-store`.  |
+| Public auth-aware pages (`/`, `/auth/sign-in`, `/claim`, `/checkout/success`) | public, optional identity                      | Called server `auth.getUser()` even when no Supabase auth cookie existed.                                                                  | Use `getServerSupabaseUserIfAuthCookiePresent()` so anonymous public visits avoid Supabase.                                                  |
+| Guide pages and guide PDF APIs                                                | protected entitlement                          | Called server `auth.getUser()` before redirect/`401`, including no-cookie traffic.                                                         | No-cookie requests redirect or return `401` without Supabase; cookie-bearing requests still validate user and entitlement server-side.       |
+| My Library pages                                                              | protected user-specific                        | Called server `auth.getUser()` for no-cookie visits before redirect.                                                                       | No-cookie requests redirect without Supabase; cookie-bearing requests still validate user then load user data via RLS-bound Supabase client. |
+| `/api/runtime/flags`                                                          | private admin affordance                       | Called route-handler `auth.getUser()` for anonymous visitors to decide dashboard visibility.                                               | Return `dashboardVisible: false` without Supabase when no auth cookie exists; signed-in users still resolve admin role server-side.          |
+| `/api/analytics/event`                                                        | public analytics with optional identity        | Called server `auth.getUser()` for every client event.                                                                                     | Anonymous events log with `userId: null` without Supabase; signed-in events may attach validated user ID.                                    |
+| `/api/checkout/session`                                                       | public checkout with optional identity         | Called server `auth.getUser()` before Stripe session creation.                                                                             | Anonymous checkout skips Supabase auth; signed-in checkout keeps optional user association.                                                  |
+| `/api/portal`                                                                 | protected billing portal                       | Called server `auth.getUser()` for no-cookie requests.                                                                                     | No-cookie requests return `401` without Supabase; cookie-bearing requests still validate user and entitlement/customer mapping.              |
+
+## Changed Read Path Cache Matrix
+
+| Path                                     | Cache / freshness                                                                           | Invalidation / correctness                                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Public anonymous auth detection          | No shared cache of identity; request-local cookie presence only.                            | Session state changes are represented by Supabase auth cookies and browser `onAuthStateChange`.      |
+| Middleware session refresh               | Request-bound; skips only when no auth token cookie exists.                                 | Existing signed-in cookie refresh remains unchanged.                                                 |
+| Runtime flags                            | `Cache-Control: no-store`; anonymous fallback is deterministic.                             | Admin visibility re-evaluates per signed-in request/session.                                         |
+| My Library/admin/guide entitlement reads | `force-dynamic`/private route behavior retained.                                            | No private data is cached across users; server Supabase checks remain required once a cookie exists. |
+| Course progress sync                     | Client session state gates optional sync; API remains `no-store` and server-authoritative.  | Server `/api/progress/course` validates current user before hydrate/write.                           |
+| Analytics events                         | `Cache-Control: no-store`; anonymous events use `userId: null`.                             | Payload redaction remains in `trackAnalyticsEvent`; no cookies/tokens are persisted.                 |
+| Checkout and portal APIs                 | Dynamic route behavior retained; identity is optional for checkout and required for portal. | Stripe/entitlement validation remains server-side; portal returns `401` without a validated user.    |
+
+## Gate Evidence Notes
+
+- Failure-mode / no unexpected 500 evidence:
+  - No changed anonymous/no-cookie path now requires Supabase before returning a deterministic
+    fallback, redirect, or `401`.
+  - `/api/runtime/flags` keeps `ok: true` fallback on missing auth cookie and unexpected lookup
+    failures.
+  - `/api/portal` returns `401` when no validated user exists.
+  - Guide PDF APIs return `401` without a user and keep existing `403` entitlement-deny behavior.
+- Official integration pattern:
+  - Supabase usage stays on the existing `@supabase/ssr` server/browser helpers and
+    `@supabase/supabase-js` admin SDK.
+  - Stripe checkout/portal behavior stays on the existing official Stripe SDK helpers; this slice
+    only changes optional user lookup before SDK calls.
+  - No webhook, retry, idempotency, credential, or dependency pattern changes are introduced.
+- Reference surface / shared UI contract:
+  - `SiteChrome` remains the shared chrome reference surface; this patch changes only its
+    session-derived runtime flag fetch gate and keeps markup/labels/classes unchanged.
+  - `app/course/page.tsx` keeps the existing custom course menu renderer and only mirrors the same
+    session gate for its dashboard menu state.
+- Screenshot artifacts / owner screenshot approval stop:
+  - `N/A`: no rendered UI, layout, print, PDF bytes, visual asset, or brand styling changed.
+  - No screenshot artifacts were generated because the changed UI files only alter whether
+    anonymous sessions request runtime flags; the owner visual approval stop is not triggered.
+  - If any product-rendering, export HTML, PDF output, style, or asset file changes later, use
+    `docs/runbooks/ui-debug-hypothesis-and-handoff.md` and run a screenshot artifact handoff before
+    PR update.
+- Print/PDF/export high-cost debug path:
+  - `N/A`: guide PDF routes keep the same consumed PDF artifact path, response headers, and
+    entitlement checks after a validated user exists.
+  - The `ui-debug-hypothesis-and-handoff` and high-cost debug log paths remain unchanged and are
+    required only if a visual/export artifact regression appears.
+- Route/label/support sweep:
+  - Identifiers searched: `runtime/flags`, `dashboardVisible`, `SiteChrome`, `auth.getUser`,
+    `getSession(`, `sb-*-auth-token`, `Supabase egress`, `auth cookie`, `auth-cookie`, and
+    `Cache-Control.*no-store`.
+  - Directories/surfaces checked: `app/`, `components/`, `lib/`, `tests/`, `docs/runbooks/`,
+    `docs/checklists/`, and `docs/task-briefs/`.
+  - Fallout handled: course page runtime-flag fetch now shares the same signed-session gate as
+    `SiteChrome`; runbook and active brief were updated in this PR.
+
 ## Out Of Scope
 
 - Disabling production Supabase for deployed production.
@@ -187,3 +255,6 @@ Minimum sweep targets:
 ## Checkpoint Log
 
 - `2026-05-05 | planned | created after PR #598 closeout to own runtime auth/cache optimization and Supabase after-metric evidence | next: execute only after owner explicitly starts this follow-up brief`
+- `2026-05-05 | in-progress | started from main e39b7f5 on branch supabase-runtime-auth-cache-aftercare-2026-05-05 | next: inventory runtime Supabase auth/PostgREST call sites and identify safe cache/auth reductions`
+- `2026-05-05 | in-progress | implemented auth-cookie-gated Supabase user lookup reductions across middleware, public auth-aware pages, SiteChrome, course sync, My Library pages, guide entitlement surfaces, analytics, checkout, portal, and runtime flags | next: run targeted tests and capture remaining after-metrics evidence after Supabase log refresh`
+- `2026-05-05 | in-progress | first verify:pre-pr attempt stopped at quality-gate evidence wording; added explicit failure-mode, official SDK, reference surface, screenshot N/A, print/export N/A, and route/support sweep evidence | next: rerun verify:pre-pr`

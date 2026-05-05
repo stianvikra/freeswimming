@@ -101,6 +101,25 @@ Owner: operations owner for the week.
 
 Record before/after evidence in the active task brief or PR summary using redacted counts and route names only.
 
+## Runtime After-Metrics Capture
+
+Use this after a containment or runtime-cache PR has been deployed long enough for Supabase logs to
+refresh. Record summarized counts only; do not copy raw rows, headers, IPs, user identifiers,
+emails, cookies, or tokens.
+
+| Metric window | `/auth/v1/user` requests | Top PostgREST paths | Source classes | Decision                                           |
+| ------------- | ------------------------ | ------------------- | -------------- | -------------------------------------------------- |
+| Before        | `<redacted count>`       | `<path + count>`    | `<class>`      | baseline                                           |
+| After         | `<redacted count>`       | `<path + count>`    | `<class>`      | hold, optimize further, temporary Pro, or rollback |
+
+Minimum after-metrics:
+
+- `/auth/v1/user` total and highest source class.
+- Top `5` `/rest/v1/...` paths and whether each is public, protected, admin, entitlement, or user-specific.
+- Whether browser anonymous traffic still creates auth calls.
+- Whether local/CI `node` traffic is absent from production logs unless an intentional smoke run was approved.
+- Finance decision: hold, optimize further, temporary Pro, or rollback.
+
 ## 402 Checklist
 
 If users report failures after egress restriction:

@@ -6,7 +6,7 @@ import Guide0To1000Tracker from "@/components/guides/Guide0To1000Tracker";
 import { loadPublishedGuide0To1000Sessions } from "@/lib/admin/content-published";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import {
   GUIDE_0_TO_1000M_PDF_DOWNLOAD_FILENAME,
   GUIDE_0_TO_1000M_PRODUCT_ID,
@@ -16,12 +16,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function Guide0To1000Page() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     redirect("/auth/sign-in?next=%2Fguides%2F0-1000m");
   }
 
@@ -49,7 +46,7 @@ export default async function Guide0To1000Page() {
   if (!entitlement) {
     return (
       <SiteChrome>
-        <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+        <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
           <div className="rounded-3xl border border-amber-200 bg-amber-50/60 p-8 shadow-[0_14px_45px_rgba(15,23,42,0.10)]">
             <h1 className="text-3xl font-bold text-slate-900">Guide access required</h1>
             <p className="mt-3 text-sm leading-relaxed text-slate-700">
@@ -79,7 +76,7 @@ export default async function Guide0To1000Page() {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pb-20 pt-28">
+      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 p-4">
           <p className="max-w-[600px] text-sm text-slate-600">
             Keep training in the interactive tracker and download the PDF whenever you need an

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isAnalyticsEventName, trackAnalyticsEvent } from "@/lib/analytics/events";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 type AnalyticsEventBody = {
   eventName?: unknown;
@@ -42,10 +42,7 @@ export async function POST(request: Request) {
       ? (body.payload as Record<string, unknown>)
       : undefined;
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   trackAnalyticsEvent({
     eventName,

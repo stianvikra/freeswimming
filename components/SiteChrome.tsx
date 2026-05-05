@@ -52,22 +52,29 @@ export default function SiteChrome({
 }: Props) {
   const pathname = usePathname() ?? "/";
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+  const [hasAuthSession, setHasAuthSession] = useState(false);
   const [dashboardVisible, setDashboardVisible] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     const supabase = createBrowserSupabaseClient();
 
-    void supabase.auth.getUser().then(({ data, error }) => {
+    void supabase.auth.getSession().then(({ data, error }) => {
       if (!mounted || error) return;
-      setSignedInEmail(data.user?.email ?? null);
+      const nextHasAuthSession = Boolean(data.session?.user);
+      setSignedInEmail(data.session?.user.email ?? null);
+      setHasAuthSession(nextHasAuthSession);
+      if (!nextHasAuthSession) setDashboardVisible(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
+      const nextHasAuthSession = Boolean(session?.user);
       setSignedInEmail(session?.user?.email ?? null);
+      setHasAuthSession(nextHasAuthSession);
+      if (!nextHasAuthSession) setDashboardVisible(false);
     });
 
     return () => {
@@ -77,6 +84,10 @@ export default function SiteChrome({
   }, []);
 
   useEffect(() => {
+    if (!hasAuthSession) {
+      return;
+    }
+
     let cancelled = false;
 
     async function loadRuntimeFlags() {
@@ -108,7 +119,7 @@ export default function SiteChrome({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hasAuthSession]);
 
   // Blur active element on route change (best effort)
   useEffect(() => {
@@ -233,7 +244,7 @@ export default function SiteChrome({
             href="/"
             aria-label="Go to home"
             className={[
-              "flex select-none items-center gap-3",
+              "flex items-center gap-3 select-none",
               "rounded-2xl px-2 py-1",
               "[--ui-focus-ring:rgba(255,255,255,0.56)]",
 
@@ -264,7 +275,7 @@ export default function SiteChrome({
                 data-testid="header-dashboard-link"
                 aria-label="Open admin dashboard"
                 className={[
-                  "border-white/38 bg-white/8 hidden min-h-[34px] items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold text-white/95 backdrop-blur-md transition-colors duration-150 md:inline-flex",
+                  "hidden min-h-[34px] items-center gap-2 rounded-xl border border-white/38 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/95 backdrop-blur-md transition-colors duration-150 md:inline-flex",
                   "[--ui-focus-ring:rgba(255,255,255,0.56)]",
                   "[@media(hover:hover)_and_(pointer:fine)]:hover:border-white/60",
                   "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/16",
@@ -290,7 +301,7 @@ export default function SiteChrome({
                   "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/16",
                   "active:bg-white/20",
                   signedInEmail
-                    ? "bg-emerald-300/14 border-emerald-200/35 text-emerald-50"
+                    ? "border-emerald-200/35 bg-emerald-300/14 text-emerald-50"
                     : "border-white/38 bg-white/8 text-white/95",
                 ].join(" ")}
               >

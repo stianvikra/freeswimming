@@ -1,11 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
+import { hasSupabaseAuthTokenCookie } from "@/lib/supabase/auth-cookie";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
-export async function createServerSupabaseClient() {
-  const cookieStore = await cookies();
+type CookieStore = Awaited<ReturnType<typeof cookies>>;
 
+function createServerSupabaseClientFromCookieStore(cookieStore: CookieStore) {
   return createServerClient<Database>(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       getAll() {
@@ -23,4 +24,40 @@ export async function createServerSupabaseClient() {
       },
     },
   });
+}
+
+export async function createServerSupabaseClient() {
+  const cookieStore = await cookies();
+  return createServerSupabaseClientFromCookieStore(cookieStore);
+}
+
+export async function createServerSupabaseClientIfAuthCookiePresent() {
+  const cookieStore = await cookies();
+  if (!hasSupabaseAuthTokenCookie(cookieStore.getAll())) return null;
+
+  return createServerSupabaseClientFromCookieStore(cookieStore);
+}
+
+export async function getServerSupabaseUserIfAuthCookiePresent() {
+  const supabase = await createServerSupabaseClientIfAuthCookiePresent();
+  if (!supabase) {
+    return {
+      supabase: null,
+      user: null,
+      error: null,
+      hasAuthCookie: false,
+    };
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  return {
+    supabase,
+    user: user ?? null,
+    error,
+    hasAuthCookie: true,
+  };
 }

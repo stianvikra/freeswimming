@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import type { WorkoutPoolsideFocusOption } from "@/lib/workouts/shared";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
@@ -44,12 +44,9 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
     notFound();
   }
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
-  if (!user) {
+  if (!supabase || !user) {
     redirect(`/auth/sign-in?next=${encodeURIComponent(`/my-library/workouts/${workoutId}`)}`);
   }
 
@@ -80,7 +77,7 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
       <section
         data-testid="workout-builder-route-shell"
         data-mobile-density="tight"
-        className="mx-auto min-h-screen w-full max-w-[980px] px-3 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-24 sm:px-5 sm:pb-20 sm:pt-28 lg:px-6"
+        className="mx-auto min-h-screen w-full max-w-[980px] px-3 pt-24 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:px-5 sm:pt-28 sm:pb-20 lg:px-6"
       >
         <div
           data-testid="workout-builder-page-card"
@@ -89,7 +86,7 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
         >
           <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                 My Library
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">

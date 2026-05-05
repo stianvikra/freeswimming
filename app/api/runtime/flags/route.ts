@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isUnauthenticatedAuthUserLookupError } from "@/lib/admin/access";
 import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
-import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
+import { createRouteHandlerSupabaseClientIfAuthCookiePresent } from "@/lib/supabase/route-handler";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +42,15 @@ export async function GET() {
   }
 
   try {
-    const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
+    const result = await createRouteHandlerSupabaseClientIfAuthCookiePresent();
+    if (!result) {
+      return noStoreJson({
+        ok: true,
+        flags: fallback,
+      });
+    }
+
+    const { supabase, applySupabaseCookies } = result;
     let dashboardVisible = false;
 
     const {
