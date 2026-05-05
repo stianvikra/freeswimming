@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-supabase-egress-containment-and-runtime-hardening-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-05`
@@ -337,9 +337,40 @@ The implementation must document:
 - Any emergency bypass must be explicit, named, redacted in logs, and documented with owner approval.
 - If runtime auth/cache hardening causes protected route regressions, revert Child B while keeping Child A containment if possible.
 
+## Completion Record
+
+- `completed_pr`: `#598`
+- `merge_commit`: `2657062b47d825f8247cc8ee10d972d082abd6a2`
+- `completed_scope`: Child A Supabase egress containment plus Child C runbook and finance checklist baseline.
+- `10/10 claim`: yes - PR `#598` Child A containment scope only; runtime auth/cache optimization remains owned by `docs/task-briefs/planned/2026-05-05-supabase-runtime-auth-cache-and-egress-aftercare-10-10.md`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                                                                                 |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Business logic correctness and data integrity | `5/5`          | Product auth/admin/entitlement/My Library runtime behavior was not weakened; guardrails prevent local/test/CI production writes by default; `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge` passed.                                          |
+| Data placement and sync boundaries            | `5/5`          | Environment contract defines production, preview, local, test, and ci ownership; local/Playwright/verify defaults use safe example Supabase unless explicit production opt-in is set.                                                                    |
+| Caching and invalidation strategy             | `5/5`          | Child A changed environment and automation boundaries without changing runtime read/cache semantics; private/session-bound data remains unchanged; runtime cache optimization is isolated to the follow-up brief.                                        |
+| Reliability and failure handling              | `5/5`          | Unsafe production Supabase contexts fail early through deterministic script/runtime guard messages; production deploy path remains available; pre-pr, pre-merge, and CI gates passed.                                                                    |
+| Security and authz                            | `5/5`          | Production service-role/live Supabase usage is blocked in unsafe local/test/CI contexts unless explicitly allowed; diagnostics and guard errors avoid logging secrets; protected auth behavior stayed unchanged.                                         |
+| Privacy and compliance                        | `5/5`          | Evidence is summarized with redacted counts and source classes only; no raw tokens, cookies, env values, emails, user IDs, or IP addresses were committed.                                                                                               |
+| Analytics and KPI observability               | `5/5`          | Supabase egress runbook now includes dashboard path, Logs Explorer queries, source classification, and before/after recording slots; baseline showed about 21.6k `/auth/v1/user` calls in 24h from local `node`.                                         |
+| Incident response and support operations      | `5/5`          | `docs/runbooks/supabase-egress-response.md` covers warning response, grace-period/402 symptoms, containment steps, rollback, evidence redaction, and temporary Pro-upgrade criteria.                                                                     |
+| Finance and reporting operations              | `5/5`          | `docs/checklists/finance-reporting-baseline.md` records egress budget ownership, review cadence, warning thresholds, hard-action thresholds, and upgrade/rollback decision rules.                                                                        |
+| Stack-fit and dependency discipline           | `5/5`          | Implementation used repo-native TypeScript helpers, Node scripts, Vitest, Playwright defaults, existing CI env policy, and added no dependencies.                                                                                                        |
+| Testing and QA automation                     | `5/5`          | Targeted Supabase guard tests passed `15/15`; `npm run verify:pre-pr` passed on artifact `artifacts/test-runs/20260505-084557`; `npm run verify:pre-merge` passed on artifact `artifacts/verify-pre-merge/20260505-070141.json`; PR `#598` CI was green. |
+| Scalability and cost efficiency               | `5/5`          | Local/dev/test/CI production Supabase traffic is blocked by default, removing the identified high-volume `node` source; post-deploy metric confirmation is tracked in the follow-up aftercare brief.                                                     |
+| DevOps and rollback readiness                 | `5/5`          | PR `#598` is revertable, opt-in is explicit through `FS_ALLOW_PROD_SUPABASE`, production deployment is not blocked by local/test guardrails, and merge/preflight gates passed before merge.                                                              |
+
+Remaining follow-ups:
+
+- Configure `FS_PRODUCTION_SUPABASE_URL` in local/CI/preview secret/config surfaces for strongest exact-production detection.
+- Capture Supabase after-metrics after dashboard/log refresh and record whether local `node` calls dropped by at least 90%.
+- Execute runtime auth/cache hardening only through the planned follow-up brief, with protected-route negative tests.
+- Handle the performance-budget tighten recommendation in a separate performance-governance slice.
+
 ## Checkpoint Log
 
 - `2026-05-05 | planned | created parent brief after Supabase egress investigation; Child A containment is the first recommended implementation slice | next: owner explicitly executes this brief or Child A before implementation begins`
 - `2026-05-05 | in-progress | started Child A on branch chore/supabase-egress-containment; moved parent brief to in-progress, added runtime/script Supabase egress guardrails, defaulted local verify/Playwright to example Supabase, and began runbook/env docs updates | next: run targeted guardrail tests, fix lint/type issues, then run pre-PR gate`
 - `2026-05-05 | in-progress | Child A validation passed: targeted Supabase guard tests 15/15, lint/typecheck green, guard CLI allows example/test env and blocks known production-origin CI config, npm run verify:pre-pr full lane passed with safe example Supabase defaults (895 unit tests, build, perf budgets, 456 Playwright cases with 82 passed/374 expected skip) | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge readiness`
 - `2026-05-05 | in-progress | perf-budget trend gate recommended tightening after 4 consecutive weekly green runs with 20.3% worst-margin; decision for this PR: hold budget changes because the active scope is Supabase egress containment, record the recommendation in PR summary, and schedule/handle tightening in the next performance-governance slice | next: do not mix performance-budget threshold edits into this ops/security PR`
+- `2026-05-05 | done | PR #598 merged as 2657062 and main synced; post-merge preflight requested docs-only task-brief closeout, moved this brief to done, and recorded Child A completion evidence plus follow-up ownership for runtime auth/cache aftercare | next: open docs-only closeout PR and wait for explicit owner approval before merging it`
