@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-01-platform-architecture-stack-practice-audit-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-01`
 - `updated`: `2026-05-05`
@@ -147,9 +147,13 @@ N/A for this audit slice because it changes architecture/task-brief documentatio
 - targeted `rg`/inventory evidence recorded in the audit output
 - targeted tests only for any implementation changes made by child briefs
 
-## Completion Score Evidence
+## Completion Record
 
-`10/10 claim: yes` for this audit slice only. App-wide strict 10/10 is not claimed.
+- `merged_pr`: `#606`
+- `merge_commit`: `3082935`
+- `completed`: `2026-05-05`
+- `validation`: `npm run verify:pre-pr` PASS, `npm run verify:pre-merge` PASS, GitHub required checks PASS.
+- `10/10 claim`: yes for this audit slice only. App-wide strict 10/10 is not claimed.
 
 | Category                                      | Achieved Score | Evidence                                                                                  | Remaining Gap                                   |
 | --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------- |
@@ -181,3 +185,4 @@ N/A for this audit slice because it changes architecture/task-brief documentatio
 
 - `2026-05-01 | planned | created from AI swim session V1 architecture review: systemic gates are now documented, and this brief owns the broader app-wide audit/decomposition work rather than expanding the UI slice into an unsafe full-app refactor | next: execute as a separate architecture audit after the AI V1 screenshot-gated slice is stable`
 - `2026-05-05 | in-progress | moved from planned to in-progress on branch platform-architecture-stack-practice-audit-2026-05-05, recorded architecture inventory, created audit output, and added four planned P1 child briefs | next: run docs-only validation, commit, push, open PR, then run pre-merge readiness gate`
+- `2026-05-05 | done | PR #606 merged as 3082935 after local verify:pre-pr, local verify:pre-merge, merge-preflight, and CI passed; this closeout moves the brief to done with score evidence | next: complete docs-only closeout PR and run post-merge preflight`
