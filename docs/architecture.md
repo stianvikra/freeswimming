@@ -16,6 +16,8 @@
 - UI pages and components live under `app/*` and `components/*`.
 - Shared helpers and UI primitives live in `components/ui/*`.
 - Database schema + RLS changes are stored as SQL migrations under `supabase/migrations/*`.
+- Route-level data access, authz, service-role, and cache contracts are registered in
+  `docs/architecture/data-access-authz-cache-contract-registry.md`.
 
 ## UI Architecture And Reference Surfaces
 
@@ -37,6 +39,9 @@
   - domain state changes should use canonical types, validation helpers, and deterministic guards rather than ad hoc object mutation.
 - Supabase:
   - schema/RLS changes require explicit migrations, least-privilege policies, generated type updates, and negative-path tests.
+  - route handler changes must preserve the
+    [data access authz/cache registry](architecture/data-access-authz-cache-contract-registry.md)
+    entry for helper choice, service-role usage, cache mode, and expected failure statuses.
 - External services:
   - integrations should use official SDK/docs where practical and define secret handling, idempotency, retries, webhook verification, and support diagnostics in the brief.
 - UI/design:

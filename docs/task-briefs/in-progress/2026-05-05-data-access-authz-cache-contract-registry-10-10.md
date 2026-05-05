@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-data-access-authz-cache-contract-registry-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-05`
@@ -104,6 +104,24 @@ Critical target categories for `10/10` claim:
 - Negative-path test gap matrix.
 - Runbook/checklist cross-links for high-risk routes.
 
+## Implementation Output
+
+- Canonical registry:
+  - `docs/architecture/data-access-authz-cache-contract-registry.md`
+- Architecture index link:
+  - `docs/architecture.md`
+- Runtime behavior:
+  - no runtime behavior changed in this slice,
+  - no schema, RLS, dependency, UI, label, Help/Guide, or route rename change.
+- Runtime enforcement decision:
+  - no immediate P0 security, data-integrity, or cache blocker found that requires code changes in this registry PR,
+  - future runtime enforcement should be split when a route sweep finds a concrete route drift.
+
+## Help / Guide Impact
+
+N/A because this slice changes architecture documentation only. It does not rename admin/user
+workflow labels, actions, Help/Guide surfaces, route params, support recovery paths, or rendered UI.
+
 ## Out Of Scope
 
 - Schema/RLS migrations.
@@ -127,3 +145,5 @@ Critical target categories for `10/10` claim:
 ## Checkpoint Log
 
 - `2026-05-05 | planned | created by platform architecture audit after Supabase egress containment exposed the need for durable route classification across the growing API surface | next: execute before adding new protected API families`
+- `2026-05-05 | in-progress | moved to branch data-access-authz-cache-registry-2026-05-05, added canonical 69-route data/auth/cache registry and architecture index link without runtime changes | next: lint docs, run verify:pre-pr, commit, push, open PR`
+- `2026-05-05 | in-progress | validation passed: npm run lint:briefs, npm run lint:briefs:all, and npm run verify:pre-pr (docs-only lane) | next: commit, push, open PR, monitor CI, run verify:pre-merge`
