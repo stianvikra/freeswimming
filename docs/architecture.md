@@ -44,11 +44,24 @@
 - Testing:
   - shared contracts should have focused unit/component coverage, while route tests cover only route-specific flow differences.
 
+## Latest Architecture Audit
+
+- `2026-05-05`: [Platform Architecture Stack Practice Audit](architecture/platform-architecture-stack-practice-audit-2026-05-05.md)
+- Verdict:
+  - release-safe under the current gates,
+  - no immediate P0 security, data-integrity, production-availability, or rollback blocker found,
+  - app-wide strict 10/10 still requires the planned P1 decomposition/contract-registry briefs created by the audit.
+- Priority follow-ups:
+  - workout/session domain contract decomposition,
+  - admin workspace contract decomposition,
+  - data-access authz/cache contract registry,
+  - external-service contract and observability hardening.
+
 ### Current Architecture Assessment
 
 - The app is on the right React path where it uses shared route components such as `WorkoutEditor`, typed draft contracts, and focused adapter helpers.
-- The main session-step architecture gap is that `WorkoutEditor` still owns too much rendering, grouping, and surface-specific mapping in one large file.
-- The 10/10 target is a smaller shared session-step view-model and renderer that manual builder, AI generator, poolside note, PDF/export, and future planner surfaces consume through typed adapters.
+- The main session-step architecture gap is now broader than one file: `lib/workouts/shared.ts`, `WorkoutEditor`, AI session-generator contracts, display adapters, and export helpers need smaller typed boundaries before broad AI/program work continues.
+- The 10/10 target is a smaller shared workout/session domain model and renderer stack that manual builder, AI generator, poolside note, PDF/export, and future planner surfaces consume through typed adapters.
 - When a shared reference surface changes, the owning PR should sweep related surfaces and either update them in the same slice or record a follow-up brief with the exception.
 
 ## Data Contract (Commerce + Progress)
