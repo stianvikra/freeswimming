@@ -9,11 +9,11 @@ import {
   type SessionDraft,
 } from "@/lib/session-generator-v1/shared";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
+import { normalizeSessionDraftForWorkoutPersistence } from "@/lib/workouts/persistence";
 import {
   buildWorkoutSummaryPreviewSections,
   buildWorkoutSummaryPreviewLineItems,
   buildWorkoutSummaryPreviewText,
-  normalizeSessionDraftForWorkoutPersistence,
   type WorkoutEditorRecord,
   type WorkoutLibrarySnapshot,
   type WorkoutSourceKind,

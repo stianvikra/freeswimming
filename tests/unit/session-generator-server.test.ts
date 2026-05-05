@@ -7,7 +7,7 @@ import {
   getDefaultSessionGeneratorFormState,
   validateSessionGeneratorFormState,
 } from "@/lib/session-generator-v1/shared";
-import { normalizeSessionDraftForWorkoutPersistence } from "@/lib/workouts/shared";
+import { normalizeSessionDraftForWorkoutPersistence } from "@/lib/workouts/persistence";
 import type { GeneratorIntakeHandoffPayload } from "@/lib/generator-intake/shared";
 
 function buildHandoff(): GeneratorIntakeHandoffPayload {

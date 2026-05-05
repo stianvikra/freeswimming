@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-workout-domain-contract-decomposition-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-05`
@@ -107,6 +107,13 @@ Critical target categories for `10/10` claim:
 - AI generated session draft validation/display handoff.
 - Saved workout quick view, program scheduled-workout cards, poolside/PDF/export consumers where touched by extraction.
 
+## Active Slice
+
+- First implementation slice extracts the workout persistence normalization contract from `lib/workouts/shared.ts` into `lib/workouts/persistence.ts`.
+- No UI, PDF HTML, step renderer, route behavior, schema, RLS, or persisted semantics change in this slice.
+- Compatibility is preserved through a `shared.ts` re-export while server-side persistence callers move to the direct module boundary.
+- Server failure-mode evidence: `buildWorkoutInsert`, `buildWorkoutUpdate`, and stored-row hydration still route invalid drafts through the same deterministic `{ ok: false, error }` persistence contract; this refactor adds no unexpected 500 path or new API/server action branch.
+
 ## Out Of Scope
 
 - New workout features.
@@ -130,4 +137,5 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-05 | in-progress | branch feat/workout-domain-contract-decomposition-2026-05-05 | first slice selected: extract persistence normalization from shared workout domain helpers without UI or schema behavior changes | next: run targeted unit/type validation, then pre-PR gate`
 - `2026-05-05 | planned | created by platform architecture audit as the highest-priority decomposition follow-up for workout/session domain concentration | next: execute after current audit PR is merged and before adding broad AI/program step-surface scope`
