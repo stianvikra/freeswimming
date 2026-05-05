@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
+import { normalizeSessionDraftForWorkoutPersistence } from "@/lib/workouts/persistence";
 import {
   buildWorkoutPdfFileName,
   buildWorkoutPdfHtmlDocument,
@@ -13,7 +14,6 @@ import {
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
   haveWorkoutDraftChanges,
-  normalizeSessionDraftForWorkoutPersistence,
   selectWorkoutPoolsideFocusPoints,
   selectWorkoutPoolsideFocusTitles,
 } from "@/lib/workouts/shared";
