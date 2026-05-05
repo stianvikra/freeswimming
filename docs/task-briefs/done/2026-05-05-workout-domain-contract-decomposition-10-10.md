@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-workout-domain-contract-decomposition-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-05`
@@ -137,5 +137,6 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-05 | done | merged PR #610 at 4ade1b4 | persistence normalization extracted to lib/workouts/persistence.ts with compatibility re-export, targeted tests, verify:pre-pr, verify:pre-merge, and required CI green | next: no follow-up required for this slice`
 - `2026-05-05 | in-progress | branch feat/workout-domain-contract-decomposition-2026-05-05 | first slice selected: extract persistence normalization from shared workout domain helpers without UI or schema behavior changes | next: run targeted unit/type validation, then pre-PR gate`
 - `2026-05-05 | planned | created by platform architecture audit as the highest-priority decomposition follow-up for workout/session domain concentration | next: execute after current audit PR is merged and before adding broad AI/program step-surface scope`
