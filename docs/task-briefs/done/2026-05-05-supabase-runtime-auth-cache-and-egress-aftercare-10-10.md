@@ -252,6 +252,35 @@ Minimum sweep targets:
 - Keep PR `#598` Child A guardrails in place unless they are proven to be the root cause.
 - If production egress restriction risk returns before optimization is validated, prefer temporary Pro upgrade over disabling production functionality.
 
+## Post-Deploy After-Metrics Follow-Up
+
+Source: Supabase Management API `logs.all` with redacted aggregate queries only. No raw rows,
+headers, IPs, user identifiers, emails, cookies, tokens, or raw env values were stored.
+
+PR `#600` production deployment completed at `2026-05-05T10:47:00Z`; PR `#601` docs-only
+production deployment completed at `2026-05-05T10:56:13Z`.
+
+| Metric window                                                       | `/auth/v1/user` requests | Top PostgREST paths                              | Source classes                         | Decision                                                                                             |
+| ------------------------------------------------------------------- | ------------------------ | ------------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| After #600 deploy, `2026-05-05T10:47:00Z` to `2026-05-05T11:16:37Z` | `0`                      | none observed; total `/rest/v1/...` requests `0` | none observed; total edge requests `0` | hold, but evidence is not final because the latest available edge/auth logs still predate deployment |
+
+Refresh evidence captured in the same session:
+
+- `edge_logs`: `0` rows in the after window; latest available edge log in the broader
+  24-hour query was `2026-05-05T05:47:15Z`, before the production deploy.
+- `auth_logs`: `0` rows in the after window; latest available auth log in the broader
+  24-hour query was `2026-05-05T01:18:19Z`, before the production deploy.
+- `postgres_logs`: `0` rows in the after window; latest broader-window postgres log was
+  `2026-05-05T10:45:45Z`, just before the runtime deployment completed.
+- Browser anonymous traffic: no post-deploy auth calls were observed, but the evidence is
+  inconclusive until `edge_logs` refresh past the deploy timestamp or a controlled anonymous
+  smoke visit is approved and visible in logs.
+- Local/CI `node` traffic: absent in the observed post-deploy window, but this is also
+  inconclusive because no post-deploy edge rows were available.
+- Finance decision: hold. No temporary Pro upgrade or rollback is indicated from these
+  after-window counts alone. Rerun after `edge_logs` latest timestamp is later than
+  `2026-05-05T10:47:00Z` and the window has real production traffic or approved controlled smoke.
+
 ## Checkpoint Log
 
 - `2026-05-05 | planned | created after PR #598 closeout to own runtime auth/cache optimization and Supabase after-metric evidence | next: execute only after owner explicitly starts this follow-up brief`
@@ -259,3 +288,4 @@ Minimum sweep targets:
 - `2026-05-05 | in-progress | implemented auth-cookie-gated Supabase user lookup reductions across middleware, public auth-aware pages, SiteChrome, course sync, My Library pages, guide entitlement surfaces, analytics, checkout, portal, and runtime flags | next: run targeted tests and capture remaining after-metrics evidence after Supabase log refresh`
 - `2026-05-05 | in-progress | first verify:pre-pr attempt stopped at quality-gate evidence wording; added explicit failure-mode, official SDK, reference surface, screenshot N/A, print/export N/A, and route/support sweep evidence | next: rerun verify:pre-pr`
 - `2026-05-05 | done | PR #600 merged at 166a719 after local verify:pre-pr, local verify:pre-merge, and CI passed; remaining Supabase after-metrics are recorded as post-deploy/log-refresh follow-up evidence | next: post-merge closeout PR moves this brief to done`
+- `2026-05-05 | post-deploy evidence | queried Supabase aggregate logs for the #600 production deploy window; after window returned 0 edge/auth/postgres rows, but latest available edge/auth logs still predate deployment, so evidence is recorded as hold plus rerun-needed rather than final success proof | next: rerun after edge_logs refresh past 2026-05-05T10:47:00Z with real traffic or owner-approved anonymous smoke`
