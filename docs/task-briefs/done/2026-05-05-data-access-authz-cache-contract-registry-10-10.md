@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-data-access-authz-cache-contract-registry-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-05`
@@ -142,8 +142,37 @@ workflow labels, actions, Help/Guide surfaces, route params, support recovery pa
 - targeted route/helper tests if runtime enforcement is added
 - `npm run verify:pre-pr`
 
+## Completion Record
+
+- `merged_pr`: `#608`
+- `merge_commit`: `71a533a`
+- `completed`: `2026-05-05`
+- `validation`: `npm run lint:briefs` PASS, `npm run lint:briefs:all` PASS, `npm run verify:pre-pr` PASS, `npm run verify:pre-merge` PASS, GitHub required checks PASS.
+- `10/10 claim`: yes for this docs/contract registry slice. No app-wide runtime enforcement claim is made.
+
+| Category                                      | Achieved Score | Evidence                                                                                                | Remaining Gap                                                       |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Registry classifies all `69` route handlers by purpose, owner, auth class, and support behavior.        | None for registry slice.                                            |
+| Business logic correctness and data integrity | `5/5`          | Route rows name canonical data, mutation semantics, stable IDs, and deterministic failure paths.        | Runtime enforcement deferred until a concrete route drift is found. |
+| Performance (CWV + payloads)                  | `5/5`          | Public/no-cookie helper rules and cache modes are documented for route changes.                         | None for docs-only slice.                                           |
+| Data placement and sync boundaries            | `5/5`          | Registry records server-canonical, local-only, sync, conflict, and cache policy expectations.           | None for registry slice.                                            |
+| Caching and invalidation strategy             | `5/5`          | Each route class and route row states `no-store`, `private, no-store`, dynamic, or side-effect posture. | None for registry slice.                                            |
+| Reliability and failure handling              | `5/5`          | High-risk negative-path matrix maps auth, validation, missing entity, provider, and schema paths.       | None for registry slice.                                            |
+| Security and authz                            | `5/5`          | Protected/admin/service-role/public optional-identity paths are explicitly classified.                  | Runtime enforcement deferred until a concrete route drift is found. |
+| Privacy and compliance                        | `5/5`          | Registry and support mapping require redacted diagnostics and safe user-data-rights behavior.           | None for registry slice.                                            |
+| Content governance                            | `5/5`          | Architecture index makes the registry the route contract source for future changes.                     | None.                                                               |
+| Analytics and KPI observability               | `5/5`          | Analytics route optional-identity and safe payload expectations are registered.                         | None.                                                               |
+| Commerce and revenue ops                      | `5/5`          | Checkout, portal, webhook, entitlement, guide PDF, and download resend routes are classified.           | External-service matrix remains the next deeper service follow-up.  |
+| Incident response and support operations      | `5/5`          | Registry maps high-risk surfaces to auth, Supabase egress, GDPR, QR, admin, and core-flow runbooks.     | None.                                                               |
+| Finance and reporting operations              | `5/5`          | Commerce/entitlement route rows require reconcilable Stripe/customer/session/product IDs.               | None for registry slice.                                            |
+| Stack-fit and dependency discipline           | `5/5`          | Implemented with repo-native docs and no new dependency or runtime surface.                             | None.                                                               |
+| Testing and QA automation                     | `5/5`          | Registry maps route classes to existing unit/E2E/security evidence and cheapest future test layer.      | None for registry slice.                                            |
+| Scalability and cost efficiency               | `5/5`          | Supabase egress and optional-identity helper rules prevent future accidental anonymous auth chatter.    | Runtime enforcement deferred until a concrete route drift is found. |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only registry is reversible; runtime enforcement must ship as scoped child slices.                 | None.                                                               |
+
 ## Checkpoint Log
 
 - `2026-05-05 | planned | created by platform architecture audit after Supabase egress containment exposed the need for durable route classification across the growing API surface | next: execute before adding new protected API families`
 - `2026-05-05 | in-progress | moved to branch data-access-authz-cache-registry-2026-05-05, added canonical 69-route data/auth/cache registry and architecture index link without runtime changes | next: lint docs, run verify:pre-pr, commit, push, open PR`
 - `2026-05-05 | in-progress | validation passed: npm run lint:briefs, npm run lint:briefs:all, and npm run verify:pre-pr (docs-only lane) | next: commit, push, open PR, monitor CI, run verify:pre-merge`
+- `2026-05-05 | done | PR #608 merged as 71a533a after local verify:pre-pr, local verify:pre-merge, and CI passed; post-merge preflight requested this docs-only closeout | next: commit closeout PR, merge it, sync main, rerun post-merge preflight`
