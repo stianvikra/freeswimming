@@ -9,6 +9,7 @@ import {
   getSupabaseServiceRoleKey,
   getSupabaseUrl,
 } from "@/lib/supabase/env";
+import { getBrowserSupabaseAnonKey, getBrowserSupabaseUrl } from "@/lib/supabase/browser-env";
 
 describe("supabase env helpers", () => {
   afterEach(() => {
@@ -32,6 +33,22 @@ describe("supabase env helpers", () => {
     expect(() => getSupabaseUrl()).toThrowError(
       "Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL"
     );
+  });
+
+  it("keeps browser public Supabase env reads separate from server egress guard", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project-ref.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-key");
+    vi.stubEnv("NODE_ENV", "test");
+
+    expect(getBrowserSupabaseUrl()).toBe("https://project-ref.supabase.co");
+    expect(getBrowserSupabaseAnonKey()).toBe("anon-key");
+  });
+
+  it("keeps server Supabase URL reads fail-closed in local/test contexts", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project-ref.supabase.co");
+    vi.stubEnv("NODE_ENV", "test");
+
+    expect(() => getSupabaseUrl()).toThrowError("Unsafe Supabase configuration");
   });
 
   it("resolves app url from explicit env first, then vercel fallback", () => {
