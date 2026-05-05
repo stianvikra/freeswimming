@@ -260,9 +260,10 @@ headers, IPs, user identifiers, emails, cookies, tokens, or raw env values were 
 PR `#600` production deployment completed at `2026-05-05T10:47:00Z`; PR `#601` docs-only
 production deployment completed at `2026-05-05T10:56:13Z`.
 
-| Metric window                                                       | `/auth/v1/user` requests | Top PostgREST paths                              | Source classes                         | Decision                                                                                             |
-| ------------------------------------------------------------------- | ------------------------ | ------------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| After #600 deploy, `2026-05-05T10:47:00Z` to `2026-05-05T11:16:37Z` | `0`                      | none observed; total `/rest/v1/...` requests `0` | none observed; total edge requests `0` | hold, but evidence is not final because the latest available edge/auth logs still predate deployment |
+| Metric window                                                       | `/auth/v1/user` requests | Top PostgREST paths                              | Source classes                                                                                              | Decision                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------- | ------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| After #600 deploy, `2026-05-05T10:47:00Z` to `2026-05-05T11:16:37Z` | `0`                      | none observed; total `/rest/v1/...` requests `0` | none observed; total edge requests `0`                                                                      | hold, but evidence is not final because the latest available edge/auth logs still predate deployment                                                                                                                                   |
+| After log refresh, `2026-05-05T10:47:00Z` to `2026-05-05T14:34:45Z` | `13`                     | none observed; total `/rest/v1/...` requests `0` | `local/automation node` `12` auth-user calls plus `1` auth-token call; `cli/http client` `1` auth-user call | hold. The baseline `/auth/v1/user` volume dropped from about `21.6k/24h` to `13` requests in the post-deploy window and PostgREST chatter was absent, but keep a monitor/follow-up item for the remaining low-volume node auth source. |
 
 Refresh evidence captured in the same session:
 
@@ -281,6 +282,30 @@ Refresh evidence captured in the same session:
   after-window counts alone. Rerun after `edge_logs` latest timestamp is later than
   `2026-05-05T10:47:00Z` and the window has real production traffic or approved controlled smoke.
 
+Second refresh evidence captured after Supabase logs advanced past deployment:
+
+- Window: `2026-05-05T10:47:00Z` to `2026-05-05T14:34:45Z`.
+- Latest available log timestamps in that window:
+  - `edge_logs`: `2026-05-05T12:25:55Z` with `14` rows.
+  - `auth_logs`: `2026-05-05T12:25:55Z` with `16` rows.
+  - `postgres_logs`: `2026-05-05T12:25:54Z` with `4` rows.
+- `/auth/v1/user`: `13` total requests. Highest source class was `local/automation node`
+  with `12` requests.
+- Top PostgREST paths: none observed; total `/rest/v1/...` requests was `0`.
+- Source/user-agent classes: `local/automation node` produced `12` `/auth/v1/user`
+  requests and `1` `/auth/v1/token` request; `cli/http client` produced `1`
+  `/auth/v1/user` request. No raw user-agent strings, headers, IPs, user identifiers,
+  emails, cookies, tokens, or raw env values were stored.
+- Browser anonymous traffic: no browser-class `/auth/v1/user` calls were observed in
+  the aggregate window.
+- Local/CI `node` traffic: not fully absent. The remaining node-class auth traffic is
+  low-volume and did not trigger PostgREST chatter, but it should be checked again in
+  the next production/log-refresh window or if Supabase egress moves back above the
+  runbook `Watch` threshold.
+- Finance decision: hold. No temporary Pro upgrade or rollback is indicated by this
+  refreshed evidence; create a follow-up mitigation only if node-class auth calls keep
+  appearing outside intentional short smoke checks.
+
 ## Checkpoint Log
 
 - `2026-05-05 | planned | created after PR #598 closeout to own runtime auth/cache optimization and Supabase after-metric evidence | next: execute only after owner explicitly starts this follow-up brief`
@@ -289,3 +314,4 @@ Refresh evidence captured in the same session:
 - `2026-05-05 | in-progress | first verify:pre-pr attempt stopped at quality-gate evidence wording; added explicit failure-mode, official SDK, reference surface, screenshot N/A, print/export N/A, and route/support sweep evidence | next: rerun verify:pre-pr`
 - `2026-05-05 | done | PR #600 merged at 166a719 after local verify:pre-pr, local verify:pre-merge, and CI passed; remaining Supabase after-metrics are recorded as post-deploy/log-refresh follow-up evidence | next: post-merge closeout PR moves this brief to done`
 - `2026-05-05 | post-deploy evidence | queried Supabase aggregate logs for the #600 production deploy window; after window returned 0 edge/auth/postgres rows, but latest available edge/auth logs still predate deployment, so evidence is recorded as hold plus rerun-needed rather than final success proof | next: rerun after edge_logs refresh past 2026-05-05T10:47:00Z with real traffic or owner-approved anonymous smoke`
+- `2026-05-05 | refreshed after-metrics | queried Supabase aggregate logs after edge/auth/postgres logs advanced past the #600 deploy; refreshed window showed 13 /auth/v1/user requests, 0 PostgREST requests, no browser-class auth calls, and low-volume local/automation node still present as the top source class | next: hold finance/rollback posture and monitor one later production/log-refresh window for whether node-class auth calls recur outside intentional smoke checks`
