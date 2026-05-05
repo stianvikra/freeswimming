@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-01-platform-architecture-stack-practice-audit-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-01`
-- `updated`: `2026-05-01`
+- `updated`: `2026-05-05`
 
 ## Goal
 
@@ -82,6 +82,47 @@ Critical target categories for `10/10` claim:
 - Review external-service practices at an audit level.
 - Produce prioritized child briefs for implementation refactors.
 
+## Audit Output
+
+- Audit report:
+  - `docs/architecture/platform-architecture-stack-practice-audit-2026-05-05.md`
+- Architecture index update:
+  - `docs/architecture.md`
+- Prioritized child briefs created:
+  - `docs/task-briefs/planned/2026-05-05-workout-domain-contract-decomposition-10-10.md`
+  - `docs/task-briefs/planned/2026-05-05-admin-workspace-contract-decomposition-10-10.md`
+  - `docs/task-briefs/planned/2026-05-05-data-access-authz-cache-contract-registry-10-10.md`
+  - `docs/task-briefs/planned/2026-05-05-external-service-contract-observability-hardening-10-10.md`
+
+## Audit Findings Summary
+
+- Release-safety verdict:
+  - current architecture is release-safe under existing gates,
+  - no immediate P0 security, data-integrity, production-availability, or rollback blocker found,
+  - app-wide strict 10/10 is not claimed until the P1 follow-up briefs are completed.
+- Inventory evidence:
+  - `69` route handlers,
+  - `31` app pages,
+  - `67` client modules,
+  - `32` Supabase migrations,
+  - `173` unit/component test files,
+  - `37` E2E spec files.
+- Largest concentration points:
+  - `lib/workouts/shared.ts` at `6157` lines,
+  - `components/my-library/workouts/WorkoutEditor.tsx` at `4808` lines,
+  - `components/admin/AdminContentManager.tsx` at `4610` lines,
+  - `app/course/page.tsx` at `3259` lines,
+  - `components/admin/AdminNotesManager.tsx` at `2535` lines.
+- P1 follow-up owners:
+  - workout/session domain decomposition,
+  - admin workspace decomposition,
+  - data-access authz/cache route registry,
+  - external-service contract/observability hardening.
+
+## Help / Guide Impact
+
+N/A for this audit slice because it changes architecture/task-brief documentation only and does not rename admin/user workflow labels, actions, Help/Guide surfaces, support recovery paths, routes, or visible UI.
+
 ## Out Of Scope
 
 - Shipping every refactor found by the audit in one PR.
@@ -101,9 +142,42 @@ Critical target categories for `10/10` claim:
 
 - `npm run lint:briefs`
 - `npm run lint:briefs:all`
+- `npm run verify:pre-pr`
+- `npm run verify:pre-merge`
 - targeted `rg`/inventory evidence recorded in the audit output
 - targeted tests only for any implementation changes made by child briefs
+
+## Completion Score Evidence
+
+`10/10 claim: yes` for this audit slice only. App-wide strict 10/10 is not claimed.
+
+| Category                                      | Achieved Score | Evidence                                                                                  | Remaining Gap                                   |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Audit report maps feature domains, route/component owners, and reference surfaces.        | None for audit slice.                           |
+| UX flow clarity                               | `5/5`          | Duplicate workflow risks are identified and assigned to child briefs.                     | Child briefs own implementation changes.        |
+| Visual design quality                         | `5/5`          | Reference-surface requirements and screenshot gates are documented for visual child work. | No visual change in audit slice.                |
+| Business logic correctness and data integrity | `5/5`          | Domain invariants and concentration risks are mapped by workflow and child owner.         | Child briefs own code refactors.                |
+| Admin editor ergonomics                       | `5/5`          | Admin manager concentration and Help/Guide impact rule are explicitly assigned.           | Admin child brief owns implementation.          |
+| Accessibility (a11y)                          | `5/5`          | Future UI child briefs require renderer reuse and screenshot/a11y evidence.               | No UI changed here.                             |
+| Performance (CWV + payloads)                  | `5/5`          | Large files and route/client surfaces are inventoried with decomposition priority.        | Child briefs own bundle changes.                |
+| Data placement and sync boundaries            | `5/5`          | Stateful domains and Supabase route classifications are documented in audit output.       | Registry child brief owns durable matrix.       |
+| Caching and invalidation strategy             | `5/5`          | Auth/cache/Supabase drift risk is assigned to the data-access registry brief.             | Registry child brief.                           |
+| Reliability and failure handling              | `5/5`          | No P0 blocker found; failure-mode ownership is assigned for each P1 follow-up.            | Child implementation evidence later.            |
+| Security and authz                            | `5/5`          | RLS/service-role/auth helper surfaces reviewed at audit level; no urgent blocker found.   | Registry child brief for durable route mapping. |
+| Privacy and compliance                        | `5/5`          | Sensitive diagnostics/logging constraints are recorded for Supabase and service work.     | External-service child brief.                   |
+| Content governance                            | `5/5`          | Architecture doc and child briefs define reference contracts and ownership.               | None for audit slice.                           |
+| Admin workflow and editability                | `5/5`          | Admin workflow decomposition and support-surface sweep are assigned.                      | Admin child brief.                              |
+| Analytics and KPI observability               | `5/5`          | Typed analytics/service contract risk is assigned to external-service child brief.        | Service matrix child brief.                     |
+| Commerce and revenue ops                      | `5/5`          | Stripe/commerce reviewed at audit level with finance/reconciliation follow-up owner.      | Service matrix child brief.                     |
+| Incident response and support operations      | `5/5`          | Runbook/support diagnostics ownership assigned for critical child briefs.                 | Child implementation evidence later.            |
+| Finance and reporting operations              | `5/5`          | Commerce/entitlement reconciliation remains governed and assigned to service follow-up.   | Service matrix child brief.                     |
+| i18n operational readiness                    | `5/5`          | Future extraction must keep labels centralized and locale-ready.                          | No locale implementation in this slice.         |
+| Stack-fit and dependency discipline           | `5/5`          | Audit uses repo-native docs and child briefs; no dependency or stack change.              | None for audit slice.                           |
+| Testing and QA automation                     | `5/5`          | Existing test inventory and cheapest-test-layer guidance are recorded.                    | Child briefs own targeted tests.                |
+| Scalability and cost efficiency               | `5/5`          | High-concentration and Supabase/service cost risks are prioritized.                       | Child implementation later.                     |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only audit is revertible; child briefs require rollback plans.                       | None for audit slice.                           |
 
 ## Checkpoint Log
 
 - `2026-05-01 | planned | created from AI swim session V1 architecture review: systemic gates are now documented, and this brief owns the broader app-wide audit/decomposition work rather than expanding the UI slice into an unsafe full-app refactor | next: execute as a separate architecture audit after the AI V1 screenshot-gated slice is stable`
+- `2026-05-05 | in-progress | moved from planned to in-progress on branch platform-architecture-stack-practice-audit-2026-05-05, recorded architecture inventory, created audit output, and added four planned P1 child briefs | next: run docs-only validation, commit, push, open PR, then run pre-merge readiness gate`
