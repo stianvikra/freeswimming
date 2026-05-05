@@ -30,6 +30,10 @@ Use this weekly to confirm commerce/entitlement/reporting consistency for curren
   - Investigate and log differences above threshold (`>= 1` unexplained mismatch).
 - Safety posture:
   - No manual data edits performed without a tracked note (who/when/why).
+- Supabase egress cost posture:
+  - Review Supabase Usage -> Egress for the current billing period.
+  - If egress is above `50%` of quota before mid-cycle, run `docs/runbooks/supabase-egress-response.md`.
+  - If egress is above `80%` of quota or Supabase sends a warning, create or update an active containment brief before more feature work.
 
 ## Automated Session-ID Reconciliation (Required)
 

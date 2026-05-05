@@ -1,3 +1,8 @@
+import {
+  assertSupabaseServiceRoleAllowed,
+  assertSupabaseUrlAllowed,
+} from "@/lib/supabase/egress-guard";
+
 function requireEnvValue(value: string | undefined, name: string): string {
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
@@ -7,7 +12,12 @@ function requireEnvValue(value: string | undefined, name: string): string {
 }
 
 export function getSupabaseUrl(): string {
-  return requireEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL");
+  const value = requireEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL");
+  assertSupabaseUrlAllowed({
+    value,
+    name: "NEXT_PUBLIC_SUPABASE_URL",
+  });
+  return value;
 }
 
 export function getSupabaseAnonKey(): string {
@@ -18,7 +28,12 @@ export function getSupabaseAnonKey(): string {
 }
 
 export function getSupabaseServiceRoleKey(): string {
-  return requireEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY");
+  const value = requireEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY");
+  assertSupabaseServiceRoleAllowed({
+    value,
+    name: "SUPABASE_SERVICE_ROLE_KEY",
+  });
+  return value;
 }
 
 export function getAppUrl(): string {
