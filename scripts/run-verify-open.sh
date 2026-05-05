@@ -44,7 +44,19 @@ echo "[verify-open] Running with SITE_LOCK_ENABLED=0"
 echo "[verify-open] Output log: ${log_file}"
 
 status=0
-if SITE_LOCK_ENABLED=0 npm run verify 2>&1 | tee "${log_file}"; then
+if [ "${FS_ALLOW_PROD_SUPABASE:-0}" = "1" ]; then
+  verify_env=(SITE_LOCK_ENABLED=0)
+else
+  verify_env=(
+    SITE_LOCK_ENABLED=0
+    FS_SUPABASE_ENV=test
+    NEXT_PUBLIC_SUPABASE_URL=https://example.com
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=local-verify-anon-key
+    SUPABASE_SERVICE_ROLE_KEY=local-verify-service-role-key
+  )
+fi
+
+if env "${verify_env[@]}" npm run verify 2>&1 | tee "${log_file}"; then
   status=0
 else
   status=$?

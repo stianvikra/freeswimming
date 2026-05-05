@@ -78,6 +78,7 @@ jobs:
       - name: Run admin e2e suite
         env:
           SITE_LOCK_ENABLED: "0"
+          FS_SUPABASE_ENV: ci
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
