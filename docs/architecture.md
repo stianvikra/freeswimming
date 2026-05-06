@@ -20,6 +20,8 @@
   `docs/architecture/data-access-authz-cache-contract-registry.md`.
 - External service, provider, observability, finance/support, and rollback contracts are
   registered in `docs/architecture/external-service-contract-matrix.md`.
+- Admin workspace module boundaries and planned module entrypoints are registered in
+  `docs/architecture/admin-workspace-module-contracts.md`.
 
 ## UI Architecture And Reference Surfaces
 

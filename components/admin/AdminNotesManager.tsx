@@ -3,10 +3,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
-import {
-  ADMIN_NOTE_CONTEXT_TYPE_VALUES,
-  type AdminNoteContextType,
-} from "@/lib/admin/note-context";
+import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import {
   createAdminNoteStagedImages,
   extractAdminNoteClipboardImage,
@@ -17,22 +14,41 @@ import {
 import {
   buildAdminNoteContextCatalog,
   resolveAdminNoteContextLabel,
-  type AdminNoteContextCatalog,
 } from "@/lib/admin/note-context-catalog";
-import type { AdminCategoryRow } from "@/lib/admin/categories";
-import type { AdminContentItemRow } from "@/lib/admin/content";
 import {
   ADMIN_INCIDENT_SEVERITY_GUIDANCE,
+  ADMIN_NOTES_CONTEXT_TYPE_OPTIONS,
   DEFAULT_ADMIN_NOTES_FILTER_STATE,
+  EMPTY_ADMIN_NOTE_CONTEXT_CATALOG,
+  INITIAL_ADMIN_NOTE_FORM_STATE,
   applyAdminNotesFilterStateToSearchParams,
+  areAdminNotesFilterStatesEqual,
   buildAdminNoteRelatedJumpFilterState,
   buildAdminNoteReferenceLabel,
   buildAdminNotesContextRefOptions,
   buildAdminNotesCounts,
   filterAdminNotes,
+  formatAdminNoteDateLabel,
+  formatAdminNoteImageCountLabel,
+  formatAdminNotePriorityLabel,
+  getAdminNotePriorityBadgeClasses,
+  getTodayAdminNoteDateInputValue,
+  getTodayAdminNoteDateLabel,
+  hasPartialAdminNoteContextSelection,
+  normalizeAdminNoteContextRef,
   parseAdminNotesFilterState,
+  toAdminNoteFormState,
+  type AdminCategoriesResponse,
+  type AdminContentResponse,
+  type AdminNoteCreateCaptureRecovery,
+  type AdminNoteCreateResponse,
+  type AdminNoteDeleteResponse,
+  type AdminNoteFormState,
+  type AdminNoteUpdateResponse,
   type AdminNotesFilterState,
+  type AdminNotesResponse,
   type AdminNotesStatusFilter,
+  type AdminProductsResponse,
 } from "@/lib/admin/notes-manager";
 import {
   ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
@@ -50,216 +66,7 @@ import {
 } from "@/lib/admin/notes";
 import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 
-type AdminNotesResponse =
-  | {
-      ok: true;
-      items: AdminNoteItem[];
-      schemaReady?: boolean;
-      warning?: string | null;
-    }
-  | {
-      ok: false;
-      error?: string;
-    };
-
-type AdminNoteCreateResponse =
-  | {
-      ok: true;
-      item: AdminNoteItem;
-    }
-  | {
-      ok: false;
-      error?: string;
-    };
-
-type AdminNoteUpdateResponse =
-  | {
-      ok: true;
-      item: AdminNoteItem | null;
-    }
-  | {
-      ok: false;
-      error?: string;
-    };
-
-type AdminNoteDeleteResponse =
-  | {
-      ok: true;
-      id: string;
-    }
-  | {
-      ok: false;
-      error?: string;
-    };
-
-type AdminCategoriesResponse =
-  | {
-      ok: true;
-      items: AdminCategoryRow[];
-      schemaReady?: boolean;
-      warning?: string | null;
-    }
-  | {
-      ok: false;
-      error?: string;
-    };
-
-type AdminContentResponse =
-  | {
-      ok: true;
-      items: AdminContentItemRow[];
-    }
-  | {
-      ok: false;
-      error?: string;
-    };
-
-type AdminProductRow = {
-  slug: string;
-  title: string;
-  active: boolean;
-};
-
-type AdminProductsResponse =
-  | {
-      ok: true;
-      items: AdminProductRow[];
-    }
-  | {
-      ok: false;
-      error?: string;
-    };
-
-type FormState = {
-  title: string;
-  category: string;
-  noteDate: string;
-  priority: AdminNotePriority;
-  body: string;
-  isDone: boolean;
-  contextType: AdminNoteContextType | "";
-  contextRef: string;
-  contextModuleRef: string;
-};
-
 type PendingScreenshot = AdminNoteStagedImage;
-
-type CaptureRecovery = {
-  id: string;
-  title: string;
-};
-
-function todayDateInputValue(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function todayDateLabel(): string {
-  return new Intl.DateTimeFormat("nb-NO", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  }).format(new Date());
-}
-
-function formatImageCountLabel(count: number): string {
-  return `${count} image${count === 1 ? "" : "s"}`;
-}
-
-const INITIAL_FORM: FormState = {
-  title: "",
-  category: "General",
-  noteDate: todayDateInputValue(),
-  priority: "normal",
-  body: "",
-  isDone: false,
-  contextType: "",
-  contextRef: "",
-  contextModuleRef: "",
-};
-
-const CONTEXT_TYPE_OPTIONS: Array<{ value: AdminNoteContextType; label: string }> = [
-  { value: "course_module", label: "Course module" },
-  { value: "course_lesson", label: "Course lesson" },
-  { value: "guide_session", label: "0-1000 session" },
-  { value: "guide_drill", label: "Poolside drill" },
-  { value: "product", label: "Product page" },
-  { value: "page", label: "Website page" },
-];
-
-const EMPTY_CONTEXT_CATALOG: AdminNoteContextCatalog = buildAdminNoteContextCatalog({
-  contentItems: [],
-  products: [],
-});
-
-function formatDateLabel(value: string): string {
-  const date = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("nb-NO", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  }).format(date);
-}
-
-function toFormState(note: AdminNoteItem): FormState {
-  return {
-    title: note.title,
-    category: note.category,
-    noteDate: note.note_date,
-    priority: note.priority,
-    body: note.body,
-    isDone: note.is_done,
-    contextType:
-      note.context_type &&
-      ADMIN_NOTE_CONTEXT_TYPE_VALUES.includes(note.context_type as AdminNoteContextType)
-        ? (note.context_type as AdminNoteContextType)
-        : "",
-    contextRef: note.context_ref ?? "",
-    contextModuleRef: "",
-  };
-}
-
-function formatPriorityLabel(priority: AdminNotePriority): string {
-  return priority.charAt(0).toUpperCase() + priority.slice(1);
-}
-
-function priorityBadgeClasses(priority: AdminNotePriority): string {
-  switch (priority) {
-    case "urgent":
-      return "border-rose-200 bg-rose-50 text-rose-700";
-    case "high":
-      return "border-amber-200 bg-amber-50 text-amber-800";
-    case "normal":
-      return "border-blue-200 bg-blue-50 text-blue-700";
-    case "low":
-    default:
-      return "border-slate-200 bg-slate-100 text-slate-700";
-  }
-}
-
-function hasPartialContextSelection(contextType: string, contextRef: string): boolean {
-  const hasType = contextType.trim().length > 0;
-  const hasRef = contextRef.trim().length > 0;
-  return (hasType && !hasRef) || (!hasType && hasRef);
-}
-
-function normalizeContextRef(value: string): string {
-  return value.replace(/\s+/g, " ").trim().toLowerCase();
-}
-
-function areAdminNotesFilterStatesEqual(
-  left: AdminNotesFilterState,
-  right: AdminNotesFilterState
-): boolean {
-  return (
-    left.query === right.query &&
-    left.status === right.status &&
-    left.category === right.category &&
-    left.priority === right.priority &&
-    left.contextType === right.contextType &&
-    left.contextRef === right.contextRef
-  );
-}
 
 export default function AdminNotesManager() {
   const pathname = usePathname() ?? "/admin";
@@ -270,24 +77,24 @@ export default function AdminNotesManager() {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [schemaReady, setSchemaReady] = useState(true);
-  const [contextCatalog, setContextCatalog] =
-    useState<AdminNoteContextCatalog>(EMPTY_CONTEXT_CATALOG);
+  const [contextCatalog, setContextCatalog] = useState(EMPTY_ADMIN_NOTE_CONTEXT_CATALOG);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
-  const [formState, setFormState] = useState<FormState>(INITIAL_FORM);
+  const [formState, setFormState] = useState<AdminNoteFormState>(INITIAL_ADMIN_NOTE_FORM_STATE);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editState, setEditState] = useState<FormState | null>(null);
+  const [editState, setEditState] = useState<AdminNoteFormState | null>(null);
   const [uploadingNoteId, setUploadingNoteId] = useState<string | null>(null);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
   const [linkingNoteId, setLinkingNoteId] = useState<string | null>(null);
   const [unlinkingKey, setUnlinkingKey] = useState<string | null>(null);
   const [linkDrafts, setLinkDrafts] = useState<Record<string, string>>({});
   const [createPendingScreenshots, setCreatePendingScreenshots] = useState<PendingScreenshot[]>([]);
-  const [createCaptureRecovery, setCreateCaptureRecovery] = useState<CaptureRecovery | null>(null);
+  const [createCaptureRecovery, setCreateCaptureRecovery] =
+    useState<AdminNoteCreateCaptureRecovery | null>(null);
   const createPendingScreenshotsRef = useRef<PendingScreenshot[]>([]);
 
   useEffect(() => {
@@ -328,7 +135,7 @@ export default function AdminNotesManager() {
         !productsResponse.ok ||
         !productsPayload.ok
       ) {
-        setContextCatalog(EMPTY_CONTEXT_CATALOG);
+        setContextCatalog(EMPTY_ADMIN_NOTE_CONTEXT_CATALOG);
         return;
       }
 
@@ -339,7 +146,7 @@ export default function AdminNotesManager() {
         })
       );
     } catch {
-      setContextCatalog(EMPTY_CONTEXT_CATALOG);
+      setContextCatalog(EMPTY_ADMIN_NOTE_CONTEXT_CATALOG);
     }
   }, []);
 
@@ -389,7 +196,7 @@ export default function AdminNotesManager() {
       setError("Could not load notes.");
       setItems([]);
       setSchemaReady(true);
-      setContextCatalog(EMPTY_CONTEXT_CATALOG);
+      setContextCatalog(EMPTY_ADMIN_NOTE_CONTEXT_CATALOG);
       setCategoryOptions([]);
     } finally {
       setLoading(false);
@@ -514,23 +321,23 @@ export default function AdminNotesManager() {
 
   const createLessonOptions = useMemo(() => {
     if (formState.contextType !== "course_lesson") return [];
-    const selectedModuleRef = normalizeContextRef(formState.contextModuleRef);
+    const selectedModuleRef = normalizeAdminNoteContextRef(formState.contextModuleRef);
     if (!selectedModuleRef) return [];
     return contextCatalog.lessons.filter((entry) => entry.moduleRef === selectedModuleRef);
   }, [contextCatalog.lessons, formState.contextModuleRef, formState.contextType]);
 
   const editLessonOptions = useMemo(() => {
     if (!editState || editState.contextType !== "course_lesson") return [];
-    const selectedModuleRef = normalizeContextRef(
+    const selectedModuleRef = normalizeAdminNoteContextRef(
       editState.contextModuleRef ||
-        contextCatalog.lessonModuleByRef[normalizeContextRef(editState.contextRef)] ||
+        contextCatalog.lessonModuleByRef[normalizeAdminNoteContextRef(editState.contextRef)] ||
         ""
     );
     if (!selectedModuleRef) return [];
     return contextCatalog.lessons.filter((entry) => entry.moduleRef === selectedModuleRef);
   }, [contextCatalog.lessonModuleByRef, contextCatalog.lessons, editState]);
 
-  const createContextInvalid = hasPartialContextSelection(
+  const createContextInvalid = hasPartialAdminNoteContextSelection(
     formState.contextType,
     formState.contextRef
   );
@@ -547,14 +354,14 @@ export default function AdminNotesManager() {
   function setCreateContextRef(nextRef: string) {
     setFormState((prev) => ({
       ...prev,
-      contextRef: normalizeContextRef(nextRef),
+      contextRef: normalizeAdminNoteContextRef(nextRef),
     }));
   }
 
   function setCreateContextModuleRef(nextRef: string) {
     setFormState((prev) => ({
       ...prev,
-      contextModuleRef: normalizeContextRef(nextRef),
+      contextModuleRef: normalizeAdminNoteContextRef(nextRef),
       contextRef: "",
     }));
   }
@@ -577,7 +384,7 @@ export default function AdminNotesManager() {
 
     setActionError(null);
     setActionNotice(
-      `${formatImageCountLabel(createPendingScreenshots.length + prepared.files.length)} ready to attach on the next note save.`
+      `${formatAdminNoteImageCountLabel(createPendingScreenshots.length + prepared.files.length)} ready to attach on the next note save.`
     );
     setCreatePendingScreenshots((current) => [
       ...current,
@@ -617,7 +424,9 @@ export default function AdminNotesManager() {
       setActionError(null);
       setActionNotice("Note saved without staged images. Use Edit to attach more later if needed.");
     } else if (nextCount > 0) {
-      setActionNotice(`${formatImageCountLabel(nextCount)} still staged for the next save.`);
+      setActionNotice(
+        `${formatAdminNoteImageCountLabel(nextCount)} still staged for the next save.`
+      );
     } else {
       setActionNotice(null);
     }
@@ -687,14 +496,14 @@ export default function AdminNotesManager() {
   }
 
   function applyIncidentTemplate(severity: IncidentNoteSeverity) {
-    const today = todayDateLabel();
+    const today = getTodayAdminNoteDateLabel();
     setFormState((prev) => ({
       ...prev,
       title: prev.title || `Incident ${severity} - ${today}`,
       category: ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY[severity],
       priority: severity === "P0" ? "urgent" : severity === "P1" ? "high" : "normal",
       body: buildIncidentNoteBodyTemplate(severity),
-      noteDate: todayDateInputValue(),
+      noteDate: getTodayAdminNoteDateInputValue(),
       isDone: false,
     }));
     setActionError(null);
@@ -734,7 +543,7 @@ export default function AdminNotesManager() {
           );
           clearCreatePendingScreenshots();
           setCreateCaptureRecovery(null);
-          setFormState(INITIAL_FORM);
+          setFormState(INITIAL_ADMIN_NOTE_FORM_STATE);
           setActionNotice(
             createPendingScreenshots.length === 1
               ? "Note saved with image attached."
@@ -749,7 +558,7 @@ export default function AdminNotesManager() {
             id: payload.item.id,
             title: payload.item.title,
           });
-          setFormState(INITIAL_FORM);
+          setFormState(INITIAL_ADMIN_NOTE_FORM_STATE);
           setActionError(
             uploadError instanceof Error
               ? `Note saved, but ${uploadError.message.toLowerCase()} Retry upload below or remove staged images before creating another note.`
@@ -762,7 +571,7 @@ export default function AdminNotesManager() {
       setItems((prev) =>
         sortNoteItems([...prev.filter((entry) => entry.id !== payload.item.id), payload.item])
       );
-      setFormState(INITIAL_FORM);
+      setFormState(INITIAL_ADMIN_NOTE_FORM_STATE);
       setCreateCaptureRecovery(null);
       setActionNotice(
         payload.item.is_done
@@ -788,10 +597,10 @@ export default function AdminNotesManager() {
       return;
     setActionError(null);
     setActionNotice(null);
-    const nextState = toFormState(item);
+    const nextState = toAdminNoteFormState(item);
     if (nextState.contextType === "course_lesson" && nextState.contextRef) {
       nextState.contextModuleRef =
-        contextCatalog.lessonModuleByRef[normalizeContextRef(nextState.contextRef)] ?? "";
+        contextCatalog.lessonModuleByRef[normalizeAdminNoteContextRef(nextState.contextRef)] ?? "";
     }
     setEditingId(item.id);
     setEditState(nextState);
@@ -811,7 +620,7 @@ export default function AdminNotesManager() {
     setEditState(null);
   }
 
-  function setEditField(updater: (prev: FormState) => FormState) {
+  function setEditField(updater: (prev: AdminNoteFormState) => AdminNoteFormState) {
     setEditState((prev) => (prev ? updater(prev) : prev));
   }
 
@@ -827,14 +636,14 @@ export default function AdminNotesManager() {
   function setEditContextRef(nextRef: string) {
     setEditField((prev) => ({
       ...prev,
-      contextRef: normalizeContextRef(nextRef),
+      contextRef: normalizeAdminNoteContextRef(nextRef),
     }));
   }
 
   function setEditContextModuleRef(nextRef: string) {
     setEditField((prev) => ({
       ...prev,
-      contextModuleRef: normalizeContextRef(nextRef),
+      contextModuleRef: normalizeAdminNoteContextRef(nextRef),
       contextRef: "",
     }));
   }
@@ -1336,7 +1145,7 @@ export default function AdminNotesManager() {
                   <option value="">All priorities</option>
                   {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
                     <option key={priority} value={priority}>
-                      {formatPriorityLabel(priority)}
+                      {formatAdminNotePriorityLabel(priority)}
                     </option>
                   ))}
                 </select>
@@ -1355,7 +1164,7 @@ export default function AdminNotesManager() {
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
                 >
                   <option value="">All context types</option>
-                  {CONTEXT_TYPE_OPTIONS.map((option) => (
+                  {ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -1395,7 +1204,7 @@ export default function AdminNotesManager() {
               const isUploading = uploadingNoteId === item.id;
               const isLinking = linkingNoteId === item.id;
               const editContextInvalid = isEditing
-                ? hasPartialContextSelection(editState.contextType, editState.contextRef)
+                ? hasPartialAdminNoteContextSelection(editState.contextType, editState.contextRef)
                 : false;
               const linkableNotes = items
                 .filter((entry) => entry.id !== item.id)
@@ -1418,16 +1227,16 @@ export default function AdminNotesManager() {
                     <div>
                       <p className="font-semibold text-slate-900">{item.title}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {item.category} · {formatDateLabel(item.note_date)}
+                        {item.category} · {formatAdminNoteDateLabel(item.note_date)}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <span
                           className={[
                             "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-                            priorityBadgeClasses(item.priority),
+                            getAdminNotePriorityBadgeClasses(item.priority),
                           ].join(" ")}
                         >
-                          {formatPriorityLabel(item.priority)}
+                          {formatAdminNotePriorityLabel(item.priority)}
                         </span>
                         {item.attachments.length > 0 ? (
                           <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700">
@@ -1443,7 +1252,7 @@ export default function AdminNotesManager() {
                         ) : null}
                       </div>
                       <p
-                        className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500"
+                        className="mt-1 text-[11px] font-medium tracking-wide text-slate-500 uppercase"
                         data-testid="admin-note-id"
                       >
                         {buildAdminNoteReferenceLabel(item.id)}
@@ -1524,7 +1333,7 @@ export default function AdminNotesManager() {
                   </div>
 
                   {!isEditing && item.body ? (
-                    <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{item.body}</p>
+                    <p className="mt-3 text-sm whitespace-pre-wrap text-slate-700">{item.body}</p>
                   ) : null}
 
                   {!isEditing && item.attachments.length > 0 ? (
@@ -1589,7 +1398,7 @@ export default function AdminNotesManager() {
                               onClick={() => {
                                 jumpToRelatedNote(relatedNote);
                               }}
-                              className="font-medium text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                              className="font-medium text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                             >
                               {relatedNote.title}
                             </button>
@@ -1666,7 +1475,7 @@ export default function AdminNotesManager() {
                         >
                           {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
                             <option key={priority} value={priority}>
-                              {formatPriorityLabel(priority)}
+                              {formatAdminNotePriorityLabel(priority)}
                             </option>
                           ))}
                         </select>
@@ -1695,7 +1504,7 @@ export default function AdminNotesManager() {
                           className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
                         >
                           <option value="">No attachment</option>
-                          {CONTEXT_TYPE_OPTIONS.map((option) => (
+                          {ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
@@ -1734,10 +1543,10 @@ export default function AdminNotesManager() {
                         {editState.contextType === "course_lesson" ? (
                           <div className="space-y-2">
                             <select
-                              value={normalizeContextRef(
+                              value={normalizeAdminNoteContextRef(
                                 editState.contextModuleRef ||
                                   contextCatalog.lessonModuleByRef[
-                                    normalizeContextRef(editState.contextRef)
+                                    normalizeAdminNoteContextRef(editState.contextRef)
                                   ] ||
                                   ""
                               )}
@@ -1988,13 +1797,13 @@ export default function AdminNotesManager() {
                                         onClick={() => {
                                           jumpToRelatedNote(relatedNote);
                                         }}
-                                        className="text-left text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        className="text-left text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                                       >
                                         {relatedNote.title}
                                       </button>
                                     </p>
                                     <p className="text-[11px] text-slate-500">
-                                      {formatPriorityLabel(relatedNote.priority)} ·{" "}
+                                      {formatAdminNotePriorityLabel(relatedNote.priority)} ·{" "}
                                       {buildAdminNoteReferenceLabel(relatedNote.id)}
                                     </p>
                                   </div>
@@ -2034,8 +1843,9 @@ export default function AdminNotesManager() {
                             <option value="">Choose note to link</option>
                             {linkableNotes.map((linkableNote) => (
                               <option key={linkableNote.id} value={linkableNote.id}>
-                                {formatPriorityLabel(linkableNote.priority)} · {linkableNote.title}{" "}
-                                · {buildAdminNoteReferenceLabel(linkableNote.id)}
+                                {formatAdminNotePriorityLabel(linkableNote.priority)} ·{" "}
+                                {linkableNote.title} ·{" "}
+                                {buildAdminNoteReferenceLabel(linkableNote.id)}
                               </option>
                             ))}
                           </select>
@@ -2225,7 +2035,7 @@ export default function AdminNotesManager() {
             >
               {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
                 <option key={priority} value={priority}>
-                  {formatPriorityLabel(priority)}
+                  {formatAdminNotePriorityLabel(priority)}
                 </option>
               ))}
             </select>
@@ -2286,7 +2096,8 @@ export default function AdminNotesManager() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold text-slate-900">
-                        {formatImageCountLabel(createPendingScreenshots.length)} ready to attach
+                        {formatAdminNoteImageCountLabel(createPendingScreenshots.length)} ready to
+                        attach
                       </p>
                       <p className="mt-1 text-[11px] text-slate-600">
                         {createCaptureRecovery
@@ -2374,7 +2185,7 @@ export default function AdminNotesManager() {
               className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
               <option value="">No attachment</option>
-              {CONTEXT_TYPE_OPTIONS.map((option) => (
+              {ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
