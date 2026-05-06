@@ -3,10 +3,11 @@
 ## Metadata
 
 - `id`: `2026-05-06-handoff-summary-and-next-step-governance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-06`
+- `mode`: `shipped`
 
 ## Goal
 
@@ -36,6 +37,35 @@ Critical target categories for `10/10` claim:
 - `Stack-fit and dependency discipline`
 - `Testing and QA automation`
 - `DevOps and rollback readiness`
+
+## Completion Record
+
+- `completed`: `2026-05-06`
+- `merged_pr`: `#619`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/619`
+- `squash_commit`: `80f2ae3`
+- `implementation_commit`: `b959654`
+- `10/10 claim`: yes - all critical target categories are scored `5/5` with focused script tests, generated PR-body lint, full local pre-PR gate, CI, merge-preflight, and post-merge closeout evidence.
+
+Plain-language done summary:
+
+- Completed workstreams now have to end with a short owner-readable summary of what changed and why it matters.
+- The final handoff and generated PR body now require one explicit recommended next step, so the next action is no longer buried in technical evidence.
+- No product UI, user data, payments, auth, analytics, or runtime route behavior changed in this governance/tooling slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                      | Gaps / Notes                                                     |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | AGENTS/runbook/template guidance and generated PR body now require owner-readable outcome and next-step text. | No product IA changed.                                           |
+| UX flow clarity                               | `5/5`          | PR-body lint enforces a single recommended next step instead of allowing ambiguous handoff text.              | Process UX only; no runtime flow changed.                        |
+| Business logic correctness and data integrity | `5/5`          | Focused PR-body generator/lint tests passed, including missing-field and valid-body fixtures.                 | No persisted data path changed.                                  |
+| Reliability and failure handling              | `5/5`          | Missing required handoff fields now fail with specific lint errors; `npm run verify:pre-pr` passed.           | No runtime failure path introduced.                              |
+| Privacy and compliance                        | `5/5`          | Handoff guidance keeps summaries away from secrets, raw env values, private customer text, and payment data.  | No privacy-bearing runtime diff.                                 |
+| Content governance                            | `5/5`          | Canonical AGENTS, task brief template, runbook, generated PR body, and lint path were updated together.       | Historical done briefs intentionally unchanged.                  |
+| Incident response and support operations      | `5/5`          | Closeout contract now surfaces risks, rollback, status, and the single next step in the PR/handoff path.      | Support process only; no Help/Guide runtime content changed.     |
+| i18n operational readiness                    | `5/5`          | Handoff guidance preserves the repo chat-language preference and requires non-jargon owner summaries.         | No translation catalog changed.                                  |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Node scripts, fixtures, repo docs, and PR body flow; no dependency was added.                 | No new tooling surface outside existing scripts.                 |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `npm run verify:pre-pr`, GitHub CI `verify`, and `npm run merge:preflight` passed.           | `verify:pre-merge` reused the existing PASS marker before merge. |
+| DevOps and rollback readiness                 | `5/5`          | PR #619 merged as `80f2ae3`; rollback is `git revert 80f2ae3`; post-merge preflight found this closeout.      | Closeout PR is docs-only and non-runtime.                        |
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                           | Evidence                                        | Expected Closeout Score |
 | --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------- |
@@ -132,3 +162,4 @@ N/A because this slice does not create persisted product entities, route params,
 - `2026-05-06 | working tree | targeted PR-body Vitest passed (25 tests), generated PR-body lint passed, lint:briefs:all passed, ESLint passed, typecheck passed, and git diff --check passed | next: checkpoint commit, run npm run verify:pre-pr on committed HEAD, then push/open PR`
 - `2026-05-06 | 9d2c2e3 | first verify:pre-pr failed in quality-gate evidence because the support-surface sweep was not recorded; ran docs/runbooks/route-label-support-surface-impact-sweep.md identifiers across AGENTS, .github, docs, task briefs, scripts, tests, app, and components; product TrainingContextHub matches are intentional runtime copy and not handoff-governance fallout | next: amend checkpoint with sweep evidence and rerun npm run verify:pre-pr`
 - `2026-05-06 | 8048a1b | npm run verify:pre-pr passed full lane: branch-current, lint:briefs, quality-gate, admin/env/PR-body lint, ESLint, typecheck, 919 unit tests, build, perf budgets, and Playwright 82 passed / 374 skipped; perf trend recommended tighten after 4 green weekly runs, decision is hold for this governance/tooling slice because it does not alter public runtime budget routes | next: amend checkpoint, push branch, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-06 | 80f2ae3 | PR #619 squash-merged to main, local main synced, branch/remote refs pruned, and post-merge preflight surfaced this repo-managed closeout | next: complete docs-only closeout PR, then assess chat handoff before Admin Messages work`
