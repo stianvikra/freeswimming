@@ -12,14 +12,14 @@ describe("admin workspace tab URL state", () => {
   it("parses only supported admin tabs", () => {
     expect(parseAdminTab("notes")).toBe("notes");
     expect(parseAdminTab("content")).toBe("content");
-    expect(parseAdminTab("messages")).toBeNull();
+    expect(parseAdminTab("messages")).toBe("messages");
     expect(parseAdminTab("unknown")).toBeNull();
     expect(parseAdminTab(null)).toBeNull();
   });
 
-  it("keeps admin messages as a planned module boundary until the inbox child activates it", () => {
+  it("keeps admin messages behind a typed module boundary", () => {
     expect(parseAdminWorkspaceModuleId("messages")).toBe("messages");
-    expect(ADMIN_MESSAGES_WORKSPACE_BOUNDARY.status).toBe("planned");
+    expect(ADMIN_MESSAGES_WORKSPACE_BOUNDARY.status).toBe("active");
     expect(buildAdminWorkspaceModuleHref(ADMIN_MESSAGES_WORKSPACE_BOUNDARY)).toBe(
       "/admin?tab=messages"
     );

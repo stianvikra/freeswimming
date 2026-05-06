@@ -1475,7 +1475,14 @@ export type Database = {
     Enums: {
       admin_role: "admin" | "editor" | "viewer";
       admin_message_source: "contact" | "analysis" | "goals_coaching" | "preview_access_notify";
-      admin_message_status: "new" | "triaged" | "archived" | "deleted";
+      admin_message_status:
+        | "new"
+        | "read"
+        | "needs_reply"
+        | "replied"
+        | "triaged"
+        | "archived"
+        | "deleted";
       admin_message_delivery_target: "inbound_notification" | "admin_reply" | "system_notice";
       admin_message_delivery_status:
         | "queued"

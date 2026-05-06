@@ -4,6 +4,7 @@ import {
   isAdminCommerceSchemaMissing,
   getAdminSchemaSetupMessage,
   isAdminContentSchemaMissing,
+  isAdminMessagesSchemaMissing,
   isAdminNotesSchemaMissing,
   isAdminRuntimeFlagsSchemaMissing,
 } from "@/lib/admin/schema";
@@ -38,6 +39,14 @@ describe("admin schema helpers", () => {
     ).toBe(true);
   });
 
+  it("detects missing admin messages schema", () => {
+    expect(
+      isAdminMessagesSchemaMissing({
+        message: 'relation "admin_messages" does not exist',
+      })
+    ).toBe(true);
+  });
+
   it("detects setup blocked by missing grants or policies", () => {
     expect(
       isAdminContentSchemaMissing({
@@ -64,5 +73,6 @@ describe("admin schema helpers", () => {
     expect(getAdminSchemaSetupMessage("notes")).toContain("Admin notes");
     expect(getAdminSchemaSetupMessage("commerce")).toContain("Admin commerce");
     expect(getAdminSchemaSetupMessage("emailTemplates")).toContain("Admin email templates");
+    expect(getAdminSchemaSetupMessage("messages")).toContain("Admin messages");
   });
 });

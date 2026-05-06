@@ -18,7 +18,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-04-06";
+const LAST_UPDATED = "2026-05-06";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -27,6 +27,7 @@ const QUICK_ACTIONS = [
   { id: "content-page", label: "Content workflow" },
   { id: "qr-links", label: "QR workflow" },
   { id: "email-templates", label: "Email templates" },
+  { id: "messages", label: "Messages" },
   { id: "buttons", label: "Buttons explained" },
   { id: "quality-matrix", label: "10/10 matrix" },
   { id: "controls", label: "Doc controls" },
@@ -62,6 +63,13 @@ const DASHBOARD_TABS: TabGuide[] = [
     primaryJob:
       "Manage lifecycle-safe email copy with placeholder validation and publish controls.",
     commonRisk: "Publishing template text with invalid placeholders can break outbound messages.",
+  },
+  {
+    name: "Messages",
+    primaryJob:
+      "Read stored intake requests, triage status, archive/delete safely, and diagnose notification delivery.",
+    commonRisk:
+      "Treating email delivery as the source of truth can hide stored requests or failed notifications.",
   },
   {
     name: "Notes",
@@ -221,6 +229,29 @@ const EMAIL_TEMPLATE_WORKFLOW = [
   },
 ];
 
+const MESSAGE_WORKFLOW = [
+  {
+    title: "Start from stored app state",
+    detail:
+      "Messages are stored in the platform before user success. Use the inbox as the source of truth; email is only a notification channel.",
+  },
+  {
+    title: "Triage without changing content",
+    detail:
+      "Use New, Read, Needs reply, Replied, Archived, and Deleted filters to manage workflow state. Original message content stays immutable except later redaction/delete workflows.",
+  },
+  {
+    title: "Prefer archive before delete",
+    detail:
+      "Archive is the reversible default for done/no-action messages. Move to Deleted only when you intentionally want it out of the active workflow; restore brings it back as New.",
+  },
+  {
+    title: "Diagnose notification issues",
+    detail:
+      "Check notification status and delivery attempts to answer whether the platform received the request and whether provider notification was accepted, disabled, or failed.",
+  },
+];
+
 const BUTTON_GUIDE: ActionGroup[] = [
   {
     section: "Content tab",
@@ -360,6 +391,41 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Refresh",
         meaning:
           "Reloads server-canonical template list if another operator changed state or conflict warning appears.",
+      },
+    ],
+  },
+  {
+    section: "Messages tab",
+    actions: [
+      {
+        label: "Status filters / Source / Search",
+        meaning:
+          "Narrows the stored inbox by workflow state, intake source, submitter, or message excerpt without exposing private message content outside admin.",
+      },
+      {
+        label: "Mark read / Mark unread",
+        meaning:
+          "Changes only the admin workflow state. It does not alter the original request or provider delivery evidence.",
+      },
+      {
+        label: "Needs reply / Mark replied",
+        meaning:
+          "Keeps manual reply intent visible until the reply/outbound-log child adds composed reply sending.",
+      },
+      {
+        label: "Archive / Restore",
+        meaning:
+          "Moves a message out of active triage and brings archived/deleted messages back as New when needed.",
+      },
+      {
+        label: "Move to deleted / Confirm delete",
+        meaning:
+          "Soft-deletes the message from active workflow after confirmation. The inbox child does not hard-delete or redact stored content.",
+      },
+      {
+        label: "Refresh / Load older",
+        meaning:
+          "Reloads latest server-canonical state or fetches the next newest-first page without changing filters.",
       },
     ],
   },
@@ -532,6 +598,13 @@ const CONNECTED_SERVICES = [
     purpose: "Runs required CI checks for merge safety.",
     caution: "Never merge with red required checks.",
   },
+  {
+    name: "Message delivery",
+    purpose:
+      "Sends admin notifications after a message is stored; provider status is shown as diagnostics, not as message identity.",
+    caution:
+      "A disabled or failed notification does not mean the platform lost the request; check the Messages inbox first.",
+  },
 ];
 
 const DAILY_PLAYBOOKS: Playbook[] = [
@@ -588,12 +661,23 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "Mark completion status once resolved, then use Done archive to confirm it is recoverable.",
     ],
   },
+  {
+    title: "Triage inbound messages",
+    steps: [
+      "Open Messages and scan New first.",
+      "Use Source and Search to find the relevant intake request.",
+      "Open detail and confirm stored content plus notification diagnostics.",
+      "Move to Needs reply when a human response is required, or Archive when no action is needed.",
+      "Use Deleted only for intentionally removed workflow items; restore if the message was moved by mistake.",
+    ],
+  },
 ];
 
 const RUNBOOK_LINKS = [
   "docs/runbooks/qr-redirect-operations.md",
   "docs/runbooks/site-lock-operations.md",
   "docs/runbooks/admin-notes-recovery.md",
+  "docs/runbooks/admin-message-inbox.md",
   "docs/runbooks/admin-email-template-governance.md",
   "docs/runbooks/private-access-gate.md",
   "docs/runbooks/post-merge-local-sync.md",
@@ -731,6 +815,25 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
+      <section id="messages" className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="text-base font-semibold text-slate-900">How Messages work</h3>
+        <p className="mt-2 text-sm text-slate-700">
+          Messages is the source-of-truth inbox for stored public intake requests and notification
+          diagnostics.
+        </p>
+        <div className="mt-3 space-y-3">
+          {MESSAGE_WORKFLOW.map((item) => (
+            <article
+              key={item.title}
+              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+            >
+              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section id="buttons" className="rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="text-base font-semibold text-slate-900">Buttons and what they do</h3>
         <p className="mt-2 text-sm text-slate-700">
@@ -771,6 +874,7 @@ export default function AdminHelpCenter() {
                 Create/edit/review/archive email templates with placeholder validation (admin role
                 required for publish/revert).
               </li>
+              <li>Read, filter, status, archive, soft-delete, and restore stored messages.</li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>
             </ul>
@@ -899,6 +1003,15 @@ export default function AdminHelpCenter() {
             <p className="text-sm font-semibold text-rose-900">Create or publish action fails</p>
             <p className="mt-1 text-sm text-rose-800">
               Read API error text, verify role/allowlist, and confirm required CI checks are green.
+            </p>
+          </article>
+          <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <p className="text-sm font-semibold text-amber-900">
+              Message exists but notification failed
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              Treat the inbox row as received. Check delivery attempts for disabled config,
+              retryable provider failure, or final provider rejection before escalating.
             </p>
           </article>
           <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">

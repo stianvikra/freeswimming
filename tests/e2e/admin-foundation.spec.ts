@@ -228,6 +228,7 @@ async function exerciseFoundationNavigation(page: Page) {
   const tabCommerce = page.getByTestId("admin-tab-commerce");
   const tabOperations = page.getByTestId("admin-tab-operations");
   const tabEmailTemplates = page.getByTestId("admin-tab-email-templates");
+  const tabMessages = page.getByTestId("admin-tab-messages");
   const tabNotes = page.getByTestId("admin-tab-notes");
   const tabCategories = page.getByTestId("admin-tab-categories");
   const tabHelp = page.getByTestId("admin-tab-help");
@@ -296,6 +297,9 @@ async function exerciseFoundationNavigation(page: Page) {
   await openTabWithFallback(tabEmailTemplates, "Email templates", "email-templates");
   await expect(page.getByRole("heading", { name: "Email templates" })).toBeVisible();
 
+  await openTabWithFallback(tabMessages, "Messages", "messages");
+  await expect(page.getByRole("heading", { name: "Messages" })).toBeVisible();
+
   await openTabWithFallback(tabNotes, "Notes", "notes");
   await expect(page.getByRole("heading", { name: "Notes" })).toBeVisible();
 
@@ -331,7 +335,12 @@ test.describe("admin foundation", () => {
   test("rejects unauthenticated admin API access", async ({ request }, testInfo) => {
     runOnceOnDesktopChromium(testInfo.project.name);
 
-    const endpoints = ["/api/admin/content", "/api/admin/products", "/api/admin/operations/flags"];
+    const endpoints = [
+      "/api/admin/content",
+      "/api/admin/messages",
+      "/api/admin/products",
+      "/api/admin/operations/flags",
+    ];
 
     for (const endpoint of endpoints) {
       let response;

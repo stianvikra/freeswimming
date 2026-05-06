@@ -118,8 +118,32 @@ export function isAdminEmailTemplatesSchemaMissing(
   return includesAnyMarker(blob, ["admin_email_templates", "admin_email_template_revisions"]);
 }
 
+export function isAdminMessagesSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  if (!error) return false;
+  if (hasMissingSchemaCode(error)) return true;
+  if (hasLikelySetupCode(error)) return true;
+
+  const blob = buildErrorBlob(error);
+  if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
+
+  return includesAnyMarker(blob, [
+    "admin_messages",
+    "admin_message_delivery_attempts",
+    "admin_message_status",
+  ]);
+}
+
 export function getAdminSchemaSetupMessage(
-  section: "content" | "operations" | "notes" | "commerce" | "categories" | "emailTemplates"
+  section:
+    | "content"
+    | "operations"
+    | "notes"
+    | "commerce"
+    | "categories"
+    | "emailTemplates"
+    | "messages"
 ): string {
   const area =
     section === "content"
@@ -132,7 +156,9 @@ export function getAdminSchemaSetupMessage(
             ? "Admin commerce"
             : section === "categories"
               ? "Admin categories"
-              : "Admin email templates";
+              : section === "emailTemplates"
+                ? "Admin email templates"
+                : "Admin messages";
 
   return `${area} setup is not ready in this environment yet. Apply latest Supabase migrations (tables + grants + RLS policies), then refresh.`;
 }
