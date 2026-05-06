@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-external-service-contract-observability-hardening-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-06`
@@ -156,8 +156,37 @@ Critical target categories for `10/10` claim:
 - targeted route/unit tests if runtime behavior changes
 - `npm run verify:pre-pr`
 
+## Completion Record
+
+- `merged_pr`: `#615`
+- `merge_commit`: `03f5b43`
+- `completed`: `2026-05-06`
+- `validation`: `npm run verify:pre-pr` PASS via docs-only lane, `npm run verify:pre-merge` PASS via docs-only lane, GitHub required checks PASS.
+- `10/10 claim`: yes for this external-service contract and observability docs/governance slice. No runtime provider adapter implementation claim is made.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                     | Remaining Gap                                                             |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | `docs/architecture/external-service-contract-matrix.md` defines service keys, owners, product purpose, launch criticality, fallback, and rollback posture.   | None for this contract slice.                                             |
+| UX flow clarity                               | `5/5`          | Matrix distinguishes app-stored state, provider-accepted delivery, generic account-safe responses, fallback routes, and disabled/failure states.             | Runtime UI copy will be validated in child implementation briefs.         |
+| Business logic correctness and data integrity | `5/5`          | Service rows define server/provider/local canonical boundaries and idempotency/retry behavior for Stripe, message delivery, analytics, QR, exports, and AI.  | Adapter/runtime tests remain scoped to Admin Messages child briefs.       |
+| Performance (CWV + payloads)                  | `5/5`          | Matrix requires bounded provider calls, timeout ceilings, no public render blocking, and cost/rate-limit guardrails.                                         | None for docs-only slice.                                                 |
+| Data placement and sync boundaries            | `5/5`          | Matrix names server-canonical, provider-canonical, and local/browser-canonical state per service, including `message_delivery`.                              | None for contract slice.                                                  |
+| Caching and invalidation strategy             | `5/5`          | Route registry and matrix cross-links preserve no-store/private/dynamic expectations and state freshness rules for provider-facing surfaces.                 | Runtime route changes must update both registry and matrix.               |
+| Reliability and failure handling              | `5/5`          | Operational contract covers timeouts, invalid webhooks, provider failures, duplicate/retry behavior, fallback, disable, swap, and rollback.                  | Runtime negative-path tests remain child-slice work.                      |
+| Security and authz                            | `5/5`          | Secret boundaries, server-only provider config, webhook/signature expectations, fail-closed admin/provider gates, and no raw token logging are explicit.     | None for docs-only slice.                                                 |
+| Privacy and compliance                        | `5/5`          | Redaction rules ban raw secrets, full emails, message free text, raw provider responses, prompts, cookies, tokens, and sensitive support artifacts.          | Policy text did not change; future runtime changes require policy review. |
+| Analytics and KPI observability               | `5/5`          | `analytics_events` row preserves typed taxonomy, safe payload sanitizer behavior, duplicate-event posture, and vendor-addition gate.                         | None.                                                                     |
+| Commerce and revenue ops                      | `5/5`          | `stripe_commerce` row records Checkout Sessions, webhook signatures, customer/session/invoice reconciliation, finance evidence, and rollback/repair rules.   | None for contract slice.                                                  |
+| Incident response and support operations      | `5/5`          | Core-flow, QR, Supabase egress, env parity, and finance runbooks/checklists link back to the service matrix for diagnostics, containment, and escalation.    | None.                                                                     |
+| Finance and reporting operations              | `5/5`          | Finance checklist now points to `stripe_commerce`; matrix requires reconcilable IDs and redacted finance/support evidence.                                   | None.                                                                     |
+| Stack-fit and dependency discipline           | `5/5`          | Implemented as repo-native docs with official provider docs baseline and no new dependency, schema, or runtime API change.                                   | None.                                                                     |
+| Testing and QA automation                     | `5/5`          | Docs-only gates passed; matrix change gate requires cheapest matching tests for future success, deny, invalid input, duplicate/retry, and provider failures. | Runtime tests intentionally deferred until runtime changes exist.         |
+| Scalability and cost efficiency               | `5/5`          | Matrix captures rate limits, retry ceilings, provider cost/cost-ceiling rules, Supabase egress thresholds, and future AI cost controls.                      | None for docs-only slice.                                                 |
+| DevOps and rollback readiness                 | `5/5`          | Matrix documents disable/swap/rollback behavior for each service and PR #615 is reversible by `git revert 03f5b43` if needed.                                | None.                                                                     |
+
 ## Checkpoint Log
 
+- `2026-05-06 | done | PR #615 merged as 03f5b43 after local verify:pre-pr, local verify:pre-merge, and required GitHub checks passed; post-merge preflight requested this docs-only closeout | next: commit closeout PR, merge it, sync main, rerun post-merge preflight`
 - `2026-05-06 | validation | external service matrix and runbook/registry links added; npm run verify:pre-pr PASS via docs-only lane with artifact artifacts/test-runs/20260506-123545/verify.log; no runtime behavior changed and no targeted route/unit tests were required | next: commit, push, open PR, then run pre-merge validation`
 - `2026-05-06 | in-progress | moved brief from planned to in-progress on branch external-service-contract-observability-hardening; implementation scope is docs/governance only unless validation exposes a runtime contract gap | next: add canonical external-service matrix, connect runbooks/registry, run docs-only validation`
 - `2026-05-06 | planned-update | Admin Message Management parent and child briefs now depend on this brief for provider-independent message delivery; service matrix must include message_delivery before contact intake/reply implementation | next: execute this architecture slice before Admin Messages runtime work`
