@@ -22,6 +22,8 @@ function buildPrBody(options?: {
   return `
 ## Summary
 
+- Plain-language done summary: This PR keeps the live product unchanged while improving repo governance automation.
+- Recommended next step: Monitor required checks, then run \`npm run verify:pre-merge\` before merge.
 - User-visible changes: No runtime behavior changes.
 - Technical changes: Updated automation/docs scripts only.
 - Policy impact: ${policyImpact}
@@ -111,6 +113,61 @@ describe("validatePullRequestBody policy-impact enforcement", () => {
     expect(errors).toContain(
       'Section "## Summary" is missing a filled `Policy impact` line (`yes` or `no` + rationale).'
     );
+  });
+
+  it("fails when the plain-language done summary is missing", () => {
+    const body = buildPrBody().replace(/^- Plain-language done summary:.*\n/m, "");
+    const errors = validatePullRequestBody(body, {
+      headSha: HEAD_SHA,
+      changedFiles: ["scripts/lint-pr-body-sections.mjs"],
+    });
+
+    expect(errors).toContain(
+      'Section "## Summary" must include exactly one `Plain-language done summary` line explaining what changed and why it matters.'
+    );
+  });
+
+  it("fails when the recommended next step is missing", () => {
+    const body = buildPrBody().replace(/^- Recommended next step:.*\n/m, "");
+    const errors = validatePullRequestBody(body, {
+      headSha: HEAD_SHA,
+      changedFiles: ["scripts/lint-pr-body-sections.mjs"],
+    });
+
+    expect(errors).toContain(
+      'Section "## Summary" must include exactly one `Recommended next step` line, or one `No next step: <rationale>` line.'
+    );
+  });
+
+  it("fails when there is more than one recommended next step", () => {
+    const body = buildPrBody().replace(
+      /^- Recommended next step:.*$/m,
+      [
+        "- Recommended next step: Monitor required checks.",
+        "- Recommended next step: Run a second unrelated follow-up.",
+      ].join("\n")
+    );
+    const errors = validatePullRequestBody(body, {
+      headSha: HEAD_SHA,
+      changedFiles: ["scripts/lint-pr-body-sections.mjs"],
+    });
+
+    expect(errors).toContain(
+      'Section "## Summary" must include exactly one `Recommended next step` line, or one `No next step: <rationale>` line.'
+    );
+  });
+
+  it("accepts an explicit no-next-step rationale", () => {
+    const body = buildPrBody().replace(
+      /^- Recommended next step:.*$/m,
+      "- Recommended next step: No next step: workstream is fully closed after merge and local sync."
+    );
+    const errors = validatePullRequestBody(body, {
+      headSha: HEAD_SHA,
+      changedFiles: ["scripts/lint-pr-body-sections.mjs"],
+    });
+
+    expect(errors).toEqual([]);
   });
 });
 

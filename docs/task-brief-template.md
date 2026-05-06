@@ -40,12 +40,14 @@ Pre-PR validation: run `npm ci` then `npm run verify`.
 Git rhythm: commit + push each validated step; ask me before opening/updating PR to main.
 Handoff must include:
 
-1. what changed
-2. test evidence
-3. PR URL
-4. direct merge URL
-5. post-merge local sync commands
-6. latest checkpoint commit hash + next step if session is interrupted
+1. plain-language done summary
+2. exactly one recommended next step, or `No next step: <rationale>`
+3. what changed
+4. test evidence
+5. PR URL
+6. direct merge URL
+7. post-merge local sync commands
+8. latest checkpoint commit hash + next step if session is interrupted
    Do not store secret values in repo files.
 ```
 

@@ -8,6 +8,8 @@ function buildBody(testEvidenceLines: string[]) {
   return `
 ## Summary
 
+- Plain-language done summary: This PR keeps the live product unchanged while improving repo tooling evidence.
+- Recommended next step: Monitor required checks, then run \`npm run verify:pre-merge\` before merge.
 - User-visible changes: No runtime behavior changes.
 - Technical changes: Updated repo tooling and docs only.
 - Policy impact: no (tooling-only scope)

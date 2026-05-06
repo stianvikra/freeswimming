@@ -94,6 +94,7 @@ function readBriefSummary(briefPath) {
     return {
       path: "",
       title: "No linked brief detected",
+      goal: "",
       scorecardSummary: "Target outcomes not auto-detected.",
     };
   }
@@ -105,6 +106,7 @@ function readBriefSummary(briefPath) {
       .find((line) => line.startsWith("# "))
       ?.replace(/^#\s+/, "")
       .trim() ?? "Task brief";
+  const goal = extractBriefGoal(text);
   const targetRows = text
     .split(/\r?\n/)
     .filter((line) => /\|\s*`?target`?\s*\|/i.test(line)).length;
@@ -112,11 +114,42 @@ function readBriefSummary(briefPath) {
   return {
     path: briefPath,
     title: titleLine,
+    goal,
     scorecardSummary:
       targetRows > 0
         ? `${targetRows} target scorecard categories are defined in the linked brief.`
         : "Target outcomes not auto-detected; verify scorecard table in brief.",
   };
+}
+
+function extractBriefGoal(text) {
+  const lines = text.split(/\r?\n/);
+  const goalLines = [];
+  let inGoal = false;
+
+  for (const line of lines) {
+    if (/^##\s+Goal\s*$/i.test(line)) {
+      inGoal = true;
+      continue;
+    }
+    if (inGoal && /^##\s+/.test(line)) {
+      break;
+    }
+    if (inGoal && line.trim()) {
+      goalLines.push(line.trim());
+    }
+  }
+
+  return stripMarkdown(goalLines[0] ?? "");
+}
+
+function stripMarkdown(value) {
+  return value
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^[-*]\s+/, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function readLatestVerifyRun() {
@@ -357,6 +390,26 @@ function describeUserVisibleChanges(changedFiles) {
   return "No direct user-visible behavior change expected from the touched file areas.";
 }
 
+export function buildPlainLanguageDoneSummary({ changedFiles, brief }) {
+  const goal = stripMarkdown(brief?.goal ?? "");
+  const areaCounts = summarizeChangedAreas(changedFiles);
+  const runtimeChanged = areaCounts.runtime > 0 || areaCounts.api > 0;
+
+  if (goal && !runtimeChanged) {
+    return `This PR makes project closeouts easier to understand and act on: ${goal}`;
+  }
+
+  if (goal) {
+    return `This PR delivers the brief goal for the touched product area: ${goal}`;
+  }
+
+  if (!runtimeChanged) {
+    return "This PR improves the repository workflow only, so the live product stays unchanged.";
+  }
+
+  return "This PR changes the touched product workflow; review the summary, risk, and QA evidence before merge.";
+}
+
 function describeTechnicalChanges(changedFiles) {
   if (changedFiles.length === 0) {
     return "No file changes detected (PR body refresh only).";
@@ -443,6 +496,18 @@ function describePolicyImpact(changedFiles) {
   };
 }
 
+export function buildRecommendedNextStep({ verifyRun, verifyPreMergeEvidence }) {
+  if (!verifyRun || verifyRun.status !== "PASS") {
+    return "Run `npm run verify:pre-pr`, then refresh the PR body before pushing or asking for merge readiness.";
+  }
+
+  if (!verifyPreMergeEvidence?.checked) {
+    return "Monitor required GitHub checks, then run `npm run verify:pre-merge` on the current HEAD before merge.";
+  }
+
+  return "Owner can merge this PR after required GitHub checks and any listed QA are complete.";
+}
+
 function buildBody({
   baseRef,
   branch,
@@ -455,6 +520,7 @@ function buildBody({
 }) {
   const generatedAt = new Date().toISOString();
   const areaCounts = summarizeChangedAreas(changedFiles);
+  const plainLanguageDoneSummary = buildPlainLanguageDoneSummary({ changedFiles, brief });
   const userVisibleChanges = describeUserVisibleChanges(changedFiles);
   const technicalChanges = describeTechnicalChanges(changedFiles);
   const inScopeDescription = describeInScope(changedFiles, areaCounts);
@@ -473,6 +539,7 @@ function buildBody({
   const verifyDocsOnlyLine = buildVerifyDocsOnlyLine(verifyRun, docsOnlyChecklist);
   const verifyPrePrLine = buildVerifyPrePrLine(verifyRun);
   const verifyPreMergeEvidence = buildPreMergeEvidenceLine(preMergeMarker, headShaShort);
+  const recommendedNextStep = buildRecommendedNextStep({ verifyRun, verifyPreMergeEvidence });
   const verifyPreMergeLine = verifyPreMergeEvidence.line;
   const commandChecklist = buildCommandChecklist({
     docsOnlyChecklist,
@@ -489,6 +556,8 @@ function buildBody({
     "",
     `- Auto-generated on ${generatedAt} for branch \`${branch}\` (base ref \`${baseRef}\`).`,
     `- Latest commit: \`${headShaShort}\` - ${commitTitle || "No commit subject found"}.`,
+    `- Plain-language done summary: ${plainLanguageDoneSummary}`,
+    `- Recommended next step: ${recommendedNextStep}`,
     `- User-visible changes: ${userVisibleChanges}`,
     `- Technical changes: ${technicalChanges}`,
     `- Policy impact: ${policyImpact.summaryLine}`,

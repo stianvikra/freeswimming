@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-06-handoff-summary-and-next-step-governance-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-06`
@@ -117,6 +117,18 @@ N/A because this slice does not create persisted product entities, route params,
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
 
+## Route/Label/Support-Surface Impact Sweep Evidence
+
+- Runbook: `docs/runbooks/route-label-support-surface-impact-sweep.md`.
+- Identifiers searched: `Plain-language done summary`, `Recommended next step`, `PR handoff must include`, `Handoff must include`, `Closeout Summary Contract`, `final handoff`, `merge readiness`, `next recommended step`, `recommended next`, `What changed and why`, `User-visible changes`, `Technical changes`, `Policy impact`, `Owner Merge Step`, `Post-Merge Local Sync`.
+- Surfaces checked: `AGENTS.md`, `.github/`, `docs/`, `docs/runbooks/`, `docs/task-briefs/planned/`, `docs/task-briefs/in-progress/`, `docs/task-briefs/done/`, `scripts/`, `tests/`, `app/`, and `components/`.
+- Fallout handled in this PR: PR template, generated PR body, PR-body lint, PR-body unit fixtures, AGENTS final/PR handoff contract, canonical PR/chat handoff runbook, task brief template, and this active brief.
+- Intentional leftovers: historical `done` briefs remain unchanged; `components/my-library/training/TrainingContextHub.tsx` uses "recommended next step" as product goal-note copy, not PR/handoff governance.
+
 ## Checkpoint Log
 
 - `2026-05-06 | planned | captured owner feedback from PR #617 closeout: final summaries should include a plain-language explanation of what changed, and the existing "next recommended step" discipline should become hard-required in final handoff/PR body/lint | next: execute as a small governance/tooling slice before the next long feature workstream`
+- `2026-05-06 | working tree | moved brief to in-progress on branch governance/handoff-summary-next-step; added PR-body generator/lint enforcement for plain-language done summary and a single recommended next step, plus canonical AGENTS/runbook/template guidance and focused unit coverage | next: run targeted PR-body tests, lint:briefs, generated PR-body lint, then verify:pre-pr`
+- `2026-05-06 | working tree | targeted PR-body Vitest passed (25 tests), generated PR-body lint passed, lint:briefs:all passed, ESLint passed, typecheck passed, and git diff --check passed | next: checkpoint commit, run npm run verify:pre-pr on committed HEAD, then push/open PR`
+- `2026-05-06 | 9d2c2e3 | first verify:pre-pr failed in quality-gate evidence because the support-surface sweep was not recorded; ran docs/runbooks/route-label-support-surface-impact-sweep.md identifiers across AGENTS, .github, docs, task briefs, scripts, tests, app, and components; product TrainingContextHub matches are intentional runtime copy and not handoff-governance fallout | next: amend checkpoint with sweep evidence and rerun npm run verify:pre-pr`
+- `2026-05-06 | 8048a1b | npm run verify:pre-pr passed full lane: branch-current, lint:briefs, quality-gate, admin/env/PR-body lint, ESLint, typecheck, 919 unit tests, build, perf budgets, and Playwright 82 passed / 374 skipped; perf trend recommended tighten after 4 green weekly runs, decision is hold for this governance/tooling slice because it does not alter public runtime budget routes | next: amend checkpoint, push branch, open PR, monitor CI, then run npm run verify:pre-merge`

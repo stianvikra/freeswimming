@@ -46,6 +46,8 @@ This file defines how coding agents should collaborate in this repository.
   - for `Incident response and support operations`, `Finance and reporting operations`, and `i18n operational readiness`:
     - if mapped `N/A`, threshold or evidence must include explicit scope rationale (plain `N/A` is not accepted).
 - In final handoff for implementation work, include:
+  - a short plain-language done summary: what changed and why it matters, readable without code knowledge,
+  - exactly one recommended next step, or `No next step: <rationale>` when the workstream is fully closed,
   - achieved score per target category (`0-5`),
   - remaining gaps (if any),
   - defer/fix recommendation when a target score is `<4`.
@@ -326,6 +328,8 @@ This file defines how coding agents should collaborate in this repository.
 ## PR Handoff Contract
 
 - PR handoff must include:
+  - a plain-language done summary for the repo owner,
+  - exactly one recommended next step, or `No next step: <rationale>`,
   - what changed (user-visible + technical),
   - validation evidence (commands + results),
   - risk/regression notes,
