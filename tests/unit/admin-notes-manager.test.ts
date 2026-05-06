@@ -1,15 +1,24 @@
 import { describe, expect, it } from "vitest";
 import type { AdminNoteItem } from "@/lib/admin/notes";
 import {
+  ADMIN_NOTES_CONTEXT_TYPE_OPTIONS,
   ADMIN_NOTES_QUERY_KEYS,
   DEFAULT_ADMIN_NOTES_FILTER_STATE,
+  INITIAL_ADMIN_NOTE_FORM_STATE,
   applyAdminNotesFilterStateToSearchParams,
+  areAdminNotesFilterStatesEqual,
   buildAdminNoteContextFilterLabel,
   buildAdminNoteRelatedJumpFilterState,
   buildAdminNoteReferenceLabel,
   buildAdminNotesContextRefOptions,
   filterAdminNotes,
+  formatAdminNoteImageCountLabel,
+  formatAdminNotePriorityLabel,
+  getAdminNotePriorityBadgeClasses,
+  hasPartialAdminNoteContextSelection,
+  normalizeAdminNoteContextRef,
   parseAdminNotesFilterState,
+  toAdminNoteFormState,
 } from "@/lib/admin/notes-manager";
 
 function buildNote(overrides?: Partial<AdminNoteItem>): AdminNoteItem {
@@ -89,6 +98,79 @@ describe("admin notes manager filter state", () => {
       query: "note-5",
       status: "done",
     });
+  });
+});
+
+describe("admin notes manager form and view contracts", () => {
+  it("keeps typed create/edit form defaults outside the client manager", () => {
+    expect(INITIAL_ADMIN_NOTE_FORM_STATE).toMatchObject({
+      title: "",
+      category: "General",
+      priority: "normal",
+      isDone: false,
+      contextType: "",
+      contextRef: "",
+      contextModuleRef: "",
+    });
+    expect(INITIAL_ADMIN_NOTE_FORM_STATE.noteDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => option.value)).toEqual([
+      "course_module",
+      "course_lesson",
+      "guide_session",
+      "guide_drill",
+      "product",
+      "page",
+    ]);
+  });
+
+  it("maps server notes into local form state without leaking invalid context types", () => {
+    expect(
+      toAdminNoteFormState(
+        buildNote({
+          title: "Edit me",
+          body: "Body",
+          priority: "high",
+          is_done: true,
+          context_type: "page",
+          context_ref: "/plans",
+        })
+      )
+    ).toMatchObject({
+      title: "Edit me",
+      body: "Body",
+      priority: "high",
+      isDone: true,
+      contextType: "page",
+      contextRef: "/plans",
+      contextModuleRef: "",
+    });
+
+    expect(
+      toAdminNoteFormState(
+        buildNote({
+          context_type: "legacy_route" as AdminNoteItem["context_type"],
+          context_ref: "/legacy",
+        })
+      )
+    ).toMatchObject({
+      contextType: "",
+      contextRef: "/legacy",
+    });
+  });
+
+  it("centralizes small notes presentation helpers used by the client manager", () => {
+    expect(normalizeAdminNoteContextRef("  /Plans   Launch  ")).toBe("/plans launch");
+    expect(hasPartialAdminNoteContextSelection("page", "")).toBe(true);
+    expect(hasPartialAdminNoteContextSelection("page", "/plans")).toBe(false);
+    expect(formatAdminNoteImageCountLabel(1)).toBe("1 image");
+    expect(formatAdminNoteImageCountLabel(2)).toBe("2 images");
+    expect(formatAdminNotePriorityLabel("urgent")).toBe("Urgent");
+    expect(getAdminNotePriorityBadgeClasses("urgent")).toContain("border-rose-200");
+    expect(
+      areAdminNotesFilterStatesEqual(DEFAULT_ADMIN_NOTES_FILTER_STATE, {
+        ...DEFAULT_ADMIN_NOTES_FILTER_STATE,
+      })
+    ).toBe(true);
   });
 });
 

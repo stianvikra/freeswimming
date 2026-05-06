@@ -1,12 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { applyAdminTabToSearchParams, parseAdminTab } from "@/lib/admin/admin-workspace";
+import {
+  ADMIN_MESSAGES_WORKSPACE_BOUNDARY,
+  applyAdminTabToSearchParams,
+  buildAdminWorkspaceModuleHref,
+  getAdminWorkspaceModuleBoundary,
+  parseAdminTab,
+  parseAdminWorkspaceModuleId,
+} from "@/lib/admin/admin-workspace";
 
 describe("admin workspace tab URL state", () => {
   it("parses only supported admin tabs", () => {
     expect(parseAdminTab("notes")).toBe("notes");
     expect(parseAdminTab("content")).toBe("content");
+    expect(parseAdminTab("messages")).toBeNull();
     expect(parseAdminTab("unknown")).toBeNull();
     expect(parseAdminTab(null)).toBeNull();
+  });
+
+  it("keeps admin messages as a planned module boundary until the inbox child activates it", () => {
+    expect(parseAdminWorkspaceModuleId("messages")).toBe("messages");
+    expect(ADMIN_MESSAGES_WORKSPACE_BOUNDARY.status).toBe("planned");
+    expect(buildAdminWorkspaceModuleHref(ADMIN_MESSAGES_WORKSPACE_BOUNDARY)).toBe(
+      "/admin?tab=messages"
+    );
+    expect(getAdminWorkspaceModuleBoundary("messages")).toMatchObject({
+      id: "messages",
+      label: "Messages",
+      viewBoundary: expect.stringContaining("dedicated admin messages component boundary"),
+    });
   });
 
   it("writes non-default tabs and removes the default content tab", () => {

@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-admin-workspace-contract-decomposition-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-06`
@@ -148,7 +148,23 @@ Critical target categories for `10/10` claim:
 - targeted admin E2E/screenshot handoff for visual changes
 - `npm run verify:pre-pr`
 
+## Implementation Slice
+
+- Establish a typed planned-module boundary for Admin Messages without activating a visible tab or route UI in this PR.
+- Reduce `AdminNotesManager` by moving typed note form state, response contracts, context helpers, and presentation labels into `lib/admin/notes-manager.ts`.
+- Keep existing admin navigation labels, layout, routes, and Help/Guide copy unchanged in this slice.
+
+## Help/Guide And Screenshot Impact
+
+- Help/Guide: `N/A` for this slice because no active admin labels, actions, recovery steps, or operator instructions change.
+- Screenshot artifact handoff: `N/A` because `AdminNotesManager.tsx` changes only move typed helpers/contracts out of the component; no JSX, Tailwind classes, visible copy, active tab, or layout behavior changes. No `output/` artifact folder is produced for this non-visual refactor.
+- Owner screenshot approval stop: `N/A` for this non-visual refactor. If this slice expands into visible navigation, tabs, workspace layout, or rendered copy changes, stop for owner screenshot approval before pre-PR.
+- Screenshot comparison naming: `N/A` because no screenshots are required for this patch. If visual scope is added, use `before-`/`after-` or `after-`/`reference-` artifact names.
+
 ## Checkpoint Log
 
+- `2026-05-06 | pre-pr-pass | implemented typed planned Admin Messages module boundary, documented admin workspace module contracts, and moved Notes form/response/label helpers into lib/admin/notes-manager.ts; targeted vitest passed (3 files, 16 tests), npm run lint:briefs:all passed, npm run typecheck passed, route/support sweep confirmed tab=messages is not active UI, and npm run verify:pre-pr passed full lane (912 unit tests, build, perf budgets, 82 e2e passed / 374 skipped); perf trend recommended tighten after 4 weekly green runs, decision: hold in this non-performance admin contract slice and prompt owner in PR summary to tighten one stretch target in the next perf-governance or performance-relevant slice | next: inspect diff, commit, push, open PR`
+- `2026-05-06 | quality-gate-adjustment | first npm run verify:pre-pr stopped in lint:quality-gates because AdminNotesManager.tsx is classified as UI and the brief lacked explicit screenshot N/A evidence; no rendered UI changed, so screenshot artifact handoff, owner screenshot approval stop, and comparison naming are now documented as N/A | next: rerun quality gate and verify:pre-pr`
+- `2026-05-06 | in-progress | branch admin-workspace-contract-decomposition-10-10 opened from clean synced main; implementation scoped to a non-visible Admin Messages workspace boundary plus Notes-manager typed helper extraction, with no admin tab/layout/copy activation planned | next: implement contracts and targeted tests`
 - `2026-05-06 | planned-update | Admin Message Management parent and child briefs now depend on this brief for a narrow admin message module boundary before inbox/reply UI is implemented | next: execute this architecture slice after external-service contract hardening or as a scoped prerequisite to Admin Messages v1`
 - `2026-05-05 | planned | created by platform architecture audit to own mature admin workspace decomposition without mixing it into feature work | next: execute only after owner chooses an admin-maintenance slice`

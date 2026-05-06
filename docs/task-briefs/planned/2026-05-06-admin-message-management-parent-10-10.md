@@ -22,7 +22,7 @@ Create the parent contract for a provider-independent admin message management s
 
 1. Create this parent and child brief set.
 2. Execute `docs/task-briefs/planned/2026-05-05-external-service-contract-observability-hardening-10-10.md` with message delivery as a concrete driver.
-3. Execute `docs/task-briefs/planned/2026-05-05-admin-workspace-contract-decomposition-10-10.md` only enough to establish a safe admin message module boundary.
+3. Execute `docs/task-briefs/in-progress/2026-05-05-admin-workspace-contract-decomposition-10-10.md` only enough to establish a safe admin message module boundary.
 4. Implement the message-management child briefs in order:
    - `docs/task-briefs/planned/2026-05-06-admin-message-delivery-provider-contract-10-10.md`
    - `docs/task-briefs/planned/2026-05-06-contact-intake-message-storage-10-10.md`
