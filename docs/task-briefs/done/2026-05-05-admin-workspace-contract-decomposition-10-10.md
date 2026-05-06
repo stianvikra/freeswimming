@@ -3,10 +3,11 @@
 ## Metadata
 
 - `id`: `2026-05-05-admin-workspace-contract-decomposition-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-06`
+- `mode`: `shipped`
 
 ## Goal
 
@@ -53,6 +54,44 @@ Critical target categories for `10/10` claim:
 - `Security and authz`
 - `Reliability and failure handling`
 - `Testing and QA automation`
+
+## Completion Record
+
+- `completed`: `2026-05-06`
+- `merged_pr`: `#617`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/617`
+- `squash_commit`: `aad4be4`
+- `implementation_commit`: `65aa2ee`
+- `10/10 claim`: yes - all critical target categories are scored `5/5` with targeted tests, full local gates, CI, and post-merge closeout evidence.
+
+Plain-language done summary:
+
+- The admin area now has a cleaner internal contract for the future Messages workspace, so the upcoming inbox/reply work can plug into a known shape instead of becoming another oversized admin screen.
+- The existing Notes admin screen still behaves the same for operators, but some of its hidden form and response wiring now lives in a smaller shared admin helper file.
+- No visible admin layout, labels, actions, routes, or Help/Guide text changed in this slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                  | Gaps / Notes                                                                    |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Documented planned Admin Messages boundary and route/support sweep confirmed `tab=messages` is not active UI.             | Future inbox UI remains in child briefs.                                        |
+| UX flow clarity                               | `5/5`          | Existing admin flows unchanged; full E2E gate passed.                                                                     | No visible workflow changed.                                                    |
+| Visual design quality                         | `5/5`          | Screenshot handoff explicitly `N/A`; no JSX, Tailwind classes, visible copy, active tab, or layout behavior changed.      | No screenshot artifacts required.                                               |
+| Business logic correctness and data integrity | `5/5`          | Targeted admin workspace and notes-manager unit tests passed; full unit suite passed.                                     | No schema or mutation semantics changed.                                        |
+| Admin editor ergonomics                       | `5/5`          | Existing Notes admin behavior preserved while helper contracts moved out of the component.                                | No operator workflow label/action changed.                                      |
+| Accessibility (a11y)                          | `5/5`          | No rendered accessibility surface changed; full Playwright gate passed.                                                   | Screenshot/a11y handoff N/A for non-visual refactor.                            |
+| Performance (CWV + payloads)                  | `5/5`          | Build and perf budgets passed; no new dependency added.                                                                   | Perf trend recommended tightening; held for a performance/governance slice.     |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical admin data and local-only form state boundaries documented and preserved.                                | No persistence boundary changed.                                                |
+| Caching and invalidation strategy             | `5/5`          | No fetch/cache behavior changed; admin mutation/freshness contracts remain documented.                                    | No cache implementation touched.                                                |
+| Reliability and failure handling              | `5/5`          | Existing failure paths unchanged; targeted tests and broad gates passed.                                                  | No new runtime failure path introduced.                                         |
+| Security and authz                            | `5/5`          | Admin route/auth behavior untouched; full CI and site-lock smoke checks passed.                                           | No authz implementation changed.                                                |
+| Privacy and compliance                        | `5/5`          | No secrets, raw env values, private admin note content, or logging payloads added.                                        | No privacy-bearing runtime diff.                                                |
+| Content governance                            | `5/5`          | Architecture docs and active/planned task briefs updated to show the admin message boundary dependency.                   | Lifecycle closeout moved this brief to `done`.                                  |
+| Admin workflow and editability                | `5/5`          | Existing admin editability unchanged; no active admin navigation, labels, recovery steps, or Help/Guide copy changed.     | Admin Messages UI remains out of scope.                                         |
+| Analytics and KPI observability               | `5/5`          | No analytics payload changed; planned boundary keeps future Admin Messages observability separate from route-local state. | Future child briefs own message-specific events.                                |
+| Incident response and support operations      | `5/5`          | Help/Guide impact documented as `N/A`; support-visible admin behavior unchanged.                                          | No runbook change required for this non-visible refactor.                       |
+| Stack-fit and dependency discipline           | `5/5`          | Used existing TypeScript/React admin patterns; no dependency added.                                                       | Broader admin decomposition remains future work.                                |
+| Testing and QA automation                     | `5/5`          | Targeted vitest, `npm run verify:pre-pr`, CI `verify`, and `npm run verify:pre-merge` passed.                             | Private-gate full regression skipped by pre-merge script because site lock off. |
+| Scalability and cost efficiency               | `5/5`          | Reduced component-local helper concentration without adding API chatter or runtime cost.                                  | Further large-manager reductions remain follow-up work.                         |
+| DevOps and rollback readiness                 | `5/5`          | PR #617 merged as `aad4be4`; rollback is `git revert aad4be4`; closeout PR is docs-only.                                  | No migration or deploy sequencing required.                                     |
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                 | Evidence                            | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ----------------------- |
@@ -163,6 +202,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-06 | done | PR #617 merged to main as aad4be4; post-merge preflight surfaced this lifecycle closeout, the brief moved to done, and owner feedback about plain-language final summaries was captured in docs/task-briefs/planned/2026-05-06-handoff-summary-and-next-step-governance-10-10.md | next: docs-only closeout PR`
 - `2026-05-06 | merge-readiness | PR #617 is mergeable and all GitHub checks passed, including CI verify (13m56s); npm run verify:pre-merge passed full lane locally with branch current against origin/main, 912 unit tests, build, perf budgets, and 82 e2e passed / 374 skipped; recorded PASS marker artifacts/verify-pre-merge/20260506-135453.json; screenshot handoff remains N/A because no rendered UI changed | next: await owner merge approval`
 - `2026-05-06 | pre-pr-pass | implemented typed planned Admin Messages module boundary, documented admin workspace module contracts, and moved Notes form/response/label helpers into lib/admin/notes-manager.ts; targeted vitest passed (3 files, 16 tests), npm run lint:briefs:all passed, npm run typecheck passed, route/support sweep confirmed tab=messages is not active UI, and npm run verify:pre-pr passed full lane (912 unit tests, build, perf budgets, 82 e2e passed / 374 skipped); perf trend recommended tighten after 4 weekly green runs, decision: hold in this non-performance admin contract slice and prompt owner in PR summary to tighten one stretch target in the next perf-governance or performance-relevant slice | next: inspect diff, commit, push, open PR`
 - `2026-05-06 | quality-gate-adjustment | first npm run verify:pre-pr stopped in lint:quality-gates because AdminNotesManager.tsx is classified as UI and the brief lacked explicit screenshot N/A evidence; no rendered UI changed, so screenshot artifact handoff, owner screenshot approval stop, and comparison naming are now documented as N/A | next: rerun quality gate and verify:pre-pr`
