@@ -204,12 +204,19 @@ tests/e2e/admin-help-center.spec.ts --project=desktop-chromium` -> passed
   done-brief references intentionally preserved as history
 - Screenshot handoff -> captured at
   `/Users/stianvikra/freeswimming/output/admin-message-inbox-2026-05-06-211646`
-- `npm run lint:briefs` after final brief update
-- `npm run verify:pre-pr`
-- `npm run verify:pre-merge`
+- `npm run lint:briefs` after final brief update -> passed
+- `npm run verify:pre-pr` -> passed on implementation commit `421653f`
+  (`artifacts/test-runs/20260506-213619`, full public lane)
+- Required GitHub checks for PR `#626` -> passed on implementation commit
+  `421653f`
+- `npm run verify:pre-merge` -> passed on implementation commit `421653f`
+  (`artifacts/verify-pre-merge/20260506-200035.json`)
+- Final checkpoint-log cleanup is docs-only; rerun pre-PR/pre-merge gates on the
+  cleanup HEAD before merge recommendation.
 
 ## Checkpoint Log
 
+- `2026-05-06 | merge-readiness cleanup | PR #626 opened, screenshot handoff approved, implementation commit 421653f pushed, required GitHub checks passed, and local verify:pre-merge passed; this checkpoint fixes stale brief handoff text before final gate rerun | next: run verify:pre-pr, push cleanup, confirm CI, then run verify:pre-merge on updated HEAD`
 - `2026-05-06 | screenshot-review | inbox implementation, docs, route support sweep, targeted unit/type/lint/e2e checks, and after-only screenshot artifacts completed; no slice commit yet because visual review stop precedes pre-pr gate | next: owner review of screenshot artifacts, then run npm run verify:pre-pr after approval`
 - `2026-05-06 | in-progress | branch admin-message-inbox-10-10 opened from clean synced main after contact intake storage and closeout PRs merged; brief moved to in-progress and scoped to dashboard inbox/read/status/archive/delete workflows without reply sending | next: inspect admin workspace/message storage contracts and implement bounded inbox route/module`
 - `2026-05-06 | planned | created as the admin workflow child after owner requested dashboard management for messages before test swimmers; depends on admin workspace boundary work to avoid adding another large admin manager | next: execute after contact intake storage and admin workspace contract dependency`
