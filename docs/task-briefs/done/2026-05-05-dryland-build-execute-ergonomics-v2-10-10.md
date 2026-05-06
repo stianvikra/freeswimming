@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-dryland-build-execute-ergonomics-v2-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-06`
@@ -368,6 +368,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-06 | merged-closeout | PR #612 merged to main as f70fac2 and post-merge preflight requested this brief closeout; moved brief to done and marked lifecycle status complete | next: open docs-only closeout PR and run repo gates`
 - `2026-05-06 | verify-pre-pr-green | full npm run verify:pre-pr passed on the V3 dryland product-surface candidate after route/label/support sweep evidence was added; result: quality gate PASS, lint/admin/env/pr-body/typecheck/unit/build/perf PASS, Playwright PASS with 82 passed / 374 skipped; perf trend recommended tightening after 4 weekly green runs, but decision is hold in this dryland UI slice and carry tightening to a dedicated performance-governance follow-up/PR summary because this branch does not own platform-wide budgets | next: rerun final pre-pr confirmation after this checkpoint-only brief update, then commit, push, open/update PR, monitor CI, and run verify:pre-merge`
 - `2026-05-06 | screenshot-approved-v3 | owner approved the V3 screenshot handoff for later manual testing, accepting the current private foundation-shell direction as the PR candidate; no product-rendering files changed after the approved capture | next: run verify:pre-pr, commit, push, open/update PR, monitor CI, and run verify:pre-merge before merge recommendation`
 - `2026-05-06 | screenshot-review-ready-v3 | regenerated before/after V3 screenshot handoff at output/dryland-training-product-surface-v3-2026-05-06-073136; temporary screenshot route/script were removed, generated Next type cache was refreshed after temp route removal, and npm run typecheck, npm run lint, npm run lint:briefs:all, git diff --check, and targeted dryland Vitest all passed; no product-rendering files changed after capture | next: owner reviews screenshots before verify:pre-pr`
