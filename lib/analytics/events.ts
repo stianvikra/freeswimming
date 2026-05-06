@@ -46,6 +46,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "contact_intake_failed",
   "contact_intake_rate_limited",
   "contact_intake_notification_failed",
+  "admin_message_status_changed",
   "item_preview_opened",
   "item_download_started",
   "resume_clicked",

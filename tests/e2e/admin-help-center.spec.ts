@@ -53,6 +53,7 @@ test.describe("admin help center", () => {
     await expect(page.getByRole("heading", { name: "How the Content page works" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "How QR Links work" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "How Email Templates work" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "How Messages work" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Buttons and what they do" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "What can be edited right now" })).toBeVisible();
     await expect(
@@ -133,6 +134,11 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Move to Review / Move to Published / Move to Archived / Move to Draft:")
     ).toBeVisible();
+    await expect(page.getByText("Status filters / Source / Search:")).toBeVisible();
+    await expect(page.getByText("Move to deleted / Confirm delete:")).toBeVisible();
+    await expect(
+      page.getByText("Messages are stored in the platform before user success.")
+    ).toBeVisible();
     await expect(page.getByText("Save changes / Cancel:")).toBeVisible();
     await expect(
       page.getByText(
@@ -142,6 +148,7 @@ test.describe("admin help center", () => {
     await expect(page.getByText("docs/runbooks/qr-redirect-operations.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/site-lock-operations.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-notes-recovery.md")).toBeVisible();
+    await expect(page.getByText("docs/runbooks/admin-message-inbox.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-email-template-governance.md")).toBeVisible();
     await expect(
       page.getByText(

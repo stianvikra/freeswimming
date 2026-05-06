@@ -18,6 +18,7 @@ describe("analytics events", () => {
     expect(isAnalyticsEventName("email_template_reverted")).toBe(true);
     expect(isAnalyticsEventName("contact_intake_accepted")).toBe(true);
     expect(isAnalyticsEventName("contact_intake_notification_failed")).toBe(true);
+    expect(isAnalyticsEventName("admin_message_status_changed")).toBe(true);
     expect(isAnalyticsEventName("unknown_event")).toBe(false);
   });
 

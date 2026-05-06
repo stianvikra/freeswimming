@@ -17,7 +17,7 @@ Allow admin to reply to stored messages from the dashboard while saving replies 
 - Parent: `docs/task-briefs/planned/2026-05-06-admin-message-management-parent-10-10.md`
 - Must follow:
   - `docs/task-briefs/done/2026-05-06-admin-message-delivery-provider-contract-10-10.md`
-  - `docs/task-briefs/planned/2026-05-06-admin-message-inbox-10-10.md`
+  - `docs/task-briefs/in-progress/2026-05-06-admin-message-inbox-10-10.md`
 
 ## Reply Truth Contract
 

@@ -4,6 +4,7 @@ export const ADMIN_TAB_VALUES = [
   "commerce",
   "operations",
   "email-templates",
+  "messages",
   "notes",
   "categories",
   "help",
@@ -11,7 +12,7 @@ export const ADMIN_TAB_VALUES = [
 
 export type AdminTab = (typeof ADMIN_TAB_VALUES)[number];
 
-export const PLANNED_ADMIN_TAB_VALUES = ["messages"] as const;
+export const PLANNED_ADMIN_TAB_VALUES = [] as const;
 
 export type PlannedAdminTab = (typeof PLANNED_ADMIN_TAB_VALUES)[number];
 
@@ -35,12 +36,12 @@ export type AdminWorkspaceModuleBoundary = {
 
 export const ADMIN_MESSAGES_WORKSPACE_BOUNDARY = {
   id: "messages",
-  status: "planned",
+  status: "active",
   label: "Messages",
   routePath: "/admin",
   tabQueryValue: "messages",
   orchestrationBoundary:
-    "Admin Messages owns filters, selection, status action state, and reply drafts in a dedicated message workspace hook/module.",
+    "Admin Messages owns filters, selection, and status action state in a dedicated message workspace module.",
   mutationBoundary:
     "Admin message reads and mutations go through admin-only route handlers backed by lib/admin message contracts; client panels do not call delivery providers directly.",
   viewBoundary:
@@ -48,12 +49,11 @@ export const ADMIN_MESSAGES_WORKSPACE_BOUNDARY = {
   serverCanonicalData: [
     "inbound messages",
     "message statuses",
-    "admin replies",
     "delivery attempts",
     "redacted diagnostics",
   ],
-  localOnlyState: ["filters", "current selection", "pending action state", "unsent reply draft"],
-  activationBrief: "docs/task-briefs/planned/2026-05-06-admin-message-inbox-10-10.md",
+  localOnlyState: ["filters", "current selection", "pending action state"],
+  activationBrief: "docs/task-briefs/in-progress/2026-05-06-admin-message-inbox-10-10.md",
 } as const satisfies AdminWorkspaceModuleBoundary;
 
 export const ADMIN_WORKSPACE_MODULE_BOUNDARIES = [

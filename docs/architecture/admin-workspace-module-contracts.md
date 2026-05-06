@@ -17,13 +17,14 @@ Current active tabs:
 - `commerce`
 - `operations`
 - `email-templates`
+- `messages`
 - `notes`
 - `categories`
 - `help`
 
-## Planned Admin Messages Boundary
+## Active Admin Messages Boundary
 
-Admin Messages v1 is reserved as the planned `/admin?tab=messages` module. This PR does not activate a visible tab or render an inbox placeholder.
+Admin Messages v1 enters the dashboard through `/admin?tab=messages`. The inbox child activates the tab for stored public intake messages, status triage, archive/delete/restore, and provider-independent notification diagnostics. Reply composition and outbound logs remain owned by the later reply child brief.
 
 Typed source of truth:
 
@@ -31,20 +32,20 @@ Typed source of truth:
 
 Boundary contract:
 
-- Route/module entry: `/admin?tab=messages` once the inbox child activates the tab.
-- Orchestration state: message filters, current selection, pending action state, and unsent reply draft stay in a dedicated Admin Messages workspace hook/module.
-- Mutations: admin message reads, status updates, archive/delete/restore actions, reply saves, sends, retries, and diagnostics go through admin-only route handlers backed by `lib/admin` message contracts.
-- Views: list, detail, diagnostics, and reply panels live under a dedicated Admin Messages component boundary instead of being added to `AdminWorkspace`, `AdminNotesManager`, or another mature manager.
-- Server-canonical data: inbound messages, message statuses, admin replies, delivery attempts, and redacted diagnostics.
-- Local-only state: filters, selection, pending action state, and unsent reply drafts before explicit save/send.
+- Route/module entry: `/admin?tab=messages`.
+- Orchestration state: message filters, current selection, and pending action state stay in `components/admin/AdminMessagesManager.tsx`.
+- Mutations: admin message reads, status updates, archive/delete/restore actions, and diagnostics go through admin-only route handlers backed by `lib/admin/messages.ts`.
+- Views: list, detail, and diagnostics live under a dedicated Admin Messages component boundary instead of being added to `AdminWorkspace`, `AdminNotesManager`, or another mature manager.
+- Server-canonical data: inbound messages, message statuses, delivery attempts, and redacted diagnostics.
+- Local-only state: filters, selection, and pending action state.
 
 Activation owner:
 
-- `docs/task-briefs/planned/2026-05-06-admin-message-inbox-10-10.md`
+- `docs/task-briefs/in-progress/2026-05-06-admin-message-inbox-10-10.md`
 
 ## Guardrails
 
 - Do not add Admin Messages inbox/reply state to existing large admin managers.
 - Do not let client panels call email or delivery providers directly.
 - Do not treat provider delivery as the message source of truth.
-- If the planned `messages` tab becomes visible, update Help/Guide and provide screenshot handoff in the same PR.
+- Help/Guide and screenshot handoff are required for visible Admin Messages workflow changes.

@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-06-admin-message-inbox-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-06`
@@ -148,15 +148,75 @@ Critical target categories for `10/10` claim:
 3. Unauthorized users cannot read or mutate messages.
 4. Inbox UI is screenshot-reviewed and does not worsen admin workspace complexity.
 
+## Implementation Evidence
+
+- Added the `Messages` admin workspace tab as an active module backed by a focused
+  `AdminMessagesManager` component and typed `lib/admin/messages.ts` view-model
+  contract.
+- Added admin-only message list/detail and status mutation API routes under
+  `/api/admin/messages`, with no-store reads, role-gated mutations, deterministic
+  status transitions, and safe analytics payloads.
+- API failure-mode evidence: route tests cover unauthenticated, forbidden,
+  not-found, invalid action, schema-not-ready, and failed update paths; no
+  unexpected 500 is expected for known admin inbox failure modes.
+- Added the Supabase status/index migration for inbox workflow states while
+  preserving legacy `triaged` compatibility through the read bucket.
+- Updated Help/Guide, the admin message inbox runbook, architecture/module
+  contracts, data-access registry, dependent task-brief links, and route/label
+  support-surface references.
+
+## UI Reference And Screenshot Handoff
+
+- Reference surface: existing admin workspace tab/card/list patterns from Content,
+  Notes, and Help/Guide; this slice adapts message data into the existing
+  dashboard IA instead of creating a separate admin route shell.
+- Handoff type: `after-only`.
+- Screenshot artifacts:
+  `/Users/stianvikra/freeswimming/output/admin-message-inbox-2026-05-06-211646`
+- Captured: `2026-05-06 21:22`
+- Review stop: owner screenshot approval is required before `npm run
+verify:pre-pr`, PR creation, or pre-merge validation.
+- Capture note: the mobile component screenshot hides capture-only shell/dev
+  chrome so the artifact reviews the stitched Messages surface without fixed-nav
+  capture artifacts; product code is unchanged.
+
 ## Validation
 
-- `npm run lint:briefs`
-- targeted admin unit/component tests
-- targeted admin route negative-path tests
-- targeted admin E2E + screenshot handoff
-- `npm run verify:pre-pr`
-- `npm run verify:pre-merge`
+- `npm exec vitest -- run tests/unit/admin-messages.test.ts
+tests/unit/admin-messages-manager.test.tsx tests/unit/admin-messages-routes.test.ts
+tests/unit/admin-workspace-state.test.ts tests/unit/admin-schema.test.ts
+tests/unit/analytics-events.test.ts` -> passed (`6` files, `27` tests)
+- `npm run typecheck` -> passed
+- `npm run lint` -> passed
+- `npm run lint:briefs:all` -> passed
+- `npm exec playwright -- test tests/e2e/admin-foundation.spec.ts
+tests/e2e/admin-help-center.spec.ts --project=desktop-chromium` -> passed
+  unauthenticated/admin-access assertions; authenticated dummy-login paths skipped
+  because the local dummy Supabase/dev-login response was HTML in this environment
+- Route/label/support sweep for `tab=messages`, `admin-tab-messages`, `Messages`,
+  `admin/messages`, `admin_message_status_changed`, `admin-message-inbox`,
+  `admin_messages`, and `admin_message_delivery_attempts` -> dependent active
+  surfaces updated; historical done-brief references intentionally left as history
+- Identifiers searched / surfaces checked: `app/`, `components/`, `lib/`,
+  `tests/`, `docs/`, `docs/runbooks/`, active/planned/done task briefs,
+  Help/Guide assertions, Supabase migrations/types, and analytics event catalog;
+  route-label-support fallout handled in the same slice except historical
+  done-brief references intentionally preserved as history
+- Screenshot handoff -> captured at
+  `/Users/stianvikra/freeswimming/output/admin-message-inbox-2026-05-06-211646`
+- `npm run lint:briefs` after final brief update -> passed
+- `npm run verify:pre-pr` -> passed on implementation commit `421653f`
+  (`artifacts/test-runs/20260506-213619`, full public lane)
+- Required GitHub checks for PR `#626` -> passed on implementation commit
+  `421653f`
+- `npm run verify:pre-merge` -> passed on implementation commit `421653f`
+  (`artifacts/verify-pre-merge/20260506-200035.json`)
+- Final checkpoint-log cleanup is docs-only; rerun pre-PR/pre-merge gates on the
+  cleanup HEAD before merge recommendation.
 
 ## Checkpoint Log
 
+- `2026-05-06 | merge-readiness cleanup | PR #626 opened, screenshot handoff approved, implementation commit 421653f pushed, required GitHub checks passed, and local verify:pre-merge passed; this checkpoint fixes stale brief handoff text before final gate rerun | next: run verify:pre-pr, push cleanup, confirm CI, then run verify:pre-merge on updated HEAD`
+- `2026-05-06 | screenshot-review | inbox implementation, docs, route support sweep, targeted unit/type/lint/e2e checks, and after-only screenshot artifacts completed; no slice commit yet because visual review stop precedes pre-pr gate | next: owner review of screenshot artifacts, then run npm run verify:pre-pr after approval`
+- `2026-05-06 | in-progress | branch admin-message-inbox-10-10 opened from clean synced main after contact intake storage and closeout PRs merged; brief moved to in-progress and scoped to dashboard inbox/read/status/archive/delete workflows without reply sending | next: inspect admin workspace/message storage contracts and implement bounded inbox route/module`
 - `2026-05-06 | planned | created as the admin workflow child after owner requested dashboard management for messages before test swimmers; depends on admin workspace boundary work to avoid adding another large admin manager | next: execute after contact intake storage and admin workspace contract dependency`

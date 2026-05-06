@@ -8,6 +8,7 @@ import AdminContentManager from "@/components/admin/AdminContentManager";
 import AdminCategoriesManager from "@/components/admin/AdminCategoriesManager";
 import AdminEmailTemplatesManager from "@/components/admin/AdminEmailTemplatesManager";
 import AdminHelpCenter from "@/components/admin/AdminHelpCenter";
+import AdminMessagesManager from "@/components/admin/AdminMessagesManager";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
 import AdminQrLinksManager from "@/components/admin/AdminQrLinksManager";
@@ -43,6 +44,11 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
     id: "email-templates",
     label: "Email templates",
     subtitle: "Draft, review, publish, and rollback-safe message copy",
+  },
+  {
+    id: "messages",
+    label: "Messages",
+    subtitle: "Stored intake, triage status, and notification diagnostics",
   },
   {
     id: "notes",
@@ -92,7 +98,7 @@ export default function AdminWorkspace({ role }: Props) {
 
   return (
     <div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-9">
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
@@ -126,7 +132,7 @@ export default function AdminWorkspace({ role }: Props) {
       <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Active section
             </p>
             <p
@@ -155,6 +161,7 @@ export default function AdminWorkspace({ role }: Props) {
         {activeTab === "commerce" ? <AdminCommerceManager /> : null}
         {activeTab === "operations" ? <AdminOperationsManager /> : null}
         {activeTab === "email-templates" ? <AdminEmailTemplatesManager /> : null}
+        {activeTab === "messages" ? <AdminMessagesManager adminRole={role} /> : null}
         {activeTab === "notes" ? <AdminNotesManager /> : null}
         {activeTab === "categories" ? <AdminCategoriesManager /> : null}
         {activeTab === "help" ? <AdminHelpCenter /> : null}

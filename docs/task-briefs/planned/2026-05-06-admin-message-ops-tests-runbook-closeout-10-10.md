@@ -18,7 +18,7 @@ Close out Admin Messages v1 with launch-grade operations, test coverage, env par
 - Must follow:
   - `docs/task-briefs/done/2026-05-06-admin-message-delivery-provider-contract-10-10.md`
   - `docs/task-briefs/done/2026-05-06-contact-intake-message-storage-10-10.md`
-  - `docs/task-briefs/planned/2026-05-06-admin-message-inbox-10-10.md`
+  - `docs/task-briefs/in-progress/2026-05-06-admin-message-inbox-10-10.md`
   - `docs/task-briefs/planned/2026-05-06-admin-message-reply-outbound-log-10-10.md`
 
 ## Closeout Target
